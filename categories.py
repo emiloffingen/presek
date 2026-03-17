@@ -223,3 +223,22 @@ def detect_subcategory(title: str, description: str = "") -> str | None:
         if any(kw in text for kw in keywords):
             return sub_name
     return None
+
+
+# ── Diaspora country map ───────────────────────────────────────────
+_COUNTRY_MAP: dict[str, str] = {
+    "Tagesschau": "🇩🇪",
+    "Der Spiegel": "🇩🇪",
+    "SRF News":    "🇨🇭",
+    "20 Minuten":  "🇨🇭",
+    "CNN":         "🇺🇸",
+    "AP News":     "🇺🇸",
+    "NPR":         "🇺🇸",
+    "CBC News":    "🇨🇦",
+    "CTV News":    "🇨🇦",
+}
+
+
+def detect_country(source_name: str) -> str:
+    """Return the country flag emoji for a given source name. Defaults to 🇲🇰."""
+    return _COUNTRY_MAP.get(source_name, "🇲🇰")

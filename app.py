@@ -8,7 +8,7 @@ from collections import defaultdict
 import health
 import trending
 import clustering
-from categories import detect_category, detect_subcategory
+from categories import detect_category, detect_subcategory, detect_country
 from notifier import BreakingNewsNotifier
 import digest as digest_module
 
@@ -102,6 +102,22 @@ RSS_FEEDS = [
     ("Time.mk",         "https://time.mk/rss"),
     ("Kolumna",         "https://kolumna.mk/feed/"),
     ("Okno",            "https://okno.mk/feed/"),
+]
+
+DIASPORA_FEEDS = [
+    # 🇩🇪 Germany
+    ("Tagesschau", "https://www.tagesschau.de/xml/rss2",                                     "Свет"),
+    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                          "Свет"),
+    # 🇨🇭 Switzerland
+    ("SRF News",   "https://www.srf.ch/news/bnf/rss/1890",                                   "Свет"),
+    ("20 Minuten", "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                   "Свет"),
+    # 🇺🇸 USA
+    ("CNN",        "http://rss.cnn.com/rss/cnn_topstories.rss",                               "Свет"),
+    ("AP News",    "https://rsshub.app/apnews/topics/apf-topnews",                            "Свет"),
+    ("NPR",        "https://feeds.npr.org/1001/rss.xml",                                      "Свет"),
+    # 🇨🇦 Canada
+    ("CBC News",   "https://www.cbc.ca/webfeed/rss/rss-topstories",                           "Свет"),
+    ("CTV News",   "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",  "Свет"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
@@ -283,6 +299,100 @@ def ingest_feeds():
     return new_count, errors
 
 
+def translate_titles_batch(titles: list[str]) -> list[str]:
+    """Translate a list of titles to Macedonian in ONE Gemini API call."""
+    if not titles or not GOOGLE_API_KEY:
+        return titles
+    titles_json = json.dumps(titles, ensure_ascii=False)
+    prompt = (
+        "Преведи ги овие наслови на македонски јазик. "
+        "Врати JSON листа со преводите во ист редослед. "
+        "Само преводите, без објаснувања.\n\n" + titles_json
+    )
+    result = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.")
+    if not result:
+        return titles
+    try:
+        import re as _re
+        clean = _re.sub(r'```(?:json)?\s*|\s*```', '', result).strip()
+        m = _re.search(r'\[[\s\S]*\]', clean)
+        if m:
+            translated = json.loads(m.group(0))
+            if isinstance(translated, list) and len(translated) == len(titles):
+                return [str(t) for t in translated]
+    except Exception as e:
+        log.warning(f"[diaspora] Translation parse failed: {e}")
+    return titles
+
+
+def ingest_diaspora_feeds():
+    """Fetch diaspora RSS feeds, batch-translate titles, write to DB separately."""
+    conn = get_db()
+    diaspora_recent = conn.execute(
+        "SELECT title, cluster_id FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT ?",
+        (CLUSTER_LOOKBACK,)
+    ).fetchall()
+    diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in diaspora_recent]
+    conn.close()
+
+    # Build source → (category, country) lookup
+    feed_meta = {s: (cat, detect_country(s)) for s, u, cat in DIASPORA_FEEDS}
+
+    # Phase 1: fetch all feeds in parallel
+    all_entries: list[tuple] = []
+    errors: list[str] = []
+    max_workers = min(len(DIASPORA_FEEDS), 10)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_feed, s, u): s for s, u, _ in DIASPORA_FEEDS}
+        for future in as_completed(futures):
+            source, entries, error = future.result()
+            if error:
+                errors.append(f"{source}: {error}")
+                log.warning(f"[diaspora] Feed error — {source}: {error}")
+            else:
+                cat, country = feed_meta[source]
+                for title, link, desc, image_url in entries:
+                    all_entries.append((source, title, link, desc, image_url, cat, country))
+
+    if not all_entries:
+        return 0, errors
+
+    # Phase 2: batch-translate all titles in one API call
+    titles = [e[1] for e in all_entries]
+    translated = translate_titles_batch(titles)
+
+    # Phase 3: write to DB sequentially
+    import re as _re
+    conn = get_db()
+    new_count = 0
+    for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
+        try:
+            if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
+                continue
+            mk_title = translated[i] if i < len(translated) else title
+            cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
+            now = datetime.datetime.now().isoformat()
+            clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
+            conn.execute(
+                "INSERT INTO articles "
+                "(title, original_title, link, source, category, subcategory, cluster_id, "
+                "created_at, image_url, description, country) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (mk_title, title, link, source, category, "", cluster_id,
+                 now, image_url, clean_desc, country)
+            )
+            diaspora_recent.insert(0, {"title": mk_title, "cluster_id": cluster_id})
+            if len(diaspora_recent) > CLUSTER_LOOKBACK:
+                diaspora_recent.pop()
+            new_count += 1
+        except Exception as e:
+            log.error(f"[diaspora] DB write error — {source} | {title[:40]}: {e}")
+
+    conn.commit()
+    conn.close()
+    return new_count, errors
+
+
 def prune_db():
     """Delete articles older than DB_RETAIN_DAYS and reclaim disk space."""
     try:
@@ -416,6 +526,8 @@ def ingest_loop():
             new_count, errors = ingest_feeds()
             health.record_refresh(new_count, errors)
             log.info(f"Added {new_count} new articles, {len(errors)} errors.")
+            diaspora_count, diaspora_errors = ingest_diaspora_feeds()
+            log.info(f"[diaspora] Added {diaspora_count} articles, {len(diaspora_errors)} errors.")
             global _prune_counter
             _prune_counter += 1
             if _prune_counter >= 96:
@@ -1000,6 +1112,12 @@ if __name__ == "__main__":
     if "subcategory" not in cols:
         conn.execute("ALTER TABLE articles ADD COLUMN subcategory TEXT DEFAULT ''")
         log.info("DB migrated: added subcategory column")
+    if "country" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN country TEXT DEFAULT '🇲🇰'")
+        log.info("DB migrated: added country column")
+    if "original_title" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
+        log.info("DB migrated: added original_title column")
     conn.commit()
     conn.close()
 

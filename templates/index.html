@@ -240,19 +240,24 @@
   function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
   const CAT_ORDER=['Спорт','Политика','Хроника','Економија','Свет','Технологија','Здравје','Образование','Култура','Животна средина','Време','Општо','Албански'];
   const SUB_CATS=['Скопје','Балкан','Република'];
+  const COUNTRY_BTNS=[{label:'🇩🇪 DE',flag:'🇩🇪'},{label:'🇨🇭 CH',flag:'🇨🇭'},{label:'🇺🇸 US',flag:'🇺🇸'},{label:'🇨🇦 CA',flag:'🇨🇦'}];
   const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
   const MACEDONIAN_SOURCES=new Set(['Sitel','Telma','Kanal 5','TV21','24 Вести','MIA','Nova Makedonija','Sloboden Pecat','Republika','Makfax','Fokus','Nezavisen','Kurir','Faktor','Vecer','Meta','360 Stepeni','Infomax','Lider','Vistinomer','NetPress','MKD','Press24','Skopje1','Plusinfo','Lokalno','4News','Makpress','Akademik','Skopje Info','Prizma','Expres','Tetovo Info','A1on','SportSport','Strumica Info','Журнал','Civil Media','Радио МОФ','Сакам да кажам','Бизнис Вести','Слободна Европа','Deutsche Welle','Ohrid News','Vecer Sport','Ekonomija','Zdravje','MRT','Time.mk','Kolumna','Okno']);
 
   function buildCats(clusters){
     const present=new Set(clusters.map(c=>c.articles[0]?.category).filter(Boolean));
     const subPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.subcategory).filter(Boolean));
+    const countryPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.country).filter(Boolean));
     const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c)),...[...present].filter(c=>!CAT_ORDER.includes(c))];
     const subBtns=SUB_CATS.filter(s=>subPresent.has(s)).map(s=>
       `<button class="cat-btn${s===activeCategory?' active':''}" onclick="filterCat('${s}',this)" style="color:#c9a030;border-bottom-color:${s===activeCategory?'#c9a030':'transparent'}">${s}</button>`
     ).join('');
+    const countryBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag)).map(cf=>
+      `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
+    ).join('');
     document.getElementById('catNav').innerHTML=ordered.map(c=>
       `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
-    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'');
+    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'')+(countryBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+countryBtns:'');
   }
   function filterCat(cat,btn){
     activeCategory=cat;
@@ -297,8 +302,10 @@
 
   function renderPage(clusters){
     const isSub=SUB_CATS.includes(activeCategory);
+    const isCountry=COUNTRY_BTNS.some(cf=>cf.flag===activeCategory);
     const filtered=activeCategory==='Сите'?clusters
       :isSub?clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory))
+      :isCountry?clusters.filter(c=>c.articles.some(a=>a.country===activeCategory))
       :clusters.filter(c=>c.articles[0]?.category===activeCategory);
     const wrap=document.getElementById('pageWrap');
     if(!filtered.length){wrap.innerHTML='<div class="empty-msg">Нема вести.</div>';return}
