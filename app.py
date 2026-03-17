@@ -645,6 +645,13 @@ def api_news():
     start  = page * page_size
     end    = start + page_size
     paged  = result[start:end]
+
+    # On first page, ensure diaspora clusters are always included
+    if page == 0:
+        diaspora_cids = {c["cluster_id"] for c in paged if any(a.get("country", "🇲🇰") != "🇲🇰" for a in c["articles"])}
+        diaspora_extra = [c for c in result[end:] if any(a.get("country", "🇲🇰") != "🇲🇰" for a in c["articles"]) and c["cluster_id"] not in diaspora_cids]
+        paged = paged + diaspora_extra
+
     return jsonify({
         "clusters":    paged,
         "page":        page,
