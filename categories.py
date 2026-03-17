@@ -227,15 +227,17 @@ def detect_subcategory(title: str, description: str = "") -> str | None:
 
 # ── Diaspora country map ───────────────────────────────────────────
 _COUNTRY_MAP: dict[str, str] = {
-    "Tagesschau": "🇩🇪",
-    "Der Spiegel": "🇩🇪",
-    "SRF News":    "🇨🇭",
-    "20 Minuten":  "🇨🇭",
-    "CNN":         "🇺🇸",
-    "AP News":     "🇺🇸",
-    "NPR":         "🇺🇸",
-    "CBC News":    "🇨🇦",
-    "CTV News":    "🇨🇦",
+    "Tagesschau":    "🇩🇪",
+    "Bild":          "🇩🇪",
+    "SRF News":      "🇨🇭",
+    "20 Minuten":    "🇨🇭",
+    "CNN":           "🇺🇸",
+    "Reuters":       "🇺🇸",
+    "NPR":           "🇺🇸",
+    "CBC News":      "🇨🇦",
+    "CTV News":      "🇨🇦",
+    "ABC Australia": "🇦🇺",
+    "ANSA":          "🇮🇹",
 }
 
 

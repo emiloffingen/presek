@@ -106,18 +106,22 @@ RSS_FEEDS = [
 
 DIASPORA_FEEDS = [
     # 🇩🇪 Germany
-    ("Tagesschau", "https://www.tagesschau.de/xml/rss2",                                     "Свет"),
-    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                          "Свет"),
+    ("Tagesschau",    "https://www.tagesschau.de/xml/rss2",                                                                                          "Свет"),
+    ("Bild",          "https://www.bild.de/rssfeeds/vw-alles/vw-alles-26970192,dzBildUrl=true,sort=1,teaserImageVersion=16by9,view=rss2.bild.xml",   "Свет"),
     # 🇨🇭 Switzerland
-    ("SRF News",   "https://www.srf.ch/news/bnf/rss/1890",                                   "Свет"),
-    ("20 Minuten", "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                   "Свет"),
+    ("SRF News",      "https://www.srf.ch/news/bnf/rss/1890",                                                                                        "Свет"),
+    ("20 Minuten",    "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                                                                        "Свет"),
     # 🇺🇸 USA
-    ("CNN",        "http://rss.cnn.com/rss/cnn_topstories.rss",                               "Свет"),
-    ("AP News",    "https://rsshub.app/apnews/topics/apf-topnews",                            "Свет"),
-    ("NPR",        "https://feeds.npr.org/1001/rss.xml",                                      "Свет"),
+    ("CNN",           "http://rss.cnn.com/rss/cnn_topstories.rss",                                                                                   "Свет"),
+    ("Reuters",       "https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best",                                            "Свет"),
+    ("NPR",           "https://feeds.npr.org/1001/rss.xml",                                                                                          "Свет"),
     # 🇨🇦 Canada
-    ("CBC News",   "https://www.cbc.ca/webfeed/rss/rss-topstories",                           "Свет"),
-    ("CTV News",   "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",  "Свет"),
+    ("CBC News",      "https://www.cbc.ca/webfeed/rss/rss-topstories",                                                                               "Свет"),
+    ("CTV News",      "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",                                                       "Свет"),
+    # 🇦🇺 Australia
+    ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                                                                            "Свет"),
+    # 🇮🇹 Italy
+    ("ANSA",          "https://www.ansa.it/sito/ansait_rss.xml",                                                                                     "Свет"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
