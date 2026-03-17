@@ -66,8 +66,14 @@
     .cat-btn:hover{color:#fff}
     .cat-btn.active{color:#fff;border-bottom-color:var(--red)}
 
+    /* DIASPORA NAV */
+    .diaspora-nav{background:var(--cat-bg);border-bottom:2px solid #3a3020;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:100px;z-index:189;display:none}
+    .diaspora-nav::-webkit-scrollbar{display:none}
+    .diaspora-nav-inner{display:flex;align-items:center;max-width:1100px;margin:0 auto;padding:0 .75rem;gap:.25rem}
+    .diaspora-label{font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;padding:.5rem .5rem .5rem 0;white-space:nowrap}
+
     /* SEARCH */
-    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
+    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:140px;z-index:180}
     .search-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
     .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:.5rem .75rem;outline:none;min-width:0}
     .search-input:focus{border-color:var(--red)}
@@ -227,6 +233,7 @@
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
 <header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
+<nav class="diaspora-nav" id="diasporaNav"><div class="diaspora-nav-inner"><span class="diaspora-label">🌍 Дијаспора</span><div id="diasporaBtns"></div></div></nav>
 <div class="search-bar"><div class="search-inner"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
 <div class="timebox-wrap"><div class="timebox-nav"><span class="timebox-label">↩ Сноп:</span><button class="timebox-btn active" onclick="showTimebox('live', this)">⬤ Живо</button><button class="timebox-btn" onclick="showTimebox('утро', this)">☀ Утро</button><button class="timebox-btn" onclick="showTimebox('попладне', this)">◑ Попладне</button><button class="timebox-btn" onclick="showTimebox('вечер', this)">☾ Вечер</button><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button></div></div>
@@ -248,16 +255,24 @@
     const present=new Set(clusters.map(c=>c.articles[0]?.category).filter(Boolean));
     const subPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.subcategory).filter(Boolean));
     const countryPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.country).filter(Boolean));
+    countryPresent.delete('🇲🇰');
     const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c)),...[...present].filter(c=>!CAT_ORDER.includes(c))];
     const subBtns=SUB_CATS.filter(s=>subPresent.has(s)).map(s=>
       `<button class="cat-btn${s===activeCategory?' active':''}" onclick="filterCat('${s}',this)" style="color:#c9a030;border-bottom-color:${s===activeCategory?'#c9a030':'transparent'}">${s}</button>`
     ).join('');
-    const countryBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag)).map(cf=>
-      `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
-    ).join('');
     document.getElementById('catNav').innerHTML=ordered.map(c=>
       `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
-    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'')+(countryBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+countryBtns:'');
+    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'');
+    const diasporaNav=document.getElementById('diasporaNav');
+    const activeBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag));
+    if(activeBtns.length){
+      diasporaNav.style.display='block';
+      document.getElementById('diasporaBtns').innerHTML=activeBtns.map(cf=>
+        `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
+      ).join('');
+    } else {
+      diasporaNav.style.display='none';
+    }
   }
   function filterCat(cat,btn){
     activeCategory=cat;
