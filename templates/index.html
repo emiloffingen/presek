@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Пресек | Вашиот Дневен Преглед</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#8b1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Пресек">
+  <link rel="apple-touch-icon" href="/static/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f4ede0;--bg-card:#fefbf4;--bg-hover:#f5eed8;
+      --border:#d4c5a4;--border-dark:#b8a882;
+      --text:#1c1812;--text-body:#2e281e;--text-muted:#7a6e58;
+      --headline:#1c1812;--headline-hov:#7a2020;
+      --red:#8b1a1a;--red-light:#a52a2a;--gold:#8a6d1b;
+      --cat-bg:#1c1812;--cat-text:#f4ede0;
+      --badge-bg:#ebe2cc;--badge-text:#4a3f30;
+      --serif:'Source Serif 4','Noto Serif',Georgia,serif;
+      --display:'Playfair Display',Georgia,serif;
+      --sans:'Noto Sans',sans-serif;
+    }
+    @media(prefers-color-scheme:dark){:root{
+      --bg:#151310;--bg-card:#1f1b15;--bg-hover:#2a2418;
+      --border:#3a3222;--border-dark:#4a3e2a;
+      --text:#ede0c4;--text-body:#d4c8a8;--text-muted:#8a7c62;
+      --headline:#ede0c4;--headline-hov:#e0a050;
+      --red:#c04040;--red-light:#d05050;--gold:#c9a030;
+      --cat-bg:#0e0c08;--cat-text:#ede0c4;
+      --badge-bg:#2a2418;--badge-text:#c4aa80;
+    }}
+    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+    body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+    /* TICKER */
+    .ticker-bar{background:var(--red);height:36px;display:flex;align-items:center;overflow:hidden}
+    .ticker-label{background:#000;color:#fff;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 1rem;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
+    .ticker-track{flex:1;overflow:hidden}
+    .ticker-inner{display:flex;gap:3rem;white-space:nowrap;animation:ticker 55s linear infinite;font-size:.85rem;color:#fff;font-family:var(--serif)}
+    .ticker-inner:hover{animation-play-state:paused}
+    .ticker-item::before{content:'◆ ';opacity:.5;font-size:.5rem;vertical-align:middle}
+    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+    /* HEADER */
+    .site-header{background:var(--bg-card);border-bottom:4px double var(--red);position:sticky;top:0;z-index:200}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto}
+    .logo-text{font-family:var(--display);font-size:2rem;font-weight:900;letter-spacing:.08em;color:var(--red);text-decoration:none;line-height:1}
+    @media(prefers-color-scheme:dark){.logo-text{color:#d4a040}}
+    .header-date{font-size:.85rem;color:var(--text-muted);font-family:var(--serif);text-align:center;flex:1}
+    .header-right{display:flex;align-items:center;gap:.75rem}
+    .last-updated{font-size:.75rem;color:var(--text-muted);white-space:nowrap}
+    .refresh-btn{background:var(--red);color:#fff;border:none;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:.4rem 1rem;border-radius:3px;cursor:pointer}
+    .refresh-btn:hover{background:var(--red-light)}
+    .refresh-btn.spinning{opacity:.5;pointer-events:none}
+
+    /* CAT NAV */
+    .cat-nav{background:var(--cat-bg);border-bottom:1px solid #3a3020;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:190}
+    .cat-nav::-webkit-scrollbar{display:none}
+    .cat-nav-inner{display:flex;max-width:1100px;margin:0 auto;padding:0 .75rem}
+    .cat-btn{font-family:var(--sans);font-size:.85rem;font-weight:600;color:#c0a880;background:none;border:none;border-bottom:3px solid transparent;padding:.65rem 1rem;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
+    .cat-btn:hover{color:#fff}
+    .cat-btn.active{color:#fff;border-bottom-color:var(--red)}
+
+    /* SEARCH */
+    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
+    .search-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
+    .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:.5rem .75rem;outline:none;min-width:0}
+    .search-input:focus{border-color:var(--red)}
+    .search-input::placeholder{color:var(--text-muted)}
+    .search-btn{font-family:var(--sans);font-size:.9rem;font-weight:700;background:var(--red);color:#fff;border:none;border-radius:3px;padding:.5rem 1.2rem;cursor:pointer;white-space:nowrap}
+    .search-btn:hover{background:var(--red-light)}
+    .search-clear{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);background:var(--badge-bg);border:none;border-radius:3px;padding:.5rem .75rem;cursor:pointer;display:none}
+    .search-clear.visible{display:block}
+    .search-status{font-size:.8rem;color:var(--text-muted);white-space:nowrap}
+
+    /* TRENDING */
+    .trending-bar{display:none;background:var(--bg-card);border-bottom:1px solid var(--border)}
+    .trending-bar.visible{display:block}
+    .trending-inner{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .trending-inner::-webkit-scrollbar{display:none}
+    .trending-label{font-size:.75rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
+    .trend-chips{display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .trend-chips::-webkit-scrollbar{display:none}
+    .trend-chip{font-size:.82rem;color:var(--text-body);background:var(--badge-bg);border-radius:3px;padding:.2rem .6rem;white-space:nowrap;cursor:pointer;font-family:var(--sans);transition:all .12s}
+    .trend-chip span{color:var(--text-muted);font-size:.72rem;margin-left:.15rem}
+    .trend-chip:hover{background:var(--red);color:#fff}
+    .trend-chip:hover span{color:rgba(255,255,255,.7)}
+
+    /* TIMEBOX */
+    .timebox-wrap{background:var(--bg);border-bottom:1px solid var(--border)}
+    .timebox-nav{display:flex;gap:.4rem;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto;align-items:center;flex-wrap:wrap}
+    .timebox-label{font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
+    .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap}
+    .timebox-btn:hover,.timebox-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+    .top10-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap;margin-left:auto}
+    .top10-btn:hover{opacity:.85}
+    .top10-badge{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;font-size:.68rem;font-weight:700;text-align:center;line-height:22px;font-family:var(--sans)}
+
+    /* MAIN LAYOUT */
+    .page-wrap{max-width:1100px;margin:0 auto;padding:1rem 1.25rem 3rem}
+
+    /* CATEGORY SECTIONS */
+    .cat-section{margin-bottom:1.5rem}
+    .cat-header{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;margin-bottom:.75rem;border-bottom:3px double var(--border-dark)}
+    .cat-header-label{font-family:var(--display);font-size:1.3rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem}
+    .cat-header-label .cat-bar-mark{display:inline-block;width:5px;height:1.2rem;background:var(--red);border-radius:2px}
+
+    /* STORY GRID + CARDS */
+    .stories-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .stories-grid.single{grid-template-columns:1fr}
+    .story-card{background:var(--bg-card);border:1px solid var(--border);padding:1rem;transition:background .12s,box-shadow .12s;overflow:hidden;min-width:0}
+    .story-card:hover{background:var(--bg-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .story-card.wide{grid-column:1/-1}
+    .story-main{display:flex;gap:.85rem;align-items:flex-start;margin-bottom:.5rem}
+    .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border)}
+    .story-thumb-placeholder{width:120px;height:80px;flex-shrink:0;background:var(--badge-bg);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--border-dark)}
+    @media(prefers-color-scheme:dark){.story-thumb-placeholder{background:#2a2418;color:#4a3e2a}}
+    .story-body{flex:1;min-width:0;overflow:hidden}
+    .story-byline{font-family:var(--sans);font-size:.88rem;color:var(--text-muted);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;overflow:hidden}
+    .story-source{font-weight:700;color:var(--text-body)}
+    .lang-badge{font-size:.7rem;font-weight:700;font-family:var(--sans);border-radius:2px;padding:.12rem .4rem}
+    .mk-badge{background:#dfeadf;color:#2a5a2a}
+    .alb-badge{background:#eadfe0;color:#5a2a2a}
+    @media(prefers-color-scheme:dark){.mk-badge{background:#1a2e1a;color:#6aaf6a}.alb-badge{background:#2e1a1a;color:#af6a6a}}
+    .breaking-tag{color:var(--red-light);font-weight:700;font-size:.75rem;font-family:var(--sans)}
+    .breaking-dot{width:8px;height:8px;border-radius:50%;background:var(--red-light);flex-shrink:0;animation:blink 1.5s ease infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+    .story-headline{font-family:var(--serif);font-size:1.3rem;font-weight:700;line-height:1.35;margin-bottom:.25rem;overflow-wrap:break-word;word-wrap:break-word}
+    .story-headline a{color:var(--headline);text-decoration:none;display:block}
+    .story-headline a:hover{color:var(--headline-hov)}
+    .story-excerpt{font-size:1rem;color:var(--text-muted);line-height:1.5;margin-bottom:.4rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .related-list{margin-bottom:.4rem}
+    .related-item{display:flex;align-items:baseline;gap:.4rem;font-size:1rem;line-height:1.35;padding:.12rem 0}
+    .r-dot{color:var(--red);font-size:.5rem;flex-shrink:0}
+    .related-item a{color:var(--text-body);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
+    .related-item a:hover{text-decoration:underline;color:var(--red)}
+    .r-src{font-size:.82rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
+    .source-tags{font-size:.88rem;font-family:var(--sans);color:var(--text-muted);margin-bottom:.4rem;overflow:hidden;text-overflow:ellipsis;display:flex;flex-wrap:wrap;gap:.15rem}
+    .source-tags .stag+.stag::before{content:' · '}
+    .stag-more{font-size:.72rem;color:var(--red);margin-left:.3rem;font-weight:700}
+    .actions-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+    .badge{font-family:var(--sans);font-size:.85rem;font-weight:600;border-radius:3px;padding:.22rem .65rem;white-space:nowrap;cursor:default}
+    .badge-count{background:var(--badge-bg);color:var(--badge-text)}
+    .badge-break{background:var(--red);color:#fff}
+    .action-btn{font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:none;border-radius:3px;padding:.22rem .65rem;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+    .action-btn:hover{background:#d0c8b0;color:var(--text)}
+    @media(prefers-color-scheme:dark){.action-btn:hover{background:#3a3020;color:#e0d4b8}}
+    .action-btn.synth{color:var(--gold)}
+    .action-btn.synth:hover{background:#f0e8d0;color:#6a5010}
+    @media(prefers-color-scheme:dark){.action-btn.synth:hover{background:#2e2810;color:var(--gold)}}
+    .btn-cached{position:relative}
+    .btn-cached::after{content:'●';font-size:.4rem;color:var(--gold);position:absolute;top:2px;right:3px;line-height:1}
+    .ai-panel{display:none;margin-top:.5rem;padding:.75rem 1rem;background:#f0ead4;border-left:4px solid var(--gold);font-size:.95rem;line-height:1.6;color:var(--text-body);animation:fadeIn .2s ease}
+    @media(prefers-color-scheme:dark){.ai-panel{background:#1a1810;color:#d0c4a8}}
+    .ai-panel.visible{display:block}
+    .ai-panel.synth-panel{border-left-color:var(--red)}
+    .ai-sentiment{font-size:1rem;margin-right:.3rem}
+    .ai-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
+    .ai-tag{font-size:.72rem;font-family:var(--sans);color:var(--text-muted);background:var(--badge-bg);border-radius:2px;padding:.1rem .4rem}
+    .synth-label{display:block;font-size:.68rem;font-weight:700;font-family:var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .loading-wrap{text-align:center;padding:4rem 1rem;color:var(--text-muted);font-size:1.1rem}
+    .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-msg{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-style:italic;font-size:1.05rem}
+    .load-more-wrap{text-align:center;padding:1.5rem 0 .5rem}
+    .load-more-btn{font-family:var(--serif);font-size:1rem;font-weight:700;background:var(--bg-card);border:2px solid var(--border);border-radius:3px;padding:.6rem 2.5rem;cursor:pointer;color:var(--text);transition:all .15s}
+    .load-more-btn:hover{border-color:var(--red);color:var(--red)}
+    .load-more-btn:disabled{opacity:.4;cursor:default}
+    footer{border-top:4px double var(--red);padding:1.25rem;text-align:center;color:var(--text-muted);font-size:.82rem;background:var(--bg-card)}
+    footer img{display:none}
+    .footer-brand{font-family:var(--display);font-size:1.25rem;font-weight:900;letter-spacing:.12em;color:var(--red);display:block;margin-bottom:.3rem}
+
+    /* RESPONSIVE */
+    @media(max-width:767px){
+      body{font-size:16px}
+      .header-inner{padding:.4rem .75rem}
+      .logo-text{font-size:1.6rem}
+      .header-date{display:none}
+      .last-updated{display:none}
+      .refresh-btn{font-size:.78rem;padding:.35rem .85rem}
+      .cat-nav{top:52px}
+      .cat-btn{font-size:.82rem;padding:.55rem .85rem}
+      .search-bar{top:92px;padding:.5rem .75rem}
+      .search-input{font-size:1rem;padding:.45rem .65rem}
+      .search-btn{font-size:.85rem;padding:.45rem .85rem}
+      .trending-inner{padding:.4rem .75rem}
+      .timebox-nav{padding:.4rem .75rem}
+      .page-wrap{padding:.75rem .75rem 3rem}
+      .stories-grid{grid-template-columns:1fr!important;gap:.75rem}
+      .story-card.wide{grid-column:auto}
+      .story-card{padding:.85rem}
+      .story-thumb,.story-thumb-placeholder{width:100px;height:70px}
+      .story-headline{font-size:1.2rem}
+      .story-excerpt{font-size:.95rem;-webkit-line-clamp:2}
+      .related-item{font-size:.95rem}
+      .cat-header-label{font-size:1rem}
+    }
+    @media(max-width:420px){
+      .logo-text{font-size:1.4rem}
+      .cat-btn{font-size:.78rem;padding:.5rem .7rem}
+      .story-thumb,.story-thumb-placeholder{width:85px;height:60px}
+      .story-headline{font-size:1.12rem}
+      .ticker-bar{height:30px}
+      .ticker-inner{font-size:.78rem}
+      .trend-chip{font-size:.78rem}
+    }
+    @media(min-width:768px) and (max-width:1023px){
+      .stories-grid{gap:.85rem}
+      .story-headline{font-size:1.1rem}
+    }
+    @media(min-width:1200px){
+      body{font-size:18px}
+      .logo-text{font-size:2.2rem}
+      .story-headline{font-size:1.4rem}
+      .stories-grid{gap:1.2rem}
+      .story-thumb,.story-thumb-placeholder{width:140px;height:95px}
+    }
+  </style>
+</head>
+<body>
+<div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
+<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
+<nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
+<div class="search-bar"><div class="search-inner"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
+<div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
+<div class="timebox-wrap"><div class="timebox-nav"><span class="timebox-label">↩ Сноп:</span><button class="timebox-btn active" onclick="showTimebox('live', this)">⬤ Живо</button><button class="timebox-btn" onclick="showTimebox('утро', this)">☀ Утро</button><button class="timebox-btn" onclick="showTimebox('попладне', this)">◑ Попладне</button><button class="timebox-btn" onclick="showTimebox('вечер', this)">☾ Вечер</button><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button></div></div>
+<div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
+<div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
+<footer><span class="footer-brand">ПРЕСЕК</span>Дневен преглед на македонски вести · {{ year }} · <a href="/izvori" style="color:var(--text-muted);text-decoration:none">извори</a> · <a href="/stats" style="color:var(--text-muted);text-decoration:none">статистики</a> · <a href="/arhiva" style="color:var(--text-muted);text-decoration:none">архива</a></footer>
+<script>
+  let allClusters=[];let activeCategory='Сите';const summaryCache={};const synthCache={};
+  function timeAgo(str){if(!str)return'';const diff=(Date.now()-new Date(str))/1000;if(diff<60)return'пред малку';if(diff<3600)return`пред ${Math.floor(diff/60)} мин`;if(diff<86400)return`пред ${Math.floor(diff/3600)} ч`;return`пред ${Math.floor(diff/86400)} ден`}
+  function updateTicker(clusters){const items=clusters.slice(0,20).map(c=>`<span class="ticker-item">${c.articles[0]?.title||''}</span>`);const el=document.getElementById('tickerInner');el.innerHTML=[...items,...items].join('')}
+  function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
+  const CAT_ORDER=['Спорт','Политика','Хроника','Економија','Свет','Технологија','Здравје','Образование','Култура','Животна средина','Време','Општо','Албански'];
+  const SUB_CATS=['Скопје','Балкан','Република'];
+  const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
+  const MACEDONIAN_SOURCES=new Set(['Sitel','Telma','Kanal 5','TV21','24 Вести','MIA','Nova Makedonija','Sloboden Pecat','Republika','Makfax','Fokus','Nezavisen','Kurir','Faktor','Vecer','Meta','360 Stepeni','Infomax','Lider','Vistinomer','NetPress','MKD','Press24','Skopje1','Plusinfo','Lokalno','4News','Makpress','Akademik','Skopje Info','Prizma','Expres','Tetovo Info','A1on','SportSport','Strumica Info','Журнал','Civil Media','Радио МОФ','Сакам да кажам','Бизнис Вести','Слободна Европа','Deutsche Welle','Ohrid News','Vecer Sport','Ekonomija','Zdravje','MRT','Time.mk','Kolumna','Okno']);
+
+  function buildCats(clusters){
+    const present=new Set(clusters.map(c=>c.articles[0]?.category).filter(Boolean));
+    const subPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.subcategory).filter(Boolean));
+    const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c)),...[...present].filter(c=>!CAT_ORDER.includes(c))];
+    const subBtns=SUB_CATS.filter(s=>subPresent.has(s)).map(s=>
+      `<button class="cat-btn${s===activeCategory?' active':''}" onclick="filterCat('${s}',this)" style="color:#c9a030;border-bottom-color:${s===activeCategory?'#c9a030':'transparent'}">${s}</button>`
+    ).join('');
+    document.getElementById('catNav').innerHTML=ordered.map(c=>
+      `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
+    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'');
+  }
+  function filterCat(cat,btn){
+    activeCategory=cat;
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPage(allClusters);
+  }
+
+  function filterByKeyword(word){const lower=word.toLowerCase();const filtered=allClusters.filter(c=>c.articles.some(a=>(a.title||'').toLowerCase().includes(lower)));const wrap=document.getElementById('pageWrap');const back=`<div style="padding:.5rem 0 .75rem;font-size:.9rem"><span style="color:var(--text-muted)">Резултати за: <strong>${word}</strong></span><button onclick="renderPage(allClusters)" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:none;border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Откажи</button></div>`;if(!filtered.length){wrap.innerHTML=back+'<div class="empty-msg">Нема резултати.</div>';return}wrap.innerHTML=back+`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`}
+
+  async function fetchTrending(){try{const res=await fetch('/api/trending');const data=await res.json();const terms=Array.isArray(data)?data.slice(0,14):[];if(!terms.length)return;document.getElementById('trendChips').innerHTML=terms.map(t=>{const word=t.word||t.keyword||t.term||String(t);const count=t.count||'';return`<span class="trend-chip" onclick="filterByKeyword('${word}')">${word}${count?`<span>×${count}</span>`:''}</span>`}).join('');document.getElementById('trendingBar').classList.add('visible')}catch(e){}}
+
+  function parseSummary(text,label){const lines=text.split('\n').filter(Boolean);const sentLine=lines.find(l=>/[🟢🔴⚪]/.test(l))||'';const tagLine=lines.find(l=>l.includes('#'))||'';const bodyLines=lines.filter(l=>l!==sentLine&&l!==tagLine);const sentiment=sentLine.match(/[🟢🔴⚪]/)?.[0]||'';const tags=[...(tagLine.matchAll(/#\S+/g))].map(m=>m[0]);const body=bodyLines.join(' ');const labelHtml=label?`<span class="synth-label">${label}</span>`:'';const tagsHtml=tags.length?`<div class="ai-tags">${tags.map(t=>`<span class="ai-tag">${t}</span>`).join('')}</div>`:'';return`${labelHtml}<span class="ai-sentiment">${sentiment}</span>${body}${tagsHtml}`}
+
+  async function toggleSummary(id,btn){const box=document.getElementById(`ai-${id}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='сумирано »';return}if(summaryCache[id]){box.innerHTML=summaryCache[id];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/summarize/${id}`);const data=await res.json();const html=data.summary?parseSummary(data.summary,''):(data.error||'Недостапно.');summaryCache[id]=html;box.innerHTML=html;box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
+
+  async function toggleSynth(cid,btn){const box=document.getElementById(`synth-${cid}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='синтеза »';return}if(synthCache[cid]){box.innerHTML=synthCache[cid];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/cluster-summary/${encodeURIComponent(cid)}`);const data=await res.json();const label=`Синтеза · ${data.source_count||''} извори`;const html=data.summary?parseSummary(data.summary,label):(data.error||'Недостапно.');synthCache[cid]=html;box.innerHTML=html;box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
+
+  function buildCard(cluster){
+    const arts=cluster.articles;const main=arts[0];const related=arts.slice(1,5);
+    const cid=cluster.cluster_id||main.cluster_id||'';
+    const isBreaking=cluster.is_breaking||false;const total=arts.length;const isWide=total>15;
+    const proxyUrl=main.image_url?`/proxy?url=${encodeURIComponent(main.image_url)}`:'';
+    const thumbHtml=proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'story-thumb-placeholder\\'>📰</div>'">`:`<div class="story-thumb-placeholder">📰</div>`;
+    const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
+    const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
+    const langBadge=ALBANIAN_SOURCES.has(main.source)?'<span class="lang-badge alb-badge">🇦🇱 ALB</span>':MACEDONIAN_SOURCES.has(main.source)?'<span class="lang-badge mk-badge">🇲🇰 MK</span>':'';
+    const excerpt=(main.description||'').replace(/<[^>]*>/g,'').trim();
+    const excerptHtml=excerpt?`<div class="story-excerpt">${excerpt}</div>`:'';
+    const relHtml=related.map(a=>`<div class="related-item"><span class="r-dot">●</span><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a><span class="r-src">${a.source}</span></div>`).join('');
+    const allSrcs=[...new Set(arts.map(a=>a.source))];const visibleSrcs=allSrcs.slice(0,6);const extraCount=allSrcs.length-visibleSrcs.length;
+    const srcTagsHtml=allSrcs.length>1?`<div class="source-tags">${visibleSrcs.map(s=>`<span class="stag">${s}</span>`).join('')}${extraCount>0?`<span class="stag-more">+${extraCount}</span>`:''}</div>`:'';
+    const countBadge=total>1?`<span class="badge badge-count">${total} вести »</span>`:'';
+    const breakBadge=isBreaking?'<span class="badge badge-break">● Во живо</span>':'';
+    const sumCls=cluster.has_summary?' btn-cached':'';const synCls=cluster.has_synthesis?' btn-cached':'';
+    const sumBtn=`<button class="action-btn${sumCls}" onclick="toggleSummary(${main.id},this)">сумирано »</button>`;
+    const synBtn=total>1?`<button class="action-btn synth${synCls}" onclick="toggleSynth('${cid}',this)">синтеза »</button>`:'';
+    const qQuery=encodeURIComponent(main.title.slice(0,120));
+    const qBtn=`<a class="action-btn" href="https://www.google.com/search?q=${qQuery}&udm=50&hl=mk" target="_blank" rel="noopener" style="text-decoration:none">прашања »</a>`;
+    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}<span class="story-source">${main.source}</span>${langBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
+  }
+
+  function renderPage(clusters){
+    const isSub=SUB_CATS.includes(activeCategory);
+    const filtered=activeCategory==='Сите'?clusters
+      :isSub?clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory))
+      :clusters.filter(c=>c.articles[0]?.category===activeCategory);
+    const wrap=document.getElementById('pageWrap');
+    if(!filtered.length){wrap.innerHTML='<div class="empty-msg">Нема вести.</div>';return}
+    if(activeCategory!=='Сите'){wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`;return}
+    const grouped={};const order=[];
+    for(const c of filtered){const cat=c.articles[0]?.category||'Општо';if(!grouped[cat]){grouped[cat]=[];order.push(cat)}grouped[cat].push(c)}
+    const sortedCats=[...CAT_ORDER.filter(c=>grouped[c]),...order.filter(c=>!CAT_ORDER.includes(c))];
+    let html='';
+    for(const cat of sortedCats){const cards=grouped[cat].map(buildCard).join('');const gridCls=grouped[cat].length===1?'stories-grid single':'stories-grid';html+=`<div class="cat-section" id="cat-section-${cat}"><div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="${gridCls}">${cards}</div></div>`}
+    wrap.innerHTML=html
+  }
+
+  async function showTop10(btn){if(btn.textContent.includes('Назад')){btn.textContent='🏆 Топ 10';renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';btn.textContent='← Назад';try{const res=await fetch('/api/top10');const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема доволно податоци за денес.</div>';return}const rankedCards=data.map(c=>{const base=buildCard(c);return base.replace('<div class="story-main">',`<div style="font-size:.75rem;font-weight:700;color:var(--gold);font-family:var(--sans);margin-bottom:.35rem">№${c.rank} · Топ на денот</div><div class="story-main">`)}).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .85rem;font-size:.9rem;color:var(--text-muted)"><strong style="color:var(--gold)">🏆 Топ 10 на денот</strong> — најважните приказни во последните 24 часа</div><div class="stories-grid single">${rankedCards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
+
+  async function doSearch(){const q=document.getElementById('searchInput').value.trim();if(!q||q.length<2)return;const wrap=document.getElementById('pageWrap');const status=document.getElementById('searchStatus');const clear=document.getElementById('searchClear');status.textContent='Се бара…';clear.classList.add('visible');try{const res=await fetch(`/api/search?q=${encodeURIComponent(q)}`);const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема резултати за „'+q+'".</div>';status.textContent='0 резултати';return}wrap.innerHTML=`<div class="stories-grid">${data.map(buildCard).join('')}</div>`;status.textContent=`${data.length} резултат${data.length===1?'':'и'}`}catch(e){status.textContent='Грешка.'}}
+  function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchStatus').textContent='';document.getElementById('searchClear').classList.remove('visible');renderPage(allClusters)}
+  function trackClick(id){fetch(`/api/click/${id}`,{method:'POST'}).catch(()=>{})}
+
+  async function fetchPopular(){try{const res=await fetch('/api/popular');const data=await res.json();if(!data.length)return;const wrap=document.getElementById('pageWrap');const existing=document.getElementById('popularSection');if(existing)existing.remove();const cards=data.slice(0,4).map(buildCard).join('');const section=document.createElement('div');section.id='popularSection';section.className='cat-section';section.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark" style="background:#c8760a"></span>🔥 Најчитано »</span></div><div class="stories-grid">${cards}</div>`;wrap.prepend(section)}catch(e){}}
+
+  let _timeboxData=null;
+  async function showTimebox(window,btn){document.querySelectorAll('.timebox-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(window==='live'){renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';try{if(!_timeboxData){const res=await fetch('/api/timeboxed');_timeboxData=await res.json()}const clusters=_timeboxData[window]||[];if(!clusters.length){wrap.innerHTML=`<div class="empty-msg">Нема вести за "${window}".</div>`;return}const cards=clusters.map(buildCard).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .75rem;font-size:.85rem;color:var(--text-muted)">Топ вести · <strong>${window}</strong><button onclick="showTimebox('live',document.querySelector('.timebox-btn'))" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Назад</button></div><div class="stories-grid">${cards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
+
+  let _currentPage=0;let _hasMore=false;const PAGE_SIZE=50;
+  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ …';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.textContent='↻ Освежи'}
+
+  async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
+  function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Општо';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
+
+  updateHeaderDate();fetchNews();fetchTrending();fetchPopular();
+  setInterval(fetchNews,15*60*1000);setInterval(fetchTrending,5*60*1000);
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
+</script>
+</body>
+</html>

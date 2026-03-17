@@ -1,0 +1,9 @@
+presek.db
+presek.db.bak
+presek.log
+presek.log.old
+digests/
+__pycache__/
+*.pyc
+static/logo.png
+.env

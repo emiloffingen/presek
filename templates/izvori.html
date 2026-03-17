@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пресек — Извори</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f2ead8; --card: #faf5e9; --border: #c8b89a;
+      --text: #1a1410; --muted: #7a6a52; --red: #8b1a1a;
+      --font: 'Noto Serif', Georgia, serif;
+      --sans: 'Noto Sans', sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141210; --card: #1e1a14; --border: #36301e;
+        --text: #ede0c4; --muted: #7a6a50; --red: #b03030;
+      }
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    .top-bar {
+      background: var(--card); border-bottom: 3px solid var(--red);
+      padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .top-bar a.brand { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--red); text-decoration: none; }
+    .top-bar span { font-size: 0.72rem; color: var(--muted); }
+    .top-bar a.back { font-size: 0.72rem; color: var(--muted); text-decoration: none;
+      margin-left: auto; }
+    .top-bar a.back:hover { color: var(--red); }
+
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    h1 { font-size: 1rem; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding-bottom: 0.4rem; border-bottom: 2px solid var(--border);
+      margin-bottom: 1.25rem; }
+
+    .summary-bar {
+      display: flex; gap: 1.5rem; margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .summary-item { font-size: 0.8rem; color: var(--muted); }
+    .summary-item strong { color: var(--text); font-size: 1.1rem; }
+
+    /* Filter strip */
+    .filter-strip {
+      display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;
+    }
+    .filter-label { font-size: 0.65rem; color: var(--muted); font-family: var(--sans);
+      text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+    .filter-btn {
+      font-family: var(--font); font-size: 0.66rem; font-weight: 600;
+      background: var(--card); border: 1px solid var(--border); border-radius: 2px;
+      padding: 0.18rem 0.55rem; cursor: pointer; color: var(--muted);
+      transition: all 0.12s;
+    }
+    .filter-btn.active, .filter-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* Sources grid */
+    .sources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.65rem;
+    }
+    .source-card {
+      background: var(--card); border: 1px solid var(--border);
+      padding: 0.75rem 0.9rem;
+      display: flex; flex-direction: column; gap: 0.3rem;
+      transition: background 0.12s;
+    }
+    .source-card:hover { background: #f0e8d0; }
+    @media (prefers-color-scheme: dark) { .source-card:hover { background: #26201a; } }
+
+    .source-name { font-weight: 700; font-size: 0.88rem; color: var(--text); }
+    .source-url  { font-size: 0.62rem; color: var(--muted); font-family: var(--sans);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .source-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem; }
+    .source-count { font-size: 0.72rem; color: var(--red); font-weight: 700; }
+    .source-cred  { font-size: 0.6rem; color: var(--muted); font-family: var(--sans); }
+
+    /* Bar */
+    .source-bar-track { width: 100%; background: var(--border); height: 3px;
+      border-radius: 2px; margin-top: 0.25rem; }
+    .source-bar-fill  { height: 100%; background: var(--red); border-radius: 2px; }
+
+    .cred-stars { color: #c8a060; font-size: 0.7rem; }
+
+    .badge-mk  { font-size: 0.55rem; background: #e8f0e8; color: #2a5a2a;
+      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
+    .badge-alb { font-size: 0.55rem; background: #f0e8e8; color: #5a2a2a;
+      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
+    .badge-int { font-size: 0.55rem; background: #e8e8f0; color: #2a2a5a;
+      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
+    @media (prefers-color-scheme: dark) {
+      .badge-mk  { background: #1a2e1a; color: #6aaf6a; }
+      .badge-alb { background: #2e1a1a; color: #af6a6a; }
+      .badge-int { background: #1a1a2e; color: #6a6aaf; }
+    }
+
+    .loading { color: var(--muted); font-style: italic; padding: 2rem 0; text-align: center; }
+    .section-header { font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin: 1.25rem 0 0.6rem;
+      padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="/" class="brand">ПРЕСЕК</a>
+  <span>/ Извори</span>
+  <a href="/" class="back">← Назад кон вестите</a>
+</div>
+
+<div class="wrap">
+  <h1>Новински Извори</h1>
+
+  <div class="summary-bar" id="summaryBar">
+    <div class="loading">Се вчитуваат извори…</div>
+  </div>
+
+  <div class="filter-strip">
+    <span class="filter-label">Филтер:</span>
+    <button class="filter-btn active" onclick="filterSources('all', this)">Сите</button>
+    <button class="filter-btn" onclick="filterSources('mk', this)">🇲🇰 Македонски</button>
+    <button class="filter-btn" onclick="filterSources('alb', this)">🇦🇱 Албански</button>
+    <button class="filter-btn" onclick="filterSources('int', this)">🌐 Меѓународни</button>
+  </div>
+
+  <div class="sources-grid" id="sourcesGrid">
+    <div class="loading">Се вчитуваат извори…</div>
+  </div>
+</div>
+
+<script>
+const ALBANIAN = new Set(['Portalb', 'Koha']);
+const INTERNATIONAL = new Set(['Deutsche Welle', 'Слободна Европа']);
+
+const CREDIBILITY = {
+  'MIA': 2.0, 'MRT': 1.8, 'Слободна Европа': 1.8, 'Deutsche Welle': 1.7,
+  'Sitel': 1.7, 'Kanal 5': 1.7, 'TV21': 1.6, '24 Вести': 1.6, 'Telma': 1.6,
+  'Sloboden Pecat': 1.5, 'Nova Makedonija': 1.5, 'Republika': 1.4, 'Makfax': 1.4,
+  'Civil Media': 1.3, 'Fokus': 1.3, 'Nezavisen': 1.3, 'Vistinomer': 1.2,
+  'Kurir': 1.2, 'Faktor': 1.2, 'Vecer': 1.2, 'Meta': 1.2, 'Журнал': 1.2,
+  'BIRN Macedonia': 1.4,
+};
+
+function credStars(cred) {
+  const c = cred || 0.8;
+  if (c >= 1.7) return '★★★★★';
+  if (c >= 1.4) return '★★★★☆';
+  if (c >= 1.2) return '★★★☆☆';
+  if (c >= 1.0) return '★★☆☆☆';
+  return '★☆☆☆☆';
+}
+
+function sourceType(name) {
+  if (ALBANIAN.has(name)) return 'alb';
+  if (INTERNATIONAL.has(name)) return 'int';
+  return 'mk';
+}
+
+function badgeHtml(name) {
+  const t = sourceType(name);
+  if (t === 'alb') return '<span class="badge-alb">🇦🇱 ALB</span>';
+  if (t === 'int') return '<span class="badge-int">🌐 INT</span>';
+  return '<span class="badge-mk">🇲🇰 MK</span>';
+}
+
+let allSources = [];
+let activeFilter = 'all';
+
+function filterSources(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSources();
+}
+
+function renderSources() {
+  const filtered = activeFilter === 'all'
+    ? allSources
+    : allSources.filter(s => sourceType(s.source) === activeFilter);
+
+  if (!filtered.length) {
+    document.getElementById('sourcesGrid').innerHTML = '<div class="loading">Нема извори.</div>';
+    return;
+  }
+
+  const max = Math.max(...filtered.map(s => s.n));
+
+  document.getElementById('sourcesGrid').innerHTML = filtered.map(s => {
+    const cred = CREDIBILITY[s.source] || 0.8;
+    const pct  = Math.round(s.n / max * 100);
+    return `
+      <div class="source-card">
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <span class="source-name">${s.source}</span>
+          ${badgeHtml(s.source)}
+        </div>
+        <div class="source-meta">
+          <span class="source-count">${s.n.toLocaleString()} статии</span>
+          <span class="source-cred">${credStars(cred)}</span>
+        </div>
+        <div class="source-bar-track">
+          <div class="source-bar-fill" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function load() {
+  try {
+    const res  = await fetch('/api/stats/full');
+    const data = await res.json();
+
+    allSources = data.by_source || [];
+
+    // Summary bar
+    const mkCount  = allSources.filter(s => sourceType(s.source) === 'mk').length;
+    const albCount = allSources.filter(s => sourceType(s.source) === 'alb').length;
+    const intCount = allSources.filter(s => sourceType(s.source) === 'int').length;
+
+    document.getElementById('summaryBar').innerHTML = [
+      [`${allSources.length}`, 'Активни извори'],
+      [`${mkCount}`, 'Македонски'],
+      [`${albCount}`, 'Албански'],
+      [`${intCount}`, 'Меѓународни'],
+      [`${data.total_articles?.toLocaleString()}`, 'Вкупно статии'],
+    ].map(([v, l]) =>
+      `<div class="summary-item"><strong>${v}</strong><br>${l}</div>`
+    ).join('');
+
+    renderSources();
+  } catch(e) {
+    document.getElementById('sourcesGrid').innerHTML =
+      `<div class="loading">Грешка: ${e}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
