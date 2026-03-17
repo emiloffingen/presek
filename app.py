@@ -122,6 +122,11 @@ DIASPORA_FEEDS = [
     ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                                                                            "Свет"),
     # 🇮🇹 Italy
     ("ANSA",          "https://www.ansa.it/sito/ansait_rss.xml",                                                                                     "Свет"),
+    # 🇦🇱 Albania
+    ("Top Channel",   "https://top-channel.tv/feed/",                                                                                                "Албански"),
+    ("Klan News",     "https://klankosova.tv/feed/",                                                                                                 "Албански"),
+    # 🇽🇰 Kosovo
+    ("Telegrafi",     "https://telegrafi.com/feed/",                                                                                                 "Албански"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
