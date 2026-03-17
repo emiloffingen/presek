@@ -35,8 +35,6 @@ DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 REFRESH_INTERVAL = 900
 FEED_LIMIT = 10
@@ -332,16 +330,10 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str
 
 
 def _call_ai(prompt_text: str, system_prompt: str) -> tuple[str | None, str | None]:
-    """Try Gemini first, then OpenRouter. Returns (summary, tier) or (None, None)."""
+    """Call Gemini API. Returns (summary, 'gemini') or (None, None)."""
     result = _call_gemini(prompt_text, system_prompt)
     if result:
         return result, "gemini"
-    if OPENROUTER_API_KEY:
-        try:
-            result = call_openrouter(prompt_text, system_prompt)
-            return result, "openrouter"
-        except Exception as e:
-            log.warning(f"[auto-summarize] OpenRouter fallback failed: {e}")
     return None, None
 
 
@@ -352,8 +344,8 @@ def auto_summarize_top_clusters():
     - Generates an article summary for the lead article of top clusters
     Runs in the ingest thread, respects rate limits with delays.
     """
-    if not GOOGLE_API_KEY and not OPENROUTER_API_KEY:
-        return  # no AI keys, skip silently
+    if not GOOGLE_API_KEY:
+        return  # no Gemini key, skip silently
 
     try:
         conn = get_db()
@@ -592,25 +584,6 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "Важно: Не пишувај воведни фрази. Само форматот."
 )
 
-def call_openrouter(prompt_text: str, system_prompt: str, timeout: int = 25) -> str:
-    if not OPENROUTER_API_KEY:
-        raise ValueError("OPENROUTER_API_KEY not set")
-    payload = json.dumps({
-        "model": "qwen/qwen-2.5-72b-instruct:free",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": prompt_text}
-        ],
-        "max_tokens": 500,
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        OPENROUTER_URL,
-        data=payload,
-        headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    return data["choices"][0]["message"]["content"].strip()
 
 
 @app.route("/api/summarize/<int:article_id>")
