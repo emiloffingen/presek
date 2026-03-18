@@ -66,14 +66,8 @@
     .cat-btn:hover{color:#fff}
     .cat-btn.active{color:#fff;border-bottom-color:var(--red)}
 
-    /* DIASPORA NAV */
-    .diaspora-nav{background:var(--cat-bg);border-bottom:2px solid #3a3020;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:100px;z-index:189;display:none}
-    .diaspora-nav::-webkit-scrollbar{display:none}
-    .diaspora-nav-inner{display:flex;align-items:center;max-width:1100px;margin:0 auto;padding:0 .75rem;gap:.25rem}
-    .diaspora-label{font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;padding:.5rem .5rem .5rem 0;white-space:nowrap}
-
     /* SEARCH */
-    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:140px;z-index:180}
+    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
     .search-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
     .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:.5rem .75rem;outline:none;min-width:0}
     .search-input:focus{border-color:var(--red)}
@@ -233,10 +227,8 @@
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
 <header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
-<nav class="diaspora-nav" id="diasporaNav"><div class="diaspora-nav-inner"><span class="diaspora-label">🌍 Дијаспора</span><div id="diasporaBtns"></div></div></nav>
-<div class="search-bar"><div class="search-inner"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
+<div class="search-bar"><div class="search-inner"><button class="top10-btn" onclick="showTop10(this)" style="flex-shrink:0">🏆 Топ 10</button><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
-<div class="timebox-wrap"><div class="timebox-nav"><span class="timebox-label">↩ Сноп:</span><button class="timebox-btn active" onclick="showTimebox('live', this)">⬤ Живо</button><button class="timebox-btn" onclick="showTimebox('утро', this)">☀ Утро</button><button class="timebox-btn" onclick="showTimebox('попладне', this)">◑ Попладне</button><button class="timebox-btn" onclick="showTimebox('вечер', this)">☾ Вечер</button><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button></div></div>
 <div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
 <div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
 <footer><span class="footer-brand">ПРЕСЕК</span>Дневен преглед на македонски вести · {{ year }} · <a href="/izvori" style="color:var(--text-muted);text-decoration:none">извори</a> · <a href="/stats" style="color:var(--text-muted);text-decoration:none">статистики</a> · <a href="/arhiva" style="color:var(--text-muted);text-decoration:none">архива</a></footer>
@@ -245,34 +237,23 @@
   function timeAgo(str){if(!str)return'';const diff=(Date.now()-new Date(str))/1000;if(diff<60)return'пред малку';if(diff<3600)return`пред ${Math.floor(diff/60)} мин`;if(diff<86400)return`пред ${Math.floor(diff/3600)} ч`;return`пред ${Math.floor(diff/86400)} ден`}
   function updateTicker(clusters){const items=clusters.slice(0,20).map(c=>`<span class="ticker-item">${c.articles[0]?.title||''}</span>`);const el=document.getElementById('tickerInner');el.innerHTML=[...items,...items].join('')}
   function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
-  const CAT_ORDER=['Спорт','Политика','Хроника','Економија','Свет','Технологија','Здравје','Образование','Култура','Животна средина','Време','Општо','Албански'];
-  const SUB_CATS=['Скопје','Балкан','Република'];
-  const COUNTRY_BTNS=[{label:'🇩🇪 DE',flag:'🇩🇪'},{label:'🇨🇭 CH',flag:'🇨🇭'},{label:'🇺🇸 US',flag:'🇺🇸'},{label:'🇨🇦 CA',flag:'🇨🇦'},{label:'🇦🇺 AU',flag:'🇦🇺'},{label:'🇮🇹 IT',flag:'🇮🇹'},{label:'🇦🇱 AL',flag:'🇦🇱'},{label:'🇽🇰 XK',flag:'🇽🇰'}];
+  const CAT_ORDER=['Спорт','Политика','Хроника','Економија','Свет','Албански'];
+  const SUB_CATS=[];
+  const COUNTRY_BTNS=[{label:'🇩🇪 DE',flag:'🇩🇪'},{label:'🇨🇭 CH',flag:'🇨🇭'},{label:'🇺🇸 US',flag:'🇺🇸'},{label:'🇨🇦 CA',flag:'🇨🇦'},{label:'🇦🇺 AU',flag:'🇦🇺'},{label:'🇮🇹 IT',flag:'🇮🇹'}];
   const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
   const MACEDONIAN_SOURCES=new Set(['Sitel','Telma','Kanal 5','TV21','24 Вести','MIA','Nova Makedonija','Sloboden Pecat','Republika','Makfax','Fokus','Nezavisen','Kurir','Faktor','Vecer','Meta','360 Stepeni','Infomax','Lider','Vistinomer','NetPress','MKD','Press24','Skopje1','Plusinfo','Lokalno','4News','Makpress','Akademik','Skopje Info','Prizma','Expres','Tetovo Info','A1on','SportSport','Strumica Info','Журнал','Civil Media','Радио МОФ','Сакам да кажам','Бизнис Вести','Слободна Европа','Deutsche Welle','Ohrid News','Vecer Sport','Ekonomija','Zdravje','MRT','Time.mk','Kolumna','Okno']);
 
   function buildCats(clusters){
     const present=new Set(clusters.map(c=>c.articles[0]?.category).filter(Boolean));
-    const subPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.subcategory).filter(Boolean));
     const countryPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.country).filter(Boolean));
     countryPresent.delete('🇲🇰');
-    const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c)),...[...present].filter(c=>!CAT_ORDER.includes(c))];
-    const subBtns=SUB_CATS.filter(s=>subPresent.has(s)).map(s=>
-      `<button class="cat-btn${s===activeCategory?' active':''}" onclick="filterCat('${s}',this)" style="color:#c9a030;border-bottom-color:${s===activeCategory?'#c9a030':'transparent'}">${s}</button>`
+    const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c))];
+    const countryBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag)).map(cf=>
+      `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
     ).join('');
     document.getElementById('catNav').innerHTML=ordered.map(c=>
       `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
-    ).join('')+(subBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+subBtns:'');
-    const diasporaNav=document.getElementById('diasporaNav');
-    const activeBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag));
-    if(activeBtns.length){
-      diasporaNav.style.display='block';
-      document.getElementById('diasporaBtns').innerHTML=activeBtns.map(cf=>
-        `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
-      ).join('');
-    } else {
-      diasporaNav.style.display='none';
-    }
+    ).join('')+(countryBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+countryBtns:'');
   }
   function filterCat(cat,btn){
     activeCategory=cat;
@@ -324,13 +305,7 @@
       :clusters.filter(c=>c.articles[0]?.category===activeCategory);
     const wrap=document.getElementById('pageWrap');
     if(!filtered.length){wrap.innerHTML='<div class="empty-msg">Нема вести.</div>';return}
-    if(activeCategory!=='Сите'){wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`;return}
-    const grouped={};const order=[];
-    for(const c of filtered){const cat=c.articles[0]?.category||'Општо';if(!grouped[cat]){grouped[cat]=[];order.push(cat)}grouped[cat].push(c)}
-    const sortedCats=[...CAT_ORDER.filter(c=>grouped[c]),...order.filter(c=>!CAT_ORDER.includes(c))];
-    let html='';
-    for(const cat of sortedCats){const cards=grouped[cat].map(buildCard).join('');const gridCls=grouped[cat].length===1?'stories-grid single':'stories-grid';html+=`<div class="cat-section" id="cat-section-${cat}"><div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="${gridCls}">${cards}</div></div>`}
-    wrap.innerHTML=html
+    wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`
   }
 
   async function showTop10(btn){if(btn.textContent.includes('Назад')){btn.textContent='🏆 Топ 10';renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';btn.textContent='← Назад';try{const res=await fetch('/api/top10');const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема доволно податоци за денес.</div>';return}const rankedCards=data.map(c=>{const base=buildCard(c);return base.replace('<div class="story-main">',`<div style="font-size:.75rem;font-weight:700;color:var(--gold);font-family:var(--sans);margin-bottom:.35rem">№${c.rank} · Топ на денот</div><div class="story-main">`)}).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .85rem;font-size:.9rem;color:var(--text-muted)"><strong style="color:var(--gold)">🏆 Топ 10 на денот</strong> — најважните приказни во последните 24 часа</div><div class="stories-grid single">${rankedCards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
