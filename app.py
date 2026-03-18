@@ -106,27 +106,18 @@ RSS_FEEDS = [
 
 DIASPORA_FEEDS = [
     # 🇩🇪 Germany
-    ("Tagesschau",    "https://www.tagesschau.de/xml/rss2",                                                                                          "Свет"),
-    ("Bild",          "https://www.bild.de/rssfeeds/vw-alles/vw-alles-26970192,dzBildUrl=true,sort=1,teaserImageVersion=16by9,view=rss2.bild.xml",   "Свет"),
+    ("Tagesschau", "https://www.tagesschau.de/xml/rss2",                                     "Свет"),
+    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                          "Свет"),
     # 🇨🇭 Switzerland
-    ("SRF News",      "https://www.srf.ch/news/bnf/rss/1890",                                                                                        "Свет"),
-    ("20 Minuten",    "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                                                                        "Свет"),
+    ("SRF News",   "https://www.srf.ch/news/bnf/rss/1890",                                   "Свет"),
+    ("20 Minuten", "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                   "Свет"),
     # 🇺🇸 USA
-    ("CNN",           "http://rss.cnn.com/rss/cnn_topstories.rss",                                                                                   "Свет"),
-    ("Reuters",       "https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best",                                            "Свет"),
-    ("NPR",           "https://feeds.npr.org/1001/rss.xml",                                                                                          "Свет"),
+    ("CNN",        "http://rss.cnn.com/rss/cnn_topstories.rss",                               "Свет"),
+    ("AP News",    "https://rsshub.app/apnews/topics/apf-topnews",                            "Свет"),
+    ("NPR",        "https://feeds.npr.org/1001/rss.xml",                                      "Свет"),
     # 🇨🇦 Canada
-    ("CBC News",      "https://www.cbc.ca/webfeed/rss/rss-topstories",                                                                               "Свет"),
-    ("CTV News",      "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",                                                       "Свет"),
-    # 🇦🇺 Australia
-    ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                                                                            "Свет"),
-    # 🇮🇹 Italy
-    ("ANSA",          "https://www.ansa.it/sito/ansait_rss.xml",                                                                                     "Свет"),
-    # 🇦🇱 Albania
-    ("Top Channel",   "https://top-channel.tv/feed/",                                                                                                "Албански"),
-    ("Klan News",     "https://klankosova.tv/feed/",                                                                                                 "Албански"),
-    # 🇽🇰 Kosovo
-    ("Telegrafi",     "https://telegrafi.com/feed/",                                                                                                 "Албански"),
+    ("CBC News",   "https://www.cbc.ca/webfeed/rss/rss-topstories",                           "Свет"),
+    ("CTV News",   "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",  "Свет"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
@@ -309,29 +300,52 @@ def ingest_feeds():
 
 
 def translate_titles_batch(titles: list[str]) -> list[str]:
-    """Translate a list of titles to Macedonian in ONE Gemini API call."""
+    """Translate a list of titles to Macedonian using small batches.
+    Returns list same length as input. Untranslated items are set to None
+    so the caller can skip them."""
     if not titles or not GOOGLE_API_KEY:
-        return titles
-    titles_json = json.dumps(titles, ensure_ascii=False)
-    prompt = (
-        "Преведи ги овие наслови на македонски јазик. "
-        "Врати JSON листа со преводите во ист редослед. "
-        "Само преводите, без објаснувања.\n\n" + titles_json
-    )
-    result = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.")
-    if not result:
-        return titles
-    try:
-        import re as _re
-        clean = _re.sub(r'```(?:json)?\s*|\s*```', '', result).strip()
-        m = _re.search(r'\[[\s\S]*\]', clean)
-        if m:
-            translated = json.loads(m.group(0))
-            if isinstance(translated, list) and len(translated) == len(titles):
-                return [str(t) for t in translated]
-    except Exception as e:
-        log.warning(f"[diaspora] Translation parse failed: {e}")
-    return titles
+        return [None] * len(titles)
+
+    BATCH_SIZE = 10
+    result = [None] * len(titles)
+    import re as _re
+
+    for start in range(0, len(titles), BATCH_SIZE):
+        batch = titles[start:start + BATCH_SIZE]
+        titles_json = json.dumps(batch, ensure_ascii=False)
+        prompt = (
+            "Преведи ги овие наслови на македонски јазик. "
+            "Врати JSON листа со преводите во ист редослед. "
+            "Само преводите, без објаснувања.\n\n" + titles_json
+        )
+        translated = None
+        for attempt in range(2):  # retry once
+            raw = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.", timeout=20)
+            if not raw:
+                time.sleep(2)
+                continue
+            try:
+                clean = _re.sub(r'```(?:json)?\s*|\s*```', '', raw).strip()
+                m = _re.search(r'\[[\s\S]*\]', clean)
+                if m:
+                    parsed = json.loads(m.group(0))
+                    if isinstance(parsed, list) and len(parsed) == len(batch):
+                        translated = [str(t) for t in parsed]
+                        break
+            except Exception as e:
+                log.warning(f"[diaspora] Translation parse failed: {e}")
+            time.sleep(1)
+
+        if translated:
+            for i, t in enumerate(translated):
+                result[start + i] = t
+        else:
+            log.warning(f"[diaspora] Translation failed for batch starting at {start}, skipping {len(batch)} articles")
+
+        if start + BATCH_SIZE < len(titles):
+            time.sleep(1.5)  # rate limit between batches
+
+    return result
 
 
 def ingest_diaspora_feeds():
@@ -378,7 +392,9 @@ def ingest_diaspora_feeds():
         try:
             if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
                 continue
-            mk_title = translated[i] if i < len(translated) else title
+            mk_title = translated[i] if i < len(translated) else None
+            if mk_title is None:
+                continue  # skip untranslated — will be picked up next cycle
             cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
             now = datetime.datetime.now().isoformat()
             clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
@@ -654,13 +670,6 @@ def api_news():
     start  = page * page_size
     end    = start + page_size
     paged  = result[start:end]
-
-    # On first page, ensure diaspora clusters are always included
-    if page == 0:
-        diaspora_cids = {c["cluster_id"] for c in paged if any(a.get("country", "🇲🇰") != "🇲🇰" for a in c["articles"])}
-        diaspora_extra = [c for c in result[end:] if any(a.get("country", "🇲🇰") != "🇲🇰" for a in c["articles"]) and c["cluster_id"] not in diaspora_cids]
-        paged = paged + diaspora_extra
-
     return jsonify({
         "clusters":    paged,
         "page":        page,
