@@ -55,8 +55,8 @@
     @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
     /* HEADER */
-    .site-header{background:var(--bg-card);border-bottom:4px double var(--red);position:sticky;top:0;z-index:200}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto}
+    .site-header{background:var(--bg-card);border-bottom:3px solid var(--red);position:sticky;top:0;z-index:200;box-shadow:0 1px 8px rgba(0,0,0,.1)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto}
     .logo-text{font-family:var(--display);font-size:2rem;font-weight:900;letter-spacing:.08em;color:var(--red);text-decoration:none;line-height:1}
     @media(prefers-color-scheme:dark){.logo-text{color:#d4a040}}
     .header-date{font-size:.85rem;color:var(--text-muted);font-family:var(--serif);text-align:center;flex:1}
@@ -69,14 +69,14 @@
     /* CAT NAV */
     .cat-nav{background:var(--cat-bg);border-bottom:1px solid #3a3020;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:190}
     .cat-nav::-webkit-scrollbar{display:none}
-    .cat-nav-inner{display:flex;max-width:1100px;margin:0 auto;padding:0 .75rem}
+    .cat-nav-inner{display:flex;max-width:1400px;margin:0 auto;padding:0 .75rem}
     .cat-btn{font-family:var(--sans);font-size:.85rem;font-weight:600;color:#c0a880;background:none;border:none;border-bottom:3px solid transparent;padding:.65rem 1rem;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
     .cat-btn:hover{color:#fff}
     .cat-btn.active{color:#fff;border-bottom-color:var(--red)}
 
     /* SEARCH */
     .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
-    .search-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
+    .search-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
     .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:.5rem .75rem;outline:none;min-width:0}
     .search-input:focus{border-color:var(--red)}
     .search-input::placeholder{color:var(--text-muted)}
@@ -89,7 +89,7 @@
     /* TRENDING */
     .trending-bar{display:none;background:var(--bg-card);border-bottom:1px solid var(--border)}
     .trending-bar.visible{display:block}
-    .trending-inner{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .trending-inner{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .trending-inner::-webkit-scrollbar{display:none}
     .trending-label{font-size:.75rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
     .trend-chips{display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -101,7 +101,7 @@
 
     /* TIMEBOX */
     .timebox-wrap{background:var(--bg);border-bottom:1px solid var(--border)}
-    .timebox-nav{display:flex;gap:.4rem;padding:.5rem 1.25rem;max-width:1100px;margin:0 auto;align-items:center;flex-wrap:wrap}
+    .timebox-nav{display:flex;gap:.4rem;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto;align-items:center;flex-wrap:wrap}
     .timebox-label{font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
     .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap}
     .timebox-btn:hover,.timebox-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
@@ -119,10 +119,11 @@
     .cat-header-label .cat-bar-mark{display:inline-block;width:5px;height:1.2rem;background:var(--red);border-radius:2px}
 
     /* STORY GRID + CARDS */
-    .stories-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .stories-grid{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
     .stories-grid.single{grid-template-columns:1fr}
     .story-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:1.1rem 1.15rem;transition:background .12s,box-shadow .12s;overflow:hidden;min-width:0}
-    .story-card:hover{background:var(--bg-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .story-card:hover{background:var(--bg-hover);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
     .story-card.wide{grid-column:1/-1}
     .story-main{display:flex;gap:.85rem;align-items:flex-start;margin-bottom:.5rem}
     .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border)}
@@ -228,8 +229,26 @@
       .logo-text{font-size:2.2rem}
       .story-headline{font-size:1.4rem}
       .stories-grid{gap:1.2rem}
-      .story-thumb,.story-thumb-placeholder{width:140px;height:95px}
+      .story-thumb,.story-thumb-placeholder{width:160px;height:105px;border-radius:3px}
     }
+
+    /* DESKTOP SIDEBAR LAYOUT */
+    .site-layout{display:flex;max-width:1400px;margin:0 auto;gap:1.5rem;padding:0 1.25rem}
+    .site-main{flex:1;min-width:0}
+    .site-sidebar{display:none}
+    @media(min-width:1024px){
+      .site-sidebar{display:block;width:300px;flex-shrink:0;position:sticky;top:120px;align-self:flex-start;max-height:calc(100vh - 140px);overflow-y:auto}
+      .page-wrap{max-width:none;padding:1rem 0 3rem}
+    }
+    .ad-slot{background:var(--bg-card);border:1px dashed var(--border);border-radius:4px;padding:1.5rem 1rem;text-align:center;color:var(--text-muted);font-family:var(--sans);font-size:.8rem;margin-bottom:1rem;min-height:250px;display:flex;align-items:center;justify-content:center}
+    .sidebar-section{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:1rem;margin-bottom:1rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid var(--border)}
+    .sidebar-item{font-size:.9rem;line-height:1.4;padding:.4rem 0;border-bottom:1px solid var(--border);color:var(--text-body)}
+    .sidebar-item:last-child{border-bottom:none}
+    .sidebar-item a{color:var(--text-body);text-decoration:none}
+    .sidebar-item a:hover{color:var(--red)}
+    .sidebar-item .si-src{font-size:.75rem;color:var(--text-muted);font-family:var(--sans)}
+    .sidebar-item .si-time{font-size:.72rem;color:var(--text-muted);font-family:var(--sans)}
   </style>
 </head>
 <body>
@@ -238,8 +257,22 @@
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
 <div class="search-bar"><div class="search-inner"><button class="top10-btn" onclick="showTop10(this)" style="flex-shrink:0">🏆 Топ 10</button><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
-<div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
+<div class="site-layout"><div class="site-main"><div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
 <div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
+</div><!-- /site-main -->
+<aside class="site-sidebar" id="siteSidebar">
+  <div class="ad-slot">Реклама</div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">🔥 Најчитано</div>
+    <div id="sidebarPopular">Се вчитува…</div>
+  </div>
+  <div class="ad-slot">Реклама</div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">▲ Трендови</div>
+    <div id="sidebarTrends"></div>
+  </div>
+</aside>
+</div><!-- /site-layout -->
 <footer>
   <span class="footer-brand">ПРЕСЕК</span>
   <div style="margin-bottom:.5rem">Вашиот дневен преглед на македонски вести</div>
@@ -279,7 +312,7 @@
     ).join('');
     document.getElementById('catNav').innerHTML=ordered.map(c=>
       `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
-    ).join('')+(countryBtns?'<span style="border-left:1px solid #3a3020;height:20px;margin:0 .3rem"></span>'+countryBtns:'');
+    ).join('')+(countryBtns?'<span style="border-left:2px solid var(--border-dark);height:18px;margin:0 .5rem;opacity:.5"></span>'+countryBtns:'');
   }
   function filterCat(cat,btn){
     activeCategory=cat;
@@ -351,6 +384,33 @@
   async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
   function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Општо';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
 
+  async function populateSidebar(){
+    try{
+      const res=await fetch('/api/popular');
+      const data=await res.json();
+      const el=document.getElementById('sidebarPopular');
+      if(!el)return;
+      if(!data.length){el.innerHTML='<div style="color:var(--text-muted);font-size:.85rem">Нема податоци.</div>';return}
+      el.innerHTML=data.slice(0,8).map(c=>{
+        const a=c.articles[0];
+        return`<div class="sidebar-item"><a href="/cluster/${c.cluster_id||a.cluster_id}" onclick="trackClick(${a.id})">${a.title}</a><div><span class="si-src">${a.source}</span> · <span class="si-time">${timeAgo(a.created_at)}</span></div></div>`
+      }).join('');
+    }catch(e){}
+  }
+  async function populateSidebarTrends(){
+    try{
+      const res=await fetch('/api/trending');
+      const data=await res.json();
+      const el=document.getElementById('sidebarTrends');
+      if(!el||!data.length)return;
+      el.innerHTML=data.slice(0,10).map(t=>{
+        const word=t.word||t.keyword||t.term||String(t);
+        const count=t.count||'';
+        return`<span class="trend-chip" onclick="filterByKeyword('${word}')" style="display:inline-block;margin:.15rem .2rem">${word}${count?` <span>×${count}</span>`:''}</span>`
+      }).join('');
+    }catch(e){}
+  }
+  populateSidebar();populateSidebarTrends();
   updateHeaderDate();fetchNews();fetchTrending();fetchPopular();
   setInterval(fetchNews,15*60*1000);setInterval(fetchTrending,5*60*1000);
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
