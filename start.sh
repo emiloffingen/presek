@@ -86,6 +86,14 @@ fi
 
 cd "$APP_DIR" || fail "Cannot cd to $APP_DIR"
 
+# ── 0. Termux wake lock (keep alive on Android) ─────────────────
+if command -v termux-wake-lock &>/dev/null; then
+  termux-wake-lock 2>/dev/null && ok "Wake lock acquired — Android won't kill Termux" \
+    || warn "Wake lock failed — app may be killed in background"
+else
+  warn "termux-wake-lock not found — install termux-api package for background persistence"
+fi
+
 # ── 1. File checks ───────────────────────────────────────────────
 info "Checking files..."
 
@@ -116,20 +124,13 @@ else
   ok "GOOGLE_API_KEY is set"
 fi
 
-if [ -z "$OPENROUTER_API_KEY" ]; then
-  warn "OPENROUTER_API_KEY not set — OpenRouter fallback unavailable"
-  MISSING_KEYS=$((MISSING_KEYS+1))
-else
-  ok "OPENROUTER_API_KEY is set"
-fi
-
 if [ -z "$NTFY_TOPIC" ]; then
   warn "NTFY_TOPIC not set — push notifications disabled"
 else
   ok "NTFY_TOPIC = $NTFY_TOPIC"
 fi
 
-[ $MISSING_KEYS -eq 2 ] && warn "Both AI keys missing — AI features unavailable"
+[ $MISSING_KEYS -eq 1 ] && warn "Gemini key missing — AI features unavailable"
 
 # ── 3. Python & syntax check ─────────────────────────────────────
 info "Checking Python..."

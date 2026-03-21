@@ -106,18 +106,33 @@ RSS_FEEDS = [
 
 DIASPORA_FEEDS = [
     # 🇩🇪 Germany
-    ("Tagesschau", "https://www.tagesschau.de/xml/rss2",                                     "Свет"),
-    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                          "Свет"),
+    ("Tagesschau",  "https://www.tagesschau.de/xml/rss2",                                       "Свет"),
+    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                            "Свет"),
     # 🇨🇭 Switzerland
-    ("SRF News",   "https://www.srf.ch/news/bnf/rss/1890",                                   "Свет"),
-    ("20 Minuten", "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                   "Свет"),
+    ("SRF News",    "https://www.srf.ch/news/bnf/rss/1890",                                     "Свет"),
+    ("20 Minuten",  "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                     "Свет"),
     # 🇺🇸 USA
-    ("CNN",        "http://rss.cnn.com/rss/cnn_topstories.rss",                               "Свет"),
-    ("AP News",    "https://rsshub.app/apnews/topics/apf-topnews",                            "Свет"),
-    ("NPR",        "https://feeds.npr.org/1001/rss.xml",                                      "Свет"),
+    ("CNN",         "http://rss.cnn.com/rss/cnn_topstories.rss",                                 "Свет"),
+    ("NPR",         "https://feeds.npr.org/1001/rss.xml",                                        "Свет"),
+    ("Reuters",     "https://www.reutersagency.com/feed/",                                       "Свет"),
     # 🇨🇦 Canada
-    ("CBC News",   "https://www.cbc.ca/webfeed/rss/rss-topstories",                           "Свет"),
-    ("CTV News",   "https://www.ctvnews.ca/rss/ctvnews-ca-top-stories-public-rss-1.822009",  "Свет"),
+    ("CBC News",    "https://rss.cbc.ca/lineup/topstories.xml",                                  "Свет"),
+    # 🇬🇧 United Kingdom
+    ("BBC News",    "https://feeds.bbci.co.uk/news/rss.xml",                                     "Свет"),
+    ("The Guardian", "https://www.theguardian.com/world/rss",                                    "Свет"),
+    # 🇦🇺 Australia
+    ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                        "Свет"),
+    # 🇮🇹 Italy
+    ("ANSA",        "https://www.ansa.it/sito/ansait_rss.xml",                                   "Свет"),
+    # 🇷🇸 Serbia / Region
+    ("N1 Info",     "https://n1info.rs/feed/",                                                   "Регион"),
+    ("B92",         "https://www.b92.net/info/rss/vesti.xml",                                    "Регион"),
+    # 🇧🇬 Bulgaria
+    ("Novinite",    "https://www.novinite.com/rss.php",                                          "Регион"),
+    # 🇬🇷 Greece
+    ("Kathimerini", "https://www.ekathimerini.com/rss",                                          "Регион"),
+    # 🇦🇱 Albania / Kosovo
+    ("Exit News",   "https://exit.al/en/feed/",                                                  "Регион"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
@@ -181,6 +196,24 @@ SOURCE_CREDIBILITY = {
     "Time.mk":          1.1,
     "Kolumna":          0.9,
     "Okno":             1.0,
+    # Diaspora & Regional
+    "Tagesschau":       1.8,  # German public broadcaster
+    "Der Spiegel":      1.7,  # major German weekly
+    "SRF News":         1.7,  # Swiss public broadcaster
+    "20 Minuten":       1.2,  # Swiss tabloid
+    "CNN":              1.6,  # major US cable news
+    "NPR":              1.6,  # US public radio
+    "Reuters":          1.9,  # global wire service
+    "CBC News":         1.7,  # Canadian public broadcaster
+    "BBC News":         1.8,  # British public broadcaster
+    "The Guardian":     1.7,  # major UK broadsheet
+    "ABC Australia":    1.6,  # Australian public broadcaster
+    "ANSA":             1.6,  # Italian wire service
+    "N1 Info":          1.5,  # regional independent TV (Serbia/Balkans)
+    "B92":              1.4,  # Serbian news
+    "Novinite":         1.2,  # Bulgarian English-language news
+    "Kathimerini":      1.5,  # major Greek daily
+    "Exit News":        1.3,  # Albanian independent news
 }
 DEFAULT_CREDIBILITY = 0.8  # fallback for unlisted sources
 
