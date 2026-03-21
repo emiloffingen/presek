@@ -153,6 +153,7 @@ RSS_FEEDS = [
     ("Time.mk",         "https://time.mk/rss"),
     ("Kolumna",         "https://kolumna.mk/feed/"),
     ("Okno",            "https://okno.mk/feed/"),
+    ("Alfa TV",         "https://alfa.mk/feed/"),
 ]
 
 DIASPORA_FEEDS = [
@@ -184,6 +185,13 @@ DIASPORA_FEEDS = [
     ("Kathimerini", "https://www.ekathimerini.com/rss",                                          "Регион"),
     # 🇦🇱 Albania / Kosovo
     ("Exit News",   "https://exit.al/en/feed/",                                                  "Регион"),
+    # 🇽🇰 Kosovo
+    ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Регион"),
+    # 🇹🇷 Turkey
+    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Свет"),
+    ("TRT World",    "https://www.trtworld.com/content/rss.xml",                                 "Свет"),
+    # 🌍 Balkans investigative
+    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Регион"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
@@ -265,6 +273,11 @@ SOURCE_CREDIBILITY = {
     "Novinite":         1.2,  # Bulgarian English-language news
     "Kathimerini":      1.5,  # major Greek daily
     "Exit News":        1.3,  # Albanian independent news
+    "Alfa TV":          1.5,
+    "Telegrafi":        1.3,
+    "Daily Sabah":      1.4,
+    "TRT World":        1.6,
+    "Balkan Insight":   1.7,
 }
 DEFAULT_CREDIBILITY = 0.8  # fallback for unlisted sources
 

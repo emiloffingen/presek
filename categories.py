@@ -267,6 +267,9 @@ _COUNTRY_MAP: dict[str, str] = {
     "Top Channel":   "🇦🇱",
     "Klan News":     "🇽🇰",
     "Telegrafi":     "🇽🇰",
+    "Daily Sabah":   "🇹🇷",
+    "TRT World":     "🇹🇷",
+    "Balkan Insight": "🌍",
 }
 
 
