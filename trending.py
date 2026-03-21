@@ -100,8 +100,15 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
 def register_trending_route(app, db_path: str):
     """Register /api/trending onto a Flask app."""
     from flask import jsonify
+    import time as _time
+    _trending_cache: list = [0.0, None]  # [timestamp, data]
 
     @app.route("/api/trending")
     def trending():
+        now = _time.time()
+        if _trending_cache[1] is not None and now - _trending_cache[0] < 120:
+            return jsonify(_trending_cache[1])
         results = get_trending(db_path)
+        _trending_cache[0] = now
+        _trending_cache[1] = results
         return jsonify(results)

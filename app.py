@@ -12,6 +12,41 @@ from categories import detect_category, detect_subcategory, detect_country
 from notifier import BreakingNewsNotifier
 import digest as digest_module
 
+from functools import lru_cache
+import hashlib
+
+# Simple time-based response cache
+_response_cache: dict[str, tuple[float, any]] = {}
+
+def cached_response(key: str, ttl: int = 60):
+    """Return cached value if fresh, else None."""
+    if key in _response_cache:
+        ts, val = _response_cache[key]
+        if time.time() - ts < ttl:
+            return val
+    return None
+
+def set_cache(key: str, val):
+    """Store value in cache with current timestamp."""
+    _response_cache[key] = (time.time(), val)
+
+# Simple rate limiter
+_rate_limits: dict[str, list[float]] = {}
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX = 60     # requests per window
+
+def check_rate_limit(ip: str) -> bool:
+    """Return True if request is allowed, False if rate limited."""
+    now = time.time()
+    if ip not in _rate_limits:
+        _rate_limits[ip] = []
+    # Clean old entries
+    _rate_limits[ip] = [t for t in _rate_limits[ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limits[ip]) >= RATE_LIMIT_MAX:
+        return False
+    _rate_limits[ip].append(now)
+    return True
+
 import logging
 
 logging.basicConfig(
@@ -30,6 +65,22 @@ log = logging.getLogger("presek")
 
 app = Flask(__name__)
 CORS(app)
+
+@app.before_request
+def rate_limit_check():
+    # Skip rate limiting for static files and the main page
+    if request.path in ('/', '/favicon.ico') or request.path.startswith('/static'):
+        return None
+    ip = request.remote_addr or '0.0.0.0'
+    if not check_rate_limit(ip):
+        return jsonify({"error": "Премногу барања. Обидете се повторно."}), 429
+
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "presek.db"))
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
@@ -668,6 +719,10 @@ def api_news():
     page      = request.args.get("page", 0, type=int)
     page_size = request.args.get("page_size", 50, type=int)
     page_size = min(page_size, 100)  # cap at 100
+    cache_key = f"news:{page}:{page_size}"
+    cached = cached_response(cache_key, ttl=30)
+    if cached:
+        return jsonify(cached)
     # Fetch more than needed to form clusters, then paginate the result
     conn = get_db()
     rows = conn.execute(
@@ -703,13 +758,15 @@ def api_news():
     start  = page * page_size
     end    = start + page_size
     paged  = result[start:end]
-    return jsonify({
+    result_data = {
         "clusters":    paged,
         "page":        page,
         "page_size":   page_size,
         "total":       len(result),
         "has_more":    end < len(result),
-    })
+    }
+    set_cache(cache_key, result_data)
+    return jsonify(result_data)
 
 
 @app.route("/api/scores")
@@ -832,6 +889,9 @@ def api_click(article_id: int):
 @app.route("/api/popular")
 def api_popular():
     """Return most-clicked clusters in the last 7 days."""
+    cached = cached_response("popular", ttl=120)
+    if cached:
+        return jsonify(cached)
     conn = get_db()
     rows = conn.execute("""
         SELECT * FROM articles
@@ -854,6 +914,7 @@ def api_popular():
             "total_clicks": sum(a.get("clicks",0) for a in arts),
             "is_breaking": False,
         })
+    set_cache("popular", result)
     return jsonify(result)
 
 
@@ -1062,6 +1123,9 @@ def image_proxy():
 @app.route("/api/top10")
 def api_top10():
     """Top 10 highest-scored clusters from the last 24 hours."""
+    cached = cached_response("top10", ttl=60)
+    if cached:
+        return jsonify(cached)
     conn = get_db()
     rows = conn.execute(
         "SELECT * FROM articles WHERE created_at >= datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 500"
@@ -1085,11 +1149,85 @@ def api_top10():
             "has_summary":   any(a.get("summary") for a in arts),
             "has_synthesis": cid in _cluster_summary_cache,
         })
+    set_cache("top10", result)
     return jsonify(result)
 
 @app.route("/arhiva")
 def archive_page():
     return render_template("archive.html", year=__import__('datetime').datetime.now().year)
+
+@app.route("/about")
+def about_page():
+    return render_template("about.html", year=__import__('datetime').datetime.now().year)
+
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html", year=__import__('datetime').datetime.now().year)
+
+@app.route("/contact")
+def contact_page():
+    return render_template("contact.html", year=__import__('datetime').datetime.now().year)
+
+@app.route("/robots.txt")
+def robots_txt():
+    from flask import Response
+    content = """User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /proxy
+
+Sitemap: https://presek.mk/sitemap.xml
+"""
+    return Response(content, mimetype="text/plain")
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    from flask import Response
+    now = datetime.datetime.now().strftime("%Y-%m-%d")
+    urls = [
+        ("https://presek.mk/", now, "always", "1.0"),
+        ("https://presek.mk/izvori", now, "monthly", "0.5"),
+        ("https://presek.mk/stats", now, "daily", "0.4"),
+        ("https://presek.mk/arhiva", now, "daily", "0.6"),
+        ("https://presek.mk/about", now, "monthly", "0.3"),
+        ("https://presek.mk/privacy", now, "monthly", "0.2"),
+        ("https://presek.mk/contact", now, "monthly", "0.2"),
+    ]
+    # Add recent cluster pages
+    try:
+        conn = get_db()
+        clusters = conn.execute(
+            "SELECT DISTINCT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= datetime('now', '-7 days') GROUP BY cluster_id ORDER BY latest DESC LIMIT 100"
+        ).fetchall()
+        conn.close()
+        for c in clusters:
+            urls.append((f"https://presek.mk/cluster/{c['cluster_id']}", c['latest'][:10], "daily", "0.7"))
+    except Exception:
+        pass
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for loc, lastmod, freq, priority in urls:
+        xml += f'  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>{freq}</changefreq><priority>{priority}</priority></url>\n'
+    xml += '</urlset>'
+    return Response(xml, mimetype="application/xml")
+
+@app.route("/og-image.svg")
+def og_image():
+    """Generate a dynamic Open Graph image as SVG."""
+    from flask import Response
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(DISTINCT source) FROM articles WHERE created_at >= datetime('now', '-1 day')").fetchone()[0]
+    conn.close()
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+      <rect width="1200" height="630" fill="#151310"/>
+      <rect x="0" y="0" width="1200" height="6" fill="#c04040"/>
+      <text x="600" y="260" font-family="Georgia,serif" font-size="96" font-weight="bold" text-anchor="middle" fill="#c9a030">ПРЕСЕК</text>
+      <text x="600" y="340" font-family="sans-serif" font-size="32" text-anchor="middle" fill="#d4c8a8">Македонски агрегатор на вести</text>
+      <text x="600" y="420" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#8a7c62">{count}+ извори · AI резимеа · Ажурирано на 15 мин</text>
+      <rect x="0" y="624" width="1200" height="6" fill="#c04040"/>
+    </svg>"""
+    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.route("/api/archive")
