@@ -105,7 +105,7 @@
     .timebox-label{font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
     .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap}
     .timebox-btn:hover,.timebox-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
-    .top10-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap;margin-left:auto}
+    .top10-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap}
     .top10-btn:hover{opacity:.85}
     .top10-badge{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;font-size:.68rem;font-weight:700;text-align:center;line-height:22px;font-family:var(--sans)}
 
@@ -253,9 +253,9 @@
 </head>
 <body>
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
-<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
+<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
-<div class="search-bar"><div class="search-inner"><button class="top10-btn" onclick="showTop10(this)" style="flex-shrink:0">🏆 Топ 10</button><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
+<div class="search-bar"><div class="search-inner"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
 <div class="site-layout"><div class="site-main"><div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
 <div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
