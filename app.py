@@ -1189,7 +1189,7 @@ Allow: /
 Disallow: /api/
 Disallow: /proxy
 
-Sitemap: https://presek.mk/sitemap.xml
+Sitemap: https://presek.live/sitemap.xml
 """
     return Response(content, mimetype="text/plain")
 
@@ -1198,13 +1198,13 @@ def sitemap_xml():
     from flask import Response
     now = datetime.datetime.now().strftime("%Y-%m-%d")
     urls = [
-        ("https://presek.mk/", now, "always", "1.0"),
-        ("https://presek.mk/izvori", now, "monthly", "0.5"),
-        ("https://presek.mk/stats", now, "daily", "0.4"),
-        ("https://presek.mk/arhiva", now, "daily", "0.6"),
-        ("https://presek.mk/about", now, "monthly", "0.3"),
-        ("https://presek.mk/privacy", now, "monthly", "0.2"),
-        ("https://presek.mk/contact", now, "monthly", "0.2"),
+        ("https://presek.live/", now, "always", "1.0"),
+        ("https://presek.live/izvori", now, "monthly", "0.5"),
+        ("https://presek.live/stats", now, "daily", "0.4"),
+        ("https://presek.live/arhiva", now, "daily", "0.6"),
+        ("https://presek.live/about", now, "monthly", "0.3"),
+        ("https://presek.live/privacy", now, "monthly", "0.2"),
+        ("https://presek.live/contact", now, "monthly", "0.2"),
     ]
     # Add recent cluster pages
     try:
@@ -1214,7 +1214,7 @@ def sitemap_xml():
         ).fetchall()
         conn.close()
         for c in clusters:
-            urls.append((f"https://presek.mk/cluster/{c['cluster_id']}", c['latest'][:10], "daily", "0.7"))
+            urls.append((f"https://presek.live/cluster/{c['cluster_id']}", c['latest'][:10], "daily", "0.7"))
     except Exception:
         pass
 

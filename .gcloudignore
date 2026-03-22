@@ -1,0 +1,12 @@
+presek.db
+presek.db-shm
+presek.db-wal
+presek.log
+presek.log.old
+__pycache__/
+*.pyc
+.git/
+.env
+digests/
+setup-termux.sh
+claude-code-*.md
