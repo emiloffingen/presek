@@ -65,6 +65,8 @@ log = logging.getLogger("presek")
 
 app = Flask(__name__)
 CORS(app)
+from flask_compress import Compress
+Compress(app)
 
 @app.before_request
 def rate_limit_check():
