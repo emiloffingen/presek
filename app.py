@@ -221,7 +221,7 @@ SOURCE_CREDIBILITY = {
     "360 Stepeni":      1.1,
     "Infomax":          1.1,
     "Lider":            1.1,
-    "Vistinomer":       1.2,  # fact-checking outlet — boost
+    "Vistinomer":       1.8,  # fact-checking outlet — boost
     "Birn":             1.3,  # regional investigative journalism
     "Akademik":         1.1,
     "NetPress":         1.0,
@@ -722,7 +722,11 @@ def score_cluster(arts):
     # Source count bonus (logarithmic — diminishing returns)
     breadth = math.log1p(len(arts))
 
-    return cred_score * recency * breadth
+    # Click engagement bonus
+    total_clicks = sum(a.get("clicks", 0) or 0 for a in arts)
+    click_bonus = 1 + math.log1p(total_clicks) * 0.15
+
+    return cred_score * recency * breadth * click_bonus
 
 
 def rank_articles_in_cluster(arts):
@@ -828,7 +832,9 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "САМО во овој формат без никаков додатен текст:\n"
     "Ред 1: Сентимент — точно еден емоџи: 🟢 (позитивно) или 🔴 (негативно) или ⚪ (неутрално)\n"
     "Ред 2-4: Две до три фактички реченици — синтеза на сите перспективи. Ако изворите се разликуваат, наведи ја разликата "
-    "(пример: 'Извор А тврди X, додека Извор Б тврди Y'). Биди неутрален и конкретен.\n"
+    "(пример: 'Извор А тврди X, додека Извор Б тврди Y'). Биди неутрален и конкретен. "
+    "Ако насловите содржат конфликтни податоци (различни бројки, спротивни тврдења за одговорност), "
+    "започни со '⚠️ Разлика:' и именувај ги изворите. \n"
     "Ред 5: Три до пет клучни зборови со # (пример: #Македонија #Политика #ВМРО)\n"
     "Важно: Не пишувај воведни фрази. Само форматот."
 )

@@ -17,6 +17,13 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://presek.live">
   <meta property="og:locale" content="mk_MK">
+  <meta property="og:image" content="https://presek.live/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Пресек | Македонски Вести">
+  <meta name="twitter:description" content="Најновите македонски вести од 50+ извори — агрегирани, рангирани и сумирани со AI.">
+  <meta name="twitter:image" content="https://presek.live/og-image.svg">
   <link rel="canonical" href="https://presek.live">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -169,6 +176,7 @@
     @media(prefers-color-scheme:dark){.ai-panel{background:#1a1810;color:#d0c4a8}}
     .ai-panel.visible{display:block}
     .ai-panel.synth-panel{border-left-color:var(--red)}
+    .ai-panel.has-conflict{border-left-color:#e63946}
     .ai-sentiment{font-size:1rem;margin-right:.3rem}
     .ai-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
     .ai-tag{font-size:.72rem;font-family:var(--sans);color:var(--text-muted);background:var(--badge-bg);border-radius:2px;padding:.1rem .4rem}
@@ -250,6 +258,9 @@
     .sidebar-item .si-src{font-size:.75rem;color:var(--text-muted);font-family:var(--sans)}
     .sidebar-item .si-time{font-size:.72rem;color:var(--text-muted);font-family:var(--sans)}
   </style>
+  <!-- Google Analytics - replace UA-XXXXX with real ID when ready -->
+  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script> -->
 </head>
 <body>
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
@@ -329,7 +340,7 @@
 
   async function toggleSummary(id,btn){const box=document.getElementById(`ai-${id}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='сумирано »';return}if(summaryCache[id]){box.innerHTML=summaryCache[id];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/summarize/${id}`);const data=await res.json();const html=data.summary?parseSummary(data.summary,''):(data.error||'Недостапно.');summaryCache[id]=html;box.innerHTML=html;box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
 
-  async function toggleSynth(cid,btn){const box=document.getElementById(`synth-${cid}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='синтеза »';return}if(synthCache[cid]){box.innerHTML=synthCache[cid];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/cluster-summary/${encodeURIComponent(cid)}`);const data=await res.json();const label=`Синтеза · ${data.source_count||''} извори`;const html=data.summary?parseSummary(data.summary,label):(data.error||'Недостапно.');synthCache[cid]=html;box.innerHTML=html;box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
+  async function toggleSynth(cid,btn){const box=document.getElementById(`synth-${cid}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='синтеза »';return}if(synthCache[cid]){box.innerHTML=synthCache[cid];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/cluster-summary/${encodeURIComponent(cid)}`);const data=await res.json();const label=`Синтеза · ${data.source_count||''} извори`;const html=data.summary?parseSummary(data.summary,label):(data.error||'Недостапно.');synthCache[cid]=html;box.innerHTML=html;if(box.innerHTML.includes('⚠️'))box.classList.add('has-conflict');box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
 
   function buildCard(cluster){
     const arts=cluster.articles;const main=arts[0];const related=arts.slice(1,5);
@@ -340,6 +351,8 @@
     const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
     const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
     const langBadge=ALBANIAN_SOURCES.has(main.source)?'<span class="lang-badge alb-badge">🇦🇱 ALB</span>':MACEDONIAN_SOURCES.has(main.source)?'<span class="lang-badge mk-badge">🇲🇰 MK</span>':'';
+    const isFactCheck = main.source === 'Vistinomer';
+    const factBadge = isFactCheck ? '<span style="font-size:.7rem;font-weight:700;font-family:var(--sans);background:#1a5c1a;color:#90ee90;border-radius:2px;padding:.1rem .4rem;margin-left:.3rem">✓ Проверено</span>' : '';
     const excerpt=(main.description||'').replace(/<[^>]*>/g,'').trim();
     const excerptHtml=excerpt?`<div class="story-excerpt">${excerpt}</div>`:'';
     const relHtml=related.map(a=>`<div class="related-item"><span class="r-dot">●</span><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a><span class="r-src">${a.source}</span></div>`).join('');
@@ -352,7 +365,7 @@
     const synBtn=total>1?`<button class="action-btn synth${synCls}" onclick="toggleSynth('${cid}',this)">синтеза »</button>`:'';
     const qQuery=encodeURIComponent(main.title.slice(0,120));
     const qBtn=`<a class="action-btn" href="https://www.google.com/search?q=${qQuery}&udm=50&hl=mk" target="_blank" rel="noopener" style="text-decoration:none">прашања »</a>`;
-    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}<span class="story-source">${main.source}</span>${langBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
+    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}<span class="story-source">${main.source}</span>${langBadge}${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
   }
 
   function renderPage(clusters){
