@@ -307,23 +307,17 @@
   function timeAgo(str){if(!str)return'';const diff=(Date.now()-new Date(str))/1000;if(diff<60)return'пред малку';if(diff<3600)return`пред ${Math.floor(diff/60)} мин`;if(diff<86400)return`пред ${Math.floor(diff/3600)} ч`;return`пред ${Math.floor(diff/86400)} ден`}
   function updateTicker(clusters){const items=clusters.slice(0,20).map(c=>`<span class="ticker-item">${c.articles[0]?.title||''}</span>`);const el=document.getElementById('tickerInner');el.innerHTML=[...items,...items].join('')}
   function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
-  const CAT_ORDER=['Спорт','Политика','Хроника','Економија','Свет','Албански'];
+  const CAT_ORDER=['Македонија','Балкан','Свет','Спорт','Политика','Хроника','Економија'];
   const SUB_CATS=[];
-  const COUNTRY_BTNS=[{label:'🇩🇪 DE',flag:'🇩🇪'},{label:'🇨🇭 CH',flag:'🇨🇭'},{label:'🇺🇸 US',flag:'🇺🇸'},{label:'🇬🇧 UK',flag:'🇬🇧'},{label:'🇨🇦 CA',flag:'🇨🇦'},{label:'🇦🇺 AU',flag:'🇦🇺'},{label:'🇮🇹 IT',flag:'🇮🇹'},{label:'🇷🇸 RS',flag:'🇷🇸'},{label:'🇧🇬 BG',flag:'🇧🇬'},{label:'🇬🇷 GR',flag:'🇬🇷'},{label:'🇦🇱 AL',flag:'🇦🇱'},{label:'🇹🇷 TR',flag:'🇹🇷'},{label:'🇽🇰 XK',flag:'🇽🇰'}];
+  const COUNTRY_BTNS=[];
   const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
   const MACEDONIAN_SOURCES=new Set(['Sitel','Telma','Kanal 5','TV21','24 Вести','MIA','Nova Makedonija','Sloboden Pecat','Republika','Makfax','Fokus','Nezavisen','Kurir','Faktor','Vecer','Meta','360 Stepeni','Infomax','Lider','Vistinomer','NetPress','MKD','Press24','Skopje1','Plusinfo','Lokalno','4News','Makpress','Akademik','Skopje Info','Prizma','Expres','Tetovo Info','A1on','SportSport','Strumica Info','Журнал','Civil Media','Радио МОФ','Сакам да кажам','Бизнис Вести','Слободна Европа','Deutsche Welle','Ohrid News','Vecer Sport','Ekonomija','Zdravje','MRT','Time.mk','Kolumna','Okno']);
 
   function buildCats(clusters){
-    const present=new Set(clusters.map(c=>c.articles[0]?.category).filter(Boolean));
-    const countryPresent=new Set(clusters.flatMap(c=>c.articles).map(a=>a.country).filter(Boolean));
-    countryPresent.delete('🇲🇰');
-    const ordered=['Сите',...CAT_ORDER.filter(c=>present.has(c))];
-    const countryBtns=COUNTRY_BTNS.filter(cf=>countryPresent.has(cf.flag)).map(cf=>
-      `<button class="cat-btn${cf.flag===activeCategory?' active':''}" onclick="filterCat('${cf.flag}',this)" style="color:#c9a030;border-bottom-color:${cf.flag===activeCategory?'#c9a030':'transparent'}">${cf.label}</button>`
-    ).join('');
+    const ordered=['Сите',...CAT_ORDER];
     document.getElementById('catNav').innerHTML=ordered.map(c=>
       `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
-    ).join('')+(countryBtns?'<span style="border-left:2px solid var(--border-dark);height:18px;margin:0 .5rem;opacity:.5"></span>'+countryBtns:'');
+    ).join('');
   }
   function filterCat(cat,btn){
     activeCategory=cat;
@@ -350,9 +344,10 @@
     const thumbHtml=proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'story-thumb-placeholder\\'>📰</div>'">`:`<div class="story-thumb-placeholder">📰</div>`;
     const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
     const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
-    const langBadge=ALBANIAN_SOURCES.has(main.source)?'<span class="lang-badge alb-badge">🇦🇱 ALB</span>':MACEDONIAN_SOURCES.has(main.source)?'<span class="lang-badge mk-badge">🇲🇰 MK</span>':'';
+    const countryFlag=main.country||'🇲🇰';
+    const flagBadge=countryFlag;
     const isFactCheck = main.source === 'Vistinomer';
-    const factBadge = isFactCheck ? '<span style="font-size:.7rem;font-weight:700;font-family:var(--sans);background:#1a5c1a;color:#90ee90;border-radius:2px;padding:.1rem .4rem;margin-left:.3rem">✓ Проверено</span>' : '';
+    const factBadge = isFactCheck ? '<span style="font-size:.7rem;font-weight:700;font-family:var(--sans);background:#1a5c1a;color:#90ee90;border-radius:2px;padding:.1rem .4rem;margin-left:.25rem">✓ Проверено</span>' : '';
     const excerpt=(main.description||'').replace(/<[^>]*>/g,'').trim();
     const excerptHtml=excerpt?`<div class="story-excerpt">${excerpt}</div>`:'';
     const relHtml=related.map(a=>`<div class="related-item"><span class="r-dot">●</span><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a><span class="r-src">${a.source}</span></div>`).join('');
@@ -368,16 +363,26 @@
     const shareUrl=encodeURIComponent('https://presek.live/cluster/'+cid);
     const shareTitle=encodeURIComponent(main.title);
     const shareBtn='<a class="action-btn" href="https://www.facebook.com/sharer/sharer.php?u='+shareUrl+'" target="_blank" rel="noopener" style="text-decoration:none">сподели 📤</a>';
-    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}<span class="story-source">${main.source}</span>${langBadge}${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}${shareBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
+    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}${flagBadge} <span class="story-source">${main.source}</span>${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}${shareBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
   }
 
+  const BALKAN_FLAGS=['🇷🇸','🇧🇬','🇬🇷','🇦🇱','🇽🇰','🇲🇪','🇧🇦','🇭🇷'];
   function renderPage(clusters){
     const isSub=SUB_CATS.includes(activeCategory);
-    const isCountry=COUNTRY_BTNS.some(cf=>cf.flag===activeCategory);
-    const filtered=activeCategory==='Сите'?clusters
-      :isSub?clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory))
-      :isCountry?clusters.filter(c=>c.articles.some(a=>a.country===activeCategory))
-      :clusters.filter(c=>c.articles[0]?.category===activeCategory);
+    let filtered;
+    if(activeCategory==='Сите'){
+      filtered=clusters;
+    }else if(activeCategory==='Македонија'){
+      filtered=clusters.filter(c=>c.articles.some(a=>a.country==='🇲🇰'||!a.country));
+    }else if(activeCategory==='Балкан'){
+      filtered=clusters.filter(c=>c.articles.some(a=>BALKAN_FLAGS.includes(a.country)));
+    }else if(activeCategory==='Свет'){
+      filtered=clusters.filter(c=>c.articles.some(a=>a.country&&a.country!=='🇲🇰'&&!BALKAN_FLAGS.includes(a.country)));
+    }else if(isSub){
+      filtered=clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory));
+    }else{
+      filtered=clusters.filter(c=>c.articles[0]?.category===activeCategory);
+    }
     const wrap=document.getElementById('pageWrap');
     if(!filtered.length){wrap.innerHTML='<div class="empty-msg">Нема вести.</div>';return}
     wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`

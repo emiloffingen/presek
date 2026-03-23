@@ -179,25 +179,32 @@ DIASPORA_FEEDS = [
     ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                        "Свет"),
     # 🇮🇹 Italy
     ("ANSA",        "https://www.ansa.it/sito/ansait_rss.xml",                                   "Свет"),
-    # 🇷🇸 Serbia / Region
-    ("N1 Info",     "https://n1info.rs/feed/",                                                   "Регион"),
-    ("B92",         "https://www.b92.net/info/rss/vesti.xml",                                    "Регион"),
+    # 🇷🇸 Serbia / Balkans
+    ("N1 Info",     "https://n1info.rs/feed/",                                                   "Балкан"),
+    ("B92",         "https://www.b92.net/info/rss/vesti.xml",                                    "Балкан"),
     # 🇷🇸 Serbia — high readership in Macedonia
-    ("Kurir.rs",     "https://www.kurir.rs/rss",                                                 "Регион"),
-    ("Blic.rs",      "https://www.blic.rs/rss",                                                  "Регион"),
+    ("Kurir.rs",     "https://www.kurir.rs/rss",                                                 "Балкан"),
+    ("Blic.rs",      "https://www.blic.rs/rss",                                                  "Балкан"),
     # 🇧🇬 Bulgaria
-    ("Novinite",    "https://www.novinite.com/rss.php",                                          "Регион"),
+    ("Novinite",    "https://www.novinite.com/rss.php",                                          "Балкан"),
     # 🇬🇷 Greece
-    ("Kathimerini", "https://www.ekathimerini.com/rss",                                          "Регион"),
+    ("Kathimerini", "https://www.ekathimerini.com/rss",                                          "Балкан"),
     # 🇦🇱 Albania / Kosovo
-    ("Exit News",   "https://exit.al/en/feed/",                                                  "Регион"),
+    ("Exit News",   "https://exit.al/en/feed/",                                                  "Балкан"),
     # 🇽🇰 Kosovo
-    ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Регион"),
+    ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Балкан"),
     # 🇹🇷 Turkey
     ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Свет"),
     ("TRT World",    "https://www.trtworld.com/content/rss.xml",                                 "Свет"),
     # 🌍 Balkans investigative
-    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Регион"),
+    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Балкан"),
+    # 🇭🇷 Croatia
+    ("Index.hr",     "https://index.hr/rss",                                                     "Балкан"),
+    ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "Балкан"),
+    # 🇧🇦 Bosnia
+    ("Klix.ba",      "https://www.klix.ba/rss",                                                  "Балкан"),
+    # 🇲🇪 Montenegro
+    ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "Балкан"),
 ]
 
 # ── Source credibility weights (PageRank-style) ──────────────────
@@ -287,6 +294,10 @@ SOURCE_CREDIBILITY = {
     "Tocka":            1.1,
     "Kurir.rs":         1.2,
     "Blic.rs":          1.3,
+    "Index.hr":         1.5,
+    "Jutarnji":         1.4,
+    "Klix.ba":          1.4,
+    "Vijesti.me":       1.3,
 }
 DEFAULT_CREDIBILITY = 0.8  # fallback for unlisted sources
 

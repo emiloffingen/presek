@@ -272,6 +272,10 @@ _COUNTRY_MAP: dict[str, str] = {
     "Balkan Insight": "🌍",
     "Kurir.rs":      "🇷🇸",
     "Blic.rs":       "🇷🇸",
+    "Index.hr":      "🇭🇷",
+    "Jutarnji":      "🇭🇷",
+    "Klix.ba":       "🇧🇦",
+    "Vijesti.me":    "🇲🇪",
 }
 
 
