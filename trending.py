@@ -1,7 +1,7 @@
 """
 trending.py — Real trending keywords for Пресек
 Extracts hot topics from recent articles by counting significant words,
-weighted by recency and source credibility signals.
+weighted by recency and a proper-noun bonus (capitalized mid-sentence words).
 """
 
 import sqlite3
@@ -9,46 +9,106 @@ import re
 from collections import Counter
 from datetime import datetime, timedelta
 
-# ── Macedonian stopwords ──────────────────────────────────────────
-# Common words that carry no topic signal
+# ── Macedonian + Serbian + Albanian stopwords ──────────────────────────────
 STOPWORDS = {
+    # Prepositions
     "во", "на", "од", "со", "за", "до", "по", "при", "над", "под",
     "пред", "зад", "меѓу", "низ", "без", "освен", "покрај", "спроти",
-    "и", "или", "но", "а", "па", "ама", "туку", "ни", "ниту",
+    "помеѓу", "против", "поради", "преку", "наспроти", "наместо",
+    # Conjunctions
+    "и", "или", "но", "а", "па", "ама", "туку", "ни", "ниту", "дека",
+    "оти", "иако", "ако", "кога", "додека", "штом", "бидејќи", "затоа",
+    # Pronouns
+    "тој", "таа", "тоа", "тие", "овој", "оваа", "ова", "овие", "оние",
+    "кој", "која", "кое", "кои", "некој", "некоја", "некое", "некои",
+    "секој", "секоја", "секое", "секои", "никој", "никоја",
+    "јас", "ти", "ние", "вие", "тие",
+    # Particles / auxiliaries
     "се", "си", "е", "ќе", "би", "да", "не", "ли", "нè", "им",
-    "го", "ги", "му", "и", "ја", "ме", "те", "не", "ве", "ни",
-    "тој", "таа", "тоа", "тие", "тие", "овој", "оваа", "ова",
-    "кој", "која", "кое", "кои", "што", "каде", "кога", "зошто",
-    "how", "the", "a", "an", "in", "of", "to", "and", "is", "was",
-    "дека", "оти", "how", "со", "еден", "една", "едно", "еден",
-    "исто", "така", "уште", "веќе", "само", "многу", "малку",
-    "нов", "нова", "ново", "нови", "овие", "оние", "некои",
-    "МКД", "mkd", "www", "http", "com", "mk",
-    # Macedonian verb forms that are meaningless alone
-    "има", "имаат", "нема", "немаат", "бил", "биле", "bila",
-    "рече", "рекол", "рекла", "изјави", "изјавил",
-    "според", "исто", "друго", "други", "секој", "секоја",
-    "меѓу", "помеѓу", "против", "поради", "преку",
+    "го", "ги", "му", "ја", "ме", "те", "ве", "ни", "нè",
+    "сум", "сте", "биле", "бил", "беше", "бевме", "биде",
+    # Common adverbs / adjectives with no topic value
+    "така", "исто", "уште", "веќе", "само", "многу", "малку", "повеќе",
+    "помалку", "особено", "многупати", "пак", "повторно", "прво",
+    "второ", "трето", "прв", "прва", "прво", "последен",
+    "нов", "нова", "ново", "нови", "стар", "стара", "старо",
+    "голем", "голема", "големо", "мал", "мала", "мало",
+    "добар", "добра", "добро", "лош", "лоша", "лошо",
+    # Question words
+    "каде", "кога", "зошто", "зарем", "дали", "колку",
+    # Common verbs / verb-like words that carry no entity signal
+    "има", "имаат", "имало", "нема", "немаат", "немало",
+    "рече", "рекол", "рекла", "изјави", "изјавил", "изјавила",
+    "вели", "велат", "истакна", "истакнал", "потврди", "потврдил",
+    "соопшти", "соопштил", "посочи", "посочил", "додаде", "додал",
+    "нагласи", "нагласил", "objasni", "објасни", "смета", "сметаат",
+    "треба", "трeba", "може", "можат", "мора", "мораат",
+    "почна", "почнал", "завршил", "завршила", "продолжи",
+    # Common question / demonstrative combos
+    "дури", "сепак", "меѓутоа", "сосема", "навистина", "очигледно",
+    "можеби", "веројатно", "всушност", "главно", "претежно",
+    "според", "врз", "откако", "откога", "додека",
+    # Misc noise
+    "kako", "како", "how", "the", "a", "an", "in", "of", "to", "and", "is",
+    "was", "are", "for", "that", "this", "with", "from", "has", "have",
+    "МКД", "mkd", "www", "http", "https", "com", "mk", "org", "net",
+    # Serbian / Bosnian overlap
+    "nije", "koji", "koja", "koje", "što", "jer", "ali", "ili", "kao",
+    "više", "koja", "kada", "gdje", "kako", "samo",
+    # Albanian common words
+    "dhe", "në", "për", "me", "nga", "si", "por", "që", "është",
+    "ka", "të", "një", "se", "po", "kur", "ose",
 }
 
 # Minimum word length and frequency to be considered trending
-MIN_WORD_LEN  = 4
-MIN_COUNT     = 2
-MAX_RESULTS   = 15
+MIN_WORD_LEN   = 4
+MIN_COUNT      = 2
+MAX_RESULTS    = 15
 LOOKBACK_HOURS = 24
 
+# Bonus multiplier for likely proper nouns (capitalized mid-sentence)
+PROPER_NOUN_BONUS = 3.0
 
-def extract_words(text: str) -> list[str]:
-    """Extract meaningful words from a title."""
-    # Keep Cyrillic, Latin letters and digits, split on everything else
-    words = re.findall(r'[а-шА-Ш\w]{' + str(MIN_WORD_LEN) + r',}', text, re.UNICODE)
-    return [w.lower() for w in words if w.lower() not in STOPWORDS and not w.isdigit()]
+
+def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
+    """
+    Returns list of (word_lowercase, is_proper_noun) tuples.
+    A word is treated as a proper noun if it is capitalised and
+    does NOT appear at the start of a sentence.
+    """
+    # Split into sentences on . ! ? so we can identify sentence-start positions
+    sentences = re.split(r'[.!?]+', title)
+    results: list[tuple[str, bool]] = []
+
+    for sentence in sentences:
+        # Tokenise: keep Cyrillic + Latin runs, strip surrounding punctuation
+        tokens = re.findall(r"[а-шА-Ш\w''-]+", sentence, re.UNICODE)
+        for idx, raw in enumerate(tokens):
+            # Strip leading/trailing punctuation characters
+            word = raw.strip('\"\'\u201e\u201c\u201f\u00ab\u00bb,;:!?()-\u2013\u2014')
+            if not word:
+                continue
+            is_capitalized = word[0].isupper()
+            word_lower = word.lower()
+            # Skip short words, stopwords, pure numbers
+            if len(word_lower) < MIN_WORD_LEN:
+                continue
+            if word_lower in STOPWORDS:
+                continue
+            if word_lower.isdigit():
+                continue
+            # Proper noun: capitalised and NOT the first token in the sentence
+            is_proper = is_capitalized and idx > 0
+            results.append((word_lower, is_proper))
+
+    return results
 
 
 def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[dict]:
     """
     Count word frequency in recent article titles.
-    Weight by: raw count × recency bonus (last 6h = 2×, last 12h = 1.5×, else 1×).
+    Weights: recency (last 6h = 2×, last 12h = 1.5×, else 1×)
+             × proper-noun bonus (3× if capitalised mid-sentence).
     Returns list of {word, count} dicts sorted by weighted score.
     """
     try:
@@ -72,20 +132,21 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
     raw: Counter      = Counter()
 
     for row in rows:
-        words = extract_words(row["title"] or "")
+        pairs = extract_words_with_flags(row["title"] or "")
         try:
             age_h = (now - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))).total_seconds() / 3600
         except Exception:
             age_h = 12
 
         # Recency weight
-        if   age_h <  6: weight = 2.0
-        elif age_h < 12: weight = 1.5
-        else:            weight = 1.0
+        if   age_h <  6: recency = 2.0
+        elif age_h < 12: recency = 1.5
+        else:            recency = 1.0
 
-        for w in words:
-            weighted[w] += weight
-            raw[w]       += 1
+        for word, is_proper in pairs:
+            noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
+            weighted[word] += recency * noun_bonus
+            raw[word]       += 1
 
     # Filter: must appear at least MIN_COUNT times in raw count
     results = [
