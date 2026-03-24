@@ -9,6 +9,7 @@ Allowed categories (exactly 6, geographic):
   Америка    = USA + Canada
   Свет       = everything else (Australia, Asia, Africa, Middle East, etc.)
 """
+import re
 
 ALLOWED_CATEGORIES = {
     "Македонија", "Балкан", "Европа", "Германија", "Америка", "Свет",
@@ -91,7 +92,7 @@ CATEGORIES = [
         "австралија", "австралиски",
         "бразил", "мексико", "аргентина",
         "оон", "светска здравствена организација",
-        "меѓународен", "меѓународни", "светски", "светска",
+        "светски", "светска",
         "нато",
         "г7", "г20",
         "тероризам", "санкции", "мигранти", "бегалци",
@@ -115,7 +116,12 @@ def detect_category(title: str, description: str = "", source: str = "",
     for cat_name, keywords in CATEGORIES:
         # Check longer phrases first — more specific phrases win
         for kw in sorted(keywords, key=len, reverse=True):
-            if kw in text:
+            # Short single-word keywords need a word-start boundary to avoid
+            # false substring matches (e.g. "кина" inside "прекинато").
+            if len(kw) <= 4 and " " not in kw:
+                if re.search(r"(?<!\w)" + re.escape(kw), text):
+                    return cat_name
+            elif kw in text:
                 return cat_name
     return "Македонија"
 
