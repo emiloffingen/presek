@@ -307,7 +307,7 @@
   function timeAgo(str){if(!str)return'';const diff=(Date.now()-new Date(str))/1000;if(diff<60)return'пред малку';if(diff<3600)return`пред ${Math.floor(diff/60)} мин`;if(diff<86400)return`пред ${Math.floor(diff/3600)} ч`;return`пред ${Math.floor(diff/86400)} ден`}
   function updateTicker(clusters){const items=clusters.slice(0,20).map(c=>`<span class="ticker-item">${c.articles[0]?.title||''}</span>`);const el=document.getElementById('tickerInner');el.innerHTML=[...items,...items].join('')}
   function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
-  const CAT_ORDER=['Македонија','Балкан','Свет','Спорт','Политика','Хроника','Економија'];
+  const CAT_ORDER=['Македонија','Балкан','Европа','Германија','Америка','Свет'];
   const SUB_CATS=[];
   const COUNTRY_BTNS=[];
   const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
@@ -366,18 +366,11 @@
     return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}${flagBadge} <span class="story-source">${main.source}</span>${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}<div class="actions-row">${breakBadge}${countBadge}${sumBtn}${synBtn}${qBtn}${shareBtn}</div><div class="ai-panel" id="ai-${main.id}"></div><div class="ai-panel synth-panel" id="synth-${cid}"></div></div>`
   }
 
-  const BALKAN_FLAGS=['🇷🇸','🇧🇬','🇬🇷','🇦🇱','🇽🇰','🇲🇪','🇧🇦','🇭🇷'];
   function renderPage(clusters){
     const isSub=SUB_CATS.includes(activeCategory);
     let filtered;
     if(activeCategory==='Сите'){
       filtered=clusters;
-    }else if(activeCategory==='Македонија'){
-      filtered=clusters.filter(c=>c.articles.some(a=>a.country==='🇲🇰'||!a.country));
-    }else if(activeCategory==='Балкан'){
-      filtered=clusters.filter(c=>c.articles.some(a=>BALKAN_FLAGS.includes(a.country)));
-    }else if(activeCategory==='Свет'){
-      filtered=clusters.filter(c=>c.articles.some(a=>a.country&&a.country!=='🇲🇰'&&!BALKAN_FLAGS.includes(a.country)));
     }else if(isSub){
       filtered=clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory));
     }else{
@@ -403,7 +396,7 @@
   async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ …';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.textContent='↻ Освежи'}
 
   async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
-  function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Општо';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
+  function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Македонија';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
 
   async function populateSidebar(){
     try{
@@ -432,7 +425,7 @@
     }catch(e){}
   }
   populateSidebar();populateSidebarTrends();
-  updateHeaderDate();fetchNews();fetchTrending();fetchPopular();
+  updateHeaderDate();fetchNews();fetchTrending();
   setInterval(fetchNews,15*60*1000);setInterval(fetchTrending,5*60*1000);
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
 </script>

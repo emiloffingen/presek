@@ -32,8 +32,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
     total = sum(len(v) for v in stories_by_cat.values())
     lines = [f"📰 Пресек — Дневен преглед ({total} приказни)\n"]
 
-    CAT_ORDER = ['Спорт','Политика','Хроника','Економија','Свет',
-                 'Технологија','Здравје','Образование','Култура','Општо']
+    CAT_ORDER = ['Македонија','Политика','Спорт','Хроника','Економија','Балкан','Свет','Дијаспора']
     cats = [c for c in CAT_ORDER if c in stories_by_cat] +            [c for c in stories_by_cat if c not in CAT_ORDER]
 
     for cat in cats[:6]:   # max 6 categories in notification
@@ -111,7 +110,7 @@ def fetch_top_stories(db_path: str = "presek.db",
     by_cat: dict[str, list[dict]] = defaultdict(list)
     for cluster in sorted_clusters:
         main = cluster[0]
-        cat  = main.get("category") or "Општо"
+        cat  = main.get("category") or "Македонија"
         if len(by_cat[cat]) < per_category:
             main["source_count"] = len(cluster)
             by_cat[cat].append(main)

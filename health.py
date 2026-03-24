@@ -89,6 +89,6 @@ def register_health_routes(app, db_path: str = "timeai.db"):
             "total_articles": total,
             "last_24h": recent_24h,
             "summarized": summarized,
-            "by_category": [{"category": r[0] or "Општо", "count": r[1]} for r in by_cat],
+            "by_category": [{"category": r[0] or "Македонија", "count": r[1]} for r in by_cat],
             "top_sources": [{"source": r[0], "count": r[1]} for r in by_source],
         })

@@ -159,26 +159,65 @@ RSS_FEEDS = [
     ("Tocka",           "https://tocka.com.mk/feed/"),
 ]
 
+# Feeds that publish only one type of content — no need to run keyword detection.
+# Category is applied at ingest time, skipping detect_category() for these sources.
+HARDCODED_FEED_CATEGORIES: dict[str, str] = {
+    # No hardcoded domestic category overrides — keyword detection handles all MK sources.
+}
+
+# Sources that publish in Macedonian — no Gemini translation needed.
+# Used in ingest_diaspora_feeds() to skip unnecessary API calls if any of these
+# ever appear in DIASPORA_FEEDS, and as a guard against accidental translation.
+MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
+    "Sloboden Pecat", "Kanal 5", "MIA", "Sitel", "Telma", "Kurir",
+    "Republika", "Fokus", "Nezavisen", "Faktor", "Vecer", "Meta",
+    "360 Stepeni", "Makfax", "Nova Makedonija", "Infomax", "Press24",
+    "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
+    "Portalb", "Lider", "MKD", "NetPress", "Akademik", "Skopje Info",
+    "Prizma", "Expres", "Tetovo Info", "Koha", "A1on", "SportSport",
+    "Strumica Info", "24 Вести", "TV21", "Слободна Европа",
+    "Deutsche Welle", "Журнал", "Civil Media", "Радио МОФ",
+    "Сакам да кажам", "Бизнис Вести", "Ohrid News", "Vecer Sport",
+    "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
+    "Alfa TV", "Tocka",
+})
+
 DIASPORA_FEEDS = [
     # 🇩🇪 Germany
-    ("Tagesschau",  "https://www.tagesschau.de/xml/rss2",                                       "Свет"),
-    ("Der Spiegel", "https://www.spiegel.de/schlagzeilen/index.rss",                            "Свет"),
+    ("Tagesschau",          "https://www.tagesschau.de/xml/rss2",                               "Германија"),
+    ("Der Spiegel",         "https://www.spiegel.de/schlagzeilen/index.rss",                    "Германија"),
+    ("Deutsche Welle DE",   "https://rss.dw.com/rdf/rss-de-all",                               "Германија"),
+    ("Deutsche Welle EN",   "https://rss.dw.com/rdf/rss-en-ger",                               "Германија"),
+    ("ZDF Heute",           "https://www.zdf.de/rss/zdf/nachrichten",                          "Германија"),
+    ("Süddeutsche Zeitung", "https://rss.sueddeutsche.de/rss/Topthemen",                       "Германија"),
+    ("Die Zeit",            "https://newsfeed.zeit.de/index",                                   "Германија"),
     # 🇨🇭 Switzerland
-    ("SRF News",    "https://www.srf.ch/news/bnf/rss/1890",                                     "Свет"),
-    ("20 Minuten",  "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                     "Свет"),
+    ("SRF News",    "https://www.srf.ch/news/bnf/rss/1890",                                     "Европа"),
+    ("20 Minuten",  "https://www.20min.ch/rss/rss.tmpl?type=channel&get=4",                     "Европа"),
     # 🇺🇸 USA
-    ("CNN",         "http://rss.cnn.com/rss/cnn_topstories.rss",                                 "Свет"),
-    ("NPR",         "https://feeds.npr.org/1001/rss.xml",                                        "Свет"),
+    ("CNN",         "http://rss.cnn.com/rss/cnn_topstories.rss",                                 "Америка"),
+    ("NPR",         "https://feeds.npr.org/1001/rss.xml",                                        "Америка"),
     ("Reuters",     "https://www.reutersagency.com/feed/",                                       "Свет"),
     # 🇨🇦 Canada
-    ("CBC News",    "https://rss.cbc.ca/lineup/topstories.xml",                                  "Свет"),
+    ("CBC News",        "https://rss.cbc.ca/lineup/topstories.xml",                             "Америка"),
+    ("Fox News Latest", "https://moxie.foxnews.com/google-publisher/latest.xml",                "Америка"),
+    ("Fox News World",  "https://moxie.foxnews.com/google-publisher/world.xml",                 "Америка"),
+    ("BBC US/Canada",   "https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml",            "Америка"),
     # 🇬🇧 United Kingdom
-    ("BBC News",    "https://feeds.bbci.co.uk/news/rss.xml",                                     "Свет"),
-    ("The Guardian", "https://www.theguardian.com/world/rss",                                    "Свет"),
+    ("BBC News",        "https://feeds.bbci.co.uk/news/rss.xml",                                "Европа"),
+    ("The Guardian",    "https://www.theguardian.com/world/rss",                                "Европа"),
+    ("France24",        "https://www.france24.com/en/europe/rss",                               "Европа"),
+    ("EuroNews",        "https://feeds.feedburner.com/euronews/en/home/",                       "Европа"),
+    ("Politico Europe", "https://www.politico.eu/feed",                                         "Европа"),
     # 🇦🇺 Australia
-    ("ABC Australia", "https://www.abc.net.au/news/feed/2942460/rss.xml",                        "Свет"),
+    ("ABC Australia",   "https://www.abc.net.au/news/feed/2942460/rss.xml",                     "Свет"),
+    ("Al Jazeera",      "https://www.aljazeera.com/xml/rss/all.xml",                            "Свет"),
+    ("SCMP",            "https://www.scmp.com/rss/91/feed",                                     "Свет"),
+    ("NHK World",       "https://www3.nhk.or.jp/rss/news/cat0.xml",                             "Свет"),
+    ("Times of India",  "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",           "Свет"),
+    ("RFI English",     "https://www.rfi.fr/en/rss",                                            "Свет"),
     # 🇮🇹 Italy
-    ("ANSA",        "https://www.ansa.it/sito/ansait_rss.xml",                                   "Свет"),
+    ("ANSA",        "https://www.ansa.it/sito/ansait_rss.xml",                                   "Европа"),
     # 🇷🇸 Serbia / Balkans
     ("N1 Info",     "https://n1info.rs/feed/",                                                   "Балкан"),
     ("B92",         "https://www.b92.net/info/rss/vesti.xml",                                    "Балкан"),
@@ -193,9 +232,9 @@ DIASPORA_FEEDS = [
     ("Exit News",   "https://exit.al/en/feed/",                                                  "Балкан"),
     # 🇽🇰 Kosovo
     ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Балкан"),
-    # 🇹🇷 Turkey
-    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Свет"),
-    ("TRT World",    "https://www.trtworld.com/content/rss.xml",                                 "Свет"),
+    # 🇹🇷 Turkey (included in Балкан per site taxonomy)
+    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Балкан"),
+    ("TRT World",    "https://www.trtworld.com/content/rss.xml",                                 "Балкан"),
     # 🌍 Balkans investigative
     ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Балкан"),
     # 🇭🇷 Croatia
@@ -393,7 +432,8 @@ def ingest_feeds():
         try:
             if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
                 continue
-            category   = detect_category(title, description=desc, source=source)
+            forced     = HARDCODED_FEED_CATEGORIES.get(source)
+            category   = detect_category(title, description=desc, source=source, forced_category=forced)
             subcategory = detect_subcategory(title, description=desc) or ""
             cluster_id = clustering.find_or_create_cluster(title, recent_articles)
             now        = datetime.datetime.now().isoformat()
@@ -417,47 +457,53 @@ def ingest_feeds():
 
 
 def translate_titles_batch(titles: list[str]) -> list[str]:
-    """Translate a list of titles to Macedonian using small batches.
-    Returns list same length as input. Untranslated items are set to None
-    so the caller can skip them."""
+    """Translate a list of texts to Macedonian using numbered-line batches.
+
+    Returns a list the same length as *titles*. Each item is either the
+    Macedonian translation or (on partial failure) the original text.
+    Returns [None, ...] only when no API key is configured, so the caller
+    can skip the entire result set rather than inserting untranslated text.
+    """
     if not titles or not GOOGLE_API_KEY:
         return [None] * len(titles)
 
-    BATCH_SIZE = 10
-    result = [None] * len(titles)
+    BATCH_SIZE = 15
+    result: list[str | None] = list(titles)  # start with originals as fallback
     import re as _re
 
     for start in range(0, len(titles), BATCH_SIZE):
         batch = titles[start:start + BATCH_SIZE]
-        titles_json = json.dumps(batch, ensure_ascii=False)
+        numbered = "\n".join(f"{j+1}. {t}" for j, t in enumerate(batch))
         prompt = (
-            "Преведи ги овие наслови на македонски јазик. "
-            "Врати JSON листа со преводите во ист редослед. "
-            "Само преводите, без објаснувања.\n\n" + titles_json
+            "Преведи ги овие наслови на македонски јазик.\n"
+            "Врати ги нумерирани, во ист редослед, без објаснувања.\n\n"
+            + numbered
         )
-        translated = None
+        parsed: dict[int, str] = {}
         for attempt in range(2):  # retry once
-            raw = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.", timeout=20)
+            raw = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.", timeout=25)
             if not raw:
                 time.sleep(2)
                 continue
-            try:
-                clean = _re.sub(r'```(?:json)?\s*|\s*```', '', raw).strip()
-                m = _re.search(r'\[[\s\S]*\]', clean)
+            for line in raw.splitlines():
+                m = _re.match(r'^\s*(\d+)[.)]\s*(.+)$', line.strip())
                 if m:
-                    parsed = json.loads(m.group(0))
-                    if isinstance(parsed, list) and len(parsed) == len(batch):
-                        translated = [str(t) for t in parsed]
-                        break
-            except Exception as e:
-                log.warning(f"[diaspora] Translation parse failed: {e}")
+                    idx = int(m.group(1)) - 1
+                    if 0 <= idx < len(batch):
+                        parsed[idx] = m.group(2).strip()
+            if len(parsed) >= len(batch) * 0.8:  # 80 % threshold → accept
+                break
+            parsed = {}
             time.sleep(1)
 
-        if translated:
-            for i, t in enumerate(translated):
-                result[start + i] = t
+        if parsed:
+            for j, t in parsed.items():
+                result[start + j] = t
+            missing = len(batch) - len(parsed)
+            if missing:
+                log.warning(f"[diaspora] {missing} lines not parsed in batch at {start} — using originals")
         else:
-            log.warning(f"[diaspora] Translation failed for batch starting at {start}, skipping {len(batch)} articles")
+            log.warning(f"[diaspora] Translation failed for batch at {start} — using originals for {len(batch)} items")
 
         if start + BATCH_SIZE < len(titles):
             time.sleep(1.5)  # rate limit between batches
@@ -497,12 +543,42 @@ def ingest_diaspora_feeds():
     if not all_entries:
         return 0, errors
 
-    # Phase 2: batch-translate all titles in one API call
-    titles = [e[1] for e in all_entries]
-    translated = translate_titles_batch(titles)
+    import re as _re
+
+    # Separate MK-language sources (already in Macedonian) from foreign sources.
+    # For MK sources, no translation is needed — keep original title and description.
+    needs_xlat = [e[0] not in MK_LANGUAGE_SOURCES for e in all_entries]
+    foreign_idxs = [i for i, needs in enumerate(needs_xlat) if needs]
+
+    # Phase 2: batch-translate titles of foreign sources only
+    if foreign_idxs:
+        foreign_titles = [all_entries[i][1] for i in foreign_idxs]
+        foreign_translated = translate_titles_batch(foreign_titles)
+    else:
+        foreign_translated = []
+
+    translated: list[str | None] = [None] * len(all_entries)
+    for pos, i in enumerate(foreign_idxs):
+        translated[i] = foreign_translated[pos] if pos < len(foreign_translated) else None
+    for i, needs in enumerate(needs_xlat):
+        if not needs:
+            translated[i] = all_entries[i][1]  # already Macedonian
+
+    # Phase 2b: batch-translate descriptions of foreign sources only
+    raw_descs = [_re.sub(r'<[^>]+>', '', e[3]).strip()[:500] if e[3] else "" for e in all_entries]
+    foreign_desc_idxs = [i for i in foreign_idxs if raw_descs[i]]
+    if foreign_desc_idxs:
+        foreign_descs = [raw_descs[i] for i in foreign_desc_idxs]
+        foreign_translated_descs = translate_titles_batch(foreign_descs)
+        translated_descs: list[str] = list(raw_descs)
+        for pos, i in enumerate(foreign_desc_idxs):
+            td = foreign_translated_descs[pos]
+            if td is not None:
+                translated_descs[i] = td
+    else:
+        translated_descs = list(raw_descs)
 
     # Phase 3: write to DB sequentially
-    import re as _re
     conn = get_db()
     new_count = 0
     for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
@@ -514,7 +590,7 @@ def ingest_diaspora_feeds():
                 continue  # skip untranslated — will be picked up next cycle
             cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
             now = datetime.datetime.now().isoformat()
-            clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
+            clean_desc = translated_descs[i] if i < len(translated_descs) else ""
             conn.execute(
                 "INSERT INTO articles "
                 "(title, original_title, link, source, category, subcategory, cluster_id, "
@@ -1096,7 +1172,7 @@ def api_stats_full():
             "oldest_article": oldest,
             "newest_article": newest,
             "total_feeds": len(RSS_FEEDS),
-            "by_category": [{"cat": r[0] or "Општо", "n": r[1]} for r in by_cat],
+            "by_category": [{"cat": r[0] or "Македонија", "n": r[1]} for r in by_cat],
             "by_source": [{"source": r[0], "n": r[1]} for r in by_source],
             "top_clicked": [{"title": r[0][:70], "source": r[1], "clicks": r[2], "link": r[3]} for r in top_clicks],
         })

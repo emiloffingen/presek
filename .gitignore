@@ -1,9 +1,13 @@
 presek.db
 presek.db.bak
+presek.db-shm
+presek.db-wal
 presek.log
 presek.log.old
+nohup.out
 digests/
 __pycache__/
 *.pyc
 static/logo.png
 .env
+venv/
