@@ -67,13 +67,13 @@
       --sans:'Noto Sans',sans-serif;
     }
     @media(prefers-color-scheme:dark){:root{
-      --bg:#151310;--bg-card:#1f1b15;--bg-hover:#2a2418;
-      --border:#3a3222;--border-dark:#4a3e2a;
-      --text:#ede0c4;--text-body:#d4c8a8;--text-muted:#8a7c62;
-      --headline:#ede0c4;--headline-hov:#e0a050;
+      --bg:#121212;--bg-card:#1c1c1c;--bg-hover:#252525;
+      --border:#2e2e2e;--border-dark:#3a3a3a;
+      --text:#e0e0e0;--text-body:#c8c8c8;--text-muted:#888;
+      --headline:#e0e0e0;--headline-hov:#e0a050;
       --red:#c04040;--red-light:#d05050;--gold:#c9a030;
-      --cat-bg:#0e0c08;--cat-text:#ede0c4;
-      --badge-bg:#2a2418;--badge-text:#c4aa80;
+      --cat-bg:#0a0a0a;--cat-text:#e0e0e0;
+      --badge-bg:#252525;--badge-text:#b0b0b0;
     }}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
@@ -95,12 +95,15 @@
     .header-date{font-size:.85rem;color:var(--text-muted);font-family:var(--serif);text-align:center;flex:1}
     .header-right{display:flex;align-items:center;gap:.75rem}
     .last-updated{font-size:.75rem;color:var(--text-muted);white-space:nowrap}
-    .refresh-btn{background:var(--red);color:#fff;border:none;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:.4rem 1rem;border-radius:3px;cursor:pointer}
+    .refresh-btn{background:var(--red);color:#fff;border:none;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:.4rem 1rem;border-radius:3px;cursor:pointer;transition:transform .1s}
     .refresh-btn:hover{background:var(--red-light)}
-    .refresh-btn.spinning{opacity:.5;pointer-events:none}
+    .refresh-btn:active{transform:scale(.95)}
+    .refresh-btn.spinning{opacity:.6;pointer-events:none}
+    .refresh-icon{display:inline-block}
+    .refresh-btn.spinning .refresh-icon{animation:spin .7s linear infinite}
 
     /* CAT NAV */
-    .cat-nav{background:var(--cat-bg);border-bottom:1px solid #3a3020;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:190}
+    .cat-nav{background:var(--cat-bg);border-bottom:1px solid #1e1e1e;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:190}
     .cat-nav::-webkit-scrollbar{display:none}
     .cat-nav-inner{display:flex;max-width:1400px;margin:0 auto;padding:0 .75rem}
     .cat-btn{font-family:var(--sans);font-size:.85rem;font-weight:600;color:#c0a880;background:none;border:none;border-bottom:3px solid transparent;padding:.65rem 1rem;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
@@ -109,15 +112,18 @@
 
     /* SEARCH */
     .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
-    .search-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:.5rem}
-    .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:.5rem .75rem;outline:none;min-width:0}
-    .search-input:focus{border-color:var(--red)}
+    .search-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;gap:.5rem}
+    .search-input-wrap{flex:1;position:relative;display:flex;min-width:0}
+    .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:.5rem 2.4rem .5rem .95rem;outline:none;min-width:0;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:border-color .15s,box-shadow .15s}
+    .search-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(139,26,26,.12)}
     .search-input::placeholder{color:var(--text-muted)}
-    .search-btn{font-family:var(--sans);font-size:.9rem;font-weight:700;background:var(--red);color:#fff;border:none;border-radius:3px;padding:.5rem 1.2rem;cursor:pointer;white-space:nowrap}
-    .search-btn:hover{background:var(--red-light)}
-    .search-clear{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);background:var(--badge-bg);border:none;border-radius:3px;padding:.5rem .75rem;cursor:pointer;display:none}
+    .search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.9rem;line-height:1;color:var(--text-muted);background:none;border:none;padding:.2rem .35rem;cursor:pointer;display:none;border-radius:50%;transition:color .12s,background .12s}
+    .search-clear:hover{color:var(--text);background:var(--badge-bg)}
     .search-clear.visible{display:block}
-    .search-status{font-size:.8rem;color:var(--text-muted);white-space:nowrap}
+    .search-btn{font-family:var(--sans);font-size:.9rem;font-weight:700;background:var(--red);color:#fff;border:none;border-radius:20px;padding:.5rem 1.2rem;cursor:pointer;white-space:nowrap;transition:background .12s,transform .1s;align-self:stretch}
+    .search-btn:hover{background:var(--red-light)}
+    .search-btn:active{transform:scale(.95)}
+    .search-status{font-size:.8rem;color:var(--text-muted);white-space:nowrap;align-self:center}
 
     /* TRENDING */
     .trending-bar{display:none;background:var(--bg-card);border-bottom:1px solid var(--border)}
@@ -136,10 +142,12 @@
     .timebox-wrap{background:var(--bg);border-bottom:1px solid var(--border)}
     .timebox-nav{display:flex;gap:.4rem;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto;align-items:center;flex-wrap:wrap}
     .timebox-label{font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
-    .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap}
+    .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,transform .1s}
     .timebox-btn:hover,.timebox-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
-    .top10-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap}
+    .timebox-btn:active{transform:scale(.95)}
+    .top10-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap;transition:opacity .12s,transform .1s}
     .top10-btn:hover{opacity:.85}
+    .top10-btn:active{transform:scale(.95)}
     .top10-badge{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;font-size:.68rem;font-weight:700;text-align:center;line-height:22px;font-family:var(--sans)}
 
     /* MAIN LAYOUT */
@@ -163,14 +171,14 @@
     .story-thumb:hover{opacity:0.9}
     .story-thumb.fallback-logo{object-fit:contain;padding:1rem;background:var(--badge-bg)}
     a.thumb-link{outline:none;border:none;display:block;line-height:0;flex-shrink:0}
-    @media(prefers-color-scheme:dark){.story-thumb.fallback-logo{background:#2a2418}}
+    @media(prefers-color-scheme:dark){.story-thumb.fallback-logo{background:#252525}}
     .story-body{flex:1;min-width:0;overflow:hidden}
     .story-byline{font-family:var(--sans);font-size:.88rem;color:var(--text-muted);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;overflow:hidden}
     .story-source{font-weight:700;color:var(--text-body)}
     .lang-badge{font-size:.7rem;font-weight:700;font-family:var(--sans);border-radius:2px;padding:.12rem .4rem}
     .mk-badge{background:#dfeadf;color:#2a5a2a}
     .alb-badge{background:#eadfe0;color:#5a2a2a}
-    @media(prefers-color-scheme:dark){.mk-badge{background:#1a2e1a;color:#6aaf6a}.alb-badge{background:#2e1a1a;color:#af6a6a}}
+    @media(prefers-color-scheme:dark){.mk-badge{background:#1a2e1a;color:#7ac47a}.alb-badge{background:#2e1a1a;color:#c47a7a}}
     .breaking-tag{color:var(--red-light);font-weight:700;font-size:.75rem;font-family:var(--sans)}
     .breaking-dot{width:8px;height:8px;border-radius:50%;background:var(--red-light);flex-shrink:0;animation:blink 1.5s ease infinite}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -195,14 +203,14 @@
     .badge-break{background:var(--red);color:#fff}
     .action-btn{font-family:var(--sans);font-size:.78rem;font-weight:600;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:3px;padding:.18rem .55rem;cursor:pointer;white-space:nowrap;transition:all .12s}
     .action-btn:hover{background:#d0c8b0;color:var(--text)}
-    @media(prefers-color-scheme:dark){.action-btn:hover{background:#3a3020;color:#e0d4b8}}
+    @media(prefers-color-scheme:dark){.action-btn:hover{background:#303030;color:#e0e0e0}}
     .action-btn.synth{color:var(--gold)}
     .action-btn.synth:hover{background:#f0e8d0;color:#6a5010}
-    @media(prefers-color-scheme:dark){.action-btn.synth:hover{background:#2e2810;color:var(--gold)}}
+    @media(prefers-color-scheme:dark){.action-btn.synth:hover{background:#2a2200;color:var(--gold)}}
     .btn-cached{position:relative}
     .btn-cached::after{content:'●';font-size:.4rem;color:var(--gold);position:absolute;top:2px;right:3px;line-height:1}
     .ai-panel{display:none;margin-top:.5rem;padding:.75rem 1rem;background:#f0ead4;border-left:4px solid var(--gold);font-size:.95rem;line-height:1.6;color:var(--text-body);animation:fadeIn .2s ease}
-    @media(prefers-color-scheme:dark){.ai-panel{background:#1a1810;color:#d0c4a8}}
+    @media(prefers-color-scheme:dark){.ai-panel{background:#1e1e1e;color:#c8c8c8}}
     .ai-panel.visible{display:block}
     .ai-panel.synth-panel{border-left-color:var(--red)}
     .ai-panel.has-conflict{border-left-color:#e63946}
@@ -238,10 +246,10 @@
       .search-btn{font-size:.85rem;padding:.45rem .85rem}
       .trending-inner{padding:.4rem .75rem}
       .timebox-nav{padding:.4rem .75rem}
-      .page-wrap{padding:.75rem .75rem 3rem}
-      .stories-grid{grid-template-columns:1fr!important;gap:.75rem}
+      .page-wrap{padding:1rem 1rem 3.5rem}
+      .stories-grid{grid-template-columns:1fr!important;gap:1rem}
       .story-card.wide{grid-column:auto}
-      .story-card{padding:1.1rem 1.2rem}
+      .story-card{padding:1.25rem 1.3rem}
       .story-thumb,.story-thumb-placeholder{width:100px;height:70px}
       .story-headline{font-size:0.97rem}
       .story-excerpt{font-size:.95rem;-webkit-line-clamp:2}
@@ -293,9 +301,9 @@
 </head>
 <body>
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
-<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻ Освежи</button></div></div></header>
+<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()"><span class="refresh-icon">↻</span> <span class="refresh-label">Освежи</span></button></div></div></header>
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
-<div class="search-bar"><div class="search-inner"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="if(!this.value.trim()) clearSearch()"><button class="search-btn" onclick="doSearch()">⌕ Барај</button><button class="search-clear" id="searchClear" onclick="clearSearch()">✕ Откажи</button><span class="search-status" id="searchStatus"></span></div></div>
+<div class="search-bar"><div class="search-inner"><div class="search-input-wrap"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="document.getElementById('searchClear').classList.toggle('visible',!!this.value.trim());if(!this.value.trim())clearSearch()"><button class="search-clear" id="searchClear" onclick="clearSearch()" title="Исчисти">✕</button></div><button class="search-btn" onclick="doSearch()">⌕ Барај</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
 <div class="site-layout"><div class="site-main"><div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
 <div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
@@ -425,7 +433,7 @@
   async function showTimebox(window,btn){document.querySelectorAll('.timebox-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(window==='live'){renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';try{if(!_timeboxData){const res=await fetch('/api/timeboxed');_timeboxData=await res.json()}const clusters=_timeboxData[window]||[];if(!clusters.length){wrap.innerHTML=`<div class="empty-msg">Нема вести за "${window}".</div>`;return}const cards=clusters.map(buildCard).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .75rem;font-size:.85rem;color:var(--text-muted)">Топ вести · <strong>${window}</strong><button onclick="showTimebox('live',document.querySelector('.timebox-btn'))" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Назад</button></div><div class="stories-grid">${cards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
 
   let _currentPage=0;let _hasMore=false;const PAGE_SIZE=50;
-  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ …';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.textContent='↻ Освежи'}
+  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.querySelector('.refresh-label').textContent='…';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.querySelector('.refresh-label').textContent='Освежи'}
 
   async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
   function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Македонија';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
