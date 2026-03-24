@@ -93,8 +93,30 @@ REFRESH_INTERVAL = 900
 FEED_LIMIT = 10
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 
-# In-memory cache for cluster-wide AI summaries (persists until process restart)
+# Feed ETag / Last-Modified cache — avoids re-downloading unchanged feeds
+_feed_etags:    dict[str, str] = {}
+_feed_modified: dict[str, str] = {}
+
+# Cluster-wide AI summaries — persisted to disk so they survive restarts
 _cluster_summary_cache: dict[str, str] = {}
+_SUMMARY_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cluster_summaries.json")
+
+def _load_summary_cache():
+    global _cluster_summary_cache
+    try:
+        if os.path.exists(_SUMMARY_CACHE_PATH):
+            with open(_SUMMARY_CACHE_PATH, "r", encoding="utf-8") as f:
+                _cluster_summary_cache = json.load(f)
+            log.info(f"Loaded {len(_cluster_summary_cache)} cached cluster summaries.")
+    except Exception as e:
+        log.warning(f"Could not load summary cache: {e}")
+
+def _save_summary_cache():
+    try:
+        with open(_SUMMARY_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(_cluster_summary_cache, f, ensure_ascii=False)
+    except Exception as e:
+        log.warning(f"Could not save summary cache: {e}")
 
 RSS_FEEDS = [
     # ── Original 10 ──────────────────────────────────────────────
@@ -354,7 +376,20 @@ def get_db():
 def fetch_feed(source, url):
     """Fetch a single RSS feed. Returns list of (title, link, desc, image_url) tuples."""
     try:
-        feed = feedparser.parse(url, request_headers={"User-Agent": "Presek.mk/1.0"})
+        feed = feedparser.parse(
+            url,
+            etag=_feed_etags.get(url),
+            modified=_feed_modified.get(url),
+            request_headers={"User-Agent": "Presek.mk/1.0"},
+        )
+        # 304 Not Modified — nothing new
+        if getattr(feed, "status", 200) == 304:
+            return source, [], None
+        # Store ETag / Last-Modified for next poll
+        if getattr(feed, "etag", None):
+            _feed_etags[url] = feed.etag
+        if getattr(feed, "modified", None):
+            _feed_modified[url] = feed.modified
         entries = []
         for entry in feed.entries[:FEED_LIMIT]:
             title = getattr(entry, "title", "").strip()
@@ -636,25 +671,37 @@ AUTO_SUMMARIZE_DELAY   = 1.5  # seconds between API calls (rate limit protection
 
 
 def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str | None:
-    """Shared Gemini caller for auto-summarization. Returns None on failure."""
+    """Shared Gemini caller. Retries with exponential backoff on rate-limit (429)."""
     if not GOOGLE_API_KEY:
         return None
-    try:
-        payload = json.dumps({
-            "system_instruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"parts": [{"text": prompt_text}]}]
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except Exception as e:
-        log.warning(f"[auto-summarize] Gemini call failed: {e}")
-        return None
+    payload = json.dumps({
+        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"parts": [{"text": prompt_text}]}]
+    }).encode("utf-8")
+    delays = [2, 4, 8]  # seconds before each retry (3 attempts total)
+    for attempt, delay in enumerate([0] + delays):
+        if delay:
+            time.sleep(delay)
+        try:
+            req = urllib.request.Request(
+                f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                log.warning(f"[gemini] Rate limited (429), retry {attempt+1}/3 in {delays[attempt] if attempt < len(delays) else '—'}s")
+                continue
+            log.warning(f"[gemini] HTTP {e.code}: {e}")
+            return None
+        except Exception as e:
+            log.warning(f"[gemini] Call failed: {e}")
+            return None
+    log.warning("[gemini] All retries exhausted after rate limiting.")
+    return None
 
 
 def _call_ai(prompt_text: str, system_prompt: str) -> tuple[str | None, str | None]:
@@ -736,6 +783,7 @@ def auto_summarize_top_clusters():
 
     if summarized_count or synthesis_count:
         log.info(f"[auto-summarize] {summarized_count} article summaries, {synthesis_count} cluster syntheses generated.")
+        _save_summary_cache()
 
 def ingest_loop():
     while True:
@@ -1216,11 +1264,18 @@ def cluster_page(cluster_id: str):
 def image_proxy():
     """Proxy remote images to bypass hotlink 403s."""
     import urllib.request as _ur
+    from urllib.parse import urlparse as _urlparse, urlunparse as _urlunparse, quote as _quote
     url = request.args.get("url", "").strip()
     if not url or not url.startswith(("http://", "https://")):
         return "", 400
     try:
-        req = _ur.Request(url, headers={
+        # Percent-encode non-ASCII characters in path/query (fixes Cyrillic URLs)
+        _p = _urlparse(url)
+        safe_url = _urlunparse(_p._replace(
+            path=_quote(_p.path, safe='/:@!$&\'()*+,;='),
+            query=_quote(_p.query, safe='=&+%'),
+        ))
+        req = _ur.Request(safe_url, headers={
             "User-Agent": "Mozilla/5.0 (compatible; Presek/1.0)",
             "Referer":    "",   # strip Referer to bypass hotlink protection
         })
@@ -1431,8 +1486,14 @@ if __name__ == "__main__":
     if "original_title" not in cols:
         conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
         log.info("DB migrated: added original_title column")
+    # Add indexes for common query patterns
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON articles(category)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
     conn.commit()
     conn.close()
 
+    _load_summary_cache()
     threading.Thread(target=ingest_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
