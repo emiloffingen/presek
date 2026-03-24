@@ -159,8 +159,10 @@
     .story-card:hover{background:var(--bg-hover);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
     .story-card.wide{grid-column:1/-1}
     .story-main{display:flex;gap:.85rem;align-items:flex-start;margin-bottom:.5rem}
-    .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border)}
+    .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border);image-rendering:-webkit-optimize-contrast;cursor:pointer;transition:opacity 0.2s ease-in-out}
+    .story-thumb:hover{opacity:0.9}
     .story-thumb.fallback-logo{object-fit:contain;padding:1rem;background:var(--badge-bg)}
+    a.thumb-link{outline:none;border:none;display:block;line-height:0;flex-shrink:0}
     @media(prefers-color-scheme:dark){.story-thumb.fallback-logo{background:#2a2418}}
     .story-body{flex:1;min-width:0;overflow:hidden}
     .story-byline{font-family:var(--sans);font-size:.88rem;color:var(--text-muted);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;overflow:hidden}
@@ -377,7 +379,8 @@
     const isBreaking=cluster.is_breaking||false;const total=arts.length;const isWide=total>15;
     const proxyUrl=main.image_url?`/proxy?url=${encodeURIComponent(main.image_url)}`:'';
     const fallback='/static/img/presek_emblem.png';
-    const thumbHtml=proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.src='${fallback}';this.classList.add('fallback-logo')">`:`<img class="story-thumb fallback-logo" src="${fallback}" alt="" loading="lazy">`;
+    const thumbImg=proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.src='${fallback}';this.classList.add('fallback-logo')">`:`<img class="story-thumb fallback-logo" src="${fallback}" alt="" loading="lazy">`;
+    const thumbHtml=`<a class="thumb-link" href="/cluster/${cid}" onclick="trackClick(${main.id})">${thumbImg}</a>`;
     const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
     const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
     const countryFlag=main.country||'🇲🇰';
