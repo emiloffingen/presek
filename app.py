@@ -63,6 +63,27 @@ logging.basicConfig(
 )
 log = logging.getLogger("presek")
 
+
+def normalize_headline(title: str) -> str:
+    """
+    Convert ALL-CAPS headlines to Title Case, leaving normally-cased text untouched.
+
+    Strategy: if >75% of the alphabetic characters in the title are uppercase,
+    assume the source published in ALL CAPS and apply str.title(), which correctly
+    capitalises proper nouns (Trump, Liverpool, Македонија) while not touching
+    headlines that are already in mixed case.
+    """
+    if not title:
+        return title
+    letters = [c for c in title if c.isalpha()]
+    if len(letters) < 4:
+        return title
+    upper_ratio = sum(1 for c in letters if c.isupper()) / len(letters)
+    if upper_ratio > 0.75:
+        return title.title()
+    return title
+
+
 app = Flask(__name__)
 CORS(app)
 from flask_compress import Compress
@@ -395,10 +416,10 @@ def fetch_feed(source, url):
             _feed_modified[url] = feed.modified
         entries = []
         for entry in feed.entries[:FEED_LIMIT]:
-            title = getattr(entry, "title", "").strip()
+            title = normalize_headline(getattr(entry, "title", "").strip())
             link  = getattr(entry, "link",  "").strip()
             desc  = getattr(entry, "summary", "")
-            
+
             # --- Image Extraction Logic ---
             image_url = ""
             # 1. media:content
@@ -629,6 +650,7 @@ def ingest_diaspora_feeds():
             mk_title = translated[i] if i < len(translated) else None
             if mk_title is None:
                 continue  # skip untranslated — will be picked up next cycle
+            mk_title = normalize_headline(mk_title)
             cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
             now = datetime.datetime.now().isoformat()
             clean_desc = translated_descs[i] if i < len(translated_descs) else ""
@@ -962,6 +984,9 @@ SUMMARY_SYSTEM_PROMPT = (
     "Ти си професионален уредник на македонска новинска агенција. "
     "Даден ти е наслов на вест на македонски јазик. "
     "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. НЕ користи српски, хрватски или бугарски зборови. "
+    "Правопис: Секогаш правилно пишувај ги сопствените именки (имиња на луѓе, градови, држави, организации) — "
+    "без разлика дали во изворот се напишани со голема или мала буква. "
+    "На пример: Трамп, Иран, Скопје, НАТО, ЕУ, Владата — НИКОГАШ сите мали. "
     "САМО во овој формат без никаков додатен текст:\n"
     "Ред 1: Сентимент — точно еден емоџи: 🟢 (позитивно) или 🔴 (негативно) или ⚪ (неутрално)\n"
     "Ред 2-3: ТОЧНО ДВЕ (2) кратки, фактички реченици кои го објаснуваат контекстот. Не повеќе, не помалку. Отстрани секаков сензационализам и кликбејт.\n"
@@ -973,6 +998,9 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "Ти си искусен уредник на македонска новинска агенција. "
     "Дадени ти се наслови за иста вест од различни медиуми. "
     "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. НЕ користи српски, хрватски или бугарски зборови. "
+    "Правопис: Секогаш правилно пишувај ги сопствените именки (имиња на луѓе, градови, држави, организации) — "
+    "без разлика дали во изворите се напишани со голема или мала буква. "
+    "На пример: Трамп, Иран, Скопје, НАТО, ЕУ, Владата — НИКОГАШ сите мали. "
     "САМО во овој формат без никаков додатен текст:\n"
     "Ред 1: Сентимент — точно еден емоџи: 🟢 (позитивно) или 🔴 (негативно) или ⚪ (неутрално)\n"
     "Ред 2-3: ТОЧНО ДВЕ (2) фактички реченици — синтеза на сите перспективи. Не повеќе, не помалку. "
