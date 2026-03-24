@@ -101,6 +101,9 @@ _feed_modified: dict[str, str] = {}
 _cluster_summary_cache: dict[str, str] = {}
 _SUMMARY_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cluster_summaries.json")
 
+# On-demand deep analysis cache (in-memory only, resets on restart)
+_analysis_cache: dict[str, str] = {}
+
 def _load_summary_cache():
     global _cluster_summary_cache
     try:
@@ -980,6 +983,19 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "Важно: Не пишувај воведни фрази. Само форматот."
 )
 
+ANALYSIS_SYSTEM_PROMPT = (
+    "Ти си аналитичар на македонска новинска агенција. "
+    "Дадени ти се наслови и описи на новински статии за иста приказна. "
+    "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. "
+    "НЕ користи српски, хрватски или бугарски зборови. "
+    "Дај структурирана анализа во ТОЧНО овој формат без никаков додатен текст:\n"
+    "🔑 Клучни факти:\n• [факт 1]\n• [факт 2]\n• [факт 3 ако постои]\n"
+    "📊 Бројки и статистики: [конкретни бројки ако ги има, или 'Нема конкретни бројки во изворите']\n"
+    "✅ Потврдени информации: [само потврдено, без шпекулации]\n"
+    "💡 Кратка анализа: [точно две реченици за контекстот и значењето на настанот]\n"
+    "Важно: Биди конкретен и факти-базиран. Не шпекулирај. Само форматот."
+)
+
 
 
 @app.route("/api/summarize/<int:article_id>")
@@ -1040,6 +1056,40 @@ def api_cluster_summary(cluster_id: str):
     return jsonify({"summary": summary, "source_count": len(articles), "cached": False, "tier": tier})
 
 
+@app.route("/api/analyze/<cluster_id>")
+def api_analyze(cluster_id: str):
+    """
+    On-demand deep analysis of a cluster — key facts, numbers/statistics,
+    confirmed information, and a brief situational analysis.
+    Results are cached in memory for the lifetime of the process.
+    """
+    if cluster_id in _analysis_cache:
+        return jsonify({"analysis": _analysis_cache[cluster_id], "cached": True})
+
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM articles WHERE cluster_id = ? ORDER BY created_at ASC LIMIT 10",
+        (cluster_id,)
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return jsonify({"error": "Cluster not found"}), 404
+
+    articles = [dict(r) for r in rows]
+    content = "\n".join(
+        f"- [{a['source']}]: {a['title']}"
+        + (f"\n  Опис: {(a.get('description') or '')[:250].strip()}" if a.get('description') else "")
+        for a in articles
+    )
+
+    analysis, _ = _call_ai(f"Статии:\n{content}", ANALYSIS_SYSTEM_PROMPT)
+
+    if not analysis:
+        return jsonify({"error": "AI сервисот е недостапен."}), 503
+
+    _analysis_cache[cluster_id] = analysis
+    return jsonify({"analysis": analysis, "cached": False})
 
 
 @app.route("/api/click/<int:article_id>", methods=["POST"])

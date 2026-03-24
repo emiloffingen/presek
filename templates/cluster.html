@@ -138,6 +138,39 @@
       text-align: center; color: var(--muted); font-size: 0.65rem;
       background: var(--card);
     }
+
+    /* On-demand AI analysis */
+    .analyze-btn {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-family: var(--sans); font-size: 0.78rem; font-weight: 600;
+      background: var(--gold); color: #fff;
+      border: none; border-radius: 3px;
+      padding: 0.45rem 1.1rem; margin-top: 0.9rem;
+      cursor: pointer; letter-spacing: 0.03em;
+      transition: opacity 0.15s;
+    }
+    .analyze-btn:hover { opacity: 0.82; }
+    .analyze-btn:disabled { opacity: 0.45; cursor: default; }
+
+    .analysis-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-left: 4px solid var(--gold); border-radius: 0 4px 4px 0;
+      padding: 0 1.1rem; margin-top: 0.85rem;
+      font-size: 0.88rem; line-height: 1.8; color: var(--text);
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.45s ease, padding 0.3s ease, opacity 0.35s ease;
+      opacity: 0;
+    }
+    .analysis-box.visible {
+      max-height: 900px; padding: 1rem 1.1rem; opacity: 1;
+    }
+    .analysis-label {
+      display: block; font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gold); font-family: var(--sans); margin-bottom: 0.7rem;
+    }
+    .analysis-box p { margin: 0.3rem 0; }
+    .analysis-section { margin: 0.55rem 0 0.2rem; }
   </style>
 </head>
 <body>
@@ -179,6 +212,8 @@
         {{ main.description | striptags | truncate(400) }}
       </div>
     {% endif %}
+    <button class="analyze-btn" id="analyzeBtn" onclick="loadAnalysis(this)">✨ Прашања и Анализа</button>
+    <div class="analysis-box" id="ai-analysis-box"></div>
   </div>
 
   <!-- AI synthesis -->
@@ -231,6 +266,48 @@
   document.querySelectorAll('[data-ts]').forEach(el => {
     el.textContent = timeAgo(el.dataset.ts);
   });
+
+  // On-demand AI analysis
+  async function loadAnalysis(btn) {
+    const cid = "{{ cluster_id }}";
+    const box = document.getElementById('ai-analysis-box');
+    btn.textContent = 'Анализирам…';
+    btn.disabled = true;
+    try {
+      const res  = await fetch(`/api/analyze/${encodeURIComponent(cid)}`);
+      const data = await res.json();
+      if (data.analysis) {
+        const lines = data.analysis.split('\n').filter(l => l.trim());
+        const html  = lines.map(l => {
+          // Section headers (lines starting with emoji + bold label)
+          if (/^[🔑📊✅💡]/.test(l)) {
+            const colon = l.indexOf(':');
+            if (colon !== -1) {
+              const header = l.slice(0, colon + 1);
+              const rest   = l.slice(colon + 1).trim();
+              return `<p class="analysis-section"><strong>${header}</strong>${rest ? ' ' + rest : ''}</p>`;
+            }
+            return `<p class="analysis-section"><strong>${l}</strong></p>`;
+          }
+          // Bullet points
+          if (l.startsWith('•')) {
+            return `<p style="padding-left:1rem">${l}</p>`;
+          }
+          return `<p>${l}</p>`;
+        }).join('');
+        box.innerHTML = `<span class="analysis-label">✨ AI Анализа</span>${html}`;
+      } else {
+        box.innerHTML = `<span class="analysis-label">Грешка</span><p>${data.error || 'Недостапно.'}</p>`;
+      }
+      box.classList.add('visible');
+      btn.style.display = 'none';
+    } catch(e) {
+      box.innerHTML = '<span class="analysis-label">Грешка</span><p>Грешка при поврзување.</p>';
+      box.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = '✨ Прашања и Анализа';
+    }
+  }
 
   // AI synthesis
   async function loadSynth(btn) {
