@@ -704,7 +704,8 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str
             log.warning(f"[gemini] HTTP {e.code}: {e}")
             return None
         except Exception as e:
-            log.warning(f"[gemini] Call failed: {e}")
+            import traceback as _tb
+            log.warning(f"[gemini] Call failed: {e}\n" + _tb.format_exc())
             return None
     log.warning("[gemini] All retries exhausted after rate limiting.")
     return None
@@ -1063,31 +1064,68 @@ def api_analyze(cluster_id: str):
     confirmed information, and a brief situational analysis.
     Results are cached in memory for the lifetime of the process.
     """
+    import traceback as _tb
+
     if cluster_id in _analysis_cache:
         return jsonify({"analysis": _analysis_cache[cluster_id], "cached": True})
 
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM articles WHERE cluster_id = ? ORDER BY created_at ASC LIMIT 10",
-        (cluster_id,)
-    ).fetchall()
-    conn.close()
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT * FROM articles WHERE cluster_id = ? ORDER BY created_at ASC LIMIT 10",
+            (cluster_id,)
+        ).fetchall()
+        conn.close()
+    except Exception:
+        log.error("[analyze] DB error:\n" + _tb.format_exc())
+        return jsonify({"error": "Database error"}), 500
 
     if not rows:
+        log.warning(f"[analyze] No articles found for cluster_id={cluster_id!r}")
         return jsonify({"error": "Cluster not found"}), 404
 
     articles = [dict(r) for r in rows]
-    content = "\n".join(
-        f"- [{a['source']}]: {a['title']}"
-        + (f"\n  Опис: {(a.get('description') or '')[:250].strip()}" if a.get('description') else "")
-        for a in articles
-    )
 
-    analysis, _ = _call_ai(f"Статии:\n{content}", ANALYSIS_SYSTEM_PROMPT)
+    # Build prompt content — titles are always present; descriptions are optional
+    lines = []
+    for a in articles:
+        line = f"- [{a['source']}]: {a['title']}"
+        desc = (a.get('description') or '').strip()
+        if desc:
+            # Strip HTML tags that may have slipped through
+            import re as _re
+            desc = _re.sub(r'<[^>]+>', '', desc)[:250].strip()
+            line += f"\n  Опис: {desc}"
+        lines.append(line)
+    content = "\n".join(lines)
 
-    if not analysis:
+    if not content.strip():
+        log.warning(f"[analyze] Empty content for cluster_id={cluster_id!r}")
+        return jsonify({"error": "Нема доволно содржина за анализа."}), 422
+
+    log.info(f"[analyze] Calling Gemini for cluster {cluster_id!r} ({len(articles)} articles)")
+    log.debug(f"[analyze] Prompt content:\n{content}")
+
+    try:
+        # Call Gemini directly with a slightly longer timeout for richer prompts
+        analysis = _call_gemini(
+            f"Статии:\n{content}",
+            ANALYSIS_SYSTEM_PROMPT,
+            timeout=40,
+        )
+    except Exception:
+        log.error("[analyze] Gemini call raised an exception:\n" + _tb.format_exc())
         return jsonify({"error": "AI сервисот е недостапен."}), 503
 
+    if not analysis:
+        log.warning(f"[analyze] Gemini returned empty/None for cluster {cluster_id!r}")
+        # Check whether the API key is configured at all
+        if not GOOGLE_API_KEY:
+            log.error("[analyze] GOOGLE_API_KEY is not set!")
+            return jsonify({"error": "API клучот не е конфигуриран."}), 503
+        return jsonify({"error": "AI сервисот е недостапен."}), 503
+
+    log.info(f"[analyze] Got analysis ({len(analysis)} chars) for cluster {cluster_id!r}")
     _analysis_cache[cluster_id] = analysis
     return jsonify({"analysis": analysis, "cached": False})
 
