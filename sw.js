@@ -1,7 +1,7 @@
 // Пресек — Service Worker
 // Caches the shell (HTML/CSS/JS) for instant loads; news always fetched fresh
 
-const CACHE = 'presek-v1';
+const CACHE = 'presek-v2';
 const SHELL = ['/'];
 
 self.addEventListener('install', e => {

@@ -1427,7 +1427,7 @@ def api_top10():
     for r in rows:
         clusters[r["cluster_id"]].append(dict(r))
     ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    top = sorted(ranked, key=score_cluster, reverse=True)[:10]
+    top = sorted(ranked, key=score_cluster, reverse=True)[:20]
     result = []
     for i, arts in enumerate(top):
         s   = score_cluster(arts)
@@ -1475,7 +1475,10 @@ Sitemap: https://presek.live/sitemap.xml
 @app.route("/sitemap.xml")
 def sitemap_xml():
     from flask import Response
+    import datetime
     now = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    # Base static URLs
     urls = [
         ("https://presek.live/", now, "always", "1.0"),
         ("https://presek.live/izvori", now, "monthly", "0.5"),
@@ -1485,23 +1488,40 @@ def sitemap_xml():
         ("https://presek.live/privacy", now, "monthly", "0.2"),
         ("https://presek.live/contact", now, "monthly", "0.2"),
     ]
-    # Add recent cluster pages
+    
+    # Add dynamic cluster pages from the last 14 days (DB_RETAIN_DAYS)
     try:
         conn = get_db()
         clusters = conn.execute(
-            "SELECT DISTINCT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= datetime('now', '-7 days') GROUP BY cluster_id ORDER BY latest DESC LIMIT 100"
+            "SELECT cluster_id, MAX(created_at) as latest "
+            "FROM articles "
+            "WHERE created_at >= datetime('now', '-14 days') "
+            "GROUP BY cluster_id "
+            "ORDER BY latest DESC"
         ).fetchall()
         conn.close()
+        
         for c in clusters:
-            urls.append((f"https://presek.live/cluster/{c['cluster_id']}", c['latest'][:10], "daily", "0.7"))
-    except Exception:
-        pass
+            # Extract YYYY-MM-DD from the timestamp
+            lastmod = c['latest'][:10] if c['latest'] else now
+            urls.append((f"https://presek.live/cluster/{c['cluster_id']}", lastmod, "daily", "0.7"))
+    except Exception as e:
+        log.error(f"Sitemap DB error: {e}")
 
+    # Generate XML
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     for loc, lastmod, freq, priority in urls:
-        xml += f'  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>{freq}</changefreq><priority>{priority}</priority></url>\n'
+        xml += (
+            f'  <url>\n'
+            f'    <loc>{loc}</loc>\n'
+            f'    <lastmod>{lastmod}</lastmod>\n'
+            f'    <changefreq>{freq}</changefreq>\n'
+            f'    <priority>{priority}</priority>\n'
+            f'  </url>\n'
+        )
     xml += '</urlset>'
+    
     return Response(xml, mimetype="application/xml")
 
 @app.route("/og-image.svg")

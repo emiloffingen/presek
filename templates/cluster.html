@@ -8,8 +8,23 @@
   {% set page_title = main.title | truncate(70, True, '') %}
   {% set page_desc = (main.description | striptags | truncate(160, True, '…')) if main.description else ('Прочитајте ја оваа вест на Пресек — македонски агрегатор на вести.') %}
   {% set page_url = 'https://presek.live/cluster/' ~ cluster_id %}
-  {% set page_img = ('https://presek.live/proxy?url=' ~ (main.image_url | urlencode)) if main.image_url else 'https://presek.live/static/img/presek_emblem.png' %}
+  {% set page_img = ('https://presek.live/proxy?url=' ~ (main.image_url | urlencode)) if main.image_url else 'https://presek.live/static/img/presek_emblem.svg' %}
   <title>{{ page_title }} | Пресек</title>
+{% if articles %}
+<meta property="og:title" content="{{ articles[0].title }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://presek.live/cluster/{{ cluster_id }}">
+<meta property="og:site_name" content="Пресек">
+{% if articles[0].image_url %}
+<meta property="og:image" content="{{ articles[0].image_url }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{ articles[0].image_url }}">
+{% else %}
+<meta property="og:image" content="https://presek.live/static/img/presek_emblem.svg">
+<meta name="twitter:card" content="summary">
+{% endif %}
+<meta name="twitter:title" content="{{ articles[0].title }}">
+{% endif %}
   <meta name="description" content="{{ page_desc }}">
   <!-- Open Graph -->
   <meta property="og:type" content="article">
@@ -46,6 +61,11 @@
       }
     }
     body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+    img {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      transform: translateZ(0);
+    }
 
     .top-bar {
       background: var(--card); border-bottom: 3px solid var(--red);
@@ -256,13 +276,13 @@
   <!-- Lead article -->
   <div class="lead">
     {% if main.image_url %}
-      <a class="thumb-link" href="{{ main.link }}" target="_blank" rel="noopener">
+      <a href="{{ main.link }}" target="_blank" rel="noopener" style="display:block;">
         <img class="lead-img" src="/proxy?url={{ main.image_url | urlencode }}"
-             onerror="this.src='/static/img/presek_emblem.png';this.classList.add('fallback-logo')" alt="">
+             onerror="this.src='/static/img/presek_emblem.svg';this.classList.add('fallback-logo')" alt="">
       </a>
     {% else %}
-      <a class="thumb-link" href="{{ main.link }}" target="_blank" rel="noopener">
-        <img class="lead-img fallback-logo" src="/static/img/presek_emblem.png" alt="">
+      <a href="{{ main.link }}" target="_blank" rel="noopener" style="display:block;">
+        <img class="lead-img fallback-logo" src="/static/img/presek_emblem.svg" alt="">
       </a>
     {% endif %}
     <div class="lead-source">{{ main.source }}</div>
@@ -274,28 +294,18 @@
         {{ main.description | striptags | truncate(400) }}
       </div>
     {% endif %}
-    <button class="analyze-btn" id="analyzeBtn" onclick="loadAnalysis(this)">✨ Прашања и Анализа</button>
-    <div class="analysis-box" id="ai-analysis-box"></div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="loadAnalysis(this)">✨ Анализа</button>    <div class="analysis-box" id="ai-analysis-box">
   </div>
-
-  <!-- AI synthesis -->
-  <button class="synth-btn" onclick="loadSynth(this)">✦ Синтеза на {{ articles|length }} извори »</button>
-  <div class="ai-box" id="synthBox"></div>
 
   <!-- Share -->
   <div class="share-bar">
     <span class="share-label">Сподели</span>
-    <a class="share-btn whatsapp"
-       href="https://wa.me/?text={{ (main.title ~ ' — ' ~ 'https://presek.live/cluster/' ~ cluster_id) | urlencode }}"
-       target="_blank" rel="noopener">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.553 4.122 1.522 5.857L.057 23.882l6.197-1.427A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.502-5.18-1.382l-.371-.22-3.679.846.876-3.574-.241-.389A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-      WhatsApp
-    </a>
-    <button class="share-btn copy" onclick="copyLink(this)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-      Копирај линк
-    </button>
-    <span class="copy-tooltip" id="copyTooltip">✓ Линкот е копиран!</span>
+    <div style="display:flex; gap:0.6rem; align-items:center;">
+      <a href="https://api.whatsapp.com/send?text={{ main.title | urlencode }}%20https://presek.live/cluster/{{ cluster_id }}" target="_blank" style="color:#25D366;" title="WhatsApp"><svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg></a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https://presek.live/cluster/{{ cluster_id }}" target="_blank" style="color:#1877F2;" title="Facebook"><svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/></svg></a>
+      <a href="https://twitter.com/intent/tweet?url=https://presek.live/cluster/{{ cluster_id }}&text={{ main.title | urlencode }}" target="_blank" style="color:#1DA1F2;" title="X (Twitter)"><svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.873 11.633Z"/></svg></a>
+      <a href="https://reddit.com/submit?url=https://presek.live/cluster/{{ cluster_id }}&title={{ main.title | urlencode }}" target="_blank" style="color:#FF4500;" title="Reddit"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6.167 8a.831.831 0 0 0-.83.83c0 .459.372.84.83.831a.831.831 0 0 0 0-1.661zm1.843 3.647c.315 0 1.403-.038 1.976-.611a.232.232 0 0 0 0-.306.213.213 0 0 0-.306 0c-.353.363-1.126.487-1.67.487-.545 0-1.308-.124-1.671-.487a.213.213 0 0 0-.306 0 .213.213 0 0 0 0 .306c.564.563 1.652.61 1.977.61zm.992-2.807c0 .458.373.83.831.83.458 0 .83-.381.83-.83a.831.831 0 0 0-1.66 0z"/><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.828-1.165c-.315 0-.602.124-.812.325-.801-.573-1.9-.945-3.121-.992l.534-2.501 1.738.372a.834.834 0 1 0 .832-.788l-1.905-.408a.228.228 0 0 0-.252.176L8.14 5.378c-1.219.027-2.32.39-3.112.96-.21-.2-.497-.324-.812-.324a1.166 1.166 0 0 0-.478 2.224c-.02.115-.029.23-.029.353 0 1.795 2.091 3.256 4.669 3.256 2.577 0 4.668-1.451 4.668-3.256 0-.114-.01-.238-.029-.353.408-.181.688-.592.688-1.066z"/></svg></a>
+    </div>
   </div>
 
   <!-- Other sources -->
@@ -305,13 +315,13 @@
   {% for art in articles[1:] %}
   <div class="article-row">
     {% if art.image_url %}
-      <a class="thumb-link" href="{{ art.link }}" target="_blank" rel="noopener">
+      <a href="{{ art.link }}" target="_blank" rel="noopener" style="display:block; flex-shrink:0;">
         <img class="art-thumb" src="/proxy?url={{ art.image_url | urlencode }}"
-             onerror="this.src='/static/img/presek_emblem.png';this.classList.add('fallback-logo')" alt="">
+             onerror="this.src='/static/img/presek_emblem.svg';this.classList.add('fallback-logo')" alt="">
       </a>
     {% else %}
-      <a class="thumb-link" href="{{ art.link }}" target="_blank" rel="noopener">
-        <img class="art-thumb fallback-logo" src="/static/img/presek_emblem.png" alt="">
+      <a href="{{ art.link }}" target="_blank" rel="noopener" style="display:block; flex-shrink:0;">
+        <img class="art-thumb fallback-logo" src="/static/img/presek_emblem.svg" alt="">
       </a>
     {% endif %}
     <div class="art-body">
@@ -387,46 +397,8 @@
       box.innerHTML = '<span class="analysis-label">Грешка</span><p>Грешка при поврзување.</p>';
       box.classList.add('visible');
       btn.disabled = false;
-      btn.textContent = '✨ Прашања и Анализа';
+      btn.textContent = '✨ Анализа';
     }
-  }
-
-  // AI synthesis
-  async function loadSynth(btn) {
-    const cid = "{{ cluster_id }}";
-    const box = document.getElementById('synthBox');
-    if (box.classList.contains('visible')) {
-      box.classList.remove('visible');
-      btn.textContent = `✦ Синтеза на {{ articles|length }} извори »`;
-      return;
-    }
-    btn.textContent = '…';
-    btn.disabled = true;
-    try {
-      const res  = await fetch(`/api/cluster-summary/${encodeURIComponent(cid)}`);
-      const data = await res.json();
-      if (data.summary) {
-        const lines    = data.summary.split('\n').filter(Boolean);
-        const sentLine = lines.find(l => /[🟢🔴⚪]/.test(l)) || '';
-        const tagLine  = lines.find(l => l.includes('#')) || '';
-        const body     = lines.filter(l => l !== sentLine && l !== tagLine).join(' ');
-        const sent     = sentLine.match(/[🟢🔴⚪]/)?.[0] || '';
-        const tags     = [...tagLine.matchAll(/#\S+/g)].map(m =>
-          `<span class="ai-tag">${m[0]}</span>`).join('');
-        box.innerHTML  = `<span class="ai-label">✦ Синтеза · ${data.source_count || ''} извори</span>
-          <span style="font-size:1rem;margin-right:0.3rem">${sent}</span>${body}
-          ${tags ? `<div class="ai-tags">${tags}</div>` : ''}`;
-      } else {
-        box.innerHTML = data.error || 'Недостапно.';
-      }
-      box.classList.add('visible');
-      btn.textContent = '✦ Затвори синтеза';
-    } catch(e) {
-      box.innerHTML = 'Грешка.';
-      box.classList.add('visible');
-      btn.textContent = '✦ Затвори синтеза';
-    }
-    btn.disabled = false;
   }
 
   // Copy cluster link to clipboard

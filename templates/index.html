@@ -77,6 +77,11 @@
     }}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+    img {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      transform: translateZ(0);
+    }
 
     /* TICKER */
     .ticker-bar{background:var(--red);height:32px;display:flex;align-items:center;overflow:hidden}
@@ -148,7 +153,7 @@
     .top10-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap;transition:opacity .12s,transform .1s}
     .top10-btn:hover{opacity:.85}
     .top10-btn:active{transform:scale(.95)}
-    .top10-badge{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff;font-size:.68rem;font-weight:700;text-align:center;line-height:22px;font-family:var(--sans)}
+    .rank-badge{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;font-size:1.1rem;font-weight:900;font-family:var(--sans);margin-right:.75rem;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.2);}
 
     /* MAIN LAYOUT */
     .page-wrap{max-width:1100px;margin:0 auto;padding:1rem 1.25rem 3rem}
@@ -163,8 +168,15 @@
     .stories-grid{display:grid;grid-template-columns:1fr;gap:1rem}
     @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
     .stories-grid.single{grid-template-columns:1fr}
-    .story-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:1.5rem 1.6rem;transition:background .12s,box-shadow .12s;overflow:hidden;min-width:0;display:flex;flex-direction:column}
-    .story-card:hover{background:var(--bg-hover);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
+    .stories-grid.top10-grid{grid-template-columns:1fr;}
+    @media(min-width:768px){.stories-grid.top10-grid{grid-template-columns:repeat(2, 1fr);}.stories-grid.top10-grid .story-card:first-child{grid-column:1 / -1;}}
+    .stories-grid.top10-grid .story-card.hero-card{display:block;padding:0;box-shadow:0 4px 15px rgba(0,0,0,.08);}
+    .stories-grid.top10-grid .story-card.hero-card .story-main{margin-bottom:.75rem;display:block;}
+    .stories-grid.top10-grid .story-card.hero-card .thumb-link{width:100%;height:300px;display:block;margin-bottom:1rem;overflow:hidden;border-radius:10px 10px 0 0;}
+    .stories-grid.top10-grid .story-card.hero-card .story-thumb{width:100%;height:100%;object-fit:cover;border-radius:0;}
+    .stories-grid.top10-grid .story-card.hero-card .story-body{padding:0 2rem 2rem;}
+    .story-card{background:var(--bg-card);border-radius:12px;padding:1.5rem 1.6rem;transition:transform .2s ease-out,box-shadow .2s ease-out;overflow:hidden;min-width:0;display:flex;flex-direction:column;box-shadow:0 4px 12px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.04)}
+    .story-card:hover{transform:translateY(-5px);box-shadow:0 12px 28px rgba(0,0,0,.12),0 3px 6px rgba(0,0,0,.06)}
     .story-card.wide{grid-column:1/-1}
     .story-main{display:flex;gap:.85rem;align-items:flex-start;margin-bottom:.5rem}
     .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border);image-rendering:-webkit-optimize-contrast;cursor:pointer;transition:opacity 0.2s ease-in-out}
@@ -293,6 +305,7 @@
     .sidebar-item a:hover{color:var(--red)}
     .sidebar-item .si-src{font-size:.75rem;color:var(--text-muted);font-family:var(--sans)}
     .sidebar-item .si-time{font-size:.72rem;color:var(--text-muted);font-family:var(--sans)}
+    @media (min-width: 992px) { .sidebar-column { position: sticky; top: 1rem; align-self: start; height: calc(100vh - 2rem); overflow-y: auto; } }
   </style>
   <!-- Google Analytics - replace UA-XXXXX with real ID when ready -->
   <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
@@ -300,7 +313,7 @@
 </head>
 <body>
 <div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
-<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 10</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()"><span class="refresh-icon">↻</span> <span class="refresh-label">Освежи</span></button></div></div></header>
+<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">ПРЕСЕК</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 20</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()"><span class="refresh-icon">↻</span> <span class="refresh-label">Освежи</span></button></div></div></header>
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
 <div class="search-bar"><div class="search-inner"><div class="search-input-wrap"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="document.getElementById('searchClear').classList.toggle('visible',!!this.value.trim());if(!this.value.trim())clearSearch()"><button class="search-clear" id="searchClear" onclick="clearSearch()" title="Исчисти">✕</button></div><button class="search-btn" onclick="doSearch()">⌕ Барај</button><span class="search-status" id="searchStatus"></span></div></div>
 <div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
@@ -385,9 +398,8 @@
     const cid=cluster.cluster_id||main.cluster_id||'';
     const isBreaking=cluster.is_breaking||false;const total=arts.length;const isWide=total>15;
     const proxyUrl=main.image_url?`/proxy?url=${encodeURIComponent(main.image_url)}`:'';
-    const fallback='/static/img/presek_emblem.png';
-    const thumbImg=proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.src='${fallback}';this.classList.add('fallback-logo')">`:`<img class="story-thumb fallback-logo" src="${fallback}" alt="" loading="lazy">`;
-    const thumbHtml=`<a class="thumb-link" href="/cluster/${cid}" onclick="trackClick(${main.id})">${thumbImg}</a>`;
+    const fallback='/static/img/presek_emblem.svg';
+    const thumbHtml=`<a href="/cluster/${cid}" onclick="trackClick(${main.id})" style="display:block; flex-shrink:0;">${proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.src='${fallback}';this.classList.add('fallback-logo')">`:`<img class="story-thumb fallback-logo" src="${fallback}" alt="" loading="lazy">`}</a>`;
     const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
     const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
     const countryFlag=main.country||'🇲🇰';
@@ -399,10 +411,15 @@
     const relHtml=related.map(a=>`<div class="related-item"><span class="r-dot">●</span><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a><span class="r-src">${a.source}</span></div>`).join('');
     const allSrcs=[...new Set(arts.map(a=>a.source))];const visibleSrcs=allSrcs.slice(0,6);const extraCount=allSrcs.length-visibleSrcs.length;
     const srcTagsHtml=allSrcs.length>1?`<div class="source-tags">${visibleSrcs.map(s=>`<span class="stag">${s}</span>`).join('')}${extraCount>0?`<span class="stag-more">+${extraCount}</span>`:''}</div>`:'';
+    
+    // UI UPDATES: Badges, Sinteza Button, and Social Share Icons
     const countBadge=total>1?`<span class="badge badge-count">${total} вести »</span>`:'';
     const breakBadge=isBreaking?'<span class="badge badge-break">● Во живо</span>':'';
-    const actionsHtml=(breakBadge||countBadge)?`<div class="actions-row">${breakBadge}${countBadge}</div>`:'';
-    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}${flagBadge} <span class="story-source">${main.source}</span>${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}${actionsHtml}</div>`
+    const synthBtn=total>1?`<button class="action-btn synth" onclick="event.preventDefault(); toggleSynth('${cid}', this)" style="margin-left:4px;">✦ Синтеза</button>`:'';
+    
+    const actionsHtml=`<div class="actions-row">${breakBadge}${countBadge}${synthBtn}</div>`;
+
+    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}${flagBadge} <span class="story-source">${main.source}</span>${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}${actionsHtml}<div id="synth-${cid}" class="ai-panel synth-panel"></div></div>`
   }
 
   function renderPage(clusters){
@@ -420,7 +437,7 @@
     wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`
   }
 
-  async function showTop10(btn){if(btn.textContent.includes('Назад')){btn.textContent='🏆 Топ 10';renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';btn.textContent='← Назад';try{const res=await fetch('/api/top10');const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема доволно податоци за денес.</div>';return}const rankedCards=data.map(c=>{const base=buildCard(c);return base.replace('<div class="story-main">',`<div style="font-size:.75rem;font-weight:700;color:var(--gold);font-family:var(--sans);margin-bottom:.35rem">№${c.rank} · Топ на денот</div><div class="story-main">`)}).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .85rem;font-size:.9rem;color:var(--text-muted)"><strong style="color:var(--gold)">🏆 Топ 10 на денот</strong> — најважните приказни во последните 24 часа</div><div class="stories-grid single">${rankedCards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
+  async function showTop10(btn){if(btn.textContent.includes('Назад')){btn.textContent='🏆 Топ 20';renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';btn.textContent='← Назад';try{const res=await fetch('/api/top10');const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема доволно податоци за денес.</div>';return}const rankedCards=data.map(buildCard).join('');wrap.innerHTML=`<div class="stories-grid">${rankedCards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
 
   async function doSearch(){const q=document.getElementById('searchInput').value.trim();if(!q||q.length<2)return;const wrap=document.getElementById('pageWrap');const status=document.getElementById('searchStatus');const clear=document.getElementById('searchClear');status.textContent='Се бара…';clear.classList.add('visible');try{const res=await fetch(`/api/search?q=${encodeURIComponent(q)}`);const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема резултати за „'+q+'".</div>';status.textContent='0 резултати';return}wrap.innerHTML=`<div class="stories-grid">${data.map(buildCard).join('')}</div>`;status.textContent=`${data.length} резултат${data.length===1?'':'и'}`}catch(e){status.textContent='Грешка.'}}
   function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchStatus').textContent='';document.getElementById('searchClear').classList.remove('visible');renderPage(allClusters)}
@@ -432,7 +449,7 @@
   async function showTimebox(window,btn){document.querySelectorAll('.timebox-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(window==='live'){renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';try{if(!_timeboxData){const res=await fetch('/api/timeboxed');_timeboxData=await res.json()}const clusters=_timeboxData[window]||[];if(!clusters.length){wrap.innerHTML=`<div class="empty-msg">Нема вести за "${window}".</div>`;return}const cards=clusters.map(buildCard).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .75rem;font-size:.85rem;color:var(--text-muted)">Топ вести · <strong>${window}</strong><button onclick="showTimebox('live',document.querySelector('.timebox-btn'))" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Назад</button></div><div class="stories-grid">${cards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
 
   let _currentPage=0;let _hasMore=false;const PAGE_SIZE=50;
-  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.querySelector('.refresh-label').textContent='…';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.querySelector('.refresh-label').textContent='Освежи'}
+  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ …';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.textContent='↻ Освежи'}
 
   async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
   function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Македонија';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
@@ -446,7 +463,17 @@
       if(!data.length){el.innerHTML='<div style="color:var(--text-muted);font-size:.85rem">Нема податоци.</div>';return}
       el.innerHTML=data.slice(0,8).map(c=>{
         const a=c.articles[0];
-        return`<div class="sidebar-item"><a href="/cluster/${c.cluster_id||a.cluster_id}" onclick="trackClick(${a.id})">${a.title}</a><div><span class="si-src">${a.source}</span> · <span class="si-time">${timeAgo(a.created_at)}</span></div></div>`
+        const domain = a.link.split('/')[2];
+        const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+        return `<div class="sidebar-item">
+<div style="display:flex; gap:10px; align-items:flex-start;">
+<img src="${favicon}" style="width:16px; height:16px; margin-top:3px; border-radius:2px;" alt="">
+<div>
+<a href="/cluster/${c.cluster_id||a.cluster_id}" onclick="trackClick(${a.id})">${a.title}</a>
+<div style="margin-top:4px;"><span class="si-src">${a.source}</span> · <span class="si-time">${timeAgo(a.created_at)}</span></div>
+</div>
+</div>
+</div>`;
       }).join('');
     }catch(e){}
   }
@@ -459,7 +486,7 @@
       el.innerHTML=data.slice(0,10).map(t=>{
         const word=t.word||t.keyword||t.term||String(t);
         const count=t.count||'';
-        return`<span class="trend-chip" onclick="filterByKeyword('${word}')" style="display:inline-block;margin:.15rem .2rem">${word}${count?` <span>×${count}</span>`:''}</span>`
+        return `<span class="trend-chip" onclick="filterByKeyword('${word}')" style="display:inline-block; margin:4px 4px; padding:4px 10px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">${word}${count ? `<span style="opacity:0.6; margin-left:4px;">${count}</span>` : ''}</span>`;
       }).join('');
     }catch(e){}
   }
