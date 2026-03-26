@@ -84,6 +84,35 @@ def normalize_headline(title: str) -> str:
     return title
 
 
+def clean_json_response(text: str) -> str:
+    """
+    Robustly extract the JSON payload from a string.
+    Removes markdown code blocks and trims everything outside the first and last
+    matching brackets/braces.
+    """
+    if not text:
+        return ""
+    # Remove markdown code blocks
+    text = text.replace('```json', '').replace('```', '').strip()
+    
+    # Find the start and end of the JSON object or array
+    start_brace = text.find('{')
+    start_bracket = text.find('[')
+    
+    start = -1
+    if start_brace != -1 and (start_bracket == -1 or start_brace < start_bracket):
+        start = start_brace
+        end = text.rfind('}')
+    elif start_bracket != -1:
+        start = start_bracket
+        end = text.rfind(']')
+        
+    if start != -1 and end != -1 and end > start:
+        return text[start:end+1]
+        
+    return text.strip()
+
+
 app = Flask(__name__)
 CORS(app)
 from flask_compress import Compress
@@ -94,9 +123,13 @@ def rate_limit_check():
     # Skip rate limiting for static files and the main page
     if request.path in ('/', '/favicon.ico') or request.path.startswith('/static'):
         return None
-    ip = request.remote_addr or '0.0.0.0'
+    # Behind a proxy like Cloudflare or Nginx, use X-Forwarded-For
+    if request.headers.get("X-Forwarded-For"):
+        ip = request.headers.get("X-Forwarded-For").split(",")[0].strip()
+    else:
+        ip = request.remote_addr or '0.0.0.0'
     if not check_rate_limit(ip):
-        return jsonify({"error": "Премногу барања. Обидете се повторно."}), 429
+        return jsonify({"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}), 429
 
 @app.after_request
 def add_security_headers(response):
@@ -464,111 +497,112 @@ def fetch_feed(source, url):
 def ingest_feeds():
     """Fetch all RSS feeds in parallel, then write to DB sequentially."""
     conn = get_db()
-    recent_rows = conn.execute(
-        "SELECT title, cluster_id FROM articles ORDER BY created_at DESC LIMIT ?",
-        (CLUSTER_LOOKBACK,)
-    ).fetchall()
-    recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in recent_rows]
+    try:
+        recent_rows = conn.execute(
+            "SELECT title, cluster_id FROM articles ORDER BY created_at DESC LIMIT ?",
+            (CLUSTER_LOOKBACK,)
+        ).fetchall()
+        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in recent_rows]
 
-    # ── Phase 1: fetch all feeds in parallel ─────────────────────
-    all_entries = []  
-    errors = []
-    max_workers = min(len(RSS_FEEDS), 20)  
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(fetch_feed, s, u): s for s, u in RSS_FEEDS}
-        for future in as_completed(futures):
-            source, entries, error = future.result()
-            if error:
-                errors.append(f"{source}: {error}")
-                log.warning(f"Feed error — {source}: {error}")
-            else:
-                for title, link, desc, image_url in entries:
-                    all_entries.append((source, title, link, desc, image_url))
+        # ── Phase 1: fetch all feeds in parallel ─────────────────────
+        all_entries = []  
+        errors = []
+        max_workers = min(len(RSS_FEEDS), 20)  
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(fetch_feed, s, u): s for s, u in RSS_FEEDS}
+            for future in as_completed(futures):
+                source, entries, error = future.result()
+                if error:
+                    errors.append(f"{source}: {error}")
+                    log.warning(f"Feed error — {source}: {error}")
+                else:
+                    for title, link, desc, image_url in entries:
+                        all_entries.append((source, title, link, desc, image_url))
 
-    # ── Phase 2: write to DB sequentially (no lock contention) ───
-    new_count = 0
-    for source, title, link, desc, image_url in all_entries:
-        try:
-            if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
-                continue
-            forced     = HARDCODED_FEED_CATEGORIES.get(source)
-            category   = detect_category(title, description=desc, source=source, forced_category=forced)
-            subcategory = detect_subcategory(title, description=desc) or ""
-            cluster_id = clustering.find_or_create_cluster(title, recent_articles)
-            now        = datetime.datetime.now().isoformat()
-            # Strip HTML tags from description for clean storage
-            import re as _re
-            clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
-            conn.execute(
-                "INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc)
-            )
-            recent_articles.insert(0, {"title": title, "cluster_id": cluster_id})
-            if len(recent_articles) > CLUSTER_LOOKBACK:
-                recent_articles.pop()
-            new_count += 1
-        except Exception as e:
-            log.error(f"DB write error — {source} | {title[:40]}: {e}")
+        # ── Phase 2: write to DB sequentially (no lock contention) ───
+        new_count = 0
+        for source, title, link, desc, image_url in all_entries:
+            try:
+                if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
+                    continue
+                forced     = HARDCODED_FEED_CATEGORIES.get(source)
+                category   = detect_category(title, description=desc, source=source, forced_category=forced)
+                subcategory = detect_subcategory(title, description=desc) or ""
+                cluster_id = clustering.find_or_create_cluster(title, recent_articles)
+                now        = datetime.datetime.now().isoformat()
+                # Strip HTML tags from description for clean storage
+                import re as _re
+                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
+                conn.execute(
+                    "INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc)
+                )
+                recent_articles.insert(0, {"title": title, "cluster_id": cluster_id})
+                if len(recent_articles) > CLUSTER_LOOKBACK:
+                    recent_articles.pop()
+                new_count += 1
+            except Exception as e:
+                log.error(f"DB write error — {source} | {title[:40]}: {e}")
 
-    conn.commit()
-    conn.close()
-    return new_count, errors
+        conn.commit()
+        return new_count, errors
+    finally:
+        conn.close()
 
 
 def translate_titles_batch(titles: list[str]) -> list[str]:
-    """Translate a list of texts to Macedonian using numbered-line batches.
-
-    Returns a list the same length as *titles*. Each item is either the
-    Macedonian translation or (on partial failure) the original text.
-    Returns [None, ...] only when no API key is configured, so the caller
-    can skip the entire result set rather than inserting untranslated text.
-    """
+    """Translate a list of texts to Macedonian using numbered-line batches."""
     if not titles or not GOOGLE_API_KEY:
         return [None] * len(titles)
 
-    BATCH_SIZE = 15
+    BATCH_SIZE = 5
     result: list[str | None] = list(titles)  # start with originals as fallback
     import re as _re
 
     for start in range(0, len(titles), BATCH_SIZE):
         batch = titles[start:start + BATCH_SIZE]
-        numbered = "\n".join(f"{j+1}. {t}" for j, t in enumerate(batch))
         prompt = (
-            "Преведи ги овие наслови на македонски јазик.\n"
-            "Врати ги нумерирани, во ист редослед, без објаснувања.\n"
-            "ВАЖНО: Пишувај го секој наслов во стандарден реченичен запис (Sentence case) — "
-            "само првата буква на реченицата и сопствените имиња се со голема буква. "
-            "НИКОГАШ не пишувај цели зборови со ГОЛЕМ БУКВИ.\n\n"
-            + numbered
+            f"Translate these {len(batch)} news titles to Macedonian. "
+            "Return ONLY a raw JSON array of strings in the exact same order. "
+            f"Format: [\"Title 1\", ..., \"Title {len(batch)}\"]\n\n"
+            + json.dumps(batch, ensure_ascii=False)
         )
-        parsed: dict[int, str] = {}
-        for attempt in range(2):  # retry once
-            raw = _call_gemini(prompt, "Ти си професионален преведувач на македонски јазик.", timeout=25)
+        translations = None
+        for attempt in range(3):  # retry twice
+            time.sleep(10)  # Long rate limit protection
+            raw = _call_gemini(prompt, "You are a professional translator to Macedonian. Respond with JSON array only.", timeout=45, max_tokens=2000, json_mode=True)
             if not raw:
-                time.sleep(2)
                 continue
-            for line in raw.splitlines():
-                m = _re.match(r'^\s*(\d+)[.)]\s*(.+)$', line.strip())
-                if m:
-                    idx = int(m.group(1)) - 1
-                    if 0 <= idx < len(batch):
-                        parsed[idx] = m.group(2).strip()
-            if len(parsed) >= len(batch) * 0.8:  # 80 % threshold → accept
-                break
-            parsed = {}
+            
+            # Sanitize output using our robust cleaner
+            response_text = clean_json_response(raw)
+            
+            try:
+                data = json.loads(response_text)
+                if isinstance(data, list) and len(data) == len(batch):
+                    translations = data
+                    break
+                else:
+                    log.warning(f"[diaspora] JSON mismatch at {start}: expected {len(batch)}, got {len(data) if isinstance(data, list) else 'non-list'}. Raw length: {len(raw)}")
+            except Exception as e:
+                log.warning(f"[diaspora] JSON parse error at {start}: {e}. Raw length: {len(raw)}")
+                log.error(f"Failed response text: {raw}")
+            
             time.sleep(1)
 
-        if parsed:
-            for j, t in parsed.items():
+        if translations:
+            for j, t in enumerate(translations):
                 result[start + j] = t
-            missing = len(batch) - len(parsed)
-            if missing:
-                log.warning(f"[diaspora] {missing} lines not parsed in batch at {start} — using originals")
         else:
-            log.warning(f"[diaspora] Translation failed for batch at {start} — using originals for {len(batch)} items")
-
-        if start + BATCH_SIZE < len(titles):
-            time.sleep(1.5)  # rate limit between batches
+            log.warning(f"[diaspora] Batch translation failed at {start}, falling back to single items...")
+            for j, title in enumerate(batch):
+                time.sleep(2)
+                single_prompt = f"Translate this news title to Macedonian. Return ONLY the translated string, no JSON, no quotes unless part of title.\n\nTitle: {title}"
+                res = _call_gemini(single_prompt, "You are a professional translator to Macedonian.", max_tokens=200)
+                if res:
+                    result[start + j] = res
+                else:
+                    log.warning(f"[diaspora] Single translation failed for item {start+j}")
 
     return result
 
@@ -642,36 +676,38 @@ def ingest_diaspora_feeds():
 
     # Phase 3: write to DB sequentially
     conn = get_db()
-    new_count = 0
-    for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
-        try:
-            if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
-                continue
-            mk_title = translated[i] if i < len(translated) else None
-            if mk_title is None:
-                continue  # skip untranslated — will be picked up next cycle
-            mk_title = normalize_headline(mk_title)
-            cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
-            now = datetime.datetime.now().isoformat()
-            clean_desc = translated_descs[i] if i < len(translated_descs) else ""
-            conn.execute(
-                "INSERT INTO articles "
-                "(title, original_title, link, source, category, subcategory, cluster_id, "
-                "created_at, image_url, description, country) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (mk_title, title, link, source, category, "", cluster_id,
-                 now, image_url, clean_desc, country)
-            )
-            diaspora_recent.insert(0, {"title": mk_title, "cluster_id": cluster_id})
-            if len(diaspora_recent) > CLUSTER_LOOKBACK:
-                diaspora_recent.pop()
-            new_count += 1
-        except Exception as e:
-            log.error(f"[diaspora] DB write error — {source} | {title[:40]}: {e}")
+    try:
+        new_count = 0
+        for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
+            try:
+                if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
+                    continue
+                mk_title = translated[i] if i < len(translated) else None
+                if mk_title is None:
+                    continue  # skip untranslated — will be picked up next cycle
+                mk_title = normalize_headline(mk_title)
+                cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
+                now = datetime.datetime.now().isoformat()
+                clean_desc = translated_descs[i] if i < len(translated_descs) else ""
+                conn.execute(
+                    "INSERT INTO articles "
+                    "(title, original_title, link, source, category, subcategory, cluster_id, "
+                    "created_at, image_url, description, country) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (mk_title, title, link, source, category, "", cluster_id,
+                     now, image_url, clean_desc, country)
+                )
+                diaspora_recent.insert(0, {"title": mk_title, "cluster_id": cluster_id})
+                if len(diaspora_recent) > CLUSTER_LOOKBACK:
+                    diaspora_recent.pop()
+                new_count += 1
+            except Exception as e:
+                log.error(f"[diaspora] DB write error — {source} | {title[:40]}: {e}")
 
-    conn.commit()
-    conn.close()
-    return new_count, errors
+        conn.commit()
+        return new_count, errors
+    finally:
+        conn.close()
 
 
 def prune_db():
@@ -698,16 +734,24 @@ AUTO_SUMMARIZE_MIN_SRC = 2    # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY   = 1.5  # seconds between API calls (rate limit protection)
 
 
-def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str | None:
+def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
     """Shared Gemini caller. Retries with exponential backoff on rate-limit (429)."""
     if not GOOGLE_API_KEY:
         return None
-    prompt_text = prompt_text[:3000]
+    prompt_text = prompt_text[:10000]
+    
+    gen_config = {"maxOutputTokens": max_tokens}
+    if json_mode:
+        gen_config["response_mime_type"] = "application/json"
+        
     payload = json.dumps({
         "system_instruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"parts": [{"text": prompt_text}]}],
-        "generationConfig": {"maxOutputTokens": 250}
+        "generationConfig": gen_config
     }).encode("utf-8")
+    # Financial Safety Rail: Mandatory 1s delay between any two global API calls
+    time.sleep(1)
+    
     delays = [2, 4, 8]  # seconds before each retry (3 attempts total)
     for attempt, delay in enumerate([0] + delays):
         if delay:
@@ -735,9 +779,9 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str
     return None
 
 
-def _call_ai(prompt_text: str, system_prompt: str) -> tuple[str | None, str | None]:
+def _call_ai(prompt_text: str, system_prompt: str, max_tokens: int = 2000) -> tuple[str | None, str | None]:
     """Call Gemini API. Returns (summary, 'gemini') or (None, None)."""
-    result = _call_gemini(prompt_text, system_prompt)
+    result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens)
     if result:
         return result, "gemini"
     return None, None
@@ -797,7 +841,7 @@ def auto_summarize_top_clusters():
                     summarized_count += 1
                 except Exception as e:
                     log.warning(f"[auto-summarize] DB write failed for article {lead['id']}: {e}")
-                time.sleep(AUTO_SUMMARIZE_DELAY)
+                time.sleep(6)  # enforce strict 6s delay for rate limit
 
         # 2. Generate cluster synthesis (if multi-source and not cached)
         unique_sources = {a["source"] for a in arts}
@@ -810,7 +854,7 @@ def auto_summarize_top_clusters():
             if synthesis:
                 _cluster_summary_cache[cid] = synthesis
                 synthesis_count += 1
-                time.sleep(AUTO_SUMMARIZE_DELAY)
+                time.sleep(6)  # enforce strict 6s delay for rate limit
 
     if summarized_count or synthesis_count:
         log.info(f"[auto-summarize] {summarized_count} article summaries, {synthesis_count} cluster syntheses generated.")
@@ -856,6 +900,7 @@ def ingest_loop():
             
         except Exception as e:
             log.error(f"Ingest loop failed: {e}", exc_info=True)
+        log.info(f"Ingest loop sleeping for {REFRESH_INTERVAL}s...")
         time.sleep(REFRESH_INTERVAL)
 
 health.register_health_routes(app, DB_PATH)
@@ -999,19 +1044,14 @@ SUMMARY_SYSTEM_PROMPT = (
 SYNTHESIS_SYSTEM_PROMPT = (
     "Ти си искусен уредник на македонска новинска агенција. "
     "Дадени ти се наслови за иста вест од различни медиуми. "
-    "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. НЕ користи српски, хрватски или бугарски зборови. "
-    "Правопис: Секогаш правилно пишувај ги сопствените именки (имиња на луѓе, градови, држави, организации) — "
+    "Write a comprehensive, detailed synthesis consisting of at least 3 to 4 full paragraphs. "
+    "You must write the entire response strictly in the Macedonian language. "
+    "You must return valid JSON in the format: {\"summary\": \"...\"}. "
+    "Do NOT use literal quotation marks inside the summary text. Use single quotes (') or escape double quotes (\\\") to ensure the JSON does not break. "
+    "Do NOT use bullet points or complex markdown. "
+    "Секогаш правилно пишувај ги сопствените именки (имиња на луѓе, градови, држави, организации) — "
     "без разлика дали во изворите се напишани со голема или мала буква. "
-    "На пример: Трамп, Иран, Скопје, НАТО, ЕУ, Владата — НИКОГАШ сите мали. "
-    "САМО во овој формат без никаков додатен текст:\n"
-    "Ред 1: Сентимент — точно еден емоџи: 🟢 (позитивно) или 🔴 (негативно) или ⚪ (неутрално)\n"
-    "Ред 2-3: ТОЧНО ДВЕ (2) фактички реченици — синтеза на сите перспективи. Не повеќе, не помалку. "
-    "Ако изворите се разликуваат, наведи ја разликата "
-    "(пример: 'Извор А тврди X, додека Извор Б тврди Y'). Биди неутрален и конкретен. "
-    "Ако насловите содржат конфликтни податоци (различни бројки, спротивни тврдења за одговорност), "
-    "започни со '⚠️ Разлика:' и именувај ги изворите. \n"
-    "Ред 5: Три до пет клучни зборови со # (пример: #Македонија #Политика #ВМРО)\n"
-    "Важно: Не пишувај воведни фрази. Само форматот."
+    "На пример: Трамп, Иран, Скопје, НАТО, ЕУ, Владата — НИКОГАШ сите мали."
 )
 
 ANALYSIS_SYSTEM_PROMPT = (
@@ -1057,34 +1097,72 @@ def api_cluster_summary(cluster_id: str):
     """
     Cluster-wide AI synthesis — feeds all articles in a cluster to Gemini
     and returns a cross-source summary with multiple perspectives.
-    Results are cached in memory for the lifetime of the process.
+    Results are cached in memory and in the cluster_summaries database table.
     """
     if cluster_id in _cluster_summary_cache:
         return jsonify({"summary": _cluster_summary_cache[cluster_id], "cached": True})
 
     conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM articles WHERE cluster_id = ? ORDER BY created_at ASC LIMIT 10",
-        (cluster_id,)
-    ).fetchall()
-    conn.close()
+    try:
+        # 1. DB cache check
+        row = conn.execute("SELECT summary FROM cluster_summaries WHERE cluster_id = ?", (cluster_id,)).fetchone()
+        if row:
+            summary = row["summary"]
+            _cluster_summary_cache[cluster_id] = summary
+            # We still need source count for the response, so fetch relevant articles
+            count_row = conn.execute("SELECT COUNT(*) as count FROM articles WHERE cluster_id = ?", (cluster_id,)).fetchone()
+            return jsonify({
+                "summary": summary,
+                "source_count": count_row["count"] if count_row else 0,
+                "cached": True,
+                "tier": "db_cache"
+            })
 
-    if not rows:
-        return jsonify({"error": "Cluster not found"}), 404
+        # 2. Fetch articles for synthesis if not in cache
+        rows = conn.execute(
+            "SELECT * FROM articles WHERE cluster_id = ? ORDER BY created_at ASC LIMIT 10",
+            (cluster_id,)
+        ).fetchall()
 
-    articles = [dict(r) for r in rows]
-    headlines = "\n".join(
-        f"- [{a['source']}]: {a['title']}"
-        for a in articles
-    )
+        if not rows:
+            return jsonify({"error": "Cluster not found"}), 404
 
-    summary, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT)
+        articles = [dict(r) for r in rows]
+        headlines = "\n".join(f"- [{a['source']}]: {a['title']}" for a in articles)
 
-    if not summary:
-        return jsonify({"error": "AI сервисот е недостапен."}), 503
-
-    _cluster_summary_cache[cluster_id] = summary
-    return jsonify({"summary": summary, "source_count": len(articles), "cached": False, "tier": tier})
+        # 3. Call Gemini with error handling for 429s
+        try:
+            summary = _call_gemini(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT)
+            if not summary:
+                return jsonify({"error": "AI сервисот е недостапен."}), 503
+            
+            # --- Cleanup logic to sanitize Gemini response ---
+            summary = summary.replace('```json', '').replace('```', '').strip()
+            if summary.startswith('{"summary":'):
+                import json
+                try:
+                    summary = json.loads(summary)['summary']
+                except:
+                    pass
+            
+            # 4. Success: Save to DB and memory cache
+            now = datetime.datetime.now().isoformat()
+            conn.execute(
+                "INSERT OR REPLACE INTO cluster_summaries (cluster_id, summary, created_at) VALUES (?, ?, ?)",
+                (cluster_id, summary, now)
+            )
+            conn.commit()
+            _cluster_summary_cache[cluster_id] = summary
+            
+            return jsonify({"summary": summary})
+            
+        except Exception as e:
+            if '429' in str(e) or 'ResourceExhausted' in str(e):
+                return jsonify({"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."})
+            return jsonify({"error": "AI сервисот е недостапен."}), 503
+            
+    finally:
+        conn.close()
 
 
 @app.route("/api/analyze/<cluster_id>")
@@ -1601,12 +1679,17 @@ def index():
 
 if __name__ == "__main__":
     conn = get_db()
-    # Create table if new install
+    # Create tables if new install
     conn.execute("""CREATE TABLE IF NOT EXISTS articles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT, link TEXT UNIQUE, source TEXT,
         category TEXT, summary TEXT, cluster_id TEXT,
         created_at TEXT, image_url TEXT
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
+        cluster_id TEXT PRIMARY KEY,
+        summary TEXT,
+        created_at TEXT
     )""")
     # Migrate existing DB — add image_url if not present
     cols = [r[1] for r in conn.execute("PRAGMA table_info(articles)").fetchall()]
@@ -1636,6 +1719,50 @@ if __name__ == "__main__":
     conn.commit()
     conn.close()
 
+if __name__ == "__main__":
+    conn = get_db()
+    # Create tables if new install
+    conn.execute("""CREATE TABLE IF NOT EXISTS articles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT, link TEXT UNIQUE, source TEXT,
+        category TEXT, summary TEXT, cluster_id TEXT,
+        created_at TEXT, image_url TEXT
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
+        cluster_id TEXT PRIMARY KEY,
+        summary TEXT,
+        created_at TEXT
+    )""")
+    # Migrate existing DB
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(articles)").fetchall()]
+    if "image_url" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN image_url TEXT DEFAULT ''")
+        log.info("DB migrated: added image_url column")
+    if "clicks" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN clicks INTEGER DEFAULT 0")
+        log.info("DB migrated: added clicks column")
+    if "description" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN description TEXT DEFAULT ''")
+        log.info("DB migrated: added description column")
+    if "subcategory" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN subcategory TEXT DEFAULT ''")
+        log.info("DB migrated: added subcategory column")
+    if "country" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN country TEXT DEFAULT '🇲🇰'")
+        log.info("DB migrated: added country column")
+    if "original_title" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
+        log.info("DB migrated: added original_title column")
+    
+    # Add indexes for common query patterns
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON articles(category)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
+    conn.commit()
+    conn.close()
+
     _load_summary_cache()
     threading.Thread(target=ingest_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+

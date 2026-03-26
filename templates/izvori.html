@@ -26,7 +26,7 @@
       padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem;
       position: sticky; top: 0; z-index: 100;
     }
-    .top-bar a.brand { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.1em;
+    .top-bar a.brand { display: flex; align-items: center; gap: 8px; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.1em;
       color: var(--red); text-decoration: none; }
     .top-bar span { font-size: 0.72rem; color: var(--muted); }
     .top-bar a.back { font-size: 0.72rem; color: var(--muted); text-decoration: none;
@@ -111,7 +111,13 @@
 <body>
 
 <div class="top-bar">
-  <a href="/" class="brand">ПРЕСЕК</a>
+  <a href="/" class="brand">
+    <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="var(--red)"/>
+      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#f4ede0">П</text>
+    </svg>
+    <span>ПРЕСЕК</span>
+  </a>
   <span>/ Извори</span>
   <a href="/" class="back">← Назад кон вестите</a>
 </div>

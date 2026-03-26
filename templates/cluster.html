@@ -55,8 +55,8 @@
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #121212; --card: #1c1c1c; --border: #2e2e2e;
-        --text: #e0e0e0; --muted: #888; --red: #c04040;
+        --bg: #141210; --card: #1c1c1c; --border: #2e2e2e;
+        --text: #ede0c4; --muted: #888; --red: #b03030;
         --gold: #c9a030;
       }
     }
@@ -72,8 +72,11 @@
       padding: 0.55rem 1.25rem; display: flex; align-items: center; gap: 1rem;
       position: sticky; top: 0; z-index: 100;
     }
-    .brand { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.1em;
-      color: var(--red); text-decoration: none; }
+    .brand { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.1em;
+      color: #000; text-decoration: none; }
+    @media (prefers-color-scheme: dark) {
+      .brand { color: #fff; }
+    }
     .back  { font-size: 0.72rem; color: var(--muted); text-decoration: none;
       margin-left: auto; }
     .back:hover { color: var(--red); }
@@ -255,7 +258,13 @@
 <body>
 
 <div class="top-bar">
-  <a href="/" class="brand">ПРЕСЕК</a>
+  <a href="/" class="brand">
+    <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="var(--red)"/>
+      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#f4ede0">П</text>
+    </svg>
+    <span>ПРЕСЕК</span>
+  </a>
   <a href="/" class="back">← Назад</a>
 </div>
 
@@ -294,7 +303,7 @@
         {{ main.description | striptags | truncate(400) }}
       </div>
     {% endif %}
-    <button class="analyze-btn" id="analyzeBtn" onclick="loadAnalysis(this)">✨ Анализа</button>    <div class="analysis-box" id="ai-analysis-box">
+    <div class="analysis-box" id="ai-analysis-box">
   </div>
 
   <!-- Share -->

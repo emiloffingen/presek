@@ -8,6 +8,5 @@ nohup.out
 digests/
 __pycache__/
 *.pyc
-static/logo.png
 .env
 venv/

@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/bin/bash
 # ─────────────────────────────────────────────────────────────────
 # start.sh — Пресек  |  Safe restart script for Termux / Shield TV
 #
@@ -15,6 +15,11 @@ SESSION="presek"
 DIGESTS_DIR="$APP_DIR/digests"
 LOG_FILE="$APP_DIR/presek.log"
 LOG_MAX_KB=2048   # rotate log when it exceeds 2 MB
+
+# Load environment variables if .env exists
+if [ -f "$APP_DIR/.env" ]; then
+    export $(grep -v '^#' "$APP_DIR/.env" | xargs)
+fi
 
 # ── Colours ──────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'

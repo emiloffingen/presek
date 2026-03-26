@@ -3,4 +3,4 @@ flask-cors
 flask-compress
 feedparser
 gunicorn
-psycopg2-binary
+requests

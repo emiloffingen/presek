@@ -17,16 +17,16 @@
       --sans:'Noto Sans',sans-serif;
     }
     @media(prefers-color-scheme:dark){:root{
-      --bg:#151310;--bg-card:#1f1b15;--bg-hover:#2a2418;
+      --bg:#141210;--bg-card:#1f1b15;--bg-hover:#2a2418;
       --border:#3a3222;--border-dark:#4a3e2a;
       --text:#ede0c4;--text-body:#d4c8a8;--text-muted:#8a7c62;
-      --red:#c04040;--red-light:#d05050;--gold:#c9a030;
+      --red:#b03030;--red-light:#d05050;--gold:#c9a030;
     }}
     body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
 
     .top-bar{background:var(--bg-card);border-bottom:4px double var(--red);padding:.6rem 1.25rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
-    .brand{font-family:var(--display);font-size:1.6rem;font-weight:900;letter-spacing:.08em;color:var(--red);text-decoration:none}
-    @media(prefers-color-scheme:dark){.brand{color:#d4a040}}
+    .brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:1.6rem;font-weight:900;letter-spacing:.08em;color:var(--red);text-decoration:none}
+    @media(prefers-color-scheme:dark){.brand{color:#ede0c4}}
     .top-bar span{font-size:.85rem;color:var(--text-muted)}
     .back{font-size:.85rem;color:var(--text-muted);text-decoration:none;margin-left:auto}
     .back:hover{color:var(--red)}
@@ -85,7 +85,13 @@
 <body>
 
 <div class="top-bar">
-  <a href="/" class="brand">ПРЕСЕК</a>
+  <a href="/" class="brand">
+    <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="var(--red)"/>
+      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#f4ede0">П</text>
+    </svg>
+    <span>ПРЕСЕК</span>
+  </a>
   <span>/ Архива</span>
   <a href="/" class="back">← Назад</a>
 </div>
