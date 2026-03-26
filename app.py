@@ -84,6 +84,27 @@ def normalize_headline(title: str) -> str:
     return title
 
 
+def clean_rss_footer(text: str) -> str:
+    """
+    Remove common RSS 'signature' footers like 'The post ... appeared first on ...'
+    which clutter the description and confuse the translation AI.
+    """
+    if not text:
+        return ""
+    import re as _re
+    # 1. WordPress style: The post [Title] appeared first on [Site].
+    text = _re.sub(r'The post\s+.*?\s+appeared first on\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
+    # 2. Variant: This article was originally published on ...
+    text = _re.sub(r'This article was originally published on\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
+    # 3. Simple 'Source: [URL]' or 'Source: [Name]'
+    text = _re.sub(r'Source:\s+https?://\S+', '', text, flags=_re.IGNORECASE)
+    text = _re.sub(r'Source:\s+[A-Za-z0-9 ]+(\.|$)', '', text, flags=_re.IGNORECASE)
+    # 4. "Read more at..."
+    text = _re.sub(r'Read more at\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
+
+    return text.strip()
+
+
 def clean_json_response(text: str) -> str:
     """
     Robustly extract the JSON payload from a string.
@@ -530,9 +551,10 @@ def ingest_feeds():
                 subcategory = detect_subcategory(title, description=desc) or ""
                 cluster_id = clustering.find_or_create_cluster(title, recent_articles)
                 now        = datetime.datetime.now().isoformat()
-                # Strip HTML tags from description for clean storage
+                # Strip HTML tags and remove common footers for clean storage
                 import re as _re
-                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip()[:500] if desc else ""
+                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
+                clean_desc = clean_rss_footer(clean_desc)[:500]
                 conn.execute(
                     "INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc)
@@ -557,20 +579,28 @@ def translate_titles_batch(titles: list[str]) -> list[str]:
 
     BATCH_SIZE = 5
     result: list[str | None] = list(titles)  # start with originals as fallback
-    import re as _re
+    
+    # Define a stricter system prompt to avoid concatenation issues
+    SYSTEM_PROMPT = (
+        "You are a professional translator to Macedonian. "
+        "Translate the input texts accurately. "
+        "Return ONLY the Macedonian translation. "
+        "DO NOT include the original text, DO NOT include labels like 'Translation:', "
+        "and DO NOT include any extra notes or explanations."
+    )
 
     for start in range(0, len(titles), BATCH_SIZE):
         batch = titles[start:start + BATCH_SIZE]
         prompt = (
-            f"Translate these {len(batch)} news titles to Macedonian. "
+            f"Translate these {len(batch)} news texts to Macedonian. "
             "Return ONLY a raw JSON array of strings in the exact same order. "
-            f"Format: [\"Title 1\", ..., \"Title {len(batch)}\"]\n\n"
+            f"Format: [\"Text 1\", ..., \"Text {len(batch)}\"]\n\n"
             + json.dumps(batch, ensure_ascii=False)
         )
         translations = None
         for attempt in range(3):  # retry twice
             time.sleep(10)  # Long rate limit protection
-            raw = _call_gemini(prompt, "You are a professional translator to Macedonian. Respond with JSON array only.", timeout=45, max_tokens=2000, json_mode=True)
+            raw = _call_gemini(prompt, SYSTEM_PROMPT + " Respond with JSON array only.", timeout=45, max_tokens=2000, json_mode=True)
             if not raw:
                 continue
             
@@ -597,8 +627,8 @@ def translate_titles_batch(titles: list[str]) -> list[str]:
             log.warning(f"[diaspora] Batch translation failed at {start}, falling back to single items...")
             for j, title in enumerate(batch):
                 time.sleep(2)
-                single_prompt = f"Translate this news title to Macedonian. Return ONLY the translated string, no JSON, no quotes unless part of title.\n\nTitle: {title}"
-                res = _call_gemini(single_prompt, "You are a professional translator to Macedonian.", max_tokens=200)
+                single_prompt = f"Translate this text to Macedonian. Return ONLY the translated string, no JSON, no quotes unless part of text.\n\nText: {title}"
+                res = _call_gemini(single_prompt, SYSTEM_PROMPT, max_tokens=400)
                 if res:
                     result[start + j] = res
                 else:
@@ -648,7 +678,7 @@ def ingest_diaspora_feeds():
 
     # Phase 2: batch-translate titles of foreign sources only
     if foreign_idxs:
-        foreign_titles = [all_entries[i][1] for i in foreign_idxs]
+        foreign_titles = [clean_rss_footer(all_entries[i][1]) for i in foreign_idxs]
         foreign_translated = translate_titles_batch(foreign_titles)
     else:
         foreign_translated = []
@@ -661,7 +691,7 @@ def ingest_diaspora_feeds():
             translated[i] = all_entries[i][1]  # already Macedonian
 
     # Phase 2b: batch-translate descriptions of foreign sources only
-    raw_descs = [_re.sub(r'<[^>]+>', '', e[3]).strip()[:500] if e[3] else "" for e in all_entries]
+    raw_descs = [clean_rss_footer(_re.sub(r'<[^>]+>', '', e[3]).strip()[:500]) if e[3] else "" for e in all_entries]
     foreign_desc_idxs = [i for i in foreign_idxs if raw_descs[i]]
     if foreign_desc_idxs:
         foreign_descs = [raw_descs[i] for i in foreign_desc_idxs]
