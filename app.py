@@ -702,9 +702,11 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25) -> str
     """Shared Gemini caller. Retries with exponential backoff on rate-limit (429)."""
     if not GOOGLE_API_KEY:
         return None
+    prompt_text = prompt_text[:3000]
     payload = json.dumps({
         "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"parts": [{"text": prompt_text}]}]
+        "contents": [{"parts": [{"text": prompt_text}]}],
+        "generationConfig": {"maxOutputTokens": 250}
     }).encode("utf-8")
     delays = [2, 4, 8]  # seconds before each retry (3 attempts total)
     for attempt, delay in enumerate([0] + delays):
