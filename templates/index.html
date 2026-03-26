@@ -5,510 +5,376 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Пресек | Вашиот Дневен Преглед</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#8b1a1a">
+  <meta name="theme-color" content="#121212">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Пресек">
   <link rel="apple-touch-icon" href="/static/logo.png">
-  <meta name="description" content="Пресек — Македонски агрегатор на вести. Најновите вести од 50+ извори на едно место, со AI сумаризација и анализа.">
-  <meta name="keywords" content="македонски вести, вести денес, Македонија, Скопје, новости, news aggregator">
-  <meta property="og:title" content="Пресек | Македонски Вести">
-  <meta property="og:description" content="Најновите македонски вести од 50+ извори — агрегирани, рангирани и сумирани со AI.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://presek.live">
-  <meta property="og:locale" content="mk_MK">
-  <meta property="og:image" content="https://presek.live/og-image.svg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Пресек | Македонски Вести">
-  <meta name="twitter:description" content="Најновите македонски вести од 65+ извори на едно место.">
-  <meta name="twitter:image" content="https://presek.live/og-image.svg">
-  <link rel="canonical" href="https://presek.live">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Пресек",
-    "url": "https://presek.live",
-    "description": "Македонски агрегатор на вести — најновите вести од 65+ извори, агрегирани и сумирани со AI.",
-    "inLanguage": "mk",
-    "publisher": {
-      "@type": "NewsMediaOrganization",
-      "name": "Пресек",
-      "url": "https://presek.live",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://presek.live/static/logo.png"
-      }
-    },
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://presek.live/?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --bg:#f4ede0;--bg-card:#fefbf4;--bg-hover:#f5eed8;
-      --border:#d4c5a4;--border-dark:#b8a882;
-      --text:#1c1812;--text-body:#2e281e;--text-muted:#7a6e58;
-      --headline:#1c1812;--headline-hov:#7a2020;
-      --red:#8b1a1a;--red-light:#a52a2a;--gold:#8a6d1b;
-      --cat-bg:#1c1812;--cat-text:#f4ede0;
-      --badge-bg:#ebe2cc;--badge-text:#4a3f30;
+      --bg:#f8f9fa;--bg-card:#ffffff;--bg-hover:#f1f3f5;
+      --border:#dee2e6;--border-dark:#ced4da;
+      --text:#212529;--text-body:#495057;--text-muted:#868e96;
+      --headline:#212529;--headline-hov:#1c7ed6;
+      --red:#d63031;--red-light:#ff7675;--accent:#ffca28;--accent-dark:#ffb300;
+      --cat-bg:#212529;--cat-text:#f8f9fa;
+      --badge-bg:#e9ecef;--badge-text:#495057;
       --serif:'Source Serif 4','Noto Serif',Georgia,serif;
       --display:'Playfair Display',Georgia,serif;
       --sans:'Noto Sans',sans-serif;
     }
     @media(prefers-color-scheme:dark){:root{
-      --bg:#141210;--bg-card:#1c1c1c;--bg-hover:#252525;
-      --border:#2e2e2e;--border-dark:#3a3a3a;
-      --text:#ede0c4;--text-body:#c8c8c8;--text-muted:#888;
-      --headline:#ede0c4;--headline-hov:#e0a050;
-      --red:#b03030;--red-light:#d05050;--gold:#c9a030;
-      --cat-bg:#0a0a0a;--cat-text:#ede0c4;
-      --badge-bg:#252525;--badge-text:#b0b0b0;
+      --bg:#121212;--bg-card:#1e1e1e;--bg-hover:#2d2d2d;
+      --border:#333333;--border-dark:#444444;
+      --text:#e0e0e0;--text-body:#b0b0b0;--text-muted:#9e9e9e;
+      --headline:#f5f5f5;--headline-hov:#ffca28;
+      --red:#ff5252;--red-light:#ff8a80;--accent:#ffca28;--accent-dark:#ffb300;
+      --cat-bg:#0a0a0a;--cat-text:#e0e0e0;
+      --badge-bg:#2d2d2d;--badge-text:#9e9e9e;
     }}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
-    img {
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-      transform: translateZ(0);
-    }
 
     /* TICKER */
-    .ticker-bar{background:var(--red);height:32px;display:flex;align-items:center;overflow:hidden}
-    .ticker-label{background:rgba(0,0,0,.4);color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 .85rem;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
+    .ticker-bar{background:var(--bg-card);border-bottom:1px solid var(--border);height:32px;display:flex;align-items:center;overflow:hidden}
+    .ticker-label{background:var(--red);color:#fff;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:0 .85rem;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
     .ticker-track{flex:1;overflow:hidden}
-    .ticker-inner{display:flex;gap:2.5rem;white-space:nowrap;animation:ticker 55s linear infinite;font-size:.8rem;color:rgba(255,255,255,.9);font-family:var(--serif)}
-    .ticker-inner:hover{animation-play-state:paused}
-    .ticker-item::before{content:'◆ ';opacity:.5;font-size:.5rem;vertical-align:middle}
+    .ticker-inner{display:flex;gap:2.5rem;white-space:nowrap;animation:ticker 60s linear infinite;font-size:.8rem;color:var(--text-muted);font-family:var(--serif)}
+    .ticker-item::before{content:'◆ ';color:var(--accent);opacity:.8;font-size:.5rem;vertical-align:middle}
     @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-    /* HEADER */
-    .site-header{background:var(--bg-card);border-bottom:3px solid var(--red);position:sticky;top:0;z-index:200;box-shadow:0 1px 8px rgba(0,0,0,.1)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto}
-    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:2rem;font-weight:900;letter-spacing:.08em;color:#000;text-decoration:none;line-height:1}
-    @media(prefers-color-scheme:dark){.logo-text{color:#fff}}
-    .header-date{font-size:.85rem;color:var(--text-muted);font-family:var(--serif);text-align:center;flex:1}
+    /* HEADER & SEARCH */
+    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;max-width:1400px;margin:0 auto;height:64px;position:relative}
+    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;transition:opacity .2s}
+    .logo-text.hidden{opacity:0;pointer-events:none}
+    .header-date{font-size:.85rem;color:var(--text-muted);font-family:var(--sans);font-weight:600;flex:1;text-align:center;transition:opacity .2s}
+    .header-date.hidden{opacity:0}
     .header-right{display:flex;align-items:center;gap:.75rem}
-    .last-updated{font-size:.75rem;color:var(--text-muted);white-space:nowrap}
-    .refresh-btn{background:var(--red);color:#fff;border:none;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:.4rem 1rem;border-radius:3px;cursor:pointer;transition:transform .1s}
-    .refresh-btn:hover{background:var(--red-light)}
-    .refresh-btn:active{transform:scale(.95)}
-    .refresh-btn.spinning{opacity:.6;pointer-events:none}
-    .refresh-icon{display:inline-block}
-    .refresh-btn.spinning .refresh-icon{animation:spin .7s linear infinite}
+    .search-toggle{background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;padding:.4rem;display:flex;align-items:center}
+    .top20-btn{background:var(--accent);color:#121212;border:none;font-family:var(--sans);font-size:.8rem;font-weight:700;padding:.5rem 1rem;border-radius:6px;cursor:pointer}
+    .refresh-btn{background:var(--bg);color:var(--text);border:1px solid var(--border);width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    
+    .search-overlay{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--bg-card);display:none;align-items:center;padding:0 1.25rem;gap:1rem;z-index:210}
+    .search-overlay.active{display:flex}
+    .search-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-family:var(--sans);font-size:1rem;color:var(--text);outline:none}
+    .search-input:focus{border-color:var(--accent)}
+    .search-close{background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:.4rem}
 
     /* CAT NAV */
-    .cat-nav{background:var(--cat-bg);border-bottom:1px solid #1e1e1e;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:190}
+    .cat-nav{background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:64px;z-index:190;scrollbar-width:none}
     .cat-nav::-webkit-scrollbar{display:none}
-    .cat-nav-inner{display:flex;max-width:1400px;margin:0 auto;padding:0 .75rem}
-    .cat-btn{font-family:var(--sans);font-size:.85rem;font-weight:600;color:#c0a880;background:none;border:none;border-bottom:3px solid transparent;padding:.65rem 1rem;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
-    .cat-btn:hover{color:#fff}
-    .cat-btn.active{color:#fff;border-bottom-color:var(--red)}
+    .cat-nav-inner{display:flex;max-width:1400px;margin:0 auto;padding:0 .5rem}
+    .cat-btn{font-family:var(--sans);font-size:.8rem;font-weight:700;color:var(--text-muted);background:none;border:none;border-bottom:3px solid transparent;padding:.8rem 1rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.02em}
+    .cat-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 
-    /* SEARCH */
-    .search-bar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.6rem 1.25rem;position:sticky;top:100px;z-index:180}
-    .search-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;gap:.5rem}
-    .search-input-wrap{flex:1;position:relative;display:flex;min-width:0}
-    .search-input{flex:1;font-family:var(--serif);font-size:1rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:.5rem 2.4rem .5rem .95rem;outline:none;min-width:0;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:border-color .15s,box-shadow .15s}
-    .search-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(139,26,26,.12)}
-    .search-input::placeholder{color:var(--text-muted)}
-    .search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.9rem;line-height:1;color:var(--text-muted);background:none;border:none;padding:.2rem .35rem;cursor:pointer;display:none;border-radius:50%;transition:color .12s,background .12s}
-    .search-clear:hover{color:var(--text);background:var(--badge-bg)}
-    .search-clear.visible{display:block}
-    .search-btn{font-family:var(--sans);font-size:.9rem;font-weight:700;background:var(--red);color:#fff;border:none;border-radius:20px;padding:.5rem 1.2rem;cursor:pointer;white-space:nowrap;transition:background .12s,transform .1s;align-self:stretch}
-    .search-btn:hover{background:var(--red-light)}
-    .search-btn:active{transform:scale(.95)}
-    .search-status{font-size:.8rem;color:var(--text-muted);white-space:nowrap;align-self:center}
-
-    /* TRENDING */
-    .trending-bar{display:none;background:var(--bg-card);border-bottom:1px solid var(--border)}
-    .trending-bar.visible{display:block}
-    .trending-inner{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    /* TRENDS */
+    .trending-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:.5rem 0}
+    .trending-inner{display:flex;align-items:center;gap:.75rem;padding:0 1.25rem;max-width:1400px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
     .trending-inner::-webkit-scrollbar{display:none}
-    .trending-label{font-size:.75rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
-    .trend-chips{display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-    .trend-chips::-webkit-scrollbar{display:none}
-    .trend-chip{font-size:.82rem;color:var(--text-body);background:var(--badge-bg);border-radius:3px;padding:.2rem .6rem;white-space:nowrap;cursor:pointer;font-family:var(--sans);transition:all .12s}
-    .trend-chip span{color:var(--text-muted);font-size:.72rem;margin-left:.15rem}
-    .trend-chip:hover{background:var(--red);color:#fff}
-    .trend-chip:hover span{color:rgba(255,255,255,.7)}
-
-    /* TIMEBOX */
-    .timebox-wrap{background:var(--bg);border-bottom:1px solid var(--border)}
-    .timebox-nav{display:flex;gap:.4rem;padding:.5rem 1.25rem;max-width:1400px;margin:0 auto;align-items:center;flex-wrap:wrap}
-    .timebox-label{font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
-    .timebox-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--text-muted);background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.3rem .75rem;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,transform .1s}
-    .timebox-btn:hover,.timebox-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
-    .timebox-btn:active{transform:scale(.95)}
-    .top10-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:3px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap;transition:opacity .12s,transform .1s}
-    .top10-btn:hover{opacity:.85}
-    .top10-btn:active{transform:scale(.95)}
-    .rank-badge{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;font-size:1.1rem;font-weight:900;font-family:var(--sans);margin-right:.75rem;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.2);}
+    .trend-chip{font-size:.75rem;font-weight:600;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:.2rem .8rem;white-space:nowrap;cursor:pointer;transition:all .15s}
+    .trend-chip:hover{border-color:var(--accent);color:var(--accent)}
 
     /* MAIN LAYOUT */
-    .page-wrap{max-width:1100px;margin:0 auto;padding:1rem 1.25rem 3rem}
-
-    /* CATEGORY SECTIONS */
-    .cat-section{margin-bottom:1.5rem}
-    .cat-header{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;margin-bottom:.75rem;border-bottom:3px double var(--border-dark)}
-    .cat-header-label{font-family:var(--display);font-size:1.3rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem}
-    .cat-header-label .cat-bar-mark{display:inline-block;width:5px;height:1.2rem;background:var(--red);border-radius:2px}
-
-    /* STORY GRID + CARDS */
-    .stories-grid{display:grid;grid-template-columns:1fr;gap:1rem}
-    @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
-    .stories-grid.single{grid-template-columns:1fr}
-    .stories-grid.top10-grid{grid-template-columns:1fr;}
-    @media(min-width:768px){.stories-grid.top10-grid{grid-template-columns:repeat(2, 1fr);}.stories-grid.top10-grid .story-card:first-child{grid-column:1 / -1;}}
-    .stories-grid.top10-grid .story-card.hero-card{display:block;padding:0;box-shadow:0 4px 15px rgba(0,0,0,.08);}
-    .stories-grid.top10-grid .story-card.hero-card .story-main{margin-bottom:.75rem;display:block;}
-    .stories-grid.top10-grid .story-card.hero-card .thumb-link{width:100%;height:300px;display:block;margin-bottom:1rem;overflow:hidden;border-radius:10px 10px 0 0;}
-    .stories-grid.top10-grid .story-card.hero-card .story-thumb{width:100%;height:100%;object-fit:cover;border-radius:0;}
-    .stories-grid.top10-grid .story-card.hero-card .story-body{padding:0 2rem 2rem;}
-    .story-card{background:var(--bg-card);border-radius:12px;padding:1.5rem 1.6rem;transition:transform .2s ease-out,box-shadow .2s ease-out;overflow:hidden;min-width:0;display:flex;flex-direction:column;box-shadow:0 4px 12px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.04)}
-    .story-card:hover{transform:translateY(-5px);box-shadow:0 12px 28px rgba(0,0,0,.12),0 3px 6px rgba(0,0,0,.06)}
-    .story-card.wide{grid-column:1/-1}
-    .story-main{display:flex;gap:.85rem;align-items:flex-start;margin-bottom:.5rem}
-    .story-thumb{width:120px;height:80px;object-fit:cover;flex-shrink:0;background:var(--border);image-rendering:-webkit-optimize-contrast;cursor:pointer;transition:opacity 0.2s ease-in-out}
-    .story-thumb:hover{opacity:0.9}
-    .story-thumb.fallback-logo{object-fit:contain;padding:1rem;background:var(--badge-bg)}
-    a.thumb-link{outline:none;border:none;display:block;line-height:0;flex-shrink:0}
-    @media(prefers-color-scheme:dark){.story-thumb.fallback-logo{background:#252525}}
-    .story-body{flex:1;min-width:0;overflow:hidden}
-    .story-byline{font-family:var(--sans);font-size:.88rem;color:var(--text-muted);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;overflow:hidden}
-    .story-source{font-weight:700;color:var(--text-body)}
-    .lang-badge{font-size:.7rem;font-weight:700;font-family:var(--sans);border-radius:2px;padding:.12rem .4rem}
-    .mk-badge{background:#dfeadf;color:#2a5a2a}
-    .alb-badge{background:#eadfe0;color:#5a2a2a}
-    @media(prefers-color-scheme:dark){.mk-badge{background:#1a2e1a;color:#7ac47a}.alb-badge{background:#2e1a1a;color:#c47a7a}}
-    .breaking-tag{color:var(--red-light);font-weight:700;font-size:.75rem;font-family:var(--sans)}
-    .breaking-dot{width:8px;height:8px;border-radius:50%;background:var(--red-light);flex-shrink:0;animation:blink 1.5s ease infinite}
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-    .story-headline{font-family:var(--serif);font-size:1.15rem;font-weight:700;line-height:1.35;margin-bottom:.25rem;overflow-wrap:break-word;word-wrap:break-word}
-    .story-headline a{color:var(--headline);text-decoration:none;display:block}
-    .story-headline a:hover{color:var(--headline-hov)}
-    .story-excerpt{font-size:1rem;color:var(--text-muted);line-height:1.5;margin-bottom:.4rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    .related-list{margin-bottom:.4rem}
-    .related-item{display:flex;align-items:baseline;gap:.4rem;font-size:.82rem;line-height:1.4;padding:.2rem 0;border-bottom:1px solid var(--border);margin:0;color:var(--text-muted)}
-    .related-item:last-child{border-bottom:none}
-    .r-dot{color:var(--red);font-size:.5rem;flex-shrink:0}
-    .related-item a{color:var(--text-muted);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
-    .related-item a:hover{text-decoration:underline;color:var(--red)}
-    .r-src{font-size:.75rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;font-family:var(--sans);min-width:65px;text-align:right}
-    .source-tags{font-size:.88rem;font-family:var(--sans);color:var(--text-muted);margin-bottom:.4rem;overflow:hidden;text-overflow:ellipsis;display:flex;flex-wrap:wrap;gap:.15rem}
-    .source-tags .stag+.stag::before{content:' · '}
-    .stag-more{font-size:.72rem;color:var(--red);margin-left:.3rem;font-weight:700}
-    .actions-row{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;margin-top:auto;padding-top:.5rem;border-top:1px solid var(--border)}
-    .badge{font-family:var(--sans);font-size:.78rem;font-weight:600;border-radius:3px;padding:.18rem .55rem;white-space:nowrap;cursor:default}
-    .badge-count{background:var(--badge-bg);color:var(--badge-text)}
-    .badge-break{background:var(--red);color:#fff}
-    .action-btn{font-family:var(--sans);font-size:.78rem;font-weight:600;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:3px;padding:.18rem .55rem;cursor:pointer;white-space:nowrap;transition:all .12s}
-    .action-btn:hover{background:#d0c8b0;color:var(--text)}
-    @media(prefers-color-scheme:dark){.action-btn:hover{background:#303030;color:#e0e0e0}}
-    .btn-cached{position:relative}
-    .btn-cached::after{content:'●';font-size:.4rem;color:var(--gold);position:absolute;top:2px;right:3px;line-height:1}
-    .ai-panel{display:none;margin-top:.5rem;padding:.75rem 1rem;background:#f0ead4;border-left:4px solid var(--gold);font-size:.95rem;line-height:1.6;color:var(--text-body);animation:fadeIn .2s ease}
-    @media(prefers-color-scheme:dark){.ai-panel{background:#1e1e1e;color:#c8c8c8}}
-    .ai-panel.visible{display:block}
-    .ai-panel.has-conflict{border-left-color:#e63946}
-    .ai-sentiment{font-size:1rem;margin-right:.3rem}
-    .ai-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
-    .ai-tag{font-size:.72rem;font-family:var(--sans);color:var(--text-muted);background:var(--badge-bg);border-radius:2px;padding:.1rem .4rem}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-    .loading-wrap{text-align:center;padding:4rem 1rem;color:var(--text-muted);font-size:1.1rem}
-    .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1rem}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .empty-msg{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-style:italic;font-size:1.05rem}
-    .load-more-wrap{text-align:center;padding:1.5rem 0 .5rem}
-    .load-more-btn{font-family:var(--serif);font-size:1rem;font-weight:700;background:var(--bg-card);border:2px solid var(--border);border-radius:3px;padding:.6rem 2.5rem;cursor:pointer;color:var(--text);transition:all .15s}
-    .load-more-btn:hover{border-color:var(--red);color:var(--red)}
-    .load-more-btn:disabled{opacity:.4;cursor:default}
-    footer{border-top:4px double var(--red);padding:1.25rem;text-align:center;color:var(--text-muted);font-size:.82rem;background:var(--bg-card)}
-    footer img{display:none}
-    .footer-brand{font-family:var(--display);font-size:1.25rem;font-weight:900;letter-spacing:.12em;color:#000;display:block;margin-bottom:.3rem}
-    @media(prefers-color-scheme:dark){.footer-brand{color:#fff}}
-
-    /* RESPONSIVE */
-    @media(max-width:767px){
-      body{font-size:16px}
-      .header-inner{padding:.4rem .75rem}
-      .logo-text{font-size:1.6rem}
-      .header-date{display:none}
-      .last-updated{display:none}
-      .refresh-btn{font-size:.78rem;padding:.35rem .85rem}
-      .cat-nav{top:52px}
-      .cat-btn{font-size:.82rem;padding:.55rem .85rem}
-      .search-bar{top:92px;padding:.5rem .75rem}
-      .search-input{font-size:1rem;padding:.45rem .65rem}
-      .search-btn{font-size:.85rem;padding:.45rem .85rem}
-      .trending-inner{padding:.4rem .75rem}
-      .timebox-nav{padding:.4rem .75rem}
-      .page-wrap{padding:1rem 1rem 3.5rem}
-      .stories-grid{grid-template-columns:1fr!important;gap:1rem}
-      .story-card.wide{grid-column:auto}
-      .story-card{padding:1.25rem 1.3rem}
-      .story-thumb,.story-thumb-placeholder{width:100px;height:70px}
-      .story-headline{font-size:0.97rem}
-      .story-excerpt{font-size:.95rem;-webkit-line-clamp:2}
-      .related-item{font-size:.95rem}
-      .cat-header-label{font-size:1rem}
-    }
-    @media(max-width:420px){
-      .logo-text{font-size:1.4rem}
-      .cat-btn{font-size:.78rem;padding:.5rem .7rem}
-      .story-thumb,.story-thumb-placeholder{width:85px;height:60px}
-      .story-headline{font-size:0.93rem}
-      .ticker-bar{height:30px}
-      .ticker-inner{font-size:.78rem}
-      .trend-chip{font-size:.78rem}
-    }
-    @media(min-width:768px) and (max-width:1023px){
-      .stories-grid{gap:.85rem}
-      .story-headline{font-size:1.1rem}
-    }
-    @media(min-width:1200px){
-      body{font-size:18px}
-      .logo-text{font-size:2.2rem}
-      .story-headline{font-size:1.4rem}
-      .stories-grid{gap:1.2rem}
-      .story-thumb,.story-thumb-placeholder{width:160px;height:105px;border-radius:3px}
-    }
-
-    /* DESKTOP SIDEBAR LAYOUT */
-    .site-layout{display:flex;max-width:1400px;margin:0 auto;gap:1.5rem;padding:0 1.25rem}
+    .site-layout{display:flex;max-width:1400px;margin:0 auto;gap:1.5rem;padding:1rem 1.25rem 3rem}
     .site-main{flex:1;min-width:0}
-    .site-sidebar{display:none}
-    @media(min-width:1024px){
-      .site-sidebar{display:block;width:300px;flex-shrink:0;position:sticky;top:120px;align-self:flex-start;max-height:calc(100vh - 140px);overflow-y:auto}
-      .page-wrap{max-width:none;padding:1rem 0 3rem}
+    .site-sidebar{width:300px;flex-shrink:0;display:none}
+    @media(min-width:1024px){.site-sidebar{display:block;position:sticky;top:130px;align-self:flex-start}}
+
+    /* CARDS */
+    .stories-grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
+    @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
+    .story-card{background:var(--bg-card);border-radius:12px;padding:1.25rem;border:1px solid var(--border);display:flex;flex-direction:column;gap:.75rem;transition:all .2s ease}
+    .story-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-2px)}
+    .story-card-top{display:flex;gap:1rem;justify-content:space-between}
+    .story-content{flex:1;min-width:0}
+    .story-meta{display:flex;align-items:center;gap:.5rem;font-family:var(--sans);font-size:.75rem;font-weight:700;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.02em}
+    .story-source{color:var(--text)}
+    .story-time::before{content:'·';margin-right:.5rem}
+    .story-headline{font-family:var(--serif);font-size:1.2rem;font-weight:700;line-height:1.3;margin:0}
+    .story-headline a{color:var(--headline);text-decoration:none}
+    .story-headline a:hover{color:var(--accent)}
+    .story-thumb-wrap{width:100px;height:70px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg)}
+    .story-thumb{width:100%;height:100%;object-fit:cover}
+    .story-excerpt{font-size:.95rem;color:var(--text-body);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    
+    .related-links{border-top:1px solid var(--border);padding-top:.75rem;display:flex;flex-direction:column;gap:.4rem}
+    .related-item{display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--text-muted);text-decoration:none}
+    .related-item:hover{color:var(--accent)}
+    .related-dot{width:4px;height:4px;background:var(--border-dark);border-radius:50%}
+    .related-text{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .related-src{font-size:.7rem;font-weight:700;opacity:.7}
+
+    .actions-row{margin-top:auto;padding-top:.75rem;display:flex;align-items:center;gap:.75rem}
+    .badge-count{background:var(--badge-bg);color:var(--badge-text);font-family:var(--sans);font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:4px}
+    .ai-btn{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--sans);font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:4px;cursor:pointer;transition:all .15s}
+    .ai-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .ai-panel{display:none;margin-top:.75rem;padding:.75rem;background:var(--bg);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.9rem}
+    .ai-panel.active{display:block}
+
+    .loading-wrap{text-align:center;padding:4rem 1rem;color:var(--text-muted)}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    
+    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:2rem 1.25rem;text-align:center;color:var(--text-muted);font-size:.85rem}
+    .footer-links{display:flex;justify-content:center;gap:1rem;margin-top:1rem;flex-wrap:wrap}
+    .footer-links a{color:var(--text-muted);text-decoration:none}
+    .footer-links a:hover{color:var(--accent)}
+    
+    @media(max-width:767px){
+      .header-inner{height:56px;padding:0 .75rem}
+      .logo-text{font-size:1.5rem}
+      .header-date{display:none}
+      .cat-nav{top:56px}
+      .story-card{padding:1rem}
+      .story-headline{font-size:1.05rem}
+      .story-thumb-wrap{width:80px;height:60px}
     }
-    .ad-slot{background:var(--bg-card);border:1px dashed var(--border);border-radius:4px;padding:1.5rem 1rem;text-align:center;color:var(--text-muted);font-family:var(--sans);font-size:.8rem;margin-bottom:1rem;min-height:250px;display:flex;align-items:center;justify-content:center}
-    .sidebar-section{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:1rem;margin-bottom:1rem}
-    .sidebar-title{font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid var(--border)}
-    .sidebar-item{font-size:.9rem;line-height:1.4;padding:.4rem 0;border-bottom:1px solid var(--border);color:var(--text-body)}
-    .sidebar-item:last-child{border-bottom:none}
-    .sidebar-item a{color:var(--text-body);text-decoration:none}
-    .sidebar-item a:hover{color:var(--red)}
-    .sidebar-item .si-src{font-size:.75rem;color:var(--text-muted);font-family:var(--sans)}
-    .sidebar-item .si-time{font-size:.72rem;color:var(--text-muted);font-family:var(--sans)}
-    @media (min-width: 992px) { .sidebar-column { position: sticky; top: 1rem; align-self: start; height: calc(100vh - 2rem); overflow-y: auto; } }
   </style>
-  <!-- Google Analytics - replace UA-XXXXX with real ID when ready -->
-  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script> -->
 </head>
 <body>
-<div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"><span class="ticker-item">Се вчитуваат вести…</span></div></div></div>
-<header class="site-header"><div class="header-inner"><a href="/" class="logo-text">
-  <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-    <rect width="32" height="32" rx="6" fill="var(--red)"/>
-    <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#f4ede0">П</text>
-  </svg>
-  <span>ПРЕСЕК</span>
-</a><div class="header-date" id="headerCenter">—</div><div class="header-right"><span class="last-updated" id="lastUpdated">—</span><button class="top10-btn" onclick="showTop10(this)">🏆 Топ 20</button><button class="refresh-btn" id="refreshBtn" onclick="fetchNews()"><span class="refresh-icon">↻</span> <span class="refresh-label">Освежи</span></button></div></div></header>
-<nav class="cat-nav"><div class="cat-nav-inner" id="catNav"><button class="cat-btn active" onclick="filterCat('Сите', this)">Сите</button></div></nav>
-<div class="search-bar"><div class="search-inner"><div class="search-input-wrap"><input class="search-input" id="searchInput" type="text" placeholder="Пребарај вести…" onkeydown="if(event.key==='Enter') doSearch()" oninput="document.getElementById('searchClear').classList.toggle('visible',!!this.value.trim()); if(!this.value.trim()){clearSearch()} else {liveSearch(this.value)}"><button class="search-clear" id="searchClear" onclick="clearSearch()" title="Исчисти">✕</button></div><button class="search-btn" onclick="doSearch()">⌕ Барај</button><span class="search-status" id="searchStatus"></span></div></div>
-<div class="trending-bar" id="trendingBar"><div class="trending-inner"><span class="trending-label">▲ Трендови</span><div class="trend-chips" id="trendChips"></div></div></div>
-<div class="site-layout"><div class="site-main"><div class="page-wrap" id="pageWrap"><div class="loading-wrap"><div class="spinner"></div><div>Се вчитуваат вести…</div></div></div>
-<div class="load-more-wrap" id="loadMoreWrap" style="display:none"><button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Вчитај повеќе вести ↓</button></div>
-</div><!-- /site-main -->
-<aside class="site-sidebar" id="siteSidebar">
-  <div class="ad-slot">Реклама</div>
-  <div class="sidebar-section">
-    <div class="sidebar-title">🔥 Најчитано</div>
-    <div id="sidebarPopular">Се вчитува…</div>
-  </div>
-  <div class="ad-slot">Реклама</div>
-  <div class="sidebar-section">
-    <div class="sidebar-title">▲ Трендови</div>
-    <div id="sidebarTrends"></div>
-  </div>
-</aside>
-</div><!-- /site-layout -->
-<footer>
-  <span class="footer-brand">ПРЕСЕК</span>
-  <div style="margin-bottom:.5rem">Вашиот дневен преглед на македонски вести</div>
-  <div style="margin-bottom:.75rem;display:flex;justify-content:center;gap:.75rem;flex-wrap:wrap">
-    <a href="/izvori" style="color:var(--text-muted);text-decoration:none">Извори</a>
-    <span style="color:var(--border)">·</span>
-    <a href="/stats" style="color:var(--text-muted);text-decoration:none">Статистики</a>
-    <span style="color:var(--border)">·</span>
-    <a href="/arhiva" style="color:var(--text-muted);text-decoration:none">Архива</a>
-    <span style="color:var(--border)">·</span>
-    <a href="/about" style="color:var(--text-muted);text-decoration:none">За нас</a>
-    <span style="color:var(--border)">·</span>
-    <a href="/privacy" style="color:var(--text-muted);text-decoration:none">Приватност</a>
-    <span style="color:var(--border)">·</span>
-    <a href="/contact" style="color:var(--text-muted);text-decoration:none">Контакт</a>
-  </div>
-  <div style="font-size:.75rem;color:var(--text-muted)">© {{ year }} Пресек · Агрегатор на македонски вести</div>
-</footer>
-<script>
-  let allClusters=[];let activeCategory='Сите';const summaryCache={};
-  function timeAgo(str){if(!str)return'';const diff=(Date.now()-new Date(str))/1000;if(diff<60)return'пред малку';if(diff<3600)return`пред ${Math.floor(diff/60)} мин`;if(diff<86400)return`пред ${Math.floor(diff/3600)} ч`;return`пред ${Math.floor(diff/86400)} ден`}
-  function updateTicker(clusters){const items=clusters.slice(0,20).map(c=>`<span class="ticker-item">${c.articles[0]?.title||''}</span>`);const el=document.getElementById('tickerInner');el.innerHTML=[...items,...items].join('')}
-  function updateHeaderDate(){const now=new Date();const D=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];const M=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];document.getElementById('headerCenter').textContent=`${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]} ${now.getFullYear()}`}
-  const CAT_ORDER=['Македонија','Балкан','Европа','Германија','Америка','Свет'];
-  const SUB_CATS=[];
-  const COUNTRY_BTNS=[];
-  const ALBANIAN_SOURCES=new Set(['Portalb','Koha']);
-  const MACEDONIAN_SOURCES=new Set(['Sitel','Telma','Kanal 5','TV21','24 Вести','MIA','Nova Makedonija','Sloboden Pecat','Republika','Makfax','Fokus','Nezavisen','Kurir','Faktor','Vecer','Meta','360 Stepeni','Infomax','Lider','Vistinomer','NetPress','MKD','Press24','Skopje1','Plusinfo','Lokalno','4News','Makpress','Akademik','Skopje Info','Prizma','Expres','Tetovo Info','A1on','SportSport','Strumica Info','Журнал','Civil Media','Радио МОФ','Сакам да кажам','Бизнис Вести','Слободна Европа','Deutsche Welle','Ohrid News','Vecer Sport','Ekonomija','Zdravje','MRT','Time.mk','Kolumna','Okno']);
 
-  function buildCats(clusters){
-    const ordered=['Сите',...CAT_ORDER];
-    document.getElementById('catNav').innerHTML=ordered.map(c=>
-      `<button class="cat-btn${c===activeCategory?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`
+<div class="ticker-bar"><div class="ticker-label">◉ Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"></div></div></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo-text" id="logoText">
+      <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="var(--red)"/>
+        <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#fff">П</text>
+      </svg>
+      <span>ПРЕСЕК</span>
+    </a>
+    <div class="header-date" id="headerDate"></div>
+    <div class="header-right" id="headerRight">
+      <button class="search-toggle" onclick="toggleSearch(true)">⌕</button>
+      <button class="top20-btn" onclick="showTop20(this)">Топ 20</button>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻</button>
+    </div>
+    <div class="search-overlay" id="searchOverlay">
+      <input type="text" class="search-input" id="searchInput" placeholder="Пребарај вести…" oninput="liveSearch(this.value)" onkeydown="if(event.key==='Enter') toggleSearch(false)">
+      <button class="search-close" onclick="toggleSearch(false)">✕</button>
+    </div>
+  </div>
+</header>
+
+<nav class="cat-nav"><div class="cat-nav-inner" id="catNav"></div></nav>
+<div class="trending-bar"><div class="trending-inner" id="trendChips"></div></div>
+
+<div class="site-layout">
+  <main class="site-main">
+    <div id="pageWrap">
+      <div class="loading-wrap"><div class="spinner"></div>Вчитување…</div>
+    </div>
+    <div id="loadMoreWrap" style="display:none; text-align:center; padding:2rem">
+      <button class="top20-btn" style="padding:.8rem 2rem" onclick="loadMore()">Вчитај повеќе ↓</button>
+    </div>
+  </main>
+  <aside class="site-sidebar">
+    <div class="sidebar-section" style="background:var(--bg-card); padding:1rem; border-radius:12px; border:1px solid var(--border)">
+      <h4 style="margin-bottom:1rem; font-family:var(--display); font-size:1.1rem">🔥 Најчитано</h4>
+      <div id="sidebarPopular"></div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline)">ПРЕСЕК</strong>
+  <p style="margin-top:.5rem">Вашиот дневен преглед на македонски вести</p>
+  <div class="footer-links">
+    <a href="/izvori">Извори</a> · <a href="/stats">Статистики</a> · <a href="/about">За нас</a> · <a href="/privacy">Приватност</a>
+  </div>
+</footer>
+
+<script>
+  let allClusters = [];
+  let activeCategory = 'Сите';
+  let _currentPage = 0;
+  let _hasMore = false;
+  const PAGE_SIZE = 50;
+
+  function timeAgo(str) {
+    if(!str) return '';
+    const diff = (Date.now() - new Date(str)) / 1000;
+    if(diff < 60) return 'сега';
+    if(diff < 3600) return `${Math.floor(diff/60)}м`;
+    if(diff < 86400) return `${Math.floor(diff/3600)}ч`;
+    return `${Math.floor(diff/86400)}д`;
+  }
+
+  function toggleSearch(show) {
+    const overlay = document.getElementById('searchOverlay');
+    const input = document.getElementById('searchInput');
+    overlay.classList.toggle('active', show);
+    if(show) {
+      input.focus();
+    } else if(input.value) {
+      input.value = '';
+      liveSearch('');
+    }
+  }
+
+  function toggleAI(id, btn) {
+    const panel = document.getElementById(`ai-${id}`);
+    const isVisible = panel.classList.toggle('active');
+    btn.textContent = isVisible ? 'Затвори' : 'AI Анализа';
+    if(isVisible && !panel.dataset.loaded) {
+      panel.textContent = 'Анализирање…';
+      fetch(`/api/summary/${id}`).then(r => r.json()).then(data => {
+        panel.textContent = data.summary || 'Нема достапна анализа.';
+        panel.dataset.loaded = "true";
+      }).catch(() => { panel.textContent = 'Грешка при анализа.'; });
+    }
+  }
+
+  function renderCard(c) {
+    const a = c.articles[0];
+    if(!a) return '';
+    const related = c.articles.slice(1, 4);
+    const isBreaking = (c.score || 0) > 3.0;
+
+    return `
+      <div class="story-card">
+        <div class="story-card-top">
+          <div class="story-content">
+            <div class="story-meta">
+              <span class="story-source">${a.source}</span>
+              <span class="story-time">${timeAgo(a.created_at)}</span>
+              ${isBreaking ? '<span style="color:var(--red)">· ВО ЖИВО</span>' : ''}
+            </div>
+            <h3 class="story-headline">
+              <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
+            </h3>
+          </div>
+          ${a.image_url ? `
+            <div class="story-thumb-wrap">
+              <img src="${a.image_url}" class="story-thumb" loading="lazy">
+            </div>
+          ` : ''}
+        </div>
+        ${a.description ? `<p class="story-excerpt">${a.description}</p>` : ''}
+        ${related.length ? `
+          <div class="related-links">
+            ${related.map(r => `
+              <a href="${r.link}" target="_blank" class="related-item">
+                <span class="related-dot"></span>
+                <span class="related-text">${r.title}</span>
+                <span class="related-src">${r.source}</span>
+              </a>
+            `).join('')}
+          </div>
+        ` : ''}
+        <div class="actions-row">
+          <span class="badge-count">${c.articles.length} извори</span>
+          <button class="ai-btn" onclick="toggleAI('${c.cluster_id}', this)">AI Анализа</button>
+        </div>
+        <div class="ai-panel" id="ai-${c.cluster_id}"></div>
+      </div>
+    `;
+  }
+
+  function renderPage(clusters) {
+    const wrap = document.getElementById('pageWrap');
+    let filtered = clusters;
+    if(activeCategory !== 'Сите') {
+      filtered = clusters.filter(c => c.articles[0]?.category === activeCategory);
+    }
+    if(!filtered.length) {
+      wrap.innerHTML = '<div style="text-align:center; padding:3rem; opacity:0.5">Нема вести во оваа категорија.</div>';
+      return;
+    }
+    wrap.innerHTML = `<div class="stories-grid">${filtered.map(renderCard).join('')}</div>`;
+  }
+
+  async function fetchNews() {
+    const btn = document.getElementById('refreshBtn');
+    btn.style.opacity = '0.5';
+    try {
+      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
+      const data = await res.json();
+      allClusters = data.clusters || data;
+      _hasMore = data.has_more;
+      renderPage(allClusters);
+      updateTicker(allClusters);
+      buildCats(allClusters);
+      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    } catch(e) {}
+    btn.style.opacity = '1';
+  }
+
+  async function loadMore() {
+    _currentPage++;
+    try {
+      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
+      const data = await res.json();
+      const nc = data.clusters || [];
+      allClusters = [...allClusters, ...nc];
+      _hasMore = data.has_more;
+      renderPage(allClusters);
+      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    } catch(e) {}
+  }
+
+  function liveSearch(q) {
+    const lower = q.toLowerCase();
+    const cards = document.querySelectorAll('.story-card');
+    cards.forEach(card => {
+      card.style.display = card.innerText.toLowerCase().includes(lower) ? 'flex' : 'none';
+    });
+  }
+
+  function updateTicker(clusters) {
+    const items = clusters.slice(0, 15).map(c => `<span class="ticker-item">${c.articles[0]?.title}</span>`);
+    document.getElementById('tickerInner').innerHTML = [...items, ...items].join('');
+  }
+
+  function buildCats() {
+    const cats = ['Сите', 'Македонија', 'Балкан', 'Европа', 'Германија', 'Америка', 'Свет'];
+    document.getElementById('catNav').innerHTML = cats.map(c => 
+      `<button class="cat-btn ${c===activeCategory?'active':''}" onclick="filterCat('${c}', this)">${c}</button>`
     ).join('');
   }
-  async function filterCat(cat,btn){
-    activeCategory=cat;
-    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+
+  function filterCat(cat, btn) {
+    activeCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    if(cat!=='Сите'&&!SUB_CATS.includes(cat)){
-      const hasData=allClusters.some(c=>c.articles[0]?.category===cat);
-      if(!hasData&&_hasMore){
-        document.getElementById('pageWrap').innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';
-        while(_hasMore){_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const nc=data.clusters||[];allClusters=[...allClusters,...nc];_hasMore=data.has_more||false}catch(e){break}}
-        document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none';
-      }
-    }
     renderPage(allClusters);
+    window.scrollTo({top: 0, behavior: 'smooth'});
   }
 
-  function liveSearch(q){
-    const lower=q.toLowerCase();
-    const cards=document.querySelectorAll('.story-card');
-    let visibleCount=0;
-    cards.forEach(card=>{
-      const txt=card.innerText.toLowerCase();
-      const show=txt.includes(lower);
-      card.style.display=show?'flex':'none';
-      if(show)visibleCount++;
-    });
-    document.querySelectorAll('.cat-section').forEach(sec=>{
-      const visibleInSec=Array.from(sec.querySelectorAll('.story-card')).some(c=>c.style.display!=='none');
-      sec.style.display=visibleInSec?'block':'none';
-    });
-    document.getElementById('searchStatus').textContent=visibleCount+' резултат'+(visibleCount===1?'':'и');
+  async function fetchPopular() {
+    try {
+      const res = await fetch('/api/popular');
+      const data = await res.json();
+      document.getElementById('sidebarPopular').innerHTML = data.slice(0, 6).map(c => `
+        <div style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem">
+          <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:0.95rem; font-weight:600; line-height:1.4; display:block">${c.articles[0].title}</a>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
+        </div>
+      `).join('');
+    } catch(e) {}
   }
 
-  function filterByKeyword(word){const lower=word.toLowerCase();const filtered=allClusters.filter(c=>c.articles.some(a=>(a.title||'').toLowerCase().includes(lower)));const wrap=document.getElementById('pageWrap');const back=`<div style="padding:.5rem 0 .75rem;font-size:.9rem"><span style="color:var(--text-muted)">Резултати за: <strong>${word}</strong></span><button onclick="renderPage(allClusters)" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:none;border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Откажи</button></div>`;if(!filtered.length){wrap.innerHTML=back+'<div class="empty-msg">Нема резултати.</div>';return}wrap.innerHTML=back+`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`}
-
-  async function fetchTrending(){try{const res=await fetch('/api/trending');const data=await res.json();const terms=Array.isArray(data)?data.slice(0,14):[];if(!terms.length)return;document.getElementById('trendChips').innerHTML=terms.map(t=>{const word=t.word||t.keyword||t.term||String(t);const count=t.count||'';return`<span class="trend-chip" onclick="filterByKeyword('${word}')">${word}${count?`<span>×${count}</span>`:''}</span>`}).join('');document.getElementById('trendingBar').classList.add('visible')}catch(e){}}
-
-  function parseSummary(text,label){const lines=text.split('\n').filter(Boolean);const sentLine=lines.find(l=>/[🟢🔴⚪]/.test(l))||'';const tagLine=lines.find(l=>l.includes('#'))||'';const bodyLines=lines.filter(l=>l!==sentLine&&l!==tagLine);const sentiment=sentLine.match(/[🟢🔴⚪]/)?.[0]||'';const tags=[...(tagLine.matchAll(/#\S+/g))].map(m=>m[0]);const body=bodyLines.join(' ');const labelHtml=label?`<span class="synth-label">${label}</span>`:'';const tagsHtml=tags.length?`<div class="ai-tags">${tags.map(t=>`<span class="ai-tag">${t}</span>`).join('')}</div>`:'';return`${labelHtml}<span class="ai-sentiment">${sentiment}</span>${body}${tagsHtml}`}
-
-  async function toggleSummary(id,btn){const box=document.getElementById(`ai-${id}`);if(box.classList.contains('visible')){box.classList.remove('visible');btn.textContent='сумирано »';return}if(summaryCache[id]){box.innerHTML=summaryCache[id];box.classList.add('visible');btn.textContent='затвори';return}btn.textContent='…';btn.disabled=true;try{const res=await fetch(`/api/summarize/${id}`);const data=await res.json();const html=data.summary?parseSummary(data.summary,''):(data.error||'Недостапно.');summaryCache[id]=html;box.innerHTML=html;box.classList.add('visible');btn.textContent='затвори'}catch(e){box.innerHTML='Грешка.';box.classList.add('visible');btn.textContent='затвори'}btn.disabled=false}
-
-  function buildCard(cluster){
-    const arts=cluster.articles;const main=arts[0];const related=arts.slice(1,3);
-    const cid=cluster.cluster_id||main.cluster_id||'';
-    const isBreaking=cluster.is_breaking||false;const total=arts.length;const isWide=total>15;
-    const proxyUrl=main.image_url?`/proxy?url=${encodeURIComponent(main.image_url)}`:'';
-    const fallback='/static/img/presek_emblem.svg';
-    const thumbHtml=`<a href="/cluster/${cid}" onclick="trackClick(${main.id})" style="display:block; flex-shrink:0;">${proxyUrl?`<img class="story-thumb" src="${proxyUrl}" alt="" loading="lazy" onerror="this.src='${fallback}';this.classList.add('fallback-logo')">`:`<img class="story-thumb fallback-logo" src="${fallback}" alt="" loading="lazy">`}</a>`;
-    const dotHtml=isBreaking?'<span class="breaking-dot"></span>':'';
-    const timeText=isBreaking?'<span class="breaking-tag">тукушто објавено</span>':timeAgo(main.created_at);
-    const countryFlag=main.country||'🇲🇰';
-    const flagBadge=countryFlag;
-    const isFactCheck = main.source === 'Vistinomer';
-    const factBadge = isFactCheck ? '<span style="font-size:.7rem;font-weight:700;font-family:var(--sans);background:#1a5c1a;color:#90ee90;border-radius:2px;padding:.1rem .4rem;margin-left:.25rem">✓ Проверено</span>' : '';
-    const excerpt=(main.description||'').replace(/<[^>]*>/g,'').trim();
-    const excerptHtml=excerpt?`<div class="story-excerpt">${excerpt}</div>`:'';
-    const relHtml=related.map(a=>`<div class="related-item"><span class="r-dot">●</span><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a><span class="r-src">${a.source}</span></div>`).join('');
-    const allSrcs=[...new Set(arts.map(a=>a.source))];const visibleSrcs=allSrcs.slice(0,6);const extraCount=allSrcs.length-visibleSrcs.length;
-    const srcTagsHtml=allSrcs.length>1?`<div class="source-tags">${visibleSrcs.map(s=>`<span class="stag">${s}</span>`).join('')}${extraCount>0?`<span class="stag-more">+${extraCount}</span>`:''}</div>`:'';
-    
-    // UI UPDATES: Badges, Sinteza Button, and Social Share Icons
-    const countBadge=total>1?`<span class="badge badge-count">${total} вести »</span>`:'';
-    const breakBadge=isBreaking?'<span class="badge badge-break">● Во живо</span>':'';
-    const actionsHtml=`<div class="actions-row">${breakBadge}${countBadge}</div>`;
-
-    return`<div class="story-card${isWide?' wide':''}"><div class="story-main">${thumbHtml}<div class="story-body"><div class="story-byline">${dotHtml}${flagBadge} <span class="story-source">${main.source}</span>${factBadge}<span>·</span>${timeText}</div><div class="story-headline"><a href="/cluster/${cid}" onclick="trackClick(${main.id})">${main.title}</a></div></div></div>${excerptHtml}${relHtml?`<div class="related-list">${relHtml}</div>`:''}${srcTagsHtml}${actionsHtml}</div>`
+  async function fetchTrending() {
+    try {
+      const res = await fetch('/api/trending');
+      const data = await res.json();
+      document.getElementById('trendChips').innerHTML = data.slice(0, 10).map(t => `
+        <span class="trend-chip" onclick="document.getElementById('searchInput').value='${t.word}'; toggleSearch(true); liveSearch('${t.word}')">#${t.word}</span>
+      `).join('');
+    } catch(e) {}
   }
 
-  function renderPage(clusters){
-    const isSub=SUB_CATS.includes(activeCategory);
-    let filtered;
-    if(activeCategory==='Сите'){
-      filtered=clusters;
-    }else if(isSub){
-      filtered=clusters.filter(c=>c.articles.some(a=>a.subcategory===activeCategory));
-    }else{
-      filtered=clusters.filter(c=>c.articles[0]?.category===activeCategory);
-    }
-    const wrap=document.getElementById('pageWrap');
-    if(!filtered.length){wrap.innerHTML='<div class="empty-msg">Нема вести.</div>';return}
-    wrap.innerHTML=`<div class="stories-grid">${filtered.map(buildCard).join('')}</div>`
-  }
+  const now = new Date();
+  const D = ['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];
+  const M = ['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];
+  document.getElementById('headerDate').textContent = `${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]}`;
 
-  async function showTop10(btn){if(btn.textContent.includes('Назад')){btn.textContent='🏆 Топ 20';renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';btn.textContent='← Назад';try{const res=await fetch('/api/top10');const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема доволно податоци за денес.</div>';return}const rankedCards=data.map(buildCard).join('');wrap.innerHTML=`<div class="stories-grid">${rankedCards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
-
-  async function doSearch(){const q=document.getElementById('searchInput').value.trim();if(!q||q.length<2)return;const wrap=document.getElementById('pageWrap');const status=document.getElementById('searchStatus');const clear=document.getElementById('searchClear');status.textContent='Се бара…';clear.classList.add('visible');try{const res=await fetch(`/api/search?q=${encodeURIComponent(q)}`);const data=await res.json();if(!data.length){wrap.innerHTML='<div class="empty-msg">Нема резултати за „'+q+'".</div>';status.textContent='0 резултати';return}wrap.innerHTML=`<div class="stories-grid">${data.map(buildCard).join('')}</div>`;status.textContent=`${data.length} резултат${data.length===1?'':'и'}`}catch(e){status.textContent='Грешка.'}}
-  function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchStatus').textContent='';document.getElementById('searchClear').classList.remove('visible');renderPage(allClusters)}
-  function trackClick(id){fetch(`/api/click/${id}`,{method:'POST'}).catch(()=>{})}
-
-  async function fetchPopular(){try{const res=await fetch('/api/popular');const data=await res.json();if(!data.length)return;const wrap=document.getElementById('pageWrap');const existing=document.getElementById('popularSection');if(existing)existing.remove();const cards=data.slice(0,4).map(buildCard).join('');const section=document.createElement('div');section.id='popularSection';section.className='cat-section';section.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark" style="background:#c8760a"></span>🔥 Најчитано »</span></div><div class="stories-grid">${cards}</div>`;wrap.prepend(section)}catch(e){}}
-
-  let _timeboxData=null;
-  async function showTimebox(window,btn){document.querySelectorAll('.timebox-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(window==='live'){renderPage(allClusters);return}const wrap=document.getElementById('pageWrap');wrap.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div>Се вчитува…</div></div>';try{if(!_timeboxData){const res=await fetch('/api/timeboxed');_timeboxData=await res.json()}const clusters=_timeboxData[window]||[];if(!clusters.length){wrap.innerHTML=`<div class="empty-msg">Нема вести за "${window}".</div>`;return}const cards=clusters.map(buildCard).join('');wrap.innerHTML=`<div style="padding:.4rem 0 .75rem;font-size:.85rem;color:var(--text-muted)">Топ вести · <strong>${window}</strong><button onclick="showTimebox('live',document.querySelector('.timebox-btn'))" style="margin-left:.75rem;font-size:.82rem;background:var(--badge-bg);border:1px solid var(--border);border-radius:3px;padding:.2rem .6rem;cursor:pointer;font-family:var(--sans)">✕ Назад</button></div><div class="stories-grid">${cards}</div>`}catch(e){wrap.innerHTML='<div class="empty-msg">Грешка при вчитување.</div>'}}
-
-  let _currentPage=0;let _hasMore=false;const PAGE_SIZE=50;
-  async function fetchNews(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.textContent='↻ …';_currentPage=0;try{const res=await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);const data=await res.json();const clusters=data.clusters||data;allClusters=Array.isArray(clusters)?clusters:[];_hasMore=data.has_more||false;updateTicker(allClusters);buildCats(allClusters);renderPage(allClusters);const now=new Date();document.getElementById('lastUpdated').textContent=`Освежено ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){document.getElementById('pageWrap').innerHTML='<div class="empty-msg">Грешка при поврзување.</div>'}btn.classList.remove('spinning');btn.textContent='↻ Освежи'}
-
-  async function loadMore(){const btn=document.getElementById('loadMoreBtn');btn.disabled=true;btn.textContent='Се вчитува…';_currentPage++;try{const res=await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);const data=await res.json();const newClusters=data.clusters||[];allClusters=[...allClusters,...newClusters];_hasMore=data.has_more||false;appendClusters(newClusters);document.getElementById('loadMoreWrap').style.display=_hasMore?'block':'none'}catch(e){}btn.disabled=false;btn.textContent='Вчитај повеќе вести ↓'}
-  function appendClusters(newClusters){if(activeCategory!=='Сите')return;const wrap=document.getElementById('pageWrap');newClusters.forEach(c=>{const cat=c.articles[0]?.category||'Македонија';const secId=`cat-section-${cat}`;let sec=document.getElementById(secId);if(!sec){sec=document.createElement('div');sec.id=secId;sec.className='cat-section';sec.innerHTML=`<div class="cat-header"><span class="cat-header-label"><span class="cat-bar-mark"></span>${cat} »</span></div><div class="stories-grid"></div>`;wrap.appendChild(sec)}sec.querySelector('.stories-grid').insertAdjacentHTML('beforeend',buildCard(c))})}
-
-  async function populateSidebar(){
-    try{
-      const res=await fetch('/api/popular');
-      const data=await res.json();
-      const el=document.getElementById('sidebarPopular');
-      if(!el)return;
-      if(!data.length){el.innerHTML='<div style="color:var(--text-muted);font-size:.85rem">Нема податоци.</div>';return}
-      el.innerHTML=data.slice(0,8).map(c=>{
-        const a=c.articles[0];
-        const domain = a.link.split('/')[2];
-        const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-        return `<div class="sidebar-item">
-<div style="display:flex; gap:10px; align-items:flex-start;">
-<img src="${favicon}" style="width:16px; height:16px; margin-top:3px; border-radius:2px;" alt="">
-<div>
-<a href="/cluster/${c.cluster_id||a.cluster_id}" onclick="trackClick(${a.id})">${a.title}</a>
-<div style="margin-top:4px;"><span class="si-src">${a.source}</span> · <span class="si-time">${timeAgo(a.created_at)}</span></div>
-</div>
-</div>
-</div>`;
-      }).join('');
-    }catch(e){}
-  }
-  async function populateSidebarTrends(){
-    try{
-      const res=await fetch('/api/trending');
-      const data=await res.json();
-      const el=document.getElementById('sidebarTrends');
-      if(!el||!data.length)return;
-      el.innerHTML=data.slice(0,10).map(t=>{
-        const word=t.word||t.keyword||t.term||String(t);
-        const count=t.count||'';
-        return `<span class="trend-chip" onclick="filterByKeyword('${word}')" style="display:inline-block; margin:4px 4px; padding:4px 10px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">${word}${count ? `<span style="opacity:0.6; margin-left:4px;">${count}</span>` : ''}</span>`;
-      }).join('');
-    }catch(e){}
-  }
-  populateSidebar();populateSidebarTrends();
-  updateHeaderDate();fetchNews();fetchTrending();
-  setInterval(fetchNews,15*60*1000);setInterval(fetchTrending,5*60*1000);
-  if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
+  fetchNews(); fetchPopular(); fetchTrending();
 </script>
 </body>
 </html>
