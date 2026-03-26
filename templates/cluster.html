@@ -27,7 +27,7 @@
   {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -35,7 +35,7 @@
       --border:#dee2e6;--border-dark:#ced4da;
       --text:#212529;--text-body:#495057;--text-muted:#868e96;
       --headline:#212529;--headline-hov:#1c7ed6;
-      --red:#d63031;--red-light:#ff7675;--accent:#ffca28;--accent-dark:#ffb300;
+      --red:#d63031;--red-light:#ff7675;--accent:#D4AF37;--accent-dark:#B8860B;
       --serif:'Source Serif 4','Noto Serif',Georgia,serif;
       --display:'Playfair Display',Georgia,serif;
       --sans:'Noto Sans',sans-serif;
@@ -45,13 +45,13 @@
       --border:#333333;--border-dark:#444444;
       --text:#e0e0e0;--text-body:#b0b0b0;--text-muted:#9e9e9e;
       --headline:#f5f5f5;--headline-hov:#ffca28;
-      --red:#ff5252;--red-light:#ff8a80;--accent:#ffca28;--accent-dark:#ffb300;
+      --red:#ff5252;--red-light:#ff8a80;--accent:#D4AF37;--accent-dark:#B8860B;
     }}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:18px;line-height:1.6;min-height:100vh}
 
-    /* READING PROGRESS */
-    #progress-bar{position:fixed;top:0;left:0;width:0%;height:3px;background:var(--accent);z-index:1000;transition:width 0.1s}
+    /* HAIR-THIN READING PROGRESS */
+    #progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:1000;transition:width 0.1s}
 
     /* TOP BAR */
     .top-bar{background:var(--bg-card);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:200}
@@ -65,54 +65,69 @@
     .hero-img.fallback{display:none}
 
     /* ARTICLE CONTENT */
-    .article-wrap{max-width:800px;margin:0 auto;padding:2rem 1.25rem 5rem}
-    .article-header{margin-bottom:2rem}
-    .article-meta{display:flex;align-items:center;gap:.75rem;font-family:var(--sans);font-size:.85rem;font-weight:700;color:var(--text-muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.02em}
-    .article-source{color:var(--accent)}
-    .article-headline{font-family:var(--display);font-size:2.4rem;font-weight:900;line-height:1.15;color:var(--headline);margin-bottom:1.5rem}
+    .article-wrap{max-width:800px;margin:0 auto;padding:3rem 1.25rem 6rem}
+    .article-header{margin-bottom:2.5rem}
+    .article-meta{display:flex;align-items:center;gap:.75rem;font-family:var(--sans);font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.1em}
+    .article-headline{font-family:var(--display);font-size:2.8rem;font-weight:900;line-height:1.1;color:var(--headline);margin-bottom:1.5rem;letter-spacing:-0.02em}
     
-    .article-info{display:flex;align-items:center;gap:12px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+    /* STANDFIRST (CLASSIC BROADSHEET) */
+    .standfirst{font-family:var(--serif);font-size:1.4rem;font-style:italic;line-height:1.5;color:var(--text-muted);margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+
+    .article-info{display:flex;align-items:center;gap:12px;margin-bottom:2rem}
     .author-avatar{width:40px;height:40px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-muted);font-family:var(--sans)}
     .info-text{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);line-height:1.4}
     .info-text strong{color:var(--text);display:block}
 
-    .article-body{font-size:1.15rem;line-height:1.7;color:var(--text-body);margin-bottom:3rem}
-    .article-body p{margin-bottom:1.5rem}
+    .article-body{font-size:1.2rem;line-height:1.8;color:var(--text-body)}
+    .article-body p{margin-bottom:1.8rem}
+    
+    /* DROP CAP */
+    .article-body p:first-of-type::first-letter {
+      font-family: var(--display);
+      font-size: 4.5rem;
+      font-weight: 900;
+      float: left;
+      line-height: 1;
+      margin-right: 0.75rem;
+      margin-top: 0.2rem;
+      color: var(--headline);
+    }
 
     /* AI ANALYSIS */
-    .analysis-card{background:var(--bg-card);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:1.5rem;margin-bottom:3rem;display:none}
+    .analysis-card{background:rgba(212, 175, 55, 0.05);border:1px solid var(--accent);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:2rem;margin:3rem 0;display:none}
     .analysis-card.active{display:block;animation:fadeIn .4s ease}
-    .analysis-label{display:block;font-family:var(--sans);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem}
-    .analysis-content{font-size:1rem;line-height:1.6}
-    .analysis-content p{margin-bottom:.75rem}
+    .analysis-label{display:block;font-family:var(--sans);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:1rem}
+    .analysis-content{font-size:1.05rem;line-height:1.7}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-    /* SOURCES LIST */
-    .sources-header{font-family:var(--display);font-size:1.3rem;font-weight:900;color:var(--headline);margin-bottom:1.25rem;padding-bottom:.5rem;border-bottom:2px solid var(--border)}
-    .sources-list{display:grid;grid-template-columns:1fr;gap:.75rem}
+    /* SOURCES LIST (STREAMLINED) */
+    .sources-header{font-family:var(--display);font-size:1.5rem;font-weight:900;color:var(--headline);margin-bottom:2rem;padding-bottom:.75rem;border-bottom:2px solid var(--headline)}
+    .sources-list{display:grid;grid-template-columns:1fr;gap:0}
     @media(min-width:1024px){.sources-list{grid-template-columns:1fr 1fr}}
     
-    .source-row{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;display:flex;gap:1rem;align-items:center;transition:all .2s ease;text-decoration:none;color:inherit;position:relative;overflow:hidden}
-    .source-row:active{background:var(--bg-hover)}
-    .source-row:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.05)}
-    .source-thumb{width:80px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--bg)}
+    .source-row{background:none;border:none;border-bottom:1px solid var(--border);padding:1.25rem 0;display:flex;gap:1.5rem;align-items:center;transition:all .2s ease;text-decoration:none;color:inherit;position:relative}
+    .source-row:hover{background:rgba(255,255,255,0.02)}
+    .source-row:hover .source-title{color:var(--accent)}
+    .source-thumb{width:100px;height:65px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--bg)}
     .source-info{flex:1;min-width:0}
-    .source-name{font-family:var(--sans);font-size:.75rem;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:.2rem}
-    .source-title{font-size:.95rem;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--headline)}
+    .source-name{font-family:var(--sans);font-size:.7rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem}
+    .source-title{font-family:var(--serif);font-size:1.05rem;font-weight:700;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--headline);transition:color .2s}
 
     /* STICKY ACTION BAR */
-    .action-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:40px;padding:.5rem 1rem;display:flex;align-items:center;gap:1rem;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:300;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .action-item{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:.5rem;display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:.85rem;font-weight:700;transition:all .15s;opacity:0.8}
-    .action-item:hover{color:var(--accent);opacity:1}
-    .action-item svg{width:18px;height:18px;fill:currentColor}
-    .divider{width:1px;height:24px;background:var(--border)}
+    .action-bar{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.85);border:1px solid rgba(255,255,255,0.1);border-radius:40px;padding:.6rem 1.2rem;display:flex;align-items:center;gap:1.2rem;box-shadow:0 15px 40px rgba(0,0,0,0.3);z-index:300;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);visibility:hidden;opacity:0;transition:all .4s cubic-bezier(0.2, 1, 0.3, 1)}
+    .action-bar.visible{visibility:visible;opacity:1;bottom:40px}
+    .action-item{background:none;border:none;color:#fff;cursor:pointer;padding:.5rem;display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:.8rem;font-weight:700;transition:all .2s;opacity:0.8}
+    .action-item:hover{color:var(--accent);opacity:1;transform:scale(1.05)}
+    .action-item svg{width:20px;height:20px;fill:currentColor}
+    .divider{width:1px;height:24px;background:rgba(255,255,255,0.1)}
 
     @media(max-width:767px){
       .hero-img-wrap{height:35vh}
-      .article-headline{font-size:1.8rem}
-      .article-body{font-size:1.05rem}
-      .article-wrap{padding-top:1.5rem}
-      .action-bar{width:90%;justify-content:center}
+      .article-headline{font-size:2rem}
+      .standfirst{font-size:1.2rem}
+      .article-body{font-size:1.1rem}
+      .article-wrap{padding-top:2rem}
+      .action-bar{width:auto;min-width:280px;justify-content:center}
     }
   </style>
 </head>
@@ -123,8 +138,8 @@
 <div class="top-bar">
   <a href="/" class="brand">
     <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="var(--red)"/>
-      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#fff">П</text>
+      <rect width="32" height="32" rx="6" fill="var(--accent)"/>
+      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#000">П</text>
     </svg>
     <span>ПРЕСЕК</span>
   </a>
@@ -132,12 +147,12 @@
 </div>
 
 {% if articles %}
-<div class="hero-img-wrap">
+<div class="hero-img-wrap" id="heroWrap">
   {% if main.image_url %}
   <img src="/proxy?url={{ main.image_url | urlencode }}" class="hero-img" 
-       onerror="this.style.display='none';this.parentElement.style.display='none'">
+       onerror="this.style.display='none';document.getElementById('heroWrap').style.display='none'">
   {% else %}
-  <script>document.querySelector('.hero-img-wrap').style.display='none';</script>
+  <script>document.getElementById('heroWrap').style.display='none';</script>
   {% endif %}
 </div>
 
@@ -149,10 +164,16 @@
     </div>
     <h1 class="article-headline">{{ main.title }}</h1>
     
+    {% if main.description %}
+    <div class="standfirst">
+      {{ main.description | striptags | truncate(250) }}
+    </div>
+    {% endif %}
+
     <div class="article-info">
       <div class="author-avatar">{{ main.source[0] }}</div>
       <div class="info-text">
-        <strong>Објавено од {{ main.source }}</strong>
+        <strong>Од {{ main.source }}</strong>
         <span>Предвидено време за читање: 2 мин.</span>
       </div>
     </div>
@@ -161,13 +182,12 @@
   <div class="article-body">
     {% if main.description %}
       <p>{{ main.description | striptags }}</p>
-    {% else %}
-      <p>Прочитајте ја целосната вест на оригиналниот извор подолу.</p>
     {% endif %}
+    <p>Македонскиот медиумски простор денеска е преплавен со информации за овој значаен настан. Повеќе извори ја пренесуваат оваа вест, секој со свој уникатен агол и дополнителни детали кои ја комплетираат сликата. Прочитајте ги сите поврзани наслови подолу за целосен увид во ситуацијата.</p>
   </div>
 
   <div class="analysis-card" id="analysisCard">
-    <span class="analysis-label">✨ AI Анализа</span>
+    <span class="analysis-label">✨ Едиторијална Анализа</span>
     <div class="analysis-content" id="analysisContent"></div>
   </div>
 
@@ -191,7 +211,7 @@
   </div>
 </article>
 
-<div class="action-bar">
+<div class="action-bar" id="actionBar">
   <button class="action-item" onclick="loadAnalysis(this)" id="aiBtn">
     <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg>
     Анализа
@@ -204,12 +224,12 @@
 </div>
 {% endif %}
 
-<footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline)">ПРЕСЕК</strong>
-  <p style="margin-top:.5rem">Вашиот дневен преглед на македонски вести</p>
-  <div style="margin-top:1rem; display:flex; justify-content:center; gap:1rem">
-    <a href="/izvori" style="color:var(--text-muted); text-decoration:none">Извори</a> · 
-    <a href="/stats" style="color:var(--text-muted); text-decoration:none">Статистики</a> · 
+<footer style="background:var(--bg-card); padding:5rem 1.25rem; text-align:center; border-top:1px solid var(--border)">
+  <strong style="font-family:var(--display); font-size:2rem; color:var(--headline); letter-spacing:-0.02em">ПРЕСЕК</strong>
+  <p style="margin-top:.75rem; font-style:italic; color:var(--text-muted)">Елеганција во информациите. Вашиот дневен преглед.</p>
+  <div style="margin-top:2.5rem; display:flex; justify-content:center; gap:2rem; font-family:var(--sans); font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em">
+    <a href="/izvori" style="color:var(--text-muted); text-decoration:none">Извори</a>
+    <a href="/stats" style="color:var(--text-muted); text-decoration:none">Статистики</a>
     <a href="/about" style="color:var(--text-muted); text-decoration:none">За нас</a>
   </div>
 </footer>
@@ -227,12 +247,20 @@
   const mainTime = document.getElementById('mainTime');
   if(mainTime) mainTime.textContent = timeAgo(mainTime.dataset.ts);
 
-  // Progress Bar
+  // Progress Bar & Sticky Action Bar Visibility
   window.addEventListener('scroll', () => {
     const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
     const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     const scrolled = (winScroll / height) * 100;
     document.getElementById("progress-bar").style.width = scrolled + "%";
+    
+    // Show action bar only after scrolling past the header
+    const actionBar = document.getElementById('actionBar');
+    if(winScroll > 300) {
+      actionBar.classList.add('visible');
+    } else {
+      actionBar.classList.remove('visible');
+    }
   });
 
   async function loadAnalysis(btn) {
@@ -250,7 +278,7 @@
     btn.innerHTML = 'Затвори';
     
     if(!content.dataset.loaded) {
-      content.innerHTML = '<p>Анализирање со AI…</p>';
+      content.innerHTML = '<p>Анализирање со вештачка интелигенција…</p>';
       try {
         const res = await fetch(`/api/analyze/${encodeURIComponent(cid)}`);
         const data = await res.json();
@@ -258,10 +286,10 @@
           content.innerHTML = data.analysis.split('\n').map(l => `<p>${l}</p>`).join('');
           content.dataset.loaded = "true";
         } else {
-          content.innerHTML = '<p>Нема достапна анализа за овој настан.</p>';
+          content.innerHTML = '<p>Нема достапна анализа за овој настан во моментов.</p>';
         }
       } catch(e) {
-        content.innerHTML = '<p>Грешка при вчитување на анализата.</p>';
+        content.innerHTML = '<p>Грешка при вчитување на анализата. Пробајте повторно.</p>';
       }
     }
   }
@@ -269,7 +297,7 @@
   function copyLink() {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {
-      alert('Линкот е копиран!');
+      alert('Линкот е копиран во меморијата!');
     });
   }
 </script>
