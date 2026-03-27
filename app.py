@@ -164,7 +164,7 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
-REFRESH_INTERVAL = 900
+REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 
@@ -1646,7 +1646,7 @@ def og_image():
       <rect x="0" y="0" width="1200" height="6" fill="#c04040"/>
       <text x="600" y="260" font-family="Georgia,serif" font-size="96" font-weight="bold" text-anchor="middle" fill="#c9a030">ПРЕСЕК</text>
       <text x="600" y="340" font-family="sans-serif" font-size="32" text-anchor="middle" fill="#d4c8a8">Македонски агрегатор на вести</text>
-      <text x="600" y="420" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#8a7c62">{count}+ извори · AI резимеа · Ажурирано на 15 мин</text>
+      <text x="600" y="420" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#8a7c62">{count}+ извори · AI резимеа · Ажурирано на 5 мин</text>
       <rect x="0" y="624" width="1200" height="6" fill="#c04040"/>
     </svg>"""
     return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
