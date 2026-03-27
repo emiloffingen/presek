@@ -198,7 +198,18 @@
     /* CARDS */
     .stories-grid{display:grid;grid-template-columns:1fr;gap:32px}
     @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
-    .story-card{background:var(--bg-card);padding:28px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);position:relative;overflow:hidden}
+    .story-card{
+      background:var(--bg-card);
+      padding:28px;
+      border:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);
+      position:relative;
+      overflow:hidden;
+      height: 100%;
+    }
     .story-card:hover{border-color:var(--gold);box-shadow:0 15px 40px rgba(0,0,0,0.4);transform:translateY(-4px)}
     .story-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:0;background:var(--accent);transition:height .3s}
     .story-card:hover::after{height:100%}
@@ -239,10 +250,22 @@
       filter:brightness(1);
     }
 
-    .story-excerpt{font-size:var(--font-size-sm);color:var(--text-body);font-weight:400;opacity:0.95}    
+    .story-excerpt{
+      font-size:var(--font-size-sm);
+      color:var(--text-body);
+      font-weight:400;
+      opacity:0.95;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.6;
+    }    
     .source-ribbon{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid rgba(176, 141, 87, 0.15)}
     .source-tag{font-family:var(--font-sans);font-size:.65rem;font-weight:800;color:var(--bronze);text-transform:uppercase;letter-spacing:.08em}
     .source-more{font-family:var(--font-sans);font-size:.65rem;font-weight:800;color:var(--gold)}
+
+    .live-badge { color: var(--color-ruby); font-weight: 900; }
 
     /* SIDEBAR */
     .sidebar-inner{background:var(--bg-card); padding:28px; border:1px solid var(--border); display:flex; flex-direction:column; max-height:calc(100vh - 140px); position:sticky; top:128px}
@@ -464,7 +487,7 @@
               <span style="color:var(--gold)">${a.source}</span>
               <span style="opacity:0.5">|</span>
               <span>${timeAgo(a.created_at)}</span>
-              ${isBreaking ? '<span style="color:var(--accent)">| ВО ЖИВО</span>' : ''}
+              ${isBreaking ? '<span class="live-badge">| ВО ЖИВО</span>' : ''}
             </div>
             <h3 class="story-headline">
               <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
