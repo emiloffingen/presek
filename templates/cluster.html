@@ -152,6 +152,7 @@
         <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
         <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
         <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeNav)" />
+        <circle id="lorGlow" cx="50" cy="55" r="12" fill="#FF2A2A" opacity="0"/>
         <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
       </svg>
       <span>ПРЕСЕК</span>
@@ -214,6 +215,21 @@
   const label = document.getElementById('timeLabel');
   if(label) label.textContent = timeAgo("{{ articles[0].created_at }}");
   {% endif %}
+
+  let lorAnimation;
+  function startLoranditeFlicker() {
+    const glow = document.getElementById("lorGlow");
+    if (!glow) return;
+    if (lorAnimation) lorAnimation.cancel();
+    lorAnimation = glow.animate([
+      { opacity: 0.1, transform: "scale(0.98)" },
+      { opacity: 0.35, transform: "scale(1.03)" },
+      { opacity: 0.15, transform: "scale(0.98)" },
+      { opacity: 0.4, transform: "scale(1.02)" },
+      { opacity: 0.1, transform: "scale(1)" }
+    ], { duration: 2200, iterations: Infinity, easing: "ease-in-out" });
+  }
+  startLoranditeFlicker();
 </script>
 </body>
 </html>

@@ -232,7 +232,7 @@
         <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
         <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
         <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdge)" />
-        <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
+        <circle id="lorGlow" cx="50" cy="55" r="12" fill="#FF2A2A" opacity="0"/>
       </svg>
       <span>ПРЕСЕК</span>
     </a>
@@ -340,6 +340,7 @@
   }
 
   async function showTop10(btn) {
+    startLoranditeFlicker();
     if(btn) btn.style.opacity = '0.5';
     try {
       const res = await fetch('/api/top10');
@@ -399,6 +400,7 @@
   }
 
   async function fetchNews() {
+    stopLoranditeFlicker();
     newNajcitanoCount = 0;
     const badge = document.getElementById("najcitanoBadge");
     if(badge) badge.style.display = "none";
@@ -468,6 +470,27 @@
       { filter: "brightness(1.5)" },
       { filter: "brightness(1)" }
     ], { duration: 600 });
+  }
+
+  // Lorandite Flicker Animation
+  let lorAnimation;
+  function startLoranditeFlicker() {
+    const glow = document.getElementById("lorGlow");
+    if (!glow) return;
+    if (lorAnimation) lorAnimation.cancel();
+    lorAnimation = glow.animate([
+      { opacity: 0.1, transform: "scale(0.98)" },
+      { opacity: 0.35, transform: "scale(1.03)" },
+      { opacity: 0.15, transform: "scale(0.98)" },
+      { opacity: 0.4, transform: "scale(1.02)" },
+      { opacity: 0.1, transform: "scale(1)" }
+    ], { duration: 2200, iterations: Infinity, easing: "ease-in-out" });
+  }
+
+  function stopLoranditeFlicker() {
+    if (lorAnimation) lorAnimation.cancel();
+    const glow = document.getElementById("lorGlow");
+    if (glow) glow.style.opacity = 0;
   }
 
   async function fetchPopular() {
