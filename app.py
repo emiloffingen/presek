@@ -257,6 +257,19 @@ RSS_FEEDS = [
     ("Okno",            "https://okno.mk/feed/"),
     ("Alfa TV",         "https://alfa.mk/feed/"),
     ("Tocka",           "https://tocka.com.mk/feed/"),
+    # ── Batch 6 — Sourced from time.mk ───────────────────────────
+    ("IRL",             "https://irl.mk/mk/feed/"),
+    ("Nova TV",         "https://novatv.mk/feed/"),
+    ("Libertas",        "https://libertas.mk/feed/"),
+    ("Racin",           "https://racin.mk/feed/"),
+    ("Kajgana",         "https://kajgana.com/rss.xml"),
+    ("Pari.com.mk",     "https://pari.com.mk/feed/"),
+    ("Bloomberg Adria", "https://mk.bloombergadria.com/rss"),
+    ("E-Magazin",       "https://emagazin.mk/feed/"),
+    ("IT.mk",           "https://it.mk/feed/"),
+    ("Sportmanija",     "https://sportmanija.mk/feed/"),
+    ("Fakulteti",       "https://fakulteti.mk/rss"),
+    ("Magazin",         "https://magazin.mk/feed/"),
 ]
 
 # Feeds that publish only one type of content — no need to run keyword detection.
@@ -279,7 +292,9 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Deutsche Welle", "Журнал", "Civil Media", "Радио МОФ",
     "Сакам да кажам", "Бизнис Вести", "Ohrid News", "Vecer Sport",
     "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
-    "Alfa TV", "Tocka",
+    "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
+    "Kajgana", "Pari.com.mk", "Bloomberg Adria", "E-Magazin",
+    "IT.mk", "Sportmanija", "Fakulteti", "Magazin",
 })
 
 DIASPORA_FEEDS = [
@@ -437,6 +452,18 @@ SOURCE_CREDIBILITY = {
     "Jutarnji":         1.4,
     "Klix.ba":          1.4,
     "Vijesti.me":       1.3,
+    "IRL":              1.8,
+    "Nova TV":          1.3,
+    "Libertas":         1.1,
+    "Racin":            1.3,
+    "Kajgana":          1.0,
+    "Pari.com.mk":      1.2,
+    "Bloomberg Adria":  1.4,
+    "E-Magazin":        1.1,
+    "IT.mk":            1.1,
+    "Sportmanija":      0.8,
+    "Fakulteti":        1.1,
+    "Magazin":          0.8,
 }
 DEFAULT_CREDIBILITY = 0.8  # fallback for unlisted sources
 
