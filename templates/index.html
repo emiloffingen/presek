@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Пресек | Вашиот Дневен Преглед</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#D10047">
+  <meta name="theme-color" id="themeMeta" content="#141618">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/static/logo.png">
@@ -673,19 +673,29 @@
   const themeToggle = document.getElementById('themeToggle');
   const sunRays = document.getElementById('sunRays');
   const htmlEl = document.documentElement;
+  const themeMeta = document.getElementById('themeMeta');
+
+  function updateThemeMeta(isLight) {
+    if (themeMeta) themeMeta.setAttribute('content', isLight ? '#EAECEE' : '#141618');
+  }
 
   // 1. Load Theme
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'light') {
     htmlEl.classList.add('light');
+    updateThemeMeta(true);
   } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
     htmlEl.classList.add('light');
+    updateThemeMeta(true);
+  } else {
+    updateThemeMeta(false);
   }
 
   // 2. Toggle Handler
   themeToggle.addEventListener('click', () => {
-    htmlEl.classList.toggle('light');
-    localStorage.setItem('theme', htmlEl.classList.contains('light') ? 'light' : 'dark');
+    const isLight = htmlEl.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    updateThemeMeta(isLight);
   });
 
   // 3. Smooth Scroll Rotation
