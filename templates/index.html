@@ -189,10 +189,10 @@
 
     .actions-row{margin-top:auto;padding-top:var(--spacing-sm);display:flex;align-items:center;gap:var(--spacing-sm)}
     .badge-count{background:var(--color-bg-surface-hover);color:var(--text-muted);font-family:var(--sans);font-size:var(--font-size-xs);font-weight:var(--font-weight-bold);padding:.2rem .6rem;border-radius:var(--border-radius-sm)}
-    .ai-btn{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--sans);font-size:var(--font-size-xs);font-weight:var(--font-weight-bold);padding:.2rem .6rem;border-radius:var(--border-radius-sm);cursor:pointer;transition:all .15s;opacity:0.8}
-    .ai-btn:hover{border-color:var(--accent);color:var(--accent);opacity:1}
-    .ai-panel{display:none;margin-top:var(--spacing-sm);padding:var(--spacing-md);background:var(--bg);border-left:3px solid var(--accent);border-radius:0 var(--border-radius-sm) var(--border-radius-sm) 0;font-size:var(--font-size-sm)}
-    .ai-panel.active{display:block}
+    .share-row{display:flex;align-items:center;gap:var(--spacing-sm);margin-left:auto}
+    .share-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;display:flex;align-items:center;transition:all .15s;opacity:0.7}
+    .share-btn:hover{color:var(--accent);opacity:1;transform:scale(1.1)}
+    .share-btn svg{width:18px;height:18px;fill:currentColor}
 
     .loading-wrap{text-align:center;padding:var(--spacing-xl) 1rem;color:var(--text-muted)}
     .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
@@ -301,17 +301,16 @@
     }
   }
 
-  function toggleAI(id, btn) {
-    const panel = document.getElementById(`ai-${id}`);
-    const isVisible = panel.classList.toggle('active');
-    btn.textContent = isVisible ? 'Затвори' : 'AI Анализа';
-    if(isVisible && !panel.dataset.loaded) {
-      panel.textContent = 'Анализирање…';
-      fetch(`/api/summary/${id}`).then(r => r.json()).then(data => {
-        panel.textContent = data.summary || 'Нема достапна анализа.';
-        panel.dataset.loaded = "true";
-      }).catch(() => { panel.textContent = 'Грешка при анализа.'; });
-    }
+  function share(platform, id, title) {
+    const url = `https://presek.live/cluster/${id}`;
+    const text = encodeURIComponent(title + " — Пресек: ");
+    const u = encodeURIComponent(url);
+    let shareUrl = "";
+    if(platform === 'whatsapp') shareUrl = `https://api.whatsapp.com/send?text=${text}${u}`;
+    else if(platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+    else if(platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${u}`;
+    else if(platform === 'reddit') shareUrl = `https://www.reddit.com/submit?url=${u}&title=${text}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
   }
 
   function renderCard(c) {
@@ -319,6 +318,7 @@
     if(!a) return '';
     const related = c.articles.slice(1, 4);
     const isBreaking = (c.score || 0) > 3.0;
+    const title = (a.headline || a.title).replace(/'/g, "\\'");
 
     return `
       <div class="story-card fade-in">
@@ -352,9 +352,21 @@
         ` : ''}
         <div class="actions-row">
           <span class="badge-count">${c.articles.length} извори</span>
-          <button class="ai-btn" onclick="toggleAI('${c.cluster_id}', this)">AI Анализа</button>
+          <div class="share-row">
+            <button class="share-btn" onclick="share('whatsapp', '${c.cluster_id}', '${title}')" title="Сподели на WhatsApp">
+              <svg viewBox="0 0 24 24"><path d="M12.064 0C5.402 0 0 5.403 0 12.062c0 2.112.547 4.164 1.59 5.982L0 24l6.12-1.607a12.048 12.048 0 0 0 5.94 1.585h.005c6.662 0 12.064-5.403 12.064-12.062C24.13 5.403 18.727 0 12.064 0zm0 22.067c-1.8 0-3.565-.483-5.105-1.398l-.365-.217-3.8 1 1.018-3.7-.24-.38a10.04 10.04 0 0 1-1.537-5.31c0-5.547 4.512-10.058 10.063-10.058 2.69 0 5.217 1.047 7.12 2.951a10.002 10.002 0 0 1 2.943 7.106c0 5.548-4.512 10.06-10.06 10.06zm5.518-7.53c-.302-.15-1.788-.882-2.065-1.007-.278-.125-.48-.188-.681.12-.202.308-.781 1.007-.957 1.207-.176.2-.353.225-.654.075-.302-.15-1.274-.47-2.426-1.503-.897-.8-1.502-1.79-1.277-2.12a.6.6 0 0 1 .15-.22c.075-.075.113-.15.15-.225.037-.076.075-.15.112-.225.037-.075.075-.15.113-.225.037-.075.037-.15.018-.225-.018-.075-.188-.456-.258-.626-.07-.168-.14-.144-.194-.144l-.165-.004a.31.31 0 0 0-.226.105c-.075.084-.288.28-.288.683 0 .403.293.792.334.847.04.055.576.88 1.396 1.237.195.085.347.135.466.173.196.063.375.054.516.033.158-.024.485-.198.554-.39.07-.19.07-.354.049-.39-.021-.037-.077-.056-.15-.093z"/></svg>
+            </button>
+            <button class="share-btn" onclick="share('facebook', '${c.cluster_id}', '${title}')" title="Сподели на Facebook">
+              <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </button>
+            <button class="share-btn" onclick="share('twitter', '${c.cluster_id}', '${title}')" title="Сподели на Twitter">
+              <svg viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 0 1-2.825.775 4.958 4.958 0 0 0 2.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 0 0-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 0 0-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 0 1-2.228-.616v.06a4.923 4.923 0 0 0 3.946 4.84 4.996 4.996 0 0 1-2.212.085 4.936 4.936 0 0 0 4.604 3.417 9.867 9.867 0 0 1-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 0 0 7.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0 0 24 4.59z"/></svg>
+            </button>
+            <button class="share-btn" onclick="share('reddit', '${c.cluster_id}', '${title}')" title="Сподели на Reddit">
+              <svg viewBox="0 0 24 24"><path d="M24 11.5c0-1.65-1.35-3-3-3-.41 0-.8.08-1.15.24C18.15 7.15 15.65 6.15 13 6V2.5h5V1h-6.5v5c-2.65.15-5.15 1.15-6.85 2.74-.35-.16-.74-.24-1.15-.24-1.65 0-3 1.35-3 3 0 1.32.86 2.44 2.05 2.84-.03.22-.05.44-.05.66 0 3.86 4.5 7 10 7s10-3.14 10-7c0-.22-.02-.44-.05-.66 1.19-.4 2.05-1.52 2.05-2.84zM6.5 15.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm10.5 3.5c-1.81 1.56-5.02 1.59-6 1.59s-4.19-.03-6-1.59l-.4-.3.8-.8.3.25c1.47 1.25 4.31 1.34 5.3 1.34s3.83-.09 5.3-1.34l.3-.25.8.8-.4.3zm.5-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="ai-panel" id="ai-${c.cluster_id}"></div>
       </div>
     `;
   }

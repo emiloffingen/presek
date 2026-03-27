@@ -186,11 +186,6 @@
     <p>Македонскиот медиумски простор денеска е преплавен со информации за овој значаен настан. Повеќе извори ја пренесуваат оваа вест, секој со свој уникатен агол и дополнителни детали кои ја комплетираат сликата. Прочитајте ги сите поврзани наслови подолу за целосен увид во ситуацијата.</p>
   </div>
 
-  <div class="analysis-card" id="analysisCard">
-    <span class="analysis-label">✨ Едиторијална Анализа</span>
-    <div class="analysis-content" id="analysisContent"></div>
-  </div>
-
   <div class="sources-section">
     <h2 class="sources-header">Сите извори ({{ articles|length }})</h2>
     <div class="sources-list">
@@ -212,14 +207,17 @@
 </article>
 
 <div class="action-bar" id="actionBar">
-  <button class="action-item" onclick="loadAnalysis(this)" id="aiBtn">
-    <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg>
-    Анализа
+  <button class="action-item" onclick="share('whatsapp')" title="WhatsApp">
+    <svg viewBox="0 0 24 24"><path d="M12.064 0C5.402 0 0 5.403 0 12.062c0 2.112.547 4.164 1.59 5.982L0 24l6.12-1.607a12.048 12.048 0 0 0 5.94 1.585h.005c6.662 0 12.064-5.403 12.064-12.062C24.13 5.403 18.727 0 12.064 0zm0 22.067c-1.8 0-3.565-.483-5.105-1.398l-.365-.217-3.8 1 1.018-3.7-.24-.38a10.04 10.04 0 0 1-1.537-5.31c0-5.547 4.512-10.058 10.063-10.058 2.69 0 5.217 1.047 7.12 2.951a10.002 10.002 0 0 1 2.943 7.106c0 5.548-4.512 10.06-10.06 10.06zm5.518-7.53c-.302-.15-1.788-.882-2.065-1.007-.278-.125-.48-.188-.681.12-.202.308-.781 1.007-.957 1.207-.176.2-.353.225-.654.075-.302-.15-1.274-.47-2.426-1.503-.897-.8-1.502-1.79-1.277-2.12a.6.6 0 0 1 .15-.22c.075-.075.113-.15.15-.225.037-.076.075-.15.112-.225.037-.075.075-.15.113-.225.037-.075.037-.15.018-.225-.018-.075-.188-.456-.258-.626-.07-.168-.14-.144-.194-.144l-.165-.004a.31.31 0 0 0-.226.105c-.075.084-.288.28-.288.683 0 .403.293.792.334.847.04.055.576.88 1.396 1.237.195.085.347.135.466.173.196.063.375.054.516.033.158-.024.485-.198.554-.39.07-.19.07-.354.049-.39-.021-.037-.077-.056-.15-.093z"/></svg>
   </button>
-  <div class="divider"></div>
-  <button class="action-item" onclick="copyLink()">
-    <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-    Сподели
+  <button class="action-item" onclick="share('facebook')" title="Facebook">
+    <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+  </button>
+  <button class="action-item" onclick="share('twitter')" title="Twitter">
+    <svg viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 0 1-2.825.775 4.958 4.958 0 0 0 2.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 0 0-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 0 0-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 0 1-2.228-.616v.06a4.923 4.923 0 0 0 3.946 4.84 4.996 4.996 0 0 1-2.212.085 4.936 4.936 0 0 0 4.604 3.417 9.867 9.867 0 0 1-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 0 0 7.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0 0 24 4.59z"/></svg>
+  </button>
+  <button class="action-item" onclick="share('reddit')" title="Reddit">
+    <svg viewBox="0 0 24 24"><path d="M24 11.5c0-1.65-1.35-3-3-3-.41 0-.8.08-1.15.24C18.15 7.15 15.65 6.15 13 6V2.5h5V1h-6.5v5c-2.65.15-5.15 1.15-6.85 2.74-.35-.16-.74-.24-1.15-.24-1.65 0-3 1.35-3 3 0 1.32.86 2.44 2.05 2.84-.03.22-.05.44-.05.66 0 3.86 4.5 7 10 7s10-3.14 10-7c0-.22-.02-.44-.05-.66 1.19-.4 2.05-1.52 2.05-2.84zM6.5 15.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm10.5 3.5c-1.81 1.56-5.02 1.59-6 1.59s-4.19-.03-6-1.59l-.4-.3.8-.8.3.25c1.47 1.25 4.31 1.34 5.3 1.34s3.83-.09 5.3-1.34l.3-.25.8.8-.4.3zm.5-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
   </button>
 </div>
 {% endif %}
@@ -247,59 +245,37 @@
   const mainTime = document.getElementById('mainTime');
   if(mainTime) mainTime.textContent = timeAgo(mainTime.dataset.ts);
 
+  function share(platform) {
+    const url = window.location.href;
+    const title = document.title.split(' | ')[0];
+    const text = encodeURIComponent(title + " — Пресек: ");
+    const u = encodeURIComponent(url);
+    let shareUrl = "";
+    if(platform === 'whatsapp') shareUrl = `https://api.whatsapp.com/send?text=${text}${u}`;
+    else if(platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+    else if(platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${u}`;
+    else if(platform === 'reddit') shareUrl = `https://www.reddit.com/submit?url=${u}&title=${text}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  }
+
   // Progress Bar & Sticky Action Bar Visibility
   window.addEventListener('scroll', () => {
     const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
     const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     const scrolled = (winScroll / height) * 100;
-    document.getElementById("progress-bar").style.width = scrolled + "%";
+    const pb = document.getElementById("progress-bar");
+    if(pb) pb.style.width = scrolled + "%";
     
     // Show action bar only after scrolling past the header
     const actionBar = document.getElementById('actionBar');
-    if(winScroll > 300) {
-      actionBar.classList.add('visible');
-    } else {
-      actionBar.classList.remove('visible');
-    }
-  });
-
-  async function loadAnalysis(btn) {
-    const card = document.getElementById('analysisCard');
-    const content = document.getElementById('analysisContent');
-    const cid = "{{ cluster_id }}";
-    
-    if (card.classList.contains('active')) {
-        card.classList.remove('active');
-        btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg> Анализа';
-        return;
-    }
-
-    card.classList.add('active');
-    btn.innerHTML = 'Затвори';
-    
-    if(!content.dataset.loaded) {
-      content.innerHTML = '<p>Анализирање со вештачка интелигенција…</p>';
-      try {
-        const res = await fetch(`/api/analyze/${encodeURIComponent(cid)}`);
-        const data = await res.json();
-        if (data.analysis) {
-          content.innerHTML = data.analysis.split('\n').map(l => `<p>${l}</p>`).join('');
-          content.dataset.loaded = "true";
-        } else {
-          content.innerHTML = '<p>Нема достапна анализа за овој настан во моментов.</p>';
-        }
-      } catch(e) {
-        content.innerHTML = '<p>Грешка при вчитување на анализата. Пробајте повторно.</p>';
+    if(actionBar) {
+      if(winScroll > 300) {
+        actionBar.classList.add('visible');
+      } else {
+        actionBar.classList.remove('visible');
       }
     }
-  }
-
-  function copyLink() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      alert('Линкот е копиран во меморијата!');
-    });
-  }
+  });
 </script>
 </body>
 </html>
