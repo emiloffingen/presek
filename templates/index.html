@@ -245,14 +245,25 @@
         <svg id="sunIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <g id="sunRays" transform-origin="50 50">
             <g fill="#F5C400">
-              <polygon points="50,5 54,30 46,30"/>
-              <polygon points="50,95 54,70 46,70"/>
-              <polygon points="5,50 30,54 30,46"/>
-              <polygon points="95,50 70,54 70,46"/>
-              <polygon points="18,18 36,36 30,40"/>
-              <polygon points="82,18 70,40 64,36"/>
-              <polygon points="82,82 64,64 70,60"/>
-              <polygon points="18,82 30,60 36,64"/>
+              <!-- 8 Primary Long Rays -->
+              <polygon points="50,2 54,35 46,35"/> <!-- Top -->
+              <polygon points="50,98 54,65 46,65"/> <!-- Bottom -->
+              <polygon points="2,50 35,54 35,46"/> <!-- Left -->
+              <polygon points="98,50 65,54 65,46"/> <!-- Right -->
+              <polygon points="16,16 38,34 34,38"/> <!-- Top-Left -->
+              <polygon points="84,16 62,34 66,38"/> <!-- Top-Right -->
+              <polygon points="84,84 62,66 66,62"/> <!-- Bottom-Right -->
+              <polygon points="16,84 38,66 34,62"/> <!-- Bottom-Left -->
+              
+              <!-- 8 Secondary Shorter Rays -->
+              <polygon points="50,15 53,35 47,35" transform="rotate(22.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(67.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(112.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(157.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(202.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(247.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(292.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(337.5, 50, 50)"/>
             </g>
           </g>
           <circle id="sunCore" cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
