@@ -1363,25 +1363,28 @@ def api_chat_cluster():
     
     context_text = "\n---\n".join(context_items)
     
-    prompt = f"""
-    You are 'Presek AI', a senior journalistic analyst for the Macedonian media landscape.
-    Use the following headlines and snippets from Macedonian media to answer the user.
-    
-    CLUSTER CONTEXT:
-    {context_text}
-    
-    USER QUESTION:
-    {query}
-    
-    INSTRUCTIONS:
-    1. Answer based ONLY on the provided context (or search results if enabled).
-    2. If the user asks for something not in the context (like history or future predictions), use your Search tool.
-    3. Be objective, highlight source differences, and use professional Macedonian.
-    4. Keep the answer concise (max 150 words).
-    5. If search is used, mention it.
-    """
+    system_instruction = """
+Ти си Главен Аналитичар (Chief Analyst) за 'Пресек', премиум македонски агрегатор на вести.
+Твојата задача е да им дадеш на корисниците објективен, јасен и прецизен преглед на вестите базиран на понудените извори.
 
-    # Refined Grounding Triggers: Future, Global, or Deep Analysis keywords
+Твоите новинарски правила:
+1. НУЛТА ПРИСТРАСНОСТ: Мораш да останеш апсолутно неутрален. Не заземај страна во македонската или глобалната политика.
+2. ФОКУС НА ИЗВОРИТЕ: Секогаш кога е можно, посочувај кој медиум што кажал (на пр. "Сител известува дека..., додека Слободен Печат додава...").
+3. БЕЗ ПАНИКА: Известувај за трагедии, криминал или војна со ладна глава и почит. Избегнувај сензационализам.
+4. КОНЦИЗНОСТ: Одговорите нека бидат кратки, структурирани со точки (bullet points) и лесни за скенирање. Избегнувај долги воведи.
+5. КОНТЕКСТ: Ако корисникот праша за нешто што го нема во дадените наслови, користи го твоето пребарување (Search tool) за да дадеш точен, глобален или историски контекст, но јасно напомени дека е дополнителна информација.
+6. РЕЛЕВАНТНОСТ: Фокусирај се на факти и сериозна анализа. Игнорирај шпекулации или озборувања кои не се поткрепени со изворите.
+"""
+
+    user_prompt = f"""
+CLUSTER CONTEXT (Macedonian Media):
+{context_text}
+
+USER QUESTION:
+{query}
+"""
+
+    # Refined Grounding Triggers
     grounding_keywords = [
         "зошто", "свет", "историја", "анализа", "влијание", "последици", 
         "минатото", "контекст", "кога", "очекува", "иднина", "сад", "еу", "русија"
@@ -1390,7 +1393,8 @@ def api_chat_cluster():
 
     try:
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
+            "system_instruction": {"parts": [{"text": system_instruction}]},
+            "contents": [{"parts": [{"text": user_prompt}]}],
             "tools": [{"google_search_retrieval": {}}] if needs_grounding else []
         }
         
@@ -1398,11 +1402,10 @@ def api_chat_cluster():
                           data=json.dumps(payload).encode("utf-8"),
                           headers={"Content-Type": "application/json"})
         
-        with _ur.urlopen(req, timeout=20) as resp:
+        with _ur.urlopen(req, timeout=25) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
             answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
             
-            # Add a small hint if grounding was used
             return jsonify({
                 "response": answer,
                 "grounded": needs_grounding
