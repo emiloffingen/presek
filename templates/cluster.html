@@ -131,6 +131,91 @@
       .source-thumb-wrap{width:80px;height:60px}
       .source-title{font-size:1rem}
     }
+
+    /* AI CHAT UI */
+    .ai-chat-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 700px;
+      background: rgba(26, 28, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(209, 0, 71, 0.4);
+      border-radius: 50px;
+      padding: 6px 6px 6px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.6);
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    .ai-chat-bar:focus-within {
+      border-color: var(--color-gold);
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+    }
+    .ai-chat-input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--color-text-primary);
+      font-family: var(--sans);
+      font-size: 1rem;
+      outline: none;
+    }
+    .ai-chat-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--color-ruby);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+      color: white;
+    }
+    .ai-chat-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    .ai-chat-btn:hover { transform: scale(1.1); }
+    
+    .ai-sheet {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      width: 100%;
+      max-height: 70vh;
+      background: rgba(20, 22, 24, 0.98);
+      backdrop-filter: blur(30px);
+      border-top: 2px solid var(--color-ruby);
+      border-radius: 32px 32px 0 0;
+      z-index: 999;
+      transition: bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 40px;
+      overflow-y: auto;
+      box-shadow: 0 -20px 60px rgba(0,0,0,0.8);
+    }
+    .ai-sheet.active { bottom: 0; }
+    .ai-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .ai-sheet-title { font-family: var(--display); color: var(--color-gold); font-size: 1.4rem; font-weight: 900; }
+    .ai-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.5rem; }
+    .ai-content { color: var(--color-text-primary); line-height: 1.8; font-size: 1.15rem; }
+    
+    .ai-loading { display: flex; gap: 8px; justify-content: center; padding: 40px; }
+    .dot { width: 10px; height: 10px; background: var(--color-ruby); border-radius: 50%; animation: dotPulse 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotPulse { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
   </style>
 </head>
 <body>
@@ -211,6 +296,26 @@
   <p style="margin-top:8px; font-size:.9rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
 </footer>
 
+<div class="ai-sheet" id="aiSheet">
+  <div class="ai-sheet-header">
+    <div class="ai-sheet-title">Пресек Дијалог</div>
+    <button class="ai-close" onclick="toggleAISheet(false)">&times;</button>
+  </div>
+  <div id="aiResponse" class="ai-content"></div>
+  <div id="aiLoading" class="ai-loading" style="display:none">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+<div class="ai-chat-bar">
+  <input type="text" id="aiInput" class="ai-chat-input" placeholder="Прашајте за овој настан..." onkeypress="if(event.key==='Enter') askAI()">
+  <button class="ai-chat-btn" onclick="askAI()">
+    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</div>
+
 <script>
   function getSimilarity(s1, s2) {
     const longer = s1.length > s2.length ? s1 : s2;
@@ -277,7 +382,45 @@
     if(label) label.textContent = timeAgo("{{ articles[0].created_at }}");
     {% endif %}
 
-    startLoranditeFlicker();
+    function toggleAISheet(show) {
+    document.getElementById('aiSheet').classList.toggle('active', show);
+  }
+
+  async function askAI() {
+    const input = document.getElementById('aiInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    input.value = '';
+    const responseEl = document.getElementById('aiResponse');
+    const loadingEl = document.getElementById('aiLoading');
+    
+    responseEl.innerHTML = '';
+    loadingEl.style.display = 'flex';
+    toggleAISheet(true);
+
+    try {
+      const clusterId = window.location.pathname.split('/').pop();
+      const res = await fetch('/api/chat_cluster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cluster_id: clusterId, query: query })
+      });
+      const data = await res.json();
+      
+      loadingEl.style.display = 'none';
+      if (data.error) {
+        responseEl.innerHTML = `<div style="color:var(--color-ruby)">Грешка: ${data.error}</div>`;
+      } else {
+        responseEl.innerHTML = data.response.replace(/\n/g, '<br>');
+      }
+    } catch(e) {
+      loadingEl.style.display = 'none';
+      responseEl.innerHTML = '<div style="color:var(--color-ruby)">Серверот не одговара. Пробајте подоцна.</div>';
+    }
+  }
+
+  startLoranditeFlicker();
   });
 
   let lorAnimation;

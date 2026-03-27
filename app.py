@@ -1340,6 +1340,54 @@ def api_popular():
     return jsonify(result)
 
 
+@app.route("/api/chat_cluster", methods=["POST"])
+def api_chat_cluster():
+    """Real-time conversation with a specific news cluster."""
+    data = request.json
+    cluster_id = data.get("cluster_id")
+    query = data.get("query")
+    if not cluster_id or not query:
+        return jsonify({"error": "Missing cluster_id or query"}), 400
+
+    conn = get_db()
+    rows = conn.execute("SELECT source, title, description FROM articles WHERE cluster_id = ?", (cluster_id,)).fetchall()
+    conn.close()
+    if not rows:
+        return jsonify({"error": "Cluster not found"}), 404
+
+    context_text = "\n".join([f"Source: {r['source']}\nTitle: {r['title']}\nSnippet: {r['description']}\n---" for r in rows])
+    
+    prompt = f"""
+    You are 'Presek AI', a senior journalistic analyst for the Macedonian media landscape.
+    Below are several news articles from different sources about the same event.
+    
+    CLUSTER CONTEXT:
+    {context_text}
+    
+    USER QUESTION:
+    {query}
+    
+    INSTRUCTIONS:
+    1. Answer the user's question based ONLY on the provided context.
+    2. Be objective and highlight differences in reporting between sources if they exist.
+    3. Use a professional, analytical tone in Macedonian.
+    4. Keep the answer concise (max 150 words) unless the user asks for more detail.
+    """
+
+    try:
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        req = _ur.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
+                          data=json.dumps(payload).encode("utf-8"),
+                          headers={"Content-Type": "application/json"})
+        with _ur.urlopen(req, timeout=15) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"response": answer})
+    except Exception as e:
+        log.error(f"AI Chat error: {e}")
+        return jsonify({"error": "AI сервисот е моментално преоптоварен."}), 503
+
+
 @app.route("/api/timeboxed")
 def api_timeboxed():
     """Return top clusters for each time window: утро 6-12, попладне 12-18, вечер 18-24."""
