@@ -161,7 +161,12 @@
     }
     .site-main{min-width:0}
     .site-sidebar{display:none}
-    @media(min-width:1024px){.site-sidebar{display:flex;flex-direction:column;gap:var(--spacing-md);position:sticky;top:84px;align-self:flex-start}}
+    @media(min-width:1024px){
+      .site-sidebar{display:flex;flex-direction:column;gap:var(--spacing-md);position:sticky;top:84px;align-self:flex-start;max-height:calc(100vh - 100px)}
+      .sidebar-inner{background:var(--bg-card); padding:var(--spacing-md); border-radius:var(--border-radius-md); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden}
+      #sidebarPopular{overflow-y:hidden; transition:overflow-y 0.2s}
+      .sidebar-inner:hover #sidebarPopular{overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--accent) transparent}
+    }
 
     /* CARDS */
     .stories-grid{display:grid;grid-template-columns:1fr;gap:var(--spacing-lg)}
@@ -254,7 +259,7 @@
     </div>
   </main>
   <aside class="site-sidebar">
-    <div style="background:var(--bg-card); padding:var(--spacing-md); border-radius:var(--border-radius-md); border:1px solid var(--border)">
+    <div class="sidebar-inner">
       <h4 style="margin-bottom:var(--spacing-md); font-family:var(--display); font-size:1.1rem; color:var(--accent)">🔥 Најчитано</h4>
       <div id="sidebarPopular"></div>
     </div>
@@ -334,11 +339,9 @@
               <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
             </h3>
           </div>
-          ${a.image_url ? `
-            <div class="story-thumb-wrap">
-              <img src="${a.image_url}" class="story-thumb" loading="lazy">
-            </div>
-          ` : ''}
+          <div class="story-thumb-wrap">
+            <img src="${a.image_url || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!a.image_url ? 'object-fit: contain; padding: 10px; opacity: 0.8;' : ''}">
+          </div>
         </div>
         ${a.description ? `<p class="story-excerpt">${a.description}</p>` : ''}
         ${related.length ? `
