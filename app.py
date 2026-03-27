@@ -1398,11 +1398,11 @@ USER QUESTION:
             "tools": [{"google_search_retrieval": {}}] if needs_grounding else []
         }
         
-        req = _ur.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
+        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
                           data=json.dumps(payload).encode("utf-8"),
                           headers={"Content-Type": "application/json"})
         
-        with _ur.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
             answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
             
