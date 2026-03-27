@@ -5,271 +5,218 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Пресек | Вашиот Дневен Преглед</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#D10047">
+  <meta name="theme-color" content="#D20000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* =========================================
-       DESIGN TOKENS (MINERAL & METALLIC)
+       DESIGN TOKENS (MACEDONIAN TRADITIONAL MATERIAL)
        ========================================= */
     :root {
-      /* Dark Mode (Default) - Mineral & Metallic */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E0E2E4;
-      --color-text-secondary: #8C8E90;
-      --color-ruby: #D10047;
-      --color-bronze: #8C6D3E;
-      --color-gold: #D4AF37;
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, var(--color-gold));
-
+      /* Light Mode (Default) - Warm & Traditional */
+      --color-bg-base: #FFFBF2;
+      --color-bg-surface: #FFFFFF;
+      --color-bg-surface-hover: #FFF8E7;
+      --color-text-primary: #1A1712;
+      --color-text-secondary: #5C5852;
+      
+      /* Traditional Palette */
+      --color-macedonian-red: #D20000;
+      --color-macedonian-gold: #FFE000;
+      --color-macedonian-gold-dark: #E6B800;
+      
       /* Semantic mapping */
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
-      --border: rgba(140, 109, 62, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: var(--color-gold);
-      --bronze: var(--color-bronze);
-      --headline: #FFFFFF;
+      --border: #E8E2D9;
+      --accent: var(--color-macedonian-red);
+      --gold: var(--color-macedonian-gold);
+      --headline: #1A1712;
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      /* Geometry */
-      --border-radius-sm: 0px;
-      --border-radius-md: 0px;
-      --border-radius-lg: 0px;
+      /* Material Shadows */
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      
+      /* Geometry (Material Softness) */
+      --border-radius-sm: 4px;
+      --border-radius-md: 12px;
+      --border-radius-lg: 24px;
 
-      /* Layout */
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.875rem;
-      --font-size-body: 1rem;
-      --font-size-md: 1.125rem;
-      --font-size-lg: 1.5rem;
-      --line-height-body: 1.6;
-      --line-height-heading: 1.1;
-      --spacing-xs: 4px;
-      --spacing-sm: 8px;
-      --spacing-md: 16px;
-      --spacing-lg: 24px;
-      --spacing-xl: 32px;
-      --layout-max-width: 1280px;
-      --layout-sidebar-width: 320px;
-      --grid-gap: 32px;
-      --serif: 'Source Serif 4', Georgia, serif;
-      --display: 'Playfair Display', Georgia, serif;
+      /* Typography (Enhanced for Readability) */
+      --font-size-xs: 0.85rem;
+      --font-size-sm: 1rem;
+      --font-size-body: 1.15rem; /* Larger for easier reading */
+      --font-size-md: 1.35rem;
+      --font-size-lg: 1.75rem;
+      --line-height-body: 1.7;
+      --line-height-heading: 1.2;
+      --serif: 'Playfair Display', Georgia, serif;
       --sans: 'Noto Sans', sans-serif;
+      
+      --spacing-md: 20px;
+      --layout-max-width: 1280px;
     }
 
-    @media(prefers-color-scheme: light) {
+    @media(prefers-color-scheme: dark) {
       :root {
-        /* Light Mode - Polished Platinum */
-        --color-bg-base: #F0F2F3;
-        --color-bg-surface: #FFFFFF;
-        --color-bg-surface-hover: #E8EAEB;
-        --color-text-primary: #1A1C1E;
-        --color-text-secondary: #5C5E60;
-        --border-opacity: 0.4;
-        --pattern-opacity: 0.05;
-        --logo-gradient: linear-gradient(to right, var(--color-ruby), var(--color-bronze));
+        --color-bg-base: #12100E;
+        --color-bg-surface: #1E1B18;
+        --color-bg-surface-hover: #292521;
+        --color-text-primary: #F5F2EF;
+        --color-text-secondary: #AAA5A0;
         
         --bg: var(--color-bg-base);
         --bg-card: var(--color-bg-surface);
-        --headline: #141618;
+        --border: #332F2B;
+        --headline: #FFFFFF;
         --text-body: var(--color-text-primary);
         --text-muted: var(--color-text-secondary);
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
       }
     }
 
-    /* Pattern depends on opacity variable */
-    body {
-      --crystal-pattern: 
-        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%),
-        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%);
-      background: var(--bg);
-      background-image: var(--crystal-pattern);
-      background-size: 100px 173px;
-      color: var(--text-body);
-      font-family: var(--serif);
-      font-size: var(--font-size-body);
-      line-height: var(--line-height-body);
-      min-height: 100vh;
-      overflow-x: hidden;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+    body{
+      background:var(--bg);
+      color:var(--text-body);
+      font-family:var(--sans);
+      font-size:var(--font-size-body);
+      line-height:var(--line-height-body);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* SUN WATERMARK */
+    .sun-motif {
+      position: fixed;
+      top: -100px;
+      right: -100px;
+      width: 400px;
+      height: 400px;
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: -1;
+      color: var(--color-macedonian-gold);
     }
 
     /* TICKER */
-    .ticker-bar{background:var(--bg-card);border-bottom:1px solid var(--border);height:32px;display:flex;align-items:center;overflow:hidden}
-    .ticker-label{background:var(--accent);color:#fff;font-size:.6rem;font-weight:var(--font-weight-bold);letter-spacing:.2em;text-transform:uppercase;padding:0 1rem;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;font-family:var(--sans)}
-    .ticker-track{flex:1;overflow:hidden}
-    .ticker-inner{display:flex;gap:3rem;white-space:nowrap;animation:ticker 80s linear infinite;font-size:var(--font-size-xs);color:var(--text-muted);font-family:var(--serif)}
-    .ticker-item::before{content:'';display:inline-block;width:6px;height:6px;background:var(--bronze);transform:rotate(45deg);margin-right:1rem;vertical-align:middle;opacity:0.6}
+    .ticker-bar{background:var(--color-macedonian-red);color:#fff;height:36px;display:flex;align-items:center;overflow:hidden;box-shadow:var(--shadow-sm)}
+    .ticker-label{background:var(--color-macedonian-gold);color:#000;font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:0 1.25rem;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0}
+    .ticker-inner{display:flex;gap:4rem;white-space:nowrap;animation:ticker 90s linear infinite;font-size:var(--font-size-xs);font-weight:600}
     @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
     /* HEADER */
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;position:relative;gap:var(--spacing-md)}
-    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;transition:all .3s ease;flex-shrink:0;letter-spacing:-0.02em}
-    .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .site-header{background:var(--bg-card);border-bottom:4px solid var(--color-macedonian-gold);position:sticky;top:0;z-index:200;box-shadow:var(--shadow-md)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:72px}
+    .logo-text{display:flex;align-items:center;gap:15px;font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--color-macedonian-red);text-decoration:none}
     
-    .header-nav{display:none;flex:1;overflow-x:auto;scrollbar-width:none}
-    @media(min-width:1024px){.header-nav{display:flex;gap:var(--spacing-sm);justify-content:center}}
+    .header-right{display:flex;align-items:center;gap:var(--spacing-md)}
+    .top10-btn{background:var(--color-macedonian-gold);color:#000;border:none;font-family:var(--sans);font-size:.85rem;font-weight:800;text-transform:uppercase;padding:.75rem 1.5rem;border-radius:var(--border-radius-lg);cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(255,224,0,0.3)}
+    .top10-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,224,0,0.5)}
     
-    .header-date{font-size:var(--font-size-sm);color:var(--text-muted);font-family:var(--sans);font-weight:var(--font-weight-semibold);text-align:center}
-    @media(min-width:1024px){.header-date{display:none}}
-    
-    .header-right{display:flex;align-items:center;gap:var(--spacing-md);flex-shrink:0}
-    .search-toggle{background:none;border:none;color:var(--gold);font-size:1.2rem;cursor:pointer;padding:.4rem;display:flex;align-items:center;transition:transform .2s}
-    .search-toggle:hover{transform:scale(1.1)}
-    .top10-btn{background:none;color:var(--gold);border:1px solid var(--bronze);font-family:var(--sans);font-size:.7rem;font-weight:var(--font-weight-bold);letter-spacing:.15em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;transition:all .2s ease}
-    .top10-btn:hover{background:var(--bronze);color:#fff;border-color:var(--gold)}
-    
-    .refresh-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;transition:all .3s}
-    .refresh-btn:hover{color:var(--gold);transform:rotate(180deg)}
-
-    .search-overlay{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--bg-card);display:none;align-items:center;padding:0 var(--spacing-md);gap:var(--spacing-md);z-index:210}
-    .search-overlay.active{display:flex}
-    .search-input{flex:1;background:var(--bg);border:1px solid var(--border);padding:.6rem 1rem;font-family:var(--sans);font-size:var(--font-size-body);color:var(--text-body);outline:none}
-    .search-input:focus{border-color:var(--gold)}
-    .search-close{background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:.4rem}
+    .refresh-btn{background:var(--bg-card);border:2px solid var(--border);width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
+    .refresh-btn:hover{border-color:var(--accent);transform:rotate(180deg)}
 
     /* CAT NAV */
-    .cat-nav{background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:64px;z-index:190;scrollbar-width:none}
-    @media(min-width:1024px){.cat-nav{display:none}}
-    .cat-nav-inner{display:flex;padding:0 var(--spacing-xs)}
-    .cat-btn{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:var(--font-weight-bold);color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;padding:.8rem 1rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.1em;transition:all .15s}
-    .cat-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
-
-    /* TRENDS */
-    .trending-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:var(--spacing-xs) 0}
-    .trending-inner{display:flex;align-items:center;gap:var(--spacing-sm);padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;overflow-x:auto;scrollbar-width:none}
-    .trend-chip{font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);padding:.2rem .8rem;white-space:nowrap;cursor:pointer;transition:all .15s}
-    .trend-chip:hover{border-color:var(--gold);color:var(--gold)}
-
-    /* MAIN LAYOUT */
-    .site-layout{display:grid;grid-template-columns:1fr;max-width:var(--layout-max-width);margin:0 auto;gap:var(--grid-gap);padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl)}
-    @media(min-width:1024px){
-      .site-layout{grid-template-columns:1fr var(--layout-sidebar-width);padding:var(--spacing-xl) var(--spacing-md)}
-    }
-    .site-main{min-width:0}
-    .site-sidebar{display:none}
-    @media(min-width:1024px){
-      .site-sidebar{display:flex;flex-direction:column;gap:var(--spacing-md);position:sticky;top:84px;align-self:flex-start;max-height:calc(100vh - 100px)}
-      .sidebar-inner{background:var(--bg-card); padding:var(--spacing-md); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden}
-      #sidebarPopular{overflow-y:hidden; transition:overflow-y 0.2s}
-      .sidebar-inner:hover #sidebarPopular{overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--gold) transparent}
-    }
+    .cat-nav{background:var(--bg-surface);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:72px;z-index:190;scrollbar-width:none}
+    .cat-btn{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--text-muted);background:none;border:none;padding:1rem 1.5rem;cursor:pointer;white-space:nowrap;transition:all .2s;position:relative}
+    .cat-btn.active{color:var(--accent)}
+    .cat-btn.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:4px;background:var(--accent);border-radius:4px 4px 0 0}
 
     /* CARDS */
-    .stories-grid{display:grid;grid-template-columns:1fr;gap:var(--grid-gap)}
-    @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
-    .story-card{background:var(--bg-card);padding:var(--spacing-md);border:1px solid var(--border);display:flex;flex-direction:column;gap:var(--spacing-sm);transition:all .3s ease;position:relative;overflow:hidden}
-    .story-card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.3);transform:translateY(-2px)}
-    .story-card::after{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--accent);transition:height .3s}
-    .story-card:hover::after{height:100%}
+    .site-layout{display:grid;grid-template-columns:1fr;max-width:var(--layout-max-width);margin:0 auto;gap:32px;padding:32px var(--spacing-md)}
+    @media(min-width:1024px){.site-layout{grid-template-columns:1fr 340px}}
+
+    .stories-grid{display:grid;grid-template-columns:1fr;gap:24px}
+    .story-card{background:var(--bg-card);border-radius:var(--border-radius-md);padding:24px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+    .story-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--color-macedonian-gold-dark)}
     
-    .story-card-top{display:flex;gap:var(--spacing-md);justify-content:space-between}
-    .story-content{flex:1;min-width:0}
-    .story-meta{display:flex;align-items:center;gap:var(--spacing-xs);font-family:var(--sans);font-size:.65rem;font-weight:var(--font-weight-bold);color:var(--bronze);margin-bottom:var(--spacing-xs);text-transform:uppercase;letter-spacing:.15em}
-    .story-source{color:var(--gold)}
-    .story-time::before{content:'|';margin-right:var(--spacing-xs);opacity:0.5}
-    .story-headline{font-family:var(--display);font-size:1.25rem;font-weight:700;line-height:var(--line-height-heading);margin:0}
-    .story-headline a{color:var(--headline);text-decoration:none;transition:color .2s}
-    .story-headline a:hover{color:var(--gold)}
-    .story-thumb-wrap{width:100px;height:70px;overflow:hidden;flex-shrink:0;background:var(--bg);border:1px solid var(--border)}
+    .story-meta{display:flex;align-items:center;gap:8px;font-size:var(--font-size-xs);font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+    .story-headline{font-family:var(--serif);font-size:var(--font-size-md);font-weight:900;line-height:1.3}
+    .story-headline a{color:var(--headline);text-decoration:none}
+    .story-headline a:hover{color:var(--accent);text-decoration:underline}
+    
+    .story-thumb-wrap{width:120px;height:90px;border-radius:var(--border-radius-sm);overflow:hidden;flex-shrink:0;background:var(--color-bg-base);border:1px solid var(--border)}
     .story-thumb{width:100%;height:100%;object-fit:cover}
-    .story-excerpt{font-size:var(--font-size-sm);color:var(--text-body);line-height:var(--line-height-body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;opacity:0.8}
     
-    .related-links{border-top:1px solid var(--border);padding-top:var(--spacing-sm);display:flex;flex-direction:column;gap:var(--spacing-xs)}
-    .related-item{display:flex;align-items:center;gap:var(--spacing-sm);font-size:var(--font-size-sm);color:var(--text-muted);text-decoration:none;padding-left:var(--spacing-xs);border-left:1px solid transparent;transition:all .2s}
-    .related-item:hover{color:var(--gold);border-left-color:var(--gold);background:var(--color-bg-surface-hover)}
-    .related-text{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .related-src{font-size:.65rem;font-weight:var(--font-weight-bold);color:var(--bronze)}
+    .badge-count{background:var(--color-macedonian-gold);color:#000;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:800;text-transform:uppercase}
 
-    .actions-row{margin-top:auto;padding-top:var(--spacing-sm);display:flex;align-items:center;gap:var(--spacing-sm)}
-    .badge-count{color:var(--bronze);font-family:var(--sans);font-size:.65rem;font-weight:var(--font-weight-bold);text-transform:uppercase;letter-spacing:.1em}
+    /* SIDEBAR POPULAR */
+    .sidebar-inner{background:var(--bg-card);padding:24px;border-radius:var(--border-radius-md);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+    .sidebar-title{font-family:var(--serif);font-size:1.4rem;font-weight:900;color:var(--color-macedonian-red);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    
+    .popular-item{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+    .popular-link{color:var(--headline);text-decoration:none;font-weight:700;font-size:var(--font-size-sm);line-height:1.4;display:block}
+    .popular-link:hover{color:var(--accent)}
 
-    .loading-wrap{text-align:center;padding:var(--spacing-xl) 1rem;color:var(--text-muted)}
-    .spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite;margin:0 auto 1rem}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .fade-in{animation:fadeIn .5s ease-out}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-
-    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:var(--spacing-xl) var(--spacing-md);text-align:center;color:var(--text-muted);font-size:var(--font-size-sm)}
-    .footer-links{display:flex;justify-content:center;gap:var(--spacing-md);margin-top:var(--spacing-md);flex-wrap:wrap}
-    .footer-links a{color:var(--text-muted);text-decoration:none;transition:color .2s}
-    .footer-links a:hover{color:var(--gold)}
+    footer{background:var(--color-bg-surface);border-top:4px solid var(--color-macedonian-red);padding:48px var(--spacing-md);text-align:center}
     
     @media(max-width:767px){
-      .header-inner{height:56px;padding:0 var(--spacing-sm);gap:var(--spacing-xs)}
       .logo-text{font-size:1.5rem}
-      .cat-nav{top:56px}
-      .story-card{padding:var(--spacing-md)}
-      .story-headline{font-size:1.15rem}
-      .story-thumb-wrap{width:80px;height:60px}
+      .story-card{padding:16px}
+      .story-thumb-wrap{width:100px;height:75px}
     }
   </style>
 </head>
 <body>
 
-<div class="ticker-bar"><div class="ticker-label">ВО ЖИВО</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"></div></div></div>
+<svg class="sun-motif" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="12" fill="currentColor"/>
+  <path d="M50 5 L50 30 M50 70 L50 95 M5 50 L30 50 M70 50 L95 50 M18 18 L35 35 M65 65 L82 82 M82 18 L65 35 M35 65 L18 82" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+</svg>
+
+<div class="ticker-bar"><div class="ticker-label">Во Живо</div><div class="ticker-track"><div class="ticker-inner" id="tickerInner"></div></div></div>
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="logo-text" id="logoText">
-      <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <rect width="32" height="32" fill="#D10047"/>
-        <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#fff">П</text>
+    <a href="/" class="logo-text">
+      <svg width="40" height="40" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="6" fill="#FFE000"/>
+        <path d="M16 2 L16 10 M16 22 L16 30 M2 16 L10 16 M22 16 L30 16 M6 6 L12 12 M20 20 L26 26 M26 6 L20 12 M12 20 L6 26" stroke="#FFE000" stroke-width="2.5" stroke-linecap="round"/>
+        <rect width="32" height="32" fill="none" stroke="#D20000" stroke-width="0"/>
       </svg>
       <span>ПРЕСЕК</span>
     </a>
     
-    <div class="header-nav" id="headerNav"></div>
-    <div class="header-date" id="headerDate"></div>
-    
-    <div class="header-right" id="headerRight">
-      <button class="search-toggle" onclick="toggleSearch(true)">⌕</button>
+    <div class="header-right">
       <button class="top10-btn" onclick="showTop10(this)">Топ 10</button>
-      <button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">↻</button>
-    </div>
-    
-    <div class="search-overlay" id="searchOverlay">
-      <input type="text" class="search-input" id="searchInput" placeholder="Пребарај вести…" oninput="liveSearch(this.value)" onkeydown="if(event.key==='Enter') toggleSearch(false)">
-      <button class="search-close" onclick="toggleSearch(false)">✕</button>
+      <button class="refresh-btn" onclick="fetchNews()">↻</button>
     </div>
   </div>
 </header>
 
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNavMobile"></div></nav>
-<div class="trending-bar"><div class="trending-inner" id="trendChips"></div></div>
 
 <div class="site-layout">
   <main class="site-main">
-    <div id="pageWrap" class="fade-in">
-      <div class="loading-wrap"><div class="spinner"></div>Вчитување…</div>
-    </div>
-    <div id="loadMoreWrap" style="display:none; text-align:center; padding:2rem">
-      <button class="top10-btn" style="padding:.8rem 2rem" onclick="loadMore()">Вчитај повеќе ↓</button>
+    <div id="pageWrap" class="fade-in"></div>
+    <div id="loadMoreWrap" style="display:none; text-align:center; padding:32px">
+      <button class="top10-btn" onclick="loadMore()">Вчитај повеќе ↓</button>
     </div>
   </main>
   <aside class="site-sidebar">
     <div class="sidebar-inner">
-      <h4 style="margin-bottom:var(--spacing-md); font-family:var(--display); font-size:1.1rem; color:var(--gold); letter-spacing:.05em">🔥 Најчитано</h4>
+      <h4 class="sidebar-title">🔥 Најчитано</h4>
       <div id="sidebarPopular"></div>
     </div>
   </aside>
 </div>
 
 <footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
-  <p style="margin-top:.5rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
-  <div class="footer-links">
-    <a href="/izvori">Извори</a> · <a href="/stats">Статистики</a> · <a href="/about">За нас</a> · <a href="/privacy">Приватност</a>
+  <strong style="font-family:var(--serif); font-size:1.8rem; color:var(--accent)">ПРЕСЕК</strong>
+  <p style="margin-top:8px; font-weight:600">Вашиот дневен преглед на македонски вести</p>
+  <div style="margin-top:24px; display:flex; justify-content:center; gap:20px; font-weight:700">
+    <a href="/izvori" style="color:var(--text-muted); text-decoration:none">Извори</a>
+    <a href="/stats" style="color:var(--text-muted); text-decoration:none">Статистики</a>
+    <a href="/about" style="color:var(--text-muted); text-decoration:none">За нас</a>
   </div>
 </footer>
 
@@ -291,69 +238,41 @@
 
   function showTop10(btn) {
     if(btn) btn.style.opacity = '0.5';
-    fetch('/api/top10')
-      .then(res => res.json())
-      .then(data => {
-        allClusters = data.clusters || data;
-        _hasMore = false;
-        renderPage(allClusters);
-        document.getElementById('loadMoreWrap').style.display = 'none';
-        if(btn) btn.style.opacity = '1';
-        window.scrollTo({top: 0, behavior: 'smooth'});
-      })
-      .catch(e => {
-        if(btn) btn.style.opacity = '1';
-      });
-  }
-
-  function toggleSearch(show) {
-    const overlay = document.getElementById('searchOverlay');
-    const input = document.getElementById('searchInput');
-    overlay.classList.toggle('active', show);
-    if(show) {
-      input.focus();
-    } else if(input.value) {
-      input.value = '';
-      liveSearch('');
-    }
+    fetch('/api/top10').then(res => res.json()).then(data => {
+      allClusters = data.clusters || data;
+      _hasMore = false;
+      renderPage(allClusters);
+      document.getElementById('loadMoreWrap').style.display = 'none';
+      if(btn) btn.style.opacity = '1';
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
   }
 
   function renderCard(c) {
     const a = c.articles[0];
     if(!a) return '';
-    const related = c.articles.slice(1, 4);
     const isBreaking = (c.score || 0) > 3.0;
-    const title = (a.headline || a.title).replace(/'/g, "\\'");
 
     return `
-      <div class="story-card fade-in">
-        <div class="story-card-top">
-          <div class="story-content">
+      <div class="story-card">
+        <div style="display:flex; gap:20px; justify-content:space-between">
+          <div style="flex:1">
             <div class="story-meta">
-              <span class="story-source">${a.source}</span>
-              <span class="story-time">${timeAgo(a.created_at)}</span>
-              ${isBreaking ? '<span style="color:var(--accent)">| ВО ЖИВО</span>' : ''}
+              <span>${a.source}</span>
+              <span style="opacity:0.4">|</span>
+              <span>${timeAgo(a.created_at)}</span>
+              ${isBreaking ? '<span style="color:var(--accent)">· ВО ЖИВО</span>' : ''}
             </div>
             <h3 class="story-headline">
               <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
             </h3>
           </div>
           <div class="story-thumb-wrap">
-            <img src="${a.image_url || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!a.image_url ? 'object-fit: contain; padding: 10px; opacity: 0.2;' : ''}">
+            <img src="${a.image_url || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!a.image_url ? 'object-fit: contain; padding: 15px; opacity: 0.1;' : ''}">
           </div>
         </div>
-        ${a.description ? `<p class="story-excerpt">${a.description}</p>` : ''}
-        ${related.length ? `
-          <div class="related-links">
-            ${related.map(r => `
-              <a href="${r.link}" target="_blank" class="related-item">
-                <span class="related-text">${r.title}</span>
-                <span class="related-src">${r.source}</span>
-              </a>
-            `).join('')}
-          </div>
-        ` : ''}
-        <div class="actions-row">
+        <p style="font-size:var(--font-size-sm); color:var(--text-body); opacity:0.9">${a.description || ''}</p>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:8px">
           <span class="badge-count">${c.articles.length} извори</span>
         </div>
       </div>
@@ -362,111 +281,62 @@
 
   function renderPage(clusters) {
     const wrap = document.getElementById('pageWrap');
-    wrap.classList.remove('fade-in');
-    void wrap.offsetWidth; 
-    wrap.classList.add('fade-in');
-    
-    let filtered = clusters;
-    if(activeCategory !== 'Сите') {
-      filtered = clusters.filter(c => c.articles[0]?.category === activeCategory);
-    }
-    if(!filtered.length) {
-      wrap.innerHTML = '<div style="text-align:center; padding:3rem; opacity:0.5">Нема вести во оваа категорија.</div>';
-      return;
-    }
+    let filtered = activeCategory === 'Сите' ? clusters : clusters.filter(c => c.articles[0]?.category === activeCategory);
     wrap.innerHTML = `<div class="stories-grid">${filtered.map(renderCard).join('')}</div>`;
   }
 
   async function fetchNews() {
-    const btn = document.getElementById('refreshBtn');
-    btn.style.opacity = '0.5';
-    try {
-      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
-      const data = await res.json();
-      allClusters = data.clusters || data;
-      _hasMore = data.has_more;
-      renderPage(allClusters);
-      updateTicker(allClusters);
-      buildCats();
-      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-    } catch(e) {}
-    btn.style.opacity = '1';
+    const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
+    const data = await res.json();
+    allClusters = data.clusters || data;
+    _hasMore = data.has_more;
+    renderPage(allClusters);
+    updateTicker(allClusters);
+    buildCats();
+    document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
   }
 
   async function loadMore() {
     _currentPage++;
-    try {
-      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
-      const data = await res.json();
-      const nc = data.clusters || [];
-      allClusters = [...allClusters, ...nc];
-      _hasMore = data.has_more;
-      renderPage(allClusters);
-      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-    } catch(e) {}
-  }
-
-  function liveSearch(q) {
-    const lower = q.toLowerCase();
-    const cards = document.querySelectorAll('.story-card');
-    cards.forEach(card => {
-      card.style.display = card.innerText.toLowerCase().includes(lower) ? 'flex' : 'none';
-    });
+    const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
+    const data = await res.json();
+    allClusters = [...allClusters, ...(data.clusters || [])];
+    _hasMore = data.has_more;
+    renderPage(allClusters);
+    document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
   }
 
   function updateTicker(clusters) {
-    const items = clusters.slice(0, 15).map(c => `<span class="ticker-item">${c.articles[0]?.title}</span>`);
+    const items = clusters.slice(0, 15).map(c => `<span>${c.articles[0]?.title}</span>`);
     document.getElementById('tickerInner').innerHTML = [...items, ...items].join('');
   }
 
   function buildCats() {
     const cats = ['Сите', 'Македонија', 'Балкан', 'Европа', 'Германија', 'Америка', 'Свет'];
-    const html = cats.map(c => 
-      `<button class="cat-btn ${c===activeCategory?'active':''}" onclick="filterCat('${c}', this)">${c}</button>`
+    document.getElementById('catNavMobile').innerHTML = cats.map(c => 
+      `<button class="cat-btn ${c===activeCategory?'active':''}" onclick="filterCat('${c}')">${c}</button>`
     ).join('');
-    document.getElementById('headerNav').innerHTML = html;
-    document.getElementById('catNavMobile').innerHTML = html;
   }
 
-  function filterCat(cat, btn) {
+  function filterCat(cat) {
     activeCategory = cat;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.cat-btn').forEach(b => {
-      if(b.textContent === cat) b.classList.add('active');
-    });
+    buildCats();
     renderPage(allClusters);
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
 
   async function fetchPopular() {
-    try {
-      const res = await fetch('/api/popular');
-      const data = await res.json();
-      document.getElementById('sidebarPopular').innerHTML = data.slice(0, 12).map(c => `
-        <div style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem">
-          <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:var(--font-weight-semibold); line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
-          <div style="font-size:.65rem; color:var(--bronze); margin-top:4px; text-transform:uppercase; letter-spacing:.1em">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
-        </div>
-      `).join('');
-    } catch(e) {}
+    const res = await fetch('/api/popular');
+    const data = await res.json();
+    document.getElementById('sidebarPopular').innerHTML = data.slice(0, 10).map(c => `
+      <div class="popular-item">
+        <a href="/cluster/${c.cluster_id}" class="popular-link">${c.articles[0].title}</a>
+        <div style="font-size:.75rem; color:var(--accent); font-weight:700; margin-top:4px">${c.articles[0].source}</div>
+      </div>
+    `).join('');
   }
 
-  async function fetchTrending() {
-    try {
-      const res = await fetch('/api/trending');
-      const data = await res.json();
-      document.getElementById('trendChips').innerHTML = data.slice(0, 10).map(t => `
-        <span class="trend-chip" onclick="document.getElementById('searchInput').value='${t.word}'; toggleSearch(true); liveSearch('${t.word}')">#${t.word}</span>
-      `).join('');
-    } catch(e) {}
-  }
-
-  const now = new Date();
-  const D = ['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];
-  const M = ['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];
-  document.getElementById('headerDate').textContent = `${D[now.getDay()]}, ${now.getDate()} ${M[now.getMonth()]}`;
-
-  fetchNews(); fetchPopular(); fetchTrending();
+  fetchNews(); fetchPopular();
 </script>
 </body>
 </html>
