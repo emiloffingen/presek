@@ -356,6 +356,10 @@
   function renderCard(c) {
     const a = c.articles[0];
     if(!a) return '';
+    
+    // Find the first available image in the cluster
+    const clusterImage = c.articles.find(art => art.image_url)?.image_url;
+    
     const isBreaking = (c.score || 0) > 3.0;
     const uniqueSources = [...new Set(c.articles.map(art => art.source))];
     const topSources = uniqueSources.slice(0, 3);
@@ -376,7 +380,7 @@
             </h3>
           </div>
           <a href="/cluster/${c.cluster_id}" class="story-thumb-wrap">
-            <img src="${a.image_url || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!a.image_url ? 'object-fit: contain; padding: 12px; opacity: 0.2;' : ''}">
+            <img src="${clusterImage || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!clusterImage ? 'object-fit: contain; padding: 12px; opacity: 0.2;' : ''}">
           </a>
         </div>
         <p class="story-excerpt">${a.description || ''}</p>
