@@ -1,0 +1,12 @@
+presek.db
+presek.db.bak
+news.db
+presek.log
+presek.log.old
+venv/
+__pycache__/
+.env
+.git/
+*.pyc
+digests/
+cluster_summaries.json

@@ -30,24 +30,26 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Identical tokens to index.html */
-      --color-bg-base: #fffcf5;
-      --color-bg-surface: #ffffff;
-      --color-bg-surface-hover: #fffef0;
-      --color-text-primary: #1a1712;
-      --color-text-secondary: #7a6e58;
-      --color-macedonian-red: #9b111e;
-      --color-macedonian-gold: #ffe000;
+      /* Mineral & Metallic Base (Identical to index.html) */
+      --color-bg-base: #141618;
+      --color-bg-surface: #1A1C1E;
+      --color-bg-surface-hover: #232629;
+      --color-text-primary: #E0E2E4;
+      --color-text-secondary: #8C8E90;
+      --color-ruby: #D10047;
+      --color-bronze: #8C6D3E;
+      --color-gold: #D4AF37;
+      
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
-      --border: #e8dfc4;
-      --accent: var(--color-macedonian-red);
-      --gold: var(--color-macedonian-gold);
-      --headline: var(--color-text-primary);
-      --text-body: #2c271e;
+      --border: rgba(140, 109, 62, 0.2);
+      --accent: var(--color-ruby);
+      --gold: var(--color-gold);
+      --bronze: var(--color-bronze);
+      --headline: #FFFFFF;
+      --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
-      --sun-glow: rgba(255, 224, 0, 0.12);
-      --sun-gradient: linear-gradient(135deg, var(--gold), #cd7f32);
+      
       --serif: 'Source Serif 4', Georgia, serif;
       --display: 'Playfair Display', Georgia, serif;
       --sans: 'Noto Sans', sans-serif;
@@ -59,28 +61,18 @@
       --spacing-md: 16px;
       --spacing-lg: 24px;
       --spacing-xl: 32px;
-      --border-radius-sm: 4px;
-      --border-radius-md: 8px;
       --layout-max-width: 1280px;
-      --grid-gap: 24px;
+      
+      --crystal-pattern: 
+        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%),
+        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%);
     }
-    @media(prefers-color-scheme:dark){:root{
-      --color-bg-base: #0f0e0c;
-      --color-bg-surface: #1a1814;
-      --color-bg-surface-hover: #24211a;
-      --color-text-primary: #e8e4dc;
-      --color-text-secondary: #968e7f;
-      --border: #2e2a22;
-      --text-body: #cfc9bc;
-      --accent: #e63946;
-      --gold: #ffcc33;
-      --sun-glow: rgba(255, 204, 51, 0.08);
-    }}
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{
       background:var(--bg);
-      background-image: radial-gradient(circle at 50% -100px, var(--sun-glow), transparent 600px);
+      background-image: var(--crystal-pattern);
+      background-size: 100px 173px;
       color:var(--text-body);
       font-family:var(--serif);
       font-size:var(--font-size-body);
@@ -88,33 +80,39 @@
       min-height:100vh;
     }
 
-    /* HEADER (Identical to index.html) */
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+    /* HEADER */
+    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;position:relative}
-    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none}
-    @media(min-width:1024px){.logo-text{font-size:2.2rem;background:var(--sun-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em}
+    .logo-text span{background:linear-gradient(to right, #fff, var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     
-    .back-link{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--text-muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .2s}
-    .back-link:hover{color:var(--accent)}
+    .back-link{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .2s}
+    .back-link:hover{color:#fff;transform:translateX(-4px)}
 
     /* LAYOUT */
     .site-layout{max-width:var(--layout-max-width);margin:0 auto;padding:var(--spacing-xl) var(--spacing-md)}
     .cluster-content{max-width:900px;margin:0 auto}
     
-    .cluster-header{margin-bottom:var(--spacing-xl);border-bottom:1px solid var(--border);padding-bottom:var(--spacing-lg)}
+    .cluster-header{margin-bottom:var(--spacing-xl);border-bottom:1px solid var(--border);padding-bottom:var(--spacing-lg);position:relative}
+    .cluster-header::after{content:'';position:absolute;bottom:-1px;left:0;width:60px;height:2px;background:var(--accent)}
     .cluster-headline{font-family:var(--display);font-size:2.4rem;font-weight:900;line-height:1.2;color:var(--headline);margin-bottom:var(--spacing-sm)}
-    .cluster-meta{display:flex;align-items:center;gap:var(--spacing-sm);font-family:var(--sans);font-size:var(--font-size-xs);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+    .cluster-meta{display:flex;align-items:center;gap:var(--spacing-sm);font-family:var(--sans);font-size:.65rem;font-weight:700;color:var(--bronze);text-transform:uppercase;letter-spacing:.15em}
 
-    /* CARDS (Matching index.html style) */
+    /* CARDS */
     .sources-grid{display:grid;grid-template-columns:1fr;gap:var(--spacing-md)}
     @media(min-width:768px){.sources-grid{grid-template-columns:1fr 1fr}}
     
-    .source-card{background:var(--bg-card);border-radius:var(--border-radius-md);padding:var(--spacing-md);border:1px solid var(--border);display:flex;gap:var(--spacing-md);text-decoration:none;transition:all .2s ease;position:relative;overflow:hidden}
-    .source-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,0,0,0.15);transform:translateY(-2px)}
+    .source-card{background:var(--bg-card);border:1px solid var(--border);padding:var(--spacing-md);display:flex;gap:var(--spacing-md);text-decoration:none;transition:all .3s ease;position:relative;overflow:hidden}
+    .source-card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.3);transform:translateY(-2px)}
+    .source-card::after{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--accent);transition:height .3s}
+    .source-card:hover::after{height:100%}
+
     .source-content{flex:1;min-width:0}
-    .source-name{font-family:var(--sans);font-size:var(--font-size-xs);font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-    .source-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;line-height:1.4;color:var(--headline);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    .source-thumb-wrap{width:100px;height:75px;border-radius:var(--border-radius-sm);overflow:hidden;flex-shrink:0;background:var(--bg)}
+    .source-name{font-family:var(--sans);font-size:.65rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+    .source-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;line-height:1.4;color:var(--headline);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;transition:color .2s}
+    .source-card:hover .source-title{color:var(--gold)}
+    
+    .source-thumb-wrap{width:100px;height:75px;overflow:hidden;flex-shrink:0;background:var(--bg);border:1px solid var(--border)}
     .source-thumb{width:100%;height:100%;object-fit:cover}
 
     .fade-in{animation:fadeIn .4s ease-out}
@@ -136,7 +134,7 @@
   <div class="header-inner">
     <a href="/" class="logo-text">
       <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <rect width="32" height="32" rx="6" fill="#9b111e"/>
+        <rect width="32" height="32" fill="#D10047"/>
         <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#fff">П</text>
       </svg>
       <span>ПРЕСЕК</span>
@@ -152,7 +150,7 @@
       <h1 class="cluster-headline">{{ articles[0].title }}</h1>
       <div class="cluster-meta">
         <span id="timeLabel"></span>
-        <span style="opacity:0.3">|</span>
+        <span style="opacity:0.2">|</span>
         <span>{{ articles|length }} извори</span>
       </div>
     </header>
@@ -164,15 +162,15 @@
           <div class="source-name">{{ art.source }}</div>
           <div class="source-title">{{ art.title }}</div>
         </div>
-        {% if art.image_url %}
         <div class="source-thumb-wrap">
+          {% if art.image_url %}
           <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy">
+          {% else %}
+          <div style="display:flex; align-items:center; justify-content:center; height:100%; padding:15px">
+            <img src="/static/logo.png" style="width:100%; height:100%; object-fit:contain; opacity:0.2">
+          </div>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="source-thumb-wrap" style="display:flex; align-items:center; justify-content:center; padding:15px">
-          <img src="/static/img/presek_emblem.svg" style="width:100%; height:100%; object-fit:contain; opacity:0.2">
-        </div>
-        {% endif %}
       </a>
       {% endfor %}
     </div>
@@ -181,8 +179,8 @@
 </div>
 
 <footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline)">ПРЕСЕК</strong>
-  <p style="margin-top:.5rem">Вашиот дневен преглед на македонски вести</p>
+  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
+  <p style="margin-top:.5rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
 </footer>
 
 <script>
