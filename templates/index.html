@@ -210,8 +210,6 @@
     </a>
     <div class="header-ticker"><div class="ticker-inner" id="tickerInner"></div></div>
     <div class="utility-ticker">
-      <span id="skopjeWeather">СКОПЈЕ ...°C</span>
-      <span style="opacity:0.3">|</span>
       <span id="rotatorText">...</span>
     </div>
     <div class="header-right">
@@ -474,18 +472,7 @@
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
 
-  async function fetchWeather() {
-    try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true');
-      const data = await res.json();
-      const temp = Math.round(data.current_weather.temperature);
-      document.getElementById('skopjeWeather').textContent = `СКОПЈЕ ${temp}°C`;
-    } catch(e) {
-      document.getElementById('skopjeWeather').textContent = 'СКОПЈЕ 12°C';
-    }
-  }
-
-  // Utility Rotation (Date, BTC, AQI)
+  // Utility Rotation (Date, Temp, BTC, AQI)
   const months = ['ЈАН','ФЕВ','МАР','АПР','МАЈ','ЈУН','ЈУЛ','АВГ','СЕП','ОКТ','НОЕ','ДЕК'];
   let rotatorData = [];
   let rotatorIdx = 0;
@@ -497,14 +484,28 @@
     const d = new Date();
     data.push(`${d.getDate()} ${months[d.getMonth()]}`);
 
-    // 2. Bitcoin (Binance API)
+    // 2. Skopje Weather
+    try {
+      const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true');
+      const wData = await wRes.json();
+      data.push(`СКОПЈЕ ${Math.round(wData.current_weather.temperature)}°C`);
+    } catch(e) {}
+
+    // 3. Bitcoin (Binance API)
     try {
       const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
       const btcData = await btcRes.json();
       data.push(`BTC $${Math.round(btcData.price).toLocaleString()}`);
     } catch(e) {}
 
-    // 3. Air Quality (Open-Meteo AQI)
+    // 4. Gold Price (Binance PAXG proxy)
+    try {
+      const goldRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
+      const goldData = await goldRes.json();
+      data.push(`ЗЛАТО $${Math.round(goldData.price).toLocaleString()}`);
+    } catch(e) {}
+
+    // 5. Air Quality (Open-Meteo AQI)
     try {
       const aqiRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=41.9965&longitude=21.4314&current=european_aqi');
       const aqiData = await aqiRes.json();
@@ -530,8 +531,8 @@
     }, 400);
   }
 
-  setInterval(updateRotator, 6000);
-  fetchNews(); fetchPopular(); fetchTrending(); fetchWeather(); fetchUtilityData();
+  setInterval(updateRotator, 60000); // 60 seconds
+  fetchNews(); fetchPopular(); fetchTrending(); fetchUtilityData();
 </script>
 </body>
 </html>
