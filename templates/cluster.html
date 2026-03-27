@@ -217,11 +217,18 @@
     .ai-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.5rem; }
     .ai-content { color: var(--color-text-primary); line-height: 1.8; font-size: 1.15rem; }
     
-    .ai-loading { display: flex; gap: 8px; justify-content: center; padding: 40px; }
-    .dot { width: 10px; height: 10px; background: var(--color-ruby); border-radius: 50%; animation: dotPulse 1.2s infinite; }
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes dotPulse { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+    .ai-sun-loader {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      animation: sunPulse 2s linear infinite;
+      display: none;
+    }
+    @keyframes sunPulse {
+      0% { transform: rotate(0deg) scale(0.8); opacity: 0.5; }
+      50% { transform: rotate(180deg) scale(1.1); opacity: 1; }
+      100% { transform: rotate(360deg) scale(0.8); opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
@@ -308,14 +315,21 @@
     <button class="ai-close" onclick="toggleAISheet(false)">&times;</button>
   </div>
   <div id="aiResponse" class="ai-content"></div>
-  <div id="aiLoading" class="ai-loading" style="display:none">
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  </div>
 </div>
 
 <div class="ai-chat-bar">
+  <!-- Small Pulsing Macedonian Sun Loader -->
+  <div id="aiLoading" class="ai-sun-loader">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#F5C400">
+        <polygon points="50,5 54,30 46,30"/><polygon points="50,95 54,70 46,70"/>
+        <polygon points="5,50 30,54 30,46"/><polygon points="95,50 70,54 70,46"/>
+        <polygon points="18,18 36,36 30,40"/><polygon points="82,18 70,40 64,36"/>
+        <polygon points="82,82 64,64 70,60"/><polygon points="18,82 30,60 36,64"/>
+      </g>
+      <circle cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
+    </svg>
+  </div>
   <input type="text" id="aiInput" class="ai-chat-input" placeholder="Прашајте за овој настан..." 
          onkeypress="if(event.key==='Enter') askAI()"
          oninput="document.getElementById('aiSendBtn').classList.toggle('active', this.value.trim().length > 2)">
@@ -409,7 +423,7 @@
     const loadingEl = document.getElementById('aiLoading');
     
     responseEl.innerHTML = '';
-    loadingEl.style.display = 'flex';
+    loadingEl.style.display = 'block';
     toggleAISheet(true);
 
     try {
