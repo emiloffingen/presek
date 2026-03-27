@@ -110,16 +110,25 @@
     .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     
     .header-right{display:flex;align-items:center;gap:var(--spacing-md)}
-    .top10-btn{background:none;color:var(--gold);border:1px solid var(--bronze);font-family:var(--sans);font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;transition:all .2s ease}
-    .top10-btn:hover{background:var(--bronze);color:#fff;border-color:var(--gold)}
+    .lorandite-btn{background:none;color:var(--gold);border:1px solid var(--bronze);font-family:var(--sans);font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:.6rem 1rem;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;gap:8px}
+    .lorandite-btn:hover{background:var(--bronze);color:#fff;border-color:var(--gold)}
+    .lorandite-btn svg{width:14px;height:14px;fill:currentColor}
     
-    .refresh-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;transition:all .3s}
+    .refresh-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;transition:all .3s}
     .refresh-btn:hover{color:var(--gold);transform:rotate(180deg)}
+    .refresh-btn svg{width:22px;height:22px;fill:currentColor}
 
     /* CAT NAV */
     .cat-nav{background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:64px;z-index:190;scrollbar-width:none}
+    .cat-nav-inner{display:flex;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto}
     .cat-btn{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;padding:.8rem 1.2rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.1em;transition:all .15s}
     .cat-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+    /* TRENDS */
+    .trending-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:8px 0}
+    .trending-inner{display:flex;align-items:center;gap:12px;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;overflow-x:auto;scrollbar-width:none}
+    .trend-chip{font-size:.7rem;font-weight:700;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);padding:4px 12px;white-space:nowrap;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
+    .trend-chip:hover{border-color:var(--gold);color:var(--gold)}
 
     /* MAIN LAYOUT */
     .site-layout{display:grid;grid-template-columns:1fr;max-width:var(--layout-max-width);margin:0 auto;gap:var(--grid-gap);padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl)}
@@ -142,8 +151,11 @@
     
     .badge-count{color:var(--bronze);font-family:var(--sans);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
 
-    .sidebar-inner{background:var(--bg-card); padding:24px; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden}
-    #sidebarPopular{overflow-y:hidden}
+    /* SIDEBAR */
+    .sidebar-inner{background:var(--bg-card); padding:24px; border:1px solid var(--border); display:flex; flex-direction:column; max-height:calc(100vh - 100px); position:sticky; top:84px}
+    .sidebar-title{margin-bottom:20px; font-family:var(--display); font-size:1.1rem; color:var(--gold); letter-spacing:.05em; display:flex; align-items:center; gap:10px}
+    .sidebar-title svg{width:18px; height:18px; fill:var(--color-ruby)}
+    #sidebarPopular{overflow-y:hidden; flex:1}
     .sidebar-inner:hover #sidebarPopular{overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--gold) transparent}
 
     footer{background:var(--bg-card);border-top:1px solid var(--border);padding:48px var(--spacing-md);text-align:center;color:var(--text-muted)}
@@ -155,6 +167,7 @@
       .logo-text{font-size:1.5rem}
       .story-card{padding:16px}
       .story-headline{font-size:1.15rem}
+      .cat-nav{top:64px}
     }
   </style>
 </head>
@@ -172,24 +185,36 @@
       <span>ПРЕСЕК</span>
     </a>
     <div class="header-right">
-      <button class="top10-btn" onclick="showTop10(this)">Топ 10</button>
-      <button class="refresh-btn" onclick="fetchNews()">↻</button>
+      <button class="lorandite-btn" onclick="showTop10(this)">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>
+        Лорандит
+      </button>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchNews()">
+        <svg viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="6" fill="currentColor"/>
+          <path d="M16 2 L16 10 M16 22 L16 30 M2 16 L10 16 M22 16 L30 16 M6 6 L12 12 M20 20 L26 26 M26 6 L20 12 M12 20 L6 26" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
   </div>
 </header>
 
 <nav class="cat-nav"><div class="cat-nav-inner" id="catNavMobile"></div></nav>
+<div class="trending-bar"><div class="trending-inner" id="trendChips"></div></div>
 
 <div class="site-layout">
   <main class="site-main">
     <div id="pageWrap" class="fade-in"></div>
     <div id="loadMoreWrap" style="display:none; text-align:center; padding:32px">
-      <button class="top10-btn" onclick="loadMore()">Вчитај повеќе ↓</button>
+      <button class="lorandite-btn" style="margin:0 auto; padding:.8rem 2rem" onclick="loadMore()">Вчитај повеќе ↓</button>
     </div>
   </main>
   <aside class="site-sidebar">
     <div class="sidebar-inner">
-      <h4 style="margin-bottom:16px; font-family:var(--display); font-size:1.1rem; color:var(--gold); letter-spacing:.05em">🔥 Најчитано</h4>
+      <h4 class="sidebar-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z"/></svg>
+        Најчитано
+      </h4>
       <div id="sidebarPopular"></div>
     </div>
   </aside>
@@ -219,22 +244,23 @@
     return `${Math.floor(diff/86400)}д`;
   }
 
-  function showTop10(btn) {
+  async function showTop10(btn) {
     if(btn) btn.style.opacity = '0.5';
-    fetch('/api/top10').then(res => res.json()).then(data => {
+    try {
+      const res = await fetch('/api/top10');
+      const data = await res.json();
       allClusters = data.clusters || data;
       _hasMore = false;
       renderPage(allClusters);
       document.getElementById('loadMoreWrap').style.display = 'none';
-      if(btn) btn.style.opacity = '1';
       window.scrollTo({top: 0, behavior: 'smooth'});
-    });
+    } catch(e) {}
+    if(btn) btn.style.opacity = '1';
   }
 
   function renderCard(c) {
     const a = c.articles[0];
     if(!a) return '';
-    const related = c.articles.slice(1, 4);
     const isBreaking = (c.score || 0) > 3.0;
 
     return `
@@ -270,24 +296,31 @@
   }
 
   async function fetchNews() {
-    const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
-    const data = await res.json();
-    allClusters = data.clusters || data;
-    _hasMore = data.has_more;
-    renderPage(allClusters);
-    updateTicker(allClusters);
-    buildCats();
-    document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    const btn = document.getElementById('refreshBtn');
+    if(btn) btn.style.opacity = '0.5';
+    try {
+      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
+      const data = await res.json();
+      allClusters = data.clusters || data;
+      _hasMore = data.has_more;
+      renderPage(allClusters);
+      updateTicker(allClusters);
+      buildCats();
+      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    } catch(e) {}
+    if(btn) btn.style.opacity = '1';
   }
 
   async function loadMore() {
     _currentPage++;
-    const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
-    const data = await res.json();
-    allClusters = [...allClusters, ...(data.clusters || [])];
-    _hasMore = data.has_more;
-    renderPage(allClusters);
-    document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    try {
+      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
+      const data = await res.json();
+      allClusters = [...allClusters, ...(data.clusters || [])];
+      _hasMore = data.has_more;
+      renderPage(allClusters);
+      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+    } catch(e) {}
   }
 
   function updateTicker(clusters) {
@@ -310,17 +343,36 @@
   }
 
   async function fetchPopular() {
-    const res = await fetch('/api/popular');
-    const data = await res.json();
-    document.getElementById('sidebarPopular').innerHTML = data.slice(0, 12).map(c => `
-      <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
-        <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
-        <div style="font-size:.65rem; color:var(--bronze); margin-top:4px; text-transform:uppercase; font-weight:700">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
-      </div>
-    `).join('');
+    try {
+      const res = await fetch('/api/popular');
+      const data = await res.json();
+      document.getElementById('sidebarPopular').innerHTML = data.slice(0, 15).map(c => `
+        <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
+          <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
+          <div style="font-size:.65rem; color:var(--bronze); margin-top:4px; text-transform:uppercase; font-weight:700">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
+        </div>
+      `).join('');
+    } catch(e) {}
   }
 
-  fetchNews(); fetchPopular();
+  async function fetchTrending() {
+    try {
+      const res = await fetch('/api/trending');
+      const data = await res.json();
+      document.getElementById('trendChips').innerHTML = data.slice(0, 10).map(t => `
+        <span class="trend-chip" onclick="filterByTrend('${t.word}')">#${t.word}</span>
+      `).join('');
+    } catch(e) {}
+  }
+
+  function filterByTrend(word) {
+    const lower = word.toLowerCase();
+    const filtered = allClusters.filter(c => c.articles.some(a => (a.title + a.description).toLowerCase().includes(lower)));
+    renderPage(filtered);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  fetchNews(); fetchPopular(); fetchTrending();
 </script>
 </body>
 </html>
