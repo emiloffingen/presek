@@ -30,7 +30,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Mineral & Metallic Base (Identical to index.html) */
+      /* Dark Mode (Default) - Mineral & Metallic */
       --color-bg-base: #141618;
       --color-bg-surface: #1A1C1E;
       --color-bg-surface-hover: #232629;
@@ -39,10 +39,13 @@
       --color-ruby: #D10047;
       --color-bronze: #8C6D3E;
       --color-gold: #D4AF37;
-      
+      --border-opacity: 0.2;
+      --pattern-opacity: 0.03;
+      --logo-gradient: linear-gradient(to right, #fff, var(--color-gold));
+
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
-      --border: rgba(140, 109, 62, 0.2);
+      --border: rgba(140, 109, 62, var(--border-opacity));
       --accent: var(--color-ruby);
       --gold: var(--color-gold);
       --bronze: var(--color-bronze);
@@ -62,14 +65,33 @@
       --spacing-lg: 24px;
       --spacing-xl: 32px;
       --layout-max-width: 1280px;
-      
-      --crystal-pattern: 
-        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%),
-        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%);
+    }
+
+    @media(prefers-color-scheme: light) {
+      :root {
+        /* Light Mode - Polished Platinum */
+        --color-bg-base: #F0F2F3;
+        --color-bg-surface: #FFFFFF;
+        --color-bg-surface-hover: #E8EAEB;
+        --color-text-primary: #1A1C1E;
+        --color-text-secondary: #5C5E60;
+        --border-opacity: 0.4;
+        --pattern-opacity: 0.05;
+        --logo-gradient: linear-gradient(to right, var(--color-ruby), var(--color-bronze));
+        
+        --bg: var(--color-bg-base);
+        --bg-card: var(--color-bg-surface);
+        --headline: #141618;
+        --text-body: var(--color-text-primary);
+        --text-muted: var(--color-text-secondary);
+      }
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{
+      --crystal-pattern: 
+        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%),
+        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%);
       background:var(--bg);
       background-image: var(--crystal-pattern);
       background-size: 100px 173px;
@@ -84,10 +106,10 @@
     .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;position:relative}
     .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em}
-    .logo-text span{background:linear-gradient(to right, #fff, var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     
     .back-link{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .2s}
-    .back-link:hover{color:#fff;transform:translateX(-4px)}
+    .back-link:hover{color:var(--accent);transform:translateX(-4px)}
 
     /* LAYOUT */
     .site-layout{max-width:var(--layout-max-width);margin:0 auto;padding:var(--spacing-xl) var(--spacing-md)}
@@ -103,7 +125,7 @@
     @media(min-width:768px){.sources-grid{grid-template-columns:1fr 1fr}}
     
     .source-card{background:var(--bg-card);border:1px solid var(--border);padding:var(--spacing-md);display:flex;gap:var(--spacing-md);text-decoration:none;transition:all .3s ease;position:relative;overflow:hidden}
-    .source-card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.3);transform:translateY(-2px)}
+    .source-card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.15);transform:translateY(-2px)}
     .source-card::after{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--accent);transition:height .3s}
     .source-card:hover::after{height:100%}
 
@@ -194,7 +216,8 @@
   }
   
   {% if articles %}
-  document.getElementById('timeLabel').textContent = timeAgo("{{ articles[0].created_at }}");
+  const label = document.getElementById('timeLabel');
+  if(label) label.textContent = timeAgo("{{ articles[0].created_at }}");
   {% endif %}
 </script>
 </body>

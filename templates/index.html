@@ -17,23 +17,23 @@
        DESIGN TOKENS (MINERAL & METALLIC)
        ========================================= */
     :root {
-      /* Mineral & Metallic Base */
+      /* Dark Mode (Default) - Mineral & Metallic */
       --color-bg-base: #141618;
       --color-bg-surface: #1A1C1E;
       --color-bg-surface-hover: #232629;
       --color-text-primary: #E0E2E4;
       --color-text-secondary: #8C8E90;
-      
-      /* Macedonian Ruby & Metallics */
       --color-ruby: #D10047;
       --color-bronze: #8C6D3E;
       --color-gold: #D4AF37;
-      
+      --border-opacity: 0.2;
+      --pattern-opacity: 0.03;
+      --logo-gradient: linear-gradient(to right, #fff, var(--color-gold));
+
       /* Semantic mapping */
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
-      --border: rgba(140, 109, 62, 0.2);
-      --border-dark: var(--color-bronze);
+      --border: rgba(140, 109, 62, var(--border-opacity));
       --accent: var(--color-ruby);
       --gold: var(--color-gold);
       --bronze: var(--color-bronze);
@@ -41,15 +41,12 @@
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      /* Geometry (Sharp & Crystalline) */
+      /* Geometry */
       --border-radius-sm: 0px;
       --border-radius-md: 0px;
       --border-radius-lg: 0px;
 
       /* Layout */
-      --font-weight-regular: 400;
-      --font-weight-semibold: 600;
-      --font-weight-bold: 700;
       --font-size-xs: 0.75rem;
       --font-size-sm: 0.875rem;
       --font-size-body: 1rem;
@@ -68,25 +65,42 @@
       --serif: 'Source Serif 4', Georgia, serif;
       --display: 'Playfair Display', Georgia, serif;
       --sans: 'Noto Sans', sans-serif;
-      
-      /* Crystalline Grid Effect */
-      --crystal-pattern: 
-        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%),
-        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, 0.03) 50%, transparent 51%);
     }
 
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-    body{
-      background:var(--bg);
+    @media(prefers-color-scheme: light) {
+      :root {
+        /* Light Mode - Polished Platinum */
+        --color-bg-base: #F0F2F3;
+        --color-bg-surface: #FFFFFF;
+        --color-bg-surface-hover: #E8EAEB;
+        --color-text-primary: #1A1C1E;
+        --color-text-secondary: #5C5E60;
+        --border-opacity: 0.4;
+        --pattern-opacity: 0.05;
+        --logo-gradient: linear-gradient(to right, var(--color-ruby), var(--color-bronze));
+        
+        --bg: var(--color-bg-base);
+        --bg-card: var(--color-bg-surface);
+        --headline: #141618;
+        --text-body: var(--color-text-primary);
+        --text-muted: var(--color-text-secondary);
+      }
+    }
+
+    /* Pattern depends on opacity variable */
+    body {
+      --crystal-pattern: 
+        linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%),
+        linear-gradient(-30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%);
+      background: var(--bg);
       background-image: var(--crystal-pattern);
       background-size: 100px 173px;
-      color:var(--text-body);
-      font-family:var(--serif);
-      font-size:var(--font-size-body);
-      line-height:var(--line-height-body);
-      min-height:100vh;
-      overflow-x:hidden;
+      color: var(--text-body);
+      font-family: var(--serif);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-body);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
     /* TICKER */
@@ -101,7 +115,7 @@
     .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;position:relative;gap:var(--spacing-md)}
     .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;transition:all .3s ease;flex-shrink:0;letter-spacing:-0.02em}
-    .logo-text span{background:linear-gradient(to right, #fff, var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     
     .header-nav{display:none;flex:1;overflow-x:auto;scrollbar-width:none}
     @media(min-width:1024px){.header-nav{display:flex;gap:var(--spacing-sm);justify-content:center}}
