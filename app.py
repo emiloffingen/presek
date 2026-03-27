@@ -1355,11 +1355,17 @@ def api_chat_cluster():
     if not rows:
         return jsonify({"error": "Cluster not found"}), 404
 
-    context_text = "\n".join([f"Source: {r['source']}\nTitle: {r['title']}\nSnippet: {r['description']}\n---" for r in rows])
+    # Construct a lean, token-efficient context (Source + Title + Truncated Snippet)
+    context_items = []
+    for r in rows:
+        snippet = (r['description'] or "")[:120] + "..." if r['description'] else "No snippet"
+        context_items.append(f"SOURCE: {r['source']}\nHEADLINE: {r['title']}\nSNIPPET: {snippet}")
+    
+    context_text = "\n---\n".join(context_items)
     
     prompt = f"""
     You are 'Presek AI', a senior journalistic analyst for the Macedonian media landscape.
-    Below are several news articles from different sources about the same event.
+    Use the following headlines and snippets from Macedonian media to answer the user.
     
     CLUSTER CONTEXT:
     {context_text}
@@ -1368,15 +1374,18 @@ def api_chat_cluster():
     {query}
     
     INSTRUCTIONS:
-    1. Answer the user's question based ONLY on the provided context (and search results if enabled).
-    2. Be objective and highlight differences in reporting between sources if they exist.
-    3. Use a professional, analytical tone in Macedonian.
-    4. Keep the answer concise (max 150 words) unless the user asks for more detail.
-    5. If you use external search results, mention that you are providing broader context.
+    1. Answer based ONLY on the provided context (or search results if enabled).
+    2. If the user asks for something not in the context (like history or future predictions), use your Search tool.
+    3. Be objective, highlight source differences, and use professional Macedonian.
+    4. Keep the answer concise (max 150 words).
+    5. If search is used, mention it.
     """
 
-    # Smart Grounding Trigger: Detect if user needs broader context
-    grounding_keywords = ["зошто", "свет", "историја", "анализа", "влијание", "последици", "минатото", "контекст"]
+    # Refined Grounding Triggers: Future, Global, or Deep Analysis keywords
+    grounding_keywords = [
+        "зошто", "свет", "историја", "анализа", "влијание", "последици", 
+        "минатото", "контекст", "кога", "очекува", "иднина", "сад", "еу", "русија"
+    ]
     needs_grounding = any(word in query.lower() for word in grounding_keywords)
 
     try:

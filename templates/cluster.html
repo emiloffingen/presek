@@ -176,11 +176,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s;
+      transition: all 0.3s ease;
       color: white;
+      opacity: 0.6;
     }
     .ai-chat-btn svg { width: 20px; height: 20px; fill: currentColor; }
-    .ai-chat-btn:hover { transform: scale(1.1); }
+    .ai-chat-btn.active { 
+      opacity: 1; 
+      transform: scale(1.1);
+      box-shadow: 0 0 15px var(--color-ruby);
+    }
+    .ai-chat-btn:hover { transform: scale(1.15); }
     
     .ai-sheet {
       position: fixed;
@@ -310,8 +316,10 @@
 </div>
 
 <div class="ai-chat-bar">
-  <input type="text" id="aiInput" class="ai-chat-input" placeholder="Прашајте за овој настан..." onkeypress="if(event.key==='Enter') askAI()">
-  <button class="ai-chat-btn" onclick="askAI()">
+  <input type="text" id="aiInput" class="ai-chat-input" placeholder="Прашајте за овој настан..." 
+         onkeypress="if(event.key==='Enter') askAI()"
+         oninput="document.getElementById('aiSendBtn').classList.toggle('active', this.value.trim().length > 2)">
+  <button id="aiSendBtn" class="ai-chat-btn" onclick="askAI()">
     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
   </button>
 </div>
