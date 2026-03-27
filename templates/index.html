@@ -212,7 +212,7 @@
     <div class="utility-ticker">
       <span id="skopjeWeather">СКОПЈЕ ...°C</span>
       <span style="opacity:0.3">|</span>
-      <span>EUR 61.50</span>
+      <span id="rotatorText">...</span>
     </div>
     <div class="header-right">
       <button class="action-btn" onclick="showTop10(this)">
@@ -485,7 +485,53 @@
     }
   }
 
-  fetchNews(); fetchPopular(); fetchTrending(); fetchWeather();
+  // Utility Rotation (Date, BTC, AQI)
+  const months = ['ЈАН','ФЕВ','МАР','АПР','МАЈ','ЈУН','ЈУЛ','АВГ','СЕП','ОКТ','НОЕ','ДЕК'];
+  let rotatorData = [];
+  let rotatorIdx = 0;
+
+  async function fetchUtilityData() {
+    const data = [];
+    
+    // 1. Current Date
+    const d = new Date();
+    data.push(`${d.getDate()} ${months[d.getMonth()]}`);
+
+    // 2. Bitcoin (Binance API)
+    try {
+      const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+      const btcData = await btcRes.json();
+      data.push(`BTC $${Math.round(btcData.price).toLocaleString()}`);
+    } catch(e) {}
+
+    // 3. Air Quality (Open-Meteo AQI)
+    try {
+      const aqiRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=41.9965&longitude=21.4314&current=european_aqi');
+      const aqiData = await aqiRes.json();
+      const aqi = aqiData.current.european_aqi;
+      let quality = 'ДОБАР';
+      if(aqi > 50) quality = 'УМЕРЕН';
+      if(aqi > 100) quality = 'ЛОШ';
+      data.push(`AQI ${aqi} (${quality})`);
+    } catch(e) {}
+
+    rotatorData = data;
+    updateRotator();
+  }
+
+  function updateRotator() {
+    const el = document.getElementById('rotatorText');
+    if(!rotatorData.length) return;
+    el.style.opacity = 0;
+    setTimeout(() => {
+      el.textContent = rotatorData[rotatorIdx];
+      el.style.opacity = 1;
+      rotatorIdx = (rotatorIdx + 1) % rotatorData.length;
+    }, 400);
+  }
+
+  setInterval(updateRotator, 6000);
+  fetchNews(); fetchPopular(); fetchTrending(); fetchWeather(); fetchUtilityData();
 </script>
 </body>
 </html>
