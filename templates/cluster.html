@@ -27,209 +27,162 @@
   {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#f8f9fa;--bg-card:#ffffff;--bg-hover:#f1f3f5;
-      --border:#dee2e6;--border-dark:#ced4da;
-      --text:#212529;--text-body:#495057;--text-muted:#868e96;
-      --headline:#212529;--headline-hov:#1c7ed6;
-      --red:#d63031;--red-light:#ff7675;--accent:#D4AF37;--accent-dark:#B8860B;
-      --serif:'Source Serif 4','Noto Serif',Georgia,serif;
-      --display:'Playfair Display',Georgia,serif;
-      --sans:'Noto Sans',sans-serif;
+    :root {
+      /* Identical tokens to index.html */
+      --color-bg-base: #fffcf5;
+      --color-bg-surface: #ffffff;
+      --color-bg-surface-hover: #fffef0;
+      --color-text-primary: #1a1712;
+      --color-text-secondary: #7a6e58;
+      --color-macedonian-red: #9b111e;
+      --color-macedonian-gold: #ffe000;
+      --bg: var(--color-bg-base);
+      --bg-card: var(--color-bg-surface);
+      --border: #e8dfc4;
+      --accent: var(--color-macedonian-red);
+      --gold: var(--color-macedonian-gold);
+      --headline: var(--color-text-primary);
+      --text-body: #2c271e;
+      --text-muted: var(--color-text-secondary);
+      --sun-glow: rgba(255, 224, 0, 0.12);
+      --sun-gradient: linear-gradient(135deg, var(--gold), #cd7f32);
+      --serif: 'Source Serif 4', Georgia, serif;
+      --display: 'Playfair Display', Georgia, serif;
+      --sans: 'Noto Sans', sans-serif;
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.875rem;
+      --font-size-body: 1rem;
+      --font-size-md: 1.125rem;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --border-radius-sm: 4px;
+      --border-radius-md: 8px;
+      --layout-max-width: 1280px;
+      --grid-gap: 24px;
     }
     @media(prefers-color-scheme:dark){:root{
-      --bg:#121212;--bg-card:#1e1e1e;--bg-hover:#2d2d2d;
-      --border:#333333;--border-dark:#444444;
-      --text:#e0e0e0;--text-body:#b0b0b0;--text-muted:#9e9e9e;
-      --headline:#f5f5f5;--headline-hov:#ffca28;
-      --red:#ff5252;--red-light:#ff8a80;--accent:#D4AF37;--accent-dark:#B8860B;
+      --color-bg-base: #0f0e0c;
+      --color-bg-surface: #1a1814;
+      --color-bg-surface-hover: #24211a;
+      --color-text-primary: #e8e4dc;
+      --color-text-secondary: #968e7f;
+      --border: #2e2a22;
+      --text-body: #cfc9bc;
+      --accent: #e63946;
+      --gold: #ffcc33;
+      --sun-glow: rgba(255, 204, 51, 0.08);
     }}
-    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-    body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:18px;line-height:1.6;min-height:100vh}
 
-    /* HAIR-THIN READING PROGRESS */
-    #progress-bar{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:1000;transition:width 0.1s}
-
-    /* TOP BAR */
-    .top-bar{background:var(--bg-card);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:200}
-    .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.5rem;font-weight:900;color:var(--headline);text-decoration:none}
-    .back-btn{color:var(--text-muted);text-decoration:none;font-family:var(--sans);font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:4px}
-    .back-btn:hover{color:var(--accent)}
-
-    /* HERO SECTION */
-    .hero-img-wrap{width:100%;max-width:1100px;margin:0 auto;height:50vh;min-height:300px;max-height:550px;overflow:hidden;background:var(--bg-card)}
-    .hero-img{width:100%;height:100%;object-fit:cover}
-    .hero-img.fallback{display:none}
-
-    /* ARTICLE CONTENT */
-    .article-wrap{max-width:800px;margin:0 auto;padding:3rem 1.25rem 6rem}
-    .article-header{margin-bottom:2.5rem}
-    .article-meta{display:flex;align-items:center;gap:.75rem;font-family:var(--sans);font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.1em}
-    .article-headline{font-family:var(--display);font-size:2.8rem;font-weight:900;line-height:1.1;color:var(--headline);margin-bottom:1.5rem;letter-spacing:-0.02em}
-    
-    /* STANDFIRST (CLASSIC BROADSHEET) */
-    .standfirst{font-family:var(--serif);font-size:1.4rem;font-style:italic;line-height:1.5;color:var(--text-muted);margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
-
-    .article-info{display:flex;align-items:center;gap:12px;margin-bottom:2rem}
-    .author-avatar{width:40px;height:40px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-muted);font-family:var(--sans)}
-    .info-text{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);line-height:1.4}
-    .info-text strong{color:var(--text);display:block}
-
-    .article-body{font-size:1.2rem;line-height:1.8;color:var(--text-body)}
-    .article-body p{margin-bottom:1.8rem}
-    
-    /* DROP CAP */
-    .article-body p:first-of-type::first-letter {
-      font-family: var(--display);
-      font-size: 4.5rem;
-      font-weight: 900;
-      float: left;
-      line-height: 1;
-      margin-right: 0.75rem;
-      margin-top: 0.2rem;
-      color: var(--headline);
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      background:var(--bg);
+      background-image: radial-gradient(circle at 50% -100px, var(--sun-glow), transparent 600px);
+      color:var(--text-body);
+      font-family:var(--serif);
+      font-size:var(--font-size-body);
+      line-height:1.6;
+      min-height:100vh;
     }
 
-    /* AI ANALYSIS */
-    .analysis-card{background:rgba(212, 175, 55, 0.05);border:1px solid var(--accent);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:2rem;margin:3rem 0;display:none}
-    .analysis-card.active{display:block;animation:fadeIn .4s ease}
-    .analysis-label{display:block;font-family:var(--sans);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:1rem}
-    .analysis-content{font-size:1.05rem;line-height:1.7}
+    /* HEADER (Identical to index.html) */
+    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;position:relative}
+    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none}
+    @media(min-width:1024px){.logo-text{font-size:2.2rem;background:var(--sun-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+    
+    .back-link{font-family:var(--sans);font-size:var(--font-size-sm);font-weight:700;color:var(--text-muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .2s}
+    .back-link:hover{color:var(--accent)}
+
+    /* LAYOUT */
+    .site-layout{max-width:var(--layout-max-width);margin:0 auto;padding:var(--spacing-xl) var(--spacing-md)}
+    .cluster-content{max-width:900px;margin:0 auto}
+    
+    .cluster-header{margin-bottom:var(--spacing-xl);border-bottom:1px solid var(--border);padding-bottom:var(--spacing-lg)}
+    .cluster-headline{font-family:var(--display);font-size:2.4rem;font-weight:900;line-height:1.2;color:var(--headline);margin-bottom:var(--spacing-sm)}
+    .cluster-meta{display:flex;align-items:center;gap:var(--spacing-sm);font-family:var(--sans);font-size:var(--font-size-xs);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+
+    /* CARDS (Matching index.html style) */
+    .sources-grid{display:grid;grid-template-columns:1fr;gap:var(--spacing-md)}
+    @media(min-width:768px){.sources-grid{grid-template-columns:1fr 1fr}}
+    
+    .source-card{background:var(--bg-card);border-radius:var(--border-radius-md);padding:var(--spacing-md);border:1px solid var(--border);display:flex;gap:var(--spacing-md);text-decoration:none;transition:all .2s ease;position:relative;overflow:hidden}
+    .source-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,0,0,0.15);transform:translateY(-2px)}
+    .source-content{flex:1;min-width:0}
+    .source-name{font-family:var(--sans);font-size:var(--font-size-xs);font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+    .source-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;line-height:1.4;color:var(--headline);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .source-thumb-wrap{width:100px;height:75px;border-radius:var(--border-radius-sm);overflow:hidden;flex-shrink:0;background:var(--bg)}
+    .source-thumb{width:100%;height:100%;object-fit:cover}
+
+    .fade-in{animation:fadeIn .4s ease-out}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-    /* SOURCES LIST (STREAMLINED) */
-    .sources-header{font-family:var(--display);font-size:1.5rem;font-weight:900;color:var(--headline);margin-bottom:2rem;padding-bottom:.75rem;border-bottom:2px solid var(--headline)}
-    .sources-list{display:grid;grid-template-columns:1fr;gap:0}
-    @media(min-width:1024px){.sources-list{grid-template-columns:1fr 1fr}}
-    
-    .source-row{background:none;border:none;border-bottom:1px solid var(--border);padding:1.25rem 0;display:flex;gap:1.5rem;align-items:center;transition:all .2s ease;text-decoration:none;color:inherit;position:relative}
-    .source-row:hover{background:rgba(255,255,255,0.02)}
-    .source-row:hover .source-title{color:var(--accent)}
-    .source-thumb{width:100px;height:65px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--bg)}
-    .source-info{flex:1;min-width:0}
-    .source-name{font-family:var(--sans);font-size:.7rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem}
-    .source-title{font-family:var(--serif);font-size:1.05rem;font-weight:700;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--headline);transition:color .2s}
-
-    /* STICKY ACTION BAR */
-    .action-bar{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.85);border:1px solid rgba(255,255,255,0.1);border-radius:40px;padding:.6rem 1.2rem;display:flex;align-items:center;gap:1.2rem;box-shadow:0 15px 40px rgba(0,0,0,0.3);z-index:300;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);visibility:hidden;opacity:0;transition:all .4s cubic-bezier(0.2, 1, 0.3, 1)}
-    .action-bar.visible{visibility:visible;opacity:1;bottom:40px}
-    .action-item{background:none;border:none;color:#fff;cursor:pointer;padding:.5rem;display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:.8rem;font-weight:700;transition:all .2s;opacity:0.8}
-    .action-item:hover{color:var(--accent);opacity:1;transform:scale(1.05)}
-    .action-item svg{width:20px;height:20px;fill:currentColor}
-    .divider{width:1px;height:24px;background:rgba(255,255,255,0.1)}
+    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:var(--spacing-xl) var(--spacing-md);text-align:center;color:var(--text-muted);font-size:var(--font-size-sm);margin-top:var(--spacing-xl)}
 
     @media(max-width:767px){
-      .hero-img-wrap{height:35vh}
-      .article-headline{font-size:2rem}
-      .standfirst{font-size:1.2rem}
-      .article-body{font-size:1.1rem}
-      .article-wrap{padding-top:2rem}
-      .action-bar{width:auto;min-width:280px;justify-content:center}
+      .cluster-headline{font-size:1.8rem}
+      .source-card{padding:var(--spacing-sm)}
+      .source-thumb-wrap{width:80px;height:60px}
+      .source-title{font-size:1rem}
     }
   </style>
 </head>
 <body>
 
-<div id="progress-bar"></div>
-
-<div class="top-bar">
-  <a href="/" class="brand">
-    <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="var(--accent)"/>
-      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#000">П</text>
-    </svg>
-    <span>ПРЕСЕК</span>
-  </a>
-  <a href="/" class="back-btn">← Назад</a>
-</div>
-
-{% if articles %}
-<div class="hero-img-wrap" id="heroWrap">
-  {% if main.image_url %}
-  <img src="/proxy?url={{ main.image_url | urlencode }}" class="hero-img" 
-       onerror="this.style.display='none';document.getElementById('heroWrap').style.display='none'">
-  {% else %}
-  <script>document.getElementById('heroWrap').style.display='none';</script>
-  {% endif %}
-</div>
-
-<article class="article-wrap">
-  <header class="article-header">
-    <div class="article-meta">
-      <span class="article-source">{{ main.source }}</span>
-      <span class="article-time" id="mainTime" data-ts="{{ main.created_at }}"></span>
-    </div>
-    <h1 class="article-headline">{{ main.title }}</h1>
-    
-    {% if main.description %}
-    <div class="standfirst">
-      {{ main.description | striptags | truncate(250) }}
-    </div>
-    {% endif %}
-
-    <div class="article-info">
-      <div class="author-avatar">{{ main.source[0] }}</div>
-      <div class="info-text">
-        <strong>Од {{ main.source }}</strong>
-        <span>Предвидено време за читање: 2 мин.</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="article-body">
-    {% if main.description %}
-      <p>{{ main.description | striptags }}</p>
-    {% endif %}
-    <p>Македонскиот медиумски простор денеска е преплавен со информации за овој значаен настан. Повеќе извори ја пренесуваат оваа вест, секој со свој уникатен агол и дополнителни детали кои ја комплетираат сликата. Прочитајте ги сите поврзани наслови подолу за целосен увид во ситуацијата.</p>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo-text">
+      <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#9b111e"/>
+        <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#fff">П</text>
+      </svg>
+      <span>ПРЕСЕК</span>
+    </a>
+    <a href="/" class="back-link">← Назад</a>
   </div>
+</header>
 
-  <div class="sources-section">
-    <h2 class="sources-header">Сите извори ({{ articles|length }})</h2>
-    <div class="sources-list">
+<div class="site-layout">
+  <main class="cluster-content fade-in">
+    {% if articles %}
+    <header class="cluster-header">
+      <h1 class="cluster-headline">{{ articles[0].title }}</h1>
+      <div class="cluster-meta">
+        <span id="timeLabel"></span>
+        <span style="opacity:0.3">|</span>
+        <span>{{ articles|length }} извори</span>
+      </div>
+    </header>
+
+    <div class="sources-grid">
       {% for art in articles %}
-      <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-row">
-        {% if art.image_url %}
-        <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy">
-        {% else %}
-        <img src="/static/img/presek_emblem.svg" class="source-thumb" style="object-fit:contain; padding:10px">
-        {% endif %}
-        <div class="source-info">
+      <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card">
+        <div class="source-content">
           <div class="source-name">{{ art.source }}</div>
           <div class="source-title">{{ art.title }}</div>
         </div>
+        {% if art.image_url %}
+        <div class="source-thumb-wrap">
+          <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy">
+        </div>
+        {% else %}
+        <div class="source-thumb-wrap" style="display:flex; align-items:center; justify-content:center; padding:15px">
+          <img src="/static/img/presek_emblem.svg" style="width:100%; height:100%; object-fit:contain; opacity:0.2">
+        </div>
+        {% endif %}
       </a>
       {% endfor %}
     </div>
-  </div>
-</article>
-
-<div class="action-bar" id="actionBar">
-  <button class="action-item" onclick="share('whatsapp')" title="WhatsApp">
-    <svg viewBox="0 0 24 24"><path d="M12.064 0C5.402 0 0 5.403 0 12.062c0 2.112.547 4.164 1.59 5.982L0 24l6.12-1.607a12.048 12.048 0 0 0 5.94 1.585h.005c6.662 0 12.064-5.403 12.064-12.062C24.13 5.403 18.727 0 12.064 0zm0 22.067c-1.8 0-3.565-.483-5.105-1.398l-.365-.217-3.8 1 1.018-3.7-.24-.38a10.04 10.04 0 0 1-1.537-5.31c0-5.547 4.512-10.058 10.063-10.058 2.69 0 5.217 1.047 7.12 2.951a10.002 10.002 0 0 1 2.943 7.106c0 5.548-4.512 10.06-10.06 10.06zm5.518-7.53c-.302-.15-1.788-.882-2.065-1.007-.278-.125-.48-.188-.681.12-.202.308-.781 1.007-.957 1.207-.176.2-.353.225-.654.075-.302-.15-1.274-.47-2.426-1.503-.897-.8-1.502-1.79-1.277-2.12a.6.6 0 0 1 .15-.22c.075-.075.113-.15.15-.225.037-.076.075-.15.112-.225.037-.075.075-.15.113-.225.037-.075.037-.15.018-.225-.018-.075-.188-.456-.258-.626-.07-.168-.14-.144-.194-.144l-.165-.004a.31.31 0 0 0-.226.105c-.075.084-.288.28-.288.683 0 .403.293.792.334.847.04.055.576.88 1.396 1.237.195.085.347.135.466.173.196.063.375.054.516.033.158-.024.485-.198.554-.39.07-.19.07-.354.049-.39-.021-.037-.077-.056-.15-.093z"/></svg>
-  </button>
-  <button class="action-item" onclick="share('facebook')" title="Facebook">
-    <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-  </button>
-  <button class="action-item" onclick="share('twitter')" title="Twitter">
-    <svg viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 0 1-2.825.775 4.958 4.958 0 0 0 2.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 0 0-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 0 0-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 0 1-2.228-.616v.06a4.923 4.923 0 0 0 3.946 4.84 4.996 4.996 0 0 1-2.212.085 4.936 4.936 0 0 0 4.604 3.417 9.867 9.867 0 0 1-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 0 0 7.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0 0 24 4.59z"/></svg>
-  </button>
-  <button class="action-item" onclick="share('reddit')" title="Reddit">
-    <svg viewBox="0 0 24 24"><path d="M24 11.5c0-1.65-1.35-3-3-3-.41 0-.8.08-1.15.24C18.15 7.15 15.65 6.15 13 6V2.5h5V1h-6.5v5c-2.65.15-5.15 1.15-6.85 2.74-.35-.16-.74-.24-1.15-.24-1.65 0-3 1.35-3 3 0 1.32.86 2.44 2.05 2.84-.03.22-.05.44-.05.66 0 3.86 4.5 7 10 7s10-3.14 10-7c0-.22-.02-.44-.05-.66 1.19-.4 2.05-1.52 2.05-2.84zM6.5 15.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm10.5 3.5c-1.81 1.56-5.02 1.59-6 1.59s-4.19-.03-6-1.59l-.4-.3.8-.8.3.25c1.47 1.25 4.31 1.34 5.3 1.34s3.83-.09 5.3-1.34l.3-.25.8.8-.4.3zm.5-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-  </button>
+    {% endif %}
+  </main>
 </div>
-{% endif %}
 
-<footer style="background:var(--bg-card); padding:5rem 1.25rem; text-align:center; border-top:1px solid var(--border)">
-  <strong style="font-family:var(--display); font-size:2rem; color:var(--headline); letter-spacing:-0.02em">ПРЕСЕК</strong>
-  <p style="margin-top:.75rem; font-style:italic; color:var(--text-muted)">Елеганција во информациите. Вашиот дневен преглед.</p>
-  <div style="margin-top:2.5rem; display:flex; justify-content:center; gap:2rem; font-family:var(--sans); font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em">
-    <a href="/izvori" style="color:var(--text-muted); text-decoration:none">Извори</a>
-    <a href="/stats" style="color:var(--text-muted); text-decoration:none">Статистики</a>
-    <a href="/about" style="color:var(--text-muted); text-decoration:none">За нас</a>
-  </div>
+<footer>
+  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline)">ПРЕСЕК</strong>
+  <p style="margin-top:.5rem">Вашиот дневен преглед на македонски вести</p>
 </footer>
 
 <script>
@@ -242,40 +195,9 @@
     return `${Math.floor(diff/86400)}д`;
   }
   
-  const mainTime = document.getElementById('mainTime');
-  if(mainTime) mainTime.textContent = timeAgo(mainTime.dataset.ts);
-
-  function share(platform) {
-    const url = window.location.href;
-    const title = document.title.split(' | ')[0];
-    const text = encodeURIComponent(title + " — Пресек: ");
-    const u = encodeURIComponent(url);
-    let shareUrl = "";
-    if(platform === 'whatsapp') shareUrl = `https://api.whatsapp.com/send?text=${text}${u}`;
-    else if(platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
-    else if(platform === 'twitter') shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${u}`;
-    else if(platform === 'reddit') shareUrl = `https://www.reddit.com/submit?url=${u}&title=${text}`;
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  }
-
-  // Progress Bar & Sticky Action Bar Visibility
-  window.addEventListener('scroll', () => {
-    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scrolled = (winScroll / height) * 100;
-    const pb = document.getElementById("progress-bar");
-    if(pb) pb.style.width = scrolled + "%";
-    
-    // Show action bar only after scrolling past the header
-    const actionBar = document.getElementById('actionBar');
-    if(actionBar) {
-      if(winScroll > 300) {
-        actionBar.classList.add('visible');
-      } else {
-        actionBar.classList.remove('visible');
-      }
-    }
-  });
+  {% if articles %}
+  document.getElementById('timeLabel').textContent = timeAgo("{{ articles[0].created_at }}");
+  {% endif %}
 </script>
 </body>
 </html>

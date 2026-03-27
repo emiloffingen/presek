@@ -1054,7 +1054,7 @@ def api_scores():
             "score": round(score_cluster(arts), 3),
         })
     result.sort(key=lambda x: x["score"], reverse=True)
-    return jsonify(result[:20])
+    return jsonify(result[:10])
 
 
 SUMMARY_SYSTEM_PROMPT = (
@@ -1301,7 +1301,7 @@ def api_popular():
     ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
     sorted_clusters = sorted(ranked, key=lambda arts: sum(a.get("clicks",0) for a in arts), reverse=True)
     result = []
-    for arts in sorted_clusters[:20]:
+    for arts in sorted_clusters[:10]:
         result.append({
             "articles":    arts,
             "score":       round(score_cluster(arts), 3),
@@ -1346,7 +1346,7 @@ def api_timeboxed():
     result = {}
     for w, clusters in windows.items():
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        sorted_c = sorted(ranked, key=score_cluster, reverse=True)[:20]
+        sorted_c = sorted(ranked, key=score_cluster, reverse=True)[:10]
         result[w] = []
         for arts in sorted_c:
             s = score_cluster(arts)
@@ -1537,7 +1537,7 @@ def api_top10():
     for r in rows:
         clusters[r["cluster_id"]].append(dict(r))
     ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    top = sorted(ranked, key=score_cluster, reverse=True)[:20]
+    top = sorted(ranked, key=score_cluster, reverse=True)[:10]
     result = []
     for i, arts in enumerate(top):
         s   = score_cluster(arts)
