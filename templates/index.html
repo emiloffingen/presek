@@ -209,7 +209,7 @@
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="javascript:void(0)" onclick="fetchNews()" class="logo-text" title="Освежи">
+    <a href="/" onclick="fetchNews(); return false;" class="logo-text" title="Освежи">
       <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="loranditeCore" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -375,9 +375,9 @@
               <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
             </h3>
           </div>
-          <div class="story-thumb-wrap">
+          <a href="/cluster/${c.cluster_id}" class="story-thumb-wrap">
             <img src="${a.image_url || '/static/logo.png'}" class="story-thumb" loading="lazy" style="${!a.image_url ? 'object-fit: contain; padding: 12px; opacity: 0.2;' : ''}">
-          </div>
+          </a>
         </div>
         <p class="story-excerpt">${a.description || ''}</p>
         <div class="source-ribbon">
