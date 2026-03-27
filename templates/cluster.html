@@ -390,7 +390,10 @@
     if(label) label.textContent = timeAgo("{{ articles[0].created_at }}");
     {% endif %}
 
-    function toggleAISheet(show) {
+    startLoranditeFlicker();
+  });
+
+  function toggleAISheet(show) {
     document.getElementById('aiSheet').classList.toggle('active', show);
   }
 
@@ -400,6 +403,8 @@
     if (!query) return;
 
     input.value = '';
+    document.getElementById('aiSendBtn').classList.remove('active');
+    
     const responseEl = document.getElementById('aiResponse');
     const loadingEl = document.getElementById('aiLoading');
     
@@ -434,9 +439,6 @@
       responseEl.innerHTML = '<div style="color:var(--color-ruby)">Серверот не одговара. Пробајте подоцна.</div>';
     }
   }
-
-  startLoranditeFlicker();
-  });
 
   let lorAnimation;
   function startLoranditeFlicker() {
