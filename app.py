@@ -1368,21 +1368,36 @@ def api_chat_cluster():
     {query}
     
     INSTRUCTIONS:
-    1. Answer the user's question based ONLY on the provided context.
+    1. Answer the user's question based ONLY on the provided context (and search results if enabled).
     2. Be objective and highlight differences in reporting between sources if they exist.
     3. Use a professional, analytical tone in Macedonian.
     4. Keep the answer concise (max 150 words) unless the user asks for more detail.
+    5. If you use external search results, mention that you are providing broader context.
     """
 
+    # Smart Grounding Trigger: Detect if user needs broader context
+    grounding_keywords = ["зошто", "свет", "историја", "анализа", "влијание", "последици", "минатото", "контекст"]
+    needs_grounding = any(word in query.lower() for word in grounding_keywords)
+
     try:
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "tools": [{"google_search_retrieval": {}}] if needs_grounding else []
+        }
+        
         req = _ur.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
                           data=json.dumps(payload).encode("utf-8"),
                           headers={"Content-Type": "application/json"})
-        with _ur.urlopen(req, timeout=15) as resp:
+        
+        with _ur.urlopen(req, timeout=20) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
             answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return jsonify({"response": answer})
+            
+            # Add a small hint if grounding was used
+            return jsonify({
+                "response": answer,
+                "grounded": needs_grounding
+            })
     except Exception as e:
         log.error(f"AI Chat error: {e}")
         return jsonify({"error": "AI сервисот е моментално преоптоварен."}), 503
