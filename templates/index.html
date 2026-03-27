@@ -144,6 +144,40 @@
     .action-btn .btn-text{max-width:0;opacity:0;transition:all .2s ease;white-space:nowrap}
     .action-btn:hover .btn-text{max-width:100px;opacity:1}
 
+    /* SPLASH SCREEN */
+    #appSplash {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--color-bg-base);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease, visibility 0.6s;
+    }
+    #appSplash.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .splash-sun {
+      width: 120px;
+      height: 120px;
+      animation: splashRotate 10s linear infinite;
+    }
+    @keyframes splashRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .splash-text {
+      margin-top: 24px;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--color-gold);
+      letter-spacing: 0.1em;
+      font-weight: 900;
+    }
+
     /* NAV BAR */
     .nav-bar{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:190;height:48px;display:flex;align-items:center;overflow:hidden}
     .nav-inner{display:flex;align-items:center;gap:8px;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;width:100%;overflow-x:auto;scrollbar-width:none}
@@ -206,6 +240,33 @@
   </style>
 </head>
 <body>
+
+<div id="appSplash">
+  <div class="splash-sun">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#F5C400">
+        <polygon points="50,2 54,35 46,35"/>
+        <polygon points="50,98 54,65 46,65"/>
+        <polygon points="2,50 35,54 35,46"/>
+        <polygon points="98,50 65,54 65,46"/>
+        <polygon points="16,16 38,34 34,38"/>
+        <polygon points="84,16 62,34 66,38"/>
+        <polygon points="84,84 62,66 66,62"/>
+        <polygon points="16,84 38,66 34,62"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(22.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(67.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(112.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(157.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(202.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(247.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(292.5, 50, 50)"/>
+        <polygon points="50,15 53,35 47,35" transform="rotate(337.5, 50, 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
+    </svg>
+  </div>
+  <div class="splash-text">ПРЕСЕК</div>
+</div>
 
 <header class="site-header">
   <div class="header-inner">
@@ -416,7 +477,14 @@
       updateTicker(allClusters);
       buildCats();
       document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-    } catch(e) {}
+      
+      // Hide splash screen after initial load
+      const splash = document.getElementById('appSplash');
+      if (splash) splash.classList.add('hidden');
+    } catch(e) {
+      const splash = document.getElementById('appSplash');
+      if (splash) splash.classList.add('hidden');
+    }
     if(btn) btn.style.opacity = '1';
   }
 

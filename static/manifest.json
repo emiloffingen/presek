@@ -4,20 +4,14 @@
   "description": "Дневен преглед на македонски вести",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f2ead8",
-  "theme_color": "#8b1a1a",
+  "background_color": "#141618",
+  "theme_color": "#D10047",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/static/logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/static/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/static/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]

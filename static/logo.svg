@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="loranditeCoreApp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2B0000"/>
+      <stop offset="50%" stop-color="#5A0A0A"/>
+      <stop offset="100%" stop-color="#120000"/>
+    </linearGradient>
+    <radialGradient id="loranditeGlowApp" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="loranditeEdgeApp" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="42" fill="url(#loranditeGlowApp)" />
+  <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCoreApp)" stroke="#8B1A1A" stroke-width="2"/>
+  <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
+  <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
+  <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
+  <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeApp)" />
+  <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
+</svg>
