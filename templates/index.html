@@ -209,7 +209,7 @@
 
 <header class="site-header">
   <div class="header-inner">
-    <a onclick="fetchNews()" class="logo-text" title="Освежи">
+    <a href="javascript:void(0)" onclick="fetchNews()" class="logo-text" title="Освежи">
       <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="loranditeCore" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -395,6 +395,10 @@
   }
 
   async function fetchNews() {
+    newNajcitanoCount = 0;
+    const badge = document.getElementById("najcitanoBadge");
+    if(badge) badge.style.display = "none";
+
     const btn = document.getElementById('refreshBtn');
     if(btn) btn.style.opacity = '0.5';
     try {
@@ -469,12 +473,15 @@
       if (!data || !data.length) return;
 
       const currentTopId = data[0].cluster_id;
-      if (lastPopularId && lastPopularId !== currentTopId) {
-        newNajcitanoCount++;
-        const badge = document.getElementById("najcitanoBadge");
-        if (badge) {
-          badge.style.display = "block";
-          badge.textContent = newNajcitanoCount;
+      // Trigger pulse if first load OR if data changed
+      if (lastPopularId === null || lastPopularId !== currentTopId) {
+        if (lastPopularId !== null) {
+          newNajcitanoCount++;
+          const badge = document.getElementById("najcitanoBadge");
+          if (badge) {
+            badge.style.display = "block";
+            badge.textContent = newNajcitanoCount;
+          }
         }
         triggerNajcitanoPulse();
       }
