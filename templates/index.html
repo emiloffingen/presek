@@ -22,9 +22,9 @@
       --color-bg-surface: #1A1C1E;
       --color-bg-surface-hover: #232629;
       --color-text-primary: #E0E2E4;
-      --color-text-secondary: #AAA8A0; /* Boosted for better contrast */
+      --color-text-secondary: #AAA8A0;
       --color-ruby: #D10047;
-      --color-bronze: #B08D57; /* Lightened for readability */
+      --color-bronze: #B08D57;
       --color-gold: #D4AF37;
       --border-opacity: 0.2;
       --pattern-opacity: 0.03;
@@ -40,20 +40,19 @@
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      /* ACCESSIBLE TYPOGRAPHY */
       --font-body: 'Atkinson Hyperlegible', sans-serif;
       --font-display: 'Cinzel', serif;
       --font-sans: 'Noto Sans', sans-serif;
       
-      --font-size-xs: 0.85rem;   /* Increased */
-      --font-size-sm: 1rem;      /* Increased */
-      --font-size-body: 1.125rem; /* 18px - Golden standard */
+      --font-size-xs: 0.85rem;
+      --font-size-sm: 1rem;
+      --font-size-body: 1.125rem;
       --font-size-md: 1.4rem;
       --font-size-lg: 1.8rem;
       
-      --line-height-body: 1.7;   /* Spaced for easier tracking */
-      --letter-spacing-body: 0.02em; /* Prevent crowding */
-      --font-weight-body: 400;   /* Hyperlegible 400 is equivalent to standard 500 */
+      --line-height-body: 1.7;
+      --letter-spacing-body: 0.02em;
+      --font-weight-body: 400;
 
       --spacing-md: 16px;
       --layout-max-width: 1280px;
@@ -61,22 +60,21 @@
       --grid-gap: 32px;
     }
 
-    @media(prefers-color-scheme: light) {
-      :root {
-        --color-bg-base: #F0F2F3;
-        --color-bg-surface: #FFFFFF;
-        --color-bg-surface-hover: #E8EAEB;
-        --color-text-primary: #1A1C1E;
-        --color-text-secondary: #4A4C4E;
-        --border-opacity: 0.4;
-        --pattern-opacity: 0.05;
-        --logo-gradient: linear-gradient(to right, var(--color-ruby), #8C6D3E);
-        --bg: var(--color-bg-base);
-        --bg-card: var(--color-bg-surface);
-        --headline: #141618;
-        --text-body: var(--color-text-primary);
-        --text-muted: var(--color-text-secondary);
-      }
+    /* Light Mode Trigger */
+    html.light {
+      --color-bg-base: #F0F2F3;
+      --color-bg-surface: #FFFFFF;
+      --color-bg-surface-hover: #E8EAEB;
+      --color-text-primary: #1A1C1E;
+      --color-text-secondary: #4A4C4E;
+      --border-opacity: 0.4;
+      --pattern-opacity: 0.05;
+      --logo-gradient: linear-gradient(to right, var(--color-ruby), #8C6D3E);
+      --bg: var(--color-bg-base);
+      --bg-card: var(--color-bg-surface);
+      --headline: #141618;
+      --text-body: var(--color-text-primary);
+      --text-muted: var(--color-text-secondary);
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -92,13 +90,43 @@
       letter-spacing: var(--letter-spacing-body);
       min-height: 100vh;
       overflow-x: hidden;
+      transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
     }
+
+    /* SUN TOGGLE STYLES */
+    #themeToggle {
+      background: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      border-radius: 4px;
+    }
+    #themeToggle:hover {
+      background: var(--border);
+      border-color: var(--gold);
+    }
+    #sunIcon {
+      transition: transform 0.2s ease, filter 0.3s ease;
+      width: 28px;
+      height: 28px;
+    }
+    #themeToggle:hover #sunIcon {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+    html.light #sunCore { fill: #FDB813; }
+    html.light #sunRays g { fill: #FDB813; }
 
     /* COMPACT HEADER */
     .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .header-inner{display:flex;align-items:center;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;gap:var(--spacing-md)}
     
-    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em;flex-shrink:0}
+    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em;flex-shrink:0;cursor:pointer;transition:transform .2s ease}
+    .logo-text:hover{transform:scale(1.02)}
     .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     
     .header-ticker{flex:1;overflow:hidden;display:none;align-items:center;height:100%;border-left:1px solid var(--border);border-right:1px solid var(--border);margin:0 1rem;padding:0 1.5rem}
@@ -181,7 +209,7 @@
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="logo-text">
+    <a onclick="fetchNews()" class="logo-text" title="Освежи">
       <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="loranditeCore" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -213,32 +241,22 @@
       <span id="rotatorText">...</span>
     </div>
     <div class="header-right">
-      <button class="action-btn" id="refreshBtn" onclick="fetchNews()">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="sunCore" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#FFE066"/>
-              <stop offset="100%" stop-color="#F5C400"/>
-            </radialGradient>
-            <radialGradient id="sunGlow" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stop-color="#F5C400" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <circle cx="50" cy="50" r="45" fill="url(#sunGlow)" />
-          <g fill="#F5C400">
-            <polygon points="50,5 54,30 46,30"/>
-            <polygon points="50,95 54,70 46,70"/>
-            <polygon points="5,50 30,54 30,46"/>
-            <polygon points="95,50 70,54 70,46"/>
-            <polygon points="18,18 36,36 30,40"/>
-            <polygon points="82,18 70,40 64,36"/>
-            <polygon points="82,82 64,64 70,60"/>
-            <polygon points="18,82 30,60 36,64"/>
+      <button id="themeToggle" aria-label="Toggle theme">
+        <svg id="sunIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g id="sunRays" transform-origin="50 50">
+            <g fill="#F5C400">
+              <polygon points="50,5 54,30 46,30"/>
+              <polygon points="50,95 54,70 46,70"/>
+              <polygon points="5,50 30,54 30,46"/>
+              <polygon points="95,50 70,54 70,46"/>
+              <polygon points="18,18 36,36 30,40"/>
+              <polygon points="82,18 70,40 64,36"/>
+              <polygon points="82,82 64,64 70,60"/>
+              <polygon points="18,82 30,60 36,64"/>
+            </g>
           </g>
-          <circle cx="50" cy="50" r="16" fill="url(#sunCore)" stroke="#FFD84D" stroke-width="2"/>
+          <circle id="sunCore" cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
         </svg>
-        <span class="btn-text">Освежи</span>
       </button>
     </div>
   </div>
@@ -509,6 +527,33 @@
       rotatorIdx = (rotatorIdx + 1) % rotatorData.length;
     }, 400);
   }
+
+  // Theme Toggle & Scroll Rotation
+  const themeToggle = document.getElementById('themeToggle');
+  const sunRays = document.getElementById('sunRays');
+  const htmlEl = document.documentElement;
+
+  // 1. Load Theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    htmlEl.classList.add('light');
+  } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    htmlEl.classList.add('light');
+  }
+
+  // 2. Toggle Handler
+  themeToggle.addEventListener('click', () => {
+    htmlEl.classList.toggle('light');
+    localStorage.setItem('theme', htmlEl.classList.contains('light') ? 'light' : 'dark');
+  });
+
+  // 3. Smooth Scroll Rotation
+  let currentRotation = 0;
+  window.addEventListener('scroll', () => {
+    const targetRotation = window.scrollY * 0.15;
+    currentRotation += (targetRotation - currentRotation) * 0.1; // Smooth easing
+    sunRays.style.transform = `rotate(${currentRotation}deg)`;
+  }, { passive: true });
 
   setInterval(updateRotator, 60000); // 60 seconds
   fetchNews(); fetchPopular(); fetchTrending(); fetchUtilityData();
