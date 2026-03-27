@@ -3,124 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Пресек — Извори</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <title>Извори | Пресек</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #f2ead8; --card: #faf5e9; --border: #c8b89a;
-      --text: #1a1410; --muted: #7a6a52; --red: #8b1a1a;
-      --font: 'Noto Serif', Georgia, serif;
+      --color-bg-base: #FFFBF2;
+      --color-bg-surface: #FFFFFF;
+      --color-text-primary: #1A1712;
+      --color-text-secondary: #5C5852;
+      --color-macedonian-red: #D20000;
+      --color-macedonian-gold: #FFE000;
+      --bg: var(--color-bg-base);
+      --bg-card: var(--color-bg-surface);
+      --border: #E8E2D9;
+      --accent: var(--color-macedonian-red);
+      --gold: var(--color-macedonian-gold);
+      --headline: #1A1712;
+      --text-body: var(--color-text-primary);
+      --text-muted: var(--color-text-secondary);
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --border-radius-md: 12px;
+      --font-size-body: 1.15rem;
+      --serif: 'Playfair Display', Georgia, serif;
       --sans: 'Noto Sans', sans-serif;
+      --layout-max-width: 1280px;
     }
-    @media (prefers-color-scheme: dark) {
+
+    @media(prefers-color-scheme: dark) {
       :root {
-        --bg: #141210; --card: #1e1a14; --border: #36301e;
-        --text: #ede0c4; --muted: #7a6a50; --red: #b03030;
+        --color-bg-base: #12100E;
+        --color-bg-surface: #1E1B18;
+        --color-text-primary: #F5F2EF;
+        --color-text-secondary: #AAA5A0;
+        --bg: var(--color-bg-base);
+        --bg-card: var(--color-bg-surface);
+        --border: #332F2B;
+        --headline: #FFFFFF;
+        --text-body: var(--color-text-primary);
+        --text-muted: var(--color-text-secondary);
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
       }
     }
-    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
 
-    .top-bar {
-      background: var(--card); border-bottom: 3px solid var(--red);
-      padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem;
-      position: sticky; top: 0; z-index: 100;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      background:var(--bg);
+      color:var(--text-body);
+      font-family:var(--sans);
+      font-size:var(--font-size-body);
+      line-height:1.7;
+      min-height:100vh;
     }
-    .top-bar a.brand { display: flex; align-items: center; gap: 8px; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.1em;
-      color: var(--red); text-decoration: none; }
-    .top-bar span { font-size: 0.72rem; color: var(--muted); }
-    .top-bar a.back { font-size: 0.72rem; color: var(--muted); text-decoration: none;
-      margin-left: auto; }
-    .top-bar a.back:hover { color: var(--red); }
 
-    .wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    /* HEADER */
+    .site-header{background:var(--bg-card);border-bottom:4px solid var(--color-macedonian-gold);position:sticky;top:0;z-index:200;box-shadow:var(--shadow-md)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:var(--layout-max-width);margin:0 auto;height:72px}
+    .logo-text{display:flex;align-items:center;gap:15px;font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--color-macedonian-red);text-decoration:none}
+    .back-link{font-family:var(--sans);font-size:1rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px}
 
-    h1 { font-size: 1rem; font-weight: 700; color: var(--muted);
-      letter-spacing: 0.08em; text-transform: uppercase;
-      padding-bottom: 0.4rem; border-bottom: 2px solid var(--border);
-      margin-bottom: 1.25rem; }
+    /* CONTENT */
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-family: var(--serif); font-size: 2.2rem; font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
 
-    .summary-bar {
-      display: flex; gap: 1.5rem; margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .summary-item { font-size: 0.8rem; color: var(--muted); }
-    .summary-item strong { color: var(--text); font-size: 1.1rem; }
+    .summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .summary-item { background: var(--bg-card); padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm); text-align: center; }
+    .summary-item strong { color: var(--accent); font-size: 1.8rem; display: block; line-height: 1.2; }
+    .summary-item span { color: var(--text-muted); font-size: 0.9rem; font-weight: 700; text-transform: uppercase; }
 
     /* Filter strip */
-    .filter-strip {
-      display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;
-    }
-    .filter-label { font-size: 0.65rem; color: var(--muted); font-family: var(--sans);
-      text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+    .filter-strip { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     .filter-btn {
-      font-family: var(--font); font-size: 0.66rem; font-weight: 600;
-      background: var(--card); border: 1px solid var(--border); border-radius: 2px;
-      padding: 0.18rem 0.55rem; cursor: pointer; color: var(--muted);
-      transition: all 0.12s;
+      font-family: var(--sans); font-size: 0.9rem; font-weight: 700;
+      background: var(--bg-card); border: 2px solid var(--border); border-radius: 30px;
+      padding: 8px 20px; cursor: pointer; color: var(--text-muted);
+      transition: all 0.2s;
     }
-    .filter-btn.active, .filter-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    .filter-btn.active, .filter-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
     /* Sources grid */
-    .sources-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 0.65rem;
-    }
+    .sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .source-card {
-      background: var(--card); border: 1px solid var(--border);
-      padding: 0.75rem 0.9rem;
-      display: flex; flex-direction: column; gap: 0.3rem;
-      transition: background 0.12s;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 20px; border-radius: var(--border-radius-md);
+      display: flex; flex-direction: column; gap: 12px;
+      transition: all 0.3s; box-shadow: var(--shadow-sm);
     }
-    .source-card:hover { background: #f0e8d0; }
-    @media (prefers-color-scheme: dark) { .source-card:hover { background: #26201a; } }
+    .source-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--gold); }
 
-    .source-name { font-weight: 700; font-size: 0.88rem; color: var(--text); }
-    .source-url  { font-size: 0.62rem; color: var(--muted); font-family: var(--sans);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .source-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem; }
-    .source-count { font-size: 0.72rem; color: var(--red); font-weight: 700; }
-    .source-cred  { font-size: 0.6rem; color: var(--muted); font-family: var(--sans); }
+    .source-name { font-weight: 800; font-size: 1.2rem; color: var(--headline); }
+    .source-meta { display: flex; align-items: center; justify-content: space-between; }
+    .source-count { font-size: 0.9rem; color: var(--accent); font-weight: 700; }
+    
+    .source-bar-track { width: 100%; background: var(--bg-base); height: 6px; border-radius: 10px; overflow: hidden; }
+    .source-bar-fill { height: 100%; background: var(--gold); border-radius: 10px; }
 
-    /* Bar */
-    .source-bar-track { width: 100%; background: var(--border); height: 3px;
-      border-radius: 2px; margin-top: 0.25rem; }
-    .source-bar-fill  { height: 100%; background: var(--red); border-radius: 2px; }
+    .badge { font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+    .badge-mk  { background: #E8F0E8; color: #2A5A2A; }
+    .badge-alb { background: #F0E8E8; color: #5A2A2A; }
+    .badge-int { background: #E8E8F0; color: #2A2A5A; }
 
-    .cred-stars { color: #c8a060; font-size: 0.7rem; }
-
-    .badge-mk  { font-size: 0.55rem; background: #e8f0e8; color: #2a5a2a;
-      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
-    .badge-alb { font-size: 0.55rem; background: #f0e8e8; color: #5a2a2a;
-      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
-    .badge-int { font-size: 0.55rem; background: #e8e8f0; color: #2a2a5a;
-      border-radius: 2px; padding: 0.06rem 0.3rem; font-family: var(--sans); }
-    @media (prefers-color-scheme: dark) {
-      .badge-mk  { background: #1a2e1a; color: #6aaf6a; }
-      .badge-alb { background: #2e1a1a; color: #af6a6a; }
-      .badge-int { background: #1a1a2e; color: #6a6aaf; }
-    }
-
-    .loading { color: var(--muted); font-style: italic; padding: 2rem 0; text-align: center; }
-    .section-header { font-size: 0.72rem; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.08em; margin: 1.25rem 0 0.6rem;
-      padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+    .loading { color: var(--text-muted); font-style: italic; padding: 40px 0; text-align: center; font-size: 1.2rem; }
+    footer{background:var(--bg-card);border-top:4px solid var(--color-macedonian-red);padding:40px 20px;text-align:center;margin-top:60px}
   </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <a href="/" class="brand">
-    <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="var(--red)"/>
-      <text x="16" y="24" font-family="Georgia, serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#f4ede0">П</text>
-    </svg>
-    <span>ПРЕСЕК</span>
-  </a>
-  <span>/ Извори</span>
-  <a href="/" class="back">← Назад кон вестите</a>
-</div>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo-text">
+      <svg width="40" height="40" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="6" fill="#FFE000"/>
+        <path d="M16 2 L16 10 M16 22 L16 30 M2 16 L10 16 M22 16 L30 16 M6 6 L12 12 M20 20 L26 26 M26 6 L20 12 M12 20 L6 26" stroke="#FFE000" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <span>ПРЕСЕК</span>
+    </a>
+    <a href="/" class="back-link">← Назад</a>
+  </div>
+</header>
 
 <div class="wrap">
   <h1>Новински Извори</h1>
@@ -130,7 +133,6 @@
   </div>
 
   <div class="filter-strip">
-    <span class="filter-label">Филтер:</span>
     <button class="filter-btn active" onclick="filterSources('all', this)">Сите</button>
     <button class="filter-btn" onclick="filterSources('mk', this)">🇲🇰 Македонски</button>
     <button class="filter-btn" onclick="filterSources('alb', this)">🇦🇱 Албански</button>
@@ -142,27 +144,14 @@
   </div>
 </div>
 
+<footer>
+  <strong style="font-family:var(--serif); font-size:1.5rem; color:var(--accent)">ПРЕСЕК</strong>
+  <p style="margin-top:8px; font-weight:600">Вашиот дневен преглед на македонски вести</p>
+</footer>
+
 <script>
 const ALBANIAN = new Set(['Portalb', 'Koha']);
 const INTERNATIONAL = new Set(['Deutsche Welle', 'Слободна Европа']);
-
-const CREDIBILITY = {
-  'MIA': 2.0, 'MRT': 1.8, 'Слободна Европа': 1.8, 'Deutsche Welle': 1.7,
-  'Sitel': 1.7, 'Kanal 5': 1.7, 'TV21': 1.6, '24 Вести': 1.6, 'Telma': 1.6,
-  'Sloboden Pecat': 1.5, 'Nova Makedonija': 1.5, 'Republika': 1.4, 'Makfax': 1.4,
-  'Civil Media': 1.3, 'Fokus': 1.3, 'Nezavisen': 1.3, 'Vistinomer': 1.2,
-  'Kurir': 1.2, 'Faktor': 1.2, 'Vecer': 1.2, 'Meta': 1.2, 'Журнал': 1.2,
-  'BIRN Macedonia': 1.4,
-};
-
-function credStars(cred) {
-  const c = cred || 0.8;
-  if (c >= 1.7) return '★★★★★';
-  if (c >= 1.4) return '★★★★☆';
-  if (c >= 1.2) return '★★★☆☆';
-  if (c >= 1.0) return '★★☆☆☆';
-  return '★☆☆☆☆';
-}
 
 function sourceType(name) {
   if (ALBANIAN.has(name)) return 'alb';
@@ -172,9 +161,9 @@ function sourceType(name) {
 
 function badgeHtml(name) {
   const t = sourceType(name);
-  if (t === 'alb') return '<span class="badge-alb">🇦🇱 ALB</span>';
-  if (t === 'int') return '<span class="badge-int">🌐 INT</span>';
-  return '<span class="badge-mk">🇲🇰 MK</span>';
+  if (t === 'alb') return '<span class="badge badge-alb">ALB</span>';
+  if (t === 'int') return '<span class="badge badge-int">INT</span>';
+  return '<span class="badge badge-mk">MK</span>';
 }
 
 let allSources = [];
@@ -188,29 +177,22 @@ function filterSources(f, btn) {
 }
 
 function renderSources() {
-  const filtered = activeFilter === 'all'
-    ? allSources
-    : allSources.filter(s => sourceType(s.source) === activeFilter);
-
+  const filtered = activeFilter === 'all' ? allSources : allSources.filter(s => sourceType(s.source) === activeFilter);
   if (!filtered.length) {
     document.getElementById('sourcesGrid').innerHTML = '<div class="loading">Нема извори.</div>';
     return;
   }
-
   const max = Math.max(...filtered.map(s => s.n));
-
   document.getElementById('sourcesGrid').innerHTML = filtered.map(s => {
-    const cred = CREDIBILITY[s.source] || 0.8;
     const pct  = Math.round(s.n / max * 100);
     return `
       <div class="source-card">
-        <div style="display:flex;align-items:center;gap:0.4rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="source-name">${s.source}</span>
           ${badgeHtml(s.source)}
         </div>
         <div class="source-meta">
           <span class="source-count">${s.n.toLocaleString()} статии</span>
-          <span class="source-cred">${credStars(cred)}</span>
         </div>
         <div class="source-bar-track">
           <div class="source-bar-fill" style="width:${pct}%"></div>
@@ -223,31 +205,22 @@ async function load() {
   try {
     const res  = await fetch('/api/stats/full');
     const data = await res.json();
-
     allSources = data.by_source || [];
-
-    // Summary bar
     const mkCount  = allSources.filter(s => sourceType(s.source) === 'mk').length;
     const albCount = allSources.filter(s => sourceType(s.source) === 'alb').length;
     const intCount = allSources.filter(s => sourceType(s.source) === 'int').length;
 
     document.getElementById('summaryBar').innerHTML = [
-      [`${allSources.length}`, 'Активни извори'],
-      [`${mkCount}`, 'Македонски'],
-      [`${albCount}`, 'Албански'],
-      [`${intCount}`, 'Меѓународни'],
-      [`${data.total_articles?.toLocaleString()}`, 'Вкупно статии'],
-    ].map(([v, l]) =>
-      `<div class="summary-item"><strong>${v}</strong><br>${l}</div>`
-    ).join('');
-
+      [allSources.length, 'Активни извори'],
+      [mkCount, 'Македонски'],
+      [albCount, 'Албански'],
+      [data.total_articles?.toLocaleString(), 'Вкупно статии'],
+    ].map(([v, l]) => `<div class="summary-item"><strong>${v}</strong><span>${l}</span></div>`).join('');
     renderSources();
   } catch(e) {
-    document.getElementById('sourcesGrid').innerHTML =
-      `<div class="loading">Грешка: ${e}</div>`;
+    document.getElementById('sourcesGrid').innerHTML = `<div class="loading">Грешка: ${e}</div>`;
   }
 }
-
 load();
 </script>
 </body>

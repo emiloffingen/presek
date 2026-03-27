@@ -4,42 +4,142 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>За нас | Пресек</title>
-  <meta name="theme-color" content="#8b1a1a">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#141210;--bg-card:#1f1b15;--border:#3a3222;--text:#ede0c4;--text-body:#d4c8a8;--text-muted:#8a7c62;--red:#b03030;--gold:#c9a030;--serif:'Source Serif 4',Georgia,serif;--display:'Playfair Display',Georgia,serif;--sans:'Noto Sans',sans-serif}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.7}
-    .page{max-width:720px;margin:0 auto;padding:2rem 1.25rem 4rem}
-    .back{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);text-decoration:none;display:inline-block;margin-bottom:1.5rem}
-    .back:hover{color:var(--gold)}
-    h1{font-family:var(--display);font-size:2rem;color:var(--text);margin-bottom:1rem;border-bottom:3px solid var(--red);padding-bottom:.5rem}
-    h2{font-family:var(--display);font-size:1.3rem;color:var(--text);margin:1.5rem 0 .75rem}
-    p{margin-bottom:1rem}
-    a{color:var(--gold)}
-    .stat{font-family:var(--sans);font-size:.9rem;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:.75rem 1rem;margin:1rem 0}
+    :root {
+      --color-bg-base: #FFFBF2;
+      --color-bg-surface: #FFFFFF;
+      --color-text-primary: #1A1712;
+      --color-text-secondary: #5C5852;
+      --color-macedonian-red: #D20000;
+      --color-macedonian-gold: #FFE000;
+      --bg: var(--color-bg-base);
+      --bg-card: var(--color-bg-surface);
+      --border: #E8E2D9;
+      --accent: var(--color-macedonian-red);
+      --gold: var(--color-macedonian-gold);
+      --headline: #1A1712;
+      --text-body: var(--color-text-primary);
+      --text-muted: var(--color-text-secondary);
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --border-radius-md: 12px;
+      --font-size-body: 1.15rem;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Noto Sans', sans-serif;
+      --layout-max-width: 1280px;
+    }
+
+    @media(prefers-color-scheme: dark) {
+      :root {
+        --color-bg-base: #12100E;
+        --color-bg-surface: #1E1B18;
+        --color-text-primary: #F5F2EF;
+        --color-text-secondary: #AAA5A0;
+        --bg: var(--color-bg-base);
+        --bg-card: var(--color-bg-surface);
+        --border: #332F2B;
+        --headline: #FFFFFF;
+        --text-body: var(--color-text-primary);
+        --text-muted: var(--color-text-secondary);
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+      }
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      background:var(--bg);
+      color:var(--text-body);
+      font-family:var(--sans);
+      font-size:var(--font-size-body);
+      line-height:1.8;
+      min-height:100vh;
+    }
+
+    /* HEADER */
+    .site-header{background:var(--bg-card);border-bottom:4px solid var(--color-macedonian-gold);position:sticky;top:0;z-index:200;box-shadow:var(--shadow-md)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:var(--layout-max-width);margin:0 auto;height:72px}
+    .logo-text{display:flex;align-items:center;gap:15px;font-family:var(--serif);font-size:2rem;font-weight:900;color:var(--color-macedonian-red);text-decoration:none}
+    .back-link{font-family:var(--sans);font-size:1rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px}
+
+    /* CONTENT */
+    .page { max-width: 800px; margin: 0 auto; padding: 60px 20px; }
+    h1 { font-family: var(--serif); font-size: 2.8rem; font-weight: 900; color: var(--accent); margin-bottom: 24px; border-bottom: 4px solid var(--color-macedonian-gold); padding-bottom: 12px; display: inline-block; }
+    h2 { font-family: var(--serif); font-size: 1.8rem; font-weight: 900; color: var(--headline); margin: 40px 0 16px; position: relative; }
+    h2::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 40px; height: 3px; background: var(--color-macedonian-gold); }
+    
+    p { margin-bottom: 24px; }
+    strong { color: var(--headline); font-weight: 700; }
+    a { color: var(--accent); font-weight: 700; text-decoration: none; border-bottom: 2px solid rgba(210,0,0,0.2); transition: all 0.2s; }
+    a:hover { background: rgba(210,0,0,0.05); border-bottom-color: var(--accent); }
+
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 32px; border-radius: var(--border-radius-md);
+      margin: 40px 0; box-shadow: var(--shadow-sm);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;
+    }
+    .feature-item { text-align: center; }
+    .feature-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+    .feature-text { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    footer{background:var(--bg-card);border-top:4px solid var(--color-macedonian-red);padding:40px 20px;text-align:center;margin-top:60px}
   </style>
 </head>
 <body>
-  <div class="page">
-    <a href="/" class="back">← Назад кон вести</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo-text">
+      <svg width="40" height="40" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="6" fill="#FFE000"/>
+        <path d="M16 2 L16 10 M16 22 L16 30 M2 16 L10 16 M22 16 L30 16 M6 6 L12 12 M20 20 L26 26 M26 6 L20 12 M12 20 L6 26" stroke="#FFE000" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <span>ПРЕСЕК</span>
+    </a>
+    <a href="/" class="back-link">← Назад</a>
+  </div>
+</header>
+
+<div class="page">
     <h1>За Пресек</h1>
-    <p><strong>Пресек</strong> е независен македонски агрегатор на вести кој собира, групира и рангира содржини од повеќе од 50 домашни и меѓународни извори — сè на едно место.</p>
+    <p><strong>Пресек</strong> е независен македонски агрегатор на вести кој собира, групира и рангира содржини од повеќе од 50 домашни и меѓународни извори — сè на едно место, на Вашиот јазик.</p>
 
     <h2>Како работи?</h2>
-    <p>Нашиот систем автоматски ги собира најновите вести од македонските медиуми на секои 15 минути. Сродните вести се групираат во кластери за полесно следење на приказните. AI технологија (Gemini) генерира резимеа и анализи на најважните теми.</p>
+    <p>Нашиот систем автоматски ги пребарува најновите информации од македонскиот медиумски простор на секои 15 минути. Користиме напредна технологија за групирање на сродните вести во „кластери“, овозможувајќи Ви да ја согледате целосната слика преку повеќе различни извори одеднаш.</p>
 
-    <h2>Извори</h2>
-    <p>Пресек агрегира вести од сите поголеми македонски медиуми, вклучувајќи: Сител, ТВ21, Телма, МИА, Слободен Печат, Република, Канал 5, и многу други. Дополнително, следиме и меѓународни извори (BBC, CNN, Tagesschau, Reuters) со автоматски превод на македонски.</p>
-    <p>Целосната листа на извори е достапна на страницата <a href="/izvori">Извори</a>.</p>
+    <h2>Вештачка Интелигенција</h2>
+    <p>Со помош на најсовремена AI технологија (Google Gemini), Пресек генерира резимеа и непристрасни анализи за најважните настани. Нашата цел е да Ви заштедиме време и да понудиме јасен преглед во морето од информации.</p>
 
-    <h2>Рангирање</h2>
-    <p>Вестите се рангираат според број на извори кои ја покриваат темата, кредибилитетот на изворите и актуелноста. Овој систем обезбедува дека најважните приказни се прикажани на врвот.</p>
+    <h2>Рангирање и Кредибилитет</h2>
+    <p>Вестите не се прикажани случајно. Системот ги рангира според нивната актуелност, бројот на медиуми кои известуваат за истата тема и историскиот кредибилитет на изворите. Така, најзначајните приказни природно го наоѓаат патот до врвот.</p>
+
+    <div class="feature-card">
+      <div class="feature-item">
+        <span class="feature-icon">🗞️</span>
+        <span class="feature-text">50+ Извори</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🤖</span>
+        <span class="feature-text">AI Резимеа</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🔄</span>
+        <span class="feature-text">15м Освежување</span>
+      </div>
+    </div>
 
     <h2>Контакт</h2>
-    <p>За прашања, предлози или соработка, контактирајте нè на <a href="mailto:contact@presek.live">contact@presek.live</a>.</p>
+    <p>Доколку имате прашања, предлози за нови извори или сакате соработка, слободно контактирајте го нашиот тим на: <a href="mailto:contact@presek.live">contact@presek.live</a></p>
+</div>
 
-    <div class="stat">🗞️ 50+ извори · 📊 Автоматско рангирање · 🤖 AI резимеа · 🔄 Освежување на 15 мин</div>
-  </div>
+<footer>
+  <strong style="font-family:var(--serif); font-size:1.5rem; color:var(--accent)">ПРЕСЕК</strong>
+  <p style="margin-top:8px; font-weight:600">Вашиот дневен преглед на македонски вести</p>
+</footer>
+
 </body>
 </html>
