@@ -204,17 +204,22 @@ html.light .site-header { background: rgba(248, 249, 250, 0.7); }
     transition: var(--transition);
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 .story-card:hover {
-    transform: translateY(-8px) scale(1.01);
+    transform: translateY(-4px);
     border-color: var(--primary);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-html.light .story-card:hover {
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    box-shadow: var(--shadow-lg);
 }
 
+@media (min-width: 640px) {
+    .story-card {
+        flex-direction: row-reverse;
+        align-items: stretch;
+        gap: var(--spacing-lg);
+    }
+}
 
 /* Breaking animation overlay */
 .story-card.is-breaking::before {
@@ -226,13 +231,27 @@ html.light .story-card:hover {
     z-index: 10;
 }
 
-.story-thumb-wrap {
+.story-thumb-wrap, 
+.story-thumb-placeholder {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--bg-base);
     border: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 640px) {
+    .story-thumb-wrap, 
+    .story-thumb-placeholder {
+        width: 160px;
+        height: 110px;
+        aspect-ratio: auto;
+    }
 }
 
 .story-thumb {
@@ -242,7 +261,7 @@ html.light .story-card:hover {
     transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-.story-card:hover .story-thumb { transform: scale(1.1); }
+.story-card:hover .story-thumb { transform: scale(1.05); }
 
 .story-meta {
     font-size: 0.7rem;
@@ -350,39 +369,20 @@ html.light .story-card:hover {
 
 /* STORY THUMB PLACEHOLDER */
 .story-thumb-placeholder {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border-radius: var(--radius-md);
     background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-base) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
     position: relative;
-    overflow: hidden;
-}
-
-.story-thumb-placeholder::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(var(--primary) 1px, transparent 1px);
-    background-size: 20px 20px;
-    opacity: 0.03;
 }
 
 .story-thumb-placeholder img {
-    width: 40px;
-    height: 40px;
+    width: 24px;
+    height: 24px;
     opacity: 0.1;
-    filter: grayscale(1) brightness(1.5);
+    filter: grayscale(1);
     z-index: 1;
 }
 
 html.light .story-thumb-placeholder img {
     opacity: 0.05;
-    filter: grayscale(1) invert(1);
 }
 
 @keyframes fadeIn {
