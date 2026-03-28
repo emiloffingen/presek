@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Статистики | Пресек</title>
@@ -73,6 +74,8 @@
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    *,*::before,*::after{will-change:transform,opacity}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
     body{
       background: var(--bg);
       color: var(--color-text-primary);
@@ -90,7 +93,10 @@
     h1 { font-family: var(--font-display); font-size: var(--font-size-lg); font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     html:not(.light) h1 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px; background: var(--border); border: 1px solid var(--border); margin-bottom: 40px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 40px; }
+    @media(max-width:500px){
+      .kpi-grid{grid-template-columns:1fr}
+    }
     .kpi { background: var(--bg-card); padding: 32px; text-align: center; }
     .kpi-val { font-size: var(--font-size-lg); font-weight: 900; color: var(--gold); font-family: var(--font-display); margin-bottom: 8px; }
     .kpi-label { font-size: var(--font-size-xs); color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -98,15 +104,15 @@
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); margin-bottom: 32px; }
     @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
 
-    .panel { background: var(--bg-card); border: 1px solid var(--border); padding: 32px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); padding: 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     .panel h2 { font-family: var(--font-display); font-size: var(--font-size-md); font-weight: 900; color: var(--headline); margin-bottom: 24px; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     html:not(.light) .panel h2 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
 
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: var(--font-size-sm); }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 8px 0; font-size: var(--font-size-sm); }
     .bar-label { width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--color-text-secondary); }
-    .bar-track { flex: 1; background: var(--bg-base); height: 2px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--gold); }
-    .bar-num { width: 50px; text-align: right; color: var(--bronze); font-weight: 700; flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--bg-base); height: 4px; overflow: hidden; border-radius: 2px; }
+    .bar-fill { height: 100%; background: var(--gold); border-radius: 0 2px 2px 0; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 8px rgba(212, 175, 55, 0.3); }
+    .bar-num { width: 50px; text-align: right; color: var(--bronze); font-weight: 700; flex-shrink: 0; font-family: var(--font-display); }
 
     .click-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; align-items: baseline; }
     .click-rank { width: 24px; color: var(--accent); font-weight: 900; }

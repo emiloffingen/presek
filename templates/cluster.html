@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   {% if articles %}
@@ -11,6 +12,7 @@
   <title>Вест | Пресек</title>
   {% endif %}
   <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta name="theme-color" id="themeMeta" content="#141618">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -83,6 +85,8 @@
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    *,*::before,*::after{will-change:transform,opacity}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
     body{
       --crystal-pattern: 
         linear-gradient(30deg, transparent 49%, rgba(140, 109, 62, var(--pattern-opacity)) 50%, transparent 51%),
@@ -164,6 +168,9 @@
     .source-card:hover{border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.3);transform:translateY(-2px)}
     .source-card::after{content:'';position:absolute;top:0;left:0;width:2px;height:0;background:var(--accent);transition:height .3s}
     .source-card:hover::after{height:100%}
+    .source-card[data-similarity="high"]{border-left:3px solid var(--accent)}
+    .source-card[data-similarity="medium"]{border-left:3px solid var(--gold)}
+    .source-card[data-similarity="low"]{border-left:3px solid var(--bronze)}
 
     .source-content{flex:1;min-width:0}
     .source-name{font-family:var(--font-sans);font-size:.65rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
@@ -195,10 +202,10 @@
     /* AI CHAT UI */
     .ai-chat-bar {
       position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
+      bottom: 12px;
+      left: 2%;
+      right: 2%;
+      width: auto;
       max-width: 700px;
       background: rgba(26, 28, 30, 0.85);
       backdrop-filter: blur(20px);
@@ -212,6 +219,9 @@
       box-shadow: 0 10px 50px rgba(0,0,0,0.6);
       z-index: 1000;
       transition: all 0.3s ease;
+    }
+    @media(max-width:600px){
+      .ai-chat-bar{bottom:8px;left:1%;right:1%}
     }
     .ai-chat-bar:focus-within {
       border-color: var(--color-gold);
@@ -485,11 +495,19 @@
       const snippetEl = card.querySelector('.source-snippet');
       const btnEl = card.querySelector('.read-more-btn');
 
+      // Set similarity attribute for CSS targeting
       if (similarity > 0.85) {
+        card.setAttribute('data-similarity', 'high');
         if (titleEl) titleEl.style.display = 'none';
         if (snippetEl) snippetEl.style.display = 'none';
         if (btnEl) btnEl.style.display = 'inline-block';
+      } else if (similarity > 0.6) {
+        card.setAttribute('data-similarity', 'medium');
+        if (titleEl) titleEl.style.display = '-webkit-box';
+        if (snippetEl) snippetEl.style.display = '-webkit-box';
+        if (btnEl) btnEl.style.display = 'none';
       } else {
+        card.setAttribute('data-similarity', 'low');
         if (titleEl) titleEl.style.display = '-webkit-box';
         if (snippetEl) snippetEl.style.display = '-webkit-box';
         if (btnEl) btnEl.style.display = 'none';

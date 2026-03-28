@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Извори | Пресек</title>
@@ -72,6 +73,8 @@
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    *,*::before,*::after{will-change:transform,opacity}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
     body{
       --crystal-pattern: 
         linear-gradient(30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%),
@@ -103,7 +106,7 @@
     .summary-item span { color: var(--bronze); font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
 
     /* Filter strip */
-    .filter-strip { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+    .filter-strip { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; position: sticky; top: 64px; z-index: 100; background: var(--bg-card); padding: 12px 0; border-bottom: 1px solid var(--border); }
     .filter-btn {
       font-family: var(--font-sans); font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
       background: none; border: 1px solid var(--bronze); color: var(--gold);
@@ -117,10 +120,12 @@
       background: var(--bg-card); border: 1px solid var(--border);
       padding: 24px; display: flex; flex-direction: column; gap: 12px;
       transition: all 0.3s; position: relative; overflow: hidden;
+      border-radius: 12px;
     }
-    .source-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .source-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
     .source-card::after { content:''; position:absolute; top:0; left:0; width:2px; height:0; background:var(--accent); transition:height .3s; }
     .source-card:hover::after { height:100%; }
+    .source-bar-fill { height: 3px; border-radius: 0 3px 3px 0; }
 
     .source-name { font-weight: 700; font-size: 1.1rem; color: var(--headline); font-family: var(--font-display); }
     .source-meta { display: flex; align-items: center; justify-content: space-between; }
@@ -134,7 +139,9 @@
     .badge-alb { color: #FF5252; }
     .badge-int { color: #2196F3; }
 
-    .loading { color: var(--text-muted); font-style: italic; padding: 40px 0; text-align: center; font-size: 1.1rem; }
+    .loading { color: var(--text-muted); font-style: italic; padding: 40px 0; text-align: center; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .loading::after { content: "⏳"; animation: spin 1s linear infinite; font-size: 1.2rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     footer{background:var(--bg-card);border-top:1px solid var(--border);padding:48px 20px;text-align:center;margin-top:60px}
   </style>
 </head>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Приватност | Пресек</title>
@@ -64,9 +65,11 @@
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
+    *,*::before,*::after{will-change:transform,opacity}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
     body{background:var(--bg);color:var(--text-body);font-family:var(--font-serif);font-size:var(--font-size-body);line-height:var(--line-height-body);min-height:100vh}
     .page{max-width:800px;margin:0 auto;padding:64px 20px}
-    .back{font-family:var(--font-sans);font-size:var(--font-size-sm);color:var(--text-muted);text-decoration:none;display:inline-block;margin-bottom:32px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em}
+    .back{font-family:var(--font-sans);font-size:var(--font-size-sm);color:var(--text-muted);text-decoration:none;display:inline-block;margin-bottom:32px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;position:sticky;top:20px;z-index:50;background:var(--bg-card);padding:8px 12px;border-radius:6px;border:1px solid var(--border)}
     .back:hover{color:var(--accent)}
     
     h1{font-family:var(--font-display);font-size:var(--font-size-lg);color:var(--headline);margin-bottom:32px;border-bottom:4px solid var(--accent);padding-bottom:16px;text-shadow: 0 1px 2px rgba(0,0,0,0.1)}

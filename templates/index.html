@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Пресек | Вашиот Дневен Преглед</title>
   <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <meta name="theme-color" id="themeMeta" content="#141618">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -78,6 +80,10 @@
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    *,*::before,*::after{will-change:transform,opacity}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+    *,*::before,*::after{will-change:transform,opacity}
+    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{
       background: var(--bg);
@@ -138,7 +144,7 @@
     .utility-ticker{font-family:var(--font-sans);font-size:.7rem;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:15px;text-transform:uppercase;letter-spacing:.05em}
     .header-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
     .action-btn{background:none;color:var(--gold);border:1px solid var(--border);font-family:var(--font-sans);font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.6rem;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;gap:8px;min-width:44px;justify-content:center;overflow:hidden}
-    .action-btn:hover{background:var(--border);color:#fff;border-color:var(--gold);padding-left:1.2rem;padding-right:1.2rem}
+    .action-btn:hover{background:var(--border);color:#fff;border-color:var(--gold);padding-left:1rem;padding-right:1rem;transition:all .15s ease}
     .action-btn svg{width:18px;height:18px;fill:currentColor;flex-shrink:0}
     .action-btn .btn-text{max-width:0;opacity:0;transition:all .2s ease;white-space:nowrap}
     .action-btn:hover .btn-text{max-width:100px;opacity:1}
@@ -421,9 +427,13 @@
     
     @media(max-width:767px){
       .logo-text{font-size:1.4rem}
-      .story-card{padding:24px}
+      .story-card{padding:16px;min-height:340px}
       .story-headline{font-size:1.25rem}
       .nav-bar{top:64px}
+      .action-btn{padding:0.4rem 0.6rem;min-width:36px}
+      .action-btn:hover .btn-text{max-width:80px}
+      .header-ticker{display:none}
+      .cat-btn{font-size:.7rem;padding:0 .8rem}
     }
   </style>
 </head>
@@ -593,6 +603,21 @@
     if(diff < 3600) return `${Math.floor(diff/60)}м`;
     if(diff < 86400) return `${Math.floor(diff/3600)}ч`;
     return `${Math.floor(diff/86400)}д`;
+  }
+  
+  function showError(message) {
+    return `
+      <div class="error-message" style="
+        background: rgba(209, 0, 71, 0.1);
+        color: var(--color-ruby);
+        padding: 16px;
+        border-left: 4px solid var(--color-ruby);
+        margin: 20px 0;
+        border-radius: 0 8px 8px 0;
+      ">
+        ⚠️ ${message}
+      </div>
+    `;
   }
 
   async function showTop10(btn) {
@@ -949,17 +974,23 @@
     if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
   }
 
-  // 1. Load Theme
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light') {
-    htmlEl.classList.add('light');
-    updateThemeMeta(true);
-  } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    htmlEl.classList.add('light');
-    updateThemeMeta(true);
-  } else {
-    updateThemeMeta(false);
+  // Enhanced theme initialization
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      htmlEl.classList.add(savedTheme);
+      updateThemeMeta(savedTheme === 'light');
+      return;
+    }
+    
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      htmlEl.classList.add('light');
+      updateThemeMeta(true);
+    }
   }
+  
+  // Initialize theme
+  initTheme();
 
   // 2. Toggle Handler
   themeToggle.addEventListener('click', () => {
