@@ -382,7 +382,10 @@
     if (!masterHeadline) return;
 
     const cards = document.querySelectorAll('.source-card');
-    cards.forEach(card => {
+    cards.forEach((card, index) => {
+      // SKIP deduplication for the first card so the 15-row text remains visible
+      if (index === 0) return;
+
       const artTitle = card.getAttribute('data-title');
       if (!artTitle) return;
 
