@@ -994,15 +994,17 @@ def rank_articles_in_cluster(arts):
 def api_news():
     page      = request.args.get("page", 0, type=int)
     page_size = request.args.get("page_size", 50, type=int)
+    country   = request.args.get("country", "🇲🇰")
     page_size = min(page_size, 100)  # cap at 100
-    cache_key = f"news:{page}:{page_size}"
+    cache_key = f"news:{country}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached:
         return jsonify(cached)
-    # Fetch more than needed to form clusters, then paginate the result
+    # Fetch articles filtered by country, then cluster them
     conn = get_db()
     rows = conn.execute(
-        "SELECT * FROM articles ORDER BY created_at DESC LIMIT 500"
+        "SELECT * FROM articles WHERE country = ? ORDER BY created_at DESC LIMIT 500",
+        (country,)
     ).fetchall()
     conn.close()
 
