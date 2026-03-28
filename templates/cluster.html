@@ -10,6 +10,11 @@
   {% else %}
   <title>Вест | Пресек</title>
   {% endif %}
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" id="themeMeta" content="#141618">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
@@ -46,24 +51,21 @@
     }
 
     /* Light Mode Trigger */
-    html.light,
-    @media(prefers-color-scheme: light) {
-      :root {
-        --color-bg-base: #F0F2F3;
-        --color-bg-surface: #FFFFFF;
-        --color-bg-surface-hover: #E8EAEB;
-        --color-text-primary: #2D3134; /* Deep Antimony Grey */
-        --color-text-secondary: #5F6368; /* Steel Grey */
-        --border-opacity: 0.4;
-        --pattern-opacity: 0.05;
-        --logo-gradient: linear-gradient(to right, var(--color-ruby), var(--color-bronze));
-        
-        --bg: var(--color-bg-base);
-        --bg-card: var(--color-bg-surface);
-        --headline: #2D3134;
-        --text-body: var(--color-text-primary);
-        --text-muted: var(--color-text-secondary);
-      }
+    html.light {
+      --color-bg-base: #F0F2F3;
+      --color-bg-surface: #FFFFFF;
+      --color-bg-surface-hover: #E8EAEB;
+      --color-text-primary: #2D3134; /* Deep Antimony Grey */
+      --color-text-secondary: #5F6368; /* Steel Grey */
+      --border-opacity: 0.4;
+      --pattern-opacity: 0.05;
+      --logo-gradient: linear-gradient(to right, var(--color-ruby), var(--color-bronze));
+      
+      --bg: var(--color-bg-base);
+      --bg-card: var(--color-bg-surface);
+      --headline: #2D3134;
+      --text-body: var(--color-text-primary);
+      --text-muted: var(--color-text-secondary);
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -79,7 +81,36 @@
       font-size:var(--font-size-body);
       line-height:1.6;
       min-height:100vh;
+      transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
     }
+
+    /* SUN TOGGLE STYLES */
+    #themeToggle {
+      background: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      border-radius: 4px;
+    }
+    #themeToggle:hover {
+      background: var(--border);
+      border-color: var(--gold);
+    }
+    #sunIcon {
+      transition: transform 0.2s ease, filter 0.3s ease;
+      width: 28px;
+      height: 28px;
+    }
+    #themeToggle:hover #sunIcon {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+    html.light #sunCore { fill: #FDB813; }
+    html.light #sunRays g { fill: #FDB813; }
 
     /* HEADER */
     .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
@@ -276,7 +307,37 @@
       </svg>
       <span>ПРЕСЕК</span>
     </a>
-    <a href="/" class="back-link">← Назад</a>
+    <div style="display:flex; align-items:center; gap:20px">
+      <button id="themeToggle" aria-label="Toggle theme">
+        <svg id="sunIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <g id="sunRays" transform-origin="50 50">
+            <g fill="#F5C400">
+              <!-- 8 Primary Long Rays -->
+              <polygon points="50,2 54,35 46,35"/> <!-- Top -->
+              <polygon points="50,98 54,65 46,65"/> <!-- Bottom -->
+              <polygon points="2,50 35,54 35,46"/> <!-- Left -->
+              <polygon points="98,50 65,54 65,46"/> <!-- Right -->
+              <polygon points="16,16 38,34 34,38"/> <!-- Top-Left -->
+              <polygon points="84,16 62,34 66,38"/> <!-- Top-Right -->
+              <polygon points="84,84 62,66 66,62"/> <!-- Bottom-Right -->
+              <polygon points="16,84 38,66 34,62"/> <!-- Bottom-Left -->
+              
+              <!-- 8 Secondary Shorter Rays -->
+              <polygon points="50,15 53,35 47,35" transform="rotate(22.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(67.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(112.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(157.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(202.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(247.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(292.5, 50, 50)"/>
+              <polygon points="50,15 53,35 47,35" transform="rotate(337.5, 50, 50)"/>
+            </g>
+          </g>
+          <circle id="sunCore" cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
+        </svg>
+      </button>
+      <a href="/" class="back-link">← Назад</a>
+    </div>
   </div>
 </header>
 
@@ -425,6 +486,34 @@
     {% endif %}
 
     startLoranditeFlicker();
+  });
+
+  // Theme Toggle Logic
+  const themeToggle = document.getElementById('themeToggle');
+  const htmlEl = document.documentElement;
+  const themeMeta = document.getElementById('themeMeta');
+
+  function updateThemeMeta(isLight) {
+    if (themeMeta) themeMeta.setAttribute('content', isLight ? '#EAECEE' : '#141618');
+  }
+
+  // 1. Load Theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    htmlEl.classList.add('light');
+    updateThemeMeta(true);
+  } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    htmlEl.classList.add('light');
+    updateThemeMeta(true);
+  } else {
+    updateThemeMeta(false);
+  }
+
+  // 2. Toggle Handler
+  themeToggle.addEventListener('click', () => {
+    const isLight = htmlEl.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    updateThemeMeta(isLight);
   });
 
   function toggleAISheet(show) {
