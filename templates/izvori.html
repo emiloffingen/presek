@@ -184,7 +184,16 @@
 
 <script>
 const ALBANIAN = new Set(['Portalb', 'Koha']);
-const INTERNATIONAL = new Set(['Deutsche Welle', 'Слободна Европа']);
+const INTERNATIONAL = new Set([
+  'Deutsche Welle', 'Слободна Европа', 'Tagesschau', 'Der Spiegel', 'SRF News', 
+  '20 Minuten', 'CNN', 'NPR', 'Reuters', 'CBC News', 'Fox News Latest', 
+  'Fox News World', 'BBC News', 'The Guardian', 'France24', 'EuroNews', 
+  'Politico Europe', 'ABC Australia', 'Al Jazeera', 'SCMP', 'NHK World', 
+  'Times of India', 'RFI English', 'ANSA', 'RTVSLO', 'ORF', 'SVT News', 
+  'N1 Info', 'B92', 'Kurir.rs', 'Blic.rs', 'Novinite', 'Kathimerini', 
+  'Exit News', 'Top Channel', 'Telegrafi', 'Daily Sabah', 'TRT World', 
+  'Balkan Insight', 'Index.hr', 'Jutarnji', 'Klix.ba', 'Vijesti.me'
+]);
 
 function sourceType(name) {
   if (ALBANIAN.has(name)) return 'alb';
@@ -241,11 +250,13 @@ async function load() {
     allSources = data.by_source || [];
     const mkCount  = allSources.filter(s => sourceType(s.source) === 'mk').length;
     const albCount = allSources.filter(s => sourceType(s.source) === 'alb').length;
+    const intCount = allSources.filter(s => sourceType(s.source) === 'int').length;
 
     document.getElementById('summaryBar').innerHTML = [
       [allSources.length, 'Активни извори'],
       [mkCount, 'Македонски'],
       [albCount, 'Албански'],
+      [intCount, 'Меѓународни'],
       [data.total_articles?.toLocaleString(), 'Вкупно статии'],
     ].map(([v, l]) => `<div class="summary-item"><strong>${v}</strong><span>${l}</span></div>`).join('');
     renderSources();
