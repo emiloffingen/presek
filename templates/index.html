@@ -202,6 +202,64 @@
     }
     #trendChips::-webkit-scrollbar { display: none; }
 
+    /* CRYSTAL CAROUSEL (NAJCITANO) */
+    .popular-carousel {
+      background: rgba(26, 28, 30, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 40px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      position: sticky;
+      top: 112px;
+      z-index: 180;
+    }
+    html.light .popular-carousel {
+      background: rgba(240, 242, 243, 0.8);
+    }
+    .popular-carousel-inner {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      padding: 0 var(--spacing-md);
+      max-width: var(--layout-max-width);
+      margin: 0 auto;
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .popular-carousel-inner::-webkit-scrollbar { display: none; }
+    
+    .popular-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-primary);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 700;
+      transition: all 0.2s;
+      padding: 0 16px;
+    }
+    .popular-item:hover { color: var(--accent); }
+    .popular-item .rank { color: var(--accent); font-family: var(--font-display); font-style: italic; margin-right: 4px; }
+    
+    .popular-sep {
+      width: 6px;
+      height: 6px;
+      background: var(--color-ruby);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--color-ruby);
+      flex-shrink: 0;
+      animation: ruby-glow 2s infinite;
+    }
+    @keyframes ruby-glow {
+      0%, 100% { opacity: 0.4; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
     .country-dropdown-wrap { position: relative; flex-shrink: 0; }
     .country-dropdown {
       position: absolute;
@@ -454,6 +512,14 @@
     </div>
   </div>
 </nav>
+
+<div class="popular-carousel">
+  <div class="popular-carousel-inner" id="popularCarousel">
+    <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
+      <div class="popular-sep"></div> НАЈЧИТАНО
+    </div>
+  </div>
+</div>
 
 <div class="site-layout">
   <main class="site-main">
@@ -744,6 +810,22 @@
       }
       lastPopularId = currentTopId;
 
+      // 1. Populate Crystal Carousel (Top 5)
+      const carouselItems = data.slice(0, 5).map((c, i) => `
+        <a href="/cluster/${c.cluster_id}" class="popular-item">
+          <span class="rank">${i+1}</span> ${c.articles[0].title}
+        </a>
+        <div class="popular-sep"></div>
+      `).join('');
+      
+      document.getElementById('popularCarousel').innerHTML = `
+        <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
+          <div class="popular-sep" style="animation:none; opacity:1"></div> НАЈЧИТАНО
+        </div>
+        ${carouselItems}
+      `;
+
+      // 2. Populate Sidebar (Extended list)
       document.getElementById('sidebarPopular').innerHTML = data.slice(0, 15).map(c => `
         <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
           <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
