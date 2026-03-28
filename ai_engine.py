@@ -1,5 +1,6 @@
 import json
 import time
+import datetime
 import urllib.request
 import urllib.error
 import re
@@ -157,8 +158,10 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
 
     try:
         conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(days=1)
         rows = conn.execute(
-            "SELECT * FROM articles WHERE created_at >= datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 500"
+            "SELECT * FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 500",
+            (cutoff,)
         ).fetchall()
         
         # Build clusters and rank them
@@ -212,9 +215,9 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
                     synthesis, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
                     if synthesis:
                         clean_synthesis = clean_json_response(synthesis)
-                        now = __import__('datetime').datetime.now().isoformat()
+                        now = datetime.datetime.now()
                         conn.execute(
-                            "INSERT OR REPLACE INTO cluster_summaries (cluster_id, summary, created_at) VALUES (?, ?, ?)",
+                            "INSERT INTO cluster_summaries (cluster_id, summary, created_at) VALUES (%s, %s, %s) ON CONFLICT (cluster_id) DO UPDATE SET summary = EXCLUDED.summary, created_at = EXCLUDED.created_at",
                             (cid, clean_synthesis, now)
                         )
                         conn.commit()

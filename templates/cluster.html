@@ -10,34 +10,58 @@
 
 {% block head %}
 <style>
-    .cluster-header {
-        padding: var(--spacing-xl) 0;
+    .cluster-hero {
+        position: relative;
+        margin: -16px -16px var(--spacing-lg) -16px;
+        height: 40vh;
+        min-height: 300px;
+        overflow: hidden;
         border-bottom: 1px solid var(--border);
-        margin-bottom: var(--spacing-xl);
+    }
+    .hero-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.6);
+    }
+    .hero-overlay {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+        background: linear-gradient(to top, var(--bg-base) 0%, transparent 100%);
+    }
+
+    .cluster-header {
+        padding: 0 0 var(--spacing-lg) 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: var(--spacing-lg);
     }
     
     .cluster-headline {
-        font-size: clamp(1.8rem, 5vw, 3rem);
-        margin-bottom: var(--spacing-md);
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        margin-bottom: var(--spacing-sm);
         line-height: 1.1;
+        letter-spacing: -0.02em;
     }
 
     .cluster-summary {
-        font-size: 1.2rem;
+        font-size: 1.25rem;
         line-height: 1.7;
-        color: var(--text-secondary);
+        color: var(--text-primary);
         background: var(--bg-surface);
         padding: var(--spacing-lg);
         border-left: 4px solid var(--primary);
         border-radius: 0 var(--radius-md) var(--radius-md) 0;
         margin: var(--spacing-lg) 0;
         white-space: pre-line;
+        box-shadow: var(--shadow-sm);
     }
 
     .sources-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
     }
 
     .source-card {
@@ -85,33 +109,33 @@
         overflow: hidden;
         flex-shrink: 0;
         background: var(--bg-base);
+        border: 1px solid var(--border);
     }
     .source-thumb { width: 100%; height: 100%; object-fit: cover; }
 
-    /* AI UI */
-    .ai-chat-bar {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%;
-        max-width: 600px;
-        background: rgba(20, 22, 24, 0.9);
-        backdrop-filter: blur(20px);
+    /* AI Chat Integration */
+    .ai-section {
+        margin: var(--spacing-xl) 0;
+        padding: var(--spacing-xl) 0;
+        border-top: 1px solid var(--border);
+    }
+    .ai-chat-bar-inline {
+        background: var(--bg-surface);
         border: 1px solid var(--primary);
         border-radius: 40px;
         padding: 8px 8px 8px 24px;
         display: flex;
         align-items: center;
         gap: 12px;
-        box-shadow: var(--shadow-lg);
-        z-index: 1000;
+        box-shadow: var(--shadow-md);
+        max-width: 700px;
+        margin: 0 auto;
     }
     .ai-chat-input {
         flex: 1;
         background: none;
         border: none;
-        color: white;
+        color: var(--text-primary);
         outline: none;
         font-size: 1rem;
     }
@@ -126,7 +150,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: var(--transition);
     }
+    .ai-chat-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
 
     .ai-sheet {
         position: fixed;
@@ -139,12 +165,14 @@
         max-height: 80vh;
         overflow-y: auto;
         z-index: 999;
-        transition: bottom 0.5s ease;
+        transition: bottom 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: 0 -20px 60px rgba(0,0,0,0.5);
     }
     .ai-sheet.active { bottom: 0; }
-    .ai-content { font-size: 1.1rem; line-height: 1.8; }
+    .ai-content { font-size: 1.15rem; line-height: 1.8; color: var(--text-primary); }
 
     @media (max-width: 600px) {
+        .cluster-hero { height: 30vh; margin-bottom: var(--spacing-md); }
         .sources-grid { grid-template-columns: 1fr; }
         .source-card { flex-direction: column; }
         .source-thumb-wrap { width: 100%; height: 180px; }
@@ -154,56 +182,73 @@
 
 {% block content %}
 {% if articles %}
-<article class="cluster-content">
-    <header class="cluster-header fade-in">
-        <a href="/" style="font-size:0.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; margin-bottom:12px; display:block">← Назад во вести</a>
-        <h1 class="cluster-headline">{{ articles[0].title }}</h1>
-        <div class="story-meta">
-            <span>{{ articles|length }} извори</span>
-            <span>•</span>
-            <span id="timeLabel">{{ articles[0].created_at }}</span>
-        </div>
-    </header>
+    {% set hero_image = None %}
+    {% for art in articles %}{% if art.image_url and not hero_image %}{% set hero_image = art.image_url %}{% endif %}{% endfor %}
 
-    {% if synthesis %}
-    <section class="cluster-summary fade-in" style="animation-delay: 0.1s">
-        {{ synthesis }}
-    </section>
+    {% if hero_image %}
+    <div class="cluster-hero fade-in">
+        <img src="/proxy?url={{ hero_image | urlencode }}" class="hero-img" alt="Hero Image">
+        <div class="hero-overlay"></div>
+    </div>
     {% endif %}
 
-    <div class="sources-grid">
-        {% for art in articles %}
-        <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.05 + 0.2 }}s">
-            <div class="source-content">
-                <div class="source-name">{{ art.source }}</div>
-                <h3 class="source-title">{{ art.title }}</h3>
-                <p class="source-snippet">{{ art.description | truncate(200) }}</p>
+    <article class="cluster-content">
+        <header class="cluster-header fade-in">
+            <a href="/" style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; margin-bottom:8px; display:block; letter-spacing:0.1em;">← Назад во вести</a>
+            <h1 class="cluster-headline">{{ articles[0].title }}</h1>
+            <div class="story-meta">
+                <span class="source">{{ articles|length }} извори</span>
+                <span>•</span>
+                <span id="timeLabel">{{ articles[0].created_at }}</span>
             </div>
-            {% if art.image_url %}
-            <div class="source-thumb-wrap">
-                <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
+        </header>
+
+        {% if synthesis %}
+        <section class="cluster-summary fade-in" style="animation-delay: 0.1s">
+            {{ synthesis }}
+        </section>
+        {% endif %}
+
+        <div class="sources-grid">
+            {% for art in articles %}
+            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.05 + 0.2 }}s">
+                <div class="source-content">
+                    <div class="source-name">{{ art.source }}</div>
+                    <h3 class="source-title">{{ art.title }}</h3>
+                    <p class="source-snippet">{{ art.description | truncate(200) }}</p>
+                </div>
+                {% if art.image_url %}
+                <div class="source-thumb-wrap">
+                    <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
+                </div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- AI Inline Chat -->
+        <section class="ai-section fade-in">
+            <div style="text-align:center; margin-bottom:24px">
+                <h2 style="font-family:var(--font-display); font-size:1.5rem; margin-bottom:8px">Имате прашање?</h2>
+                <p style="color:var(--text-secondary)">Прашајте ја нашата вештачка интелигенција за повеќе детали за овој настан.</p>
             </div>
-            {% endif %}
-        </a>
-        {% endfor %}
-    </div>
-</article>
+            <div class="ai-chat-bar-inline">
+                <input type="text" id="aiInput" class="ai-chat-input" placeholder="Напишете прашање..." onkeypress="if(event.key==='Enter') askAI()">
+                <button class="ai-chat-btn" onclick="askAI()">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </section>
+    </article>
 {% endif %}
 
-<!-- AI Components -->
+<!-- AI Popup Sheet -->
 <div class="ai-sheet" id="aiSheet">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px">
-        <h2 style="font-family:var(--font-display); font-size:1.2rem">Вештачка Интелигенција</h2>
-        <button onclick="toggleAISheet(false)" style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer">&times;</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center">
+        <h2 style="font-family:var(--font-display); font-size:1.4rem">Пресек Дијалог</h2>
+        <button onclick="toggleAISheet(false)" style="background:var(--bg-surface-hover); border:none; color:var(--text-muted); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.5rem">&times;</button>
     </div>
     <div id="aiResponse" class="ai-content"></div>
-</div>
-
-<div class="ai-chat-bar">
-    <input type="text" id="aiInput" class="ai-chat-input" placeholder="Прашајте за овој настан..." onkeypress="if(event.key==='Enter') askAI()">
-    <button class="ai-chat-btn" onclick="askAI()">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-    </button>
 </div>
 {% endblock %}
 
@@ -220,7 +265,7 @@
 
         input.value = '';
         const responseEl = document.getElementById('aiResponse');
-        responseEl.innerHTML = '<p>Размислувам...</p>';
+        responseEl.innerHTML = '<div style="display:flex; align-items:center; gap:12px; color:var(--text-muted)"><span class="utility-ticker" style="animation: ticker 2s linear infinite">Размислувам...</span></div>';
         toggleAISheet(true);
 
         try {
