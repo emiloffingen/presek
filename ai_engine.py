@@ -94,10 +94,9 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
     if not CLOUDFLARE_API_TOKEN:
         return None
     
-    # User specifically requested this exact system message
     payload = json.dumps({
         "messages": [
-            {"role": "system", "content": "You are a Macedonian news editor. Summarize this article in Macedonian. Return ONLY valid JSON in the format {\"summary\": \"your summary\"}. Do not use markdown backticks."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Input: {prompt_text}"}
         ]
     }).encode("utf-8")
