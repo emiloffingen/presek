@@ -1835,43 +1835,33 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     conn = get_db()
-    # Create tables if new install
+    # Create tables with reorganized schema if new install
     conn.execute("""CREATE TABLE IF NOT EXISTS articles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT, link TEXT UNIQUE, source TEXT,
-        category TEXT, summary TEXT, cluster_id TEXT,
-        created_at TEXT, image_url TEXT
+        cluster_id TEXT NOT NULL,
+        source TEXT NOT NULL,
+        link TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        original_title TEXT DEFAULT '',
+        description TEXT DEFAULT '',
+        summary TEXT,
+        category TEXT,
+        subcategory TEXT DEFAULT '',
+        country TEXT DEFAULT 'Македонија',
+        created_at TEXT NOT NULL,
+        image_url TEXT,
+        clicks INTEGER DEFAULT 0
     )""")
     conn.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
         cluster_id TEXT PRIMARY KEY,
         summary TEXT,
         created_at TEXT
     )""")
-    # Migrate existing DB
-    cols = [r[1] for r in conn.execute("PRAGMA table_info(articles)").fetchall()]
-    if "image_url" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN image_url TEXT DEFAULT ''")
-        log.info("DB migrated: added image_url column")
-    if "clicks" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN clicks INTEGER DEFAULT 0")
-        log.info("DB migrated: added clicks column")
-    if "description" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN description TEXT DEFAULT ''")
-        log.info("DB migrated: added description column")
-    if "subcategory" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN subcategory TEXT DEFAULT ''")
-        log.info("DB migrated: added subcategory column")
-    if "country" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN country TEXT DEFAULT '🇲🇰'")
-        log.info("DB migrated: added country column")
-    if "original_title" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
-        log.info("DB migrated: added original_title column")
     
-    # Add indexes for common query patterns
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+    # Ensure indexes exist for performance
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON articles(category)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_country_created ON articles(country, created_at DESC)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
     conn.commit()
     conn.close()
