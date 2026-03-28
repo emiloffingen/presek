@@ -118,6 +118,18 @@
             setTimeout(() => {
                 document.body.classList.add('theme-ready');
             }, 100);
+
+            // Handle broken images
+            document.body.addEventListener('error', (e) => {
+                if (e.target.tagName === 'IMG' && !e.target.classList.contains('no-fallback')) {
+                    const isLight = document.documentElement.classList.contains('light');
+                    const fallback = isLight ? '/static/img/placeholder_light.svg' : '/static/img/placeholder.svg';
+                    if (e.target.src !== location.origin + fallback) {
+                        e.target.src = fallback;
+                        e.target.style.objectFit = 'cover';
+                    }
+                }
+            }, true);
         });
     </script>
     {% block scripts %}{% endblock %}

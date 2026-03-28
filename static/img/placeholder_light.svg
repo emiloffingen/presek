@@ -1,17 +1,17 @@
 <svg viewBox="0 0 400 225" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#141618"/>
-      <stop offset="100%" stop-color="#0B0C10"/>
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F0F2F5"/>
     </linearGradient>
     <radialGradient id="glow" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#E63946" stop-opacity="0.1"/>
-      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#E63946" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#FFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
   <circle cx="200" cy="112" r="80" fill="url(#glow)" />
-  <g transform="translate(200,112)" opacity="0.2">
+  <g transform="translate(200,112)" opacity="0.3">
     <circle r="12" fill="#E63946"/>
     <g stroke="#E63946" stroke-width="1.5">
       <line x1="0" y1="-24" x2="0" y2="-16"/>
