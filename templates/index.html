@@ -586,7 +586,6 @@
       _hasMore = data.has_more;
       renderPage(allClusters);
       updateTicker(allClusters);
-      buildCats();
       document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
     } catch(e) {
       console.error("Fetch error:", e);
