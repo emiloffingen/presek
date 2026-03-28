@@ -508,8 +508,16 @@
 
   function renderPage(clusters) {
     const wrap = document.getElementById('pageWrap');
-    // Filter strictly by the emoji flag ID stored in the DB country column
-    const filtered = clusters.filter(c => c.articles[0].country === activeCategory);
+    if (!clusters || !clusters.length) {
+      wrap.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">Нема вести за овој регион.</div>';
+      return;
+    }
+    // Filter strictly by the emoji flag ID, with safety check for missing articles
+    const filtered = clusters.filter(c => {
+      if (!c.articles || !c.articles[0]) return false;
+      const country = c.articles[0].country || '🇲🇰';
+      return country === activeCategory;
+    });
     wrap.innerHTML = `<div class="stories-grid">${filtered.map(renderCard).join('')}</div>`;
   }
 
