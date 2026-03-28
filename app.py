@@ -1569,9 +1569,14 @@ def cluster_page(cluster_id: str):
         return "Кластерот не постои.", 404
     articles = [dict(r) for r in rows]
     articles = rank_articles_in_cluster(articles)
+    
+    # Get synthesis summary if available
+    synthesis = _cluster_summary_cache.get(cluster_id)
+    
     return render_template("cluster.html",
         cluster_id=cluster_id,
         articles=articles,
+        synthesis=synthesis,
         year=__import__('datetime').datetime.now().year
     )
 
