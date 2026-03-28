@@ -107,30 +107,32 @@ def clean_rss_footer(text: str) -> str:
 
 def clean_json_response(text: str) -> str:
     """
-    Robustly extract the JSON payload from a string.
-    Removes markdown code blocks and trims everything outside the first and last
-    matching brackets/braces.
+    Robustly extract the summary text from a Gemini/AI response.
+    Handles raw text, Markdown-wrapped JSON, and JSON objects.
     """
     if not text:
         return ""
-    # Remove markdown code blocks
-    text = text.replace('```json', '').replace('```', '').strip()
     
-    # Find the start and end of the JSON object or array
+    # 1. Strip markdown code blocks if they exist
+    text = _re.sub(r'```(?:json)?\n?', '', text)
+    text = text.replace('```', '').strip()
+    
+    # 2. Try to find the bounds of a JSON object if it looks like one
     start_brace = text.find('{')
-    start_bracket = text.find('[')
+    end_brace = text.rfind('}')
     
-    start = -1
-    if start_brace != -1 and (start_bracket == -1 or start_brace < start_bracket):
-        start = start_brace
-        end = text.rfind('}')
-    elif start_bracket != -1:
-        start = start_bracket
-        end = text.rfind(']')
-        
-    if start != -1 and end != -1 and end > start:
-        return text[start:end+1]
-        
+    if start_brace != -1 and end_brace != -1 and end_brace > start_brace:
+        json_part = text[start_brace:end_brace+1]
+        try:
+            import json
+            data = json.loads(json_part)
+            # If it's a dict with a 'summary' key, return just that
+            if isinstance(data, dict) and 'summary' in data:
+                return data['summary'].strip()
+            # If it's just a dict/list, we'll fall through or return it as string
+        except:
+            pass # Not valid JSON, fall back to cleaned text
+
     return text.strip()
 
 
@@ -781,7 +783,7 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     
     gen_config = {"maxOutputTokens": max_tokens}
     if json_mode:
-        gen_config["response_mime_type"] = "application/json"
+        gen_config["responseMimeType"] = "application/json"
         
     payload = json.dumps({
         "system_instruction": {"parts": [{"text": system_prompt}]},
@@ -818,9 +820,9 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     return None
 
 
-def _call_ai(prompt_text: str, system_prompt: str, max_tokens: int = 2000) -> tuple[str | None, str | None]:
+def _call_ai(prompt_text: str, system_prompt: str, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
     """Call Gemini API. Returns (summary, 'gemini') or (None, None)."""
-    result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens)
+    result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens, json_mode=json_mode)
     if result:
         return result, "gemini"
     return None, None
@@ -889,9 +891,10 @@ def auto_summarize_top_clusters():
                 f"- [{a['source']}]: {a['title']}"
                 for a in arts[:10]
             )
-            synthesis, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT)
+            synthesis, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
             if synthesis:
-                _cluster_summary_cache[cid] = synthesis
+                clean_synthesis = clean_json_response(synthesis)
+                _cluster_summary_cache[cid] = clean_synthesis
                 synthesis_count += 1
                 time.sleep(6)  # enforce strict 6s delay for rate limit
 
@@ -1087,7 +1090,9 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "Дадени ти се наслови за иста вест од различни медиуми. "
     "Write a comprehensive, detailed synthesis consisting of at least 3 to 4 full paragraphs. "
     "You must write the entire response strictly in the Macedonian language. "
-    "You must return valid JSON in the format: {\"summary\": \"...\"}. "
+    "Return ONLY a valid JSON object in the format: {\"summary\": \"...\"}. "
+    "Do NOT wrap the response in ```json or any other markdown formatting. "
+    "Start directly with { and end with }. "
     "Do NOT use literal quotation marks inside the summary text. Use single quotes (') or escape double quotes (\\\") to ensure the JSON does not break. "
     "Do NOT use bullet points or complex markdown. "
     "Секогаш правилно пишувај ги сопствените именки (имиња на луѓе, градови, држави, организации) — "
@@ -1127,6 +1132,8 @@ def api_summarize(article_id: int):
         conn.close()
         return jsonify({"error": "AI сервисот е недостапен."}), 503
 
+    summary = clean_json_response(summary)
+    
     conn.execute("UPDATE articles SET summary = ? WHERE id = ?", (summary, article_id))
     conn.commit()
     conn.close()
@@ -1173,18 +1180,12 @@ def api_cluster_summary(cluster_id: str):
 
         # 3. Call Gemini with error handling for 429s
         try:
-            summary = _call_gemini(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT)
-            if not summary:
+            raw_res = _call_gemini(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+            if not raw_res:
                 return jsonify({"error": "AI сервисот е недостапен."}), 503
             
             # --- Cleanup logic to sanitize Gemini response ---
-            summary = summary.replace('```json', '').replace('```', '').strip()
-            if summary.startswith('{"summary":'):
-                import json
-                try:
-                    summary = json.loads(summary)['summary']
-                except:
-                    pass
+            summary = clean_json_response(raw_res)
             
             # 4. Success: Save to DB and memory cache
             now = datetime.datetime.now().isoformat()
@@ -1275,6 +1276,7 @@ def api_analyze(cluster_id: str):
         return jsonify({"error": "AI сервисот е недостапен."}), 503
 
     log.info(f"[analyze] Got analysis ({len(analysis)} chars) for cluster {cluster_id!r}")
+    analysis = clean_json_response(analysis)
     _analysis_cache[cluster_id] = analysis
     return jsonify({"analysis": analysis, "cached": False})
 
