@@ -1,274 +1,113 @@
-<!DOCTYPE html>
-<html lang="mk">
-<head>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Статистики | Пресек</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" id="themeMeta" content="#141618">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* Dark Mode (Default) */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E8EAED; /* Soft Thallium Silver */
-      --color-text-secondary: #9AA0A6; /* Muted Ash */
-      --color-ruby: #D10047;
-      --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
+{% extends "base.html" %}
 
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --border: rgba(176, 141, 87, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: #E8EAED;
-      --bronze: var(--color-bronze);
-      --headline: #E8EAED;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      
-      --font-body: 'Atkinson Hyperlegible', sans-serif;
-      --font-display: 'Cinzel', serif;
-      --font-sans: 'Noto Sans', sans-serif;
-      --font-serif: 'Source Serif 4', Georgia, serif;
-      
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.9rem;
-      --font-size-body: 1.1rem;
-      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
-      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
-      
-      --line-height-body: 1.618;
-      --letter-spacing-body: 0.015em;
-      --font-weight-body: 400;
+{% block title %}Статистики | Пресек{% endblock %}
 
-      --spacing-md: 20px;
-      --layout-max-width: 1100px;
-      --grid-gap: 32.36px;
+{% block head %}
+<style>
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+    .kpi-card {
+        background: var(--bg-surface);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: var(--transition);
+    }
+    .kpi-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+    .kpi-val { font-size: 2.5rem; font-weight: 800; color: var(--primary); font-family: var(--font-display); }
+    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 700; }
+
+    .stats-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-xl);
+    }
+    @media (max-width: 900px) { .stats-layout { grid-template-columns: 1fr; } }
+
+    .panel {
+        background: var(--bg-surface);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+    .panel-title {
+        font-size: 1.2rem;
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
     }
 
-    /* Light Mode Trigger */
-    html.light {
-      --color-bg-base: #F0F2F3;
-      --color-bg-surface: #FFFFFF;
-      --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
-      --color-text-secondary: #5F6368; /* Steel Grey */
-      --border-opacity: 0.4;
-      --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --headline: #1A1C1E;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E;
-    }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .bar-label { width: 120px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; height: 8px; background: var(--bg-base); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 1s ease; }
+    .bar-val { width: 40px; font-size: 0.8rem; font-weight: 700; text-align: right; }
+</style>
+{% endblock %}
 
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *,*::before,*::after{will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    body{
-      background: var(--bg);
-      color: var(--color-text-primary);
-      font-family: var(--font-body);
-      line-height: var(--line-height-body);
-      min-height: 100vh;
-    }
+{% block content %}
+<div class="fade-in">
+    <h1 class="hero-title">Статистички <span style="color:var(--primary)">Преглед</span></h1>
+    <p class="hero-subtitle">Увид во медиумската слика во Македонија преку податоци.</p>
 
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:var(--layout-max-width);margin:0 auto;height:64px}
-    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--headline);text-decoration:none}
-    .back-link{font-family:var(--font-sans);font-size:.875rem;font-weight:700;color:var(--gold);text-decoration:none}
-
-    .wrap { max-width: var(--layout-max-width); margin: 0 auto; padding: 48px 20px; }
-    h1 { font-family: var(--font-display); font-size: var(--font-size-lg); font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    html:not(.light) h1 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
-
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 40px; }
-    @media(max-width:500px){
-      .kpi-grid{grid-template-columns:1fr}
-    }
-    .kpi { background: var(--bg-card); padding: 32px; text-align: center; }
-    .kpi-val { font-size: var(--font-size-lg); font-weight: 900; color: var(--gold); font-family: var(--font-display); margin-bottom: 8px; }
-    .kpi-label { font-size: var(--font-size-xs); color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
-
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); margin-bottom: 32px; }
-    @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
-
-    .panel { background: var(--bg-card); border: 1px solid var(--border); padding: 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .panel h2 { font-family: var(--font-display); font-size: var(--font-size-md); font-weight: 900; color: var(--headline); margin-bottom: 24px; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    html:not(.light) .panel h2 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
-
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 8px 0; font-size: var(--font-size-sm); }
-    .bar-label { width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--color-text-secondary); }
-    .bar-track { flex: 1; background: var(--bg-base); height: 4px; overflow: hidden; border-radius: 2px; }
-    .bar-fill { height: 100%; background: var(--gold); border-radius: 0 2px 2px 0; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 8px rgba(212, 175, 55, 0.3); }
-    .bar-num { width: 50px; text-align: right; color: var(--bronze); font-weight: 700; flex-shrink: 0; font-family: var(--font-display); }
-
-    .click-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; align-items: baseline; }
-    .click-rank { width: 24px; color: var(--accent); font-weight: 900; }
-    .click-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .click-title a { color: var(--headline); text-decoration: none; transition: color .2s; }
-    .click-title a:hover { color: var(--gold); }
-    .click-src { font-size: 0.7rem; color: var(--bronze); font-weight: 700; text-transform: uppercase; }
-
-    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:48px 20px;text-align:center;color:var(--text-muted);margin-top:64px}
-  </style>
-</head>
-<body>
-
-<header class="site-header">
-  <div class="header-inner">
-    <a href="/" class="logo-text">
-      <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="loranditeCoreNav" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#2B0000"/>
-            <stop offset="50%" stop-color="#5A0A0A"/>
-            <stop offset="100%" stop-color="#120000"/>
-          </linearGradient>
-          <radialGradient id="loranditeGlowNav" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </radialGradient>
-          <linearGradient id="loranditeEdgeNav" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <circle cx="50" cy="50" r="42" fill="url(#loranditeGlowNav)" />
-        <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCoreNav)" stroke="#8B1A1A" stroke-width="2"/>
-        <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
-        <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeNav)" />
-        <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
-      </svg>
-      <span>ПРЕСЕК</span>
-    </a>
-    <a href="/" class="back-link">← Назад</a>
-  </div>
-</header>
-
-<div class="wrap">
-  <h1>Статистики</h1>
-  
-  <div class="kpi-grid" id="kpiGrid"></div>
-
-  <div class="two-col">
-    <div class="panel">
-      <h2>По категорија</h2>
-      <div id="catBars"></div>
+    <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card"><div class="kpi-val" id="totalArticles">-</div><div class="kpi-label">Вкупно Вести</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="totalSources">-</div><div class="kpi-label">Активни Извори</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="totalClusters">-</div><div class="kpi-label">Настани (24ч)</div></div>
     </div>
-    <div class="panel">
-      <h2>Топ извори</h2>
-      <div id="srcBars"></div>
-    </div>
-  </div>
 
-  <div class="panel" style="margin-bottom:32px">
-    <h2>🔥 Дигитален Отпечаток</h2>
-    <div style="display:flex; align-items:center; gap:40px; flex-wrap:wrap">
-      <div style="flex:1; min-width:250px">
-        <p style="font-size:.9rem; color:var(--color-text-secondary); margin-bottom:15px">Сооднос на уникатни информации наспроти преземени содржини во македонскиот медиумски простор.</p>
-        <div style="height:10px; background:var(--bg-base); display:flex">
-          <div style="width:28%; background:var(--gold)" title="Уникатни"></div>
-          <div style="width:72%; background:var(--bronze); opacity:0.3" title="Реобјавени"></div>
+    <div class="stats-layout">
+        <div class="panel">
+            <h2 class="panel-title">Најактивни Медиуми</h2>
+            <div id="sourcesStats"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:.7rem; font-weight:700; text-transform:uppercase">
-          <span style="color:var(--gold)">28% Уникатни</span>
-          <span style="color:var(--bronze)">72% Преземени</span>
+        <div class="panel">
+            <h2 class="panel-title">Вести по Категорија</h2>
+            <div id="categoryStats"></div>
         </div>
-      </div>
-      <div style="background:var(--bg-base); padding:20px; border-left:4px solid var(--accent)">
-        <div style="font-size:1.5rem; font-weight:900; color:var(--headline); font-family:var(--display)">~15,000</div>
-        <div style="font-size:.65rem; color:var(--bronze); font-weight:700; text-transform:uppercase">Анализирани статии дневно</div>
-      </div>
     </div>
-  </div>
-
-  <div class="panel">
-    <h2>🔥 Најчитано</h2>
-    <div id="clickList"></div>
-  </div>
 </div>
+{% endblock %}
 
-<footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
-  <p style="margin-top:8px; font-size:.8rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
-</footer>
-
+{% block scripts %}
 <script>
-const themeMeta = document.getElementById('themeMeta');
-const htmlEl = document.documentElement;
+    async function loadStats() {
+        try {
+            const res = await fetch('/api/stats_full');
+            const data = await res.json();
 
-function updateThemeMeta(isLight) {
-  if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
-}
+            document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
+            document.getElementById('totalSources').textContent = data.source_stats.length;
+            document.getElementById('totalClusters').textContent = data.category_stats.reduce((a, b) => a + b.count, 0);
 
-// 1. Load Theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else {
-  updateThemeMeta(false);
-}
+            // Render Sources
+            const maxSrc = Math.max(...data.source_stats.map(s => s.count));
+            document.getElementById('sourcesStats').innerHTML = data.source_stats.slice(0, 10).map(s => `
+                <div class="bar-row">
+                    <span class="bar-label">${s.source}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.count/maxSrc)*100}%"></div></div>
+                    <span class="bar-val">${s.count}</span>
+                </div>
+            `).join('');
 
-async function load() {
+            // Render Categories
+            const maxCat = Math.max(...data.category_stats.map(c => c.count));
+            document.getElementById('categoryStats').innerHTML = data.category_stats.map(c => `
+                <div class="bar-row">
+                    <span class="bar-label">${c.category}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: ${(c.count/maxCat)*100}%; background: var(--text-muted)"></div></div>
+                    <span class="bar-val">${c.count}</span>
+                </div>
+            `).join('');
 
-  try {
-    const res = await fetch('/api/stats/full');
-    const s = await res.json();
-
-    document.getElementById('kpiGrid').innerHTML = [
-      [s.total_articles.toLocaleString(), 'Вкупно статии'],
-      [s.last_24h.toLocaleString(), 'Денес'],
-      [s.last_7d.toLocaleString(), 'Оваа недела'],
-      [s.summarized_pct + '%', 'AI Анализи'],
-      [s.db_size_mb + ' MB', 'Дата база'],
-      [s.total_feeds, 'Активни RSS'],
-    ].map(([v, l]) => `<div class="kpi"><div class="kpi-val">${v}</div><div class="kpi-label">${l}</div></div>`).join('');
-
-    const maxCat = Math.max(...s.by_category.map(r => r.n));
-    document.getElementById('catBars').innerHTML = s.by_category.map(r => `
-      <div class="bar-row">
-        <div class="bar-label">${r.cat}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.n/maxCat*100)}%"></div></div>
-        <div class="bar-num">${r.n}</div>
-      </div>`).join('');
-
-    const maxSrc = Math.max(...s.by_source.map(r => r.n));
-    document.getElementById('srcBars').innerHTML = s.by_source.slice(0,15).map(r => `
-      <div class="bar-row">
-        <div class="bar-label">${r.source}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.n/maxSrc*100)}%"></div></div>
-        <div class="bar-num">${r.n}</div>
-      </div>`).join('');
-
-    if (s.top_clicked?.length) {
-      document.getElementById('clickList').innerHTML = s.top_clicked.map((r, i) => `
-        <div class="click-row">
-          <div class="click-rank">${i+1}</div>
-          <div class="click-title"><a href="${r.link}" target="_blank">${r.title}</a></div>
-          <div class="click-src">${r.source}</div>
-        </div>`).join('');
+        } catch(e) { console.error(e); }
     }
-  } catch(e) {}
-}
-load();
+    loadStats();
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,313 +1,208 @@
-<!DOCTYPE html>
-<html lang="mk">
-<head>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Пресек — Архива</title>
-  <meta name="theme-color" id="themeMeta" content="#141618">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *,*::before,*::after{will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    :root {
-      /* Dark Mode (Default) */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E8EAED; /* Soft Thallium Silver */
-      --color-text-secondary: #9AA0A6; /* Muted Ash */
-      --color-ruby: #D10047;
-      --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
+{% extends "base.html" %}
 
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --border: rgba(176, 141, 87, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: #E8EAED; /* Silver */
-      --bronze: var(--color-bronze);
-      --headline: #E8EAED;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      
-      --font-body: 'Atkinson Hyperlegible', sans-serif;
-      --font-display: 'Cinzel', serif;
-      --font-sans: 'Noto Sans', sans-serif;
-      --font-serif: 'Source Serif 4', Georgia, serif;
-      
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.9rem;
-      --font-size-body: 1.1rem;
-      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
-      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
-      
-      --line-height-body: 1.618;
-      --letter-spacing-body: 0.015em;
-      --font-weight-body: 400;
+{% block title %}Архива | Пресек{% endblock %}
 
-      --spacing-md: 20px;
-      --layout-max-width: 1100px;
-      --grid-gap: 32.36px;
+{% block head %}
+<style>
+    .archive-header {
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid var(--border);
     }
-
-    /* Light Mode Trigger */
-    html.light {
-      --color-bg-base: #F0F2F3;
-      --color-bg-surface: #FFFFFF;
-      --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
-      --color-text-secondary: #5F6368; /* Steel Grey */
-      --border-opacity: 0.4;
-      --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --headline: #1A1C1E;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E; /* Antimony in light mode */
+    .date-picker-wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+        background: var(--bg-surface);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
     }
-    body{background:var(--bg);color:var(--text-body);font-family:var(--font-serif);font-size:var(--font-size-body);line-height:var(--line-height-body);min-height:100vh;overflow-x:hidden}
-
-    .top-bar{background:var(--bg-card);border-bottom:4px double var(--accent);padding:.6rem 1.25rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
-    .brand{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:1.6rem;font-weight:900;letter-spacing:.08em;color:var(--headline);text-decoration:none}
-    .top-bar span{font-size:.85rem;color:var(--text-muted)}
-    .back{font-size:.85rem;color:var(--text-muted);text-decoration:none;margin-left:auto}
-    .back:hover{color:var(--accent)}
-
-    .wrap{max-width:var(--layout-max-width);margin:0 auto;padding:1.5rem 1.25rem 4rem}
-
-    h1{font-family:var(--font-display);font-size:var(--font-size-lg);font-weight:700;color:var(--headline);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:3px double var(--border);text-shadow: 0 1px 2px rgba(0,0,0,0.1)}
-    html:not(.light) h1{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
-
-    /* Date picker strip */
-    .date-nav{display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
-    .date-nav label{font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--text-muted)}
-    .date-input{font-family:var(--serif);font-size:1rem;padding:.6rem 1rem;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-body);cursor:pointer;min-width:180px}
-    .date-input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px rgba(209, 0, 71, 0.2)}
-    .date-btn{font-family:var(--sans);font-size:.85rem;font-weight:700;padding:.6rem 1.2rem;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-body);cursor:pointer;transition:all .12s}
-    .date-btn:hover,.date-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-
-    /* Stats line */
-    .day-stats{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;display:flex;gap:1.5rem;flex-wrap:wrap}
-    .day-stats strong{color:var(--headline)}
-
-    /* Article list */
-    .article-row{background:var(--bg-card);border:1px solid var(--border);padding:1rem;margin-bottom:.75rem;display:flex;gap:.85rem;align-items:flex-start;transition:all .2s ease;border-radius:8px}
-    .article-row:hover{background:var(--color-bg-surface-hover);transform:translateX(4px)}
-    .art-thumb{width:90px;height:62px;object-fit:cover;flex-shrink:0;background:var(--border)}
-    .art-thumb-ph{width:90px;height:62px;flex-shrink:0;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--text-muted)}
-    .art-body{flex:1;min-width:0;overflow:hidden}
-    .art-meta{font-family:var(--sans);font-size:.82rem;color:var(--text-muted);margin-bottom:.2rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
-    .art-meta .src{font-weight:700;color:var(--text-body)}
-    .art-meta .cat{font-size:.72rem;background:var(--border);border-radius:2px;padding:.08rem .35rem;color:var(--text-muted)}
-    .art-meta .cat{background: var(--color-bg-surface-hover)}
-    .art-title a{font-size:1.1rem;font-weight:700;color:var(--headline);text-decoration:none;line-height:1.35;display:block;overflow-wrap:break-word}
-    .art-title a:hover{color:var(--accent)}
-    .art-desc{font-size:.9rem;color:var(--text-muted);margin-top:.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-
-    .loading{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-style:italic;font-size:1.05rem}
-    .empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-style:italic}
-
-    /* Pagination */
-    .pager{display:flex;justify-content:center;gap:.5rem;padding:1.5rem 0}
-    .pager-btn{font-family:var(--sans);font-size:.9rem;font-weight:600;padding:.45rem 1.2rem;border:2px solid var(--border);border-radius:3px;background:var(--bg-card);color:var(--text-body);cursor:pointer;transition:all .12s}
-    .pager-btn:hover{border-color:var(--accent);color:var(--accent)}
-    .pager-btn:disabled{opacity:.3;cursor:default}
-    .pager-info{font-size:.85rem;color:var(--text-muted);align-self:center}
-
-    footer{border-top:4px double var(--accent);padding:1.25rem;text-align:center;color:var(--text-muted);font-size:.82rem;background:var(--bg-card);margin-top:2rem}
-    .footer-brand{font-family:var(--display);font-size:1.15rem;font-weight:900;letter-spacing:.12em;color:var(--accent);display:block;margin-bottom:.3rem}
-
-    @media(max-width:600px){
-      .wrap{padding:1rem .75rem 3rem}
-      .art-thumb,.art-thumb-ph{width:75px;height:52px}
-      .art-title a{font-size:1rem}
-      h1{font-size:1.2rem}
+    .date-input {
+        background: var(--bg-base);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        outline: none;
     }
-  </style>
-</head>
-<body>
+    .date-input:focus { border-color: var(--primary); }
 
-<div class="top-bar">
-  <a href="/" class="brand">
-    <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="loranditeCoreNav" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#2B0000"/>
-          <stop offset="50%" stop-color="#5A0A0A"/>
-          <stop offset="100%" stop-color="#120000"/>
-        </linearGradient>
-        <radialGradient id="loranditeGlowNav" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="loranditeEdgeNav" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <circle cx="50" cy="50" r="42" fill="url(#loranditeGlowNav)" />
-      <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCoreNav)" stroke="#8B1A1A" stroke-width="2"/>
-      <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
-      <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
-      <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
-      <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeNav)" />
-      <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
-    </svg>
-    <span>ПРЕСЕК</span>
-  </a>
-  <span>/ Архива</span>
-  <a href="/" class="back">← Назад</a>
-</div>
-
-<div class="wrap">
-  <h1>Архива на вести</h1>
-
-  <div class="date-nav">
-    <label>Датум:</label>
-    <input type="date" class="date-input" id="datePicker">
-    <button class="date-btn" onclick="goDay(-1)" id="prevBtn">← Претходен</button>
-    <button class="date-btn active" onclick="goToday()">Денес</button>
-    <button class="date-btn" onclick="goDay(1)" id="nextBtn">Следен →</button>
-  </div>
-
-  <div class="day-stats" id="dayStats"></div>
-
-  <div id="articleList">
-    <div class="loading">Се вчитуваат вести…</div>
-  </div>
-
-  <div class="pager" id="pager" style="display:none">
-    <button class="pager-btn" id="prevPage" onclick="changePage(-1)">← Претходна</button>
-    <span class="pager-info" id="pageInfo"></span>
-    <button class="pager-btn" id="nextPage" onclick="changePage(1)">Следна →</button>
-  </div>
-</div>
-
-<footer>
-  <span class="footer-brand">ПРЕСЕК</span>
-  Дневен преглед на македонски вести · {{ year }}
-  · <a href="/" style="color:var(--text-muted);text-decoration:none">почетна</a>
-  · <a href="/izvori" style="color:var(--text-muted);text-decoration:none">извори</a>
-  · <a href="/stats" style="color:var(--text-muted);text-decoration:none">статистики</a>
-</footer>
-
-<script>
-const MK_DAYS=['Недела','Понеделник','Вторник','Среда','Четврток','Петок','Сабота'];
-const MK_MONTHS=['јануари','февруари','март','април','мај','јуни','јули','август','септември','октомври','ноември','декември'];
-const PAGE_SIZE=50;
-let currentDate=new Date();
-let currentPage=0;
-let totalArticles=0;
-
-function fmtDate(d){return d.toISOString().slice(0,10)}
-function mkDate(d){return`${MK_DAYS[d.getDay()]}, ${d.getDate()} ${MK_MONTHS[d.getMonth()]} ${d.getFullYear()}`}
-function timeStr(ts){if(!ts)return'';try{const d=new Date(ts);return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}catch(e){return''}}
-
-const picker=document.getElementById('datePicker');
-picker.value=fmtDate(currentDate);
-picker.max=fmtDate(new Date());
-picker.addEventListener('change',()=>{currentDate=new Date(picker.value+'T12:00:00');currentPage=0;loadArchive()});
-
-function goDay(offset){
-  const d=new Date(currentDate);
-  d.setDate(d.getDate()+offset);
-  if(d>new Date())return;
-  currentDate=d;
-  picker.value=fmtDate(currentDate);
-  currentPage=0;
-  loadArchive();
-}
-function goToday(){currentDate=new Date();picker.value=fmtDate(currentDate);currentPage=0;loadArchive()}
-function changePage(dir){currentPage+=dir;loadArchive()}
-
-async function loadArchive(){
-  const list=document.getElementById('articleList');
-  list.innerHTML='<div class="loading">Се вчитуваат вести…</div>';
-
-  const dateStr=fmtDate(currentDate);
-  try{
-    const res=await fetch(`/api/archive?date=${dateStr}&page=${currentPage}&page_size=${PAGE_SIZE}`);
-    const data=await res.json();
-    totalArticles=data.total||0;
-
-    // Stats
-    document.getElementById('dayStats').innerHTML=`
-      <span><strong>${mkDate(currentDate)}</strong></span>
-      <span>${totalArticles} вести</span>
-      <span>${data.sources||0} извори</span>
-      <span>${data.categories||0} категории</span>`;
-
-    // Disable next if in the future
-    const tomorrow=new Date(currentDate);tomorrow.setDate(tomorrow.getDate()+1);
-    document.getElementById('nextBtn').disabled=tomorrow>new Date();
-
-    if(!data.articles||!data.articles.length){
-      list.innerHTML='<div class="empty">Нема вести за овој ден.</div>';
-      document.getElementById('pager').style.display='none';
-      return;
+    .archive-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
     }
+    .archive-row {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        gap: var(--spacing-md);
+        transition: var(--transition);
+    }
+    .archive-row:hover {
+        transform: translateX(4px);
+        border-color: var(--primary);
+    }
+    .archive-thumb {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        background: var(--bg-base);
+    }
+    .archive-body { flex: 1; min-width: 0; }
+    .archive-meta {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+    .archive-title {
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    .archive-title a:hover { color: var(--primary); }
 
-    list.innerHTML=data.articles.map(a=>{
-      const thumb=a.image_url
-        ?`<img class="art-thumb" src="/proxy?url=${encodeURIComponent(a.image_url)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'art-thumb-ph\\'>📰</div>'">`
-        :`<div class="art-thumb-ph">📰</div>`;
-      const desc=a.description?`<div class="art-desc">${a.description}</div>`:'';
-      return`<div class="article-row">
-        ${thumb}
-        <div class="art-body">
-          <div class="art-meta">
-            <span class="src">${a.source||''}</span>
-            <span class="cat">${a.category||'Македонија'}</span>
-            <span>· ${timeStr(a.created_at)}</span>
-          </div>
-          <div class="art-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></div>
-          ${desc}
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-xl);
+        align-items: center;
+    }
+    .page-btn {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 8px 24px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="archive-header">
+        <h1 class="hero-title">Дигитална <span style="color:var(--primary)">Архива</span></h1>
+        <div class="date-picker-wrap">
+            <label for="archiveDate">Избери датум:</label>
+            <input type="date" id="archiveDate" class="date-input" onchange="fetchArchive()">
+            <div id="archiveStats" style="font-size: 0.8rem; color: var(--text-muted); margin-left: auto;"></div>
         </div>
-      </div>`
-    }).join('');
+    </div>
 
-    // Pagination
-    const totalPages=Math.ceil(totalArticles/PAGE_SIZE);
-    if(totalPages>1){
-      document.getElementById('pager').style.display='flex';
-      document.getElementById('prevPage').disabled=currentPage<=0;
-      document.getElementById('nextPage').disabled=currentPage>=totalPages-1;
-      document.getElementById('pageInfo').textContent=`${currentPage+1} / ${totalPages}`;
-    }else{
-      document.getElementById('pager').style.display='none';
+    <div id="archiveList" class="archive-grid">
+        <!-- Populated by JS -->
+    </div>
+
+    <div class="pagination">
+        <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>Претходна</button>
+        <span id="pageInfo" class="page-info">Страна 1</span>
+        <button id="nextBtn" class="page-btn" onclick="changePage(1)" disabled>Следна</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 0;
+    const pageSize = 50;
+
+    // Set default date to today
+    document.getElementById('archiveDate').valueAsDate = new Date();
+
+    async function fetchArchive() {
+        const date = document.getElementById('archiveDate').value;
+        const list = document.getElementById('archiveList');
+        const stats = document.getElementById('archiveStats');
+        
+        list.innerHTML = '<div style="text-align:center; padding:40px">Се вчитува...</div>';
+
+        try {
+            const res = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
+            const data = await res.json();
+
+            if (!data.articles || data.articles.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:40px">Нема пронајдени вести за овој датум.</div>';
+                stats.textContent = '';
+                return;
+            }
+
+            stats.textContent = `${data.total} вести • ${data.sources} извори`;
+            
+            list.innerHTML = data.articles.map(a => `
+                <div class="archive-row fade-in">
+                    ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : '<div class="archive-thumb" style="display:flex; align-items:center; justify-content:center; opacity:0.2">P</div>'}
+                    <div class="archive-body">
+                        <div class="archive-meta">${a.source} • ${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</div>
+                        <h3 class="archive-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h3>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('prevBtn').disabled = currentPage === 0;
+            document.getElementById('nextBtn').disabled = !data.has_more;
+            document.getElementById('pageInfo').textContent = `Страна ${currentPage + 1}`;
+
+        } catch(e) {
+            console.error(e);
+            list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--primary)">Грешка при вчитување на архивата.</div>';
+        }
     }
-  }catch(e){
-    list.innerHTML='<div class="empty">Грешка при вчитување.</div>';
-  }
-}
 
-const htmlEl = document.documentElement;
-const themeMeta = document.getElementById('themeMeta');
+    function changePage(delta) {
+        currentPage += delta;
+        fetchArchive();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
 
-function updateThemeMeta(isLight) {
-  if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
-}
+    function fetchArchive() {
+        // Reset page when date changes
+        if (event && event.type === 'change') currentPage = 0;
+        
+        const date = document.getElementById('archiveDate').value;
+        const list = document.getElementById('archiveList');
+        const stats = document.getElementById('archiveStats');
+        
+        list.innerHTML = '<div style="text-align:center; padding:40px">Се вчитува...</div>';
 
-// 1. Load Theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else {
-  updateThemeMeta(false);
-}
+        fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.articles || data.articles.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; padding:40px">Нема пронајдени вести за овој датум.</div>';
+                    stats.textContent = '';
+                    return;
+                }
 
-loadArchive();
+                stats.textContent = `${data.total} вести • ${data.sources} извори`;
+                
+                list.innerHTML = data.articles.map(a => `
+                    <div class="archive-row fade-in">
+                        ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : '<div class="archive-thumb" style="display:flex; align-items:center; justify-content:center; opacity:0.2">P</div>'}
+                        <div class="archive-body">
+                            <div class="archive-meta">${a.source} • ${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</div>
+                            <h3 class="archive-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h3>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('prevBtn').disabled = currentPage === 0;
+                document.getElementById('nextBtn').disabled = !data.has_more;
+                document.getElementById('pageInfo').textContent = `Страна ${currentPage + 1}`;
+            });
+    }
+
+    fetchArchive();
 </script>
-</body>
-</html>
+{% endblock %}

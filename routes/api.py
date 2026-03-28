@@ -29,9 +29,7 @@ def trending_route():
         return jsonify(cached)
     
     # Fallback in case cache is empty or stale
-    # Note: DB_PATH is not used by trending.get_trending anymore, but we pass it for compatibility
-    from config import DB_PATH
-    results = trending.get_trending(DB_PATH)
+    results = trending.get_trending()
     set_cache("trending", results, ttl=900)
     return jsonify(results)
 

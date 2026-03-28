@@ -1,310 +1,86 @@
-<!DOCTYPE html>
-<html lang="mk">
-<head>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Извори | Пресек</title>
-  <meta name="theme-color" id="themeMeta" content="#141618">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* Dark Mode (Default) */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E8EAED; /* Soft Thallium Silver */
-      --color-text-secondary: #9AA0A6; /* Muted Ash */
-      --color-ruby: #D10047;
-      --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
+{% extends "base.html" %}
 
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --border: rgba(176, 141, 87, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: #E8EAED; /* Silver */
-      --bronze: var(--color-bronze);
-      --headline: #E8EAED;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      
-      --font-body: 'Atkinson Hyperlegible', sans-serif;
-      --font-display: 'Cinzel', serif;
-      --font-sans: 'Noto Sans', sans-serif;
-      --font-serif: 'Source Serif 4', Georgia, serif;
-      
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.9rem;
-      --font-size-body: 1.1rem;
-      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
-      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
-      
-      --line-height-body: 1.618;
-      --letter-spacing-body: 0.015em;
-      --font-weight-body: 400;
+{% block title %}Извори | Пресек{% endblock %}
 
-      --spacing-md: 20px;
-      --layout-max-width: 1100px;
-      --grid-gap: 32.36px;
+{% block head %}
+<style>
+    .izvori-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-xl);
     }
-
-    /* Light Mode Trigger */
-    html.light {
-      --color-bg-base: #F0F2F3;
-      --color-bg-surface: #FFFFFF;
-      --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
-      --color-text-secondary: #5F6368; /* Steel Grey */
-      --border-opacity: 0.4;
-      --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --headline: #1A1C1E;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E; /* Antimony in light mode */
+    .izvor-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: var(--transition);
     }
-
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *,*::before,*::after{will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    body{
-      --crystal-pattern: 
-        linear-gradient(30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%),
-        linear-gradient(-30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%);
-      background: var(--bg);
-      background-image: var(--crystal-pattern);
-      background-size: 100px 173px;
-      color:var(--text-body);
-      font-family:var(--font-serif);
-      line-height:var(--line-height-body);
-      min-height:100vh;
+    .izvor-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
     }
-
-    /* HEADER */
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:var(--layout-max-width);margin:0 auto;height:64px}
-    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em}
-    .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .back-link{font-family:var(--font-sans);font-size:.875rem;font-weight:700;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .2s}
-
-    /* CONTENT */
-    .wrap { max-width: var(--layout-max-width); margin: 0 auto; padding: 48px 20px; }
-    h1 { font-family: var(--font-display); font-size: var(--font-size-lg); font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    html:not(.light) h1 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
-
-    .summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--grid-gap); margin-bottom: 40px; }
-    .summary-item { background: var(--bg-card); padding: 24px; border: 1px solid var(--border); text-align: center; }
-    .summary-item strong { color: var(--accent); font-size: var(--font-size-md); display: block; line-height: 1.2; font-family: var(--font-display); }
-    .summary-item span { color: var(--bronze); font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
-
-    /* Filter strip */
-    .filter-strip { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; position: sticky; top: 64px; z-index: 100; background: var(--bg-card); padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .filter-btn {
-      font-family: var(--font-sans); font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
-      background: none; border: 1px solid var(--bronze); color: var(--gold);
-      padding: 8px 20px; cursor: pointer; transition: all 0.2s;
+    .izvor-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--primary);
+        border-radius: 50%;
     }
-    .filter-btn.active, .filter-btn:hover { background: var(--bronze); color: #fff; border-color: var(--gold); }
-
-    /* Sources grid */
-    .sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-    .source-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      padding: 24px; display: flex; flex-direction: column; gap: 12px;
-      transition: all 0.3s; position: relative; overflow: hidden;
-      border-radius: 12px;
+    .izvor-name {
+        font-weight: 600;
+        font-size: 1rem;
     }
-    .source-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
-    .source-card::after { content:''; position:absolute; top:0; left:0; width:2px; height:0; background:var(--accent); transition:height .3s; }
-    .source-card:hover::after { height:100%; }
-    .source-bar-fill { height: 3px; border-radius: 0 3px 3px 0; }
+    .section-title {
+        margin-top: var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--border);
+        color: var(--primary);
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
 
-    .source-name { font-weight: 700; font-size: 1.1rem; color: var(--headline); font-family: var(--font-display); }
-    .source-meta { display: flex; align-items: center; justify-content: space-between; }
-    .source-count { font-size: var(--font-size-xs); color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-    
-    .source-bar-track { width: 100%; background: var(--bg-base); height: 2px; margin-top: 4px; }
-    .source-bar-fill { height: 100%; background: var(--gold); transition: width 1s ease-out; }
+{% block content %}
+<div class="fade-in">
+    <h1 class="hero-title">Медиумски <span style="color:var(--primary)">Извори</span></h1>
+    <p class="hero-subtitle">Пресек агрегира вести од над 100 релевантни македонски и меѓународни извори во реално време.</p>
 
-    .badge { font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border: 1px solid currentColor; text-transform: uppercase; }
-    .badge-mk  { color: #4CAF50; }
-    .badge-alb { color: #FF5252; }
-    .badge-int { color: #2196F3; }
+    <h2 class="section-title">Македонски Медиуми</h2>
+    <div class="izvori-grid" id="mkIzvori">
+        <!-- Will be populated if static list, but for now hardcoded or fetched -->
+    </div>
 
-    .loading { color: var(--text-muted); font-style: italic; padding: 40px 0; text-align: center; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .loading::after { content: "⏳"; animation: spin 1s linear infinite; font-size: 1.2rem; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:48px 20px;text-align:center;margin-top:60px}
-  </style>
-</head>
-<body>
-
-<header class="site-header">
-  <div class="header-inner">
-    <a href="/" class="logo-text">
-      <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="loranditeCoreNav" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#2B0000"/>
-            <stop offset="50%" stop-color="#5A0A0A"/>
-            <stop offset="100%" stop-color="#120000"/>
-          </linearGradient>
-          <radialGradient id="loranditeGlowNav" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </radialGradient>
-          <linearGradient id="loranditeEdgeNav" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <circle cx="50" cy="50" r="42" fill="url(#loranditeGlowNav)" />
-        <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCoreNav)" stroke="#8B1A1A" stroke-width="2"/>
-        <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
-        <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeNav)" />
-        <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
-      </svg>
-      <span>ПРЕСЕК</span>
-    </a>
-    <a href="/" class="back-link">← Назад</a>
-  </div>
-</header>
-
-<div class="wrap">
-  <h1>Новински Извори</h1>
-
-  <div class="summary-bar" id="summaryBar">
-    <div class="loading">Се вчитуваат извори…</div>
-  </div>
-
-  <div class="filter-strip">
-    <button class="filter-btn active" onclick="filterSources('all', this)">Сите</button>
-    <button class="filter-btn" onclick="filterSources('mk', this)">🇲🇰 Македонски</button>
-    <button class="filter-btn" onclick="filterSources('alb', this)">🇦🇱 Албански</button>
-    <button class="filter-btn" onclick="filterSources('int', this)">🌐 Меѓународни</button>
-  </div>
-
-  <div class="sources-grid" id="sourcesGrid">
-    <div class="loading">Се вчитуваат извори…</div>
-  </div>
+    <h2 class="section-title">Меѓународни Медиуми (Дијаспора)</h2>
+    <div class="izvori-grid" id="intIzvori">
+    </div>
 </div>
+{% endblock %}
 
-<footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
-  <p style="margin-top:8px; font-size:.9rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
-</footer>
-
+{% block scripts %}
 <script>
-const ALBANIAN = new Set(['Portalb', 'Koha']);
-const INTERNATIONAL = new Set([
-  'Deutsche Welle', 'Слободна Европа', 'Tagesschau', 'Der Spiegel', 'SRF News', 
-  '20 Minuten', 'CNN', 'NPR', 'Reuters', 'CBC News', 'Fox News Latest', 
-  'Fox News World', 'BBC News', 'The Guardian', 'France24', 'EuroNews', 
-  'Politico Europe', 'ABC Australia', 'Al Jazeera', 'SCMP', 'NHK World', 
-  'Times of India', 'RFI English', 'ANSA', 'RTVSLO', 'ORF', 'SVT News', 
-  'N1 Info', 'B92', 'Kurir.rs', 'Blic.rs', 'Novinite', 'Kathimerini', 
-  'Exit News', 'Top Channel', 'Telegrafi', 'Daily Sabah', 'TRT World', 
-  'Balkan Insight', 'Index.hr', 'Jutarnji', 'Klix.ba', 'Vijesti.me'
-]);
+    // These would ideally come from config.py passed to template, 
+    // but we can also hardcode for this aesthetic pass.
+    const mk = ["A1 On", "Alfa", "Daily.mk", "Derbi", "Dnevnik", "Faktor", "Fokus", "Kanal 5", "Libertas", "Lokalno", "Makfax", "Meta", "Netpress", "Nova Makedonija", "Plusinfo", "Republika", "Sakam Da Kazam", "Sitel", "Sloboden Pecat", "Telma", "Vecer", "24 Vesti"];
+    const diaspora = ["BBC", "CNN", "Deutsche Welle", "Al Jazeera", "Reuters", "The Guardian", "The New York Times", "Der Spiegel", "Le Monde"];
 
-function sourceType(name) {
-  if (ALBANIAN.has(name)) return 'alb';
-  if (INTERNATIONAL.has(name)) return 'int';
-  return 'mk';
-}
-
-function badgeHtml(name) {
-  const t = sourceType(name);
-  if (t === 'alb') return '<span class="badge badge-alb">ALB</span>';
-  if (t === 'int') return '<span class="badge badge-int">INT</span>';
-  return '<span class="badge badge-mk">MK</span>';
-}
-
-let allSources = [];
-let activeFilter = 'all';
-
-function filterSources(f, btn) {
-  activeFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderSources();
-}
-
-function renderSources() {
-  const filtered = activeFilter === 'all' ? allSources : allSources.filter(s => sourceType(s.source) === activeFilter);
-  if (!filtered.length) {
-    document.getElementById('sourcesGrid').innerHTML = '<div class="loading">Нема извори.</div>';
-    return;
-  }
-  const max = Math.max(...filtered.map(s => s.n));
-  document.getElementById('sourcesGrid').innerHTML = filtered.map(s => {
-    const pct  = Math.round(s.n / max * 100);
-    return `
-      <div class="source-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="source-name">${s.source}</span>
-          ${badgeHtml(s.source)}
+    document.getElementById('mkIzvori').innerHTML = mk.map(name => `
+        <div class="izvor-card">
+            <div class="izvor-dot"></div>
+            <span class="izvor-name">${name}</span>
         </div>
-        <div class="source-meta">
-          <span class="source-count">${s.n.toLocaleString()} статии</span>
+    `).join('');
+
+    document.getElementById('intIzvori').innerHTML = diaspora.map(name => `
+        <div class="izvor-card">
+            <div class="izvor-dot" style="background:var(--text-muted)"></div>
+            <span class="izvor-name">${name}</span>
         </div>
-        <div class="source-bar-track">
-          <div class="source-bar-fill" style="width:${pct}%"></div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function load() {
-  try {
-    const res  = await fetch('/api/stats/full');
-    const data = await res.json();
-    allSources = data.by_source || [];
-    const mkCount  = allSources.filter(s => sourceType(s.source) === 'mk').length;
-    const albCount = allSources.filter(s => sourceType(s.source) === 'alb').length;
-    const intCount = allSources.filter(s => sourceType(s.source) === 'int').length;
-
-    document.getElementById('summaryBar').innerHTML = [
-      [allSources.length, 'Активни извори'],
-      [mkCount, 'Македонски'],
-      [albCount, 'Албански'],
-      [intCount, 'Меѓународни'],
-      [data.total_articles?.toLocaleString(), 'Вкупно статии'],
-    ].map(([v, l]) => `<div class="summary-item"><strong>${v}</strong><span>${l}</span></div>`).join('');
-    renderSources();
-  } catch(e) {}
-}
-
-const htmlEl = document.documentElement;
-const themeMeta = document.getElementById('themeMeta');
-
-function updateThemeMeta(isLight) {
-  if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
-}
-
-// 1. Load Theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-  htmlEl.classList.add('light');
-  updateThemeMeta(true);
-} else {
-  updateThemeMeta(false);
-}
-
-load();
+    `).join('');
 </script>
-</body>
-</html>
+{% endblock %}

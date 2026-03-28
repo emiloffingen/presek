@@ -1,212 +1,62 @@
-<!DOCTYPE html>
-<html lang="mk">
-<head>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>За нас | Пресек</title>
-  <meta name="theme-color" id="themeMeta" content="#141618">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* Dark Mode (Default) */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E8EAED; /* Soft Thallium Silver */
-      --color-text-secondary: #9AA0A6; /* Muted Ash */
-      --color-ruby: #D10047;
-      --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
+{% extends "base.html" %}
 
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --border: rgba(176, 141, 87, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: #E8EAED;
-      --bronze: var(--color-bronze);
-      --headline: #E8EAED;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      
-      --font-body: 'Atkinson Hyperlegible', sans-serif;
-      --font-display: 'Cinzel', serif;
-      --font-sans: 'Noto Sans', sans-serif;
-      --font-serif: 'Source Serif 4', Georgia, serif;
-      
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.9rem;
-      --font-size-body: 1.1rem;
-      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
-      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
-      
-      --line-height-body: 1.618;
-      --letter-spacing-body: 0.015em;
-      --font-weight-body: 400;
+{% block title %}За Нас | Пресек{% endblock %}
 
-      --spacing-md: 20px;
-      --layout-max-width: 1100px;
-      --grid-gap: 32.36px;
+{% block head %}
+<style>
+    .about-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: var(--spacing-xl) 0;
+        line-height: 1.8;
     }
-
-    /* Light Mode Trigger */
-    html.light {
-      --color-bg-base: #F0F2F3;
-      --color-bg-surface: #FFFFFF;
-      --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
-      --color-text-secondary: #5F6368; /* Steel Grey */
-      --border-opacity: 0.4;
-      --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --headline: #1A1C1E;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E; /* Antimony in light mode */
+    .about-content h2 {
+        margin-top: var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
+        color: var(--primary);
     }
-
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *,*::before,*::after{will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    body{
-      --crystal-pattern: 
-        linear-gradient(30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%),
-        linear-gradient(-30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%);
-      background: var(--bg);
-      background-image: var(--crystal-pattern);
-      background-size: 100px 173px;
-      color:var(--text-body);
-      font-family:var(--font-serif);
-      line-height:var(--line-height-body);
-      min-height:100vh;
-    }
-
-    /* HEADER */
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px}
-    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em}
-    .logo-text span{background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .back-link{font-family:var(--font-sans);font-size:.875rem;font-weight:700;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .2s;position:sticky;top:20px;z-index:50;background:var(--bg-card);padding:8px 12px;border-radius:6px;border:1px solid var(--border)}
-
-    /* CONTENT */
-    .page { max-width: 900px; margin: 0 auto; padding: 64px 20px; }
-    h1 { font-family: var(--font-display); font-size: var(--font-size-lg); font-weight: 900; color: var(--headline); margin-bottom: 24px; border-bottom: 4px solid var(--accent); padding-bottom: 12px; display: inline-block; letter-spacing: -0.02em; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    html:not(.light) h1 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
-    h2 { font-family: var(--font-display); font-size: var(--font-size-md); font-weight: 900; color: var(--accent); margin: 48px 0 16px; text-transform: uppercase; letter-spacing: .05em; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    html:not(.light) h2 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
-    
-    p { margin-bottom: 24px; font-size: var(--font-size-body); opacity: 0.9; }
-    strong { color: var(--headline); font-weight: 700; }
-    a { color: var(--accent); font-weight: 700; text-decoration: none; border-bottom: 1px solid currentColor; transition: all 0.2s; }
-    a:hover { background: rgba(209,0,71,0.1); }
-
     .feature-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2px;
-      background: var(--border); border: 1px solid var(--border); margin: 48px 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+        margin: var(--spacing-xl) 0;
     }
-    .feature-item { background: var(--bg-card); padding: 32px; text-align: center; }
-    .feature-icon { font-size: 2rem; margin-bottom: 12px; display: block; filter: grayscale(1); }
-    .feature-text { font-size: 0.8rem; font-weight: 700; color: var(--bronze); text-transform: uppercase; letter-spacing: 0.1em; }
+    .feature-card {
+        background: var(--bg-surface);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+    .feature-card h3 { font-size: 1.2rem; margin-bottom: 12px; }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
 
-    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:48px 20px;text-align:center;color:var(--text-muted);margin-top:64px}
-  </style>
-</head>
-<body>
-
-<header class="site-header">
-  <div class="header-inner">
-    <a href="/" class="logo-text">
-      <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="loranditeCoreNav" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#2B0000"/>
-            <stop offset="50%" stop-color="#5A0A0A"/>
-            <stop offset="100%" stop-color="#120000"/>
-          </linearGradient>
-          <radialGradient id="loranditeGlowNav" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </radialGradient>
-          <linearGradient id="loranditeEdgeNav" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <circle cx="50" cy="50" r="42" fill="url(#loranditeGlowNav)" />
-        <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCoreNav)" stroke="#8B1A1A" stroke-width="2"/>
-        <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
-        <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdgeNav)" />
-        <circle cx="50" cy="55" r="10" fill="#FF2A2A" opacity="0.15"/>
-      </svg>
-      <span>ПРЕСЕК</span>
-    </a>
-    <a href="/" class="back-link">← Назад</a>
-  </div>
-</header>
-
-<div class="page">
-    <h1>За Пресек</h1>
-    <p><strong>Пресек</strong> е независен македонски агрегатор на вести кој собира, групира и рангира содржини од повеќе од 50 домашни и меѓународни извори — сè на едно место, софистицирано и прецизно.</p>
-
-    <h2>Технологија</h2>
-    <p>Нашиот систем автоматски ги пребарува најновите информации од македонскиот медиумски простор на секои 5 минути. Користиме напредна технологија за групирање на сродните вести во „кластери“, овозможувајќи Ви да ја согледате целосната слика преку повеќе различни извори одеднаш.</p>
-
-    <h2>Вештачка Интелигенција</h2>
-    <p>Со помош на најсовремена AI технологија (Google Gemini), Пресек генерира резимеа и непристрасни анализи за најважните настани. Нашата цел е да Ви заштедиме време и да понудиме јасен преглед во морето од информации.</p>
+{% block content %}
+<div class="about-content fade-in">
+    <h1 class="hero-title">За <span style="color:var(--primary)">Пресек</span></h1>
+    <p class="hero-subtitle">Пресек е најнапредниот македонски агрегатор на вести, напојуван од вештачка интелигенција.</p>
 
     <div class="feature-grid">
-      <div class="feature-item">
-        <span class="feature-icon">🗞️</span>
-        <span class="feature-text">50+ Извори</span>
-      </div>
-      <div class="feature-item">
-        <span class="feature-icon">🤖</span>
-        <span class="feature-text">AI Резимеа</span>
-      </div>
-      <div class="feature-item">
-        <span class="feature-icon">🔄</span>
-        <span class="feature-text">5м Освежување</span>
-      </div>
+        <div class="feature-card">
+            <h3>🤖 AI Кластеризација</h3>
+            <p>Нашиот алгоритам ги групира сите вести за ист настан од различни извори, овозможувајќи ви да ги видите сите страни на приказната.</p>
+        </div>
+        <div class="feature-card">
+            <h3>📝 Автоматски Резимеа</h3>
+            <p>Вештачката интелигенција ги анализира вестите и генерира кратки, објективни резимеа за да заштедите време.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🌍 Светски Вести</h3>
+            <p>Ги следиме најголемите светски медиуми и автоматски ги преведуваме најважните вести на македонски јазик.</p>
+        </div>
+        <div class="feature-card">
+            <h3>⚡ Реално Време</h3>
+            <p>Пресек ги проверува изворите на секои 5 минути за да бидете секогаш во тек со најновите случувања.</p>
+        </div>
     </div>
 
-    <h2>Контакт</h2>
-    <p>За прашања, предлози за нови извори или сакате соработка, слободно контактирајте го нашиот тим на: <a href="mailto:contact@presek.mk">contact@presek.mk</a></p>
+    <h2>Нашата Мисија</h2>
+    <p>Во ера на информациски преоптоварување и поларизирани медиуми, нашата цел е да обезбедиме чист, технолошки напреден и објективен поглед врз вестите. Пресек не е медиум, туку алатка која ви помага да ја разберете реалноста побрзо и подобро.</p>
 </div>
-
-<footer>
-  <strong style="font-family:var(--display); font-size:1.2rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
-  <p style="margin-top:8px; font-size:.9rem; opacity:0.6">Вашиот дневен преглед на македонски вести</p>
-</footer>
-
-<script>
-  const htmlEl = document.documentElement;
-  const themeMeta = document.getElementById('themeMeta');
-
-  function updateThemeMeta(isLight) {
-    if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
-  }
-
-  // 1. Load Theme
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light') {
-    htmlEl.classList.add('light');
-    updateThemeMeta(true);
-  } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    htmlEl.classList.add('light');
-    updateThemeMeta(true);
-  } else {
-    updateThemeMeta(false);
-  }
-</script>
-
-</body>
-</html>
+{% endblock %}

@@ -1,1126 +1,315 @@
-<!DOCTYPE html>
-<html lang="mk">
-<head>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Пресек | Вашиот Дневен Преглед</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <meta name="theme-color" id="themeMeta" content="#141618">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="/static/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
-  <!-- Prevent flash of wrong theme before CSS loads -->
-  <script>(function(){var s=localStorage.getItem('theme');if(s==='light'||(s===null&&window.matchMedia('(prefers-color-scheme: light)').matches)){document.documentElement.classList.add('light');}})();</script>
-  <style>
-    /* =========================================
-       DESIGN TOKENS (MINERAL LUXURY + ACCESSIBLE)
-       ========================================= */
-    :root {
-      /* Dark Mode (Default) */
-      --color-bg-base: #141618;
-      --color-bg-surface: #1A1C1E;
-      --color-bg-surface-hover: #232629;
-      --color-text-primary: #E8EAED; /* Soft Thallium Silver */
-      --color-text-secondary: #9AA0A6; /* Muted Ash */
-      --color-ruby: #D10047;
-      --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
-      --border-opacity: 0.2;
-      --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
+{% extends "base.html" %}
 
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --border: rgba(176, 141, 87, var(--border-opacity));
-      --accent: var(--color-ruby);
-      --gold: #E8EAED; /* Silver */
-      --bronze: var(--color-bronze);
-      --headline: #E8EAED;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      
-      --font-body: 'Atkinson Hyperlegible', sans-serif;
-      --font-display: 'Cinzel', serif;
-      --font-sans: 'Noto Sans', sans-serif;
-      
-      --font-size-xs: 0.75rem;
-      --font-size-sm: 0.9rem;
-      --font-size-body: 1.1rem;
-      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
-      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
-      
-      --line-height-body: 1.618;
-      --letter-spacing-body: 0.015em;
-      --font-weight-body: 400;
+{% block title %}Пресек | Вашиот Дневен Преглед{% endblock %}
 
-      --spacing-md: 20px;
-      --layout-max-width: 1100px;
-      --grid-gap: 32.36px; /* 20 * 1.618 */
+{% block head %}
+<style>
+    /* Page Specific Styles */
+    .hero-section {
+        padding: var(--spacing-xl) 0;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: var(--spacing-xl);
+    }
+    .hero-title {
+        font-size: clamp(2.5rem, 8vw, 4rem);
+        margin-bottom: var(--spacing-md);
+        letter-spacing: -0.04em;
+    }
+    .hero-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
     }
 
-    /* Light Mode Trigger */
-    html.light {
-      --color-bg-base: #F0F2F3;
-      --color-bg-surface: #FFFFFF;
-      --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
-      --color-text-secondary: #5F6368; /* Steel Grey */
-      --border-opacity: 0.4;
-      --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
-      --bg: var(--color-bg-base);
-      --bg-card: var(--color-bg-surface);
-      --headline: #1A1C1E;
-      --text-body: var(--color-text-primary);
-      --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E; /* Antimony in light mode */
+    .nav-bar {
+        position: sticky;
+        top: 72px;
+        z-index: 900;
+        background: rgba(11, 12, 16, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        margin-bottom: var(--spacing-lg);
+    }
+    html.light .nav-bar { background: rgba(248, 249, 250, 0.8); }
+
+    .nav-inner {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-sm) var(--spacing-md);
     }
 
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *,*::before,*::after{will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    *,*::before,*::after{will-change:transform,opacity}
-    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-    body{
-      background: var(--bg);
-      background-image: linear-gradient(30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%), linear-gradient(-30deg, transparent 49%, rgba(176, 141, 87, var(--pattern-opacity)) 50%, transparent 51%);
-      background-size: 100px 173px;
-      color: var(--text-body);
-      font-family: var(--font-body);
-      font-size: var(--font-size-body);
-      line-height: var(--line-height-body);
-      letter-spacing: var(--letter-spacing-body);
-      min-height: 100vh;
-      overflow-x: hidden;
+    .category-scroll {
+        display: flex;
+        gap: var(--spacing-sm);
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
     }
-    /* Transition only active after page load — prevents flash on initial render */
-    body.theme-ready{transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;}
+    .category-scroll::-webkit-scrollbar { display: none; }
 
-    /* SUN TOGGLE STYLES */
-    #themeToggle {
-      background: none;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      border-radius: 4px;
+    .cat-btn {
+        background: none;
+        border: 1px solid transparent;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 20px;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: var(--transition);
     }
-    #themeToggle:hover {
-      background: var(--border);
-      border-color: var(--gold);
-    }
-    #sunIcon {
-      transition: transform 0.2s ease, filter 0.3s ease;
-      width: 28px;
-      height: 28px;
-    }
-    #themeToggle:hover #sunIcon {
-      transform: scale(1.1);
-      filter: brightness(1.2);
-    }
-    html.light #sunCore { fill: #FDB813; }
-    html.light #sunRays g { fill: #FDB813; }
-
-    /* COMPACT HEADER */
-    .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;height:64px;gap:var(--spacing-md)}
-    
-    .logo-text{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:var(--headline);text-decoration:none;letter-spacing:-0.02em;flex-shrink:0;cursor:pointer;transition:transform .2s ease}
-    .logo-text:hover{transform:scale(1.02)}
-    .logo-text span{display:none;background:var(--logo-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    @media(min-width:480px){.logo-text span{display:inline}}
-
-    .header-ticker{flex:1;overflow:hidden;display:flex;align-items:center;height:100%;border-left:1px solid var(--border);border-right:1px solid var(--border);margin:0 0.5rem;padding:0 0.5rem}
-    @media(min-width:768px){.header-ticker{margin:0 1rem;padding:0 1.5rem}}
-    .ticker-inner{display:flex;gap:4rem;white-space:nowrap;animation:ticker 120s linear infinite;font-size:var(--font-size-xs);color:var(--text-muted);font-weight:700}
-    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-
-    .utility-ticker{font-family:var(--font-sans);font-size:.7rem;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:15px;text-transform:uppercase;letter-spacing:.05em}
-    .header-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
-    .action-btn{background:none;color:var(--gold);border:1px solid var(--border);font-family:var(--font-sans);font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:.6rem;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;gap:8px;min-width:44px;justify-content:center;overflow:hidden}
-    .action-btn:hover{background:var(--border);color:#fff;border-color:var(--gold);padding-left:1rem;padding-right:1rem;transition:all .15s ease}
-    .action-btn svg{width:18px;height:18px;fill:currentColor;flex-shrink:0}
-    .action-btn .btn-text{max-width:0;opacity:0;transition:all .2s ease;white-space:nowrap}
-    .action-btn:hover .btn-text{max-width:100px;opacity:1}
-
-    /* SPLASH SCREEN */
-    #appSplash {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--color-bg-base);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
-    }
-    #appSplash.hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-    .splash-crystal {
-      width: 140px;
-      height: 140px;
-      filter: drop-shadow(0 0 30px rgba(209, 0, 71, 0.2));
-      animation: crystalPulse 3s ease-in-out infinite;
-    }
-    @keyframes crystalPulse {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(209, 0, 71, 0.15)); }
-      50% { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(209, 0, 71, 0.4)); }
-    }
-    .splash-text {
-      margin-top: 32px;
-      font-family: var(--font-display);
-      font-size: 1.8rem;
-      color: var(--color-gold);
-      letter-spacing: 0.15em;
-      font-weight: 900;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    .cat-btn:hover { color: var(--text-primary); background: var(--border); }
+    .cat-btn.active { 
+        background: var(--primary); 
+        color: white; 
+        border-color: var(--primary); 
     }
 
-    /* NAV BAR */
-    .nav-bar{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:190;height:48px;display:flex;align-items:center}
-    .nav-inner{display:flex;align-items:center;gap:8px;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;width:100%;height:100%}
-    
-    .cat-btn{font-family:var(--font-sans);font-size:.75rem;font-weight:800;color:var(--text-muted);background:none;border:none;padding:0 1rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.12em;transition:all .15s;height:48px;line-height:48px;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px}
-    .cat-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
-    .cat-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
-    
-    .nav-divider{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 12px}
-    .trend-chip{font-size:.7rem;font-weight:800;color:var(--bronze);background:rgba(176,141,87,0.08);border:1px solid rgba(176,141,87,0.2);border-radius:20px;padding:3px 10px;white-space:nowrap;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
-    .trend-chip:hover{color:var(--gold);background:rgba(176,141,87,0.18);border-color:var(--bronze)}
-
-    #trendChips {
-      display: flex;
-      align-items: center;
-      flex: 1;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+    .time-divider {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin: var(--spacing-lg) 0 var(--spacing-sm);
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
     }
-    #trendChips::-webkit-scrollbar { display: none; }
-
-    /* CRYSTAL CAROUSEL (NAJCITANO) */
-    .popular-carousel {
-      background: rgba(26, 28, 30, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      height: 40px;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-      position: sticky;
-      top: 112px;
-      z-index: 180;
-      /* Edge Fade Effect */
-      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-      -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    }
-    html.light .popular-carousel {
-      background: rgba(240, 242, 243, 0.8);
-    }
-    .popular-carousel-inner {
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
-      padding: 0 40px;
-      width: max-content;
-      animation: ticker-scroll 60s linear infinite;
-    }
-    .popular-carousel:hover .popular-carousel-inner {
-      animation-play-state: paused;
-    }
-    
-    @keyframes ticker-scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    
-    .popular-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--color-text-primary);
-      text-decoration: none;
-      font-size: 0.75rem;
-      font-weight: 700;
-      transition: all 0.2s;
-      padding: 0 16px;
-    }
-    .popular-item:hover { color: var(--accent); }
-    .popular-item .rank { color: var(--accent); font-family: var(--font-display); font-style: italic; margin-right: 4px; }
-    
-    .popular-sep {
-      width: 6px;
-      height: 6px;
-      background: var(--color-ruby);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--color-ruby);
-      flex-shrink: 0;
-      animation: ruby-glow 2s infinite;
-    }
-    @keyframes ruby-glow {
-      0%, 100% { opacity: 0.4; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.2); }
+    .time-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
     }
 
-    .country-dropdown-wrap { position: relative; flex-shrink: 0; }
-    .country-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      z-index: 1000;
-      padding: 8px;
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 180px;
-      max-height: 400px;
-      overflow-y: auto;
-      backdrop-filter: blur(10px);
+    .load-more-wrap {
+        text-align: center;
+        padding: var(--spacing-xl) 0;
     }
-    .country-dropdown.show { display: flex; }
-    .dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
-      border: none;
-      background: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 700;
-      width: 100%;
-      text-align: left;
-      border-radius: 8px;
-      transition: all 0.2s;
+    .load-more-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 32px;
+        border-radius: var(--radius-md);
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition);
     }
-    .dropdown-item:hover { background: var(--border); color: var(--gold); }
-    .dropdown-item.active { color: var(--gold); background: rgba(245, 196, 0, 0.1); }
-    .dropdown-item svg { width: 24px; height: 24px; }
-
-    /* LAYOUT */
-    .site-layout{max-width:var(--layout-max-width);margin:0 auto;padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl);display:block}
-    @media(min-width:1024px){
-      .site-layout{padding:40px 0}
-      #layoutGrid { grid-template-columns: 1fr 340px !important; }
-      #siteSidebar { display: block !important; }
+    .load-more-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        filter: brightness(1.1);
     }
 
-    /* CARDS */
-    .stories-grid{display:grid;grid-template-columns:1fr;gap:32px}
-    @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
-    @media(min-width:1200px){.site-layout{max-width:1400px}}
-    
-    .story-card{
-      background:var(--bg-card);
-      padding:24px;
-      border:1px solid var(--border);
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);
-      position:relative;
-      overflow:hidden;
+    /* Skeleton Loading */
+    .skeleton-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: var(--spacing-lg);
     }
-    .story-card:hover{border-color:var(--gold);box-shadow:0 15px 40px rgba(0,0,0,0.4);transform:translateY(-4px)}
-    .story-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:0;background:var(--accent);transition:height .3s}
-    .story-card:hover::after{height:100%}
+    .skeleton-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        height: 400px;
+        padding: var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    .skeleton-box {
+        background: var(--border);
+        border-radius: var(--radius-md);
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 0.8; }
+    }
+</style>
+{% endblock %}
 
-    /* Breaking news: animated pulse bar across the top */
-    .story-card.is-breaking::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:3px;
-      background:var(--accent);
-      animation:breakingPulse 1.5s ease-in-out infinite;
-      z-index:2;
-    }
-    @keyframes breakingPulse{
-      0%,100%{opacity:.5;box-shadow:none}
-      50%{opacity:1;box-shadow:0 0 12px var(--accent),0 0 24px var(--accent)}
-    }
-
-    /* Horizontal card layout: text left, image right */
-    .card-content{display:flex;flex-direction:column;gap:12px;flex:1;min-width:0}
-    @media(min-width:540px){
-      .story-card{flex-direction:row;align-items:flex-start;gap:18px}
-      .story-thumb-wrap{width:150px;height:110px;aspect-ratio:unset;flex-shrink:0;order:2;margin-bottom:0;align-self:flex-start}
-    }
-    @media(max-width:539px){
-      .card-content{order:2}
-      .story-thumb-wrap{order:1;width:100%}
-    }
-    
-    .story-meta{display:flex;align-items:center;gap:10px;font-family:var(--font-sans);font-size:.7rem;font-weight:800;color:var(--bronze);text-transform:uppercase;letter-spacing:.12em}
-    .story-headline{
-      font-family:var(--font-display);
-      font-size:1.25rem;
-      font-weight:900;
-      line-height:1.3;
-      margin:0;
-      letter-spacing:-0.01em;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      min-height: 4.8em; /* 3 lines * 1.6 line-height roughly */
-    }
-    html:not(.light) .story-headline{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
-    .story-headline a{color:var(--headline);text-decoration:none;transition:color .2s}
-    .story-headline a:hover{color:var(--accent)}
-    
-    .story-thumb-wrap{
-      width:100%;
-      aspect-ratio:16/9;
-      overflow:hidden;
-      flex-shrink:0;
-      background:var(--bg);
-      border:1px solid var(--border);
-      transition:all .3s ease;
-    }
-    .story-thumb{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      opacity:0.9;
-      filter:brightness(0.85) contrast(1.1);
-      transition:all .4s ease;
-    }
-    html.light .story-thumb{
-      opacity:1;
-      filter:none;
-    }
-    .story-card:hover .story-thumb-wrap{
-      border-color:var(--accent);
-      box-shadow:0 0 15px rgba(209, 0, 71, 0.3);
-    }
-    .story-card:hover .story-thumb{
-      transform:scale(1.08);
-      opacity:1;
-      filter:brightness(1);
-    }
-
-    .story-excerpt{
-      font-size:var(--font-size-sm);
-      color:var(--text-body);
-      font-weight:400;
-      opacity:0.95;
-      display: -webkit-box;
-      -webkit-line-clamp: 5;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      line-height: 1.6;
-    }    
-    .source-ribbon{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid rgba(176, 141, 87, 0.15)}
-    .source-tag{font-family:var(--font-sans);font-size:.65rem;font-weight:800;color:var(--bronze);text-transform:uppercase;letter-spacing:.08em}
-    .source-more{font-family:var(--font-sans);font-size:.65rem;font-weight:800;color:var(--gold)}
-
-    .live-badge { color: var(--color-ruby); font-weight: 900; }
-
-    /* SIDEBAR */
-    .sidebar-inner{background:var(--bg-card); padding:28px; border:1px solid var(--border); display:flex; flex-direction:column; max-height:calc(100vh - 140px); position:sticky; top:128px}
-    .sidebar-title{margin-bottom:24px; font-family:var(--font-display); font-size:1.2rem; color:var(--text-muted); letter-spacing:.05em; display:flex; align-items:center; gap:12px; cursor:default; transition:all .2s ease}
-    .sidebar-title:hover{color:var(--gold)}
-    .sidebar-title svg{width:22px; height:22px; fill:var(--color-ruby); transition:transform .3s ease}
-    .sidebar-title:hover svg{transform:rotate(45deg) scale(1.2)}
-    .sidebar-title .title-text{max-width:0; opacity:0; overflow:hidden; transition:all .3s ease; white-space:nowrap}
-    .sidebar-title:hover .title-text{max-width:200px; opacity:1; margin-left:10px}
-    #sidebarPopular{overflow-y:hidden; flex:1}
-    .sidebar-inner:hover #sidebarPopular{overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--gold) transparent}
-
-    footer{background:var(--bg-card);border-top:1px solid var(--border);padding:64px var(--spacing-md);text-align:center;color:var(--text-muted)}
-    .footer-links{display:flex;justify-content:center;gap:24px;margin-top:24px}
-    .footer-links a{color:var(--text-muted);text-decoration:none;transition:color .2s;font-size:var(--font-size-sm);font-weight:800;text-transform:uppercase;letter-spacing:.1em}
-    .footer-links a:hover{color:var(--gold)}
-    
-    @media(max-width:767px){
-      .logo-text{font-size:1.4rem}
-      .story-card{padding:18px}
-      .story-headline{font-size:1.05rem;line-height:1.4}
-      .nav-bar{top:64px}
-      .action-btn{padding:0.4rem 0.6rem;min-width:36px}
-      .action-btn:hover .btn-text{max-width:80px}
-      .header-ticker{display:none}
-      .cat-btn{font-size:.7rem;padding:0 .8rem}
-    }
-
-    /* TIME PERIOD DIVIDERS */
-    .time-divider{
-      grid-column:1/-1;
-      display:flex;align-items:center;gap:14px;
-      margin:8px 0 4px;
-      font-family:var(--font-sans);font-size:.68rem;font-weight:800;
-      color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;
-    }
-    .time-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-
-    /* SKELETON LOADING */
-    .skeleton{
-      background:var(--bg-card);border:1px solid var(--border);
-      padding:24px;display:flex;flex-direction:column;gap:14px;
-      height:220px;overflow:hidden;
-    }
-    @media(min-width:540px){.skeleton{flex-direction:row;height:130px}}
-    .skel-body{flex:1;display:flex;flex-direction:column;gap:10px}
-    .skel-img{width:150px;height:110px;flex-shrink:0;border-radius:2px;background:var(--bg)}
-    @media(max-width:539px){.skel-img{width:100%;height:80px;order:1}.skel-body{order:2}}
-    .skeleton-line{
-      border-radius:4px;
-      background:linear-gradient(90deg,var(--bg) 25%,var(--bg-card) 50%,var(--bg) 75%);
-      background-size:200% 100%;
-      animation:shimmer 1.5s infinite;
-    }
-    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-    /* EMPTY STATE */
-    .empty-state{
-      grid-column:1/-1;text-align:center;padding:80px 20px;
-      display:flex;flex-direction:column;align-items:center;gap:16px;
-      opacity:.6;
-    }
-    .empty-state svg{width:48px;height:48px;opacity:.4}
-    .empty-state p{font-family:var(--font-display);font-size:1rem;letter-spacing:.05em;color:var(--text-muted)}
-  </style>
-</head>
-<body>
-
-<div id="appSplash">
-  <div class="splash-crystal">
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="splashLorCore" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#2B0000"/>
-          <stop offset="50%" stop-color="#8B1A1A"/>
-          <stop offset="100%" stop-color="#120000"/>
-        </linearGradient>
-        <radialGradient id="splashLorGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle cx="50" cy="50" r="45" fill="url(#splashLorGlow)" />
-      <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#splashLorCore)" stroke="#D10047" stroke-width="1.5"/>
-      <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.5"/>
-      <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.5"/>
-      <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.4"/>
-      <circle cx="50" cy="55" r="15" fill="#FF2A2A" opacity="0.3">
-        <animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite" />
-      </circle>
-    </svg>
-  </div>
-  <div class="splash-text">ПРЕСЕК</div>
-</div>
-
-<header class="site-header">
-  <div class="header-inner">
-    <a href="/" class="logo-text">
-      <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="loranditeCore" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#2B0000"/>
-            <stop offset="50%" stop-color="#5A0A0A"/>
-            <stop offset="100%" stop-color="#120000"/>
-          </linearGradient>
-          <radialGradient id="loranditeGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FF3B3B" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </radialGradient>
-          <linearGradient id="loranditeEdge" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.7"/>
-            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <circle cx="50" cy="50" r="42" fill="url(#loranditeGlow)" />
-        <polygon points="50,8 78,30 70,78 30,92 18,42" fill="url(#loranditeCore)" stroke="#8B1A1A" stroke-width="2"/>
-        <line x1="50" y1="8" x2="30" y2="92" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="50" y1="8" x2="70" y2="78" stroke="#FF4D4D" stroke-opacity="0.4"/>
-        <line x1="18" y1="42" x2="78" y2="30" stroke="#FF4D4D" stroke-opacity="0.3"/>
-        <polygon points="50,8 65,30 50,35" fill="url(#loranditeEdge)" />
-        <circle id="lorGlow" cx="50" cy="55" r="12" fill="#FF2A2A" opacity="0"/>
-      </svg>
-      <span>ПРЕСЕК</span>
-    </a>
-    <div class="header-ticker"><div class="ticker-inner" id="tickerInner"></div></div>
-    <div class="utility-ticker">
-      <span id="rotatorText">...</span>
-    </div>
-    <div class="header-right">
-      <button id="themeToggle" aria-label="Toggle theme">
-        <svg id="sunIcon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <g id="sunRays" transform-origin="50 50">
-            <g fill="#F5C400">
-              <!-- 8 Primary Long Rays -->
-              <polygon points="50,2 54,35 46,35"/> <!-- Top -->
-              <polygon points="50,98 54,65 46,65"/> <!-- Bottom -->
-              <polygon points="2,50 35,54 35,46"/> <!-- Left -->
-              <polygon points="98,50 65,54 65,46"/> <!-- Right -->
-              <polygon points="16,16 38,34 34,38"/> <!-- Top-Left -->
-              <polygon points="84,16 62,34 66,38"/> <!-- Top-Right -->
-              <polygon points="84,84 62,66 66,62"/> <!-- Bottom-Right -->
-              <polygon points="16,84 38,66 34,62"/> <!-- Bottom-Left -->
-              
-              <!-- 8 Secondary Shorter Rays -->
-              <polygon points="50,15 53,35 47,35" transform="rotate(22.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(67.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(112.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(157.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(202.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(247.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(292.5, 50, 50)"/>
-              <polygon points="50,15 53,35 47,35" transform="rotate(337.5, 50, 50)"/>
-            </g>
-          </g>
-          <circle id="sunCore" cx="50" cy="50" r="16" fill="#F5C400" stroke="#FFD84D" stroke-width="2"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</header>
+{% block content %}
+<section class="hero-section fade-in">
+    <h1 class="hero-title">Македонски <span style="color:var(--primary)">Пресек</span></h1>
+    <p class="hero-subtitle">Сите македонски и светски вести, групирани и сумирани од вештачка интелигенција.</p>
+</section>
 
 <nav class="nav-bar">
-  <div class="nav-inner">
-    <div id="trendChips"></div>
-    <div class="nav-divider"></div>
-    <div class="country-dropdown-wrap">
-      <button class="cat-btn" onclick="toggleCountryDropdown(event)" title="Избери држава" style="padding:0 .5rem">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-      </button>
-      <div id="countryDropdown" class="country-dropdown"></div>
+    <div class="nav-inner">
+        <div class="category-scroll" id="categoryList">
+            <!-- Populated by JS -->
+        </div>
     </div>
-  </div>
 </nav>
 
-<div class="popular-carousel">
-  <div class="popular-carousel-inner" id="popularCarousel">
-    <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
-      <div class="popular-sep"></div> НАЈЧИТАНО
-      <div class="najcitano-badge" id="najcitanoBadge" style="display:none; background:var(--color-ruby); color:white; font-size:0.6rem; padding:2px 6px; border-radius:10px; margin-left:5px">0</div>
-    </div>
-  </div>
+<div id="pageWrap">
+    <!-- Content Populated by JS -->
 </div>
 
-<div class="site-layout">
-  <div style="display:grid; grid-template-columns:1fr; gap:32px; align-items:start;" id="layoutGrid">
-    <main class="site-main">
-      <div id="pageWrap" class="fade-in"></div>
-      <div id="loadMoreWrap" style="display:none; text-align:center; padding:40px">
-        <button class="action-btn" style="margin:0 auto; padding:.8rem 2.5rem" onclick="loadMore()">
-          <span style="opacity:1; max-width:none">Вчитај повеќе ↓</span>
-        </button>
-      </div>
-    </main>
-    
-    <aside class="site-sidebar" id="siteSidebar" style="display:none">
-      <div class="sidebar-inner">
-        <div class="sidebar-title">
-          <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>
-          <span class="title-text" style="opacity:1; max-width:none; margin-left:10px; font-weight:900; font-size:0.9rem; text-transform:uppercase">Најчитано</span>
-        </div>
-        <div id="sidebarPopular"></div>
-      </div>
-    </aside>
-  </div>
+<div id="loadMoreWrap" class="load-more-wrap" style="display:none">
+    <button class="load-more-btn" onclick="loadMore()">Вчитај повеќе</button>
 </div>
+{% endblock %}
 
-<footer>
-  <strong style="font-family:var(--font-display); font-size:1.5rem; color:var(--headline); letter-spacing:.05em">ПРЕСЕК</strong>
-  <p style="margin-top:12px; font-size:.95rem; opacity:0.7">Вашиот дневен преглед на македонски вести</p>
-  <div class="footer-links">
-    <a href="/izvori">Извори</a> · <a href="/stats">Статистики</a> · <a href="/about">За нас</a>
-  </div>
-</footer>
-
+{% block scripts %}
 <script>
-  let allClusters = [];
-  let activeCategory = '🇲🇰';
-  let _currentPage = 0;
-  let _hasMore = false;
-  const PAGE_SIZE = 50;
+    let activeCategory = '🇲🇰';
+    let _currentPage = 0;
+    let _hasMore = false;
+    const PAGE_SIZE = 50;
 
-  function timeAgo(str) {
-    if(!str) return '';
-    const diff = (Date.now() - new Date(str)) / 1000;
-    if(diff < 60) return 'сега';
-    if(diff < 3600) return `${Math.floor(diff/60)}м`;
-    if(diff < 86400) return `${Math.floor(diff/3600)}ч`;
-    return `${Math.floor(diff/86400)}д`;
-  }
-  
-  function showError(message) {
-    return `
-      <div class="error-message" style="
-        background: rgba(209, 0, 71, 0.1);
-        color: var(--color-ruby);
-        padding: 16px;
-        border-left: 4px solid var(--color-ruby);
-        margin: 20px 0;
-        border-radius: 0 8px 8px 0;
-      ">
-        ⚠️ ${message}
-      </div>
-    `;
-  }
-
-  async function showTop10(btn) {
-    startLoranditeFlicker();
-    if(btn) btn.style.opacity = '0.5';
-    try {
-      const res = await fetch('/api/top10');
-      const data = await res.json();
-      allClusters = data.clusters || data;
-      _hasMore = false;
-      renderPage(allClusters);
-      document.getElementById('loadMoreWrap').style.display = 'none';
-      window.scrollTo({top: 0, behavior: 'smooth'});
-    } catch(e) {}
-    if(btn) btn.style.opacity = '1';
-  }
-
-  function renderCard(c) {
-    if(!c || !c.articles || !c.articles.length) return '';
-    const a = c.articles[0];
-
-    let clusterImage = null;
-    for (let art of c.articles) {
-      if (art.image_url) { clusterImage = art.image_url; break; }
-    }
-
-    const isBreaking = (c.score || 0) > 3.0;
-    const uniqueSources = [...new Set(c.articles.map(art => art.source))];
-    const topSources = uniqueSources.slice(0, 3);
-    const moreCount = uniqueSources.length - topSources.length;
-
-    const flag = (a.country && a.country !== '🇲🇰') ? `<span style="font-size:1.2rem;margin-right:4px">${a.country}</span>` : '';
-    const translatedBadge = a.is_translated ? '<span style="font-size:0.65rem;background:rgba(176,141,87,0.1);padding:2px 6px;border-radius:4px;color:var(--bronze);margin-left:8px;border:1px solid var(--border)">AI ПРЕВОД</span>' : '';
-    const thumbHtml = clusterImage
-      ? `<a href="/cluster/${c.cluster_id}" class="story-thumb-wrap"><img src="${clusterImage}" class="story-thumb" loading="lazy"></a>`
-      : '';
-
-    return `
-      <div class="story-card fade-in${isBreaking ? ' is-breaking' : ''}">
-        <div class="card-content">
-          <div class="story-meta">
-            ${flag}
-            <span style="color:var(--gold)">${a.source}</span>
-            <span style="opacity:0.5">|</span>
-            <span>${timeAgo(a.created_at)}</span>
-            ${isBreaking ? '<span class="live-badge">| ВО ЖИВО</span>' : ''}
-            ${translatedBadge}
-          </div>
-          <h3 class="story-headline">
-            <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
-          </h3>
-          <p class="story-excerpt">${a.description || ''}</p>
-          <div class="source-ribbon">
-            ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('<span style="opacity:0.2">·</span>')}
-            ${moreCount > 0 ? `<span class="source-more">+ уште ${moreCount}</span>` : ''}
-          </div>
-        </div>
-        ${thumbHtml}
-      </div>
-    `;
-  }
-
-  function getTimePeriod(dateStr) {
-    if (!dateStr) return null;
-    const h = new Date(dateStr).getHours();
-    if (h >= 6  && h < 12) return { label: '🌅 Утро',     order: 3 };
-    if (h >= 12 && h < 18) return { label: '☀️ Попладне', order: 2 };
-    if (h >= 18)            return { label: '🌙 Вечер',    order: 1 };
-    return                         { label: '🌃 Ноќ',      order: 0 };
-  }
-
-  function showSkeletons() {
-    const wrap = document.getElementById('pageWrap');
-    const card = `
-      <div class="skeleton">
-        <div class="skel-img skeleton-line"></div>
-        <div class="skel-body">
-          <div class="skeleton-line" style="height:10px;width:45%"></div>
-          <div class="skeleton-line" style="height:16px;width:90%"></div>
-          <div class="skeleton-line" style="height:16px;width:75%"></div>
-          <div class="skeleton-line" style="height:10px;width:55%;margin-top:auto"></div>
-        </div>
-      </div>`;
-    wrap.innerHTML = `<div class="stories-grid">${card.repeat(6)}</div>`;
-  }
-
-  function renderPage(clusters) {
-    const wrap = document.getElementById('pageWrap');
-    if (!clusters || !clusters.length) {
-      wrap.innerHTML = `<div class="stories-grid"><div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <p>Нема вести во моментов.</p>
-      </div></div>`;
-      return;
-    }
-
-    // Group clusters by time period, preserve score order within each group
-    const periodMap = {};
-    for (const c of clusters) {
-      const dt = c.articles[0]?.created_at;
-      const p = getTimePeriod(dt);
-      const key = p ? p.label : '📅 Порано';
-      if (!periodMap[key]) periodMap[key] = { label: key, order: p?.order ?? -1, items: [] };
-      periodMap[key].items.push(c);
-    }
-    const sorted = Object.values(periodMap).sort((a, b) => b.order - a.order);
-
-    let html = '';
-    for (const period of sorted) {
-      html += `<div class="time-divider"><span>${period.label}</span></div>`;
-      html += period.items.map(renderCard).join('');
-    }
-    wrap.innerHTML = `<div class="stories-grid">${html}</div>`;
-  }
-
-  async function fetchNews() {
-    stopLoranditeFlicker();
-    newNajcitanoCount = 0;
-    const badge = document.getElementById("najcitanoBadge");
-    if(badge) badge.style.display = "none";
-    showSkeletons();
-
-    try {
-      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
-      const data = await res.json();
-      allClusters = data.clusters || data;
-      _hasMore = data.has_more;
-      renderPage(allClusters);
-      updateTicker(allClusters);
-      buildCats();
-      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-    } catch(e) {
-      console.error("Fetch error:", e);
-      document.getElementById('pageWrap').innerHTML = `<div class="stories-grid"><div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <p>Грешка при вчитување. Обидете се повторно.</p>
-      </div></div>`;
-    } finally {
-      document.getElementById('appSplash').classList.add('hidden');
-    }
-  }
-
-  async function loadMore() {
-    _currentPage++;
-    try {
-      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
-      const data = await res.json();
-      allClusters = [...allClusters, ...(data.clusters || [])];
-      _hasMore = data.has_more;
-      renderPage(allClusters);
-      document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-    } catch(e) {}
-  }
-
-  function buildCats() {
     const countries = [
-      { id: '🇲🇰', label: 'Македонија', flag: `
-        <svg viewBox="0 0 100 100" width="32">
-          <rect x="10" y="20" width="80" height="60" rx="8" fill="#D10047"/>
-          <g fill="#F5C400">
-            <polygon points="10,20 26,20 10,32 50,50"/>
-            <polygon points="90,20 74,20 90,32 50,50"/>
-            <polygon points="10,80 26,80 10,68 50,50"/>
-            <polygon points="90,80 74,80 90,68 50,50"/>
-            <polygon points="44,20 56,20 50,50"/>
-            <polygon points="44,80 56,80 50,50"/>
-            <polygon points="10,44 10,56 50,50"/>
-            <polygon points="90,44 90,56 50,50"/>
-            <circle cx="50" cy="50" r="11" stroke="#D10047" stroke-width="1.5"/>
-          </g>
-        </svg>` },
-      { id: '🇩🇪', label: 'Германија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#000"/><rect x="10" y="40" width="80" height="20" fill="#DD0000"/><rect x="10" y="60" width="80" height="20" fill="#FFCE00"/></svg>` },
-      { id: '🇷🇸', label: 'Србија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#C6363C"/><rect x="10" y="40" width="80" height="20" fill="#0C4076"/><rect x="10" y="60" width="80" height="20" fill="#fff"/></svg>` },
-      { id: '🇺🇸', label: 'САД', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#fff"/><g fill="#B22234"><rect x="10" y="20" width="80" height="6"/><rect x="10" y="32" width="80" height="6"/><rect x="10" y="44" width="80" height="6"/><rect x="10" y="56" width="80" height="6"/><rect x="10" y="68" width="80" height="6"/></g><rect x="10" y="20" width="35" height="30" fill="#3C3B6E"/></svg>` },
-      { id: '🇧🇬', label: 'Бугарија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#fff"/><rect x="10" y="40" width="80" height="20" fill="#00966E"/><rect x="10" y="60" width="80" height="20" fill="#D62612"/></svg>` },
-      { id: '🇬🇷', label: 'Грција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#0D5EAF"/><rect x="10" y="45" width="80" height="10" fill="#fff"/><rect x="35" y="20" width="10" height="40" fill="#fff"/></svg>` },
-      { id: '🇦🇱', label: 'Албанија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E41E20"/><polygon points="50,40 55,50 45,50" fill="#000"/></svg>` },
-      { id: '🇨🇭', label: 'Швајцарија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" rx="12" fill="#D52B1E"/><rect x="42" y="30" width="16" height="40" fill="#fff"/><rect x="30" y="42" width="40" height="16" fill="#fff"/></svg>` },
-      { id: '🇦🇹', label: 'Австрија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#ED2939"/><rect x="10" y="40" width="80" height="20" fill="#fff"/><rect x="10" y="60" width="80" height="20" fill="#ED2939"/></svg>` },
-      { id: '🇸🇮', label: 'Словенија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#fff"/><rect x="10" y="40" width="80" height="20" fill="#005DA4"/><rect x="10" y="60" width="80" height="20" fill="#ED1C24"/></svg>` },
-      { id: '🇮🇹', label: 'Италија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="26" height="60" fill="#009246"/><rect x="36" y="20" width="28" height="60" fill="#fff"/><rect x="64" y="20" width="26" height="60" fill="#CE2B37"/></svg>` },
-      { id: '🇸🇪', label: 'Шведска', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#006AA7"/><rect x="30" y="20" width="10" height="60" fill="#FECC00"/><rect x="10" y="45" width="80" height="10" fill="#FECC00"/></svg>` },
-      { id: '🇬🇧', label: 'Обединето Кралство', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#012169"/><rect x="45" y="20" width="10" height="60" fill="#fff"/><rect x="10" y="45" width="80" height="10" fill="#fff"/><rect x="47" y="20" width="6" height="60" fill="#C8102E"/><rect x="10" y="47" width="80" height="6" fill="#C8102E"/></svg>` },
-      { id: '🇦🇺', label: 'Австралија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" rx="8" fill="#012169"/><rect x="10" y="20" width="35" height="30" fill="#00247D"/><circle cx="70" cy="55" r="4" fill="#fff"/><circle cx="80" cy="65" r="3" fill="#fff"/></svg>` },
-      { id: '🇨🇦', label: 'Канада', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="20" height="60" fill="#D52B1E"/><rect x="30" y="20" width="40" height="60" fill="#fff"/><rect x="70" y="20" width="20" height="60" fill="#D52B1E"/><polygon points="50,40 55,55 50,50 45,55" fill="#D52B1E"/></svg>` },
-      { id: '🇹🇷', label: 'Турција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E30A17"/><circle cx="45" cy="50" r="10" fill="#fff"/><circle cx="50" cy="50" r="8" fill="#E30A17"/><circle cx="60" cy="50" r="3" fill="#fff"/></svg>` }
+        { id: '🇲🇰', label: 'Македонија' },
+        { id: '🇩🇪', label: 'Германија' },
+        { id: '🇷🇸', label: 'Србија' },
+        { id: '🇺🇸', label: 'САД' },
+        { id: '🇧🇬', label: 'Бугарија' },
+        { id: '🇬🇷', label: 'Грција' },
+        { id: '🇦🇱', label: 'Албанија' },
+        { id: '🇨🇭', label: 'Швајцарија' },
+        { id: '🇹🇷', label: 'Турција' }
     ];
 
-    document.getElementById('countryDropdown').innerHTML = countries.map(c =>
-      `<button class="dropdown-item ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')">${c.flag} <span>${c.label}</span></button>`
-    ).join('');
-  }
-
-  function toggleCountryDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('countryDropdown').classList.toggle('show');
-  }
-
-  window.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('countryDropdown');
-    if (dropdown && !dropdown.contains(e.target)) {
-      dropdown.classList.remove('show');
-    }
-  });
-
-  function filterCat(cat) {
-    activeCategory = cat;
-    _currentPage = 0;
-    fetchNews();
-    window.scrollTo({top: 0, behavior: 'smooth'});
-    document.getElementById('countryDropdown').classList.remove('show');
-  }
-
-  function updateTicker(clusters) {
-    const items = clusters.slice(0, 15).map(c => `<span>${c.articles[0]?.title}</span>`);
-    document.getElementById('tickerInner').innerHTML = [...items, ...items].join('');
-  }
-
-  let lastPopularId = null;
-  let newNajcitanoCount = 0;
-
-  function triggerNajcitanoPulse() {
-    const pulse = document.getElementById("pulsePolygon");
-    const ruby = document.getElementById("rubyIcon");
-    if(!pulse || !ruby) return;
-
-    pulse.animate([
-      { opacity: 0, transform: "scale(1)" },
-      { opacity: 0.8, transform: "scale(1.1)" },
-      { opacity: 0, transform: "scale(1.25)" }
-    ], { duration: 800, easing: "ease-out" });
-
-    ruby.animate([
-      { filter: "brightness(1)" },
-      { filter: "brightness(1.5)" },
-      { filter: "brightness(1)" }
-    ], { duration: 600 });
-  }
-
-  // Lorandite Flicker Animation
-  let lorAnimation;
-  function startLoranditeFlicker() {
-    const glow = document.getElementById("lorGlow");
-    if (!glow) return;
-    if (lorAnimation) lorAnimation.cancel();
-    lorAnimation = glow.animate([
-      { opacity: 0.1, transform: "scale(0.98)" },
-      { opacity: 0.35, transform: "scale(1.03)" },
-      { opacity: 0.15, transform: "scale(0.98)" },
-      { opacity: 0.4, transform: "scale(1.02)" },
-      { opacity: 0.1, transform: "scale(1)" }
-    ], { duration: 2200, iterations: Infinity, easing: "ease-in-out" });
-  }
-
-  function stopLoranditeFlicker() {
-    if (lorAnimation) lorAnimation.cancel();
-    const glow = document.getElementById("lorGlow");
-    if (glow) glow.style.opacity = 0;
-  }
-
-  async function fetchPopular() {
-    try {
-      const res = await fetch('/api/popular');
-      const data = await res.json();
-      if (!data || !data.length) return;
-
-      const currentTopId = data[0].cluster_id;
-      // Trigger pulse if first load OR if data changed
-      if (lastPopularId === null || lastPopularId !== currentTopId) {
-        if (lastPopularId !== null) {
-          newNajcitanoCount++;
-          const badge = document.getElementById("najcitanoBadge");
-          if (badge) {
-            badge.style.display = "block";
-            badge.textContent = newNajcitanoCount;
-          }
-        }
-        triggerNajcitanoPulse();
-      }
-      lastPopularId = currentTopId;
-
-      // 1. Populate Crystal Carousel (Up to 10)
-      const carouselItems = data.slice(0, 10).map((c, i) => `
-        <a href="/cluster/${c.cluster_id}" class="popular-item">
-          <span class="rank">${i+1}</span> ${c.articles[0].title}
-        </a>
-        <div class="popular-sep"></div>
-      `).join('');
-      
-      const header = `
-        <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
-          <div class="popular-sep" style="animation:none; opacity:1"></div> НАЈЧИТАНО
-        </div>
-      `;
-      
-      // Duplicate for seamless loop
-      const carouselEl = document.getElementById('popularCarousel');
-      if (carouselEl) carouselEl.innerHTML = header + carouselItems + carouselItems + carouselItems;
-
-      // 2. Populate Sidebar (Extended list)
-      const sidebarEl = document.getElementById('sidebarPopular');
-      if (sidebarEl) {
-        sidebarEl.innerHTML = data.slice(0, 15).map(c => `
-          <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
-            <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
-            <div style="font-size:.7rem; color:var(--bronze); margin-top:6px; text-transform:uppercase; font-weight:800">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
-          </div>
+    function initCategories() {
+        const list = document.getElementById('categoryList');
+        list.innerHTML = countries.map(c => `
+            <button class="cat-btn ${c.id === activeCategory ? 'active' : ''}" onclick="filterCat('${c.id}')">
+                ${c.id} ${c.label}
+            </button>
         `).join('');
-      }
-    } catch(e) { console.error("fetchPopular error:", e); }
-  }
-
-  async function fetchTrending() {
-    try {
-      const res = await fetch('/api/trending');
-      const data = await res.json();
-      document.getElementById('trendChips').innerHTML = data.slice(0, 10).map(t => `
-        <span class="trend-chip" onclick="handleTrendClick('${t.word}')">#${t.word}</span>
-      `).join('');
-    } catch(e) {}
-  }
-
-  async function handleTrendClick(word) {
-    if (activeCategory !== '🇲🇰') {
-      activeCategory = '🇲🇰';
-      _currentPage = 0;
-      await fetchNews();
     }
-    filterByTrend(word);
-  }
 
-  function filterByTrend(word) {
-    const lower = word.toLowerCase();
-    const filtered = allClusters.filter(c => c.articles.some(a => (a.title + (a.description||'')).toLowerCase().includes(lower)));
-    renderPage(filtered);
-    window.scrollTo({top: 0, behavior: 'smooth'});
-  }
-
-  // Utility Rotation (Date, Temp, BTC, AQI)
-  const months = ['ЈАН','ФЕВ','МАР','АПР','МАЈ','ЈУН','ЈУЛ','АВГ','СЕП','ОКТ','НОЕ','ДЕК'];
-  let rotatorData = [];
-  let rotatorIdx = 0;
-
-  async function fetchUtilityData() {
-    const data = [];
-    
-    // 1. Current Date
-    const d = new Date();
-    data.push(`${d.getDate()} ${months[d.getMonth()]}`);
-
-    // 2. Skopje Weather
-    try {
-      const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true');
-      const wData = await wRes.json();
-      data.push(`СКОПЈЕ ${Math.round(wData.current_weather.temperature)}°C`);
-    } catch(e) {}
-
-    // 3. Bitcoin (Binance API)
-    try {
-      const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-      const btcData = await btcRes.json();
-      data.push(`BTC $${Math.round(btcData.price).toLocaleString()}`);
-    } catch(e) {}
-
-    // 4. Gold Price (Binance PAXG proxy)
-    try {
-      const goldRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
-      const goldData = await goldRes.json();
-      data.push(`ЗЛАТО $${Math.round(goldData.price).toLocaleString()}`);
-    } catch(e) {}
-
-    // 5. Air Quality (Open-Meteo AQI)
-    try {
-      const aqiRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=41.9965&longitude=21.4314&current=european_aqi');
-      const aqiData = await aqiRes.json();
-      const aqi = aqiData.current.european_aqi;
-      let quality = 'ДОБАР';
-      if(aqi > 50) quality = 'УМЕРЕН';
-      if(aqi > 100) quality = 'ЛОШ';
-      data.push(`AQI ${aqi} (${quality})`);
-    } catch(e) {}
-
-    rotatorData = data;
-    updateRotator();
-  }
-
-  function updateRotator() {
-    const el = document.getElementById('rotatorText');
-    if(!rotatorData.length) return;
-    el.style.opacity = 0;
-    setTimeout(() => {
-      el.textContent = rotatorData[rotatorIdx];
-      el.style.opacity = 1;
-      rotatorIdx = (rotatorIdx + 1) % rotatorData.length;
-    }, 400);
-  }
-
-  // Theme Toggle & Scroll Rotation
-  const themeToggle = document.getElementById('themeToggle');
-  const sunRays = document.getElementById('sunRays');
-  const htmlEl = document.documentElement;
-  const themeMeta = document.getElementById('themeMeta');
-
-  function updateThemeMeta(isLight) {
-    if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
-  }
-
-  // Enhanced theme initialization
-  function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      htmlEl.classList.add(savedTheme);
-      updateThemeMeta(savedTheme === 'light');
-      return;
+    function timeAgo(str) {
+        if(!str) return '';
+        const diff = (Date.now() - new Date(str)) / 1000;
+        if(diff < 60) return 'сега';
+        if(diff < 3600) return `${Math.floor(diff/60)}м`;
+        if(diff < 86400) return `${Math.floor(diff/3600)}ч`;
+        return `${Math.floor(diff/86400)}д`;
     }
-    
-    if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      htmlEl.classList.add('light');
-      updateThemeMeta(true);
+
+    function renderCard(c, index) {
+        if(!c || !c.articles || !c.articles.length) return '';
+        const a = c.articles[0];
+        let clusterImage = null;
+        for (let art of c.articles) {
+            if (art.image_url) { clusterImage = art.image_url; break; }
+        }
+
+        const isBreaking = (c.score || 0) > 3.0;
+        const uniqueSources = [...new Set(c.articles.map(art => art.source))];
+        const topSources = uniqueSources.slice(0, 3);
+        const moreCount = uniqueSources.length - topSources.length;
+
+        return `
+            <article class="story-card fade-in" style="animation-delay: ${index * 0.05}s">
+                ${isBreaking ? '<div class="is-breaking"></div>' : ''}
+                ${clusterImage ? `
+                    <div class="story-thumb-wrap">
+                        <img src="${clusterImage}" class="story-thumb" loading="lazy" alt="${a.title}">
+                    </div>
+                ` : ''}
+                <div class="story-meta">
+                    <span class="source">${a.source}</span>
+                    <span>•</span>
+                    <span>${timeAgo(a.created_at)}</span>
+                    ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
+                </div>
+                <h3 class="story-headline">
+                    <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
+                </h3>
+                <p class="story-excerpt">${a.description || ''}</p>
+                <div class="source-ribbon">
+                    <div style="display:flex; gap:8px">
+                        ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('')}
+                    </div>
+                    ${moreCount > 0 ? `<span class="source-more">+${moreCount}</span>` : ''}
+                </div>
+            </article>
+        `;
     }
-  }
-  
-  // Initialize theme
-  initTheme();
 
-  // 2. Toggle Handler
-  themeToggle.addEventListener('click', () => {
-    document.body.classList.add('theme-ready');
-    const isLight = htmlEl.classList.toggle('light');
-    localStorage.setItem('theme', isLight ? 'light' : 'dark');
-    updateThemeMeta(isLight);
-  });
+    function renderPage(clusters) {
+        const wrap = document.getElementById('pageWrap');
+        if (!clusters || !clusters.length) {
+            wrap.innerHTML = '<div class="empty-state">Нема вести за избраната категорија.</div>';
+            return;
+        }
 
-  // 3. Smooth Scroll Rotation
-  let currentRotation = 0;
-  window.addEventListener('scroll', () => {
-    const targetRotation = window.scrollY * 0.15;
-    currentRotation += (targetRotation - currentRotation) * 0.1; // Smooth easing
-    sunRays.style.transform = `rotate(${currentRotation}deg)`;
-  }, { passive: true });
+        const periodMap = {};
+        clusters.forEach(c => {
+            const h = new Date(c.articles[0].created_at).getHours();
+            let key = '🌃 Ноќ';
+            if (h >= 6 && h < 12) key = '🌅 Утро';
+            else if (h >= 12 && h < 18) key = '☀️ Попладне';
+            else if (h >= 18) key = '🌙 Вечер';
+            
+            if (!periodMap[key]) periodMap[key] = [];
+            periodMap[key].push(c);
+        });
 
-  setInterval(updateRotator, 60000); // 60 seconds
-  fetchNews(); fetchPopular(); fetchTrending(); fetchUtilityData();
+        let html = '<div class="stories-grid">';
+        Object.keys(periodMap).forEach(period => {
+            html += `<div class="time-divider"><span>${period}</span></div>`;
+            periodMap[period].forEach((c, idx) => {
+                html += renderCard(c, idx);
+            });
+        });
+        html += '</div>';
+        wrap.innerHTML = html;
+    }
+
+    async function fetchNews(isLoadMore = false) {
+        if (!isLoadMore) {
+            document.getElementById('pageWrap').innerHTML = `
+                <div class="skeleton-grid">
+                    ${'<div class="skeleton-card"><div class="skeleton-box" style="height:180px"></div><div class="skeleton-box" style="height:24px;width:80%"></div><div class="skeleton-box" style="height:60px"></div></div>'.repeat(6)}
+                </div>
+            `;
+        }
+
+        try {
+            const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
+            const data = await res.json();
+            
+            if (isLoadMore) {
+                renderPage([...allClusters, ...data.clusters]);
+                allClusters = [...allClusters, ...data.clusters];
+            } else {
+                allClusters = data.clusters;
+                renderPage(allClusters);
+            }
+            
+            _hasMore = data.has_more;
+            document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    function filterCat(cat) {
+        activeCategory = cat;
+        _currentPage = 0;
+        initCategories();
+        fetchNews();
+    }
+
+    function loadMore() {
+        _currentPage++;
+        fetchNews(true);
+    }
+
+    initCategories();
+    fetchNews();
 </script>
-</body>
-</html>
+{% endblock %}

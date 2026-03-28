@@ -1,6 +1,5 @@
 import time
 import logging
-from config import DB_PATH
 from trending import get_trending
 from app import set_cache
 
@@ -10,7 +9,8 @@ log = logging.getLogger("trending_backfill")
 def backfill():
     log.info("Recalculating and caching trending topics...")
     try:
-        results = get_trending(DB_PATH)
+        # get_trending no longer needs a path after Postgres migration
+        results = get_trending()
         if results:
             set_cache("trending", results, ttl=900)
             log.info(f"Successfully cached {len(results)} trending topics.")

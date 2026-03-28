@@ -106,7 +106,7 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
     return results
 
 
-def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[dict]:
+def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[dict]:
     """
     Count word frequency in recent article titles.
     Weights: recency (last 6h = 2×, last 12h = 1.5×, else 1×)
