@@ -585,16 +585,21 @@
     const uniqueSources = [...new Set(c.articles.map(art => art.source))];
     const topSources = uniqueSources.slice(0, 3);
     const moreCount = uniqueSources.length - topSources.length;
+    
+    const flag = (a.country && a.country !== '🇲🇰') ? `<span style="font-size:1.2rem; margin-right:4px">${a.country}</span>` : '';
+    const translatedBadge = a.is_translated ? '<span style="font-size:0.65rem; background:rgba(176, 141, 87, 0.1); padding:2px 6px; border-radius:4px; color:var(--bronze); margin-left:8px; border:1px solid var(--border)">AI ПРЕВОД</span>' : '';
 
     return `
       <div class="story-card fade-in">
         <div style="display:flex; gap:24px; justify-content:space-between">
           <div style="flex:1">
             <div class="story-meta">
+              ${flag}
               <span style="color:var(--gold)">${a.source}</span>
               <span style="opacity:0.5">|</span>
               <span>${timeAgo(a.created_at)}</span>
               ${isBreaking ? '<span class="live-badge">| ВО ЖИВО</span>' : ''}
+              ${translatedBadge}
             </div>
             <h3 class="story-headline">
               <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
@@ -616,14 +621,10 @@
   function renderPage(clusters) {
     const wrap = document.getElementById('pageWrap');
     if (!clusters || !clusters.length) {
-      wrap.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">Нема вести за овој регион.</div>';
+      wrap.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">Нема вести.</div>';
       return;
     }
-    const filtered = clusters.filter(c => {
-      if (!c.articles || !c.articles[0]) return false;
-      return (c.articles[0].country || '🇲🇰') === activeCategory;
-    });
-    wrap.innerHTML = `<div class="stories-grid">${filtered.map(renderCard).join('')}</div>`;
+    wrap.innerHTML = `<div class="stories-grid">${clusters.map(renderCard).join('')}</div>`;
   }
 
   async function fetchNews() {

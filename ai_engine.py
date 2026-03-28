@@ -10,7 +10,7 @@ from config import (
     GOOGLE_API_KEY, GEMINI_URL, 
     CLOUDFLARE_API_TOKEN, CF_AI_URL,
     AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
+    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TRANSLATION_SYSTEM_PROMPT
 )
 from database import get_db
 
@@ -111,31 +111,42 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
             }
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            raw_body = resp.read().decode("utf-8")
+            data = json.loads(raw_body)
         
         if data.get("success"):
-            # Cloudflare's @cf/meta/llama-3-8b-instruct response structure
             return data["result"]["response"].strip()
         else:
             log.warning(f"[cloudflare] API error: {data.get('errors')}")
+            log.debug(f"[cloudflare] Raw response: {raw_body}")
             return None
     except Exception as e:
         log.warning(f"[cloudflare] Call failed: {e}")
         return None
 
-def _call_ai(prompt_text: str, system_prompt: str, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
+def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
     """Call AI provider (Cloudflare first, fallback to Gemini)."""
     # 1. Try Cloudflare Workers AI
-    cf_result = _call_cloudflare_ai(prompt_text, system_prompt)
+    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
     if cf_result:
         return cf_result, "cloudflare"
     
     # 2. Fallback to Gemini
-    gemini_result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens, json_mode=json_mode)
+    gemini_result = _call_gemini(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
     if gemini_result:
         return gemini_result, "gemini"
         
     return None, None
+
+def translate_to_macedonian(text: str) -> str | None:
+    """Translate news text to Macedonian using AI (Cloudflare preferred)."""
+    if not text or not text.strip():
+        return text
+    
+    res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT)
+    if res:
+        return clean_json_response(res)
+    return None
 
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
     """

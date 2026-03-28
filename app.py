@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+import re
 import json
 import os
 import threading
@@ -150,10 +151,17 @@ def api_news():
     if cached: return jsonify(cached)
     
     conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM articles WHERE country = ? ORDER BY created_at DESC LIMIT 500",
-        (country,)
-    ).fetchall()
+    if country == '🇲🇰':
+        # Front page: show everything (Domestic + Translated International)
+        rows = conn.execute(
+            "SELECT * FROM articles ORDER BY created_at DESC LIMIT 500"
+        ).fetchall()
+    else:
+        # Filtered by country
+        rows = conn.execute(
+            "SELECT * FROM articles WHERE country = ? ORDER BY created_at DESC LIMIT 500",
+            (country,)
+        ).fetchall()
     
     # We also need to know which clusters have syntheses to pass 'has_synthesis'
     synthesis_rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
@@ -261,7 +269,7 @@ def api_cluster_summary(cluster_id: str):
         headlines = "\n".join(f"- [{a['source']}]: {a['title']}" for a in articles)
 
         try:
-            raw_res = _call_gemini(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+            raw_res, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
             if not raw_res:
                 return jsonify({"error": "AI сервисот е недостапен."}), 503
             
@@ -273,7 +281,7 @@ def api_cluster_summary(cluster_id: str):
                 (cluster_id, summary, now)
             )
             conn.commit()
-            return jsonify({"summary": summary})
+            return jsonify({"summary": summary, "tier": tier})
             
         except Exception as e:
             if '429' in str(e) or 'ResourceExhausted' in str(e):
@@ -306,7 +314,7 @@ def api_analyze(cluster_id: str):
         line = f"- [{a['source']}]: {a['title']}"
         desc = (a.get('description') or '').strip()
         if desc:
-            desc = _re.sub(r'<[^>]+>', '', desc)[:250].strip()
+            desc = re.sub(r'<[^>]+>', '', desc)[:250].strip()
             line += f"\n  Опис: {desc}"
         lines.append(line)
     content = "\n".join(lines)
@@ -315,7 +323,7 @@ def api_analyze(cluster_id: str):
         return jsonify({"error": "Нема доволно содржина за анализа."}), 422
 
     try:
-        analysis = _call_gemini(f"Статии:\n{content}", ANALYSIS_SYSTEM_PROMPT, timeout=40)
+        analysis, tier = _call_ai(f"Статии:\n{content}", ANALYSIS_SYSTEM_PROMPT, timeout=40)
     except Exception:
         return jsonify({"error": "AI сервисот е недостапен."}), 503
 
@@ -324,7 +332,7 @@ def api_analyze(cluster_id: str):
 
     analysis = clean_json_response(analysis)
     _analysis_cache[cluster_id] = analysis
-    return jsonify({"analysis": analysis, "cached": False})
+    return jsonify({"analysis": analysis, "cached": False, "tier": tier})
 
 
 @app.route("/api/click/<int:article_id>", methods=["POST"])

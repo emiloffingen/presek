@@ -1,9 +1,11 @@
+import re
 import datetime
 import feedparser
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import clustering
+from ai_engine import translate_to_macedonian
 from categories import detect_category, detect_subcategory, detect_country
 from config import (
     RSS_FEEDS, DIASPORA_FEEDS, HARDCODED_FEED_CATEGORIES, 
@@ -34,11 +36,11 @@ def clean_rss_footer(text: str) -> str:
     if not text:
         return ""
     import re as _re
-    text = _re.sub(r'The post\s+.*?\s+appeared first on\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
-    text = _re.sub(r'This article was originally published on\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
-    text = _re.sub(r'Source:\s+https?://\S+', '', text, flags=_re.IGNORECASE)
-    text = _re.sub(r'Source:\s+[A-Za-z0-9 ]+(\.|$)', '', text, flags=_re.IGNORECASE)
-    text = _re.sub(r'Read more at\s+.*?(\.|$)', '', text, flags=_re.IGNORECASE | _re.DOTALL)
+    text = re.sub(r'The post\s+.*?\s+appeared first on\s+.*?(\.|$)', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'This article was originally published on\s+.*?(\.|$)', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'Source:\s+https?://\S+', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'Source:\s+[A-Za-z0-9 ]+(\.|$)', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'Read more at\s+.*?(\.|$)', '', text, flags=re.IGNORECASE | re.DOTALL)
     return text.strip()
 
 def fetch_feed(source, url):
@@ -83,7 +85,7 @@ def fetch_feed(source, url):
                         image_url = link_obj.get('href', ''); break
             if not image_url and desc:
                 import re as _re
-                m = _re.search(r'<img[^>]+src=["\']([^"\']+)["\']', desc, _re.IGNORECASE)
+                m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', desc, re.IGNORECASE)
                 if m:
                     c = m.group(1)
                     if not any(s in c.lower() for s in ['pixel','icon','1x1','logo','gravatar','avatar']):
@@ -134,7 +136,7 @@ def ingest_feeds():
                 cluster_id = clustering.find_or_create_cluster(title, recent_articles)
                 now        = datetime.datetime.now().isoformat()
                 import re as _re
-                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
+                clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
                 
                 conn.execute(
@@ -193,19 +195,27 @@ def ingest_diaspora_feeds():
                     continue
                 
                 display_title = normalize_headline(title)
-                cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent)
-                now = datetime.datetime.now().isoformat()
                 
-                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
+                # --- Background Translation ---
+                translated_title = translate_to_macedonian(display_title)
+                clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
+                translated_desc = translate_to_macedonian(clean_desc)
+                
+                final_title = translated_title or display_title
+                final_desc = translated_desc or clean_desc
+                is_translated = 1 if translated_title else 0
+
+                cluster_id = clustering.find_or_create_cluster(final_title, diaspora_recent)
+                now = datetime.datetime.now().isoformat()
 
                 conn.execute(
                     "INSERT INTO articles "
                     "(title, original_title, link, source, category, subcategory, cluster_id, "
-                    "created_at, image_url, description, country) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (display_title, title, link, source, category, "", cluster_id,
-                     now, image_url, clean_desc, country)
+                    "created_at, image_url, description, original_description, country, is_translated) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (final_title, title, link, source, category, "", cluster_id,
+                     now, image_url, final_desc, clean_desc, country, is_translated)
                 )
                 diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id})
                 if len(diaspora_recent) > CLUSTER_LOOKBACK:

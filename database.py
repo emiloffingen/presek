@@ -31,7 +31,9 @@ def init_db():
         country TEXT DEFAULT '🇲🇰',
         created_at TEXT NOT NULL,
         image_url TEXT,
-        clicks INTEGER DEFAULT 0
+        clicks INTEGER DEFAULT 0,
+        original_description TEXT DEFAULT '',
+        is_translated INTEGER DEFAULT 0
     )""")
     
     conn.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
@@ -60,6 +62,10 @@ def init_db():
         conn.execute("ALTER TABLE articles ADD COLUMN country TEXT DEFAULT '🇲🇰'")
     if "original_title" not in cols:
         conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
+    if "original_description" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN original_description TEXT DEFAULT ''")
+    if "is_translated" not in cols:
+        conn.execute("ALTER TABLE articles ADD COLUMN is_translated INTEGER DEFAULT 0")
         
     conn.commit()
     conn.close()

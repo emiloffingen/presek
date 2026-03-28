@@ -129,6 +129,19 @@ else
   ok "GOOGLE_API_KEY is set"
 fi
 
+if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+  warn "CLOUDFLARE_API_TOKEN not set — Workers AI unavailable"
+  MISSING_KEYS=$((MISSING_KEYS+1))
+else
+  ok "CLOUDFLARE_API_TOKEN is set"
+fi
+
+if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+  warn "CLOUDFLARE_ACCOUNT_ID not set — Workers AI URL may be invalid"
+else
+  ok "CLOUDFLARE_ACCOUNT_ID = $CLOUDFLARE_ACCOUNT_ID"
+fi
+
 if [ -z "$NTFY_TOPIC" ]; then
   warn "NTFY_TOPIC not set — push notifications disabled"
 else
