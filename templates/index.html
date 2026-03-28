@@ -442,6 +442,16 @@
   <div class="nav-inner">
     <div id="trendChips"></div>
     <div class="nav-divider"></div>
+    <div class="country-dropdown-wrap">
+      <button class="cat-btn" onclick="toggleCountryDropdown(event)" title="Избери држава" style="padding:0 .5rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </button>
+      <div id="countryDropdown" class="country-dropdown"></div>
+    </div>
   </div>
 </nav>
 
@@ -604,6 +614,65 @@
       renderPage(allClusters);
       document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
     } catch(e) {}
+  }
+
+  function buildCats() {
+    const countries = [
+      { id: '🇲🇰', label: 'Македонија', flag: `
+        <svg viewBox="0 0 100 100" width="32">
+          <rect x="10" y="20" width="80" height="60" rx="8" fill="#D10047"/>
+          <g fill="#F5C400">
+            <polygon points="10,20 26,20 10,32 50,50"/>
+            <polygon points="90,20 74,20 90,32 50,50"/>
+            <polygon points="10,80 26,80 10,68 50,50"/>
+            <polygon points="90,80 74,80 90,68 50,50"/>
+            <polygon points="44,20 56,20 50,50"/>
+            <polygon points="44,80 56,80 50,50"/>
+            <polygon points="10,44 10,56 50,50"/>
+            <polygon points="90,44 90,56 50,50"/>
+            <circle cx="50" cy="50" r="11" stroke="#D10047" stroke-width="1.5"/>
+          </g>
+        </svg>` },
+      { id: '🇩🇪', label: 'Германија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#000"/><rect x="10" y="40" width="80" height="20" fill="#DD0000"/><rect x="10" y="60" width="80" height="20" fill="#FFCE00"/></svg>` },
+      { id: '🇷🇸', label: 'Србија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#C6363C"/><rect x="10" y="40" width="80" height="20" fill="#0C4076"/><rect x="10" y="60" width="80" height="20" fill="#fff"/></svg>` },
+      { id: '🇺🇸', label: 'САД', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#fff"/><g fill="#B22234"><rect x="10" y="20" width="80" height="6"/><rect x="10" y="32" width="80" height="6"/><rect x="10" y="44" width="80" height="6"/><rect x="10" y="56" width="80" height="6"/><rect x="10" y="68" width="80" height="6"/></g><rect x="10" y="20" width="35" height="30" fill="#3C3B6E"/></svg>` },
+      { id: '🇧🇬', label: 'Бугарија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#fff"/><rect x="10" y="40" width="80" height="20" fill="#00966E"/><rect x="10" y="60" width="80" height="20" fill="#D62612"/></svg>` },
+      { id: '🇬🇷', label: 'Грција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#0D5EAF"/><rect x="10" y="45" width="80" height="10" fill="#fff"/><rect x="35" y="20" width="10" height="40" fill="#fff"/></svg>` },
+      { id: '🇦🇱', label: 'Албанија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E41E20"/><polygon points="50,40 55,50 45,50" fill="#000"/></svg>` },
+      { id: '🇨🇭', label: 'Швајцарија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" rx="12" fill="#D52B1E"/><rect x="42" y="30" width="16" height="40" fill="#fff"/><rect x="30" y="42" width="40" height="16" fill="#fff"/></svg>` },
+      { id: '🇦🇹', label: 'Австрија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#ED2939"/><rect x="10" y="40" width="80" height="20" fill="#fff"/><rect x="10" y="60" width="80" height="20" fill="#ED2939"/></svg>` },
+      { id: '🇸🇮', label: 'Словенија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="20" fill="#fff"/><rect x="10" y="40" width="80" height="20" fill="#005DA4"/><rect x="10" y="60" width="80" height="20" fill="#ED1C24"/></svg>` },
+      { id: '🇮🇹', label: 'Италија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="26" height="60" fill="#009246"/><rect x="36" y="20" width="28" height="60" fill="#fff"/><rect x="64" y="20" width="26" height="60" fill="#CE2B37"/></svg>` },
+      { id: '🇸🇪', label: 'Шведска', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#006AA7"/><rect x="30" y="20" width="10" height="60" fill="#FECC00"/><rect x="10" y="45" width="80" height="10" fill="#FECC00"/></svg>` },
+      { id: '🇬🇧', label: 'Обединето Кралство', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#012169"/><rect x="45" y="20" width="10" height="60" fill="#fff"/><rect x="10" y="45" width="80" height="10" fill="#fff"/><rect x="47" y="20" width="6" height="60" fill="#C8102E"/><rect x="10" y="47" width="80" height="6" fill="#C8102E"/></svg>` },
+      { id: '🇦🇺', label: 'Австралија', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" rx="8" fill="#012169"/><rect x="10" y="20" width="35" height="30" fill="#00247D"/><circle cx="70" cy="55" r="4" fill="#fff"/><circle cx="80" cy="65" r="3" fill="#fff"/></svg>` },
+      { id: '🇨🇦', label: 'Канада', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="20" height="60" fill="#D52B1E"/><rect x="30" y="20" width="40" height="60" fill="#fff"/><rect x="70" y="20" width="20" height="60" fill="#D52B1E"/><polygon points="50,40 55,55 50,50 45,55" fill="#D52B1E"/></svg>` },
+      { id: '🇹🇷', label: 'Турција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E30A17"/><circle cx="45" cy="50" r="10" fill="#fff"/><circle cx="50" cy="50" r="8" fill="#E30A17"/><circle cx="60" cy="50" r="3" fill="#fff"/></svg>` }
+    ];
+
+    document.getElementById('countryDropdown').innerHTML = countries.map(c =>
+      `<button class="dropdown-item ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')">${c.flag} <span>${c.label}</span></button>`
+    ).join('');
+  }
+
+  function toggleCountryDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('countryDropdown').classList.toggle('show');
+  }
+
+  window.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('countryDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
+  });
+
+  function filterCat(cat) {
+    activeCategory = cat;
+    _currentPage = 0;
+    fetchNews();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    document.getElementById('countryDropdown').classList.remove('show');
   }
 
   function updateTicker(clusters) {
