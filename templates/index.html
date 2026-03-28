@@ -18,9 +18,10 @@
     }
     .hero-subtitle {
         color: var(--text-secondary);
-        font-size: 1.1rem;
-        max-width: 600px;
+        font-size: 1.25rem; /* Increased for better presence */
+        max-width: 700px;
         margin: 0 auto;
+        line-height: 1.5;
     }
 
     .nav-bar {
@@ -39,37 +40,41 @@
         margin: 0 auto;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center; /* Centered navigation */
         padding: var(--spacing-sm) var(--spacing-md);
     }
 
     .category-scroll {
         display: flex;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
         overflow-x: auto;
-        padding-bottom: 4px;
+        padding: 4px;
         scrollbar-width: none;
     }
     .category-scroll::-webkit-scrollbar { display: none; }
 
     .cat-btn {
         background: none;
-        border: 1px solid transparent;
+        border: none;
         color: var(--text-secondary);
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 20px;
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
         white-space: nowrap;
         cursor: pointer;
         transition: var(--transition);
+        position: relative;
     }
-    .cat-btn:hover { color: var(--text-primary); background: var(--border); }
+    .cat-btn:hover { 
+        color: var(--text-primary); 
+        background: var(--bg-surface-hover); 
+    }
     .cat-btn.active { 
         background: var(--primary); 
         color: white; 
-        border-color: var(--primary); 
     }
+    .cat-btn.active:hover { background: var(--accent); }
 
     .time-divider {
         grid-column: 1 / -1;
@@ -217,11 +222,7 @@
                     <div class="story-thumb-wrap">
                         <img src="${clusterImage}" class="story-thumb" loading="lazy" alt="${a.title}">
                     </div>
-                ` : `
-                    <div class="story-thumb-placeholder">
-                        <img src="/static/logo.svg" alt="Presek Logo">
-                    </div>
-                `}
+                ` : ''}
                 <div class="story-meta">
                     <span class="source">${a.source}</span>
                     <span>•</span>
