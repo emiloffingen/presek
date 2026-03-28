@@ -468,11 +468,14 @@
   }
 
   function renderCard(c) {
+    if(!c || !c.articles || !c.articles.length) return '';
     const a = c.articles[0];
-    if(!a) return '';
     
-    // Find the first available image in the cluster
-    const clusterImage = c.articles.find(art => art.image_url)?.image_url;
+    // Safety check for cluster image
+    let clusterImage = null;
+    for (let art of c.articles) {
+      if (art.image_url) { clusterImage = art.image_url; break; }
+    }
     
     const isBreaking = (c.score || 0) > 3.0;
     const uniqueSources = [...new Set(c.articles.map(art => art.source))];
@@ -512,11 +515,9 @@
       wrap.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">Нема вести за овој регион.</div>';
       return;
     }
-    // Filter strictly by the emoji flag ID, with safety check for missing articles
     const filtered = clusters.filter(c => {
       if (!c.articles || !c.articles[0]) return false;
-      const country = c.articles[0].country || '🇲🇰';
-      return country === activeCategory;
+      return (c.articles[0].country || '🇲🇰') === activeCategory;
     });
     wrap.innerHTML = `<div class="stories-grid">${filtered.map(renderCard).join('')}</div>`;
   }
@@ -527,8 +528,6 @@
     const badge = document.getElementById("najcitanoBadge");
     if(badge) badge.style.display = "none";
 
-    const btn = document.getElementById('refreshBtn');
-    if(btn) btn.style.opacity = '0.5';
     try {
       const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
       const data = await res.json();
@@ -541,10 +540,7 @@
     } catch(e) {
       console.error("Fetch error:", e);
     } finally {
-      // ALWAYS hide splash screen
-      const splash = document.getElementById('appSplash');
-      if (splash) splash.classList.add('hidden');
-      if (btn) btn.style.opacity = '1';
+      document.getElementById('appSplash').classList.add('hidden');
     }
   }
 
