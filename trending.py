@@ -39,7 +39,7 @@ STOPWORDS = {
     # Common verbs / verb-like words that carry no entity signal
     "има", "имаат", "имало", "нема", "немаат", "немало",
     "рече", "рекол", "рекла", "изјави", "изјавил", "изјавила",
-    "вели", "велат", "истакна", "истакнал", "потврди", "потврдил",
+    "вели", "велат", "истакна", "истакнал", "потврдни", "потврдил",
     "соопшти", "соопштил", "посочи", "посочил", "додаде", "додал",
     "нагласи", "нагласил", "objasni", "објасни", "смета", "сметаат",
     "треба", "трeba", "може", "можат", "мора", "мораат",
@@ -52,22 +52,24 @@ STOPWORDS = {
     "kako", "како", "how", "the", "a", "an", "in", "of", "to", "and", "is",
     "was", "are", "for", "that", "this", "with", "from", "has", "have",
     "МКД", "mkd", "www", "http", "https", "com", "mk", "org", "net",
+    "video", "видео", "еден", "напад", "фото", "foto", "галерија", "galerija",
+    "интервју", "intervju", "денес", "denas", "утре", "utre", "вчера", "vchera",
     # Serbian / Bosnian overlap
     "nije", "koji", "koja", "koje", "što", "jer", "ali", "ili", "kao",
     "više", "koja", "kada", "gdje", "kako", "samo",
     # Albanian common words
     "dhe", "në", "për", "me", "nga", "si", "por", "që", "është",
-    "ka", "të", "një", "se", "po", "kur", "ose",
+    "ka", "të", "një", "се", "po", "kur", "ose",
 }
 
 # Minimum word length and frequency to be considered trending
 MIN_WORD_LEN   = 4
 MIN_COUNT      = 2
 MAX_RESULTS    = 15
-LOOKBACK_HOURS = 24
+LOOKBACK_HOURS = 12
 
 # Bonus multiplier for likely proper nouns (capitalized mid-sentence)
-PROPER_NOUN_BONUS = 3.0
+PROPER_NOUN_BONUS = 4.0
 
 
 def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
@@ -108,7 +110,7 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
     """
     Count word frequency in recent article titles.
     Weights: recency (last 6h = 2×, last 12h = 1.5×, else 1×)
-             × proper-noun bonus (3× if capitalised mid-sentence).
+             × proper-noun bonus (4× if capitalised mid-sentence).
     Returns list of {word, count} dicts sorted by weighted score.
     """
     try:
@@ -144,6 +146,11 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
         else:            recency = 1.0
 
         for word, is_proper in pairs:
+            # Simple normalization for very common dual-script or variations
+            if word in ('iran', 'iranski'): word = 'иран'
+            if word in ('trump', 'trampa'): word = 'трамп'
+            if word in ('video', 'vinea'): word = 'видео' # though 'видео' is in stopwords now
+            
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
             weighted[word] += recency * noun_bonus
             raw[word]       += 1
