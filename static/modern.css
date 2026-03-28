@@ -213,24 +213,6 @@ html.light .site-header { background: rgba(248, 249, 250, 0.7); }
     box-shadow: var(--shadow-lg);
 }
 
-@media (min-width: 640px) {
-    .story-card {
-        flex-direction: row-reverse;
-        align-items: stretch;
-        gap: var(--spacing-lg);
-    }
-}
-
-/* Breaking animation overlay */
-.story-card.is-breaking::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 4px;
-    background: var(--primary);
-    box-shadow: 0 2px 10px var(--primary);
-    z-index: 10;
-}
-
 .story-thumb-wrap, 
 .story-thumb-placeholder {
     width: 100%;
@@ -243,15 +225,6 @@ html.light .site-header { background: rgba(248, 249, 250, 0.7); }
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-@media (min-width: 640px) {
-    .story-thumb-wrap, 
-    .story-thumb-placeholder {
-        width: 160px;
-        height: 110px;
-        aspect-ratio: auto;
-    }
 }
 
 .story-thumb {
@@ -374,8 +347,10 @@ html.light .site-header { background: rgba(248, 249, 250, 0.7); }
 }
 
 .story-thumb-placeholder img {
-    width: 24px;
-    height: 24px;
+    max-width: 40px;
+    max-height: 40px;
+    width: auto;
+    height: auto;
     opacity: 0.1;
     filter: grayscale(1);
     z-index: 1;
