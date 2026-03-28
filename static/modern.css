@@ -212,14 +212,29 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     box-shadow: var(--shadow-md);
 }
 
+.story-thumb-link, .archive-thumb-link, .cluster-hero-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.story-thumb-wrap,
 .story-thumb-placeholder {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    background: url('/static/img/placeholder.svg') center/cover no-repeat;
+    background: var(--bg-base);
     border: 1px solid var(--border);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.story-thumb-placeholder {
+    background: url('/static/img/placeholder.svg') center/cover no-repeat;
 }
 
 html.light .story-thumb-placeholder {

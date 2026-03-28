@@ -217,11 +217,15 @@
             <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
                 ${isBreaking ? '<div class="is-breaking"></div>' : ''}
                 ${clusterImage ? `
-                    <div class="story-thumb-wrap">
-                        <img src="${clusterImage}" class="story-thumb" loading="lazy" alt="${a.title}">
-                    </div>
+                    <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                        <div class="story-thumb-wrap">
+                            <img src="${clusterImage}" class="story-thumb" loading="lazy" alt="${a.title}">
+                        </div>
+                    </a>
                 ` : `
-                    <div class="story-thumb-placeholder"></div>
+                    <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                        <div class="story-thumb-placeholder"></div>
+                    </a>
                 `}
                 <div class="story-meta">
                     <span class="source">${a.source}</span>

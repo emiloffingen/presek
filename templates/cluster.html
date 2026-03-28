@@ -186,10 +186,12 @@
     {% for art in articles %}{% if art.image_url and not hero_image %}{% set hero_image = art.image_url %}{% endif %}{% endfor %}
 
     {% if hero_image %}
-    <div class="cluster-hero fade-in">
-        <img src="/proxy?url={{ hero_image | urlencode }}" class="hero-img" alt="Hero Image">
-        <div class="hero-overlay"></div>
-    </div>
+    <a href="{{ articles[0].link }}" target="_blank" rel="noopener" class="cluster-hero-link">
+        <div class="cluster-hero fade-in">
+            <img src="/proxy?url={{ hero_image | urlencode }}" class="hero-img" alt="Hero Image">
+            <div class="hero-overlay"></div>
+        </div>
+    </a>
     {% endif %}
 
     <article class="cluster-content">
