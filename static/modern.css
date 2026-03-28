@@ -212,31 +212,14 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     box-shadow: var(--shadow-md);
 }
 
-.story-thumb-wrap,
 .story-thumb-placeholder {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    background: var(--bg-base);
+    background: url('/static/img/placeholder.svg') center/cover no-repeat;
     border: 1px solid var(--border);
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.story-thumb-placeholder {
-    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-base) 100%);
-}
-
-.story-thumb-placeholder img {
-    max-width: 32px;
-    max-height: 32px;
-    width: auto;
-    height: auto;
-    opacity: 0.1;
-    filter: grayscale(1);
 }
 
 .story-thumb {
