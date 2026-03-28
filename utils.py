@@ -1,6 +1,43 @@
 import datetime
 import math
+import redis
+import json
+import os
+import time
 from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
+
+redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+
+def cached_response(key: str, ttl: int = 60):
+    try:
+        val = redis_client.get(key)
+        if val:
+            return json.loads(val)
+    except Exception as e:
+        # We'll use a local logger if possible, but for simplicity let's print or ignore
+        pass
+    return None
+
+def set_cache(key: str, val, ttl: int = 60):
+    try:
+        redis_client.setex(key, ttl, json.dumps(val))
+    except Exception as e:
+        pass
+
+# Simple rate limiter
+_rate_limits: dict[str, list[float]] = {}
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX = 60     # requests per window
+
+def check_rate_limit(ip: str) -> bool:
+    now = time.time()
+    if ip not in _rate_limits:
+        _rate_limits[ip] = []
+    _rate_limits[ip] = [t for t in _rate_limits[ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limits[ip]) >= RATE_LIMIT_MAX:
+        return False
+    _rate_limits[ip].append(now)
+    return True
 
 def score_cluster(arts):
     """

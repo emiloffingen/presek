@@ -9,9 +9,9 @@ from collections import defaultdict
 from config import (
     GOOGLE_API_KEY, GEMINI_URL, 
     CLOUDFLARE_API_TOKEN, CF_AI_URL,
-    AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TRANSLATION_SYSTEM_PROMPT
+    AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY
 )
+from prompts import SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TRANSLATION_SYSTEM_PROMPT
 from database import get_db
 
 log = logging.getLogger("presek")
@@ -186,7 +186,7 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
                 if summary:
                     summary = clean_json_response(summary)
                     try:
-                        conn.execute("UPDATE articles SET summary = ? WHERE id = ?", (summary, lead["id"]))
+                        conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, lead["id"]))
                         conn.commit()
                         summarized_count += 1
                     except Exception as e:
@@ -197,7 +197,7 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
                 # Check DB cache first
-                row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ?", (cid,)).fetchone()
+                row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
                 if not row:
                     lines = []
                     for a in arts[:10]:

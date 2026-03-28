@@ -137,7 +137,7 @@ def ingest_feeds():
     conn = get_db()
     try:
         recent_rows = conn.execute(
-            "SELECT title, cluster_id FROM articles ORDER BY created_at DESC LIMIT ?",
+            "SELECT title, cluster_id FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         ).fetchall()
         recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in recent_rows]
@@ -159,19 +159,19 @@ def ingest_feeds():
         new_count = 0
         for source, title, link, desc, image_url in all_entries:
             try:
-                if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
+                if conn.execute("SELECT id FROM articles WHERE link = %s", (link,)).fetchone():
                     continue
                 forced     = HARDCODED_FEED_CATEGORIES.get(source)
                 category   = detect_category(title, description=desc, source=source, forced_category=forced)
                 subcategory = detect_subcategory(title, description=desc) or ""
                 cluster_id = clustering.find_or_create_cluster(title, recent_articles)
-                now        = datetime.datetime.now().isoformat()
+                now        = datetime.datetime.now()
                 import re as _re
                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
                 
                 conn.execute(
-                    "INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc)
                 )
                 recent_articles.insert(0, {"title": title, "cluster_id": cluster_id})
@@ -190,7 +190,7 @@ def ingest_diaspora_feeds():
     """Fetch diaspora RSS feeds and write to DB separately (without translation)."""
     conn = get_db()
     diaspora_recent = conn.execute(
-        "SELECT title, cluster_id FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT ?",
+        "SELECT title, cluster_id FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
         (CLUSTER_LOOKBACK,)
     ).fetchall()
     diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in diaspora_recent]
@@ -222,32 +222,34 @@ def ingest_diaspora_feeds():
         new_count = 0
         for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
             try:
-                if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
+                if conn.execute("SELECT id FROM articles WHERE link = %s", (link,)).fetchone():
                     continue
                 
                 display_title = normalize_headline(title)
                 
-                # --- Background Translation ---
-                translated_title = translate_to_macedonian(display_title)
                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
-                translated_desc = translate_to_macedonian(clean_desc)
                 
-                final_title = translated_title or display_title
-                final_desc = translated_desc or clean_desc
-                is_translated = 1 if translated_title else 0
+                cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent)
+                now = datetime.datetime.now()
 
-                cluster_id = clustering.find_or_create_cluster(final_title, diaspora_recent)
-                now = datetime.datetime.now().isoformat()
-
-                conn.execute(
+                cur = conn.cursor()
+                cur.execute(
                     "INSERT INTO articles "
                     "(title, original_title, link, source, category, subcategory, cluster_id, "
                     "created_at, image_url, description, original_description, country, is_translated) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (final_title, title, link, source, category, "", cluster_id,
-                     now, image_url, final_desc, clean_desc, country, is_translated)
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                    (display_title, title, link, source, category, "", cluster_id,
+                     now, image_url, clean_desc, clean_desc, country, 0)
                 )
+                article_id = cur.fetchone()[0]
+                conn.commit()
+                cur.close()
+
+                # Dispatch background translation task
+                from tasks import translate_article_task
+                translate_article_task.delay(article_id, display_title, clean_desc)
+
                 diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id})
                 if len(diaspora_recent) > CLUSTER_LOOKBACK:
                     diaspora_recent.pop()

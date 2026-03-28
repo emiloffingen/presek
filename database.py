@@ -1,24 +1,33 @@
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor, RealDictCursor
 import datetime
 import logging
 import os
-from config import DB_PATH, DB_RETAIN_DAYS
 
 log = logging.getLogger("presek")
 
-def get_db() -> sqlite3.Connection:
-    """Get a database connection with Row factory enabled."""
-    conn = sqlite3.connect(DB_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
+DB_RETAIN_DAYS = int(os.environ.get("DB_RETAIN_DAYS", 14))
+
+class PostgresConnection(psycopg2.extensions.connection):
+    def execute(self, sql, params=None):
+        cur = self.cursor()
+        cur.execute(sql, params)
+        return cur
+
+def get_db():
+    """Get a database connection with DictCursor enabled."""
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=DictCursor, connection_factory=PostgresConnection)
     return conn
 
 def init_db():
     """Initialize the database schema."""
     conn = get_db()
+    cur = conn.cursor()
     
     # Create tables with reorganized schema if new install
-    conn.execute("""CREATE TABLE IF NOT EXISTS articles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cur.execute("""CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
         cluster_id TEXT NOT NULL,
         source TEXT NOT NULL,
         link TEXT UNIQUE NOT NULL,
@@ -29,64 +38,41 @@ def init_db():
         category TEXT,
         subcategory TEXT DEFAULT '',
         country TEXT DEFAULT '🇲🇰',
-        created_at TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL,
         image_url TEXT,
         clicks INTEGER DEFAULT 0,
         original_description TEXT DEFAULT '',
         is_translated INTEGER DEFAULT 0
     )""")
     
-    conn.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
+    cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
         cluster_id TEXT PRIMARY KEY,
         summary TEXT,
-        created_at TEXT
+        created_at TIMESTAMP
     )""")
     
     # Ensure indexes exist for performance
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_country_created ON articles(country, created_at DESC)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_country_created ON articles(country, created_at DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
     
-    # Handle Migrations for existing DB
-    cols = [r[1] for r in conn.execute("PRAGMA table_info(articles)").fetchall()]
-    if "image_url" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN image_url TEXT DEFAULT ''")
-    if "clicks" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN clicks INTEGER DEFAULT 0")
-    if "description" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN description TEXT DEFAULT ''")
-    if "subcategory" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN subcategory TEXT DEFAULT ''")
-    if "country" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN country TEXT DEFAULT '🇲🇰'")
-    if "original_title" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN original_title TEXT DEFAULT ''")
-    if "original_description" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN original_description TEXT DEFAULT ''")
-    if "is_translated" not in cols:
-        conn.execute("ALTER TABLE articles ADD COLUMN is_translated INTEGER DEFAULT 0")
-        
     conn.commit()
+    cur.close()
     conn.close()
 
 def prune_db():
-    """Delete articles older than DB_RETAIN_DAYS and reclaim disk space."""
+    """Delete articles older than DB_RETAIN_DAYS."""
     try:
-        cutoff = (datetime.datetime.now() - datetime.timedelta(days=DB_RETAIN_DAYS)).isoformat()
+        cutoff = datetime.datetime.now() - datetime.timedelta(days=DB_RETAIN_DAYS)
         conn = get_db()
-        result = conn.execute("DELETE FROM articles WHERE created_at < ?", (cutoff,))
-        deleted = result.rowcount
+        cur = conn.cursor()
+        cur.execute("DELETE FROM articles WHERE created_at < %s", (cutoff,))
+        deleted = cur.rowcount
         conn.commit()
+        cur.close()
         conn.close()
         if deleted:
             log.info(f"Pruned {deleted} articles older than {DB_RETAIN_DAYS} days.")
-            # VACUUM requires an exclusive lock — run it in a separate connection
-            # after the write connection is fully closed.
-            vconn = sqlite3.connect(DB_PATH, timeout=30)
-            try:
-                vconn.execute("VACUUM")
-            finally:
-                vconn.close()
     except Exception as e:
         log.error(f"Prune error: {e}")

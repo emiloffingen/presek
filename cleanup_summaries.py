@@ -1,5 +1,5 @@
 
-import sqlite3
+import database
 import json
 import os
 import re
@@ -41,7 +41,7 @@ def cleanup():
     # 2. Clean database tables
     if os.path.exists("presek.db"):
         print("Cleaning presek.db...")
-        conn = sqlite3.connect("presek.db")
+        conn = database.get_db()
         conn.row_factory = sqlite3.Row
         
         # Clean articles table (lead summaries)
@@ -49,7 +49,7 @@ def cleanup():
         for art in articles:
             cleaned = clean_json_response(art['summary'])
             if cleaned != art['summary']:
-                conn.execute("UPDATE articles SET summary = ? WHERE id = ?", (cleaned, art['id']))
+                conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (cleaned, art['id']))
         print(f"Cleaned {len(articles)} summaries in articles table.")
 
         # Clean cluster_summaries table
@@ -58,7 +58,7 @@ def cleanup():
             for s in summaries:
                 cleaned = clean_json_response(s['summary'])
                 if cleaned != s['summary']:
-                    conn.execute("UPDATE cluster_summaries SET summary = ? WHERE cluster_id = ?", (cleaned, s['cluster_id']))
+                    conn.execute("UPDATE cluster_summaries SET summary = %s WHERE cluster_id = %s", (cleaned, s['cluster_id']))
             print(f"Cleaned {len(summaries)} summaries in cluster_summaries table.")
         except:
             print("cluster_summaries table not found or empty.")

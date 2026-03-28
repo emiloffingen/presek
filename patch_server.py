@@ -1,4 +1,4 @@
-import sqlite3
+import database
 import os
 import re
 
@@ -7,7 +7,7 @@ def patch_server():
     
     # 1. Database operation: Create table in presek.db
     try:
-        conn = sqlite3.connect('presek.db')
+        conn = database.get_db()
         conn.execute("CREATE TABLE IF NOT EXISTS cluster_summaries (cluster_id TEXT PRIMARY KEY, summary TEXT, created_at TEXT)")
         conn.commit()
         conn.close()

@@ -4,7 +4,7 @@ Extracts hot topics from recent articles by counting significant words,
 weighted by recency and a proper-noun bonus (capitalized mid-sentence words).
 """
 
-import sqlite3
+import database
 import re
 from collections import Counter
 from datetime import datetime, timedelta
@@ -43,7 +43,7 @@ STOPWORDS = {
     "соопшти", "соопштил", "посочи", "посочил", "додаде", "додал",
     "нагласи", "нагласил", "objasni", "објасни", "смета", "сметаат",
     "треба", "трeba", "може", "можат", "мора", "мораат",
-    "почна", "почнал", "завршил", "завршила", "продолжи",
+    "почна", "почнал", "заврдшил", "завршила", "продолжи",
     # Common question / demonstrative combos
     "дури", "сепак", "меѓутоа", "сосема", "навистина", "очигледно",
     "можеби", "веројатно", "всушност", "главно", "претежно",
@@ -114,11 +114,10 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
     Returns list of {word, count} dicts sorted by weighted score.
     """
     try:
-        conn = sqlite3.connect(db_path, timeout=5)
-        conn.row_factory = sqlite3.Row
-        cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+        conn = database.get_db()
+        cutoff = datetime.now() - timedelta(hours=hours)
         rows = conn.execute(
-            "SELECT title, created_at FROM articles WHERE created_at >= ? ORDER BY created_at DESC LIMIT 2000",
+            "SELECT title, created_at FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
             (cutoff,)
         ).fetchall()
         conn.close()
@@ -136,7 +135,11 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
     for row in rows:
         pairs = extract_words_with_flags(row["title"] or "")
         try:
-            age_h = (now - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))).total_seconds() / 3600
+            # PostgreSQL returns datetime objects for TIMESTAMP
+            if isinstance(row["created_at"], datetime):
+                age_h = (now - row["created_at"].replace(tzinfo=None)).total_seconds() / 3600
+            else:
+                age_h = (now - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))).total_seconds() / 3600
         except Exception:
             age_h = 12
 
@@ -149,7 +152,7 @@ def get_trending(db_path: str, hours: int = LOOKBACK_HOURS, limit: int = MAX_RES
             # Simple normalization for very common dual-script or variations
             if word in ('iran', 'iranski'): word = 'иран'
             if word in ('trump', 'trampa'): word = 'трамп'
-            if word in ('video', 'vinea'): word = 'видео' # though 'видео' is in stopwords now
+            if word in ('video', 'vinea'): word = 'видео'
             
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
             weighted[word] += recency * noun_bonus

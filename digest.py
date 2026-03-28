@@ -11,7 +11,7 @@ Cron (every Monday 08:00):
     0 8 * * 1 cd /path/to/timeai && python3 digest.py --email ... >> digest.log 2>&1
 """
 
-import sqlite3
+import database
 import argparse
 import smtplib
 import ssl
@@ -85,14 +85,13 @@ def fetch_top_stories(db_path: str = "presek.db",
     Selects the earliest article per cluster (= most-sourced story).
     """
     try:
-        conn = sqlite3.connect(db_path, timeout=5)
-        conn.row_factory = sqlite3.Row
+        conn = database.get_db()
         rows = conn.execute("""
             SELECT id, title, link, source, category, summary, cluster_id, created_at
             FROM articles
-            WHERE created_at >= datetime('now', ?)
+            WHERE created_at >= NOW() - INTERVAL '%s days'
             ORDER BY created_at DESC
-        """, (f"-{days} days",)).fetchall()
+        """, (days,)).fetchall()
         conn.close()
     except Exception as e:
         print(f"[digest] DB error: {e}")

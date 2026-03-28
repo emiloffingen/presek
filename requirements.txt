@@ -4,3 +4,8 @@ flask-compress
 feedparser
 gunicorn
 requests
+pytest
+pytest-mock
+psycopg2-binary
+redis
+celery

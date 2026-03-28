@@ -1,4 +1,4 @@
-import sqlite3
+import database
 import time
 import logging
 from database import get_db

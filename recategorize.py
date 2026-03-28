@@ -3,14 +3,14 @@ recategorize.py — Re-run category detection on all articles.
 Usage: python3 recategorize.py          (dry run — shows changes)
        python3 recategorize.py --apply  (applies changes to DB)
 """
-import sqlite3, sys, os
+import database
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from categories import detect_category, detect_subcategory
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "presek.db")
 apply = "--apply" in sys.argv
 
-conn = sqlite3.connect(DB_PATH)
+conn = database.get_db()
 conn.row_factory = sqlite3.Row
 rows = conn.execute("SELECT id, title, description, source, category, subcategory FROM articles").fetchall()
 

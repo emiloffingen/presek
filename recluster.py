@@ -15,7 +15,7 @@ Run this ONCE after uploading the new clustering.py.
 Back up presek.db first:  cp presek.db presek.db.bak
 """
 
-import sqlite3
+import database
 import sys
 import math
 import re
@@ -70,7 +70,7 @@ def cosine(v1, v2):
 
 
 def recluster(db_path, apply=False):
-    conn = sqlite3.connect(db_path, timeout=10)
+    conn = database.get_db()
     conn.row_factory = sqlite3.Row
 
     # ── Before stats ──
@@ -180,7 +180,7 @@ def recluster(db_path, apply=False):
     for cid, n in top5:
         # Get a sample title
         sample_id = [aid for aid, c in new_clusters.items() if c == cid][0]
-        sample_title = conn.execute("SELECT title FROM articles WHERE id=?", (sample_id,)).fetchone()["title"]
+        sample_title = conn.execute("SELECT title FROM articles WHERE id=%s", (sample_id,)).fetchone()["title"]
         print(f"    {cid}: {n} articles — \"{sample_title[:60]}\"")
 
     # Size distribution
@@ -199,7 +199,7 @@ def recluster(db_path, apply=False):
         print("\nApplying changes...")
         conn.execute("BEGIN")
         for aid, cid in new_clusters.items():
-            conn.execute("UPDATE articles SET cluster_id=? WHERE id=?", (cid, aid))
+            conn.execute("UPDATE articles SET cluster_id=%s WHERE id=%s", (cid, aid))
         conn.commit()
         print(f"Done. Updated {len(new_clusters)} articles.")
     else:

@@ -3,7 +3,7 @@ health.py — Health check + monitoring for TimeAI.mk
 Add to app.py: from health import register_health_routes; register_health_routes(app, db)
 """
 
-import sqlite3
+import database
 import time
 import threading
 from datetime import datetime, timezone
@@ -37,7 +37,7 @@ def register_health_routes(app, db_path: str = "timeai.db"):
         db_ok = False
         article_count = 0
         try:
-            conn = sqlite3.connect(db_path, timeout=3)
+            conn = database.get_db()
             row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
             article_count = row[0] if row else 0
             conn.close()
@@ -67,7 +67,7 @@ def register_health_routes(app, db_path: str = "timeai.db"):
     @app.route("/api/stats")
     def stats():
         try:
-            conn = sqlite3.connect(db_path, timeout=3)
+            conn = database.get_db()
             total     = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
             by_cat    = conn.execute(
                 "SELECT category, COUNT(*) as n FROM articles GROUP BY category ORDER BY n DESC"
@@ -76,7 +76,7 @@ def register_health_routes(app, db_path: str = "timeai.db"):
                 "SELECT source, COUNT(*) as n FROM articles GROUP BY source ORDER BY n DESC LIMIT 10"
             ).fetchall()
             recent_24h = conn.execute(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= datetime('now', '-1 day')"
+                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'"
             ).fetchone()[0]
             summarized = conn.execute(
                 "SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''"
