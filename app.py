@@ -14,6 +14,18 @@ from flask import Flask, jsonify, render_template, request, Response
 from flask_cors import CORS
 from flask_compress import Compress
 
+import logging
+# Configure logging to write to presek.log
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("presek.log"),
+        logging.StreamHandler()
+    ]
+)
+log = logging.getLogger("presek")
+
 import health
 import trending
 from notifier import BreakingNewsNotifier
@@ -25,23 +37,36 @@ from config import (
     REFRESH_INTERVAL, BREAKING_SCORE_THRESHOLD, RSS_FEEDS,
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, ANALYSIS_SYSTEM_PROMPT
 )
-from database import get_db, init_db, prune_db, log
+from database import get_db, init_db, prune_db
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from ai_engine import clean_json_response, _call_gemini, _call_ai, auto_summarize_top_clusters
 from utils import score_cluster, rank_articles_in_cluster
+from cloudflare_kv import get_kv, put_kv
 
 # Simple time-based response cache
 _response_cache: dict[str, tuple[float, any]] = {}
 
 def cached_response(key: str, ttl: int = 60):
+    # 1. Try Memory
     if key in _response_cache:
         ts, val = _response_cache[key]
         if time.time() - ts < ttl:
             return val
+            
+    # 2. Try Cloudflare KV
+    kv_val = get_kv(key)
+    if kv_val:
+        # Save back to memory for faster subsequent reads
+        _response_cache[key] = (time.time(), kv_val)
+        return kv_val
+        
     return None
 
-def set_cache(key: str, val):
+def set_cache(key: str, val, ttl: int = 60):
     _response_cache[key] = (time.time(), val)
+    # Background write to KV (non-blocking if possible, but for simplicity we do it here)
+    # TTL for KV should be a bit longer than the memory TTL to be useful across restarts
+    put_kv(key, val, ttl=max(ttl, 300))
 
 # Simple rate limiter
 _rate_limits: dict[str, list[float]] = {}
@@ -198,7 +223,7 @@ def api_news():
         "total":       len(result),
         "has_more":    end < len(result),
     }
-    set_cache(cache_key, result_data)
+    set_cache(cache_key, result_data, ttl=60)
     return jsonify(result_data)
 
 
@@ -377,7 +402,7 @@ def api_popular():
             "total_clicks": sum(a.get("clicks",0) for a in arts),
             "is_breaking": False,
         })
-    set_cache("popular", result)
+    set_cache("popular", result, ttl=120)
     return jsonify(result)
 
 @app.route("/api/top10")
@@ -412,7 +437,7 @@ def api_top10():
             "has_summary":   any(a.get("summary") for a in arts),
             "has_synthesis": cid in cached_synthesis_ids,
         })
-    set_cache("top10", result)
+    set_cache("top10", result, ttl=60)
     return jsonify(result)
 
 @app.route("/api/timeboxed")

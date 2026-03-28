@@ -142,6 +142,12 @@ else
   ok "CLOUDFLARE_ACCOUNT_ID = $CLOUDFLARE_ACCOUNT_ID"
 fi
 
+if [ -z "$CLOUDFLARE_KV_NAMESPACE_ID" ]; then
+  warn "CLOUDFLARE_KV_NAMESPACE_ID not set — Persistent cache disabled"
+else
+  ok "CLOUDFLARE_KV_NAMESPACE_ID is set"
+fi
+
 if [ -z "$NTFY_TOPIC" ]; then
   warn "NTFY_TOPIC not set — push notifications disabled"
 else
