@@ -530,15 +530,14 @@
       updateTicker(allClusters);
       buildCats();
       document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
-      
-      // Hide splash screen after initial load
-      const splash = document.getElementById('appSplash');
-      if (splash) splash.classList.add('hidden');
     } catch(e) {
+      console.error("Fetch error:", e);
+    } finally {
+      // ALWAYS hide splash screen
       const splash = document.getElementById('appSplash');
       if (splash) splash.classList.add('hidden');
+      if (btn) btn.style.opacity = '1';
     }
-    if(btn) btn.style.opacity = '1';
   }
 
   async function loadMore() {
