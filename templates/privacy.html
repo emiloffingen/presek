@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Приватност | Пресек</title>
   <meta name="theme-color" id="themeMeta" content="#141618">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@400;600;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans:wght@400;600&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       /* Dark Mode (Default) */
@@ -16,7 +16,7 @@
       --color-text-secondary: #9AA0A6; /* Muted Ash */
       --color-ruby: #D10047;
       --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
+      --color-gold: #E8EAED; /* Silver */
       --border-opacity: 0.2;
       --pattern-opacity: 0.03;
       --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
@@ -25,15 +25,24 @@
       --bg-card: var(--color-bg-surface);
       --border: rgba(176, 141, 87, var(--border-opacity));
       --accent: var(--color-ruby);
-      --gold: #E8EAED; /* Silver */
+      --gold: #E8EAED;
       --bronze: var(--color-bronze);
       --headline: #E8EAED;
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      --serif: 'Source Serif 4', Georgia, serif;
-      --display: 'Playfair Display', Georgia, serif;
-      --sans: 'Noto Sans', sans-serif;
+      --font-body: 'Atkinson Hyperlegible', sans-serif;
+      --font-display: 'Cinzel', serif;
+      --font-sans: 'Noto Sans', sans-serif;
+      --font-serif: 'Source Serif 4', serif;
+
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.9rem;
+      --font-size-body: 1.1rem;
+      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
+      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
+      
+      --line-height-body: 1.618;
     }
 
     /* Light Mode Trigger */
@@ -51,45 +60,42 @@
       --headline: #1A1C1E;
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
-      --gold: #1A1C1E; /* Antimony in light mode */
+      --gold: #1A1C1E;
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.7}
-    .page{max-width:720px;margin:0 auto;padding:2rem 1.25rem 4rem}
-    .back{font-family:var(--sans);font-size:.85rem;color:var(--text-muted);text-decoration:none;display:inline-block;margin-bottom:1.5rem}
+    body{background:var(--bg);color:var(--text-body);font-family:var(--font-serif);font-size:var(--font-size-body);line-height:var(--line-height-body);min-height:100vh}
+    .page{max-width:800px;margin:0 auto;padding:64px 20px}
+    .back{font-family:var(--font-sans);font-size:var(--font-size-sm);color:var(--text-muted);text-decoration:none;display:inline-block;margin-bottom:32px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em}
     .back:hover{color:var(--accent)}
-    h1{font-family:var(--display);font-size:2rem;color:var(--headline);margin-bottom:1rem;border-bottom:3px solid var(--accent);padding-bottom:.5rem}
-    h2{font-family:var(--display);font-size:1.3rem;color:var(--headline);margin:1.5rem 0 .75rem}
-    p{margin-bottom:1rem}
-    ul{margin:0 0 1rem 1.5rem}
-    li{margin-bottom:.4rem}
-    a{color:var(--accent)}
+    
+    h1{font-family:var(--font-display);font-size:var(--font-size-lg);color:var(--headline);margin-bottom:32px;border-bottom:4px solid var(--accent);padding-bottom:16px;text-shadow: 0 1px 2px rgba(0,0,0,0.1)}
+    html:not(.light) h1{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
+    
+    h2{font-family:var(--font-display);font-size:var(--font-size-md);color:var(--headline);margin:48px 0 24px;text-shadow: 0 1px 2px rgba(0,0,0,0.1)}
+    html:not(.light) h2{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
+    
+    p{margin-bottom:24px}
+    a{color:var(--accent);text-decoration:none;font-weight:700}
   </style>
 </head>
 <body>
   <div class="page">
-    <a href="/" class="back">← Назад кон вести</a>
+    <a href="/" class="back">← Назад</a>
     <h1>Политика за приватност</h1>
-    <p><em>Последна промена: март 2026</em></p>
+    <p>Пресек е посветен на заштитата на вашата приватност. Оваа политика објаснува како ги собираме и користиме информациите на нашата веб-страница.</p>
 
-    <h2>Кои податоци ги собираме</h2>
-    <p>Пресек е агрегатор на јавно достапни вести. Собираме минимални податоци:</p>
-    <ul>
-      <li><strong>Клик-броење:</strong> Бројот на кликови на секоја вест се чува анонимно за да се одреди популарноста.</li>
-      <li><strong>Серверски логови:</strong> Стандардни серверски логови (IP адреса, user agent, време на пристап) за безбедносни цели.</li>
-    </ul>
+    <h2>Кои податоци ги собираме?</h2>
+    <p>Ние не бараме од вас да креирате профил или да давате лични информации како име, презиме или адреса за да ја користите нашата услуга.</p>
+    <p>Собираме само анонимни технички податоци (како што се типот на прелистувачот и посетените страници) со цел да го подобриме корисничкото искуство и да ја анализираме популарноста на вестите.</p>
 
     <h2>Колачиња (Cookies)</h2>
-    <p>Пресек не користи колачиња за следење. Можеби ќе користиме колачиња од трети страни доколку прикажуваме реклами, за што ќе ве известиме.</p>
+    <p>Користиме локално складирање (Local Storage) за да ги зачуваме вашите преференции, како што е изборот на темна или светла тема.</p>
 
-    <h2>Трети страни</h2>
-    <p>Содржините кои ги прикажуваме се јавно достапни RSS фидови од македонски и меѓународни медиуми. Кога кликнувате на наслов, ве пренасочуваме кон оригиналниот извор.</p>
+    <h2>Надворешни врски</h2>
+    <p>Пресек содржи линкови до надворешни веб-страници. Ние не сме одговорни за содржината или политиките за приватност на тие страници.</p>
 
-    <h2>AI обработка</h2>
-    <p>Користиме Google Gemini API за автоматско генерирање резимеа на вести. Содржината на насловите се испраќа до Google исклучиво за оваа цел.</p>
-
-    <h2>Вашите права</h2>
+    <h2>Контакт</h2>
     <p>За било какви прашања поврзани со приватноста, контактирајте нè на <a href="mailto:contact@presek.mk">contact@presek.mk</a>.</p>
   </div>
 
@@ -101,7 +107,6 @@
       if (themeMeta) themeMeta.setAttribute('content', isLight ? '#F0F2F3' : '#141618');
     }
 
-    // 1. Load Theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
       htmlEl.classList.add('light');

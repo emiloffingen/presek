@@ -19,8 +19,9 @@
       --color-text-secondary: #9AA0A6; /* Muted Ash */
       --color-ruby: #D10047;
       --color-bronze: #B08D57;
-      --color-gold: #E8EAED; /* Silver */
+      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
       --border-opacity: 0.2;
+      --pattern-opacity: 0.03;
       --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
 
       --bg: var(--color-bg-base);
@@ -33,9 +34,24 @@
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      --serif: 'Source Serif 4', Georgia, serif;
-      --display: 'Playfair Display', Georgia, serif;
-      --sans: 'Noto Sans', sans-serif;
+      --font-body: 'Atkinson Hyperlegible', sans-serif;
+      --font-display: 'Cinzel', serif;
+      --font-sans: 'Noto Sans', sans-serif;
+      --font-serif: 'Source Serif 4', Georgia, serif;
+      
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.9rem;
+      --font-size-body: 1.1rem;
+      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
+      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
+      
+      --line-height-body: 1.618;
+      --letter-spacing-body: 0.015em;
+      --font-weight-body: 400;
+
+      --spacing-md: 20px;
+      --layout-max-width: 1100px;
+      --grid-gap: 32.36px;
     }
 
     /* Light Mode Trigger */
@@ -46,6 +62,8 @@
       --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
       --color-text-secondary: #5F6368; /* Steel Grey */
       --border-opacity: 0.4;
+      --pattern-opacity: 0.05;
+      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
       --headline: #1A1C1E;
@@ -54,49 +72,37 @@
       --gold: #1A1C1E;
     }
 
-    /* Light Mode Trigger */
-    html.light,
-    @media(prefers-color-scheme: light) {
-      :root {
-        --color-bg-base: #F0F2F3;
-        --color-bg-surface: #FFFFFF;
-        --color-text-primary: #2D3134; /* Deep Antimony Grey */
-        --color-text-secondary: #5F6368; /* Steel Grey */
-        --bg: var(--color-bg-base);
-        --bg-card: var(--color-bg-surface);
-        --headline: #2D3134;
-      }
-    }
-
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{
       background: var(--bg);
       color: var(--color-text-primary);
-      font-family: var(--serif);
-      line-height: 1.6;
+      font-family: var(--font-body);
+      line-height: var(--line-height-body);
       min-height: 100vh;
     }
 
     .site-header{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:1280px;margin:0 auto;height:56px}
-    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.5rem;font-weight:900;color:var(--headline);text-decoration:none}
-    .back-link{font-family:var(--sans);font-size:.875rem;font-weight:700;color:var(--gold);text-decoration:none}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 20px;max-width:var(--layout-max-width);margin:0 auto;height:64px}
+    .logo-text{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--headline);text-decoration:none}
+    .back-link{font-family:var(--font-sans);font-size:.875rem;font-weight:700;color:var(--gold);text-decoration:none}
 
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 20px; }
-    h1 { font-family: var(--display); font-size: 2.2rem; font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .wrap { max-width: var(--layout-max-width); margin: 0 auto; padding: 48px 20px; }
+    h1 { font-family: var(--font-display); font-size: var(--font-size-lg); font-weight: 900; color: var(--headline); margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    html:not(.light) h1 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px; background: var(--border); border: 1px solid var(--border); margin-bottom: 40px; }
     .kpi { background: var(--bg-card); padding: 32px; text-align: center; }
-    .kpi-val { font-size: 2.2rem; font-weight: 900; color: var(--gold); font-family: var(--display); margin-bottom: 8px; }
-    .kpi-label { font-size: 0.7rem; color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .kpi-val { font-size: var(--font-size-lg); font-weight: 900; color: var(--gold); font-family: var(--font-display); margin-bottom: 8px; }
+    .kpi-label { font-size: var(--font-size-xs); color: var(--bronze); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
 
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); margin-bottom: 32px; }
     @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
 
     .panel { background: var(--bg-card); border: 1px solid var(--border); padding: 32px; }
-    .panel h2 { font-family: var(--display); font-size: 1.1rem; font-weight: 900; color: var(--headline); margin-bottom: 24px; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .panel h2 { font-family: var(--font-display); font-size: var(--font-size-md); font-weight: 900; color: var(--headline); margin-bottom: 24px; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--border); padding-bottom: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    html:not(.light) .panel h2 { text-shadow: 0 0 10px rgba(255,255,255,0.05); }
 
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.85rem; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: var(--font-size-sm); }
     .bar-label { width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--color-text-secondary); }
     .bar-track { flex: 1; background: var(--bg-base); height: 2px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--gold); }

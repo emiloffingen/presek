@@ -32,9 +32,24 @@
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
       
-      --serif: 'Source Serif 4', Georgia, serif;
-      --display: 'Playfair Display', Georgia, serif;
-      --sans: 'Noto Sans', sans-serif;
+      --font-body: 'Atkinson Hyperlegible', sans-serif;
+      --font-display: 'Cinzel', serif;
+      --font-sans: 'Noto Sans', sans-serif;
+      --font-serif: 'Source Serif 4', Georgia, serif;
+      
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.9rem;
+      --font-size-body: 1.1rem;
+      --font-size-md: 1.78rem;  /* 1.1 * 1.618 */
+      --font-size-lg: 2.88rem;  /* 1.78 * 1.618 */
+      
+      --line-height-body: 1.618;
+      --letter-spacing-body: 0.015em;
+      --font-weight-body: 400;
+
+      --spacing-md: 20px;
+      --layout-max-width: 1100px;
+      --grid-gap: 32.36px;
     }
 
     /* Light Mode Trigger */
@@ -54,17 +69,18 @@
       --text-muted: var(--color-text-secondary);
       --gold: #1A1C1E; /* Antimony in light mode */
     }
-    body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-size:17px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+    body{background:var(--bg);color:var(--text-body);font-family:var(--font-serif);font-size:var(--font-size-body);line-height:var(--line-height-body);min-height:100vh;overflow-x:hidden}
 
     .top-bar{background:var(--bg-card);border-bottom:4px double var(--accent);padding:.6rem 1.25rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
-    .brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:1.6rem;font-weight:900;letter-spacing:.08em;color:var(--headline);text-decoration:none}
+    .brand{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:1.6rem;font-weight:900;letter-spacing:.08em;color:var(--headline);text-decoration:none}
     .top-bar span{font-size:.85rem;color:var(--text-muted)}
     .back{font-size:.85rem;color:var(--text-muted);text-decoration:none;margin-left:auto}
     .back:hover{color:var(--accent)}
 
-    .wrap{max-width:900px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+    .wrap{max-width:var(--layout-max-width);margin:0 auto;padding:1.5rem 1.25rem 4rem}
 
-    h1{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--headline);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:3px double var(--border)}
+    h1{font-family:var(--font-display);font-size:var(--font-size-lg);font-weight:700;color:var(--headline);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:3px double var(--border);text-shadow: 0 1px 2px rgba(0,0,0,0.1)}
+    html:not(.light) h1{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
 
     /* Date picker strip */
     .date-nav{display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
