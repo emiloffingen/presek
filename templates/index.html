@@ -214,6 +214,9 @@
       position: sticky;
       top: 112px;
       z-index: 180;
+      /* Edge Fade Effect */
+      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
     }
     html.light .popular-carousel {
       background: rgba(240, 242, 243, 0.8);
@@ -222,14 +225,18 @@
       display: flex;
       align-items: center;
       white-space: nowrap;
-      padding: 0 var(--spacing-md);
-      max-width: var(--layout-max-width);
-      margin: 0 auto;
-      width: 100%;
-      overflow-x: auto;
-      scrollbar-width: none;
+      padding: 0 40px;
+      width: max-content;
+      animation: ticker-scroll 60s linear infinite;
     }
-    .popular-carousel-inner::-webkit-scrollbar { display: none; }
+    .popular-carousel:hover .popular-carousel-inner {
+      animation-play-state: paused;
+    }
+    
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
     
     .popular-item {
       display: flex;
@@ -300,13 +307,18 @@
     .dropdown-item svg { width: 24px; height: 24px; }
 
     /* LAYOUT */
-    .site-layout{max-width:1000px;margin:0 auto;padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl);display:block}
-    @media(min-width:1024px){.site-layout{padding:40px 0}}
+    .site-layout{max-width:var(--layout-max-width);margin:0 auto;padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl);display:block}
+    @media(min-width:1024px){
+      .site-layout{padding:40px 0}
+      #layoutGrid { grid-template-columns: 1fr 340px !important; }
+      #siteSidebar { display: block !important; }
+    }
 
     /* CARDS */
     .stories-grid{display:grid;grid-template-columns:1fr;gap:32px}
     @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
-    @media(min-width:1200px){.site-layout{max-width:1100px}}
+    @media(min-width:1024px){.stories-grid{grid-template-columns:1fr}}
+    @media(min-width:1200px){.site-layout{max-width:1200px}}
     .story-card{
       background:var(--bg-card);
       padding:28px;
@@ -517,19 +529,32 @@
   <div class="popular-carousel-inner" id="popularCarousel">
     <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
       <div class="popular-sep"></div> НАЈЧИТАНО
+      <div class="najcitano-badge" id="najcitanoBadge" style="display:none; background:var(--color-ruby); color:white; font-size:0.6rem; padding:2px 6px; border-radius:10px; margin-left:5px">0</div>
     </div>
   </div>
 </div>
 
 <div class="site-layout">
-  <main class="site-main">
-    <div id="pageWrap" class="fade-in"></div>
-    <div id="loadMoreWrap" style="display:none; text-align:center; padding:40px">
-      <button class="action-btn" style="margin:0 auto; padding:.8rem 2.5rem" onclick="loadMore()">
-        <span style="opacity:1; max-width:none">Вчитај повеќе ↓</span>
-      </button>
-    </div>
-  </main>
+  <div style="display:grid; grid-template-columns:1fr; gap:32px; align-items:start;" id="layoutGrid">
+    <main class="site-main">
+      <div id="pageWrap" class="fade-in"></div>
+      <div id="loadMoreWrap" style="display:none; text-align:center; padding:40px">
+        <button class="action-btn" style="margin:0 auto; padding:.8rem 2.5rem" onclick="loadMore()">
+          <span style="opacity:1; max-width:none">Вчитај повеќе ↓</span>
+        </button>
+      </div>
+    </main>
+    
+    <aside class="site-sidebar" id="siteSidebar" style="display:none">
+      <div class="sidebar-inner">
+        <div class="sidebar-title">
+          <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"/></svg>
+          <span class="title-text" style="opacity:1; max-width:none; margin-left:10px; font-weight:900; font-size:0.9rem; text-transform:uppercase">Најчитано</span>
+        </div>
+        <div id="sidebarPopular"></div>
+      </div>
+    </aside>
+  </div>
 </div>
 
 <footer>
@@ -788,29 +813,35 @@
       }
       lastPopularId = currentTopId;
 
-      // 1. Populate Crystal Carousel (Top 5)
-      const carouselItems = data.slice(0, 5).map((c, i) => `
+      // 1. Populate Crystal Carousel (Up to 10)
+      const carouselItems = data.slice(0, 10).map((c, i) => `
         <a href="/cluster/${c.cluster_id}" class="popular-item">
           <span class="rank">${i+1}</span> ${c.articles[0].title}
         </a>
         <div class="popular-sep"></div>
       `).join('');
       
-      document.getElementById('popularCarousel').innerHTML = `
+      const header = `
         <div style="font-size:0.7rem; color:var(--bronze); text-transform:uppercase; font-weight:800; letter-spacing:0.1em; display:flex; align-items:center; gap:10px; padding-right:20px">
           <div class="popular-sep" style="animation:none; opacity:1"></div> НАЈЧИТАНО
         </div>
-        ${carouselItems}
       `;
+      
+      // Duplicate for seamless loop
+      const carouselEl = document.getElementById('popularCarousel');
+      if (carouselEl) carouselEl.innerHTML = header + carouselItems + carouselItems + carouselItems;
 
       // 2. Populate Sidebar (Extended list)
-      document.getElementById('sidebarPopular').innerHTML = data.slice(0, 15).map(c => `
-        <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
-          <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
-          <div style="font-size:.7rem; color:var(--bronze); margin-top:6px; text-transform:uppercase; font-weight:800">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
-        </div>
-      `).join('');
-    } catch(e) {}
+      const sidebarEl = document.getElementById('sidebarPopular');
+      if (sidebarEl) {
+        sidebarEl.innerHTML = data.slice(0, 15).map(c => `
+          <div style="margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px">
+            <a href="/cluster/${c.cluster_id}" style="color:var(--headline); text-decoration:none; font-size:var(--font-size-sm); font-weight:700; line-height:1.4; display:block; transition:color .2s">${c.articles[0].title}</a>
+            <div style="font-size:.7rem; color:var(--bronze); margin-top:6px; text-transform:uppercase; font-weight:800">${c.articles[0].source} · ${timeAgo(c.articles[0].created_at)}</div>
+          </div>
+        `).join('');
+      }
+    } catch(e) { console.error("fetchPopular error:", e); }
   }
 
   async function fetchTrending() {
