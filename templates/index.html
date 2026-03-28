@@ -301,12 +301,13 @@
     .dropdown-item svg { width: 24px; height: 24px; }
 
     /* LAYOUT */
-    .site-layout{display:grid;grid-template-columns:1fr;max-width:var(--layout-max-width);margin:0 auto;gap:var(--grid-gap);padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl)}
-    @media(min-width:1024px){.site-layout{grid-template-columns:1fr var(--layout-sidebar-width);padding:40px var(--spacing-md)}}
+    .site-layout{max-width:1000px;margin:0 auto;padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl);display:block}
+    @media(min-width:1024px){.site-layout{padding:40px 0}}
 
     /* CARDS */
     .stories-grid{display:grid;grid-template-columns:1fr;gap:32px}
     @media(min-width:768px){.stories-grid{grid-template-columns:1fr 1fr}}
+    @media(min-width:1200px){.site-layout{max-width:1100px}}
     .story-card{
       background:var(--bg-card);
       padding:28px;
@@ -530,11 +531,6 @@
       </button>
     </div>
   </main>
-  <aside class="site-sidebar">
-    <div class="sidebar-inner" style="padding:0; background:none; border:none">
-      <!-- Old Najcitano removed, space reserved for future sidebar content or kept clean -->
-    </div>
-  </aside>
 </div>
 
 <footer>
