@@ -589,7 +589,7 @@
     if(badge) badge.style.display = "none";
 
     try {
-      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}`);
+      const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
       const data = await res.json();
       allClusters = data.clusters || data;
       _hasMore = data.has_more;
@@ -607,7 +607,7 @@
   async function loadMore() {
     _currentPage++;
     try {
-      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`);
+      const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
       const data = await res.json();
       allClusters = [...allClusters, ...(data.clusters || [])];
       _hasMore = data.has_more;
@@ -677,8 +677,8 @@
 
   function filterCat(cat) {
     activeCategory = cat;
-    buildCats();
-    renderPage(allClusters);
+    _currentPage = 0;
+    fetchNews();
     window.scrollTo({top: 0, behavior: 'smooth'});
     document.getElementById('countryDropdown').classList.remove('show');
   }
@@ -760,14 +760,23 @@
       const res = await fetch('/api/trending');
       const data = await res.json();
       document.getElementById('trendChips').innerHTML = data.slice(0, 10).map(t => `
-        <span class="trend-chip" onclick="filterByTrend('${t.word}')">#${t.word}</span>
+        <span class="trend-chip" onclick="handleTrendClick('${t.word}')">#${t.word}</span>
       `).join('');
     } catch(e) {}
   }
 
+  async function handleTrendClick(word) {
+    if (activeCategory !== '🇲🇰') {
+      activeCategory = '🇲🇰';
+      _currentPage = 0;
+      await fetchNews();
+    }
+    filterByTrend(word);
+  }
+
   function filterByTrend(word) {
     const lower = word.toLowerCase();
-    const filtered = allClusters.filter(c => c.articles.some(a => (a.title + a.description).toLowerCase().includes(lower)));
+    const filtered = allClusters.filter(c => c.articles.some(a => (a.title + (a.description||'')).toLowerCase().includes(lower)));
     renderPage(filtered);
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
