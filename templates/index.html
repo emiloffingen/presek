@@ -25,16 +25,16 @@
       --color-text-secondary: #9AA0A6; /* Muted Ash */
       --color-ruby: #D10047;
       --color-bronze: #B08D57;
-      --color-gold: #D4AF37;
+      --color-gold: #E8EAED; /* Changed to Silver for Mineral look */
       --border-opacity: 0.2;
       --pattern-opacity: 0.03;
-      --logo-gradient: linear-gradient(to right, #fff, var(--color-gold));
+      --logo-gradient: linear-gradient(to right, #fff, #9AA0A6);
 
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
       --border: rgba(176, 141, 87, var(--border-opacity));
       --accent: var(--color-ruby);
-      --gold: var(--color-gold);
+      --gold: #E8EAED; /* Silver */
       --bronze: var(--color-bronze);
       --headline: #E8EAED;
       --text-body: var(--color-text-primary);
@@ -65,16 +65,17 @@
       --color-bg-base: #F0F2F3;
       --color-bg-surface: #FFFFFF;
       --color-bg-surface-hover: #E8EAEB;
-      --color-text-primary: #2D3134; /* Deep Antimony Grey */
+      --color-text-primary: #1A1C1E; /* Deeper Antimony Grey */
       --color-text-secondary: #5F6368; /* Steel Grey */
       --border-opacity: 0.4;
       --pattern-opacity: 0.05;
-      --logo-gradient: linear-gradient(to right, var(--color-ruby), #8C6D3E);
+      --logo-gradient: linear-gradient(to right, var(--color-ruby), #1A1C1E);
       --bg: var(--color-bg-base);
       --bg-card: var(--color-bg-surface);
-      --headline: #2D3134;
+      --headline: #1A1C1E;
       --text-body: var(--color-text-primary);
       --text-muted: var(--color-text-secondary);
+      --gold: #1A1C1E; /* Antimony in light mode */
     }
 
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -265,9 +266,10 @@
     .story-card:hover::after{height:100%}
     
     .story-meta{display:flex;align-items:center;gap:10px;font-family:var(--font-sans);font-size:.7rem;font-weight:800;color:var(--bronze);text-transform:uppercase;letter-spacing:.12em}
-    .story-headline{font-family:var(--font-display);font-size:var(--font-size-md);font-weight:900;line-height:1.2;margin:0;letter-spacing:-0.01em}
+    .story-headline{font-family:var(--font-display);font-size:var(--font-size-md);font-weight:900;line-height:1.2;margin:0;letter-spacing:-0.01em;text-shadow: 0 1px 2px rgba(0,0,0,0.1)}
+    html:not(.light) .story-headline{text-shadow: 0 0 10px rgba(255,255,255,0.05)}
     .story-headline a{color:var(--headline);text-decoration:none;transition:color .2s}
-    .story-headline a:hover{color:var(--gold)}
+    .story-headline a:hover{color:var(--accent)}
     
     .story-thumb-wrap{
       width:140px;
@@ -440,7 +442,6 @@
   <div class="nav-inner">
     <div id="trendChips"></div>
     <div class="nav-divider"></div>
-    <div id="catNav" style="display:flex; align-items:center; flex-shrink:0"></div>
     <div class="country-dropdown-wrap">
       <button class="cat-btn" onclick="toggleCountryDropdown(event)" title="Други држави" style="padding:0 .5rem">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -655,14 +656,7 @@
       { id: '🇹🇷', label: 'Турција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E30A17"/><circle cx="45" cy="50" r="10" fill="#fff"/><circle cx="50" cy="50" r="8" fill="#E30A17"/><circle cx="60" cy="50" r="3" fill="#fff"/></svg>` }
     ];
 
-    const mainCountries = countries.slice(0, 1); // Just 🇲🇰
-    const otherCountries = countries.slice(1);
-
-    document.getElementById('catNav').innerHTML = mainCountries.map(c => 
-      `<button class="cat-btn ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')" title="${c.label}">${c.flag}</button>`
-    ).join('');
-
-    document.getElementById('countryDropdown').innerHTML = otherCountries.map(c =>
+    document.getElementById('countryDropdown').innerHTML = countries.map(c =>
       `<button class="dropdown-item ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')">${c.flag} <span>${c.label}</span></button>`
     ).join('');
   }
