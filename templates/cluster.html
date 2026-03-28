@@ -112,6 +112,7 @@
     .source-card:hover .source-title{color:var(--gold)}
     
     .source-snippet{font-family:var(--serif);font-size:.9rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;line-height:1.5}
+    .source-snippet.expanded{ -webkit-line-clamp: 15; } /* Only for the first source */
     .read-more-btn{display:none;margin-top:12px;padding:8px 16px;background:rgba(212, 175, 55, 0.1);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--gold);border-radius:4px;transition:all .2s;width:fit-content}
     .source-card:hover .read-more-btn{background:var(--gold);color:#000}
 
@@ -285,7 +286,9 @@
         <div class="source-content">
           <div class="source-name">{{ art.source }}</div>
           <div class="source-title">{{ art.title }}</div>
-          <div class="source-snippet">{{ art.description | truncate(150) }}</div>
+          <div class="source-snippet {% if loop.first %}expanded{% endif %}">
+            {{ art.description | truncate(1200 if loop.first else 300) }}
+          </div>
           <div class="read-more-btn">Прочитај ја целата вест</div>
         </div>
         <div class="source-thumb-wrap">
