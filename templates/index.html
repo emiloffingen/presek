@@ -182,14 +182,65 @@
 
     /* NAV BAR */
     .nav-bar{background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:190;height:48px;display:flex;align-items:center;overflow:hidden}
-    .nav-inner{display:flex;align-items:center;gap:8px;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;width:100%;overflow-x:auto;scrollbar-width:none}
+    .nav-inner{display:flex;align-items:center;gap:8px;padding:0 var(--spacing-md);max-width:var(--layout-max-width);margin:0 auto;width:100%;overflow:visible}
     
-    .cat-btn{font-family:var(--font-sans);font-size:.75rem;font-weight:800;color:var(--text-muted);background:none;border:none;padding:0 1rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.12em;transition:all .15s;height:48px;line-height:48px;border-bottom:3px solid transparent}
+    .cat-btn{font-family:var(--font-sans);font-size:.75rem;font-weight:800;color:var(--text-muted);background:none;border:none;padding:0 1rem;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:.12em;transition:all .15s;height:48px;line-height:48px;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px}
     .cat-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+    .cat-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
     
     .nav-divider{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 12px}
     .trend-chip{font-size:.7rem;font-weight:800;color:var(--bronze);background:none;border:none;padding:0 .6rem;white-space:nowrap;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
     .trend-chip:hover{color:var(--gold)}
+
+    #trendChips {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    #trendChips::-webkit-scrollbar { display: none; }
+
+    .country-dropdown-wrap { position: relative; flex-shrink: 0; }
+    .country-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 1000;
+      padding: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 180px;
+      max-height: 400px;
+      overflow-y: auto;
+      backdrop-filter: blur(10px);
+    }
+    .country-dropdown.show { display: flex; }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      width: 100%;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .dropdown-item:hover { background: var(--border); color: var(--gold); }
+    .dropdown-item.active { color: var(--gold); background: rgba(245, 196, 0, 0.1); }
+    .dropdown-item svg { width: 24px; height: 24px; }
 
     /* LAYOUT */
     .site-layout{display:grid;grid-template-columns:1fr;max-width:var(--layout-max-width);margin:0 auto;gap:var(--grid-gap);padding:var(--spacing-md) var(--spacing-md) var(--spacing-xl)}
@@ -388,9 +439,19 @@
 
 <nav class="nav-bar">
   <div class="nav-inner">
-    <div id="catNav" style="display:flex"></div>
+    <div id="trendChips"></div>
     <div class="nav-divider"></div>
-    <div id="trendChips" style="display:flex"></div>
+    <div id="catNav" style="display:flex; align-items:center; flex-shrink:0"></div>
+    <div class="country-dropdown-wrap">
+      <button class="cat-btn" onclick="toggleCountryDropdown(event)" title="Други држави" style="padding:0 .5rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </button>
+      <div id="countryDropdown" class="country-dropdown"></div>
+    </div>
   </div>
 </nav>
 
@@ -591,16 +652,36 @@
       { id: '🇹🇷', label: 'Турција', flag: `<svg viewBox="0 0 100 100" width="32"><rect x="10" y="20" width="80" height="60" fill="#E30A17"/><circle cx="45" cy="50" r="10" fill="#fff"/><circle cx="50" cy="50" r="8" fill="#E30A17"/><circle cx="60" cy="50" r="3" fill="#fff"/></svg>` }
     ];
 
-    document.getElementById('catNav').innerHTML = countries.map(c => 
+    const mainCountries = countries.slice(0, 1); // Just 🇲🇰
+    const otherCountries = countries.slice(1);
+
+    document.getElementById('catNav').innerHTML = mainCountries.map(c => 
       `<button class="cat-btn ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')" title="${c.label}">${c.flag}</button>`
     ).join('');
+
+    document.getElementById('countryDropdown').innerHTML = otherCountries.map(c =>
+      `<button class="dropdown-item ${c.id===activeCategory?'active':''}" onclick="filterCat('${c.id}')">${c.flag} <span>${c.label}</span></button>`
+    ).join('');
   }
+
+  function toggleCountryDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('countryDropdown').classList.toggle('show');
+  }
+
+  window.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('countryDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
+  });
 
   function filterCat(cat) {
     activeCategory = cat;
     buildCats();
     renderPage(allClusters);
     window.scrollTo({top: 0, behavior: 'smooth'});
+    document.getElementById('countryDropdown').classList.remove('show');
   }
 
   let lastPopularId = null;
