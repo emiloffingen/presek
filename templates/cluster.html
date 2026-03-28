@@ -183,6 +183,10 @@
             <div class="source-thumb-wrap">
                 <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
             </div>
+            {% else %}
+            <div class="story-thumb-placeholder" style="width:120px; height:90px; flex-shrink:0;">
+                <img src="/static/logo.svg" alt="Presek Logo" style="width:30px; height:30px;">
+            </div>
             {% endif %}
         </a>
         {% endfor %}

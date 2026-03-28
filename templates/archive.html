@@ -142,7 +142,7 @@
             
             list.innerHTML = data.articles.map(a => `
                 <div class="archive-row fade-in">
-                    ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : '<div class="archive-thumb" style="display:flex; align-items:center; justify-content:center; opacity:0.2">P</div>'}
+                    ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : `<div class="story-thumb-placeholder" style="width:80px; height:60px; flex-shrink:0;"><img src="/static/logo.svg" alt="Presek Logo" style="width:24px; height:24px;"></div>`}
                     <div class="archive-body">
                         <div class="archive-meta">${a.source} • ${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</div>
                         <h3 class="archive-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h3>
@@ -189,7 +189,7 @@
                 
                 list.innerHTML = data.articles.map(a => `
                     <div class="archive-row fade-in">
-                        ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : '<div class="archive-thumb" style="display:flex; align-items:center; justify-content:center; opacity:0.2">P</div>'}
+                        ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : `<div class="story-thumb-placeholder" style="width:80px; height:60px; flex-shrink:0;"><img src="/static/logo.svg" alt="Presek Logo" style="width:24px; height:24px;"></div>`}
                         <div class="archive-body">
                             <div class="archive-meta">${a.source} • ${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</div>
                             <h3 class="archive-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h3>
