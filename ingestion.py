@@ -2,13 +2,14 @@ import re
 import datetime
 import feedparser
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import clustering
 from ai_engine import translate_to_macedonian
 from categories import detect_category, detect_subcategory, detect_country
 from config import (
-    RSS_FEEDS, DIASPORA_FEEDS, HARDCODED_FEED_CATEGORIES, 
+    RSS_FEEDS, DIASPORA_FEEDS, HARDCODED_FEED_CATEGORIES,
     FEED_LIMIT, CLUSTER_LOOKBACK
 )
 from database import get_db
@@ -18,6 +19,11 @@ log = logging.getLogger("presek")
 # Feed ETag / Last-Modified cache — avoids re-downloading unchanged feeds
 _feed_etags:    dict[str, str] = {}
 _feed_modified: dict[str, str] = {}
+_etag_lock = threading.Lock()
+
+# Circuit breaker: skip feeds with too many consecutive failures
+_feed_failures: dict[str, int] = {}
+_CIRCUIT_OPEN_THRESHOLD = 5
 
 def normalize_headline(title: str) -> str:
     """Convert ALL-CAPS headlines to Title Case, leaving normally-cased text untouched."""
@@ -43,22 +49,43 @@ def clean_rss_footer(text: str) -> str:
     text = re.sub(r'Read more at\s+.*?(\.|$)', '', text, flags=re.IGNORECASE | re.DOTALL)
     return text.strip()
 
+def _is_valid_image_url(url: str) -> bool:
+    """Accept only plain http/https URLs of reasonable length."""
+    if not url:
+        return False
+    if not url.startswith(("http://", "https://")):
+        return False
+    if len(url) < 12 or len(url) > 2000:
+        return False
+    return True
+
 def fetch_feed(source, url):
     """Fetch a single RSS feed. Returns list of (title, link, desc, image_url) tuples."""
+    # Circuit breaker: skip consistently failing feeds
+    if _feed_failures.get(url, 0) >= _CIRCUIT_OPEN_THRESHOLD:
+        log.debug(f"[circuit-open] Skipping {source} after {_CIRCUIT_OPEN_THRESHOLD} consecutive failures.")
+        return source, [], None
+
     try:
+        with _etag_lock:
+            etag = _feed_etags.get(url)
+            modified = _feed_modified.get(url)
+
         feed = feedparser.parse(
             url,
-            etag=_feed_etags.get(url),
-            modified=_feed_modified.get(url),
+            etag=etag,
+            modified=modified,
             request_headers={"User-Agent": "Presek.mk/1.0"},
         )
         if getattr(feed, "status", 200) == 304:
+            _feed_failures[url] = 0
             return source, [], None
-            
-        if getattr(feed, "etag", None):
-            _feed_etags[url] = feed.etag
-        if getattr(feed, "modified", None):
-            _feed_modified[url] = feed.modified
+
+        with _etag_lock:
+            if getattr(feed, "etag", None):
+                _feed_etags[url] = feed.etag
+            if getattr(feed, "modified", None):
+                _feed_modified[url] = feed.modified
             
         entries = []
         for entry in feed.entries[:FEED_LIMIT]:
@@ -92,13 +119,17 @@ def fetch_feed(source, url):
                         image_url = c
             if not image_url and hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
                 image_url = entry.media_thumbnail[0].get('url', '')
-            if image_url and (image_url.startswith('data:') or len(image_url) < 10):
+            # Validate image URL — reject data URIs, relative paths, oversized strings
+            if not _is_valid_image_url(image_url):
                 image_url = ""
-            
+
             if title and link:
                 entries.append((title, link, desc, image_url))
+
+        _feed_failures[url] = 0  # reset on success
         return source, entries, None
     except Exception as e:
+        _feed_failures[url] = _feed_failures.get(url, 0) + 1
         return source, [], str(e)
 
 def ingest_feeds():

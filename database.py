@@ -77,10 +77,16 @@ def prune_db():
         conn = get_db()
         result = conn.execute("DELETE FROM articles WHERE created_at < ?", (cutoff,))
         deleted = result.rowcount
-        conn.execute("VACUUM")
         conn.commit()
         conn.close()
         if deleted:
             log.info(f"Pruned {deleted} articles older than {DB_RETAIN_DAYS} days.")
+            # VACUUM requires an exclusive lock — run it in a separate connection
+            # after the write connection is fully closed.
+            vconn = sqlite3.connect(DB_PATH, timeout=30)
+            try:
+                vconn.execute("VACUUM")
+            finally:
+                vconn.close()
     except Exception as e:
         log.error(f"Prune error: {e}")

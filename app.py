@@ -15,12 +15,13 @@ from flask_cors import CORS
 from flask_compress import Compress
 
 import logging
-# Configure logging to write to presek.log
+from logging.handlers import RotatingFileHandler
+# Configure logging to write to presek.log with rotation (10 MB × 5 files)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("presek.log"),
+        RotatingFileHandler("presek.log", maxBytes=10 * 1024 * 1024, backupCount=5),
         logging.StreamHandler()
     ]
 )
@@ -43,8 +44,20 @@ from ai_engine import clean_json_response, _call_gemini, _call_ai, auto_summariz
 from utils import score_cluster, rank_articles_in_cluster
 from cloudflare_kv import get_kv, put_kv
 
-# Simple time-based response cache
+# Simple time-based response cache (max 500 entries)
 _response_cache: dict[str, tuple[float, any]] = {}
+_CACHE_MAX_SIZE = 500
+
+def _evict_response_cache():
+    """Remove expired entries; if still oversized, drop the oldest half."""
+    now = time.time()
+    expired = [k for k, (ts, _) in _response_cache.items() if now - ts > 3600]
+    for k in expired:
+        del _response_cache[k]
+    if len(_response_cache) > _CACHE_MAX_SIZE:
+        sorted_keys = sorted(_response_cache, key=lambda k: _response_cache[k][0])
+        for k in sorted_keys[: len(_response_cache) // 2]:
+            del _response_cache[k]
 
 def cached_response(key: str, ttl: int = 60):
     # 1. Try Memory
@@ -52,28 +65,29 @@ def cached_response(key: str, ttl: int = 60):
         ts, val = _response_cache[key]
         if time.time() - ts < ttl:
             return val
-            
+
     # 2. Try Cloudflare KV
     kv_val = get_kv(key)
     if kv_val:
-        # Save back to memory for faster subsequent reads
         _response_cache[key] = (time.time(), kv_val)
         return kv_val
-        
+
     return None
 
 def set_cache(key: str, val, ttl: int = 60):
+    if len(_response_cache) >= _CACHE_MAX_SIZE:
+        _evict_response_cache()
     _response_cache[key] = (time.time(), val)
-    # Background write to KV (non-blocking if possible, but for simplicity we do it here)
-    # TTL for KV should be a bit longer than the memory TTL to be useful across restarts
     put_kv(key, val, ttl=max(ttl, 300))
 
 # Simple rate limiter
 _rate_limits: dict[str, list[float]] = {}
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window
+_rate_limit_cleanup_counter = 0
 
 def check_rate_limit(ip: str) -> bool:
+    global _rate_limit_cleanup_counter
     now = time.time()
     if ip not in _rate_limits:
         _rate_limits[ip] = []
@@ -81,6 +95,13 @@ def check_rate_limit(ip: str) -> bool:
     if len(_rate_limits[ip]) >= RATE_LIMIT_MAX:
         return False
     _rate_limits[ip].append(now)
+    # Periodically purge stale IP entries to keep the dict bounded
+    _rate_limit_cleanup_counter += 1
+    if _rate_limit_cleanup_counter >= 10000:
+        stale = [k for k, ts_list in _rate_limits.items() if not ts_list or now - ts_list[-1] > RATE_LIMIT_WINDOW]
+        for k in stale:
+            del _rate_limits[k]
+        _rate_limit_cleanup_counter = 0
     return True
 
 app = Flask(__name__)
@@ -107,8 +128,9 @@ def add_security_headers(response):
 
 ntfy = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
 
-# On-demand deep analysis cache (in-memory only, resets on restart)
+# On-demand deep analysis cache (in-memory only, resets on restart; max 200 entries)
 _analysis_cache: dict[str, str] = {}
+_ANALYSIS_CACHE_MAX = 200
 
 _prune_counter = 0
 _digest_counter = 0
@@ -376,6 +398,11 @@ def api_analyze(cluster_id: str):
         return jsonify({"error": "AI сервисот е недостапен."}), 503
 
     analysis = clean_json_response(analysis)
+    if len(_analysis_cache) >= _ANALYSIS_CACHE_MAX:
+        # Drop the oldest half (dict preserves insertion order in Python 3.7+)
+        drop = list(_analysis_cache.keys())[: _ANALYSIS_CACHE_MAX // 2]
+        for k in drop:
+            del _analysis_cache[k]
     _analysis_cache[cluster_id] = analysis
     return jsonify({"analysis": analysis, "cached": False, "tier": tier})
 

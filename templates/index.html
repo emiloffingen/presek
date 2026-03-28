@@ -14,6 +14,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Prevent flash of wrong theme before CSS loads -->
+  <script>(function(){var s=localStorage.getItem('theme');if(s==='light'||(s===null&&window.matchMedia('(prefers-color-scheme: light)').matches)){document.documentElement.classList.add('light');}})();</script>
   <style>
     /* =========================================
        DESIGN TOKENS (MINERAL LUXURY + ACCESSIBLE)
@@ -96,8 +98,9 @@
       letter-spacing: var(--letter-spacing-body);
       min-height: 100vh;
       overflow-x: hidden;
-      transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
     }
+    /* Transition only active after page load — prevents flash on initial render */
+    body.theme-ready{transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;}
 
     /* SUN TOGGLE STYLES */
     #themeToggle {
@@ -194,8 +197,8 @@
     .cat-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
     
     .nav-divider{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 12px}
-    .trend-chip{font-size:.7rem;font-weight:800;color:var(--bronze);background:none;border:none;padding:0 .6rem;white-space:nowrap;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
-    .trend-chip:hover{color:var(--gold)}
+    .trend-chip{font-size:.7rem;font-weight:800;color:var(--bronze);background:rgba(176,141,87,0.08);border:1px solid rgba(176,141,87,0.2);border-radius:20px;padding:3px 10px;white-space:nowrap;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
+    .trend-chip:hover{color:var(--gold);background:rgba(176,141,87,0.18);border-color:var(--bronze)}
 
     #trendChips {
       display: flex;
@@ -327,20 +330,41 @@
     
     .story-card{
       background:var(--bg-card);
-      padding:28px;
+      padding:24px;
       border:1px solid var(--border);
       display:flex;
       flex-direction:column;
-      gap:16px;
+      gap:14px;
       transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);
       position:relative;
       overflow:hidden;
-      height: 100%;
-      min-height: 400px; /* Ensure equal heights */
     }
     .story-card:hover{border-color:var(--gold);box-shadow:0 15px 40px rgba(0,0,0,0.4);transform:translateY(-4px)}
     .story-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:0;background:var(--accent);transition:height .3s}
     .story-card:hover::after{height:100%}
+
+    /* Breaking news: animated pulse bar across the top */
+    .story-card.is-breaking::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      background:var(--accent);
+      animation:breakingPulse 1.5s ease-in-out infinite;
+      z-index:2;
+    }
+    @keyframes breakingPulse{
+      0%,100%{opacity:.5;box-shadow:none}
+      50%{opacity:1;box-shadow:0 0 12px var(--accent),0 0 24px var(--accent)}
+    }
+
+    /* Horizontal card layout: text left, image right */
+    .card-content{display:flex;flex-direction:column;gap:12px;flex:1;min-width:0}
+    @media(min-width:540px){
+      .story-card{flex-direction:row;align-items:flex-start;gap:18px}
+      .story-thumb-wrap{width:150px;height:110px;aspect-ratio:unset;flex-shrink:0;order:2;margin-bottom:0;align-self:flex-start}
+    }
+    @media(max-width:539px){
+      .card-content{order:2}
+      .story-thumb-wrap{order:1;width:100%}
+    }
     
     .story-meta{display:flex;align-items:center;gap:10px;font-family:var(--font-sans);font-size:.7rem;font-weight:800;color:var(--bronze);text-transform:uppercase;letter-spacing:.12em}
     .story-headline{
@@ -368,7 +392,6 @@
       background:var(--bg);
       border:1px solid var(--border);
       transition:all .3s ease;
-      margin-bottom: 4px;
     }
     .story-thumb{
       width:100%;
@@ -427,14 +450,51 @@
     
     @media(max-width:767px){
       .logo-text{font-size:1.4rem}
-      .story-card{padding:16px;min-height:340px}
-      .story-headline{font-size:1.25rem}
+      .story-card{padding:18px}
+      .story-headline{font-size:1.05rem;line-height:1.4}
       .nav-bar{top:64px}
       .action-btn{padding:0.4rem 0.6rem;min-width:36px}
       .action-btn:hover .btn-text{max-width:80px}
       .header-ticker{display:none}
       .cat-btn{font-size:.7rem;padding:0 .8rem}
     }
+
+    /* TIME PERIOD DIVIDERS */
+    .time-divider{
+      grid-column:1/-1;
+      display:flex;align-items:center;gap:14px;
+      margin:8px 0 4px;
+      font-family:var(--font-sans);font-size:.68rem;font-weight:800;
+      color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;
+    }
+    .time-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    /* SKELETON LOADING */
+    .skeleton{
+      background:var(--bg-card);border:1px solid var(--border);
+      padding:24px;display:flex;flex-direction:column;gap:14px;
+      height:220px;overflow:hidden;
+    }
+    @media(min-width:540px){.skeleton{flex-direction:row;height:130px}}
+    .skel-body{flex:1;display:flex;flex-direction:column;gap:10px}
+    .skel-img{width:150px;height:110px;flex-shrink:0;border-radius:2px;background:var(--bg)}
+    @media(max-width:539px){.skel-img{width:100%;height:80px;order:1}.skel-body{order:2}}
+    .skeleton-line{
+      border-radius:4px;
+      background:linear-gradient(90deg,var(--bg) 25%,var(--bg-card) 50%,var(--bg) 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* EMPTY STATE */
+    .empty-state{
+      grid-column:1/-1;text-align:center;padding:80px 20px;
+      display:flex;flex-direction:column;align-items:center;gap:16px;
+      opacity:.6;
+    }
+    .empty-state svg{width:48px;height:48px;opacity:.4}
+    .empty-state p{font-family:var(--font-display);font-size:1rem;letter-spacing:.05em;color:var(--text-muted)}
   </style>
 </head>
 <body>
@@ -638,53 +698,99 @@
   function renderCard(c) {
     if(!c || !c.articles || !c.articles.length) return '';
     const a = c.articles[0];
-    
-    // Safety check for cluster image
+
     let clusterImage = null;
     for (let art of c.articles) {
       if (art.image_url) { clusterImage = art.image_url; break; }
     }
-    
+
     const isBreaking = (c.score || 0) > 3.0;
     const uniqueSources = [...new Set(c.articles.map(art => art.source))];
     const topSources = uniqueSources.slice(0, 3);
     const moreCount = uniqueSources.length - topSources.length;
-    
-    const flag = (a.country && a.country !== '🇲🇰') ? `<span style="font-size:1.2rem; margin-right:4px">${a.country}</span>` : '';
-    const translatedBadge = a.is_translated ? '<span style="font-size:0.65rem; background:rgba(176, 141, 87, 0.1); padding:2px 6px; border-radius:4px; color:var(--bronze); margin-left:8px; border:1px solid var(--border)">AI ПРЕВОД</span>' : '';
+
+    const flag = (a.country && a.country !== '🇲🇰') ? `<span style="font-size:1.2rem;margin-right:4px">${a.country}</span>` : '';
+    const translatedBadge = a.is_translated ? '<span style="font-size:0.65rem;background:rgba(176,141,87,0.1);padding:2px 6px;border-radius:4px;color:var(--bronze);margin-left:8px;border:1px solid var(--border)">AI ПРЕВОД</span>' : '';
+    const thumbHtml = clusterImage
+      ? `<a href="/cluster/${c.cluster_id}" class="story-thumb-wrap"><img src="${clusterImage}" class="story-thumb" loading="lazy"></a>`
+      : '';
 
     return `
-      <div class="story-card fade-in">
-        <a href="/cluster/${c.cluster_id}" class="story-thumb-wrap">
-          <img src="${clusterImage || '/static/img/presek_emblem.svg'}" class="story-thumb" loading="lazy" style="${!clusterImage ? 'object-fit: contain; padding: 20px; opacity: 0.15;' : ''}">
-        </a>
-        <div class="story-meta">
-          ${flag}
-          <span style="color:var(--gold)">${a.source}</span>
-          <span style="opacity:0.5">|</span>
-          <span>${timeAgo(a.created_at)}</span>
-          ${isBreaking ? '<span class="live-badge">| ВО ЖИВО</span>' : ''}
-          ${translatedBadge}
+      <div class="story-card fade-in${isBreaking ? ' is-breaking' : ''}">
+        <div class="card-content">
+          <div class="story-meta">
+            ${flag}
+            <span style="color:var(--gold)">${a.source}</span>
+            <span style="opacity:0.5">|</span>
+            <span>${timeAgo(a.created_at)}</span>
+            ${isBreaking ? '<span class="live-badge">| ВО ЖИВО</span>' : ''}
+            ${translatedBadge}
+          </div>
+          <h3 class="story-headline">
+            <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
+          </h3>
+          <p class="story-excerpt">${a.description || ''}</p>
+          <div class="source-ribbon">
+            ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('<span style="opacity:0.2">·</span>')}
+            ${moreCount > 0 ? `<span class="source-more">+ уште ${moreCount}</span>` : ''}
+          </div>
         </div>
-        <h3 class="story-headline">
-          <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
-        </h3>
-        <p class="story-excerpt">${a.description || ''}</p>
-        <div class="source-ribbon">
-          ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('<span style="opacity:0.2">·</span>')}
-          ${moreCount > 0 ? `<span class="source-more">+ уште ${moreCount}</span>` : ''}
-        </div>
+        ${thumbHtml}
       </div>
     `;
+  }
+
+  function getTimePeriod(dateStr) {
+    if (!dateStr) return null;
+    const h = new Date(dateStr).getHours();
+    if (h >= 6  && h < 12) return { label: '🌅 Утро',     order: 3 };
+    if (h >= 12 && h < 18) return { label: '☀️ Попладне', order: 2 };
+    if (h >= 18)            return { label: '🌙 Вечер',    order: 1 };
+    return                         { label: '🌃 Ноќ',      order: 0 };
+  }
+
+  function showSkeletons() {
+    const wrap = document.getElementById('pageWrap');
+    const card = `
+      <div class="skeleton">
+        <div class="skel-img skeleton-line"></div>
+        <div class="skel-body">
+          <div class="skeleton-line" style="height:10px;width:45%"></div>
+          <div class="skeleton-line" style="height:16px;width:90%"></div>
+          <div class="skeleton-line" style="height:16px;width:75%"></div>
+          <div class="skeleton-line" style="height:10px;width:55%;margin-top:auto"></div>
+        </div>
+      </div>`;
+    wrap.innerHTML = `<div class="stories-grid">${card.repeat(6)}</div>`;
   }
 
   function renderPage(clusters) {
     const wrap = document.getElementById('pageWrap');
     if (!clusters || !clusters.length) {
-      wrap.innerHTML = '<div style="text-align:center; padding:100px; opacity:0.5;">Нема вести.</div>';
+      wrap.innerHTML = `<div class="stories-grid"><div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>Нема вести во моментов.</p>
+      </div></div>`;
       return;
     }
-    wrap.innerHTML = `<div class="stories-grid">${clusters.map(renderCard).join('')}</div>`;
+
+    // Group clusters by time period, preserve score order within each group
+    const periodMap = {};
+    for (const c of clusters) {
+      const dt = c.articles[0]?.created_at;
+      const p = getTimePeriod(dt);
+      const key = p ? p.label : '📅 Порано';
+      if (!periodMap[key]) periodMap[key] = { label: key, order: p?.order ?? -1, items: [] };
+      periodMap[key].items.push(c);
+    }
+    const sorted = Object.values(periodMap).sort((a, b) => b.order - a.order);
+
+    let html = '';
+    for (const period of sorted) {
+      html += `<div class="time-divider"><span>${period.label}</span></div>`;
+      html += period.items.map(renderCard).join('');
+    }
+    wrap.innerHTML = `<div class="stories-grid">${html}</div>`;
   }
 
   async function fetchNews() {
@@ -692,6 +798,7 @@
     newNajcitanoCount = 0;
     const badge = document.getElementById("najcitanoBadge");
     if(badge) badge.style.display = "none";
+    showSkeletons();
 
     try {
       const res = await fetch(`/api/news?page=0&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
@@ -704,6 +811,10 @@
       document.getElementById('loadMoreWrap').style.display = _hasMore ? 'block' : 'none';
     } catch(e) {
       console.error("Fetch error:", e);
+      document.getElementById('pageWrap').innerHTML = `<div class="stories-grid"><div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>Грешка при вчитување. Обидете се повторно.</p>
+      </div></div>`;
     } finally {
       document.getElementById('appSplash').classList.add('hidden');
     }
@@ -994,6 +1105,7 @@
 
   // 2. Toggle Handler
   themeToggle.addEventListener('click', () => {
+    document.body.classList.add('theme-ready');
     const isLight = htmlEl.classList.toggle('light');
     localStorage.setItem('theme', isLight ? 'light' : 'dark');
     updateThemeMeta(isLight);
