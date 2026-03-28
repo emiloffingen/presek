@@ -12,9 +12,9 @@
 <style>
     .cluster-hero {
         position: relative;
-        margin: -16px -16px var(--spacing-lg) -16px;
-        height: 40vh;
-        min-height: 300px;
+        margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-lg);
+        height: 35vh;
+        min-height: 260px;
         overflow: hidden;
         border-bottom: 1px solid var(--border);
     }
@@ -22,76 +22,75 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        filter: brightness(0.6);
+        filter: brightness(0.5);
     }
     .hero-overlay {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md);
+        padding: var(--space-xl) var(--space-md) var(--space-md);
         background: linear-gradient(to top, var(--bg-base) 0%, transparent 100%);
     }
 
     .cluster-header {
-        padding: 0 0 var(--spacing-lg) 0;
+        padding: 0 0 var(--space-md) 0;
         border-bottom: 1px solid var(--border);
-        margin-bottom: var(--spacing-lg);
+        margin-bottom: var(--space-lg);
     }
     
     .cluster-headline {
-        font-size: clamp(1.8rem, 5vw, 3.5rem);
-        margin-bottom: var(--spacing-sm);
-        line-height: 1.1;
-        letter-spacing: -0.02em;
+        font-size: clamp(1.5rem, 4vw, 2.5rem); /* Scaled down for better hierarchy */
+        margin-bottom: var(--space-xs);
+        line-height: var(--lh-tight);
+        letter-spacing: -0.01em;
     }
 
     .cluster-summary {
-        font-size: 1.25rem;
-        line-height: 1.7;
+        font-size: 1.15rem;
+        line-height: var(--lh-base);
         color: var(--text-primary);
         background: var(--bg-surface);
-        padding: var(--spacing-lg);
+        padding: var(--space-lg);
         border-left: 4px solid var(--primary);
         border-radius: 0 var(--radius-md) var(--radius-md) 0;
-        margin: var(--spacing-lg) 0;
+        margin: var(--space-lg) 0;
         white-space: pre-line;
-        box-shadow: var(--shadow-sm);
     }
 
     .sources-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: var(--spacing-lg);
-        margin-bottom: var(--spacing-xl);
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-2xl);
     }
 
     .source-card {
         background: var(--bg-surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: var(--spacing-lg);
+        padding: var(--space-lg);
         display: flex;
-        gap: var(--spacing-md);
+        gap: var(--space-md);
         transition: var(--transition);
     }
     .source-card:hover {
-        transform: translateY(-4px);
         border-color: var(--primary);
-        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
     }
 
     .source-content { flex: 1; min-width: 0; }
     .source-name {
         font-size: 0.7rem;
-        font-weight: 800;
+        font-weight: var(--weight-bold);
         text-transform: uppercase;
         color: var(--primary);
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .source-title {
         font-family: var(--font-heading);
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: var(--spacing-sm);
+        font-size: 1.05rem;
+        font-weight: var(--weight-semi);
+        margin-bottom: var(--space-xs);
+        line-height: var(--lh-tight);
     }
     .source-snippet {
         font-size: 0.9rem;
@@ -100,11 +99,12 @@
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        opacity: 0.8;
     }
 
     .source-thumb-wrap {
-        width: 120px;
-        height: 90px;
+        width: 100px;
+        height: 75px;
         border-radius: var(--radius-sm);
         overflow: hidden;
         flex-shrink: 0;
@@ -115,33 +115,35 @@
 
     /* AI Chat Integration */
     .ai-section {
-        margin: var(--spacing-xl) 0;
-        padding: var(--spacing-xl) 0;
+        margin: var(--space-2xl) 0;
+        padding: var(--space-xl) 0;
         border-top: 1px solid var(--border);
     }
     .ai-chat-bar-inline {
         background: var(--bg-surface);
-        border: 1px solid var(--primary);
+        border: 1px solid var(--border);
         border-radius: 40px;
-        padding: 8px 8px 8px 24px;
+        padding: 6px 6px 6px 20px;
         display: flex;
         align-items: center;
         gap: 12px;
-        box-shadow: var(--shadow-md);
-        max-width: 700px;
+        max-width: 600px;
         margin: 0 auto;
+        transition: border-color 0.2s;
     }
+    .ai-chat-bar-inline:focus-within { border-color: var(--primary); }
+
     .ai-chat-input {
         flex: 1;
         background: none;
         border: none;
         color: var(--text-primary);
         outline: none;
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     .ai-chat-btn {
-        width: 44px;
-        height: 44px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         background: var(--primary);
         border: none;
@@ -150,9 +152,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: var(--transition);
     }
-    .ai-chat-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
 
     .ai-sheet {
         position: fixed;
@@ -161,21 +161,21 @@
         background: var(--bg-surface);
         border-top: 2px solid var(--primary);
         border-radius: 24px 24px 0 0;
-        padding: 32px;
+        padding: var(--space-xl);
         max-height: 80vh;
         overflow-y: auto;
         z-index: 999;
-        transition: bottom 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-        box-shadow: 0 -20px 60px rgba(0,0,0,0.5);
+        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
     }
     .ai-sheet.active { bottom: 0; }
-    .ai-content { font-size: 1.15rem; line-height: 1.8; color: var(--text-primary); }
+    .ai-content { font-size: 1.1rem; line-height: var(--lh-base); }
 
     @media (max-width: 600px) {
-        .cluster-hero { height: 30vh; margin-bottom: var(--spacing-md); }
+        .cluster-hero { height: 25vh; }
         .sources-grid { grid-template-columns: 1fr; }
         .source-card { flex-direction: column; }
-        .source-thumb-wrap { width: 100%; height: 180px; }
+        .source-thumb-wrap { width: 100%; height: 160px; }
     }
 </style>
 {% endblock %}
@@ -194,7 +194,7 @@
 
     <article class="cluster-content">
         <header class="cluster-header fade-in">
-            <a href="/" style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; margin-bottom:8px; display:block; letter-spacing:0.1em;">← Назад во вести</a>
+            <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
             <h1 class="cluster-headline">{{ articles[0].title }}</h1>
             <div class="story-meta">
                 <span class="source">{{ articles|length }} извори</span>
@@ -211,7 +211,7 @@
 
         <div class="sources-grid">
             {% for art in articles %}
-            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.05 + 0.2 }}s">
+            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s">
                 <div class="source-content">
                     <div class="source-name">{{ art.source }}</div>
                     <h3 class="source-title">{{ art.title }}</h3>
@@ -226,27 +226,25 @@
             {% endfor %}
         </div>
 
-        <!-- AI Inline Chat -->
         <section class="ai-section fade-in">
-            <div style="text-align:center; margin-bottom:24px">
-                <h2 style="font-family:var(--font-display); font-size:1.5rem; margin-bottom:8px">Имате прашање?</h2>
-                <p style="color:var(--text-secondary)">Прашајте ја нашата вештачка интелигенција за повеќе детали за овој настан.</p>
+            <div style="text-align:center; margin-bottom:var(--space-lg)">
+                <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:var(--space-xs)">Имате прашање?</h2>
+                <p style="color:var(--text-secondary); font-size:0.95rem">Прашајте ја вештачката интелигенција за повеќе детали.</p>
             </div>
             <div class="ai-chat-bar-inline">
                 <input type="text" id="aiInput" class="ai-chat-input" placeholder="Напишете прашање..." onkeypress="if(event.key==='Enter') askAI()">
                 <button class="ai-chat-btn" onclick="askAI()">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
         </section>
     </article>
 {% endif %}
 
-<!-- AI Popup Sheet -->
 <div class="ai-sheet" id="aiSheet">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center">
-        <h2 style="font-family:var(--font-display); font-size:1.4rem">Пресек Дијалог</h2>
-        <button onclick="toggleAISheet(false)" style="background:var(--bg-surface-hover); border:none; color:var(--text-muted); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.5rem">&times;</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-lg); align-items:center">
+        <h2 style="font-family:var(--font-display); font-size:1.25rem">Пресек Дијалог</h2>
+        <button onclick="toggleAISheet(false)" style="background:var(--bg-surface-hover); border:none; color:var(--text-muted); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer">&times;</button>
     </div>
     <div id="aiResponse" class="ai-content"></div>
 </div>
@@ -265,7 +263,7 @@
 
         input.value = '';
         const responseEl = document.getElementById('aiResponse');
-        responseEl.innerHTML = '<div style="display:flex; align-items:center; gap:12px; color:var(--text-muted)"><span class="utility-ticker" style="animation: ticker 2s linear infinite">Размислувам...</span></div>';
+        responseEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.95rem">Размислувам...</div>';
         toggleAISheet(true);
 
         try {
@@ -287,7 +285,6 @@
         }
     }
 
-    // Format time
     const timeEl = document.getElementById('timeLabel');
     if (timeEl) {
         const date = new Date(timeEl.textContent);

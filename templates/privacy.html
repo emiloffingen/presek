@@ -7,13 +7,18 @@
     .legal-content {
         max-width: 800px;
         margin: 0 auto;
-        padding: var(--spacing-xl) 0;
-        line-height: 1.8;
+        padding: var(--space-xl) 0;
     }
     .legal-content h2 {
-        margin-top: var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
+        margin-top: var(--space-2xl);
+        margin-bottom: var(--space-md);
         color: var(--primary);
+        font-size: 1.5rem;
+    }
+    .legal-content p {
+        color: var(--text-secondary);
+        line-height: 1.8;
+        margin-bottom: var(--space-md);
     }
 </style>
 {% endblock %}
@@ -30,6 +35,6 @@
     <p>Користиме локално складирање (Local Storage) за да ги зачуваме вашите преференции, како што е изборот на темна или светла тема.</p>
 
     <h2>Контакт</h2>
-    <p>За било какви прашања поврзани со приватноста, контактирајте нè на <a href="mailto:contact@presek.mk" style="color:var(--primary)">contact@presek.mk</a>.</p>
+    <p>За било какви прашања поврзани со приватноста, контактирајте нè на <a href="mailto:contact@presek.mk" style="color:var(--primary); font-weight:var(--weight-semi)">contact@presek.mk</a>.</p>
 </div>
 {% endblock %}

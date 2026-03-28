@@ -7,47 +7,47 @@
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--spacing-lg);
-        margin-bottom: var(--spacing-xl);
+        gap: var(--space-lg);
+        margin-bottom: var(--space-2xl);
     }
     .kpi-card {
         background: var(--bg-surface);
-        padding: var(--spacing-lg);
+        padding: var(--space-lg);
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
         text-align: center;
         transition: var(--transition);
     }
     .kpi-card:hover { transform: translateY(-4px); border-color: var(--primary); }
-    .kpi-val { font-size: 2.5rem; font-weight: 800; color: var(--primary); font-family: var(--font-display); }
-    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 700; }
+    .kpi-val { font-size: 2.25rem; font-weight: var(--weight-bold); color: var(--primary); font-family: var(--font-display); }
+    .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: var(--weight-bold); margin-top: var(--space-xs); }
 
     .stats-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: var(--spacing-xl);
+        gap: var(--space-xl);
     }
     @media (max-width: 900px) { .stats-layout { grid-template-columns: 1fr; } }
 
     .panel {
         background: var(--bg-surface);
-        padding: var(--spacing-lg);
+        padding: var(--space-lg);
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
     }
     .panel-title {
-        font-size: 1.2rem;
-        margin-bottom: var(--spacing-lg);
-        padding-bottom: var(--spacing-sm);
+        font-size: 1.15rem;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-sm);
         border-bottom: 1px solid var(--border);
         color: var(--text-primary);
     }
 
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .bar-label { width: 120px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; height: 8px; background: var(--bg-base); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 1s ease; }
-    .bar-val { width: 40px; font-size: 0.8rem; font-weight: 700; text-align: right; }
+    .bar-row { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md); }
+    .bar-label { width: 120px; font-size: 0.85rem; font-weight: var(--weight-semi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+    .bar-track { flex: 1; height: 6px; background: var(--bg-base); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 1s ease; }
+    .bar-val { width: 40px; font-size: 0.8rem; font-weight: var(--weight-bold); text-align: right; color: var(--text-primary); }
 </style>
 {% endblock %}
 
@@ -86,7 +86,6 @@
             document.getElementById('totalSources').textContent = data.source_stats.length;
             document.getElementById('totalClusters').textContent = data.category_stats.reduce((a, b) => a + b.count, 0);
 
-            // Render Sources
             const maxSrc = Math.max(...data.source_stats.map(s => s.count));
             document.getElementById('sourcesStats').innerHTML = data.source_stats.slice(0, 10).map(s => `
                 <div class="bar-row">
@@ -96,7 +95,6 @@
                 </div>
             `).join('');
 
-            // Render Categories
             const maxCat = Math.max(...data.category_stats.map(c => c.count));
             document.getElementById('categoryStats').innerHTML = data.category_stats.map(c => `
                 <div class="bar-row">

@@ -6,42 +6,45 @@
 <style>
     .izvori-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-xl);
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
     }
     .izvor-card {
         background: var(--bg-surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        padding: var(--spacing-md);
+        padding: var(--space-md);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--space-md);
         transition: var(--transition);
     }
     .izvor-card:hover {
         border-color: var(--primary);
         transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
     }
     .izvor-dot {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
         background: var(--primary);
         border-radius: 50%;
+        box-shadow: 0 0 8px var(--primary);
     }
     .izvor-name {
-        font-weight: 600;
-        font-size: 1rem;
+        font-weight: var(--weight-semi);
+        font-size: 0.95rem;
+        color: var(--text-primary);
     }
     .section-title {
-        margin-top: var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
-        padding-bottom: var(--spacing-sm);
+        margin-top: var(--space-2xl);
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-xs);
         border-bottom: 1px solid var(--border);
         color: var(--primary);
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+        font-family: var(--font-display);
+        letter-spacing: 0.05em;
     }
 </style>
 {% endblock %}
@@ -52,33 +55,28 @@
     <p class="hero-subtitle">Пресек агрегира вести од над 100 релевантни македонски и меѓународни извори во реално време.</p>
 
     <h2 class="section-title">Македонски Медиуми</h2>
-    <div class="izvori-grid" id="mkIzvori">
-        <!-- Will be populated if static list, but for now hardcoded or fetched -->
-    </div>
+    <div class="izvori-grid" id="mkIzvori"></div>
 
-    <h2 class="section-title">Меѓународни Медиуми (Дијаспора)</h2>
-    <div class="izvori-grid" id="intIzvori">
-    </div>
+    <h2 class="section-title">Меѓународни Медиуми</h2>
+    <div class="izvori-grid" id="intIzvori"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // These would ideally come from config.py passed to template, 
-    // but we can also hardcode for this aesthetic pass.
     const mk = ["A1 On", "Alfa", "Daily.mk", "Derbi", "Dnevnik", "Faktor", "Fokus", "Kanal 5", "Libertas", "Lokalno", "Makfax", "Meta", "Netpress", "Nova Makedonija", "Plusinfo", "Republika", "Sakam Da Kazam", "Sitel", "Sloboden Pecat", "Telma", "Vecer", "24 Vesti"];
-    const diaspora = ["BBC", "CNN", "Deutsche Welle", "Al Jazeera", "Reuters", "The Guardian", "The New York Times", "Der Spiegel", "Le Monde"];
+    const diaspora = ["BBC", "CNN", "Deutsche Welle", "Al Jazeera", "Reuters", "The Guardian", "The New York Times", "Der Spiegel", "Le Monde", "AP News", "FAZ", "Swissinfo", "The Verge", "TechCrunch", "Axios"];
 
-    document.getElementById('mkIzvori').innerHTML = mk.map(name => `
+    document.getElementById('mkIzvori').innerHTML = mk.sort().map(name => `
         <div class="izvor-card">
             <div class="izvor-dot"></div>
             <span class="izvor-name">${name}</span>
         </div>
     `).join('');
 
-    document.getElementById('intIzvori').innerHTML = diaspora.map(name => `
+    document.getElementById('intIzvori').innerHTML = diaspora.sort().map(name => `
         <div class="izvor-card">
-            <div class="izvor-dot" style="background:var(--text-muted)"></div>
+            <div class="izvor-dot" style="background:var(--text-muted); box-shadow:none;"></div>
             <span class="izvor-name">${name}</span>
         </div>
     `).join('');
