@@ -88,7 +88,7 @@
         });
 
         // Initialize ticker
-        fetch('/api/popular')
+        fetch('/api/trending')
             .then(res => res.json())
             .then(data => {
                 const inner = document.getElementById('tickerInner');
