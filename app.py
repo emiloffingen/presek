@@ -291,10 +291,19 @@ def api_cluster_summary(cluster_id: str):
             return jsonify({"error": "Cluster not found"}), 404
 
         articles = [dict(r) for r in rows]
-        headlines = "\n".join(f"- [{a['source']}]: {a['title']}" for a in articles)
+        lines = []
+        for a in articles:
+            line = f"- [{a['source']}]: {a['title']}"
+            desc = (a.get('description') or '').strip()
+            if desc:
+                # Remove HTML tags and truncate
+                desc = re.sub(r'<[^>]+>', '', desc)[:250].strip()
+                if desc: line += f"\n  Опис: {desc}"
+            lines.append(line)
+        content = "\n".join(lines)
 
         try:
-            raw_res, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+            raw_res, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
             if not raw_res:
                 return jsonify({"error": "AI сервисот е недостапен."}), 503
             

@@ -199,8 +199,17 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
                 # Check DB cache first
                 row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ?", (cid,)).fetchone()
                 if not row:
-                    headlines = "\n".join(f"- [{a['source']}]: {a['title']}" for a in arts[:10])
-                    synthesis, tier = _call_ai(f"Наслови:\n{headlines}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+                    lines = []
+                    for a in arts[:10]:
+                        line = f"- [{a['source']}]: {a['title']}"
+                        desc = (a.get('description') or '').strip()
+                        if desc:
+                            desc = re.sub(r'<[^>]+>', '', desc)[:250].strip()
+                            if desc: line += f"\n  Опис: {desc}"
+                        lines.append(line)
+                    content = "\n".join(lines)
+                    
+                    synthesis, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
                     if synthesis:
                         clean_synthesis = clean_json_response(synthesis)
                         now = __import__('datetime').datetime.now().isoformat()
