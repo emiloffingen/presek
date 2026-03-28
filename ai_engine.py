@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from config import (
     GOOGLE_API_KEY, GEMINI_URL, 
+    CLOUDFLARE_API_TOKEN, CF_AI_URL,
     AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 )
@@ -88,11 +89,53 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     log.warning("[gemini] All retries exhausted after rate limiting.")
     return None
 
+def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
+    """Call Cloudflare Workers AI REST API."""
+    if not CLOUDFLARE_API_TOKEN:
+        return None
+    
+    # User specifically requested this exact system message
+    payload = json.dumps({
+        "messages": [
+            {"role": "system", "content": "You are a Macedonian news editor. Summarize this article in Macedonian. Return ONLY valid JSON in the format {\"summary\": \"your summary\"}. Do not use markdown backticks."},
+            {"role": "user", "content": f"Input: {prompt_text}"}
+        ]
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(
+            CF_AI_URL,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        
+        if data.get("success"):
+            # Cloudflare's @cf/meta/llama-3-8b-instruct response structure
+            return data["result"]["response"].strip()
+        else:
+            log.warning(f"[cloudflare] API error: {data.get('errors')}")
+            return None
+    except Exception as e:
+        log.warning(f"[cloudflare] Call failed: {e}")
+        return None
+
 def _call_ai(prompt_text: str, system_prompt: str, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
-    """Call Gemini API. Returns (summary, 'gemini') or (None, None)."""
-    result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens, json_mode=json_mode)
-    if result:
-        return result, "gemini"
+    """Call AI provider (Cloudflare first, fallback to Gemini)."""
+    # 1. Try Cloudflare Workers AI
+    cf_result = _call_cloudflare_ai(prompt_text, system_prompt)
+    if cf_result:
+        return cf_result, "cloudflare"
+    
+    # 2. Fallback to Gemini
+    gemini_result = _call_gemini(prompt_text, system_prompt, max_tokens=max_tokens, json_mode=json_mode)
+    if gemini_result:
+        return gemini_result, "gemini"
+        
     return None, None
 
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
