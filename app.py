@@ -333,6 +333,12 @@ DIASPORA_FEEDS = [
     ("RFI English",     "https://www.rfi.fr/en/rss",                                            "Свет"),
     # 🇮🇹 Italy
     ("ANSA",        "https://www.ansa.it/sito/ansait_rss.xml",                                   "Европа"),
+    # 🇸🇮 Slovenia
+    ("RTVSLO",      "https://www.rtvslo.si/feeds/00.xml",                                       "Словенија"),
+    # 🇦🇹 Austria
+    ("ORF",         "https://rss.orf.at/news.xml",                                               "Австрија"),
+    # 🇸🇪 Sweden
+    ("SVT News",    "https://www.svt.se/nyheter/rss.xml",                                        "Шведска"),
     # 🇷🇸 Serbia / Balkans
     ("N1 Info",     "https://n1info.rs/feed/",                                                   "Балкан"),
     ("B92",         "https://www.b92.net/info/rss/vesti.xml",                                    "Балкан"),
@@ -345,6 +351,7 @@ DIASPORA_FEEDS = [
     ("Kathimerini", "https://www.ekathimerini.com/rss",                                          "Балкан"),
     # 🇦🇱 Albania / Kosovo
     ("Exit News",   "https://exit.al/en/feed/",                                                  "Балкан"),
+    ("Top Channel", "https://top-channel.tv/feed/",                                              "Албанија"),
     # 🇽🇰 Kosovo
     ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Балкан"),
     # 🇹🇷 Turkey (included in Балкан per site taxonomy)
@@ -435,6 +442,10 @@ SOURCE_CREDIBILITY = {
     "The Guardian":     1.7,  # major UK broadsheet
     "ABC Australia":    1.6,  # Australian public broadcaster
     "ANSA":             1.6,  # Italian wire service
+    "RTVSLO":           1.7,  # Slovenian public broadcaster
+    "ORF":              1.7,  # Austrian public broadcaster
+    "SVT News":         1.7,  # Swedish public broadcaster
+    "Top Channel":      1.6,  # Albanian major TV
     "N1 Info":          1.5,  # regional independent TV (Serbia/Balkans)
     "B92":              1.4,  # Serbian news
     "Novinite":         1.2,  # Bulgarian English-language news
@@ -665,7 +676,7 @@ def translate_titles_batch(titles: list[str]) -> list[str]:
 
 
 def ingest_diaspora_feeds():
-    """Fetch diaspora RSS feeds, batch-translate titles, write to DB separately."""
+    """Fetch diaspora RSS feeds and write to DB separately (without translation)."""
     conn = get_db()
     diaspora_recent = conn.execute(
         "SELECT title, cluster_id FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT ?",
@@ -698,40 +709,7 @@ def ingest_diaspora_feeds():
 
     import re as _re
 
-    # Separate MK-language sources (already in Macedonian) from foreign sources.
-    # For MK sources, no translation is needed — keep original title and description.
-    needs_xlat = [e[0] not in MK_LANGUAGE_SOURCES for e in all_entries]
-    foreign_idxs = [i for i, needs in enumerate(needs_xlat) if needs]
-
-    # Phase 2: batch-translate titles of foreign sources only
-    if foreign_idxs:
-        foreign_titles = [clean_rss_footer(all_entries[i][1]) for i in foreign_idxs]
-        foreign_translated = translate_titles_batch(foreign_titles)
-    else:
-        foreign_translated = []
-
-    translated: list[str | None] = [None] * len(all_entries)
-    for pos, i in enumerate(foreign_idxs):
-        translated[i] = foreign_translated[pos] if pos < len(foreign_translated) else None
-    for i, needs in enumerate(needs_xlat):
-        if not needs:
-            translated[i] = all_entries[i][1]  # already Macedonian
-
-    # Phase 2b: batch-translate descriptions of foreign sources only
-    raw_descs = [clean_rss_footer(_re.sub(r'<[^>]+>', '', e[3]).strip()[:500]) if e[3] else "" for e in all_entries]
-    foreign_desc_idxs = [i for i in foreign_idxs if raw_descs[i]]
-    if foreign_desc_idxs:
-        foreign_descs = [raw_descs[i] for i in foreign_desc_idxs]
-        foreign_translated_descs = translate_titles_batch(foreign_descs)
-        translated_descs: list[str] = list(raw_descs)
-        for pos, i in enumerate(foreign_desc_idxs):
-            td = foreign_translated_descs[pos]
-            if td is not None:
-                translated_descs[i] = td
-    else:
-        translated_descs = list(raw_descs)
-
-    # Phase 3: write to DB sequentially
+    # Phase 2: write to DB sequentially
     conn = get_db()
     try:
         new_count = 0
@@ -739,22 +717,26 @@ def ingest_diaspora_feeds():
             try:
                 if conn.execute("SELECT id FROM articles WHERE link = ?", (link,)).fetchone():
                     continue
-                mk_title = translated[i] if i < len(translated) else None
-                if mk_title is None:
-                    continue  # skip untranslated — will be picked up next cycle
-                mk_title = normalize_headline(mk_title)
-                cluster_id = clustering.find_or_create_cluster(mk_title, diaspora_recent)
+                
+                # All Diaspora feeds now SKIP translation. 
+                # Store 'original_title' as the main 'title' in the database.
+                display_title = normalize_headline(title)
+                cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent)
                 now = datetime.datetime.now().isoformat()
-                clean_desc = translated_descs[i] if i < len(translated_descs) else ""
+                
+                # Strip HTML tags and remove common footers for clean storage
+                clean_desc = _re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
+                clean_desc = clean_rss_footer(clean_desc)[:500]
+
                 conn.execute(
                     "INSERT INTO articles "
                     "(title, original_title, link, source, category, subcategory, cluster_id, "
                     "created_at, image_url, description, country) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (mk_title, title, link, source, category, "", cluster_id,
+                    (display_title, title, link, source, category, "", cluster_id,
                      now, image_url, clean_desc, country)
                 )
-                diaspora_recent.insert(0, {"title": mk_title, "cluster_id": cluster_id})
+                diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id})
                 if len(diaspora_recent) > CLUSTER_LOOKBACK:
                     diaspora_recent.pop()
                 new_count += 1
