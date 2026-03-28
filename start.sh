@@ -268,6 +268,11 @@ info "Starting new screen session '$SESSION'..."
 screen -dmS "$SESSION" bash -c "cd $APP_DIR && python3 $APP; exec bash"
 sleep 2
 
+if [ -f "trending_backfill.py" ]; then
+    info "Starting trending_backfill.py in the background..."
+    nohup python3 trending_backfill.py > backfill.log 2>&1 &
+fi
+
 if screen -list 2>/dev/null | grep -q "$SESSION"; then
   ok "Screen session '$SESSION' started"
 else

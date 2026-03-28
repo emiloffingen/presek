@@ -159,7 +159,18 @@ def ingest_loop():
 
 
 health.register_health_routes(app, DB_PATH)
-trending.register_trending_route(app, DB_PATH)
+
+@app.route("/api/trending")
+def trending_route():
+    # The backfill script now populates the cache
+    cached = cached_response("trending", ttl=900)
+    if cached:
+        return jsonify(cached)
+    
+    # Fallback in case cache is empty or stale
+    results = trending.get_trending(DB_PATH)
+    set_cache("trending", results, ttl=900)
+    return jsonify(results)
 
 # =====================================================================
 # API ROUTES

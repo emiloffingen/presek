@@ -65,8 +65,8 @@ STOPWORDS = {
 # Minimum word length and frequency to be considered trending
 MIN_WORD_LEN   = 4
 MIN_COUNT      = 2
-MAX_RESULTS    = 15
-LOOKBACK_HOURS = 12
+MAX_RESULTS    = 12
+LOOKBACK_HOURS = 8
 
 # Bonus multiplier for likely proper nouns (capitalized mid-sentence)
 PROPER_NOUN_BONUS = 4.0
