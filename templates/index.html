@@ -206,6 +206,7 @@
 
     const countries = [
         { id: '🇲🇰', label: 'Македонија' },
+        { id: 'SAVED', label: 'Зачувано' },
         { id: 'REG', label: 'Регионално' },
         { id: '🇩🇪', label: 'Германија' },
         { id: '🇷🇸', label: 'Србија' },
@@ -221,7 +222,7 @@
         const list = document.getElementById('categoryList');
         list.innerHTML = countries.map(c => `
             <button class="cat-btn ${c.id === activeCategory ? 'active' : ''}" onclick="filterCat('${c.id}')">
-                ${c.id === 'REG' ? '📍' : c.id} ${c.label}
+                ${c.id === 'REG' ? '📍' : (c.id === 'SAVED' ? '🔖' : c.id)} ${c.label}
             </button>
         `).join('');
 
@@ -241,7 +242,9 @@
     function renderPage(clusters) {
         const wrap = document.getElementById('pageWrap');
         if (!clusters || !clusters.length) {
-            wrap.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted)">Нема вести за избраната категорија.</div>';
+            wrap.innerHTML = `<div style="text-align:center; padding:100px; color:var(--text-muted)">
+                ${activeCategory === 'SAVED' ? 'Немате зачувано вести.' : 'Нема вести за избраната категорија.'}
+            </div>`;
             return;
         }
 
@@ -296,6 +299,16 @@
             let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`;
             if (activeCategory === 'REG') {
                 url += `&country=${encodeURIComponent('Македонија')}&sub=${encodeURIComponent(activeSubcategory)}`;
+            } else if (activeCategory === 'SAVED') {
+                const bookmarks = getBookmarks();
+                if (!bookmarks.length) {
+                    renderPage([]);
+                    _isFetching = false;
+                    _hasMore = false;
+                    document.getElementById('loadMoreWrap').style.display = 'none';
+                    return;
+                }
+                url += `&ids=${encodeURIComponent(bookmarks.join(','))}`;
             } else {
                 url += `&country=${encodeURIComponent(activeCategory)}`;
             }
@@ -340,6 +353,11 @@
             fetchNews(true);
         }
     }
+
+    // Refresh saved view if bookmark state changes
+    window.addEventListener('bookmarksUpdated', () => {
+        if (activeCategory === 'SAVED') fetchNews();
+    });
 
     // Infinite Scroll Intersection Observer
     const observer = new IntersectionObserver((entries) => {

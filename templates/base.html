@@ -128,6 +128,36 @@
             return `${Math.floor(diff/84600)}д`;
         }
 
+        // Bookmark System
+        function getBookmarks() {
+            try {
+                return JSON.parse(localStorage.getItem('bookmarks')) || [];
+            } catch(e) { return []; }
+        }
+
+        function isBookmarked(cid) {
+            return getBookmarks().includes(cid);
+        }
+
+        function toggleBookmark(event, cid) {
+            event.preventDefault();
+            event.stopPropagation();
+            let bookmarks = getBookmarks();
+            const btn = event.currentTarget;
+            
+            if (bookmarks.includes(cid)) {
+                bookmarks = bookmarks.filter(id => id !== cid);
+                btn.classList.remove('active');
+            } else {
+                bookmarks.push(cid);
+                btn.classList.add('active');
+            }
+            
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            // Dispatch event for components that might be listening (e.g. Saved view)
+            window.dispatchEvent(new CustomEvent('bookmarksUpdated'));
+        }
+
         function renderCard(c, index) {
             if(!c || !c.articles || !c.articles.length) return '';
             const a = c.articles[0];
@@ -169,6 +199,14 @@
                         <span>•</span>
                         <span>${timeAgo(a.created_at)}</span>
                         ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
+                        
+                        <button class="bookmark-btn ${isBookmarked(c.cluster_id) ? 'active' : ''}" 
+                                onclick="toggleBookmark(event, '${c.cluster_id}')" 
+                                title="Зачувај вест">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path>
+                            </svg>
+                        </button>
                     </div>
                     <h3 class="story-headline">
                         <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>

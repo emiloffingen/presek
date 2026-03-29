@@ -367,6 +367,21 @@ html.light .story-thumb-placeholder {
     cursor: help;
 }
 
+.bookmark-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+.bookmark-btn:hover { color: var(--primary); }
+.bookmark-btn.active { color: var(--primary); fill: var(--primary); }
+
 /* FOOTER */
 .site-footer {
     background: var(--bg-surface);
