@@ -184,6 +184,49 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     transform: translateY(-1px);
 }
 
+/* SEARCH SYSTEM */
+.search-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-base);
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    padding: var(--space-xl) var(--space-md);
+    animation: fadeIn 0.2s ease;
+}
+.search-overlay.active { display: flex; }
+
+.search-bar {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: var(--space-sm);
+}
+.search-bar input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-family: var(--font-heading);
+    outline: none;
+    padding: var(--space-sm) 0;
+}
+.search-results {
+    max-width: var(--max-width);
+    margin: var(--space-2xl) auto 0;
+    width: 100%;
+    overflow-y: auto;
+    flex: 1;
+}
+.search-results::-webkit-scrollbar { width: 4px; }
+.search-results::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
 /* STORY GRID */
 .stories-grid {
     display: grid;

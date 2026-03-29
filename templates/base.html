@@ -41,6 +41,19 @@
             </div>
 
             <div class="header-right">
+                <div class="search-wrap" id="searchWrap">
+                    <button id="searchOpen" class="action-btn" title="Пребарај" aria-label="Open search">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                    <div class="search-overlay" id="searchOverlay">
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" placeholder="Пребарај вести..." aria-label="Search news">
+                            <button id="searchClose" class="action-btn" style="border:none; background:none; font-size:2rem">&times;</button>
+                        </div>
+                        <div id="searchResults" class="search-results stories-grid"></div>
+                    </div>
+                </div>
+
                 <button id="themeToggle" class="action-btn" title="Промени тема" aria-label="Toggle dark mode">
                     <svg id="sunIcon" viewBox="0 0 24 24" width="24" height="24">
                         <circle id="sunCore" cx="12" cy="12" r="5" fill="currentColor"/>
@@ -79,6 +92,66 @@
 
     <!-- Global Scripts -->
     <script>
+        // Global Constants
+        const BREAKING_SCORE_THRESHOLD = 3.0;
+
+        function timeAgo(str) {
+            if(!str) return '';
+            const diff = (Date.now() - new Date(str)) / 1000;
+            if(diff < 60) return 'сега';
+            if(diff < 3600) return `${Math.floor(diff/60)}м`;
+            if(diff < 84600) return `${Math.floor(diff/3600)}ч`;
+            return `${Math.floor(diff/84600)}д`;
+        }
+
+        function renderCard(c, index) {
+            if(!c || !c.articles || !c.articles.length) return '';
+            const a = c.articles[0];
+            let clusterImage = null;
+            for (let art of c.articles) {
+                if (art.image_url) { clusterImage = art.image_url; break; }
+            }
+
+            const isBreaking = (c.score || 0) >= BREAKING_SCORE_THRESHOLD;
+            const uniqueSources = [...new Set(c.articles.map(art => art.source))];
+            const topSources = uniqueSources.slice(0, 3);
+            const moreCount = uniqueSources.length - topSources.length;
+
+            return `
+                <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
+                    ${isBreaking ? '<div class="is-breaking"></div>' : ''}
+                    ${clusterImage ? `
+                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                            <div class="story-thumb-wrap">
+                                <img src="/proxy?url=${encodeURIComponent(clusterImage)}" class="story-thumb" loading="lazy" alt="${a.title}">
+                            </div>
+                        </a>
+                    ` : `
+                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                            <div class="story-thumb-placeholder"></div>
+                        </a>
+                    `}
+                    <div class="story-meta">
+                        <span class="source" title="Кредибилитет на изворот">${a.source}</span>
+                        <span>•</span>
+                        <span>${timeAgo(a.created_at)}</span>
+                        ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
+                    </div>
+                    <h3 class="story-headline">
+                        <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
+                    </h3>
+                    <p class="story-excerpt">${a.description || ''}</p>
+                    <div class="source-ribbon">
+                        <div style="display:flex; gap:8px">
+                            ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('')}
+                        </div>
+                        ${moreCount > 0 ? `<span class="source-tag" style="opacity:0.5">+${moreCount}</span>` : ''}
+                    </div>
+                </article>
+            `;
+        }
+
+        // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
         themeToggle.addEventListener('click', () => {
             document.documentElement.classList.toggle('light');
@@ -86,6 +159,51 @@
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
             document.getElementById('themeMeta').setAttribute('content', isLight ? '#F0F2F3' : '#0B0C10');
         });
+
+        // Search System
+        const searchOpen = document.getElementById('searchOpen');
+        const searchClose = document.getElementById('searchClose');
+        const searchOverlay = document.getElementById('searchOverlay');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        
+        searchOpen.onclick = () => {
+            searchOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => searchInput.focus(), 100);
+        };
+        
+        searchClose.onclick = () => {
+            searchOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+        };
+
+        let searchTimeout;
+        searchInput.oninput = (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value.trim();
+            if (q.length < 2) {
+                searchResults.innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Пребарувам...</div>';
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
+                    if (data.clusters && data.clusters.length) {
+                        searchResults.innerHTML = data.clusters.map((c, i) => renderCard(c, i)).join('');
+                    } else {
+                        searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Нема пронајдено вести.</div>';
+                    }
+                } catch(err) {
+                    console.error(err);
+                }
+            }, 300);
+        };
 
         // Initialize ticker
         fetch('/api/top10')

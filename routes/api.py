@@ -367,15 +367,28 @@ def api_search():
     if not q or len(q) < 2: return jsonify([])
     
     conn = get_db()
-    rows = conn.execute("SELECT * FROM articles WHERE title LIKE %s OR source LIKE %s ORDER BY created_at DESC LIMIT 200", (f"%{q}%", f"%{q}%")).fetchall()
+    # Weighted search: title (A) is more important than description (B)
+    sql = """
+        SELECT *, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), query) as rank
+        FROM articles, plainto_tsquery('simple', %s) query
+        WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ query
+        ORDER BY rank DESC, created_at DESC
+        LIMIT 200
+    """
+    rows = conn.execute(sql, (q,)).fetchall()
     conn.close()
     
+    if not rows:
+        return jsonify({"clusters": [], "total": 0})
+        
     clusters = defaultdict(list)
     for r in rows:
         clusters[r["cluster_id"]].append(dict(r))
         
     ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    sorted_clusters = sorted(ranked, key=score_cluster, reverse=True)
+    # Re-sort by best rank in cluster
+    sorted_clusters = sorted(ranked, key=lambda arts: max(a.get("rank", 0) for a in arts), reverse=True)
+    
     result = []
     for arts in sorted_clusters:
         s = score_cluster(arts)
@@ -385,7 +398,7 @@ def api_search():
             "cluster_id":  arts[0]["cluster_id"] if arts else None,
             "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
         })
-    return jsonify(result)
+    return jsonify({"clusters": result, "total": len(result)})
 
 @api_bp.route("/api/archive")
 def api_archive():

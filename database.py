@@ -57,6 +57,9 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_country_created ON articles(country, created_at DESC)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
     
+    # Full Text Search Index
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (to_tsvector('simple', title || ' ' || COALESCE(description, '')))")
+    
     conn.commit()
     cur.close()
     conn.close()

@@ -180,62 +180,6 @@
         `).join('');
     }
 
-    function timeAgo(str) {
-        if(!str) return '';
-        const diff = (Date.now() - new Date(str)) / 1000;
-        if(diff < 60) return 'сега';
-        if(diff < 3600) return `${Math.floor(diff/60)}м`;
-        if(diff < 86400) return `${Math.floor(diff/3600)}ч`;
-        return `${Math.floor(diff/86400)}д`;
-    }
-
-    function renderCard(c, index) {
-        if(!c || !c.articles || !c.articles.length) return '';
-        const a = c.articles[0];
-        let clusterImage = null;
-        for (let art of c.articles) {
-            if (art.image_url) { clusterImage = art.image_url; break; }
-        }
-
-        const isBreaking = (c.score || 0) > BREAKING_SCORE_THRESHOLD;
-        const uniqueSources = [...new Set(c.articles.map(art => art.source))];
-        const topSources = uniqueSources.slice(0, 3);
-        const moreCount = uniqueSources.length - topSources.length;
-
-        return `
-            <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
-                ${isBreaking ? '<div class="is-breaking"></div>' : ''}
-                ${clusterImage ? `
-                    <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
-                        <div class="story-thumb-wrap">
-                            <img src="${clusterImage}" class="story-thumb" loading="lazy" alt="${a.title}">
-                        </div>
-                    </a>
-                ` : `
-                    <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
-                        <div class="story-thumb-placeholder"></div>
-                    </a>
-                `}
-                <div class="story-meta">
-                    <span class="source" title="Кредибилитет на изворот">${a.source}</span>
-                    <span>•</span>
-                    <span>${timeAgo(a.created_at)}</span>
-                    ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
-                </div>
-                <h3 class="story-headline">
-                    <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
-                </h3>
-                <p class="story-excerpt">${a.description || ''}</p>
-                <div class="source-ribbon">
-                    <div style="display:flex; gap:8px">
-                        ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('')}
-                    </div>
-                    ${moreCount > 0 ? `<span class="source-tag" style="opacity:0.5">+${moreCount}</span>` : ''}
-                </div>
-            </article>
-        `;
-    }
-
     function renderPage(clusters) {
         const wrap = document.getElementById('pageWrap');
         if (!clusters || !clusters.length) {
@@ -335,9 +279,6 @@
         const sentinel = document.getElementById('loadMoreWrap');
         if (sentinel) observer.observe(sentinel);
     });
-
-    // Set breaking score from config
-    const BREAKING_SCORE_THRESHOLD = 3.0;
 
     initCategories();
     fetchNews();
