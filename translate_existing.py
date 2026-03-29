@@ -32,7 +32,7 @@ def translate_batch():
         
         if translated_title:
             conn.execute(
-                "UPDATE articles SET title = ?, original_title = ?, description = ?, original_description = ?, is_translated = 1 WHERE id = ?",
+                "UPDATE articles SET title = %s, original_title = %s, description = %s, original_description = %s, is_translated = 1 WHERE id = %s",
                 (translated_title, title, translated_desc or desc, desc, aid)
             )
             print(f"✓ Translated: {translated_title[:50]}...")

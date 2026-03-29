@@ -112,7 +112,7 @@ def cluster_page(cluster_id: str):
     related_clusters = []
     if tags:
         related_rows = conn.execute("""
-            SELECT m.cluster_id, m.tags, ANY_VALUE(a.title) as title, ANY_VALUE(a.image_url) as image_url, COUNT(*) as shared_count
+            SELECT m.cluster_id, m.tags, min(a.title) as title, min(a.image_url) as image_url, COUNT(*) as shared_count
             FROM cluster_metadata m
             JOIN articles a ON m.cluster_id = a.cluster_id
             WHERE m.cluster_id != %s 
@@ -181,30 +181,15 @@ def robots_txt():
 
 @views_bp.route("/sitemap.xml")
 def sitemap_xml():
+    from utils import cached_response, set_cache
+    cached = cached_response("sitemap", ttl=3600)
+    if cached: return Response(cached, mimetype="application/xml")
+    
     now = datetime.datetime.now().strftime("%Y-%m-%d")
     urls = [
-        ("https://presek.mk/", now, "always", "1.0"),
-        ("https://presek.mk/izvori", now, "monthly", "0.5"),
-        ("https://presek.mk/stats", now, "daily", "0.4"),
-        ("https://presek.mk/arhiva", now, "daily", "0.6"),
-        ("https://presek.mk/about", now, "monthly", "0.3"),
-        ("https://presek.mk/privacy", now, "monthly", "0.2"),
-        ("https://presek.mk/contact", now, "monthly", "0.2"),
-    ]
-    try:
-        conn = get_db()
-        clusters = conn.execute("SELECT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= NOW() - INTERVAL '14 days' GROUP BY cluster_id ORDER BY latest DESC").fetchall()
-        conn.close()
-        for c in clusters:
-            lastmod = c['latest'].strftime("%Y-%m-%d") if isinstance(c['latest'], datetime.datetime) else (str(c['latest'])[:10] if c['latest'] else now)
-            urls.append((f"https://presek.mk/cluster/{c['cluster_id']}", lastmod, "daily", "0.7"))
-    except Exception as e:
-        pass
-
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for loc, lastmod, freq, priority in urls:
-        xml += f'  <url>\n    <loc>{loc}</loc>\n    <lastmod>{lastmod}</lastmod>\n    <changefreq>{freq}</changefreq>\n    <priority>{priority}</priority>\n  </url>\n'
+...
     xml += '</urlset>'
+    set_cache("sitemap", xml, ttl=3600)
     return Response(xml, mimetype="application/xml")
 
 @views_bp.route("/favicon.ico")

@@ -82,17 +82,20 @@ def api_news():
         sql += " ORDER BY created_at DESC LIMIT 500"
         rows = conn.execute(sql, tuple(params)).fetchall()
     
-    # Synthesis cache
-    synthesis_rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
-    cached_synthesis_ids = {r["cluster_id"] for r in synthesis_rows}
-    
     # Group by cluster
     clusters = defaultdict(list)
     for r in rows:
         clusters[r['cluster_id']].append(dict(r))
 
-    # Fetch all reactions for these clusters
     cluster_ids_found = list(clusters.keys())
+
+    # Synthesis cache for only the clusters found
+    cached_synthesis_ids = set()
+    if cluster_ids_found:
+        s_rows = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids_found,)).fetchall()
+        cached_synthesis_ids = {r["cluster_id"] for r in s_rows}
+
+    # Fetch all reactions for these clusters
     reactions_map = defaultdict(lambda: defaultdict(int))
     if cluster_ids_found:
         react_rows = conn.execute("SELECT cluster_id, emoji, count FROM reactions WHERE cluster_id = ANY(%s)", (cluster_ids_found,)).fetchall()

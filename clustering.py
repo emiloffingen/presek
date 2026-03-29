@@ -103,8 +103,10 @@ def find_or_create_cluster(title: str, recent_articles: list,
                 ts = article.get("created_at")
                 if isinstance(ts, datetime.datetime):
                     dt = ts.replace(tzinfo=None)
+                elif isinstance(ts, str):
+                    dt = datetime.datetime.fromisoformat(ts.replace("+00:00", "").split('.')[0]) # Remove subseconds/timezone
                 else:
-                    dt = datetime.datetime.fromisoformat(str(ts).replace("+00:00", ""))
+                    dt = now
                 cluster_age[cid] = (now - dt).total_seconds() / 3600
             except:
                 cluster_age[cid] = 12 # fallback
