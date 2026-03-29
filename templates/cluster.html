@@ -171,6 +171,11 @@
     .ai-sheet.active { bottom: 0; }
     .ai-content { font-size: 1.1rem; line-height: var(--lh-base); }
 
+    .cluster-content {
+        max-width: var(--content-width);
+        margin: 0 auto;
+    }
+
     @media (max-width: 600px) {
         .cluster-hero { height: 25vh; }
         .sources-grid { grid-template-columns: 1fr; }
@@ -206,7 +211,7 @@
         </header>
 
         {% if synthesis %}
-        <section class="cluster-summary fade-in" style="animation-delay: 0.1s">
+        <section class="cluster-summary fade-in" style="animation-delay: 0.1s; line-height: var(--lh-base);">
             {{ synthesis }}
         </section>
         {% endif %}
