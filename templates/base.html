@@ -11,6 +11,21 @@
     <link rel="icon" type="image/png" href="/static/logo.png">
 
     <title>{% block title %}Пресек | Вашиот Дневен Преглед{% endblock %}</title>
+    <meta name="description" content="{{ meta.description if meta else 'Најнапреден македонски агрегатор на вести. Групирање со вештачка интелигенција, длабинска анализа и објективни резимеа.' }}">
+    
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Пресек">
+    <meta property="og:title" content="{{ meta.title if meta else 'Пресек | Вашиот Дневен Преглед' }}">
+    <meta property="og:description" content="{{ meta.description if meta else 'Најнапреден македонски агрегатор на вести. Групирање со вештачка интелигенција, длабинска анализа и објективни резимеа.' }}">
+    <meta property="og:image" content="{{ meta.image if meta and meta.image else 'https://presek.mk/og-image.svg' }}">
+    <meta property="og:url" content="{{ meta.url if meta else 'https://presek.mk/' }}">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ meta.title if meta else 'Пресек | Вашиот Дневен Преглед' }}">
+    <meta name="twitter:description" content="{{ meta.description if meta else 'Најнапреден македонски агрегатор на вести. Групирање со вештачка интелигенција, длабинска анализа и објективни резимеа.' }}">
+    <meta name="twitter:image" content="{{ meta.image if meta and meta.image else 'https://presek.mk/og-image.svg' }}">
 
     <!-- Preconnect & Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

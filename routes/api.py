@@ -38,17 +38,24 @@ def api_news():
     page      = request.args.get("page", 0, type=int)
     page_size = request.args.get("page_size", 50, type=int)
     country   = request.args.get("country", "🇲🇰")
+    sub       = request.args.get("sub", "").strip()
     page_size = min(page_size, 100)
-    cache_key = f"news:{country}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
     conn = get_db()
     if country == '🇲🇰':
-        # Front page: show everything (Domestic + Translated International)
-        rows = conn.execute(
-            "SELECT * FROM articles ORDER BY created_at DESC LIMIT 500"
-        ).fetchall()
+        if sub:
+            rows = conn.execute(
+                "SELECT * FROM articles WHERE subcategory = %s ORDER BY created_at DESC LIMIT 500",
+                (sub,)
+            ).fetchall()
+        else:
+            # Front page: show everything (Domestic + Translated International)
+            rows = conn.execute(
+                "SELECT * FROM articles ORDER BY created_at DESC LIMIT 500"
+            ).fetchall()
     else:
         # Filtered by country
         rows = conn.execute(

@@ -49,7 +49,23 @@ def cluster_page(cluster_id: str):
     if not rows: return "Кластерот не постои.", 404
     
     articles = rank_articles_in_cluster([dict(r) for r in rows])
-    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, year=datetime.datetime.now().year)
+    
+    # SEO Metadata
+    description = ""
+    if synthesis:
+        # Clean synthesis points for meta description
+        description = synthesis.replace("•", "").replace("\n", " ").strip()[:200]
+    elif articles[0]["description"]:
+        description = articles[0]["description"][:200]
+
+    meta = {
+        "title": articles[0]["title"],
+        "description": description,
+        "image": articles[0]["image_url"],
+        "url": f"https://presek.mk/cluster/{cluster_id}"
+    }
+
+    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, year=datetime.datetime.now().year)
 
 @views_bp.route("/manifest.json")
 def manifest():

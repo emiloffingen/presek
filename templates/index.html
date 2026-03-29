@@ -92,9 +92,14 @@
         cursor: pointer;
         transition: var(--transition);
     }
-    .trend-tag:hover {
+    .trend-tag:hover, .trend-tag.active {
         border-color: var(--primary);
         color: var(--text-primary);
+    }
+    .trend-tag.active {
+        background: var(--primary);
+        color: white !important;
+        border-color: var(--primary);
     }
 
     .time-divider {
@@ -159,6 +164,12 @@
     </div>
 </nav>
 
+<!-- Regional Sub-filters -->
+<div class="trending-container" id="regionalSubBox" style="display:none; margin-bottom: var(--space-md);">
+    <div class="trending-label">Град</div>
+    <div class="trending-scroll" id="regionalSubList"></div>
+</div>
+
 <div class="trending-container" id="trendingBox" style="display:none">
     <div class="trending-label">Во Тренд</div>
     <div class="trending-scroll" id="trendingList"></div>
@@ -186,6 +197,7 @@
 {% block scripts %}
 <script>
     let activeCategory = '🇲🇰';
+    let activeSubcategory = '';
     let _currentPage = 0;
     let _hasMore = false;
     let _isFetching = false;
@@ -194,6 +206,7 @@
 
     const countries = [
         { id: '🇲🇰', label: 'Македонија' },
+        { id: 'REG', label: 'Регионално' },
         { id: '🇩🇪', label: 'Германија' },
         { id: '🇷🇸', label: 'Србија' },
         { id: '🇺🇸', label: 'САД' },
@@ -208,9 +221,21 @@
         const list = document.getElementById('categoryList');
         list.innerHTML = countries.map(c => `
             <button class="cat-btn ${c.id === activeCategory ? 'active' : ''}" onclick="filterCat('${c.id}')">
-                ${c.id} ${c.label}
+                ${c.id === 'REG' ? '📍' : c.id} ${c.label}
             </button>
         `).join('');
+
+        // Regional sub-filters
+        const subBox = document.getElementById('regionalSubBox');
+        if (activeCategory === 'REG') {
+            subBox.style.display = 'flex';
+            const cities = ["Скопје", "Битола", "Охрид", "Прилеп", "Куманово", "Тетово", "Штип", "Велес", "Гостивар", "Струмица", "Кавадарци"];
+            document.getElementById('regionalSubList').innerHTML = cities.map(city => `
+                <div class="trend-tag ${activeSubcategory === city ? 'active' : ''}" onclick="filterSub('${city}')">${city}</div>
+            `).join('');
+        } else {
+            subBox.style.display = 'none';
+        }
     }
 
     function renderPage(clusters) {
@@ -268,7 +293,14 @@
         }
 
         try {
-            const res = await fetch(`/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&country=${encodeURIComponent(activeCategory)}`);
+            let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`;
+            if (activeCategory === 'REG') {
+                url += `&country=${encodeURIComponent('Македонија')}&sub=${encodeURIComponent(activeSubcategory)}`;
+            } else {
+                url += `&country=${encodeURIComponent(activeCategory)}`;
+            }
+            
+            const res = await fetch(url);
             const data = await res.json();
             
             if (isLoadMore) {
@@ -289,6 +321,14 @@
 
     function filterCat(cat) {
         activeCategory = cat;
+        activeSubcategory = '';
+        _currentPage = 0;
+        initCategories();
+        fetchNews();
+    }
+
+    function filterSub(sub) {
+        activeSubcategory = sub;
         _currentPage = 0;
         initCategories();
         fetchNews();
@@ -328,13 +368,11 @@
     }
 
     function searchTrend(q) {
-        // Access global search system from base.html
         const searchOpen = document.getElementById('searchOpen');
         const searchInput = document.getElementById('searchInput');
         if (searchOpen && searchInput) {
             searchOpen.click();
             searchInput.value = q;
-            // Trigger input event to start search
             searchInput.dispatchEvent(new Event('input'));
         }
     }
