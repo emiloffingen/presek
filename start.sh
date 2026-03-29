@@ -12,7 +12,14 @@ PYTHON="$VENV/bin/python3"
 CELERY="$VENV/bin/celery"
 
 # Load environment variables
-[ -f "$APP_DIR/.env" ] && export $(grep -v '^#' "$APP_DIR/.env" | xargs)
+if [ -f "$APP_DIR/.env" ]; then
+  while read -r line || [ -n "$line" ]; do
+    # Skip comments and empty lines
+    [[ "$line" =~ ^#.*$ ]] && continue
+    [[ -z "$line" ]] && continue
+    export "$line"
+  done < "$APP_DIR/.env"
+fi
 
 # ── Colours ──────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'

@@ -82,12 +82,30 @@ def init_db():
         is_translated INTEGER DEFAULT 0
     )""")
     
+    # Migrations for articles
+    try:
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS subcategory TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS topic TEXT DEFAULT 'Вести'")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS original_title TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS original_description TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_translated INTEGER DEFAULT 0")
+        conn.commit()
+    except:
+        conn.rollback()
+
     cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
         cluster_id TEXT PRIMARY KEY,
         summary TEXT,
         perspectives JSONB DEFAULT '[]',
         created_at TIMESTAMP
     )""")
+    
+    # Migrations for cluster_summaries
+    try:
+        cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS perspectives JSONB DEFAULT '[]'")
+        conn.commit()
+    except:
+        conn.rollback()
 
     cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
         cluster_id TEXT PRIMARY KEY,
