@@ -102,6 +102,39 @@
         border-color: var(--primary);
     }
 
+    /* Hero Section */
+    .hero-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: repeat(2, 1fr);
+        gap: var(--space-md);
+        max-width: var(--max-width);
+        margin: 0 auto var(--space-2xl);
+        padding: 0 var(--space-md);
+        height: 500px;
+    }
+    .hero-item {
+        position: relative;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+    }
+    .hero-item.large { grid-row: 1 / span 2; }
+    .hero-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; }
+    .hero-item:hover .hero-img { transform: scale(1.05); }
+    .hero-overlay {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        padding: var(--space-xl);
+        background: linear-gradient(transparent, rgba(0,0,0,0.9));
+        color: white;
+    }
+    .hero-item.small .hero-overlay { padding: var(--space-lg); }
+    .hero-title-text { font-family: var(--font-heading); line-height: 1.2; margin-bottom: var(--space-sm); }
+    .hero-item.large .hero-title-text { font-size: 2rem; }
+    .hero-item.small .hero-title-text { font-size: 1.1rem; }
+
     .time-divider {
         grid-column: 1 / -1;
         display: flex;
@@ -125,6 +158,12 @@
         text-align: center;
         padding: var(--space-2xl) 0;
         min-height: 100px;
+    }
+
+    @media (max-width: 800px) {
+        .hero-grid { grid-template-columns: 1fr; height: auto; }
+        .hero-item.large { height: 300px; }
+        .hero-item.small { height: 200px; }
     }
 
     /* Skeleton Loading - 2026 Standard */
@@ -164,10 +203,25 @@
     </div>
 </nav>
 
+<!-- Hero Section for Top 3 -->
+<div id="heroWrap" style="display:none">
+    <div class="hero-grid" id="heroGrid"></div>
+</div>
+
 <!-- Regional Sub-filters -->
 <div class="trending-container" id="regionalSubBox" style="display:none; margin-bottom: var(--space-md);">
     <div class="trending-label">Град</div>
     <div class="trending-scroll" id="regionalSubList"></div>
+</div>
+
+<!-- Sentiment Filters -->
+<div class="trending-container" id="sentimentBox" style="margin-bottom: var(--space-md);">
+    <div class="trending-label">Тон</div>
+    <div class="trending-scroll">
+        <div class="trend-tag active" id="sentAll" onclick="filterSentiment('')">Сите</div>
+        <div class="trend-tag" id="sentPos" onclick="filterSentiment('🟢')">🟢 Позитивни</div>
+        <div class="trend-tag" id="sentCrit" onclick="filterSentiment('🔴')">🔴 Критични</div>
+    </div>
 </div>
 
 <!-- Topical Filters -->
@@ -207,6 +261,7 @@
     let activeCategory = '🇲🇰';
     let activeSubcategory = '';
     let activeTopic = '';
+    let activeSentiment = '';
     let _currentPage = 0;
     let _hasMore = false;
     let _isFetching = false;
@@ -229,7 +284,7 @@
     ];
 
     const topics = [
-        { id: '', label: 'Сите' },
+        { id: '', label: 'Сите Теми' },
         { id: 'Политика', label: 'Политика' },
         { id: 'Економија', label: 'Економија' },
         { id: 'Технологија', label: 'Технологија' },
@@ -263,6 +318,44 @@
         topicList.innerHTML = topics.map(t => `
             <div class="trend-tag ${activeTopic === t.id ? 'active' : ''}" onclick="filterTopic('${t.id}')">${t.label}</div>
         `).join('');
+        
+        // Sentiment
+        document.querySelectorAll('#sentimentBox .trend-tag').forEach(tag => tag.classList.remove('active'));
+        if (!activeSentiment) document.getElementById('sentAll').classList.add('active');
+        else if (activeSentiment === '🟢') document.getElementById('sentPos').classList.add('active');
+        else if (activeSentiment === '🔴') document.getElementById('sentCrit').classList.add('active');
+    }
+
+    function renderHero(clusters) {
+        const wrap = document.getElementById('heroWrap');
+        const grid = document.getElementById('heroGrid');
+        if (activeCategory !== '🇲🇰' || activeTopic || activeSentiment || activeSubcategory || _currentPage > 0) {
+            wrap.style.display = 'none';
+            return;
+        }
+        
+        const top3 = clusters.filter(c => c.articles[0].image_url).slice(0, 3);
+        if (top3.length < 3) {
+            wrap.style.display = 'none';
+            return;
+        }
+        
+        wrap.style.display = 'block';
+        grid.innerHTML = top3.map((c, i) => {
+            const a = c.articles[0];
+            const sizeClass = i === 0 ? 'large' : 'small';
+            return `
+                <a href="/cluster/${c.cluster_id}" class="hero-item ${sizeClass}" onmousedown="trackClick('${a.id}')">
+                    <img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="hero-img" alt="${a.title}">
+                    <div class="hero-overlay">
+                        <div class="story-meta" style="color:rgba(255,255,255,0.8); margin-bottom:8px">
+                            <span>${a.source}</span> • <span>${timeAgo(a.created_at)}</span>
+                        </div>
+                        <h2 class="hero-title-text">${a.title}</h2>
+                    </div>
+                </a>
+            `;
+        }).join('');
     }
 
     function renderPage(clusters) {
@@ -274,8 +367,14 @@
             return;
         }
 
+        // Only show hero on page 0 of domestic news
+        if (_currentPage === 0) renderHero(clusters);
+
+        const displayClusters = (activeCategory === '🇲🇰' && !activeTopic && !activeSentiment && !activeSubcategory && _currentPage === 0) 
+            ? clusters.slice(3) : clusters;
+
         const periodMap = {};
-        clusters.forEach(c => {
+        displayClusters.forEach(c => {
             const h = new Date(c.articles[0].created_at).getHours();
             let key = '🌃 Ноќ';
             if (h >= 6 && h < 12) key = '🌅 Утро';
@@ -322,7 +421,7 @@
         }
 
         try {
-            let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&topic=${encodeURIComponent(activeTopic)}`;
+            let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&topic=${encodeURIComponent(activeTopic)}&sentiment=${encodeURIComponent(activeSentiment)}`;
             if (activeCategory === 'REG') {
                 url += `&country=${encodeURIComponent('Македонија')}&sub=${encodeURIComponent(activeSubcategory)}`;
             } else if (activeCategory === 'SAVED') {
@@ -377,6 +476,13 @@
 
     function filterTopic(topic) {
         activeTopic = topic;
+        _currentPage = 0;
+        initCategories();
+        fetchNews();
+    }
+
+    function filterSentiment(s) {
+        activeSentiment = s;
         _currentPage = 0;
         initCategories();
         fetchNews();

@@ -42,9 +42,10 @@ def api_news():
     ids       = request.args.get("ids", "").strip()
     sort_by   = request.args.get("sort", "recent")
     topic     = request.args.get("topic", "").strip()
+    sentiment = request.args.get("sentiment", "").strip()
     page_size = min(page_size, 100)
     
-    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
@@ -65,6 +66,9 @@ def api_news():
         if topic:
             sql += " AND topic = %s"
             params.append(topic)
+        if sentiment:
+            sql += " AND summary LIKE %s"
+            params.append(f"%{sentiment}%")
         
         sql += " ORDER BY created_at DESC LIMIT 500"
         rows = conn.execute(sql, tuple(params)).fetchall()
@@ -75,6 +79,9 @@ def api_news():
         if topic:
             sql += " AND topic = %s"
             params.append(topic)
+        if sentiment:
+            sql += " AND summary LIKE %s"
+            params.append(f"%{sentiment}%")
             
         sql += " ORDER BY created_at DESC LIMIT 500"
         rows = conn.execute(sql, tuple(params)).fetchall()
