@@ -263,6 +263,34 @@ def api_search():
     return jsonify({"clusters": result, "total": len(result)})
 
 
+@api_bp.route("/api/top10")
+def api_top10():
+    """Alias for news ticker data."""
+    conn = get_db()
+    # Fetch top 10 clusters from last 24h
+    sql = "SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 300"
+    rows = conn.execute(sql).fetchall()
+    conn.close()
+    
+    clusters = defaultdict(list)
+    for r in rows:
+        clusters[r['cluster_id']].append(dict(r))
+        
+    ranked = []
+    for cid, arts in clusters.items():
+        sorted_arts = rank_articles_in_cluster(arts)
+        s = score_cluster(sorted_arts)
+        ranked.append({
+            "cluster_id": cid,
+            "articles": sorted_arts,
+            "score": s,
+            "is_breaking": s >= BREAKING_SCORE_THRESHOLD
+        })
+    
+    ranked.sort(key=lambda x: x["score"], reverse=True)
+    return jsonify(ranked[:10])
+
+
 @api_bp.route("/api/trending")
 def api_trending():
     from trending import get_trending
