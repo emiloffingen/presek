@@ -1,5 +1,5 @@
 """
-health.py — Health check + monitoring for TimeAI.mk
+health.py — Health check + monitoring for Presek.mk
 Add to app.py: from health import register_health_routes; register_health_routes(app, db)
 """
 

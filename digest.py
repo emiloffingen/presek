@@ -86,10 +86,11 @@ def fetch_top_stories(db_path: str = "presek.db",
     """
     try:
         conn = database.get_db()
+        # In PostgreSQL, we can use INTERVAL 'N days' or (interval '1 day' * N)
         rows = conn.execute("""
             SELECT id, title, link, source, category, summary, cluster_id, created_at
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '%s days'
+            WHERE created_at >= NOW() - (INTERVAL '1 day' * %s)
             ORDER BY created_at DESC
         """, (days,)).fetchall()
         conn.close()

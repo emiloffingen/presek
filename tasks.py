@@ -7,6 +7,7 @@ from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _cal
 from database import get_db
 from prompts import CATEGORIZATION_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
+from health import record_refresh
 
 log = logging.getLogger("presek_celery")
 
@@ -14,10 +15,13 @@ log = logging.getLogger("presek_celery")
 def run_ingestion():
     """Periodic task to ingest regular and diaspora feeds."""
     log.info("Starting regular feed ingestion...")
-    ingest_feeds()
+    new_count, errors = ingest_feeds()
     
     log.info("Starting diaspora feed ingestion...")
-    ingest_diaspora_feeds()
+    d_count, d_errors = ingest_diaspora_feeds()
+    
+    # Update health monitoring
+    record_refresh(new_count + d_count, errors + d_errors)
     
     log.info("Starting recategorization for suspect clusters...")
     recategorize_clusters_task.delay()
@@ -65,6 +69,25 @@ def recategorize_clusters_task():
         conn.close()
     except Exception as e:
         log.error(f"Recategorize task failed: {e}")
+
+@celery_app.task
+def send_daily_digest_task():
+    """
+    Periodic task to send a daily digest of the top stories to ntfy.
+    """
+    from digest import fetch_top_stories, send_ntfy_digest
+    from config import NTFY_TOPIC, DB_PATH
+    
+    log.info("Generating and sending daily digest...")
+    try:
+        # Fetch top stories for the last 24 hours
+        stories_by_cat = fetch_top_stories(DB_PATH, days=1, per_category=3)
+        if stories_by_cat:
+            send_ntfy_digest(stories_by_cat, NTFY_TOPIC, period_days=1)
+        else:
+            log.warning("No stories found for the daily digest.")
+    except Exception as e:
+        log.error(f"Daily digest task failed: {e}")
 
 @celery_app.task
 def run_prune_db():

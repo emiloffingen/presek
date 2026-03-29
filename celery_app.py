@@ -20,6 +20,10 @@ celery_app.conf.update(
         'prune-database': {
             'task': 'tasks.run_prune_db',
             'schedule': crontab(hour=3, minute=0), # Run daily at 3 AM
+        },
+        'send-daily-digest': {
+            'task': 'tasks.send_daily_digest_task',
+            'schedule': crontab(hour=7, minute=0), # Run daily at 7 AM UTC (8 AM local)
         }
     }
 )
