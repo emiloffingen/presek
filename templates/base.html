@@ -504,23 +504,25 @@
         }
 
         // Initialize ticker
-        fetch('/api/top10')
+        fetch('/api/news?sort=score&page_size=10')
             .then(res => res.json())
             .then(data => {
                 const inner = document.getElementById('tickerInner');
-                if (!data || !data.length) {
+                const clusters = data.clusters;
+                if (!clusters || !clusters.length) {
                     inner.innerHTML = '<span class="utility-ticker">Нема активни вести</span>';
                     return;
                 }
                 inner.innerHTML = '';
-                const items = [...data, ...data];
+                const items = [...clusters, ...clusters];
                 items.forEach((item, idx) => {
                     const a = document.createElement('a');
                     a.className = 'popular-item';
                     a.href = `/cluster/${item.cluster_id}`;
                     const art = item.articles[0];
-                    const headline = art.headline || art.title;
+                    const headline = art.title;
                     const isBreaking = item.is_breaking;
+
                     a.innerHTML = `
                         ${isBreaking ? `
                             <span style="display:inline-flex; align-items:center; color:var(--primary); font-weight:800; font-size:0.6rem; border:1px solid var(--primary); padding:0px 6px; border-radius:2px; margin-right:8px; gap:4px;">
