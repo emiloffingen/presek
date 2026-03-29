@@ -93,7 +93,7 @@
         transform: translateY(-1px);
     }
 
-    /* Skeleton Loading */
+    /* Skeleton Loading - 2026 Standard */
     .skeleton-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -111,11 +111,12 @@
     .skeleton-box {
         background: var(--border);
         border-radius: var(--radius-md);
-        animation: pulse 1.5s infinite ease-in-out;
+        animation: skeleton-pulse 1.8s infinite ease-in-out;
     }
-    @keyframes pulse {
-        0%, 100% { opacity: 0.5; }
+    @keyframes skeleton-pulse {
+        0% { opacity: 0.4; }
         50% { opacity: 0.8; }
+        100% { opacity: 0.4; }
     }
 </style>
 {% endblock %}
@@ -130,7 +131,17 @@
 </nav>
 
 <div id="pageWrap">
-    <!-- Content Populated by JS -->
+    <!-- Initial Skeleton Loader for Perceived Performance -->
+    <div class="skeleton-grid">
+        {% for i in range(6) %}
+        <div class="skeleton-card">
+            <div class="skeleton-box" style="aspect-ratio: 16/9; width: 100%;"></div>
+            <div class="skeleton-box" style="height: 12px; width: 30%;"></div>
+            <div class="skeleton-box" style="height: 28px; width: 90%;"></div>
+            <div class="skeleton-box" style="height: 60px; width: 100%;"></div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 <div id="loadMoreWrap" class="load-more-wrap" style="display:none">
@@ -260,7 +271,14 @@
         if (!isLoadMore) {
             document.getElementById('pageWrap').innerHTML = `
                 <div class="skeleton-grid">
-                    ${'<div class="skeleton-card"><div class="skeleton-box" style="height:160px"></div><div class="skeleton-box" style="height:24px;width:80%"></div><div class="skeleton-box" style="height:60px"></div></div>'.repeat(6)}
+                    ${`
+                        <div class="skeleton-card">
+                            <div class="skeleton-box" style="aspect-ratio: 16/9; width: 100%;"></div>
+                            <div class="skeleton-box" style="height: 12px; width: 30%;"></div>
+                            <div class="skeleton-box" style="height: 28px; width: 90%;"></div>
+                            <div class="skeleton-box" style="height: 60px; width: 100%;"></div>
+                        </div>
+                    `.repeat(6)}
                 </div>
             `;
         }
