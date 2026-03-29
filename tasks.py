@@ -3,7 +3,7 @@ import datetime
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
-from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response
+from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response, generate_cover_art
 from database import get_db
 from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
@@ -39,6 +39,15 @@ def synthesize_cluster_task(cluster_id, content):
                 (cluster_id, clean_synthesis, now)
             )
             conn.commit()
+            
+            # Check if lead image is missing
+            lead_row = conn.execute("SELECT id, image_url FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1", (cluster_id,)).fetchone()
+            if lead_row and not lead_row["image_url"]:
+                img_url = generate_cover_art(cluster_id, clean_synthesis)
+                if img_url:
+                    conn.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s", (img_url, cluster_id))
+                    conn.commit()
+            
             conn.close()
     except Exception as e:
         log.warning(f"[auto-summarize] Cluster synthesis failed for {cluster_id}: {e}")

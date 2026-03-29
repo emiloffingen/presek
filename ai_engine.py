@@ -155,6 +155,44 @@ def translate_to_macedonian(text: str) -> str | None:
         return clean_json_response(res)
     return None
 
+def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
+    """Generate professional news cover art using Cloudflare Stable Diffusion."""
+    from config import CF_IMAGE_MODEL_URL, CLOUDFLARE_API_TOKEN
+    import os
+    
+    if not CLOUDFLARE_API_TOKEN:
+        return None
+        
+    # 1. Simplify synthesis into a visual prompt
+    # Take first 2 bullets and clean
+    lines = [l.strip('• ') for l in synthesis.split('\n') if '•' in l][:2]
+    visual_context = ". ".join(lines)
+    
+    # English prompt for better results with SDXL
+    prompt = f"Cinematic editorial photography, {visual_context}, professional news graphics, high resolution, 16:9 aspect ratio, neutral lighting."
+    
+    payload = json.dumps({"prompt": prompt}).encode("utf-8")
+    save_path = f"static/generated/{cluster_id}.jpg"
+    
+    try:
+        req = urllib.request.Request(
+            CF_IMAGE_MODEL_URL,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            # Cloudflare returns binary image data
+            with open(save_path, "wb") as f:
+                f.write(resp.read())
+        
+        return f"/static/generated/{cluster_id}.jpg"
+    except Exception as e:
+        log.warning(f"[ai-image] Failed to generate cover for {cluster_id}: {e}")
+        return None
+
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
     """
     Finds top clusters and dispatches background tasks for summarization/synthesis.
