@@ -16,60 +16,96 @@
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
         text-align: center;
-        transition: var(--transition);
     }
-    .kpi-card:hover { transform: translateY(-4px); border-color: var(--primary); }
-    .kpi-val { font-size: 2.25rem; font-weight: var(--weight-bold); color: var(--primary); font-family: var(--font-display); }
-    .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: var(--weight-bold); margin-top: var(--space-xs); }
+    .kpi-val { font-size: 2rem; font-weight: var(--weight-bold); color: var(--primary); display: block; }
+    .kpi-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
-    .stats-layout {
+    .charts-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 2fr 1fr;
         gap: var(--space-xl);
+        margin-bottom: var(--space-2xl);
     }
-    @media (max-width: 900px) { .stats-layout { grid-template-columns: 1fr; } }
-
-    .panel {
+    .chart-container {
         background: var(--bg-surface);
         padding: var(--space-lg);
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
     }
-    .panel-title {
-        font-size: 1.15rem;
+    .chart-title {
+        font-size: 1.1rem;
+        font-family: var(--font-display);
         margin-bottom: var(--space-lg);
-        padding-bottom: var(--space-sm);
-        border-bottom: 1px solid var(--border);
         color: var(--text-primary);
     }
 
-    .bar-row { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md); }
-    .bar-label { width: 120px; font-size: 0.85rem; font-weight: var(--weight-semi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+    .stats-table-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-xl);
+    }
+    
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 0.85rem; }
+    .bar-label { width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bar-track { flex: 1; height: 6px; background: var(--bg-base); border-radius: 3px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 1s ease; }
-    .bar-val { width: 40px; font-size: 0.8rem; font-weight: var(--weight-bold); text-align: right; color: var(--text-primary); }
+    .bar-val { width: 40px; text-align: right; color: var(--text-muted); font-family: monospace; }
+
+    @media (max-width: 900px) {
+        .charts-grid, .stats-table-grid { grid-template-columns: 1fr; }
+    }
 </style>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
 <div class="fade-in">
-    <h1 class="hero-title">Статистички <span style="color:var(--primary)">Преглед</span></h1>
-    <p class="hero-subtitle">Увид во медиумската слика во Македонија преку податоци.</p>
-
-    <div class="kpi-grid" id="kpiGrid">
-        <div class="kpi-card"><div class="kpi-val" id="totalArticles">-</div><div class="kpi-label">Вкупно Вести</div></div>
-        <div class="kpi-card"><div class="kpi-val" id="totalSources">-</div><div class="kpi-label">Активни Извори</div></div>
-        <div class="kpi-card"><div class="kpi-val" id="totalClusters">-</div><div class="kpi-label">Настани (24ч)</div></div>
+    <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
+    
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-val" id="totalArticles">-</span>
+            <span class="kpi-label">Вкупно објави</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-val" id="last24h">-</span>
+            <span class="kpi-label">Во последни 24ч</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-val" id="summarizedPct">-</span>
+            <span class="kpi-label">AI Резимирани</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-val" id="uptimeVal">-</span>
+            <span class="kpi-label">Uptime</span>
+        </div>
     </div>
 
-    <div class="stats-layout">
-        <div class="panel">
-            <h2 class="panel-title">Најактивни Медиуми</h2>
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3 class="chart-title">Брзина на ингестија (24ч)</h3>
+            <canvas id="velocityChart" height="100"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title">Дистрибуција по категорија</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <div class="stats-table-grid">
+        <div class="chart-container">
+            <h3 class="chart-title">Топ 10 Извори</h3>
             <div id="sourcesStats"></div>
         </div>
-        <div class="panel">
-            <h2 class="panel-title">Вести по Категорија</h2>
-            <div id="categoryStats"></div>
+        <div class="chart-container">
+            <h3 class="chart-title">Технички Детали</h3>
+            <div style="font-size: 0.9rem; line-height: 2;">
+                <div style="display:flex; justify-content:space-between"><span>База на податоци (PostgreSQL):</span> <strong id="dbSize">-</strong></div>
+                <div style="display:flex; justify-content:space-between"><span>Број на активни RSS фидови:</span> <strong id="totalFeeds">-</strong></div>
+                <div style="display:flex; justify-content:space-between"><span>Најстара статија во база:</span> <strong id="oldestArt">-</strong></div>
+                <div style="display:flex; justify-content:space-between"><span>Последно ажурирање:</span> <strong id="newestArt">-</strong></div>
+            </div>
         </div>
     </div>
 </div>
@@ -83,9 +119,16 @@
             const data = await res.json();
 
             document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
-            document.getElementById('totalSources').textContent = data.by_source.length;
-            document.getElementById('totalClusters').textContent = data.last_24h.toLocaleString();
+            document.getElementById('last24h').textContent = data.last_24h.toLocaleString();
+            document.getElementById('summarizedPct').textContent = data.summarized_pct + '%';
+            document.getElementById('uptimeVal').textContent = data.uptime;
+            
+            document.getElementById('dbSize').textContent = data.db_size_mb + ' MB';
+            document.getElementById('totalFeeds').textContent = data.total_feeds;
+            document.getElementById('oldestArt').textContent = new Date(data.oldest_article).toLocaleDateString('mk-MK');
+            document.getElementById('newestArt').textContent = new Date(data.new_article).toLocaleTimeString('mk-MK');
 
+            // Sources Bar Chart
             const maxSrc = Math.max(...data.by_source.map(s => s.n));
             document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
                 <div class="bar-row">
@@ -95,14 +138,55 @@
                 </div>
             `).join('');
 
-            const maxCat = Math.max(...data.by_category.map(c => c.n));
-            document.getElementById('categoryStats').innerHTML = data.by_category.map(c => `
-                <div class="bar-row">
-                    <span class="bar-label">${c.cat}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${(c.n/maxCat)*100}%; background: var(--text-muted)"></div></div>
-                    <span class="bar-val">${c.n}</span>
-                </div>
-            `).join('');
+            // Velocity Chart (Line)
+            const ctxV = document.getElementById('velocityChart').getContext('2d');
+            new Chart(ctxV, {
+                type: 'line',
+                data: {
+                    labels: data.velocity.map(v => new Date(v.t).getHours() + ':00'),
+                    datasets: [{
+                        label: 'Статии на час',
+                        data: data.velocity.map(v => v.n),
+                        borderColor: '#c0392b',
+                        backgroundColor: 'rgba(192, 57, 43, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                        x: { grid: { display: false }, ticks: { color: '#888', maxRotation: 0 } }
+                    }
+                }
+            });
+
+            // Category Chart (Doughnut)
+            const ctxC = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctxC, {
+                type: 'doughnut',
+                data: {
+                    labels: data.by_category.map(c => c.cat),
+                    datasets: [{
+                        data: data.by_category.map(c => c.n),
+                        backgroundColor: [
+                            '#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#2980b9', '#8e44ad', '#2c3e50'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#888', padding: 20, boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
 
         } catch(e) { console.error(e); }
     }

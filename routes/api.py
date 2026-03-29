@@ -463,6 +463,16 @@ def api_stats_full():
         top_clicks = conn.execute("SELECT title, source, clicks, link FROM articles WHERE clicks > 0 ORDER BY clicks DESC LIMIT 10").fetchall()
         oldest     = conn.execute("SELECT MIN(created_at) FROM articles").fetchone()[0]
         newest     = conn.execute("SELECT MAX(created_at) FROM articles").fetchone()[0]
+        
+        # Velocity Data
+        velocity_rows = conn.execute("""
+            SELECT date_trunc('hour', created_at) as hr, COUNT(*) 
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '24 hours'
+            GROUP BY hr ORDER BY hr ASC
+        """).fetchall()
+        velocity = [{"t": r[0].isoformat(), "n": r[1]} for r in velocity_rows]
+        
         conn.close()
 
         db_size = os.path.getsize(DB_PATH) / (1024*1024) if os.path.exists(DB_PATH) else 0
@@ -481,6 +491,7 @@ def api_stats_full():
             "oldest_article": oldest,
             "newest_article": newest,
             "total_feeds": len(RSS_FEEDS),
+            "velocity": velocity,
             "by_category": [{"cat": r[0] or "Македонија", "n": r[1]} for r in by_cat],
             "by_source": [{"source": r[0], "n": r[1]} for r in by_source],
             "top_clicked": [{"title": r[0][:70], "source": r[1], "clicks": r[2], "link": r[3]} for r in top_clicks],
