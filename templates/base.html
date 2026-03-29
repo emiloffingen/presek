@@ -88,12 +88,12 @@
         });
 
         // Initialize ticker
-        fetch('/api/trending')
+        fetch('/api/top10')
             .then(res => res.json())
             .then(data => {
                 const inner = document.getElementById('tickerInner');
                 if (!data || !data.length) {
-                    inner.innerHTML = '<span class="utility-ticker">Нема активни трендови</span>';
+                    inner.innerHTML = '<span class="utility-ticker">Нема активни вести</span>';
                     return;
                 }
                 inner.innerHTML = '';
@@ -102,12 +102,23 @@
                 items.forEach((item, idx) => {
                     const a = document.createElement('a');
                     a.className = 'popular-item';
-                    a.href = `/api/search?q=${encodeURIComponent(item.word)}`;
-                    a.innerHTML = `<span class="rank">#${(idx % data.length) + 1}</span> ${item.word}`;
+                    a.href = `/cluster/${item.cluster_id}`;
+                    
+                    const art = item.articles[0];
+                    const headline = art.headline || art.title;
+                    const isBreaking = item.is_breaking;
+                    
+                    a.innerHTML = `
+                        ${isBreaking ? '<span style="color:var(--primary); font-weight:800; font-size:0.6rem; border:1px solid var(--primary); padding:0px 4px; border-radius:2px; margin-right:6px;">ВО ЖИВО</span>' : ''}
+                        <span class="rank">#${(idx % data.length) + 1}</span> ${headline}
+                    `;
                     inner.appendChild(a);
                     if (idx < items.length - 1) {
                         const sep = document.createElement('div');
                         sep.className = 'popular-sep';
+                        sep.style.width = '1px';
+                        sep.style.height = '12px';
+                        sep.style.background = 'var(--border)';
                         inner.appendChild(sep);
                     }
                 });
