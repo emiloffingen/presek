@@ -644,6 +644,39 @@ def api_briefing():
         return jsonify({"content": row["content"], "date": row["date"].isoformat()})
     return jsonify({"error": "Брифингот сè уште не е генериран за денес."}), 404
 
+@api_bp.route("/api/ai/factcheck/<cluster_id>")
+def api_ai_factcheck(cluster_id: str):
+    conn = get_db()
+    rows = conn.execute("SELECT source, title, description FROM articles WHERE cluster_id = %s", (cluster_id,)).fetchall()
+    conn.close()
+    
+    if not rows:
+        return jsonify({"error": "Кластерот не е пронајден."}), 404
+        
+    context_items = []
+    for r in rows:
+        context_items.append(f"SOURCE: {r['source']} | TITLE: {r['title']} | DESC: {(r['description'] or '')[:200]}")
+    
+    context_text = "\n---\n".join(context_items)
+    
+    from prompts import FACTCHECK_SYSTEM_PROMPT
+    from config import GOOGLE_API_KEY, GEMINI_URL
+    
+    payload = {
+        "contents": [{"parts": [{"text": f"SYSTEM: {FACTCHECK_SYSTEM_PROMPT}\n\nCONTEXT:\n{context_text}"}]}],
+        "generationConfig": {"responseMimeType": "application/json"}
+    }
+    
+    try:
+        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            return Response(answer, mimetype="application/json")
+    except Exception as e:
+        log.error(f"Fact-check API error: {e}")
+        return jsonify({"error": "Грешка при проверка на фактите."}), 500
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
