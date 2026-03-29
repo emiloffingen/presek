@@ -114,6 +114,27 @@
         </div>
     </footer>
 
+    <!-- Global AI Assistant -->
+    <div class="ai-fab" id="aiFab" onclick="toggleGlobalAI()" title="Прашај го Пресек Асистентот">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L1 23l6.71-1.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.47 0-2.84-.36-4.03-1l-.37-.21-3.73 1.1.1.38 1.1-3.73-.21-.37c-.64-1.19-1-2.56-1-4.03 0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8zM12 11c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm-4 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+    </div>
+
+    <div class="ai-chat-window" id="globalAIWindow">
+        <div class="ai-chat-header">
+            <span>Пресек Асистент</span>
+            <button onclick="toggleGlobalAI()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer">&times;</button>
+        </div>
+        <div class="ai-chat-body" id="globalAIChatBody">
+            <div class="ai-msg bot">Здраво! Јас сум вашиот Пресек Асистент. Ме интересира сè за вестите. Прашајте ме нешто!</div>
+        </div>
+        <div class="ai-chat-footer">
+            <input type="text" id="globalAIInput" placeholder="Вашето прашање..." onkeypress="if(event.key==='Enter') askGlobalAI()">
+            <button onclick="askGlobalAI()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Global Scripts -->
     <script>
         // Global Constants
@@ -314,6 +335,59 @@
             } catch(err) {
                 msg.textContent = 'Грешка. Пробајте подоцна.';
                 msg.style.color = 'var(--primary)';
+            }
+        }
+
+        // Global AI Assistant
+        const globalAIWindow = document.getElementById('globalAIWindow');
+        const globalAIChatBody = document.getElementById('globalAIChatBody');
+        const globalAIInput = document.getElementById('globalAIInput');
+
+        function toggleGlobalAI() {
+            globalAIWindow.classList.toggle('active');
+            if (globalAIWindow.classList.contains('active')) {
+                globalAIInput.focus();
+            }
+        }
+
+        function appendAIMessage(text, side) {
+            const div = document.createElement('div');
+            div.className = `ai-msg ${side}`;
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            globalAIChatBody.appendChild(div);
+            globalAIChatBody.scrollTop = globalAIChatBody.scrollHeight;
+        }
+
+        async function askGlobalAI() {
+            const query = globalAIInput.value.trim();
+            if (!query) return;
+
+            appendAIMessage(query, 'user');
+            globalAIInput.value = '';
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'ai-msg bot';
+            loadingDiv.textContent = 'Пребарувам во последните вести...';
+            globalAIChatBody.appendChild(loadingDiv);
+            globalAIChatBody.scrollTop = globalAIChatBody.scrollHeight;
+
+            try {
+                const res = await fetch('/api/ai/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const data = await res.json();
+                
+                globalAIChatBody.removeChild(loadingDiv);
+                if (data.error) {
+                    appendAIMessage(`Грешка: ${data.error}`, 'bot');
+                } else {
+                    appendAIMessage(data.response, 'bot');
+                }
+            } catch(e) {
+                globalAIChatBody.removeChild(loadingDiv);
+                appendAIMessage('Проблем со конекцијата.', 'bot');
             }
         }
 

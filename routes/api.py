@@ -574,6 +574,54 @@ def api_sources_reliability():
         "default": DEFAULT_CREDIBILITY
     })
 
+@api_bp.route("/api/ai/ask", methods=["POST"])
+def api_ai_ask():
+    data = request.json
+    query = data.get("query", "").strip()
+    if not query or len(query) < 3:
+        return jsonify({"error": "Ве молиме внесете подолго прашање."}), 400
+    
+    try:
+        conn = get_db()
+        # Find relevant news context from last 3 days
+        sql = """
+            SELECT source, title, description, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), q) as rank
+            FROM articles, plainto_tsquery('simple', %s) q
+            WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ q
+              AND created_at >= NOW() - INTERVAL '3 days'
+            ORDER BY rank DESC
+            LIMIT 10
+        """
+        rows = conn.execute(sql, (query,)).fetchall()
+        conn.close()
+        
+        if not rows:
+            return jsonify({"response": "За жал, немам информации за оваа тема во последните вести. Можам да одговорам само за актуелни случувања."})
+            
+        context_items = []
+        for r in rows:
+            context_items.append(f"SOURCE: {r['source']} | HEADLINE: {r['title']} | DESC: {(r['description'] or '')[:100]}...")
+        
+        context_text = "\n".join(context_items)
+        
+        from prompts import GLOBAL_ASSISTANT_SYSTEM_PROMPT
+        from config import GOOGLE_API_KEY, GEMINI_URL
+        
+        payload = {
+            "system_instruction": {"parts": [{"text": GLOBAL_ASSISTANT_SYSTEM_PROMPT}]},
+            "contents": [{"parts": [{"text": f"NEWS CONTEXT:\n{context_text}\n\nUSER QUESTION: {query}"}]}]
+        }
+        
+        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"response": answer})
+            
+    except Exception as e:
+        log.error(f"Global AI Assistant error: {e}")
+        return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 500
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
