@@ -75,7 +75,31 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     # Financial Safety Rail removed from here - managed by Celery rate limits
     
     delays = [2, 4, 8]  # seconds before each retry
-...
+    for attempt, delay in enumerate([0] + delays):
+        if delay:
+            time.sleep(delay)
+        try:
+            req = urllib.request.Request(
+                f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                log.warning(f"[gemini] Rate limited (429), retry {attempt+1}/3 in {delays[attempt] if attempt < len(delays) else '—'}s")
+                continue
+            log.warning(f"[gemini] HTTP {e.code}: {e}")
+            return None
+        except Exception as e:
+            import traceback as _tb
+            log.warning(f"[gemini] Call failed: {e}\n" + _tb.format_exc())
+            return None
+    log.warning("[gemini] All retries exhausted after rate limiting.")
+    return None
+
 def cleanup_cover_art():
     """Removes generated cover art for clusters that are no longer in the DB."""
     import os
@@ -103,30 +127,6 @@ def cleanup_cover_art():
             log.info(f"[cleanup] Removed {count} orphaned cover art images.")
     except Exception as e:
         log.error(f"[cleanup] Image cleanup failed: {e}")
-    for attempt, delay in enumerate([0] + delays):
-        if delay:
-            time.sleep(delay)
-        try:
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
-                data=payload,
-                headers={"Content-Type": "application/json"},
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                log.warning(f"[gemini] Rate limited (429), retry {attempt+1}/3 in {delays[attempt] if attempt < len(delays) else '—'}s")
-                continue
-            log.warning(f"[gemini] HTTP {e.code}: {e}")
-            return None
-        except Exception as e:
-            import traceback as _tb
-            log.warning(f"[gemini] Call failed: {e}\n" + _tb.format_exc())
-            return None
-    log.warning("[gemini] All retries exhausted after rate limiting.")
-    return None
 
 def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
     """Call Cloudflare Workers AI REST API."""

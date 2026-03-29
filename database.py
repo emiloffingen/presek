@@ -4,11 +4,43 @@ from psycopg2.pool import ThreadedConnectionPool
 import datetime
 import logging
 import os
-import psycopg2
 
 log = logging.getLogger("presek")
 
+def load_env():
+    """Manually load .env file if it exists."""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        # Remove quotes if present
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k not in os.environ:
+                            os.environ[k] = v
+        except Exception as e:
+            log.warning(f"Could not load .env file: {e}")
+
+load_env()
+
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
+
+# Mask password for logging
+masked_url = DATABASE_URL
+if "@" in masked_url:
+    part1, part2 = masked_url.split("@", 1)
+    if "://" in part1:
+        scheme, auth = part1.split("://", 1)
+        if ":" in auth:
+            user, pw = auth.split(":", 1)
+            masked_url = f"{scheme}://{user}:****@{part2}"
+
+log.info(f"Using database URL: {masked_url}")
+
 DB_RETAIN_DAYS = int(os.environ.get("DB_RETAIN_DAYS", 14))
 
 # Initialize a global connection pool
