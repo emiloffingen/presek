@@ -5,11 +5,43 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response
 from database import get_db
-from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT
+from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
 
 log = logging.getLogger("presek_celery")
+
+@celery_app.task(rate_limit='10/m')
+def summarize_article_task(article_id, title):
+    """Asynchronously generates a summary for a single article."""
+    try:
+        summary, tier = _call_ai(title, SUMMARY_SYSTEM_PROMPT)
+        if summary:
+            summary = clean_json_response(summary)
+            conn = get_db()
+            conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, article_id))
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        log.warning(f"[auto-summarize] DB write failed for article {article_id}: {e}")
+
+@celery_app.task(rate_limit='10/m')
+def synthesize_cluster_task(cluster_id, content):
+    """Asynchronously generates a synthesis for a cluster."""
+    try:
+        synthesis, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+        if synthesis:
+            clean_synthesis = clean_json_response(synthesis)
+            now = datetime.datetime.now()
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO cluster_summaries (cluster_id, summary, created_at) VALUES (%s, %s, %s) ON CONFLICT (cluster_id) DO UPDATE SET summary = EXCLUDED.summary, created_at = EXCLUDED.created_at",
+                (cluster_id, clean_synthesis, now)
+            )
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        log.warning(f"[auto-summarize] Cluster synthesis failed for {cluster_id}: {e}")
 
 @celery_app.task
 def run_ingestion():

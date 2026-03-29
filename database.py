@@ -1,5 +1,6 @@
 import psycopg2
-from psycopg2.extras import DictCursor, RealDictCursor
+from psycopg2.extras import DictCursor
+from psycopg2.pool import SimpleConnectionPool
 import datetime
 import logging
 import os
@@ -9,16 +10,51 @@ log = logging.getLogger("presek")
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
 DB_RETAIN_DAYS = int(os.environ.get("DB_RETAIN_DAYS", 14))
 
+# Initialize a global connection pool
+try:
+    _db_pool = SimpleConnectionPool(
+        minconn=1,
+        maxconn=20,
+        dsn=DATABASE_URL
+    )
+except Exception as e:
+    log.error(f"Failed to initialize database connection pool: {e}")
+    _db_pool = None
+
 class PostgresConnection(psycopg2.extensions.connection):
     def execute(self, sql, params=None):
-        cur = self.cursor()
+        cur = self.cursor(cursor_factory=DictCursor)
         cur.execute(sql, params)
         return cur
 
+class PooledConnectionWrapper:
+    """Wraps a connection from the pool so .close() returns it instead of closing it."""
+    def __init__(self, conn, pool):
+        self._conn = conn
+        self._pool = pool
+        
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+        
+    def execute(self, sql, params=None):
+        cur = self._conn.cursor(cursor_factory=DictCursor)
+        cur.execute(sql, params)
+        return cur
+        
+    def close(self):
+        if self._pool and self._conn:
+            self._pool.putconn(self._conn)
+            self._conn = None
+
 def get_db():
-    """Get a database connection with DictCursor enabled."""
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=DictCursor, connection_factory=PostgresConnection)
-    return conn
+    """Get a database connection from the pool with DictCursor enabled."""
+    if _db_pool:
+        conn = _db_pool.getconn()
+        return PooledConnectionWrapper(conn, _db_pool)
+    else:
+        # Fallback if pool initialization failed
+        conn = psycopg2.connect(DATABASE_URL, connection_factory=PostgresConnection)
+        return conn
 
 def init_db():
     """Initialize the database schema."""

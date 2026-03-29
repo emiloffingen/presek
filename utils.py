@@ -24,20 +24,35 @@ def set_cache(key: str, val, ttl: int = 60):
     except Exception as e:
         pass
 
-# Simple rate limiter
-_rate_limits: dict[str, list[float]] = {}
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window
 
 def check_rate_limit(ip: str) -> bool:
+    """Redis-backed rate limiter using a sliding window approach."""
+    key = f"rate_limit:{ip}"
     now = time.time()
-    if ip not in _rate_limits:
-        _rate_limits[ip] = []
-    _rate_limits[ip] = [t for t in _rate_limits[ip] if now - t < RATE_LIMIT_WINDOW]
-    if len(_rate_limits[ip]) >= RATE_LIMIT_MAX:
-        return False
-    _rate_limits[ip].append(now)
-    return True
+    
+    try:
+        # Use Redis pipeline for atomic operations
+        pipe = redis_client.pipeline()
+        # Remove timestamps older than the window
+        pipe.zremrangebyscore(key, 0, now - RATE_LIMIT_WINDOW)
+        # Count current requests in the window
+        pipe.zcard(key)
+        # Add the new request timestamp
+        pipe.zadd(key, {str(now): now})
+        # Set expiration on the key so it cleans up after inactivity
+        pipe.expire(key, RATE_LIMIT_WINDOW)
+        
+        results = pipe.execute()
+        current_count = results[1]
+        
+        if current_count >= RATE_LIMIT_MAX:
+            return False
+        return True
+    except Exception as e:
+        # If Redis fails, fail open (allow request) to prevent blocking users during cache issues
+        return True
 
 def score_cluster(arts):
     """

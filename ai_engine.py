@@ -156,12 +156,13 @@ def translate_to_macedonian(text: str) -> str | None:
 
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
     """
-    Automatically summarize the top clusters after each ingest cycle.
+    Finds top clusters and dispatches background tasks for summarization/synthesis.
     """
     if not GOOGLE_API_KEY:
         return  # no Gemini key, skip silently
 
     try:
+        from tasks import summarize_article_task, synthesize_cluster_task
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(days=1)
         rows = conn.execute(
@@ -182,31 +183,21 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
         ranked.sort(key=lambda x: x[2], reverse=True)
 
         top = ranked[:AUTO_SUMMARIZE_TOP_N]
-        summarized_count = 0
-        synthesis_count = 0
 
         for cid, arts, score in top:
             lead = arts[0]
 
-            # 1. Summarize the lead article (if not already done)
+            # 1. Dispatch summary task for the lead article (if not already done)
             if not lead.get("summary"):
-                summary, tier = _call_ai(lead["title"], SUMMARY_SYSTEM_PROMPT)
-                if summary:
-                    summary = clean_json_response(summary)
-                    try:
-                        conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, lead["id"]))
-                        conn.commit()
-                        summarized_count += 1
-                    except Exception as e:
-                        log.warning(f"[auto-summarize] DB write failed for article {lead['id']}: {e}")
-                    time.sleep(6)
+                summarize_article_task.delay(lead["id"], lead["title"])
 
-            # 2. Generate cluster synthesis
+            # 2. Dispatch cluster synthesis task
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
                 # Check DB cache first
                 row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
                 if not row:
+                    # Prepare content for synthesis task
                     lines = []
                     for a in arts[:10]:
                         line = f"- [{a['source']}]: {a['title']}"
@@ -216,21 +207,8 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
                             if desc: line += f"\n  Опис: {desc}"
                         lines.append(line)
                     content = "\n".join(lines)
-                    
-                    synthesis, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
-                    if synthesis:
-                        clean_synthesis = clean_json_response(synthesis)
-                        now = datetime.datetime.now()
-                        conn.execute(
-                            "INSERT INTO cluster_summaries (cluster_id, summary, created_at) VALUES (%s, %s, %s) ON CONFLICT (cluster_id) DO UPDATE SET summary = EXCLUDED.summary, created_at = EXCLUDED.created_at",
-                            (cid, clean_synthesis, now)
-                        )
-                        conn.commit()
-                        synthesis_count += 1
-                        time.sleep(6)
+                    synthesize_cluster_task.delay(cid, content)
 
-        if summarized_count or synthesis_count:
-            log.info(f"[auto-summarize] {summarized_count} article summaries, {synthesis_count} cluster syntheses generated.")
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
     finally:
