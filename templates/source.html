@@ -31,7 +31,12 @@
 <div class="fade-in">
     <div class="source-header">
         <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
-        <h1 class="hero-title" style="margin-bottom: var(--space-md);">Извор: <span style="color:var(--primary)">{{ source_name }}</span></h1>
+        <div style="display:flex; align-items:center; gap:var(--space-md); margin-bottom: var(--space-md);">
+            <h1 class="hero-title" style="margin-bottom: 0;">Извор: <span style="color:var(--primary)">{{ source_name }}</span></h1>
+            <button id="followBtn" onclick="toggleSourceFollow()" class="page-btn" style="padding: 6px 16px; font-size: 0.8rem; border-radius: 20px;">
+                Следи го изворот
+            </button>
+        </div>
         
         <div class="source-stats-grid">
             <div class="source-stat-card">
@@ -71,6 +76,20 @@
         wrap.innerHTML = initialClusters.map((c, i) => renderCard(c, i)).join('');
     }
 
+    const sourceName = "{{ source_name }}";
+    function updateFollowBtn() {
+        const btn = document.getElementById('followBtn');
+        const following = isFollowing('sources', sourceName);
+        btn.textContent = following ? 'Следено ✓' : 'Следи го изворот';
+        btn.style.borderColor = following ? 'var(--primary)' : '';
+    }
+
+    function toggleSourceFollow() {
+        toggleFollow('sources', sourceName);
+        updateFollowBtn();
+    }
+
     renderSourcePage();
+    updateFollowBtn();
 </script>
 {% endblock %}

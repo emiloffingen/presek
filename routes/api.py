@@ -43,9 +43,14 @@ def api_news():
     sort_by   = request.args.get("sort", "recent")
     topic     = request.args.get("topic", "").strip()
     sentiment = request.args.get("sentiment", "").strip()
+    
+    # Personalized Follows
+    follow_sources = request.args.get("follow_sources", "").strip()
+    follow_topics  = request.args.get("follow_topics", "").strip()
+    
     page_size = min(page_size, 100)
     
-    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
@@ -57,28 +62,36 @@ def api_news():
             "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
             (cluster_ids,)
         ).fetchall()
-    elif country == '🇲🇰':
+    else:
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []
-        if sub:
-            sql += " AND subcategory = %s"
-            params.append(sub)
-        if topic:
-            sql += " AND topic = %s"
-            params.append(topic)
-        if sentiment:
-            sql += " AND summary LIKE %s"
-            params.append(f"%{sentiment}%")
         
-        sql += " ORDER BY created_at DESC LIMIT 500"
-        rows = conn.execute(sql, tuple(params)).fetchall()
-    else:
-        # Filtered by country
-        sql = "SELECT * FROM articles WHERE country = %s"
-        params = [country]
-        if topic:
-            sql += " AND topic = %s"
-            params.append(topic)
+        if follow_sources or follow_topics:
+            # Personalized "For Me" logic
+            sub_clauses = []
+            if follow_sources:
+                sources_list = [s.strip() for s in follow_sources.split(',') if s.strip()]
+                sub_clauses.append("source = ANY(%s)")
+                params.append(sources_list)
+            if follow_topics:
+                topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
+                sub_clauses.append("topic = ANY(%s)")
+                params.append(topics_list)
+            
+            if sub_clauses:
+                sql += " AND (" + " OR ".join(sub_clauses) + ")"
+        else:
+            # Regular Filters
+            if country and country != '🇲🇰':
+                sql += " AND country = %s"
+                params.append(country)
+            if sub:
+                sql += " AND subcategory = %s"
+                params.append(sub)
+            if topic:
+                sql += " AND topic = %s"
+                params.append(topic)
+        
         if sentiment:
             sql += " AND summary LIKE %s"
             params.append(f"%{sentiment}%")

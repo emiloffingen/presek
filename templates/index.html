@@ -91,6 +91,9 @@
         white-space: nowrap;
         cursor: pointer;
         transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
     .trend-tag:hover, .trend-tag.active {
         border-color: var(--primary);
@@ -101,6 +104,8 @@
         color: white !important;
         border-color: var(--primary);
     }
+    .follow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: none; }
+    .trend-tag.followed .follow-dot { display: block; }
 
     /* Hero Section */
     .hero-grid {
@@ -270,6 +275,7 @@
 
     const countries = [
         { id: '🇲🇰', label: 'Македонија' },
+        { id: 'FOLLOWING', label: 'За Мене' },
         { id: 'POPULAR', label: 'Популарно' },
         { id: 'SAVED', label: 'Зачувано' },
         { id: 'REG', label: 'Регионално' },
@@ -297,7 +303,7 @@
         const list = document.getElementById('categoryList');
         list.innerHTML = countries.map(c => `
             <button class="cat-btn ${c.id === activeCategory ? 'active' : ''}" onclick="filterCat('${c.id}')">
-                ${c.id === 'REG' ? '📍' : (c.id === 'SAVED' ? '🔖' : (c.id === 'POPULAR' ? '🔥' : c.id))} ${c.label}
+                ${c.id === 'REG' ? '📍' : (c.id === 'SAVED' ? '🔖' : (c.id === 'POPULAR' ? '🔥' : (c.id === 'FOLLOWING' ? '✨' : c.id)))} ${c.label}
             </button>
         `).join('');
 
@@ -315,9 +321,17 @@
 
         // Topics
         const topicList = document.getElementById('topicList');
-        topicList.innerHTML = topics.map(t => `
-            <div class="trend-tag ${activeTopic === t.id ? 'active' : ''}" onclick="filterTopic('${t.id}')">${t.label}</div>
-        `).join('');
+        topicList.innerHTML = topics.map(t => {
+            const followed = isFollowing('topics', t.id);
+            return `
+                <div class="trend-tag ${activeTopic === t.id ? 'active' : ''} ${followed ? 'followed' : ''}" 
+                     onclick="filterTopic('${t.id}')" 
+                     oncontextmenu="event.preventDefault(); toggleFollow('topics', '${t.id}'); initCategories();">
+                    <div class="follow-dot"></div>
+                    ${t.label}
+                </div>
+            `;
+        }).join('');
         
         // Sentiment
         document.querySelectorAll('#sentimentBox .trend-tag').forEach(tag => tag.classList.remove('active'));
@@ -362,7 +376,7 @@
         const wrap = document.getElementById('pageWrap');
         if (!clusters || !clusters.length) {
             wrap.innerHTML = `<div style="text-align:center; padding:100px; color:var(--text-muted)">
-                ${activeCategory === 'SAVED' ? 'Немате зачувано вести.' : 'Нема вести за избраната категорија.'}
+                ${activeCategory === 'SAVED' ? 'Немате зачувано вести.' : (activeCategory === 'FOLLOWING' ? 'Не следите ниту еден извор или тема. Одете на профилот на изворот или десен клик на тема за да почнете да следите.' : 'Нема вести за избраната категорија.')}
             </div>`;
             return;
         }
@@ -434,6 +448,16 @@
                     return;
                 }
                 url += `&ids=${encodeURIComponent(bookmarks.join(','))}`;
+            } else if (activeCategory === 'FOLLOWING') {
+                const follows = getFollowing();
+                if (!follows.sources.length && !follows.topics.length) {
+                    renderPage([]);
+                    _isFetching = false;
+                    _hasMore = false;
+                    document.getElementById('loadMoreWrap').style.display = 'none';
+                    return;
+                }
+                url += `&follow_sources=${encodeURIComponent(follows.sources.join(','))}&follow_topics=${encodeURIComponent(follows.topics.join(','))}`;
             } else if (activeCategory === 'POPULAR') {
                 url += `&sort=popular`;
             } else {
@@ -495,7 +519,12 @@
         }
     }
 
-    // Refresh saved view if bookmark state changes
+    // Refresh views if follow state changes
+    window.addEventListener('followingUpdated', () => {
+        initCategories();
+        if (activeCategory === 'FOLLOWING') fetchNews();
+    });
+
     window.addEventListener('bookmarksUpdated', () => {
         if (activeCategory === 'SAVED') fetchNews();
     });

@@ -203,6 +203,29 @@
             window.dispatchEvent(new CustomEvent('bookmarksUpdated'));
         }
 
+        // Following System
+        function getFollowing() {
+            try {
+                return JSON.parse(localStorage.getItem('following')) || { sources: [], topics: [] };
+            } catch(e) { return { sources: [], topics: [] }; }
+        }
+
+        function isFollowing(type, id) {
+            const f = getFollowing();
+            return f[type].includes(id);
+        }
+
+        function toggleFollow(type, id) {
+            const f = getFollowing();
+            if (f[type].includes(id)) {
+                f[type] = f[type].filter(x => x !== id);
+            } else {
+                f[type].push(id);
+            }
+            localStorage.setItem('following', JSON.stringify(f));
+            window.dispatchEvent(new CustomEvent('followingUpdated'));
+        }
+
         function renderCard(c, index) {
             if(!c || !c.articles || !c.articles.length) return '';
             const a = c.articles[0];
