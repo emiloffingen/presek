@@ -32,23 +32,27 @@ def clean_json_response(text: str) -> dict | str:
     if not text:
         return ""
     
-    # Strip markdown code blocks
+    # Extract JSON block if present
+    match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
+    if match:
+        json_text = match.group(1)
+        try:
+            data = json.loads(json_text)
+            if isinstance(data, dict):
+                # Check for synthesis-specific fields
+                if 'summary' in data or 'perspectives' in data:
+                    return data
+                # Check for single-field 'summary' response
+                if 'summary' in data and len(data) == 1:
+                    return data['summary'].strip()
+            elif isinstance(data, list):
+                return data
+        except:
+            pass
+
+    # Fallback to cleaning markdown
     text = re.sub(r'```(?:json)?\n?', '', text)
     text = text.replace('```', '').strip()
-    
-    # Try JSON parse
-    try:
-        data = json.loads(text)
-        if isinstance(data, dict):
-            # Check for synthesis-specific fields
-            if 'summary' in data or 'perspectives' in data:
-                return data
-            # Check for single-field 'summary' response (common in translations)
-            if 'summary' in data and len(data) == 1:
-                return data['summary'].strip()
-    except:
-        pass
-
     return text.strip()
 
 
@@ -68,10 +72,37 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
         "generationConfig": gen_config
     }).encode("utf-8")
     
-    # Financial Safety Rail: Mandatory 1s delay between any two global API calls
-    time.sleep(1)
+    # Financial Safety Rail removed from here - managed by Celery rate limits
     
-    delays = [2, 4, 8]  # seconds before each retry (3 attempts total)
+    delays = [2, 4, 8]  # seconds before each retry
+...
+def cleanup_cover_art():
+    """Removes generated cover art for clusters that are no longer in the DB."""
+    import os
+    gen_dir = "static/generated"
+    if not os.path.exists(gen_dir):
+        return
+        
+    try:
+        conn = get_db()
+        # Get all cluster IDs currently in DB (articles or summaries)
+        rows = conn.execute("SELECT DISTINCT cluster_id FROM articles").fetchall()
+        valid_ids = {r["cluster_id"] for r in rows}
+        rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
+        valid_ids.update({r["cluster_id"] for r in rows})
+        conn.close()
+        
+        count = 0
+        for filename in os.listdir(gen_dir):
+            if filename.endswith(".jpg"):
+                cid = filename.replace(".jpg", "")
+                if cid not in valid_ids:
+                    os.remove(os.path.join(gen_dir, filename))
+                    count += 1
+        if count:
+            log.info(f"[cleanup] Removed {count} orphaned cover art images.")
+    except Exception as e:
+        log.error(f"[cleanup] Image cleanup failed: {e}")
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)

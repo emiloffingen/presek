@@ -210,21 +210,70 @@ def api_analyze(cluster_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/api/briefing")
+def api_briefing():
+    conn = get_db()
+    row = conn.execute("SELECT content, date FROM daily_briefings ORDER BY date DESC LIMIT 1").fetchone()
+    conn.close()
+    if row:
+        return jsonify({"content": row["content"], "date": row["date"].isoformat()})
+    return jsonify({"error": "Брифингот сè уште не е генериран за денес."}), 404
+
+
+@api_bp.route("/api/search")
+def api_search():
+    q = request.args.get("q", "").strip()
+    if not q or len(q) < 2: return jsonify({"clusters": [], "total": 0})
+    
+    conn = get_db()
+    # Weighted search: title (A) is more important than description (B)
+    sql = """
+        SELECT *, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), query) as rank
+        FROM articles, plainto_tsquery('simple', %s) query
+        WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ query
+        ORDER BY rank DESC, created_at DESC
+        LIMIT 200
+    """
+    rows = conn.execute(sql, (q,)).fetchall()
+    conn.close()
+    
+    if not rows:
+        return jsonify({"clusters": [], "total": 0})
+        
+    clusters = defaultdict(list)
+    for r in rows:
+        clusters[r["cluster_id"]].append(dict(r))
+        
+    ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+    # Re-sort by best rank in cluster
+    sorted_clusters = sorted(ranked, key=lambda arts: max(a.get("rank", 0) for a in arts), reverse=True)
+    
+    result = []
+    for arts in sorted_clusters:
+        s = score_cluster(arts)
+        result.append({
+            "articles":    arts,
+            "score":       round(s, 3),
+            "cluster_id":  arts[0]["cluster_id"] if arts else None,
+            "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
+        })
+    return jsonify({"clusters": result, "total": len(result)})
+
+
 @api_bp.route("/api/trending")
 def api_trending():
     from trending import get_trending
-    from config import DB_PATH
     cached = cached_response("trending", ttl=120)
     if cached: return jsonify(cached)
     
-    results = get_trending(DB_PATH)
+    results = get_trending()
     set_cache("trending", results, ttl=120)
     return jsonify(results)
 
 
 @api_bp.route("/api/stats/full")
 def api_stats_full():
-    from config import DB_PATH, RSS_FEEDS
+    from config import RSS_FEEDS
     import health
     try:
         conn = get_db()
@@ -304,14 +353,14 @@ def api_stats_full():
         
         conn.close()
 
-        db_size = os.path.getsize(DB_PATH) / (1024*1024) if os.path.exists(DB_PATH) else 0
+        db_size = database.get_db_size()
         uptime_s = int(time.time() - health._start_time)
         h, rem = divmod(uptime_s, 3600)
         m, _   = divmod(rem, 60)
 
         return jsonify({
             "uptime": f"{h}ч {m}м",
-            "db_size_mb": round(db_size, 2),
+            "db_size_mb": db_size,
             "total_articles": total,
             "last_24h": recent_24h,
             "last_7d": recent_7d,

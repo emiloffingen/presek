@@ -22,7 +22,7 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
         _last_refresh["errors"] = errors or []
 
 
-def register_health_routes(app, db_path: str = "timeai.db"):
+def register_health_routes(app):
     """Register /api/health and /api/stats routes onto a Flask app."""
 
     from flask import jsonify
@@ -36,11 +36,13 @@ def register_health_routes(app, db_path: str = "timeai.db"):
         # Quick DB probe
         db_ok = False
         article_count = 0
+        db_size_mb = 0.0
         try:
             conn = database.get_db()
             row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
             article_count = row[0] if row else 0
             conn.close()
+            db_size_mb = database.get_db_size()
             db_ok = True
         except Exception as e:
             pass
@@ -55,6 +57,7 @@ def register_health_routes(app, db_path: str = "timeai.db"):
             "database": {
                 "ok": db_ok,
                 "article_count": article_count,
+                "size_mb": db_size_mb,
             },
             "last_refresh": {
                 "time": last["time"],

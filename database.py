@@ -1,9 +1,10 @@
 import psycopg2
 from psycopg2.extras import DictCursor
-from psycopg2.pool import SimpleConnectionPool
+from psycopg2.pool import ThreadedConnectionPool
 import datetime
 import logging
 import os
+import psycopg2
 
 log = logging.getLogger("presek")
 
@@ -12,20 +13,14 @@ DB_RETAIN_DAYS = int(os.environ.get("DB_RETAIN_DAYS", 14))
 
 # Initialize a global connection pool
 try:
-    _db_pool = SimpleConnectionPool(
+    _db_pool = ThreadedConnectionPool(
         minconn=1,
-        maxconn=20,
+        maxconn=30,
         dsn=DATABASE_URL
     )
 except Exception as e:
     log.error(f"Failed to initialize database connection pool: {e}")
     _db_pool = None
-
-class PostgresConnection(psycopg2.extensions.connection):
-    def execute(self, sql, params=None):
-        cur = self.cursor(cursor_factory=DictCursor)
-        cur.execute(sql, params)
-        return cur
 
 class PooledConnectionWrapper:
     """Wraps a connection from the pool so .close() returns it instead of closing it."""
@@ -41,6 +36,11 @@ class PooledConnectionWrapper:
         cur.execute(sql, params)
         return cur
         
+    def cursor(self, *args, **kwargs):
+        if 'cursor_factory' not in kwargs:
+            kwargs['cursor_factory'] = DictCursor
+        return self._conn.cursor(*args, **kwargs)
+        
     def close(self):
         if self._pool and self._conn:
             self._pool.putconn(self._conn)
@@ -49,12 +49,32 @@ class PooledConnectionWrapper:
 def get_db():
     """Get a database connection from the pool with DictCursor enabled."""
     if _db_pool:
-        conn = _db_pool.getconn()
-        return PooledConnectionWrapper(conn, _db_pool)
+        try:
+            conn = _db_pool.getconn()
+            return PooledConnectionWrapper(conn, _db_pool)
+        except Exception as e:
+            log.error(f"Failed to get connection from pool: {e}")
+            # Fallback if pool fails
+            return psycopg2.connect(DATABASE_URL)
     else:
         # Fallback if pool initialization failed
-        conn = psycopg2.connect(DATABASE_URL, connection_factory=PostgresConnection)
-        return conn
+        return psycopg2.connect(DATABASE_URL)
+
+def get_db_size():
+    """Get the size of the PostgreSQL database in MB."""
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        # Extract database name from URL (simple version)
+        db_name = DATABASE_URL.split('/')[-1].split('?')[0]
+        cur.execute("SELECT pg_database_size(%s)", (db_name,))
+        size_bytes = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        return round(size_bytes / (1024 * 1024), 2)
+    except Exception as e:
+        log.error(f"Failed to get database size: {e}")
+        return 0.0
 
 def init_db():
     """Initialize the database schema."""

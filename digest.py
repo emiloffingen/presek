@@ -77,8 +77,7 @@ def mk_date(dt: datetime) -> str:
     return f"{MK_DAYS[dt.weekday()]}, {dt.day} {MK_MONTHS[dt.month-1]} {dt.year}"
 
 
-def fetch_top_stories(db_path: str = "presek.db",
-                      days: int = 7,
+def fetch_top_stories(days: int = 7,
                       per_category: int = 3) -> dict[str, list[dict]]:
     """
     Fetch top articles from the last N days, grouped by category.
@@ -253,7 +252,7 @@ def send_email(html: str, subject: str,
         return False
 
 
-def generate_digest(db_path: str = "presek.db", days: int = 1,
+def generate_digest(days: int = 1,
                     save_path: str | None = None,
                     smtp_user: str | None = None, smtp_pass: str | None = None,
                     to_address: str | None = None,
@@ -262,7 +261,7 @@ def generate_digest(db_path: str = "presek.db", days: int = 1,
     now    = datetime.now()
     start  = now - timedelta(days=days)
 
-    stories = fetch_top_stories(db_path, days=days)
+    stories = fetch_top_stories(days=days)
     html    = render_html(stories, start, now)
 
     if save_path:
@@ -280,7 +279,6 @@ def generate_digest(db_path: str = "presek.db", days: int = 1,
 # ── CLI ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Пресек digest generator")
-    parser.add_argument("--db",       default="presek.db",    help="Path to SQLite DB")
     parser.add_argument("--days",     default=7, type=int,    help="Days to look back")
     parser.add_argument("--save",     default="digest.html",  help="Save HTML to file")
     parser.add_argument("--email",    default=None,           help="Gmail address (sender)")
@@ -290,7 +288,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     generate_digest(
-        db_path=args.db,
         days=args.days,
         save_path=args.save,
         smtp_user=args.email,

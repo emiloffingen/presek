@@ -363,13 +363,13 @@ def send_daily_digest_task():
     Periodic task to send a daily digest of the top stories to ntfy and email subscribers.
     """
     from digest import fetch_top_stories, send_ntfy_digest, render_html, send_email, mk_date
-    from config import NTFY_TOPIC, DB_PATH
+    from config import NTFY_TOPIC
     import os
     
     log.info("Generating and sending daily digest...")
     try:
         # Fetch top stories for the last 24 hours
-        stories_by_cat = fetch_top_stories(DB_PATH, days=1, per_category=3)
+        stories_by_cat = fetch_top_stories(days=1, per_category=3)
         if not stories_by_cat:
             log.warning("No stories found for the daily digest.")
             return
@@ -398,10 +398,18 @@ def send_daily_digest_task():
         log.error(f"Daily digest task failed: {e}")
 
 @celery_app.task
+def cleanup_cover_art_task():
+    """Background task to remove orphaned cover art images."""
+    from ai_engine import cleanup_cover_art
+    cleanup_cover_art()
+
+@celery_app.task
 def run_prune_db():
-    """Periodic task to prune old articles from database."""
+    """Periodic task to prune old articles and clean up files."""
     log.info("Pruning old database entries...")
     prune_db()
+    log.info("Cleaning up orphaned cover art...")
+    cleanup_cover_art_task.delay()
 
 @celery_app.task
 def translate_article_task(article_id: int, original_title: str, original_description: str):

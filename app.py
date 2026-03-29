@@ -26,7 +26,7 @@ import digest as digest_module
 
 # Import modularized components
 from config import (
-    NTFY_TOPIC, REFRESH_INTERVAL, DB_PATH
+    NTFY_TOPIC, REFRESH_INTERVAL
 )
 from database import get_db, init_db, prune_db
 from ingestion import ingest_feeds, ingest_diaspora_feeds
@@ -69,7 +69,7 @@ ntfy = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
 _prune_counter = 0
 _digest_counter = 0
 
-health.register_health_routes(app, DB_PATH)
+health.register_health_routes(app)
 
 if __name__ == "__main__":
     init_db()
