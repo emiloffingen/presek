@@ -2,9 +2,9 @@ import pytest
 from ingestion import normalize_headline, clean_rss_footer
 
 def test_normalize_headline():
-    assert normalize_headline("ОВА Е НАСЛОВ СО ГОЛЕМИ БУКВИ") == "Ова Е Наслов Со Големи Букви"
+    assert normalize_headline("ВИДЕО: Ова е наслов") == "Ова е наслов"
     assert normalize_headline("Нормален наслов") == "Нормален наслов"
-    assert normalize_headline("ВЛАДА: Нови мерки") == "ВЛАДА: Нови мерки" # Only partial upper
+    assert normalize_headline("  Ова е наслов со празни места  ") == "Ова е наслов со празни места"
     assert normalize_headline("") == ""
 
 def test_clean_rss_footer():

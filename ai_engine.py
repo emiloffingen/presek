@@ -133,16 +133,16 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
         return None
 
 def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
-    """Call AI provider (Cloudflare first, fallback to Gemini)."""
-    # 1. Try Cloudflare Workers AI
-    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
-    if cf_result:
-        return cf_result, "cloudflare"
-    
-    # 2. Fallback to Gemini
+    """Call AI provider (Gemini first, fallback to Cloudflare)."""
+    # 1. Try Gemini
     gemini_result = _call_gemini(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
     if gemini_result:
         return gemini_result, "gemini"
+
+    # 2. Fallback to Cloudflare Workers AI
+    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
+    if cf_result:
+        return cf_result, "cloudflare"
         
     return None, None
 

@@ -288,6 +288,20 @@ def api_stats_full():
         """).fetchall()
         speed_leaderboard = [dict(r) for r in speed_rows]
         
+        # Topic Trends (last 7 days)
+        topic_rows = conn.execute("""
+            SELECT topic, date_trunc('day', created_at) as day, COUNT(*) 
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '7 days' AND topic != 'Вести'
+            GROUP BY topic, day ORDER BY day ASC
+        """).fetchall()
+        
+        topic_trends = defaultdict(list)
+        for r in topic_rows:
+            topic_trends[r[0]].append({"day": r[1].isoformat(), "count": r[2]})
+            
+        formatted_trends = [{"topic": k, "data": v} for k, v in topic_trends.items()]
+        
         conn.close()
 
         db_size = os.path.getsize(DB_PATH) / (1024*1024) if os.path.exists(DB_PATH) else 0
@@ -309,6 +323,7 @@ def api_stats_full():
             "velocity": velocity,
             "sentiment_index": sentiment_index[:15],
             "speed_leaderboard": speed_leaderboard,
+            "topic_trends": formatted_trends,
             "by_category": [{"cat": r[0] or "Македонија", "n": r[1]} for r in by_cat],
             "by_source": [{"source": r[0], "n": r[1]} for r in by_source],
             "top_clicked": [{"title": r[0][:70], "source": r[1], "clicks": r[2], "link": r[3]} for r in top_clicks],

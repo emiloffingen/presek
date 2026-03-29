@@ -197,3 +197,15 @@ _COUNTRY_MAP: dict[str, str] = {
 def detect_country(source_name: str) -> str:
     """Return the country flag emoji for a given source name. Defaults to 🇲🇰."""
     return _COUNTRY_MAP.get(source_name, "🇲🇰")
+
+
+def normalize_headline(title: str) -> str:
+    """Clean up news titles by stripping tags, extra whitespace and common prefixes."""
+    if not title: return ""
+    # Strip HTML tags
+    t = re.sub(r'<[^>]+>', '', title)
+    # Strip common prefixes
+    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРЕЈКИНГ|ЕКСКЛУЗИВНО|ПОТВРДЕНО|СКАНДАЛ|УЖАС|ТРАГЕДИЈА)[:\s]+', '', t, flags=re.IGNORECASE)
+    # Standardize whitespace
+    t = " ".join(t.split())
+    return t.strip()

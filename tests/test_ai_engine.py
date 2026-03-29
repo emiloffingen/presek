@@ -7,12 +7,16 @@ def test_clean_json_response_raw_text():
 def test_clean_json_response_markdown_json():
     # Markdown wrapped JSON
     text = "```json\n{\"summary\": \"Ова е резимето.\"}\n```"
-    assert clean_json_response(text) == "Ова е резимето."
+    res = clean_json_response(text)
+    assert isinstance(res, dict)
+    assert res["summary"] == "Ова е резимето."
 
 def test_clean_json_response_raw_json():
     # Raw JSON string
     text = "{\"summary\": \"Ова е резимето.\"}"
-    assert clean_json_response(text) == "Ова е резимето."
+    res = clean_json_response(text)
+    assert isinstance(res, dict)
+    assert res["summary"] == "Ова е резимето."
 
 def test_clean_json_response_malformed_json():
     # Malformed JSON, should fallback to string

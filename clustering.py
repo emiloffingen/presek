@@ -10,6 +10,7 @@ Fixes applied:
     not every article — prevents one big cluster matching everything
 """
 import math, uuid, re
+import datetime
 from collections import Counter
 
 # ── Macedonian stemmer ────────────────────────────────────────────
