@@ -260,6 +260,21 @@
         </section>
         {% endif %}
 
+        <section class="plurality-section fade-in" style="margin-bottom: var(--space-2xl); border-top: 1px solid var(--border); padding-top: var(--space-xl)">
+            <h2 style="font-family:var(--font-display); font-size:1.1rem; margin-bottom:var(--space-md); color:var(--text-secondary)">Развој на настаните (Timeline)</h2>
+            <div class="timeline-container" style="position:relative; padding-left:30px; border-left:2px solid var(--border); margin-left:10px">
+                {% for art in articles|reverse %}
+                <div class="timeline-item" style="margin-bottom:var(--space-lg); position:relative">
+                    <div style="position:absolute; left:-37px; top:4px; width:12px; height:12px; border-radius:50%; background:{% if loop.first %}var(--primary){% else %}var(--border){% endif %}; border:3px solid var(--bg-base)"></div>
+                    <div style="font-size:0.75rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:2px">
+                        {{ art.created_at.strftime('%H:%M') if art.created_at.strftime else art.created_at[11:16] }} — {{ art.source }}
+                    </div>
+                    <div style="font-size:0.95rem; color:var(--text-primary)">{{ art.title }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
         <div class="sources-grid">
             {% for art in articles %}
             <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s" onmousedown="trackClick('{{ art.id }}')">

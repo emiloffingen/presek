@@ -82,14 +82,18 @@
         </div>
     </div>
 
-    <div class="charts-grid">
+    <div class="charts-grid" style="grid-template-columns: 1fr 1fr 1fr;">
         <div class="chart-container">
             <h3 class="chart-title">Брзина на ингестија (24ч)</h3>
-            <canvas id="velocityChart" height="100"></canvas>
+            <canvas id="velocityChart" height="150"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title">Индекс на Сентимент</h3>
+            <canvas id="sentimentChart" height="150"></canvas>
         </div>
         <div class="chart-container">
             <h3 class="chart-title">Дистрибуција по категорија</h3>
-            <canvas id="categoryChart"></canvas>
+            <canvas id="categoryChart" height="150"></canvas>
         </div>
     </div>
 
@@ -183,7 +187,30 @@
                     responsive: true,
                     cutout: '70%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: '#888', padding: 20, boxWidth: 12, font: { size: 11 } } }
+                        legend: { position: 'bottom', labels: { color: '#888', padding: 10, boxWidth: 8, font: { size: 9 } } }
+                    }
+                }
+            });
+
+            // Sentiment Index Chart (Horizontal Bar)
+            const ctxS = document.getElementById('sentimentChart').getContext('2d');
+            new Chart(ctxS, {
+                type: 'bar',
+                data: {
+                    labels: data.sentiment_index.map(s => s.source),
+                    datasets: [{
+                        data: data.sentiment_index.map(s => s.score),
+                        backgroundColor: data.sentiment_index.map(s => s.score >= 0 ? 'rgba(46, 204, 113, 0.6)' : 'rgba(231, 76, 60, 0.6)'),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { min: -1, max: 1, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                        y: { grid: { display: false }, ticks: { color: '#888', font: { size: 9 } } }
                     }
                 }
             });

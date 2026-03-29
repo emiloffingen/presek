@@ -486,6 +486,30 @@ def api_stats_full():
         """).fetchall()
         velocity = [{"t": r[0].isoformat(), "n": r[1]} for r in velocity_rows]
         
+        # Sentiment Index (last 7 days)
+        sentiment_rows = conn.execute("""
+            SELECT source, summary 
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '7 days' 
+              AND summary IS NOT NULL AND summary != ''
+        """).fetchall()
+        
+        source_sentiments = defaultdict(list)
+        for r in sentiment_rows:
+            s = r["summary"]
+            score = 0
+            if '🟢' in s: score = 1
+            elif '🔴' in s: score = -1
+            source_sentiments[r["source"]].append(score)
+            
+        sentiment_index = []
+        for src, scores in source_sentiments.items():
+            if len(scores) >= 5: # Only sources with enough data
+                avg = sum(scores) / len(scores)
+                sentiment_index.append({"source": src, "score": round(avg, 2), "count": len(scores)})
+        
+        sentiment_index.sort(key=lambda x: abs(x["score"]), reverse=True)
+        
         conn.close()
 
         db_size = os.path.getsize(DB_PATH) / (1024*1024) if os.path.exists(DB_PATH) else 0
@@ -505,6 +529,7 @@ def api_stats_full():
             "newest_article": newest,
             "total_feeds": len(RSS_FEEDS),
             "velocity": velocity,
+            "sentiment_index": sentiment_index[:15],
             "by_category": [{"cat": r[0] or "Македонија", "n": r[1]} for r in by_cat],
             "by_source": [{"source": r[0], "n": r[1]} for r in by_source],
             "top_clicked": [{"title": r[0][:70], "source": r[1], "clicks": r[2], "link": r[3]} for r in top_clicks],
