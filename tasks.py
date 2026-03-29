@@ -102,19 +102,40 @@ def recategorize_clusters_task():
 @celery_app.task
 def send_daily_digest_task():
     """
-    Periodic task to send a daily digest of the top stories to ntfy.
+    Periodic task to send a daily digest of the top stories to ntfy and email subscribers.
     """
-    from digest import fetch_top_stories, send_ntfy_digest
+    from digest import fetch_top_stories, send_ntfy_digest, render_html, send_email, mk_date
     from config import NTFY_TOPIC, DB_PATH
+    import os
     
     log.info("Generating and sending daily digest...")
     try:
         # Fetch top stories for the last 24 hours
         stories_by_cat = fetch_top_stories(DB_PATH, days=1, per_category=3)
-        if stories_by_cat:
-            send_ntfy_digest(stories_by_cat, NTFY_TOPIC, period_days=1)
-        else:
+        if not stories_by_cat:
             log.warning("No stories found for the daily digest.")
+            return
+
+        # 1. Send via ntfy
+        send_ntfy_digest(stories_by_cat, NTFY_TOPIC, period_days=1)
+        
+        # 2. Send via Email if SMTP is configured
+        smtp_user = os.environ.get("SMTP_USER")
+        smtp_pass = os.environ.get("SMTP_PASS")
+        
+        if smtp_user and smtp_pass:
+            now = datetime.datetime.now()
+            start = now - datetime.timedelta(days=1)
+            html = render_html(stories_by_cat, start, now)
+            subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+            
+            conn = get_db()
+            subs = conn.execute("SELECT email FROM subscribers").fetchall()
+            conn.close()
+            
+            for sub in subs:
+                send_email(html, subject, smtp_user, smtp_pass, sub["email"])
+                
     except Exception as e:
         log.error(f"Daily digest task failed: {e}")
 

@@ -78,7 +78,16 @@
 
     <footer class="site-footer">
         <div class="footer-inner">
-            <div class="footer-logo">ПРЕСЕК</div>
+            <div class="footer-newsletter">
+                <h3>Дневен Преглед во вашата пошта</h3>
+                <p>Пријавете се за најважните вести секое утро.</p>
+                <form id="subscribeForm" onsubmit="subscribe(event)" class="newsletter-form">
+                    <input type="email" id="subEmail" placeholder="Вашата е-пошта..." required>
+                    <button type="submit" class="page-btn" style="padding: 10px 24px; border-radius: 30px;">Пријави се</button>
+                </form>
+                <div id="subMessage" style="margin-top:var(--space-sm); font-size:0.8rem; font-weight:var(--weight-semi)"></div>
+            </div>
+            <div class="footer-logo" style="margin-top:var(--space-2xl)">ПРЕСЕК</div>
             <p>&copy; {{ year }} Пресек. Сите права се задржани.</p>
             <div class="footer-links">
                 <a href="/about">За Нас</a>
@@ -117,6 +126,14 @@
             const topSources = uniqueSources.slice(0, 3);
             const moreCount = uniqueSources.length - topSources.length;
 
+            // Extract Sentiment Emoji from summary if available
+            let sentimentEmoji = '';
+            const leadSummary = a.summary || '';
+            const match = leadSummary.match(/[🟢🔴⚪]/);
+            if (match) {
+                sentimentEmoji = `<span class="sentiment-badge" title="AI Сентимент Анализа">${match[0]}</span>`;
+            }
+
             return `
                 <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
                     ${isBreaking ? '<div class="is-breaking"></div>' : ''}
@@ -132,6 +149,7 @@
                         </a>
                     `}
                     <div class="story-meta">
+                        ${sentimentEmoji}
                         <span class="source" title="Кредибилитет на изворот">${a.source}</span>
                         <span>•</span>
                         <span>${timeAgo(a.created_at)}</span>
@@ -204,6 +222,34 @@
                 }
             }, 300);
         };
+
+        async function subscribe(e) {
+            e.preventDefault();
+            const email = document.getElementById('subEmail').value;
+            const msg = document.getElementById('subMessage');
+            msg.textContent = 'Се обработува...';
+            msg.style.color = 'var(--text-secondary)';
+            
+            try {
+                const res = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    msg.textContent = data.message;
+                    msg.style.color = '#2ecc71';
+                    document.getElementById('subscribeForm').reset();
+                } else {
+                    msg.textContent = data.error;
+                    msg.style.color = 'var(--primary)';
+                }
+            } catch(err) {
+                msg.textContent = 'Грешка. Пробајте подоцна.';
+                msg.style.color = 'var(--primary)';
+            }
+        }
 
         // Initialize ticker
         fetch('/api/top10')

@@ -50,6 +50,12 @@ def init_db():
         summary TEXT,
         created_at TIMESTAMP
     )""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
     
     # Ensure indexes exist for performance
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")

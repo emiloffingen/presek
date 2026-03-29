@@ -523,6 +523,22 @@ def api_chat_cluster():
     except Exception as e:
         return jsonify({"error": "AI сервисот е моментално преоптоварен."}), 503
 
+@api_bp.route("/api/subscribe", methods=["POST"])
+def api_subscribe():
+    data = request.json
+    email = data.get("email", "").strip().lower()
+    if not email or "@" not in email or "." not in email:
+        return jsonify({"error": "Ве молиме внесете валидна е-пошта."}), 400
+    
+    try:
+        conn = get_db()
+        conn.execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT DO NOTHING", (email,))
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "message": "Успешно се претплативте!"})
+    except Exception as e:
+        return jsonify({"error": "Серверска грешка. Обидете се подоцна."}), 500
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
