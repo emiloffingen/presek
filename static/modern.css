@@ -669,3 +669,30 @@ html.light .story-thumb-placeholder {
     padding-top: var(--space-xl);
     border-top: 1px solid var(--border);
 }
+
+/* REACTIONS */
+.reaction-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--space-md);
+    flex-wrap: wrap;
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border);
+}
+.react-btn {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.react-btn:hover { border-color: var(--primary); background: var(--bg-surface-hover); }
+.react-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(192, 57, 43, 0.05); }
+.react-count { font-weight: var(--weight-bold); font-size: 0.75rem; }
+

@@ -101,6 +101,13 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    cur.execute("""CREATE TABLE IF NOT EXISTS reactions (
+        cluster_id TEXT,
+        emoji TEXT,
+        count INTEGER DEFAULT 1,
+        PRIMARY KEY (cluster_id, emoji)
+    )""")
+
     cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
         id SERIAL PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,

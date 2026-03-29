@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" id="themeMeta" content="#0B0C10">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     <link rel="apple-touch-icon" href="/static/logo.png">
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="icon" type="image/png" href="/static/logo.png">
-
+    <link rel="stylesheet" href="/static/modern.css">
+    
     <title>{% block title %}Пресек | Вашиот Дневен Преглед{% endblock %}</title>
     <meta name="description" content="{{ meta.description if meta else 'Најнапреден македонски агрегатор на вести. Групирање со вештачка интелигенција, длабинска анализа и објективни резимеа.' }}">
     
@@ -32,20 +31,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="/static/modern.css">
-    
-    <!-- Theme Script -->
-    <script>(function(){var s=localStorage.getItem('theme');if(s==='light'||(s===null&&window.matchMedia('(prefers-color-scheme: light)').matches)){document.documentElement.classList.add('light');}})();</script>
-    
+    <script>
+        // Critical Theme Loader (No Flash)
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') document.documentElement.classList.add('light');
+        })();
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body class="theme-ready">
     <header class="site-header">
         <div class="header-inner">
-            <a href="/" class="logo-text">
-                <img src="/static/logo.svg" alt="Presek Logo" width="32" height="32">
-                <span>ПРЕСЕК</span>
+            <a href="/" class="header-logo" aria-label="Пресек Почетна">
+                <span class="logo-text">ПРЕСЕК</span>
             </a>
             
             <div class="header-ticker">
@@ -174,16 +173,6 @@
             return getBookmarks().includes(cid);
         }
 
-        function trackClick(articleId) {
-            if (!articleId) return;
-            // Use sendBeacon for more reliable fire-and-forget click tracking on navigation
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(`/api/click/${articleId}`);
-            } else {
-                fetch(`/api/click/${articleId}`, { method: 'POST', keepalive: true });
-            }
-        }
-
         function toggleBookmark(event, cid) {
             event.preventDefault();
             event.stopPropagation();
@@ -199,7 +188,6 @@
             }
             
             localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-            // Dispatch event for components that might be listening (e.g. Saved view)
             window.dispatchEvent(new CustomEvent('bookmarksUpdated'));
         }
 
@@ -226,6 +214,36 @@
             window.dispatchEvent(new CustomEvent('followingUpdated'));
         }
 
+        // Reaction System
+        async function reactToCluster(event, cid, emoji) {
+            event.preventDefault();
+            event.stopPropagation();
+            try {
+                const res = await fetch('/api/react', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cluster_id: cid, emoji: emoji })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    const countEl = document.querySelector(`.react-count[data-cid="${cid}"][data-emoji="${emoji}"]`);
+                    if (countEl) {
+                        countEl.textContent = parseInt(countEl.textContent || '0') + 1;
+                        countEl.parentElement.classList.add('active');
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function trackClick(articleId) {
+            if (!articleId) return;
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(`/api/click/${articleId}`);
+            } else {
+                fetch(`/api/click/${articleId}`, { method: 'POST', keepalive: true });
+            }
+        }
+
         function renderCard(c, index) {
             if(!c || !c.articles || !c.articles.length) return '';
             const a = c.articles[0];
@@ -240,13 +258,20 @@
             const moreCount = uniqueSources.length - topSources.length;
             const rel = getReliabilityInfo(a.source);
 
-            // Extract Sentiment Emoji from summary if available
             let sentimentEmoji = '';
             const leadSummary = a.summary || '';
             const match = leadSummary.match(/[🟢🔴⚪]/);
             if (match) {
                 sentimentEmoji = `<span class="sentiment-badge" title="AI Сентимент Анализа">${match[0]}</span>`;
             }
+
+            const allowedEmojis = ["👍", "😮", "😡", "😢", "🔥"];
+            const reactionHtml = allowedEmojis.map(emoji => `
+                <button class="react-btn" onclick="reactToCluster(event, '${c.cluster_id}', '${emoji}')">
+                    <span>${emoji}</span>
+                    <span class="react-count" data-cid="${c.cluster_id}" data-emoji="${emoji}">${c.reactions ? (c.reactions[emoji] || 0) : 0}</span>
+                </button>
+            `).join('');
 
             return `
                 <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
@@ -284,6 +309,9 @@
                         <a href="/cluster/${c.cluster_id}" onmousedown="trackClick('${a.id}')">${a.headline || a.title}</a>
                     </h3>
                     <p class="story-excerpt">${a.description || ''}</p>
+                    
+                    <div class="reaction-bar">${reactionHtml}</div>
+
                     <div class="source-ribbon">
                         <div style="display:flex; gap:8px">
                             ${topSources.map(s => `<span class="source-tag">${s}</span>`).join('')}
@@ -354,7 +382,6 @@
             const msg = document.getElementById('subMessage');
             msg.textContent = 'Се обработува...';
             msg.style.color = 'var(--text-secondary)';
-            
             try {
                 const res = await fetch('/api/subscribe', {
                     method: 'POST',
@@ -399,16 +426,13 @@
         async function askGlobalAI() {
             const query = globalAIInput.value.trim();
             if (!query) return;
-
             appendAIMessage(query, 'user');
             globalAIInput.value = '';
-
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'ai-msg bot';
             loadingDiv.textContent = 'Пребарувам во последните вести...';
             globalAIChatBody.appendChild(loadingDiv);
             globalAIChatBody.scrollTop = globalAIChatBody.scrollHeight;
-
             try {
                 const res = await fetch('/api/ai/ask', {
                     method: 'POST',
@@ -416,7 +440,6 @@
                     body: JSON.stringify({ query: query })
                 });
                 const data = await res.json();
-                
                 globalAIChatBody.removeChild(loadingDiv);
                 if (data.error) {
                     appendAIMessage(`Грешка: ${data.error}`, 'bot');
@@ -439,17 +462,14 @@
                     return;
                 }
                 inner.innerHTML = '';
-                // Duplicate for smooth infinite scroll
                 const items = [...data, ...data];
                 items.forEach((item, idx) => {
                     const a = document.createElement('a');
                     a.className = 'popular-item';
                     a.href = `/cluster/${item.cluster_id}`;
-                    
                     const art = item.articles[0];
                     const headline = art.headline || art.title;
                     const isBreaking = item.is_breaking;
-                    
                     a.innerHTML = `
                         ${isBreaking ? `
                             <span style="display:inline-flex; align-items:center; color:var(--primary); font-weight:800; font-size:0.6rem; border:1px solid var(--primary); padding:0px 6px; border-radius:2px; margin-right:8px; gap:4px;">
@@ -471,13 +491,10 @@
                 });
             });
             
-        // Reveal animation on load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 document.body.classList.add('theme-ready');
             }, 100);
-
-            // Handle broken images
             document.body.addEventListener('error', (e) => {
                 if (e.target.tagName === 'IMG' && !e.target.classList.contains('no-fallback')) {
                     const isLight = document.documentElement.classList.contains('light');
