@@ -363,3 +363,75 @@ html.light .story-thumb-placeholder {
     .stories-grid { grid-template-columns: 1fr; gap: var(--space-md); }
     .story-card { padding: var(--space-md); }
 }
+
+/* =========================================
+   CLUSTER PAGE - Legibility & Digital Oxygen
+   ========================================= */
+
+.cluster-header {
+    padding: 0 0 var(--space-md) 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-xl); /* 32px breathing room */
+}
+
+.cluster-headline {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    margin-bottom: var(--space-xs);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+    max-width: 90%;
+}
+
+.cluster-summary {
+    font-size: 1.15rem;
+    line-height: var(--lh-base);
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    padding: var(--space-lg);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-bottom: var(--space-xl); /* 32px break before sources */
+}
+
+.summary-label {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 16px;
+    display: block;
+    letter-spacing: 0.1em;
+}
+
+.summary-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-width: 75ch; /* 2026 Golden Rule for reading comfort */
+}
+
+.summary-list li {
+    margin-bottom: 12px; /* Breathing room between facts */
+    position: relative;
+    padding-left: 24px;
+}
+
+.summary-list li::before {
+    content: '•';
+    color: var(--primary);
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.summary-list li:last-child { margin-bottom: 0; }
+
+.sources-grid {
+    margin-bottom: var(--space-2xl);
+}
+
+.ai-section {
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border);
+}

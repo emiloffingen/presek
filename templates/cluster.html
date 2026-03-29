@@ -221,9 +221,15 @@
         </header>
 
         {% if synthesis %}
-        <section class="cluster-summary fade-in" style="animation-delay: 0.1s; line-height: var(--lh-base);">
+        <section class="cluster-summary fade-in">
             <span class="summary-label">НАКРАТКО</span>
-            {{ synthesis }}
+            <ul class="summary-list">
+                {% for line in synthesis.split('\n') %}
+                    {% if line.strip() %}
+                        <li>{{ line.strip('• ').strip() }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
         </section>
         {% endif %}
 
