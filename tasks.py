@@ -380,6 +380,8 @@ def send_daily_digest_task():
         # 2. Send via Email if SMTP is configured
         smtp_user = os.environ.get("SMTP_USER")
         smtp_pass = os.environ.get("SMTP_PASS")
+        smtp_host = os.environ.get("SMTP_HOST")
+        smtp_port = os.environ.get("SMTP_PORT")
         
         if smtp_user and smtp_pass:
             now = datetime.datetime.now()
@@ -392,7 +394,7 @@ def send_daily_digest_task():
             conn.close()
             
             for sub in subs:
-                send_email(html, subject, smtp_user, smtp_pass, sub["email"])
+                send_email(html, subject, smtp_user, smtp_pass, sub["email"], smtp_host, smtp_port)
                 
     except Exception as e:
         log.error(f"Daily digest task failed: {e}")

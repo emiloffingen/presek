@@ -184,7 +184,10 @@ def translate_to_macedonian(text: str) -> str | None:
     
     res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT)
     if res:
-        return clean_json_response(res)
+        cleaned = clean_json_response(res)
+        if isinstance(cleaned, dict):
+            return cleaned.get('summary', str(cleaned))
+        return str(cleaned)
     return None
 
 def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:

@@ -30,7 +30,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         return False
 
     total = sum(len(v) for v in stories_by_cat.values())
-    lines = [f"📰 Пресек — Дневен преглед ({total} приказни)\n"]
+    lines = [f"📰 ПРЕСЕК — Дневен преглед ({total} приказни)\n"]
 
     CAT_ORDER = ['Македонија','Политика','Спорт','Хроника','Економија','Балкан','Свет','Дијаспора']
     cats = [c for c in CAT_ORDER if c in stories_by_cat] +            [c for c in stories_by_cat if c not in CAT_ORDER]
@@ -51,7 +51,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
             f"https://ntfy.sh/{topic}",
             data=body.encode("utf-8"),
             headers={
-                "Title": "Пресек — Дневен преглед",
+                "Title": "Presek - Dneven pregled",
                 "Priority": "default",
                 "Tags": "newspaper,macedonia",
                 "Content-Type": "text/plain; charset=utf-8",
@@ -229,26 +229,31 @@ def render_html(stories_by_cat: dict[str, list[dict]],
 def send_email(html: str, subject: str,
                smtp_user: str, smtp_pass: str,
                to_address: str,
-               smtp_host: str = "smtp.gmail.com",
-               smtp_port: int = 587) -> bool:
-    """Send HTML email via SMTP (Gmail by default)."""
+               smtp_host: str = None,
+               smtp_port: int = None) -> bool:
+    """Send HTML email via SMTP."""
+    import os
+    host = smtp_host or os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    port = int(smtp_port or os.environ.get("SMTP_PORT", 587))
+    from_addr = os.environ.get("EMAIL_FROM", smtp_user)
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = smtp_user
+    msg["From"]    = from_addr
     msg["To"]      = to_address
     msg.attach(MIMEText(html, "html", "utf-8"))
 
     try:
         ctx = ssl.create_default_context()
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+        with smtplib.SMTP(host, port, timeout=15) as server:
             server.ehlo()
             server.starttls(context=ctx)
             server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user, to_address, msg.as_string())
-        print(f"[digest] Email sent to {to_address}")
+            server.sendmail(from_addr, to_address, msg.as_string())
+        print(f"[digest] Email sent to {to_address} via {host}")
         return True
     except Exception as e:
-        print(f"[digest] SMTP error: {e}")
+        print(f"[digest] SMTP error on {host}: {e}")
         return False
 
 
