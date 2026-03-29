@@ -321,6 +321,8 @@ html.light .story-thumb-placeholder {
     gap: var(--space-sm);
 }
 .story-meta .source { color: var(--primary); }
+.source-link { text-decoration: none; }
+.source-link:hover { text-decoration: underline; }
 
 .story-headline {
     font-family: var(--font-heading);

@@ -27,6 +27,46 @@ def archive_page():
 def briefing_page():
     return render_template("briefing.html", year=datetime.datetime.now().year)
 
+@views_bp.route("/izvor/<source_name>")
+def source_page(source_name: str):
+    conn = get_db()
+    # Fetch recent articles from this source
+    rows = conn.execute(
+        "SELECT * FROM articles WHERE source = %s ORDER BY created_at DESC LIMIT 50",
+        (source_name,)
+    ).fetchall()
+    
+    # Calculate stats for this source
+    stats = conn.execute("""
+        SELECT 
+            COUNT(*) as total,
+            COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as last_24h,
+            (SELECT category FROM articles WHERE source = %s GROUP BY category ORDER BY COUNT(*) DESC LIMIT 1) as top_cat
+        FROM articles WHERE source = %s
+    """, (source_name, source_name)).fetchone()
+    
+    conn.close()
+    
+    if not rows:
+        return "Изворот не е пронајден или нема активни објави.", 404
+        
+    articles = [dict(r) for r in rows]
+    # We group them by cluster for better display
+    clusters = []
+    seen_clusters = set()
+    for a in articles:
+        if a["cluster_id"] not in seen_clusters:
+            clusters.append({"articles": [a], "cluster_id": a["cluster_id"], "score": 0})
+            seen_clusters.add(a["cluster_id"])
+
+    return render_template(
+        "source.html", 
+        source_name=source_name, 
+        clusters=clusters, 
+        stats=stats,
+        year=datetime.datetime.now().year
+    )
+
 @views_bp.route("/about")
 def about_page():
     return render_template("about.html", year=datetime.datetime.now().year)

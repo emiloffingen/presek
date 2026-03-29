@@ -241,7 +241,9 @@
                     `}
                     <div class="story-meta">
                         ${sentimentEmoji}
-                        <span class="source" title="Кредибилитет на изворот">${a.source}</span>
+                        <a href="/izvor/${encodeURIComponent(a.source)}" class="source-link">
+                            <span class="source" title="Кредибилитет на изворот">${a.source}</span>
+                        </a>
                         <span class="reliability-badge ${rel.class}">${rel.label}</span>
                         <span>•</span>
                         <span>${timeAgo(a.created_at)}</span>

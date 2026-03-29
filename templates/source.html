@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ source_name }} | Пресек{% endblock %}
+
+{% block head %}
+<style>
+    .source-header {
+        margin-bottom: var(--space-2xl);
+        padding-bottom: var(--space-xl);
+        border-bottom: 1px solid var(--border);
+    }
+    .source-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-lg);
+    }
+    .source-stat-card {
+        background: var(--bg-surface);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        text-align: center;
+    }
+    .stat-val { font-size: 1.5rem; font-weight: var(--weight-bold); color: var(--primary); display: block; }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="source-header">
+        <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
+        <h1 class="hero-title" style="margin-bottom: var(--space-md);">Извор: <span style="color:var(--primary)">{{ source_name }}</span></h1>
+        
+        <div class="source-stats-grid">
+            <div class="source-stat-card">
+                <span class="stat-val">{{ stats.total }}</span>
+                <span class="stat-label">Вкупно објави</span>
+            </div>
+            <div class="source-stat-card">
+                <span class="stat-val">{{ stats.last_24h }}</span>
+                <span class="stat-label">Последни 24ч</span>
+            </div>
+            <div class="source-stat-card">
+                <span class="stat-val" style="font-size: 1.1rem; padding: 6px 0;">{{ stats.top_cat or 'Вести' }}</span>
+                <span class="stat-label">Примарна Категорија</span>
+            </div>
+        </div>
+    </div>
+
+    <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:var(--space-xl)">Последни објави</h2>
+    
+    <div class="stories-grid" id="sourceStories">
+        <!-- Rendered by JS -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pass the cluster data from Jinja to JS
+    const initialClusters = {{ clusters | tojson | safe }};
+    
+    function renderSourcePage() {
+        const wrap = document.getElementById('sourceStories');
+        if (!initialClusters || !initialClusters.length) {
+            wrap.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted)">Нема активни објави за овој извор.</div>';
+            return;
+        }
+        wrap.innerHTML = initialClusters.map((c, i) => renderCard(c, i)).join('');
+    }
+
+    renderSourcePage();
+</script>
+{% endblock %}
