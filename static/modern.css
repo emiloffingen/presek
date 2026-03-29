@@ -412,7 +412,7 @@ html.light .story-thumb-placeholder {
 }
 
 .summary-list li {
-    margin-bottom: 12px; /* Breathing room between facts */
+    margin-bottom: 8px; /* Dialed back for 'Goldilocks' zone */
     position: relative;
     padding-left: 24px;
 }
