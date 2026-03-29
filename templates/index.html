@@ -5,25 +5,6 @@
 {% block head %}
 <style>
     /* Page Specific Styles */
-    .hero-section {
-        padding: var(--space-2xl) 0;
-        text-align: center;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: var(--space-xl);
-    }
-    .hero-title {
-        font-size: clamp(2rem, 6vw, 3.5rem);
-        margin-bottom: var(--space-sm);
-        letter-spacing: -0.03em;
-    }
-    .hero-subtitle {
-        color: var(--text-secondary);
-        font-size: 1.15rem;
-        max-width: 600px;
-        margin: 0 auto;
-        line-height: var(--lh-base);
-    }
-
     .nav-bar {
         position: sticky;
         top: 64px;
@@ -140,11 +121,6 @@
 {% endblock %}
 
 {% block content %}
-<section class="hero-section fade-in">
-    <h1 class="hero-title">Македонски <span style="color:var(--primary)">Пресек</span></h1>
-    <p class="hero-subtitle">Сите македонски и светски вести, групирани и сумирани од вештачка интелигенција.</p>
-</section>
-
 <nav class="nav-bar">
     <div class="nav-inner">
         <div class="category-scroll" id="categoryList">
