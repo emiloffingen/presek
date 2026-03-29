@@ -55,6 +55,48 @@
         color: white; 
     }
 
+    /* Trending Topics Bar */
+    .trending-container {
+        max-width: var(--max-width);
+        margin: 0 auto var(--space-lg);
+        padding: 0 var(--space-md);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        overflow: hidden;
+    }
+    .trending-label {
+        font-size: 0.65rem;
+        font-weight: var(--weight-bold);
+        text-transform: uppercase;
+        color: var(--primary);
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+    }
+    .trending-scroll {
+        display: flex;
+        gap: var(--space-sm);
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 4px 0;
+    }
+    .trending-scroll::-webkit-scrollbar { display: none; }
+    .trend-tag {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        background: var(--bg-surface);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .trend-tag:hover {
+        border-color: var(--primary);
+        color: var(--text-primary);
+    }
+
     .time-divider {
         grid-column: 1 / -1;
         display: flex;
@@ -130,6 +172,11 @@
         </div>
     </div>
 </nav>
+
+<div class="trending-container" id="trendingBox" style="display:none">
+    <div class="trending-label">Во Тренд</div>
+    <div class="trending-scroll" id="trendingList"></div>
+</div>
 
 <div id="pageWrap">
     <!-- Initial Skeleton Loader for Perceived Performance -->
@@ -280,7 +327,34 @@
         if (sentinel) observer.observe(sentinel);
     });
 
+    async function fetchTrending() {
+        try {
+            const res = await fetch('/api/trending');
+            const data = await res.json();
+            const list = document.getElementById('trendingList');
+            if (data && data.length) {
+                document.getElementById('trendingBox').style.display = 'flex';
+                list.innerHTML = data.map(t => `
+                    <div class="trend-tag" onclick="searchTrend('${t.word}')">${t.word}</div>
+                `).join('');
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function searchTrend(q) {
+        // Access global search system from base.html
+        const searchOpen = document.getElementById('searchOpen');
+        const searchInput = document.getElementById('searchInput');
+        if (searchOpen && searchInput) {
+            searchOpen.click();
+            searchInput.value = q;
+            // Trigger input event to start search
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    }
+
     initCategories();
     fetchNews();
+    fetchTrending();
 </script>
 {% endblock %}

@@ -29,6 +29,35 @@ def run_ingestion():
     log.info("Starting auto-summarization...")
     from utils import rank_articles_in_cluster, score_cluster
     auto_summarize_top_clusters(rank_articles_in_cluster, score_cluster)
+    
+    log.info("Checking for breaking news to notify...")
+    try:
+        from notifier import BreakingNewsNotifier
+        from config import NTFY_TOPIC, BREAKING_SCORE_THRESHOLD
+        from collections import defaultdict
+        
+        notifier = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
+        conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=1)
+        rows = conn.execute("SELECT * FROM articles WHERE created_at >= %s", (cutoff,)).fetchall()
+        conn.close()
+        
+        if rows:
+            clusters_map = defaultdict(list)
+            for r in rows:
+                clusters_map[r["cluster_id"]].append(dict(r))
+            
+            for cid, arts in clusters_map.items():
+                sorted_arts = rank_articles_in_cluster(arts)
+                score = score_cluster(sorted_arts)
+                unique_sources = len({a["source"] for a in sorted_arts})
+                
+                if score >= BREAKING_SCORE_THRESHOLD or unique_sources >= 3:
+                    notifier.notify(sorted_arts[0]["title"], unique_sources, cid)
+    except Exception as e:
+        log.error(f"Notification check failed: {e}")
+    
+    log.info("Finished ingestion cycle.")
 
 @celery_app.task
 def recategorize_clusters_task():
