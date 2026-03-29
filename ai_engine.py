@@ -40,7 +40,7 @@ def clean_json_response(text: str) -> dict | str:
             data = json.loads(json_text)
             if isinstance(data, dict):
                 # Check for synthesis-specific fields
-                if 'summary' in data or 'perspectives' in data:
+                if 'summary' in data or 'perspectives' in data or 'entities' in data:
                     return data
                 # Check for single-field 'summary' response
                 if 'summary' in data and len(data) == 1:
@@ -57,24 +57,24 @@ def clean_json_response(text: str) -> dict | str:
 
 
 def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    """Shared Gemini caller. Retries with exponential backoff on rate-limit (429)."""
+    """Shared Gemini caller. Uses contents-only approach for maximum compatibility."""
     if not GOOGLE_API_KEY:
         return None
-    prompt_text = prompt_text[:10000]
     
-    gen_config = {"maxOutputTokens": max_tokens}
+    # Combined prompt for older API versions or restricted keys
+    combined_prompt = f"{system_prompt}\n\nInput Text:\n{prompt_text}"
+    
+    payload_dict = {
+        "contents": [{"parts": [{"text": combined_prompt}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens}
+    }
+    
     if json_mode:
-        gen_config["responseMimeType"] = "application/json"
+        payload_dict["generationConfig"]["responseMimeType"] = "application/json"
         
-    payload = json.dumps({
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"parts": [{"text": prompt_text}]}],
-        "generationConfig": gen_config
-    }).encode("utf-8")
+    payload = json.dumps(payload_dict).encode("utf-8")
     
-    # Financial Safety Rail removed from here - managed by Celery rate limits
-    
-    delays = [2, 4, 8]  # seconds before each retry
+    delays = [2, 4, 8]
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)
@@ -85,20 +85,88 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
                 headers={"Content-Type": "application/json"},
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+                raw_res = resp.read().decode("utf-8")
+                data = json.loads(raw_res)
+            
+            if "candidates" not in data or not data["candidates"]:
+                return None
+                
             return data["candidates"][0]["content"]["parts"][0]["text"].strip()
         except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8") if e else ""
             if e.code == 429:
-                log.warning(f"[gemini] Rate limited (429), retry {attempt+1}/3 in {delays[attempt] if attempt < len(delays) else '—'}s")
                 continue
-            log.warning(f"[gemini] HTTP {e.code}: {e}")
-            return None
+            log.warning(f"[gemini] HTTP {e.code}: {err_body}")
+            break
         except Exception as e:
-            import traceback as _tb
-            log.warning(f"[gemini] Call failed: {e}\n" + _tb.format_exc())
-            return None
-    log.warning("[gemini] All retries exhausted after rate limiting.")
+            log.warning(f"[gemini] Generic error: {e}")
+            break
     return None
+
+def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
+    """Call Cloudflare Workers AI REST API."""
+    if not CLOUDFLARE_API_TOKEN:
+        return None
+    
+    payload = json.dumps({
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Input: {prompt_text}"}
+        ],
+        "max_tokens": 1000
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(
+            CF_AI_URL,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw_body = resp.read().decode("utf-8")
+            data = json.loads(raw_body)
+        
+        if data.get("success"):
+            return data["result"]["response"].strip()
+        return None
+    except Exception as e:
+        log.warning(f"[cloudflare] Call failed: {e}")
+        return None
+
+def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
+    """Call AI provider (Gemini first, fallback to Cloudflare) with daily usage capping."""
+    from config import AI_DAILY_LIMIT
+    from utils import redis_client
+    
+    # 0. Check Daily Usage Limit
+    try:
+        today = datetime.date.today().isoformat()
+        usage_key = f"ai_usage_count:{today}"
+        current_usage = redis_client.incr(usage_key)
+        if current_usage == 1:
+            redis_client.expire(usage_key, 86400) # Reset after 24h
+            
+        if current_usage > AI_DAILY_LIMIT:
+            if current_usage == AI_DAILY_LIMIT + 1:
+                log.warning(f"⚠️ AI Daily Limit ({AI_DAILY_LIMIT}) reached. Capping usage for today.")
+            return None, "limit_reached"
+    except Exception as e:
+        log.warning(f"[limit-check] Redis error: {e}")
+
+    # 1. Try Gemini first
+    gemini_result = _call_gemini(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
+    if gemini_result:
+        return gemini_result, "gemini"
+
+    # 2. Fallback to Cloudflare Workers AI
+    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
+    if cf_result:
+        return cf_result, "cloudflare"
+        
+    return None, None
 
 def cleanup_cover_art():
     """Removes generated cover art for clusters that are no longer in the DB."""
@@ -109,7 +177,6 @@ def cleanup_cover_art():
         
     try:
         conn = get_db()
-        # Get all cluster IDs currently in DB (articles or summaries)
         rows = conn.execute("SELECT DISTINCT cluster_id FROM articles").fetchall()
         valid_ids = {r["cluster_id"] for r in rows}
         rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
@@ -128,57 +195,8 @@ def cleanup_cover_art():
     except Exception as e:
         log.error(f"[cleanup] Image cleanup failed: {e}")
 
-def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
-    """Call Cloudflare Workers AI REST API."""
-    if not CLOUDFLARE_API_TOKEN:
-        return None
-    
-    payload = json.dumps({
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Input: {prompt_text}"}
-        ]
-    }).encode("utf-8")
-
-    try:
-        req = urllib.request.Request(
-            CF_AI_URL,
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
-            }
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw_body = resp.read().decode("utf-8")
-            data = json.loads(raw_body)
-        
-        if data.get("success"):
-            return data["result"]["response"].strip()
-        else:
-            log.warning(f"[cloudflare] API error: {data.get('errors')}")
-            log.debug(f"[cloudflare] Raw response: {raw_body}")
-            return None
-    except Exception as e:
-        log.warning(f"[cloudflare] Call failed: {e}")
-        return None
-
-def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
-    """Call AI provider (Gemini first, fallback to Cloudflare)."""
-    # 1. Try Gemini
-    gemini_result = _call_gemini(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
-    if gemini_result:
-        return gemini_result, "gemini"
-
-    # 2. Fallback to Cloudflare Workers AI
-    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
-    if cf_result:
-        return cf_result, "cloudflare"
-        
-    return None, None
-
 def translate_to_macedonian(text: str) -> str | None:
-    """Translate news text to Macedonian using AI (Cloudflare preferred)."""
+    """Translate news text to Macedonian using AI."""
     if not text or not text.strip():
         return text
     
@@ -193,17 +211,11 @@ def translate_to_macedonian(text: str) -> str | None:
 def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
     """Generate professional news cover art using Cloudflare Stable Diffusion."""
     from config import CF_IMAGE_MODEL_URL, CLOUDFLARE_API_TOKEN
-    import os
-    
     if not CLOUDFLARE_API_TOKEN:
         return None
         
-    # 1. Simplify synthesis into a visual prompt
-    # Take first 2 bullets and clean
     lines = [l.strip('• ') for l in synthesis.split('\n') if '•' in l][:2]
     visual_context = ". ".join(lines)
-    
-    # English prompt for better results with SDXL
     prompt = f"Cinematic editorial photography, {visual_context}, professional news graphics, high resolution, 16:9 aspect ratio, neutral lighting."
     
     payload = json.dumps({"prompt": prompt}).encode("utf-8")
@@ -219,22 +231,15 @@ def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
             }
         )
         with urllib.request.urlopen(req, timeout=60) as resp:
-            # Cloudflare returns binary image data
             with open(save_path, "wb") as f:
                 f.write(resp.read())
-        
         return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
         log.warning(f"[ai-image] Failed to generate cover for {cluster_id}: {e}")
         return None
 
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
-    """
-    Finds top clusters and dispatches background tasks for summarization/synthesis.
-    """
-    if not GOOGLE_API_KEY:
-        return  # no Gemini key, skip silently
-
+    """Dispatches background tasks for summarization/synthesis."""
     try:
         from tasks import summarize_article_task, synthesize_cluster_task
         conn = get_db()
@@ -244,7 +249,6 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
             (cutoff,)
         ).fetchall()
         
-        # Build clusters and rank them
         clusters_map = defaultdict(list)
         for r in rows:
             clusters_map[r["cluster_id"]].append(dict(r))
@@ -256,34 +260,21 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
             ranked.append((cid, sorted_arts, s))
         ranked.sort(key=lambda x: x[2], reverse=True)
 
-        top = ranked[:AUTO_SUMMARIZE_TOP_N]
-
-        for cid, arts, score in top:
+        for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
             lead = arts[0]
-
-            # 1. Dispatch summary task for the lead article (if not already done)
             if not lead.get("summary"):
                 summarize_article_task.delay(lead["id"], lead["title"])
 
-            # 2. Dispatch cluster synthesis task
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
-                # Check DB cache first
                 row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
                 if not row:
-                    # Prepare content for synthesis task
                     lines = []
                     for a in arts[:10]:
                         line = f"- [{a['source']}]: {a['title']}"
-                        desc = (a.get('description') or '').strip()
-                        if desc:
-                            desc = re.sub(r'<[^>]+>', '', desc)[:250].strip()
-                            if desc: line += f"\n  Опис: {desc}"
                         lines.append(line)
                     content = "\n".join(lines)
                     synthesize_cluster_task.delay(cid, content)
-
+        conn.close()
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
-    finally:
-        conn.close()

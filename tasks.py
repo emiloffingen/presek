@@ -240,12 +240,11 @@ def extract_entities_task():
         
         # Get clusters from last 24h that don't have entities yet
         rows = conn.execute("""
-            SELECT cluster_id, title, description 
-            FROM articles 
+            SELECT DISTINCT ON (cluster_id) cluster_id, title, description 
+            FROM articles a
             WHERE created_at >= %s 
-              AND cluster_id NOT IN (SELECT cluster_id FROM cluster_entities)
-            GROUP BY cluster_id, title, description
-            LIMIT 30
+              AND NOT EXISTS (SELECT 1 FROM cluster_entities e WHERE e.cluster_id = a.cluster_id)
+            LIMIT 100
         """, (cutoff,)).fetchall()
         
         if not rows:

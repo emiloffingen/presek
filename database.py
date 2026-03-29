@@ -29,18 +29,6 @@ load_env()
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
 
-# Mask password for logging
-masked_url = DATABASE_URL
-if "@" in masked_url:
-    part1, part2 = masked_url.split("@", 1)
-    if "://" in part1:
-        scheme, auth = part1.split("://", 1)
-        if ":" in auth:
-            user, pw = auth.split(":", 1)
-            masked_url = f"{scheme}://{user}:****@{part2}"
-
-log.info(f"Using database URL: {masked_url}")
-
 DB_RETAIN_DAYS = int(os.environ.get("DB_RETAIN_DAYS", 14))
 
 # Initialize a global connection pool

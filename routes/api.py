@@ -10,7 +10,7 @@ import traceback
 from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
-from database import get_db
+from database import get_db, get_db_size
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 
@@ -289,7 +289,7 @@ def api_stats_full():
         top_clicks = conn.execute("SELECT title, source, clicks, link FROM articles WHERE clicks > 0 ORDER BY clicks DESC LIMIT 10").fetchall()
         oldest     = conn.execute("SELECT MIN(created_at) FROM articles").fetchone()[0]
         newest     = conn.execute("SELECT MAX(created_at) FROM articles").fetchone()[0]
-        
+
         # Velocity Data
         velocity_rows = conn.execute("""
             SELECT date_trunc('hour', created_at) as hr, COUNT(*) 
@@ -298,7 +298,7 @@ def api_stats_full():
             GROUP BY hr ORDER BY hr ASC
         """).fetchall()
         velocity = [{"t": r[0].isoformat(), "n": r[1]} for r in velocity_rows]
-        
+
         # Sentiment Index (last 7 days)
         sentiment_rows = conn.execute("""
             SELECT source, summary 
@@ -306,7 +306,7 @@ def api_stats_full():
             WHERE created_at >= NOW() - INTERVAL '7 days' 
               AND summary IS NOT NULL AND summary != ''
         """).fetchall()
-        
+
         source_sentiments = defaultdict(list)
         for r in sentiment_rows:
             s = r["summary"]
@@ -314,15 +314,15 @@ def api_stats_full():
             if '🟢' in s: score = 1
             elif '🔴' in s: score = -1
             source_sentiments[r["source"]].append(score)
-            
+
         sentiment_index = []
         for src, scores in source_sentiments.items():
             if len(scores) >= 5: # Only sources with enough data
                 avg = sum(scores) / len(scores)
                 sentiment_index.append({"source": src, "score": round(avg, 2), "count": len(scores)})
-        
+
         sentiment_index.sort(key=lambda x: abs(x["score"]), reverse=True)
-        
+
         # Media Speed (Who reports first?)
         speed_rows = conn.execute("""
             WITH FirstReports AS (
@@ -339,7 +339,7 @@ def api_stats_full():
             LIMIT 10
         """).fetchall()
         speed_leaderboard = [dict(r) for r in speed_rows]
-        
+
         # Topic Trends (last 7 days)
         topic_rows = conn.execute("""
             SELECT topic, date_trunc('day', created_at) as day, COUNT(*) 
@@ -347,23 +347,25 @@ def api_stats_full():
             WHERE created_at >= NOW() - INTERVAL '7 days' AND topic != 'Вести'
             GROUP BY topic, day ORDER BY day ASC
         """).fetchall()
-        
+
         topic_trends = defaultdict(list)
         for r in topic_rows:
             topic_trends[r[0]].append({"day": r[1].isoformat(), "count": r[2]})
-            
+
         formatted_trends = [{"topic": k, "data": v} for k, v in topic_trends.items()]
-        
+
         conn.close()
 
-        db_size = database.get_db_size()
+        # Call get_db_size directly
+        current_db_size = get_db_size()
+
         uptime_s = int(time.time() - health._start_time)
         h, rem = divmod(uptime_s, 3600)
         m, _   = divmod(rem, 60)
 
         return jsonify({
             "uptime": f"{h}ч {m}м",
-            "db_size_mb": db_size,
+            "db_size_mb": current_db_size,
             "total_articles": total,
             "last_24h": recent_24h,
             "last_7d": recent_7d,
@@ -382,7 +384,6 @@ def api_stats_full():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @api_bp.route("/api/ai/ask", methods=["POST"])
 def api_ai_ask():
