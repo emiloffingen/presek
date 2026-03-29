@@ -23,30 +23,30 @@ from database import get_db
 
 log = logging.getLogger("presek")
 
-def clean_json_response(text: str) -> str:
+def clean_json_response(text: str) -> dict | str:
     """
-    Robustly extract the summary text from a Gemini/AI response.
-    Handles raw text, Markdown-wrapped JSON, and JSON objects.
+    Extracts summary and other fields from a JSON response.
+    Returns a dict if valid JSON with known keys, otherwise returns cleaned string.
     """
     if not text:
         return ""
     
-    # 1. Strip markdown code blocks if they exist
+    # Strip markdown code blocks
     text = re.sub(r'```(?:json)?\n?', '', text)
     text = text.replace('```', '').strip()
     
-    # 2. Try to find the bounds of a JSON object if it looks like one
-    start_brace = text.find('{')
-    end_brace = text.rfind('}')
-    
-    if start_brace != -1 and end_brace != -1 and end_brace > start_brace:
-        json_part = text[start_brace:end_brace+1]
-        try:
-            data = json.loads(json_part)
-            if isinstance(data, dict) and 'summary' in data:
+    # Try JSON parse
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict):
+            # Check for synthesis-specific fields
+            if 'summary' in data or 'perspectives' in data:
+                return data
+            # Check for single-field 'summary' response (common in translations)
+            if 'summary' in data and len(data) == 1:
                 return data['summary'].strip()
-        except:
-            pass # Not valid JSON, fall back to cleaned text
+    except:
+        pass
 
     return text.strip()
 

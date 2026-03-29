@@ -96,11 +96,13 @@ def cluster_page(cluster_id: str):
     
     # Fetch synthesis and tags
     synthesis = None
+    perspectives = []
     tags = []
     
-    s_row = conn.execute("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)).fetchone()
+    s_row = conn.execute("SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)).fetchone()
     if s_row:
         synthesis = s_row["summary"]
+        perspectives = s_row["perspectives"] if s_row["perspectives"] else []
         
     m_row = conn.execute("SELECT tags FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,)).fetchone()
     if m_row:
@@ -156,7 +158,7 @@ def cluster_page(cluster_id: str):
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 
-    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, year=datetime.datetime.now().year)
+    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, perspectives=perspectives, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, year=datetime.datetime.now().year)
 
 @views_bp.route("/manifest.json")
 def manifest():

@@ -85,6 +85,7 @@ def init_db():
     cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
         cluster_id TEXT PRIMARY KEY,
         summary TEXT,
+        perspectives JSONB DEFAULT '[]',
         created_at TIMESTAMP
     )""")
 

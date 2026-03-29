@@ -237,7 +237,22 @@
 
         {% if synthesis %}
         <section class="cluster-summary fade-in">
+            <span class="summary-label">Брз Преглед</span>
             {{ synthesis }}
+        </section>
+        {% endif %}
+
+        {% if perspectives %}
+        <section class="perspectives-section fade-in" style="margin-bottom: var(--space-xl);">
+            <h2 style="font-family:var(--font-display); font-size:1.1rem; margin-bottom:var(--space-md); color:var(--text-secondary)">Различни Перспективи</h2>
+            <div style="display:grid; grid-template-columns: 1fr; gap:var(--space-md)">
+                {% for p in perspectives %}
+                <div style="background:var(--bg-base); border:1px solid var(--border); border-left:3px solid var(--primary); padding:var(--space-md); border-radius:0 var(--radius-md) var(--radius-md) 0">
+                    <span style="font-size:0.75rem; font-weight:var(--weight-bold); text-transform:uppercase; color:var(--primary); display:block; margin-bottom:4px">{{ p.label }}</span>
+                    <p style="font-size:0.95rem; line-height:1.5; color:var(--text-primary); margin:0">{{ p.text }}</p>
+                </div>
+                {% endfor %}
+            </div>
         </section>
         {% endif %}
 

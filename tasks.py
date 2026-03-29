@@ -17,9 +17,11 @@ def summarize_article_task(article_id, title):
     try:
         summary, tier = _call_ai(title, SUMMARY_SYSTEM_PROMPT)
         if summary:
-            summary = clean_json_response(summary)
+            summary_res = clean_json_response(summary)
+            # clean_json_response might return dict for synthesis but here it should be string
+            final_summary = summary_res.get('summary', str(summary_res)) if isinstance(summary_res, dict) else summary_res
             conn = get_db()
-            conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, article_id))
+            conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (final_summary, article_id))
             conn.commit()
             conn.close()
     except Exception as e:
@@ -27,23 +29,36 @@ def summarize_article_task(article_id, title):
 
 @celery_app.task(rate_limit='10/m')
 def synthesize_cluster_task(cluster_id, content):
-    """Asynchronously generates a synthesis for a cluster."""
+    """Asynchronously generates a synthesis for a cluster with multiple perspectives."""
     try:
-        synthesis, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
-        if synthesis:
-            clean_synthesis = clean_json_response(synthesis)
+        raw_res, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+        if raw_res:
+            res = clean_json_response(raw_res)
+            summary = ""
+            perspectives = []
+
+            if isinstance(res, dict):
+                summary = res.get('summary', '')
+                perspectives = res.get('perspectives', [])
+            else:
+                summary = res
+
             now = datetime.datetime.now()
+            import json as _json
             conn = get_db()
             conn.execute(
-                "INSERT INTO cluster_summaries (cluster_id, summary, created_at) VALUES (%s, %s, %s) ON CONFLICT (cluster_id) DO UPDATE SET summary = EXCLUDED.summary, created_at = EXCLUDED.created_at",
-                (cluster_id, clean_synthesis, now)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at) 
+                   VALUES (%s, %s, %s, %s) 
+                   ON CONFLICT (cluster_id) DO UPDATE 
+                   SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
+                (cluster_id, summary, _json.dumps(perspectives), now)
             )
             conn.commit()
-            
+
             # Check if lead image is missing
             lead_row = conn.execute("SELECT id, image_url FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1", (cluster_id,)).fetchone()
             if lead_row and not lead_row["image_url"]:
-                img_url = generate_cover_art(cluster_id, clean_synthesis)
+                img_url = generate_cover_art(cluster_id, summary)
                 if img_url:
                     conn.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s", (img_url, cluster_id))
                     conn.commit()
