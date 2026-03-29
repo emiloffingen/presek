@@ -72,20 +72,23 @@ def find_or_create_cluster(title: str, recent_articles: list,
     """
     Find a matching cluster or create a new one.
 
-    Strategy: build a dict of cluster_id → representative title (the first
-    article seen for that cluster). Compare the new title against each
-    representative *once*, not against every article. This prevents
-    mega-clusters from having more chances to match.
-
-    Also enforces MAX_CLUSTER_SIZE — full clusters cannot accept new articles.
+    Strategy: 
+    1. Dynamic Thresholding: Existing clusters are slightly easier to match (-0.05) 
+       than creating a new one, favoring consolidation.
+    2. Recency Decay: The threshold increases as the representative article gets older,
+       preventing 'infinite clusters' for recurring generic topics.
+    3. Representative Matching: Compares against the first article of each cluster.
     """
     vec1 = text_to_vector(title)
     if not vec1:
         return str(uuid.uuid4())[:8]
 
-    # Build cluster representatives + sizes from recent articles
-    cluster_rep: dict[str, str] = {}      # cluster_id → representative title
-    cluster_size: dict[str, int] = {}     # cluster_id → count
+    # Build cluster representatives + sizes + ages from recent articles
+    cluster_rep: dict[str, str] = {}      # cid -> representative title
+    cluster_size: dict[str, int] = {}     # cid -> count
+    cluster_age: dict[str, float] = {}    # cid -> hours since representative was created
+    
+    now = datetime.datetime.now()
 
     for article in recent_articles:
         cid = article.get("cluster_id", "")
@@ -94,6 +97,16 @@ def find_or_create_cluster(title: str, recent_articles: list,
         cluster_size[cid] = cluster_size.get(cid, 0) + 1
         if cid not in cluster_rep:
             cluster_rep[cid] = article["title"]
+            # Calculate age of the representative
+            try:
+                ts = article.get("created_at")
+                if isinstance(ts, datetime.datetime):
+                    dt = ts.replace(tzinfo=None)
+                else:
+                    dt = datetime.datetime.fromisoformat(str(ts).replace("+00:00", ""))
+                cluster_age[cid] = (now - dt).total_seconds() / 3600
+            except:
+                cluster_age[cid] = 12 # fallback
 
     # Compare against each cluster representative
     best_cid = None
@@ -103,9 +116,17 @@ def find_or_create_cluster(title: str, recent_articles: list,
         # Skip full clusters
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE:
             continue
+            
+        # 1. Dynamic threshold (favor existing)
+        # 2. Recency penalty (older clusters are harder to match)
+        age = cluster_age.get(cid, 12)
+        penalty = (age / 24.0) * 0.1  # +0.1 threshold every 24 hours
+        current_threshold = threshold - 0.05 + penalty
+        
         vec2 = text_to_vector(rep_title)
         score = get_cosine(vec1, vec2)
-        if score > threshold and score > best_score:
+        
+        if score > current_threshold and score > best_score:
             best_score = score
             best_cid = cid
 

@@ -137,10 +137,10 @@ def ingest_feeds():
     conn = get_db()
     try:
         recent_rows = conn.execute(
-            "SELECT title, cluster_id FROM articles ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         ).fetchall()
-        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in recent_rows]
+        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"]} for r in recent_rows]
 
         all_entries = []  
         errors = []
@@ -190,10 +190,10 @@ def ingest_diaspora_feeds():
     """Fetch diaspora RSS feeds and write to DB separately (without translation)."""
     conn = get_db()
     diaspora_recent = conn.execute(
-        "SELECT title, cluster_id FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
+        "SELECT title, cluster_id, created_at FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
         (CLUSTER_LOOKBACK,)
     ).fetchall()
-    diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"]} for r in diaspora_recent]
+    diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"]} for r in diaspora_recent]
     conn.close()
 
     feed_meta = {s: (cat, detect_country(s)) for s, u, cat in DIASPORA_FEEDS}
