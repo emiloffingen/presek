@@ -1,7 +1,7 @@
 import time
 import logging
 from trending import get_trending
-from app import set_cache
+from utils import set_cache
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("trending_backfill")

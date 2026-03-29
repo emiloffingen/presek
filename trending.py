@@ -160,7 +160,7 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
 
     # Filter: must appear at least MIN_COUNT times in raw count
     results = [
-        {"word": word, "count": raw[word]}
+        {"word": word.capitalize(), "count": raw[word]}
         for word, score in weighted.most_common(limit * 3)
         if raw[word] >= MIN_COUNT
     ]
