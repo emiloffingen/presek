@@ -220,6 +220,9 @@
                 <span class="source" title="Број на поврзани извори">{{ articles|length }} извори</span>
                 <span>•</span>
                 <span id="timeLabel">{{ articles[0].created_at }}</span>
+                <button onclick="shareCluster()" class="action-btn" style="width:24px; height:24px; border:none; background:none; margin-left:auto" title="Сподели">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                </button>
             </div>
         </header>
 
@@ -255,8 +258,14 @@
             </div>
             <div class="ai-chat-bar-inline">
                 <input type="text" id="aiInput" class="ai-chat-input" placeholder="Напишете прашање..." onkeypress="if(event.key==='Enter') askAI()">
-                <button class="ai-chat-btn" onclick="askAI()">
+                <button class="ai-chat-btn" onclick="askAI()" title="Прашај">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <div style="text-align:center; margin-top:var(--space-md)">
+                <button class="page-btn" style="font-size:0.8rem; padding:8px 20px" onclick="deepAnalyze()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; vertical-align:middle"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path><path d="M10 7v6l4 2"></path></svg>
+                    Длабинска Анализа
                 </button>
             </div>
         </section>
@@ -307,10 +316,53 @@
         }
     }
 
+    async function deepAnalyze() {
+        const responseEl = document.getElementById('aiResponse');
+        responseEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.95rem">Вршам длабинска анализа на сите извори...</div>';
+        toggleAISheet(true);
+
+        try {
+            const clusterId = window.location.pathname.split('/').pop();
+            const res = await fetch(`/api/analyze/${clusterId}`);
+            const data = await res.json();
+            
+            if (data.error) {
+                responseEl.innerHTML = `<p style="color:var(--primary)">Грешка: ${data.error}</p>`;
+            } else {
+                // Bold common section headers
+                let html = data.analysis.replace(/\n/g, '<br>');
+                const sections = ['Клучни факти:', 'Бројки:', 'Потвредно:', 'Анализа:'];
+                sections.forEach(s => {
+                    html = html.replace(new RegExp(s, 'g'), `<strong>${s}</strong>`);
+                });
+                responseEl.innerHTML = html;
+            }
+        } catch(e) {
+            responseEl.innerHTML = '<p style="color:var(--primary)">Серверот не одговара.</p>';
+        }
+    }
+
     const timeEl = document.getElementById('timeLabel');
     if (timeEl) {
         const date = new Date(timeEl.textContent);
         timeEl.textContent = date.toLocaleString('mk-MK', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+    }
+
+    function shareCluster() {
+        const title = document.querySelector('.cluster-headline').textContent;
+        const url = window.location.href;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: title,
+                text: 'Погледнете ја оваа синтеза на вести на Пресек:',
+                url: url
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Линкот е копиран!');
+            });
+        }
     }
 </script>
 {% endblock %}

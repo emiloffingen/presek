@@ -121,20 +121,6 @@
         padding: var(--space-2xl) 0;
         min-height: 100px;
     }
-    .load-more-btn {
-        background: var(--bg-surface);
-        color: var(--text-primary);
-        border: 1px solid var(--border);
-        padding: 12px 32px;
-        border-radius: var(--radius-md);
-        font-weight: var(--weight-semi);
-        cursor: pointer;
-        transition: var(--transition);
-    }
-    .load-more-btn:hover {
-        border-color: var(--primary);
-        transform: translateY(-1px);
-    }
 
     /* Skeleton Loading - 2026 Standard */
     .skeleton-grid {
@@ -193,7 +179,7 @@
 </div>
 
 <div id="loadMoreWrap" class="load-more-wrap" style="display:none">
-    <button class="load-more-btn" onclick="loadMore()">Вчитај повеќе</button>
+    <button class="page-btn" onclick="loadMore()">Вчитај повеќе</button>
 </div>
 {% endblock %}
 
