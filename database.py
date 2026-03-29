@@ -96,6 +96,13 @@ def init_db():
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (
+        cluster_id TEXT,
+        entity_name TEXT,
+        entity_type TEXT, -- 'PERSON' or 'ORG'
+        PRIMARY KEY (cluster_id, entity_name)
+    )""")
+
     cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (
         date DATE PRIMARY KEY,
         content TEXT,

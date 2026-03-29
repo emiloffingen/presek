@@ -448,6 +448,23 @@ def api_sources_reliability():
     })
 
 
+@api_bp.route("/api/trending/entities")
+def api_trending_entities():
+    conn = get_db()
+    # Find most frequent entities in clusters from last 24h
+    sql = """
+        SELECT e.entity_name, e.entity_type, COUNT(DISTINCT e.cluster_id) as mentions
+        FROM cluster_entities e
+        JOIN articles a ON e.cluster_id = a.cluster_id
+        WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY e.entity_name, e.entity_type
+        ORDER BY mentions DESC
+        LIMIT 15
+    """
+    rows = conn.execute(sql).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote

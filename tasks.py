@@ -5,7 +5,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response, generate_cover_art
 from database import get_db
-from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT
+from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
 
@@ -87,6 +87,9 @@ def run_ingestion():
 
     log.info("Starting topical classification...")
     classify_topics_task.delay()
+
+    log.info("Starting entity extraction...")
+    extract_entities_task.delay()
     
     log.info("Starting auto-summarization...")
     from utils import rank_articles_in_cluster, score_cluster
@@ -224,6 +227,55 @@ def generate_cluster_metadata_task():
         conn.close()
     except Exception as e:
         log.error(f"Metadata generation task failed: {e}")
+
+@celery_app.task
+def extract_entities_task():
+    """
+    Background task to extract key personalities and organizations from top clusters.
+    """
+    try:
+        import json
+        conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        
+        # Get clusters from last 24h that don't have entities yet
+        rows = conn.execute("""
+            SELECT cluster_id, title, description 
+            FROM articles 
+            WHERE created_at >= %s 
+              AND cluster_id NOT IN (SELECT cluster_id FROM cluster_entities)
+            GROUP BY cluster_id, title, description
+            LIMIT 30
+        """, (cutoff,)).fetchall()
+        
+        if not rows:
+            conn.close()
+            return
+
+        for r in rows:
+            cid = r['cluster_id']
+            text = f"Title: {r['title']}\nDescription: {r['description']}"
+            
+            res, tier = _call_ai(text, ENTITY_EXTRACTION_PROMPT, max_tokens=500, json_mode=True)
+            if res:
+                try:
+                    data = clean_json_response(res)
+                    entities = data.get('entities', []) if isinstance(data, dict) else []
+                    for ent in entities:
+                        name = ent.get('name', '').strip()
+                        etype = ent.get('type', 'PERSON').strip()
+                        if name:
+                            conn.execute(
+                                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                                (cid, name, etype)
+                            )
+                    conn.commit()
+                except Exception as e:
+                    log.warning(f"[entities] Failed to parse for {cid}: {e}")
+        
+        conn.close()
+    except Exception as e:
+        log.error(f"Entity extraction task failed: {e}")
 
 @celery_app.task
 def classify_topics_task():

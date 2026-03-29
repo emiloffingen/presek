@@ -242,6 +242,11 @@
     <div class="trending-scroll" id="trendingList"></div>
 </div>
 
+<div class="trending-container" id="entitiesBox" style="display:none; margin-bottom: var(--space-xl);">
+    <div class="trending-label">Личности</div>
+    <div class="trending-scroll" id="entitiesList"></div>
+</div>
+
 <div id="pageWrap">
     <!-- Initial Skeleton Loader for Perceived Performance -->
     <div class="skeleton-grid">
@@ -565,8 +570,28 @@
         }
     }
 
+    async function fetchEntities() {
+        try {
+            const res = await fetch('/api/trending/entities');
+            const data = await res.json();
+            const list = document.getElementById('entitiesList');
+            if (data && data.length) {
+                document.getElementById('entitiesBox').style.display = 'flex';
+                list.innerHTML = data.map(e => `
+                    <div class="trend-tag" onclick="searchTrend('${e.entity_name}')">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                            ${e.entity_type === 'PERSON' ? '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' : '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>'}
+                        </svg>
+                        ${e.entity_name}
+                    </div>
+                `).join('');
+            }
+        } catch(e) { console.error(e); }
+    }
+
     initCategories();
     fetchNews();
     fetchTrending();
+    fetchEntities();
 </script>
 {% endblock %}
