@@ -24,6 +24,10 @@ celery_app.conf.update(
         'send-daily-digest': {
             'task': 'tasks.send_daily_digest_task',
             'schedule': crontab(hour=7, minute=0), # Run daily at 7 AM UTC (8 AM local)
+        },
+        'generate-daily-briefing': {
+            'task': 'tasks.generate_daily_brief_task',
+            'schedule': crontab(hour=6, minute=0), # Run daily at 6 AM UTC (7 AM local)
         }
     }
 )

@@ -5,7 +5,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response
 from database import get_db
-from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT
+from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
 
@@ -96,6 +96,63 @@ def run_ingestion():
         log.error(f"Notification check failed: {e}")
     
     log.info("Finished ingestion cycle.")
+
+@celery_app.task
+def generate_daily_brief_task():
+    """
+    Generate a cohesive narrative summary of the top stories.
+    Runs once a day (usually in the morning).
+    """
+    try:
+        from utils import rank_articles_in_cluster, score_cluster
+        from collections import defaultdict
+        conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        
+        # Get top clusters from the last 24h
+        rows = conn.execute("SELECT * FROM articles WHERE created_at >= %s", (cutoff,)).fetchall()
+        
+        if not rows:
+            conn.close()
+            return
+
+        clusters_map = defaultdict(list)
+        for r in rows:
+            clusters_map[r["cluster_id"]].append(dict(r))
+            
+        ranked = []
+        for cid, arts in clusters_map.items():
+            sorted_arts = rank_articles_in_cluster(arts)
+            s = score_cluster(sorted_arts)
+            ranked.append((cid, sorted_arts, s))
+        
+        ranked.sort(key=lambda x: x[2], reverse=True)
+        top_5 = ranked[:5]
+        
+        # Collect summaries/titles for context
+        brief_context = []
+        for cid, arts, s in top_5:
+            # Check for synthesis first
+            syn = conn.execute("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
+            content = syn['summary'] if syn else arts[0]['title']
+            brief_context.append(f"Тема {len(brief_context)+1}: {content}")
+            
+        context_text = "\n\n".join(brief_context)
+        
+        brief_text, tier = _call_ai(context_text, DAILY_BRIEF_SYSTEM_PROMPT, max_tokens=1000)
+        
+        if brief_text:
+            today = datetime.date.today()
+            conn.execute(
+                "INSERT INTO daily_briefings (date, content) VALUES (%s, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content",
+                (today, brief_text)
+            )
+            conn.commit()
+            log.info(f"[daily-brief] Generated brief for {today} via {tier}")
+            
+        conn.close()
+    except Exception as e:
+        log.error(f"Daily brief generation failed: {e}")
 
 @celery_app.task
 def generate_cluster_metadata_task():

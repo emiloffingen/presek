@@ -95,6 +95,12 @@ def init_db():
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (
+        date DATE PRIMARY KEY,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
         id SERIAL PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,

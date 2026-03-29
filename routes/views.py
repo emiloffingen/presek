@@ -22,6 +22,10 @@ def stats_page():
 def archive_page():
     return render_template("archive.html", year=datetime.datetime.now().year)
 
+@views_bp.route("/briefing")
+def briefing_page():
+    return render_template("briefing.html", year=datetime.datetime.now().year)
+
 @views_bp.route("/about")
 def about_page():
     return render_template("about.html", year=datetime.datetime.now().year)

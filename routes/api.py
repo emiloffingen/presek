@@ -635,6 +635,15 @@ def api_ai_ask():
         log.error(f"Global AI Assistant error: {e}")
         return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 500
 
+@api_bp.route("/api/briefing")
+def api_briefing():
+    conn = get_db()
+    row = conn.execute("SELECT content, date FROM daily_briefings ORDER BY date DESC LIMIT 1").fetchone()
+    conn.close()
+    if row:
+        return jsonify({"content": row["content"], "date": row["date"].isoformat()})
+    return jsonify({"error": "Брифингот сè уште не е генериран за денес."}), 404
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
