@@ -22,7 +22,7 @@
 
     .charts-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: var(--space-xl);
         margin-bottom: var(--space-2xl);
     }
@@ -52,7 +52,8 @@
     .bar-val { width: 40px; text-align: right; color: var(--text-muted); font-family: monospace; }
 
     @media (max-width: 900px) {
-        .charts-grid, .stats-table-grid { grid-template-columns: 1fr; }
+        .charts-grid { grid-template-columns: 1fr; }
+        .stats-table-grid { grid-template-columns: 1fr; }
     }
 </style>
 <!-- Chart.js -->
@@ -82,7 +83,7 @@
         </div>
     </div>
 
-    <div class="charts-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="charts-grid">
         <div class="chart-container">
             <h3 class="chart-title">Брзина на ингестија (24ч)</h3>
             <canvas id="velocityChart" height="150"></canvas>
@@ -99,17 +100,22 @@
 
     <div class="stats-table-grid">
         <div class="chart-container">
-            <h3 class="chart-title">Топ 10 Извори</h3>
+            <h3 class="chart-title">Топ 10 Извори (Волумен)</h3>
             <div id="sourcesStats"></div>
         </div>
         <div class="chart-container">
-            <h3 class="chart-title">Технички Детали</h3>
-            <div style="font-size: 0.9rem; line-height: 2;">
-                <div style="display:flex; justify-content:space-between"><span>База на податоци (PostgreSQL):</span> <strong id="dbSize">-</strong></div>
-                <div style="display:flex; justify-content:space-between"><span>Број на активни RSS фидови:</span> <strong id="totalFeeds">-</strong></div>
-                <div style="display:flex; justify-content:space-between"><span>Најстара статија во база:</span> <strong id="oldestArt">-</strong></div>
-                <div style="display:flex; justify-content:space-between"><span>Последно ажурирање:</span> <strong id="newestArt">-</strong></div>
-            </div>
+            <h3 class="chart-title">Кој прв објавува? (7д)</h3>
+            <div id="speedStats"></div>
+        </div>
+    </div>
+
+    <div class="chart-container" style="margin-top: var(--space-xl)">
+        <h3 class="chart-title">Технички Детали</h3>
+        <div style="font-size: 0.9rem; line-height: 2;">
+            <div style="display:flex; justify-content:space-between"><span>База на податоци (PostgreSQL):</span> <strong id="dbSize">-</strong></div>
+            <div style="display:flex; justify-content:space-between"><span>Број на активни RSS фидови:</span> <strong id="totalFeeds">-</strong></div>
+            <div style="display:flex; justify-content:space-between"><span>Најстара статија во база:</span> <strong id="oldestArt">-</strong></div>
+            <div style="display:flex; justify-content:space-between"><span>Последно ажурирање:</span> <strong id="newestArt">-</strong></div>
         </div>
     </div>
 </div>
@@ -132,13 +138,23 @@
             document.getElementById('oldestArt').textContent = new Date(data.oldest_article).toLocaleDateString('mk-MK');
             document.getElementById('newestArt').textContent = new Date(data.new_article).toLocaleTimeString('mk-MK');
 
-            // Sources Bar Chart
+            // Volume Stats
             const maxSrc = Math.max(...data.by_source.map(s => s.n));
             document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
                 <div class="bar-row">
                     <span class="bar-label">${s.source}</span>
                     <div class="bar-track"><div class="bar-fill" style="width: ${(s.n/maxSrc)*100}%"></div></div>
                     <span class="bar-val">${s.n}</span>
+                </div>
+            `).join('');
+
+            // Speed Stats
+            const maxSpeed = Math.max(...data.speed_leaderboard.map(s => s.first_count));
+            document.getElementById('speedStats').innerHTML = data.speed_leaderboard.map(s => `
+                <div class="bar-row">
+                    <span class="bar-label">${s.source}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.first_count/maxSpeed)*100}%; background:var(--primary)"></div></div>
+                    <span class="bar-val">${s.first_count}</span>
                 </div>
             `).join('');
 
