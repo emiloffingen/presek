@@ -555,6 +555,14 @@ def api_subscribe():
     except Exception as e:
         return jsonify({"error": "Серверска грешка. Обидете се подоцна."}), 500
 
+@api_bp.route("/api/sources/reliability")
+def api_sources_reliability():
+    from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
+    return jsonify({
+        "mapping": SOURCE_CREDIBILITY,
+        "default": DEFAULT_CREDIBILITY
+    })
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote

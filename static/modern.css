@@ -367,6 +367,20 @@ html.light .story-thumb-placeholder {
     cursor: help;
 }
 
+/* Reliability Badges */
+.reliability-badge {
+    font-size: 0.65rem;
+    font-weight: var(--weight-bold);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 6px;
+}
+.reliability-high { background: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.2); }
+.reliability-mid { background: rgba(241, 196, 15, 0.1); color: #f1c40f; border: 1px solid rgba(241, 196, 15, 0.2); }
+.reliability-std { background: rgba(149, 165, 166, 0.1); color: #95a5a6; border: 1px solid rgba(149, 165, 166, 0.2); }
+
 .bookmark-btn {
     background: none;
     border: none;

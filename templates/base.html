@@ -118,6 +118,17 @@
     <script>
         // Global Constants
         const BREAKING_SCORE_THRESHOLD = 3.0;
+        let reliabilityData = { mapping: {}, default: 0.8 };
+
+        // Fetch Reliability Data
+        fetch('/api/sources/reliability').then(r => r.json()).then(data => { reliabilityData = data; });
+
+        function getReliabilityInfo(source) {
+            const score = reliabilityData.mapping[source] || reliabilityData.default;
+            if (score >= 1.7) return { label: 'Верификуван', class: 'reliability-high' };
+            if (score >= 1.3) return { label: 'Етаблиран', class: 'reliability-mid' };
+            return { label: 'Стандарден', class: 'reliability-std' };
+        }
 
         function timeAgo(str) {
             if(!str) return '';
@@ -170,6 +181,7 @@
             const uniqueSources = [...new Set(c.articles.map(art => art.source))];
             const topSources = uniqueSources.slice(0, 3);
             const moreCount = uniqueSources.length - topSources.length;
+            const rel = getReliabilityInfo(a.source);
 
             // Extract Sentiment Emoji from summary if available
             let sentimentEmoji = '';
@@ -196,6 +208,7 @@
                     <div class="story-meta">
                         ${sentimentEmoji}
                         <span class="source" title="Кредибилитет на изворот">${a.source}</span>
+                        <span class="reliability-badge ${rel.class}">${rel.label}</span>
                         <span>•</span>
                         <span>${timeAgo(a.created_at)}</span>
                         ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
