@@ -39,11 +39,34 @@ def cluster_page(cluster_id: str):
     conn = get_db()
     rows = conn.execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,)).fetchall()
     
-    # Fetch synthesis from DB cache if available
+    # Fetch synthesis and tags
     synthesis = None
+    tags = []
+    
     s_row = conn.execute("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)).fetchone()
     if s_row:
         synthesis = s_row["summary"]
+        
+    m_row = conn.execute("SELECT tags FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,)).fetchone()
+    if m_row:
+        tags = m_row["tags"]
+        
+    # Find Related Clusters (share at least one tag, last 48h)
+    related_clusters = []
+    if tags:
+        related_rows = conn.execute("""
+            SELECT m.cluster_id, m.tags, ANY_VALUE(a.title) as title, ANY_VALUE(a.image_url) as image_url, COUNT(*) as shared_count
+            FROM cluster_metadata m
+            JOIN articles a ON m.cluster_id = a.cluster_id
+            WHERE m.cluster_id != %s 
+              AND a.created_at >= NOW() - INTERVAL '48 hours'
+              AND m.tags && %s
+            GROUP BY m.cluster_id, m.tags
+            ORDER BY shared_count DESC, MAX(a.created_at) DESC
+            LIMIT 4
+        """, (cluster_id, tags)).fetchall()
+        related_clusters = [dict(r) for r in related_rows]
+
     conn.close()
     
     if not rows: return "Кластерот не постои.", 404
@@ -65,7 +88,7 @@ def cluster_page(cluster_id: str):
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 
-    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, year=datetime.datetime.now().year)
+    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, tags=tags, related_clusters=related_clusters, year=datetime.datetime.now().year)
 
 @views_bp.route("/manifest.json")
 def manifest():

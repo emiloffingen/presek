@@ -51,6 +51,13 @@ def init_db():
         created_at TIMESTAMP
     )""")
 
+    cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
+        cluster_id TEXT PRIMARY KEY,
+        tags TEXT[],
+        topics TEXT[],
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
         id SERIAL PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,

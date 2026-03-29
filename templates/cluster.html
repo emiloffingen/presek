@@ -216,6 +216,15 @@
         <header class="cluster-header fade-in">
             <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
             <h1 class="cluster-headline">{{ articles[0].title }}</h1>
+            
+            {% if tags %}
+            <div class="cluster-tags" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:var(--space-md)">
+                {% for tag in tags %}
+                <span class="trend-tag" style="font-size:0.7rem; padding:2px 10px">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="story-meta">
                 <span class="source" title="Број на поврзани извори">{{ articles|length }} извори</span>
                 <span>•</span>
@@ -269,6 +278,24 @@
                 </button>
             </div>
         </section>
+
+        {% if related_clusters %}
+        <section class="related-news fade-in" style="margin-top:var(--space-2xl); border-top:1px solid var(--border); padding-top:var(--space-xl)">
+            <h2 style="font-family:var(--font-display); font-size:1.2rem; margin-bottom:var(--space-lg); color:var(--primary)">Поврзани приказни</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:var(--space-md)">
+                {% for rc in related_clusters %}
+                <a href="/cluster/{{ rc.cluster_id }}" class="source-card" style="padding:var(--space-sm); border-radius:var(--radius-md); text-decoration:none; display:flex; flex-direction:column; gap:var(--space-sm)">
+                    {% if rc.image_url %}
+                    <img src="/proxy?url={{ rc.image_url | urlencode }}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:var(--radius-sm); background:var(--bg-base)">
+                    {% else %}
+                    <div class="story-thumb-placeholder" style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-sm)"></div>
+                    {% endif %}
+                    <h3 style="font-size:0.9rem; line-height:1.4; color:var(--text-primary)">{{ rc.title | truncate(80) }}</h3>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
     </article>
 {% endif %}
 

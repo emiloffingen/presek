@@ -5,7 +5,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response
 from database import get_db
-from prompts import CATEGORIZATION_SYSTEM_PROMPT
+from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
 
@@ -25,6 +25,9 @@ def run_ingestion():
     
     log.info("Starting recategorization for suspect clusters...")
     recategorize_clusters_task.delay()
+
+    log.info("Starting metadata generation (tagging)...")
+    generate_cluster_metadata_task.delay()
     
     log.info("Starting auto-summarization...")
     from utils import rank_articles_in_cluster, score_cluster
@@ -58,6 +61,53 @@ def run_ingestion():
         log.error(f"Notification check failed: {e}")
     
     log.info("Finished ingestion cycle.")
+
+@celery_app.task
+def generate_cluster_metadata_task():
+    """
+    Background task to generate tags for top clusters from the last 24h.
+    """
+    try:
+        import json
+        conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        
+        # Get clusters from last 24h that don't have metadata yet
+        rows = conn.execute("""
+            SELECT cluster_id, title, description 
+            FROM articles 
+            WHERE created_at >= %s 
+              AND cluster_id NOT IN (SELECT cluster_id FROM cluster_metadata)
+            GROUP BY cluster_id, title, description
+            LIMIT 20
+        """, (cutoff,)).fetchall()
+        
+        if not rows:
+            conn.close()
+            return
+
+        for r in rows:
+            cid = r['cluster_id']
+            text = f"Title: {r['title']}\nDescription: {r['description']}"
+            
+            res, tier = _call_ai(text, TAGGING_SYSTEM_PROMPT, max_tokens=100)
+            if res:
+                try:
+                    # Clean the response to ensure it's a valid JSON list
+                    clean_res = res.strip().replace('```json', '').replace('```', '').strip()
+                    tags = json.loads(clean_res)
+                    if isinstance(tags, list):
+                        conn.execute(
+                            "INSERT INTO cluster_metadata (cluster_id, tags) VALUES (%s, %s) ON CONFLICT (cluster_id) DO UPDATE SET tags = EXCLUDED.tags",
+                            (cid, tags)
+                        )
+                        conn.commit()
+                except Exception as e:
+                    log.warning(f"[tagging] Failed to parse tags for {cid}: {e}")
+        
+        conn.close()
+    except Exception as e:
+        log.error(f"Metadata generation task failed: {e}")
 
 @celery_app.task
 def recategorize_clusters_task():
