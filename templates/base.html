@@ -137,6 +137,19 @@
         </div>
     </div>
 
+    <div class="ai-sheet" id="entitySheet">
+        <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-lg); align-items:center">
+            <h2 id="entityName" style="font-family:var(--font-display); font-size:1.5rem; margin:0; color:var(--primary)">Личност</h2>
+            <button onclick="toggleEntitySheet(false)" style="background:var(--bg-surface-hover); border:none; color:var(--text-muted); width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer">&times;</button>
+        </div>
+        <div id="entityInfo" style="font-family:var(--font-body); line-height:1.6; color:var(--text-primary); font-size:1.05rem">
+            Вчитувам информации...
+        </div>
+        <div style="margin-top:var(--space-xl); border-top:1px solid var(--border); padding-top:var(--space-md)">
+            <button id="entitySearchBtn" class="page-btn" style="width:100%">Види ги сите вести</button>
+        </div>
+    </div>
+
     <!-- Global Scripts -->
     <script>
         // Global Constants
@@ -241,6 +254,44 @@
                 navigator.sendBeacon(`/api/click/${articleId}`);
             } else {
                 fetch(`/api/click/${articleId}`, { method: 'POST', keepalive: true });
+            }
+        }
+
+        // Entity Info System
+        function toggleEntitySheet(show) {
+            const sheet = document.getElementById('entitySheet');
+            sheet.classList.toggle('active', show);
+            if (!show) {
+                document.getElementById('entityInfo').innerHTML = 'Вчитувам информации...';
+            }
+        }
+
+        async function showEntityInfo(name) {
+            document.getElementById('entityName').textContent = name;
+            toggleEntitySheet(true);
+            
+            const searchBtn = document.getElementById('entitySearchBtn');
+            searchBtn.onclick = () => {
+                toggleEntitySheet(false);
+                const searchOpen = document.getElementById('searchOpen');
+                const searchInput = document.getElementById('searchInput');
+                if (searchOpen && searchInput) {
+                    searchOpen.click();
+                    searchInput.value = name;
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            };
+
+            try {
+                const res = await fetch(`/api/ai/entity_info/${encodeURIComponent(name)}`);
+                const data = await res.json();
+                if (data.info) {
+                    document.getElementById('entityInfo').textContent = data.info;
+                } else {
+                    document.getElementById('entityInfo').textContent = 'Нема достапни информации.';
+                }
+            } catch(e) {
+                document.getElementById('entityInfo').textContent = 'Серверот е недостапен.';
             }
         }
 

@@ -465,6 +465,25 @@ def api_trending_entities():
     conn.close()
     return jsonify([dict(r) for r in rows])
 
+@api_bp.route("/api/ai/entity_info/<name>")
+def api_ai_entity_info(name: str):
+    from config import GEMINI_URL, GOOGLE_API_KEY
+    
+    prompt = f"Дај краток, објективен и информативен опис (максимум 3 реченици) на македонски јазик за: {name}. Ако е личност, кажи ја функцијата. Ако е организација, кажи ја дејноста. Врати само чист текст."
+    
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    
+    try:
+        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            answer = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return jsonify({"info": answer})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
