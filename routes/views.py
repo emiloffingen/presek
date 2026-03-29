@@ -3,6 +3,7 @@ import datetime
 import os
 from database import get_db
 from utils import rank_articles_in_cluster
+from config import SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
 
 views_bp = Blueprint('views', __name__)
 
@@ -77,6 +78,19 @@ def cluster_page(cluster_id: str):
     
     articles = rank_articles_in_cluster([dict(r) for r in rows])
     
+    # Calculate Source Distribution (Media Plurality)
+    dist_map = {}
+    for a in articles:
+        cat = SOURCE_CATEGORIES.get(a["source"], DEFAULT_SOURCE_CATEGORY)
+        dist_map[cat] = dist_map.get(cat, 0) + 1
+    
+    total_arts = len(articles)
+    source_distribution = [
+        {"label": cat, "pct": round((count / total_arts) * 100)}
+        for cat, count in dist_map.items()
+    ]
+    source_distribution.sort(key=lambda x: x["pct"], reverse=True)
+    
     # SEO Metadata
     description = ""
     if synthesis:
@@ -92,7 +106,7 @@ def cluster_page(cluster_id: str):
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 
-    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, tags=tags, related_clusters=related_clusters, year=datetime.datetime.now().year)
+    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, year=datetime.datetime.now().year)
 
 @views_bp.route("/manifest.json")
 def manifest():

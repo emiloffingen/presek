@@ -197,4 +197,17 @@ SOURCE_CREDIBILITY = {
 }
 DEFAULT_CREDIBILITY = 0.8
 
+SOURCE_CATEGORIES = {
+    "MIA": "Агенциски", "MRT": "Јавен Сервис", "Sitel": "Главни", "Kanal 5": "Главни",
+    "Telma": "Главни", "24 Вести": "Главни", "TV21": "Главни",
+    "Sloboden Pecat": "Независни", "Fokus": "Независни", "Nezavisen": "Независни",
+    "Meta": "Независни", "360 Stepeni": "Независни", "IRL": "Истражувачки",
+    "Makfax": "Агенциски", "NetPress": "Алтернативни", "Kurir": "Алтернативни",
+    "Republika": "Алтернативни", "Infomax": "Алтернативни",
+    "Deutsche Welle": "Меѓународни", "Слободна Европа": "Меѓународни",
+    "CNN": "Меѓународни", "BBC News": "Меѓународни", "Reuters": "Меѓународни",
+    "The Guardian": "Меѓународни", "Al Jazeera": "Меѓународни"
+}
+DEFAULT_SOURCE_CATEGORY = "Локални"
+
 

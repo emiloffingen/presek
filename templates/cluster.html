@@ -241,6 +241,25 @@
         </section>
         {% endif %}
 
+        {% if source_distribution %}
+        <section class="plurality-section fade-in" style="margin-bottom: var(--space-2xl); border-top: 1px solid var(--border); padding-top: var(--space-xl)">
+            <h2 style="font-family:var(--font-display); font-size:1.1rem; margin-bottom:var(--space-md); color:var(--text-secondary)">Медиумски Плурализам</h2>
+            <div style="display:flex; height:12px; border-radius:6px; overflow:hidden; margin-bottom:var(--space-md); background:var(--bg-base)">
+                {% for d in source_distribution %}
+                <div style="width: {{ d.pct }}%; background: var(--{% if loop.index == 1 %}primary{% elif loop.index == 2 %}text-muted{% else %}border{% endif %}); opacity: {{ 1.1 - (loop.index * 0.2) }};" title="{{ d.label }}: {{ d.pct }}%"></div>
+                {% endfor %}
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.75rem; color:var(--text-muted)">
+                {% for d in source_distribution %}
+                <div style="display:flex; align-items:center; gap:4px">
+                    <div style="width:8px; height:8px; border-radius:50%; background: var(--{% if loop.index == 1 %}primary{% elif loop.index == 2 %}text-muted{% else %}border{% endif %}); opacity: {{ 1.1 - (loop.index * 0.2) }};"></div>
+                    <span>{{ d.label }} ({{ d.pct }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
         <div class="sources-grid">
             {% for art in articles %}
             <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s" onmousedown="trackClick('{{ art.id }}')">
