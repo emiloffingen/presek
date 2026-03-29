@@ -109,7 +109,12 @@
                     const isBreaking = item.is_breaking;
                     
                     a.innerHTML = `
-                        ${isBreaking ? '<span style="color:var(--primary); font-weight:800; font-size:0.6rem; border:1px solid var(--primary); padding:0px 4px; border-radius:2px; margin-right:6px;">ВО ЖИВО</span>' : ''}
+                        ${isBreaking ? `
+                            <span style="display:inline-flex; align-items:center; color:var(--primary); font-weight:800; font-size:0.6rem; border:1px solid var(--primary); padding:0px 6px; border-radius:2px; margin-right:8px; gap:4px;">
+                                <span style="width:6px; height:6px; background:var(--primary); border-radius:50%; animation: pulse-live 1.5s infinite;"></span>
+                                ВО ЖИВО
+                            </span>
+                        ` : ''}
                         <span class="rank">#${(idx % data.length) + 1}</span> ${headline}
                     `;
                     inner.appendChild(a);
