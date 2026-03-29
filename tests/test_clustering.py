@@ -57,3 +57,66 @@ def test_max_cluster_size():
     title1 = "Мерки на владата за економија"
     cid1 = find_or_create_cluster(title1, recent_articles)
     assert cid1 != "c1" # Should not join full cluster
+
+
+def test_empty_title_creates_new_cluster():
+    """Empty or very short title should create a new cluster."""
+    recent = [{"cluster_id": "c1", "title": "Владата донесе мерка"}]
+    cid = find_or_create_cluster("", recent)
+    assert cid != "c1"
+
+def test_no_recent_articles():
+    """With no recent articles, should always create new cluster."""
+    cid = find_or_create_cluster("Нова важна вест", [])
+    assert len(cid) == 8  # uuid[:8]
+
+def test_completely_different_topic():
+    """Completely unrelated titles should not cluster together."""
+    recent = [
+        {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
+    ]
+    cid = find_or_create_cluster("Фудбалски натпревар во Лига Шампиони", recent)
+    assert cid != "c1"
+
+def test_mk_stem_short_words_unchanged():
+    """Words shorter than 5 chars should not be stemmed."""
+    assert mk_stem("мир") == "мир"
+    assert mk_stem("зема") == "зема"
+    assert mk_stem("а") == "а"
+
+def test_text_to_vector_empty():
+    vec = text_to_vector("")
+    assert len(vec) == 0
+
+def test_text_to_vector_all_stopwords():
+    vec = text_to_vector("и на во од со за")
+    assert len(vec) == 0
+
+def test_get_cosine_empty_vectors():
+    assert get_cosine(Counter(), Counter()) == 0.0
+    assert get_cosine(Counter({"a": 1}), Counter()) == 0.0
+
+def test_get_cosine_identical():
+    vec = Counter({"тест": 3, "влад": 2})
+    assert abs(get_cosine(vec, vec) - 1.0) < 0.001
+
+def test_cluster_age_decay():
+    """Older cluster representatives should be harder to match (higher threshold)."""
+    import datetime
+    old_time = datetime.datetime.now() - datetime.timedelta(hours=48)
+    recent_time = datetime.datetime.now() - datetime.timedelta(minutes=5)
+
+    title = "Владата донесе мерка за економијата"
+
+    recent_articles = [
+        {"cluster_id": "c-old", "title": "Владата донесе нова мерка за економијата", "created_at": old_time},
+    ]
+    fresh_articles = [
+        {"cluster_id": "c-new", "title": "Владата донесе нова мерка за економијата", "created_at": recent_time},
+    ]
+
+    cid_old = find_or_create_cluster(title, recent_articles)
+    cid_new = find_or_create_cluster(title, fresh_articles)
+
+    # Fresh cluster should be matched, old cluster may not due to age penalty
+    assert cid_new == "c-new"

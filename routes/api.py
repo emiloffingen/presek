@@ -164,22 +164,26 @@ def api_scores():
 @api_bp.route("/api/summarize/<int:article_id>")
 def api_summarize(article_id: int):
     conn = get_db()
-    row = conn.execute("SELECT * FROM articles WHERE id = %s", (article_id,)).fetchone()
-    if not row:
+    try:
+        row = conn.execute("SELECT * FROM articles WHERE id = %s", (article_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "Article not found"}), 404
+
+        if row["summary"]:
+            return jsonify({"summary": row["summary"]})
+
+        from ai_engine import _call_ai, clean_json_response
+        from prompts import SUMMARY_SYSTEM_PROMPT
+        raw, tier = _call_ai(row["title"], SUMMARY_SYSTEM_PROMPT)
+        summary = None
+        if raw:
+            cleaned = clean_json_response(raw)
+            summary = cleaned.get('summary', str(cleaned)) if isinstance(cleaned, dict) else str(cleaned)
+            conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, article_id))
+            conn.commit()
+        return jsonify({"summary": summary})
+    finally:
         conn.close()
-        return jsonify({"error": "Article not found"}), 404
-    
-    if row["summary"]:
-        conn.close()
-        return jsonify({"summary": row["summary"]})
-    
-    from ai_engine import summarize_to_macedonian
-    summary = summarize_to_macedonian(row["title"])
-    if summary:
-        conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (summary, article_id))
-        conn.commit()
-    conn.close()
-    return jsonify({"summary": summary})
 
 
 @api_bp.route("/api/analyze/<cluster_id>")
@@ -422,18 +426,20 @@ def api_ai_ask():
     
     try:
         conn = get_db()
-        # Find relevant news context from last 3 days
-        sql = """
-            SELECT source, title, description, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), q) as rank
-            FROM articles, plainto_tsquery('simple', %s) q
-            WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ q
-              AND created_at >= NOW() - INTERVAL '3 days'
-            ORDER BY rank DESC
-            LIMIT 10
-        """
-        rows = conn.execute(sql, (query,)).fetchall()
-        conn.close()
-        
+        try:
+            # Find relevant news context from last 3 days
+            sql = """
+                SELECT source, title, description, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), q) as rank
+                FROM articles, plainto_tsquery('simple', %s) q
+                WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ q
+                  AND created_at >= NOW() - INTERVAL '3 days'
+                ORDER BY rank DESC
+                LIMIT 10
+            """
+            rows = conn.execute(sql, (query,)).fetchall()
+        finally:
+            conn.close()
+
         if not rows:
             return jsonify({"response": "За жал, немам информации за оваа тема во последните вести. Можам да одговорам само за актуелни случувања."})
             
@@ -583,14 +589,34 @@ def api_ai_entity_info(name: str):
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
+    import ipaddress, socket
     url = request.args.get("url", "").strip()
     if not url or not url.startswith(("http://", "https://")): return "", 400
     try:
         p = urlparse(url)
+        # Block private/internal IPs to prevent SSRF
+        hostname = p.hostname or ""
+        if not hostname:
+            return "", 400
+        try:
+            resolved = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            for family, stype, proto, canonname, sockaddr in resolved:
+                ip = ipaddress.ip_address(sockaddr[0])
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    return "", 403
+        except (socket.gaierror, ValueError):
+            return "", 400
         safe_url = urlunparse(p._replace(path=quote(p.path, safe='/:@!$&\'()*+,;='), query=quote(p.query, safe='=&+%')))
         req = urllib.request.Request(safe_url, headers={"User-Agent": "Mozilla/5.0", "Referer": ""})
         with urllib.request.urlopen(req, timeout=8) as resp:
-            r = Response(resp.read(), mimetype=resp.headers.get("Content-Type", "image/jpeg"))
+            data = resp.read()
+            # Cap response size at 5MB to prevent abuse
+            if len(data) > 5 * 1024 * 1024:
+                return "", 413
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+            if not content_type.startswith("image/"):
+                return "", 400
+            r = Response(data, mimetype=content_type)
             r.headers["Cache-Control"] = "public, max-age=3600"
             r.headers["X-Content-Type-Options"] = "nosniff"
             return r

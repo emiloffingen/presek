@@ -14,6 +14,7 @@ log = logging.getLogger("presek_celery")
 @celery_app.task(rate_limit='10/m')
 def summarize_article_task(article_id, title):
     """Asynchronously generates a summary for a single article."""
+    conn = None
     try:
         summary, tier = _call_ai(title, SUMMARY_SYSTEM_PROMPT)
         if summary:
@@ -23,13 +24,16 @@ def summarize_article_task(article_id, title):
             conn = get_db()
             conn.execute("UPDATE articles SET summary = %s WHERE id = %s", (final_summary, article_id))
             conn.commit()
-            conn.close()
     except Exception as e:
         log.warning(f"[auto-summarize] DB write failed for article {article_id}: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task(rate_limit='10/m')
 def synthesize_cluster_task(cluster_id, content):
     """Asynchronously generates a synthesis for a cluster with multiple perspectives."""
+    conn = None
     try:
         raw_res, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
         if raw_res:
@@ -47,9 +51,9 @@ def synthesize_cluster_task(cluster_id, content):
             import json as _json
             conn = get_db()
             conn.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at) 
-                   VALUES (%s, %s, %s, %s) 
-                   ON CONFLICT (cluster_id) DO UPDATE 
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
                 (cluster_id, summary, _json.dumps(perspectives), now)
             )
@@ -62,10 +66,11 @@ def synthesize_cluster_task(cluster_id, content):
                 if img_url:
                     conn.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s", (img_url, cluster_id))
                     conn.commit()
-            
-            conn.close()
     except Exception as e:
         log.warning(f"[auto-summarize] Cluster synthesis failed for {cluster_id}: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def run_ingestion():
@@ -103,9 +108,11 @@ def run_ingestion():
         
         notifier = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
         conn = get_db()
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=1)
-        rows = conn.execute("SELECT * FROM articles WHERE created_at >= %s", (cutoff,)).fetchall()
-        conn.close()
+        try:
+            cutoff = datetime.datetime.now() - datetime.timedelta(hours=1)
+            rows = conn.execute("SELECT * FROM articles WHERE created_at >= %s", (cutoff,)).fetchall()
+        finally:
+            conn.close()
         
         if rows:
             clusters_map = defaultdict(list)
@@ -130,32 +137,32 @@ def generate_daily_brief_task():
     Generate a cohesive narrative summary of the top stories.
     Runs once a day (usually in the morning).
     """
+    conn = None
     try:
         from utils import rank_articles_in_cluster, score_cluster
         from collections import defaultdict
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
-        
+
         # Get top clusters from the last 24h
         rows = conn.execute("SELECT * FROM articles WHERE created_at >= %s", (cutoff,)).fetchall()
-        
+
         if not rows:
-            conn.close()
             return
 
         clusters_map = defaultdict(list)
         for r in rows:
             clusters_map[r["cluster_id"]].append(dict(r))
-            
+
         ranked = []
         for cid, arts in clusters_map.items():
             sorted_arts = rank_articles_in_cluster(arts)
             s = score_cluster(sorted_arts)
             ranked.append((cid, sorted_arts, s))
-        
+
         ranked.sort(key=lambda x: x[2], reverse=True)
         top_5 = ranked[:5]
-        
+
         # Collect summaries/titles for context
         brief_context = []
         for cid, arts, s in top_5:
@@ -163,11 +170,11 @@ def generate_daily_brief_task():
             syn = conn.execute("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
             content = syn['summary'] if syn else arts[0]['title']
             brief_context.append(f"Тема {len(brief_context)+1}: {content}")
-            
+
         context_text = "\n\n".join(brief_context)
-        
+
         brief_text, tier = _call_ai(context_text, DAILY_BRIEF_SYSTEM_PROMPT, max_tokens=1000)
-        
+
         if brief_text:
             today = datetime.date.today()
             conn.execute(
@@ -176,39 +183,40 @@ def generate_daily_brief_task():
             )
             conn.commit()
             log.info(f"[daily-brief] Generated brief for {today} via {tier}")
-            
-        conn.close()
     except Exception as e:
         log.error(f"Daily brief generation failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def generate_cluster_metadata_task():
     """
     Background task to generate tags for top clusters from the last 24h.
     """
+    conn = None
     try:
         import json
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
-        
+
         # Get clusters from last 24h that don't have metadata yet
         rows = conn.execute("""
-            SELECT cluster_id, title, description 
-            FROM articles 
-            WHERE created_at >= %s 
+            SELECT cluster_id, title, description
+            FROM articles
+            WHERE created_at >= %s
               AND cluster_id NOT IN (SELECT cluster_id FROM cluster_metadata)
             GROUP BY cluster_id, title, description
             LIMIT 20
         """, (cutoff,)).fetchall()
-        
+
         if not rows:
-            conn.close()
             return
 
         for r in rows:
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
-            
+
             res, tier = _call_ai(text, TAGGING_SYSTEM_PROMPT, max_tokens=100)
             if res:
                 try:
@@ -223,38 +231,39 @@ def generate_cluster_metadata_task():
                         conn.commit()
                 except Exception as e:
                     log.warning(f"[tagging] Failed to parse tags for {cid}: {e}")
-        
-        conn.close()
     except Exception as e:
         log.error(f"Metadata generation task failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def extract_entities_task():
     """
     Background task to extract key personalities and organizations from top clusters.
     """
+    conn = None
     try:
         import json
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
-        
+
         # Get clusters from last 24h that don't have entities yet
         rows = conn.execute("""
-            SELECT DISTINCT ON (cluster_id) cluster_id, title, description 
+            SELECT DISTINCT ON (cluster_id) cluster_id, title, description
             FROM articles a
-            WHERE created_at >= %s 
+            WHERE created_at >= %s
               AND NOT EXISTS (SELECT 1 FROM cluster_entities e WHERE e.cluster_id = a.cluster_id)
             LIMIT 100
         """, (cutoff,)).fetchall()
-        
+
         if not rows:
-            conn.close()
             return
 
         for r in rows:
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
-            
+
             res, tier = _call_ai(text, ENTITY_EXTRACTION_PROMPT, max_tokens=500, json_mode=True)
             if res:
                 try:
@@ -265,43 +274,44 @@ def extract_entities_task():
                         etype = ent.get('type', 'PERSON').strip()
                         if name:
                             conn.execute(
-                                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT (cluster_id, entity_name) DO NOTHING",
                                 (cid, name, etype)
                             )
                     conn.commit()
                 except Exception as e:
                     log.warning(f"[entities] Failed to parse for {cid}: {e}")
-        
-        conn.close()
     except Exception as e:
         log.error(f"Entity extraction task failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def classify_topics_task():
     """
     Background task to classify untagged clusters into topical categories (Politics, Sport, etc.)
     """
+    conn = None
     try:
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
-        
+
         # Find clusters created in last 24h where the topic is still 'Вести' (default)
         rows = conn.execute("""
-            SELECT cluster_id, title, description 
-            FROM articles 
+            SELECT cluster_id, title, description
+            FROM articles
             WHERE created_at >= %s AND topic = 'Вести'
             GROUP BY cluster_id, title, description
             LIMIT 30
         """, (cutoff,)).fetchall()
-        
+
         if not rows:
-            conn.close()
             return
 
         for r in rows:
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
-            
+
             res, tier = _call_ai(text, TOPIC_SYSTEM_PROMPT, max_tokens=10)
             if res:
                 topic = res.strip().strip('"').strip("'").strip('.')
@@ -311,39 +321,40 @@ def classify_topics_task():
                     log.info(f"[topic] Cluster {cid} -> {topic}")
                     conn.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, cid))
                     conn.commit()
-        
-        conn.close()
     except Exception as e:
         log.error(f"Topic classification task failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def recategorize_clusters_task():
     """
-    Background task to find 'Македонија' clusters with multiple sources 
+    Background task to find 'Македонија' clusters with multiple sources
     and ask AI if they should be in a different category.
     """
+    conn = None
     try:
         conn = get_db()
         # Find clusters with 2+ sources currently in 'Македонија' created in last 12h
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=12)
         rows = conn.execute("""
-            SELECT cluster_id, title, description 
-            FROM articles 
-            WHERE category = 'Македонија' 
+            SELECT cluster_id, title, description
+            FROM articles
+            WHERE category = 'Македонија'
               AND created_at >= %s
-            GROUP BY cluster_id, title, description
+            Group BY cluster_id, title, description
             HAVING COUNT(cluster_id) >= 2
             LIMIT 20
         """, (cutoff,)).fetchall()
-        
+
         if not rows:
-            conn.close()
             return
 
         for r in rows:
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
-            
+
             new_cat, tier = _call_ai(text, CATEGORIZATION_SYSTEM_PROMPT, max_tokens=10)
             if new_cat:
                 new_cat = new_cat.strip().strip('"').strip("'")
@@ -351,10 +362,11 @@ def recategorize_clusters_task():
                     log.info(f"[recategorize] Cluster {cid}: Македонија -> {new_cat} (via {tier})")
                     conn.execute("UPDATE articles SET category = %s WHERE cluster_id = %s", (new_cat, cid))
                     conn.commit()
-        
-        conn.close()
     except Exception as e:
         log.error(f"Recategorize task failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def send_daily_digest_task():
@@ -387,11 +399,13 @@ def send_daily_digest_task():
             start = now - datetime.timedelta(days=1)
             html = render_html(stories_by_cat, start, now)
             subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
-            
+
             conn = get_db()
-            subs = conn.execute("SELECT email FROM subscribers").fetchall()
-            conn.close()
-            
+            try:
+                subs = conn.execute("SELECT email FROM subscribers").fetchall()
+            finally:
+                conn.close()
+
             for sub in subs:
                 send_email(html, subject, smtp_user, smtp_pass, sub["email"], smtp_host, smtp_port)
                 
@@ -415,30 +429,37 @@ def run_prune_db():
 @celery_app.task
 def translate_article_task(article_id: int, original_title: str, original_description: str):
     """Background task to translate diaspora articles."""
+    conn = None
     try:
         conn = get_db()
-        cur = conn.cursor()
-        
+
         translated_title = original_title
         if original_title:
             try:
-                translated_title = translate_to_macedonian(original_title)
+                result = translate_to_macedonian(original_title)
+                if result is not None:
+                    translated_title = result
             except Exception as e:
                 log.error(f"Translation error (title) for {article_id}: {e}")
 
         translated_desc = original_description
         if original_description:
             try:
-                translated_desc = translate_to_macedonian(original_description)
+                result = translate_to_macedonian(original_description)
+                if result is not None:
+                    translated_desc = result
             except Exception as e:
                 log.error(f"Translation error (desc) for {article_id}: {e}")
 
+        cur = conn.cursor()
         cur.execute(
             "UPDATE articles SET title = %s, description = %s, is_translated = 1 WHERE id = %s",
             (translated_title, translated_desc, article_id)
         )
         conn.commit()
         cur.close()
-        conn.close()
     except Exception as e:
         log.error(f"Task failed for article {article_id}: {e}")
+    finally:
+        if conn:
+            conn.close()

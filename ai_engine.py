@@ -174,15 +174,22 @@ def cleanup_cover_art():
     gen_dir = "static/generated"
     if not os.path.exists(gen_dir):
         return
-        
+
+    conn = None
     try:
         conn = get_db()
         rows = conn.execute("SELECT DISTINCT cluster_id FROM articles").fetchall()
         valid_ids = {r["cluster_id"] for r in rows}
         rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
         valid_ids.update({r["cluster_id"] for r in rows})
-        conn.close()
-        
+    except Exception as e:
+        log.error(f"[cleanup] DB query failed: {e}")
+        return
+    finally:
+        if conn:
+            conn.close()
+
+    try:
         count = 0
         for filename in os.listdir(gen_dir):
             if filename.endswith(".jpg"):
