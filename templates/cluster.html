@@ -243,7 +243,7 @@
 
         <div class="sources-grid">
             {% for art in articles %}
-            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s">
+            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s" onmousedown="trackClick('{{ art.id }}')">
                 <div class="source-content">
                     <div class="source-name" title="Кредибилитет на овој извор">{{ art.source }}</div>
                     <h3 class="source-title">{{ art.title }}</h3>

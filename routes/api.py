@@ -40,9 +40,10 @@ def api_news():
     country   = request.args.get("country", "🇲🇰")
     sub       = request.args.get("sub", "").strip()
     ids       = request.args.get("ids", "").strip()
+    sort_by   = request.args.get("sort", "recent")
     page_size = min(page_size, 100)
     
-    cache_key = f"news:{country}:{sub}:{ids}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
@@ -82,15 +83,21 @@ def api_news():
         clusters[r['cluster_id']].append(dict(r))
 
     ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    sorted_clusters = sorted(ranked_clusters, key=score_cluster, reverse=True)
+    
+    if sort_by == 'popular':
+        sorted_clusters = sorted(ranked_clusters, key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
+    else:
+        sorted_clusters = sorted(ranked_clusters, key=score_cluster, reverse=True)
 
     result = []
     for arts in sorted_clusters:
         s   = score_cluster(arts)
         cid = arts[0]["cluster_id"] if arts else None
+        total_clicks = sum(a.get("clicks", 0) or 0 for a in arts)
         result.append({
             "articles":      arts,
             "score":         round(s, 3),
+            "clicks":        total_clicks,
             "cluster_id":    cid,
             "is_breaking":   s >= BREAKING_SCORE_THRESHOLD,
             "has_summary":   any(a.get("summary") for a in arts),

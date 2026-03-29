@@ -171,6 +171,16 @@
             return getBookmarks().includes(cid);
         }
 
+        function trackClick(articleId) {
+            if (!articleId) return;
+            // Use sendBeacon for more reliable fire-and-forget click tracking on navigation
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(`/api/click/${articleId}`);
+            } else {
+                fetch(`/api/click/${articleId}`, { method: 'POST', keepalive: true });
+            }
+        }
+
         function toggleBookmark(event, cid) {
             event.preventDefault();
             event.stopPropagation();
@@ -216,13 +226,13 @@
                 <article class="story-card fade-in" style="animation-delay: ${index * 0.03}s">
                     ${isBreaking ? '<div class="is-breaking"></div>' : ''}
                     ${clusterImage ? `
-                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link" onmousedown="trackClick('${a.id}')">
                             <div class="story-thumb-wrap">
                                 <img src="/proxy?url=${encodeURIComponent(clusterImage)}" class="story-thumb" loading="lazy" alt="${a.title}">
                             </div>
                         </a>
                     ` : `
-                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link">
+                        <a href="/cluster/${c.cluster_id}" class="story-thumb-link" onmousedown="trackClick('${a.id}')">
                             <div class="story-thumb-placeholder"></div>
                         </a>
                     `}
@@ -243,7 +253,7 @@
                         </button>
                     </div>
                     <h3 class="story-headline">
-                        <a href="/cluster/${c.cluster_id}">${a.headline || a.title}</a>
+                        <a href="/cluster/${c.cluster_id}" onmousedown="trackClick('${a.id}')">${a.headline || a.title}</a>
                     </h3>
                     <p class="story-excerpt">${a.description || ''}</p>
                     <div class="source-ribbon">

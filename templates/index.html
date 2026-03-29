@@ -206,6 +206,7 @@
 
     const countries = [
         { id: '🇲🇰', label: 'Македонија' },
+        { id: 'POPULAR', label: 'Популарно' },
         { id: 'SAVED', label: 'Зачувано' },
         { id: 'REG', label: 'Регионално' },
         { id: '🇩🇪', label: 'Германија' },
@@ -222,7 +223,7 @@
         const list = document.getElementById('categoryList');
         list.innerHTML = countries.map(c => `
             <button class="cat-btn ${c.id === activeCategory ? 'active' : ''}" onclick="filterCat('${c.id}')">
-                ${c.id === 'REG' ? '📍' : (c.id === 'SAVED' ? '🔖' : c.id)} ${c.label}
+                ${c.id === 'REG' ? '📍' : (c.id === 'SAVED' ? '🔖' : (c.id === 'POPULAR' ? '🔥' : c.id))} ${c.label}
             </button>
         `).join('');
 
@@ -309,6 +310,8 @@
                     return;
                 }
                 url += `&ids=${encodeURIComponent(bookmarks.join(','))}`;
+            } else if (activeCategory === 'POPULAR') {
+                url += `&sort=popular`;
             } else {
                 url += `&country=${encodeURIComponent(activeCategory)}`;
             }
