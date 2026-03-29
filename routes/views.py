@@ -41,9 +41,18 @@ def source_page(source_name: str):
         SELECT 
             COUNT(*) as total,
             COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as last_24h,
-            (SELECT category FROM articles WHERE source = %s GROUP BY category ORDER BY COUNT(*) DESC LIMIT 1) as top_cat
+            (SELECT category FROM articles WHERE source = %s GROUP BY category ORDER BY COUNT(*) DESC LIMIT 1) as top_cat,
+            (SELECT topic FROM articles WHERE source = %s GROUP BY topic ORDER BY COUNT(*) DESC LIMIT 1) as top_topic,
+            AVG(CASE WHEN summary LIKE '%%🟢%%' THEN 1 WHEN summary LIKE '%%🔴%%' THEN -1 ELSE 0 END) FILTER (WHERE summary IS NOT NULL) as avg_sent
         FROM articles WHERE source = %s
-    """, (source_name, source_name)).fetchone()
+    """, (source_name, source_name, source_name)).fetchone()
+    
+    # Calculate Frequency (posts per day last 7 days)
+    freq_row = conn.execute("""
+        SELECT COUNT(*) / 7.0 as daily_avg
+        FROM articles 
+        WHERE source = %s AND created_at >= NOW() - INTERVAL '7 days'
+    """, (source_name,)).fetchone()
     
     conn.close()
     
@@ -64,6 +73,7 @@ def source_page(source_name: str):
         source_name=source_name, 
         clusters=clusters, 
         stats=stats,
+        freq=freq_row,
         year=datetime.datetime.now().year
     )
 
