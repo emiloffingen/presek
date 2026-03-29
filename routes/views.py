@@ -84,10 +84,10 @@ def sitemap_xml():
     ]
     try:
         conn = get_db()
-        clusters = conn.execute("SELECT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= datetime('now', '-14 days') GROUP BY cluster_id ORDER BY latest DESC").fetchall()
+        clusters = conn.execute("SELECT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= NOW() - INTERVAL '14 days' GROUP BY cluster_id ORDER BY latest DESC").fetchall()
         conn.close()
         for c in clusters:
-            lastmod = c['latest'].strftime("%Y-%m-%d") if isinstance(c['latest'], datetime.datetime) else (c['latest'][:10] if c['latest'] else now)
+            lastmod = c['latest'].strftime("%Y-%m-%d") if isinstance(c['latest'], datetime.datetime) else (str(c['latest'])[:10] if c['latest'] else now)
             urls.append((f"https://presek.mk/cluster/{c['cluster_id']}", lastmod, "daily", "0.7"))
     except Exception as e:
         pass

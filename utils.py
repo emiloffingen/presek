@@ -58,7 +58,11 @@ def score_cluster(arts):
 
     # Recency score — exponential decay, half-life = 6 hours
     try:
-        latest = datetime.datetime.fromisoformat(arts[0]["created_at"].replace("+00:00", ""))
+        ts = arts[0]["created_at"]
+        if isinstance(ts, datetime.datetime):
+            latest = ts.replace(tzinfo=None)
+        else:
+            latest = datetime.datetime.fromisoformat(ts.replace("+00:00", ""))
         hours_old = (now - latest).total_seconds() / 3600
     except Exception:
         hours_old = 24

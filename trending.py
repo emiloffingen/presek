@@ -150,9 +150,19 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
 
         for word, is_proper in pairs:
             # Simple normalization for very common dual-script or variations
-            if word in ('iran', 'iranski'): word = 'иран'
-            if word in ('trump', 'trampa'): word = 'трамп'
-            if word in ('video', 'vinea'): word = 'видео'
+            normalization = {
+                'iran': 'иран', 'iranski': 'иран',
+                'trump': 'трамп', 'trampa': 'трамп',
+                'putin': 'путин', 'putina': 'путин',
+                'biden': 'бајден', 'bajden': 'бајден',
+                'zelensky': 'зеленски', 'zelenski': 'зеленски',
+                'nato': 'нато', 'eu': 'еу', 'sad': 'сад',
+                'video': 'видео', 'vinea': 'видео', 'foto': 'фото',
+                'ukraine': 'украина', 'ukraina': 'украина',
+                'russia': 'русија', 'rusija': 'русија',
+                'skopje': 'скопје', 'macedonia': 'македонија'
+            }
+            word = normalization.get(word, word)
             
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
             weighted[word] += recency * noun_bonus

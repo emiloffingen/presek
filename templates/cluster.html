@@ -217,7 +217,7 @@
             <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
             <h1 class="cluster-headline">{{ articles[0].title }}</h1>
             <div class="story-meta">
-                <span class="source">{{ articles|length }} извори</span>
+                <span class="source" title="Број на поврзани извори">{{ articles|length }} извори</span>
                 <span>•</span>
                 <span id="timeLabel">{{ articles[0].created_at }}</span>
             </div>
@@ -233,7 +233,7 @@
             {% for art in articles %}
             <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in" style="animation-delay: {{ loop.index0 * 0.03 + 0.1 }}s">
                 <div class="source-content">
-                    <div class="source-name">{{ art.source }}</div>
+                    <div class="source-name" title="Кредибилитет на овој извор">{{ art.source }}</div>
                     <h3 class="source-title">{{ art.title }}</h3>
                     <p class="source-snippet">{{ art.description | truncate(200) }}</p>
                 </div>

@@ -79,28 +79,28 @@
 <script>
     async function loadStats() {
         try {
-            const res = await fetch('/api/stats_full');
+            const res = await fetch('/api/stats/full');
             const data = await res.json();
 
             document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
-            document.getElementById('totalSources').textContent = data.source_stats.length;
-            document.getElementById('totalClusters').textContent = data.category_stats.reduce((a, b) => a + b.count, 0);
+            document.getElementById('totalSources').textContent = data.by_source.length;
+            document.getElementById('totalClusters').textContent = data.last_24h.toLocaleString();
 
-            const maxSrc = Math.max(...data.source_stats.map(s => s.count));
-            document.getElementById('sourcesStats').innerHTML = data.source_stats.slice(0, 10).map(s => `
+            const maxSrc = Math.max(...data.by_source.map(s => s.n));
+            document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
                 <div class="bar-row">
                     <span class="bar-label">${s.source}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.count/maxSrc)*100}%"></div></div>
-                    <span class="bar-val">${s.count}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.n/maxSrc)*100}%"></div></div>
+                    <span class="bar-val">${s.n}</span>
                 </div>
             `).join('');
 
-            const maxCat = Math.max(...data.category_stats.map(c => c.count));
-            document.getElementById('categoryStats').innerHTML = data.category_stats.map(c => `
+            const maxCat = Math.max(...data.by_category.map(c => c.n));
+            document.getElementById('categoryStats').innerHTML = data.by_category.map(c => `
                 <div class="bar-row">
-                    <span class="bar-label">${c.category}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${(c.count/maxCat)*100}%; background: var(--text-muted)"></div></div>
-                    <span class="bar-val">${c.count}</span>
+                    <span class="bar-label">${c.cat}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: ${(c.n/maxCat)*100}%; background: var(--text-muted)"></div></div>
+                    <span class="bar-val">${c.n}</span>
                 </div>
             `).join('');
 
