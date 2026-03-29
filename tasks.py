@@ -5,7 +5,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response
 from database import get_db
-from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
+from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
 
@@ -60,6 +60,9 @@ def run_ingestion():
 
     log.info("Starting metadata generation (tagging)...")
     generate_cluster_metadata_task.delay()
+
+    log.info("Starting topical classification...")
+    classify_topics_task.delay()
     
     log.info("Starting auto-summarization...")
     from utils import rank_articles_in_cluster, score_cluster
@@ -140,6 +143,46 @@ def generate_cluster_metadata_task():
         conn.close()
     except Exception as e:
         log.error(f"Metadata generation task failed: {e}")
+
+@celery_app.task
+def classify_topics_task():
+    """
+    Background task to classify untagged clusters into topical categories (Politics, Sport, etc.)
+    """
+    try:
+        conn = get_db()
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        
+        # Find clusters created in last 24h where the topic is still 'Вести' (default)
+        rows = conn.execute("""
+            SELECT cluster_id, title, description 
+            FROM articles 
+            WHERE created_at >= %s AND topic = 'Вести'
+            GROUP BY cluster_id, title, description
+            LIMIT 30
+        """, (cutoff,)).fetchall()
+        
+        if not rows:
+            conn.close()
+            return
+
+        for r in rows:
+            cid = r['cluster_id']
+            text = f"Title: {r['title']}\nDescription: {r['description']}"
+            
+            res, tier = _call_ai(text, TOPIC_SYSTEM_PROMPT, max_tokens=10)
+            if res:
+                topic = res.strip().strip('"').strip("'").strip('.')
+                # Simple validation
+                valid_topics = ['Политика', 'Економија', 'Технологија', 'Спорт', 'Забава', 'Здравје', 'Вести']
+                if topic in valid_topics:
+                    log.info(f"[topic] Cluster {cid} -> {topic}")
+                    conn.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, cid))
+                    conn.commit()
+        
+        conn.close()
+    except Exception as e:
+        log.error(f"Topic classification task failed: {e}")
 
 @celery_app.task
 def recategorize_clusters_task():

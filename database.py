@@ -73,6 +73,7 @@ def init_db():
         summary TEXT,
         category TEXT,
         subcategory TEXT DEFAULT '',
+        topic TEXT DEFAULT 'Вести',
         country TEXT DEFAULT '🇲🇰',
         created_at TIMESTAMP NOT NULL,
         image_url TEXT,

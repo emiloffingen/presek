@@ -41,9 +41,10 @@ def api_news():
     sub       = request.args.get("sub", "").strip()
     ids       = request.args.get("ids", "").strip()
     sort_by   = request.args.get("sort", "recent")
+    topic     = request.args.get("topic", "").strip()
     page_size = min(page_size, 100)
     
-    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
@@ -56,22 +57,27 @@ def api_news():
             (cluster_ids,)
         ).fetchall()
     elif country == '🇲🇰':
+        sql = "SELECT * FROM articles WHERE 1=1"
+        params = []
         if sub:
-            rows = conn.execute(
-                "SELECT * FROM articles WHERE subcategory = %s ORDER BY created_at DESC LIMIT 500",
-                (sub,)
-            ).fetchall()
-        else:
-            # Front page: show everything (Domestic + Translated International)
-            rows = conn.execute(
-                "SELECT * FROM articles ORDER BY created_at DESC LIMIT 500"
-            ).fetchall()
+            sql += " AND subcategory = %s"
+            params.append(sub)
+        if topic:
+            sql += " AND topic = %s"
+            params.append(topic)
+        
+        sql += " ORDER BY created_at DESC LIMIT 500"
+        rows = conn.execute(sql, tuple(params)).fetchall()
     else:
         # Filtered by country
-        rows = conn.execute(
-            "SELECT * FROM articles WHERE country = %s ORDER BY created_at DESC LIMIT 500",
-            (country,)
-        ).fetchall()
+        sql = "SELECT * FROM articles WHERE country = %s"
+        params = [country]
+        if topic:
+            sql += " AND topic = %s"
+            params.append(topic)
+            
+        sql += " ORDER BY created_at DESC LIMIT 500"
+        rows = conn.execute(sql, tuple(params)).fetchall()
     
     # We also need to know which clusters have syntheses to pass 'has_synthesis'
     synthesis_rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()

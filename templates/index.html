@@ -170,6 +170,14 @@
     <div class="trending-scroll" id="regionalSubList"></div>
 </div>
 
+<!-- Topical Filters -->
+<div class="trending-container" id="topicBox" style="margin-bottom: var(--space-lg);">
+    <div class="trending-label">Тема</div>
+    <div class="trending-scroll" id="topicList">
+        <!-- Populated by JS -->
+    </div>
+</div>
+
 <div class="trending-container" id="trendingBox" style="display:none">
     <div class="trending-label">Во Тренд</div>
     <div class="trending-scroll" id="trendingList"></div>
@@ -198,6 +206,7 @@
 <script>
     let activeCategory = '🇲🇰';
     let activeSubcategory = '';
+    let activeTopic = '';
     let _currentPage = 0;
     let _hasMore = false;
     let _isFetching = false;
@@ -219,6 +228,16 @@
         { id: '🇹🇷', label: 'Турција' }
     ];
 
+    const topics = [
+        { id: '', label: 'Сите' },
+        { id: 'Политика', label: 'Политика' },
+        { id: 'Економија', label: 'Економија' },
+        { id: 'Технологија', label: 'Технологија' },
+        { id: 'Спорт', label: 'Спорт' },
+        { id: 'Забава', label: 'Забава' },
+        { id: 'Здравје', label: 'Здравје' }
+    ];
+
     function initCategories() {
         const list = document.getElementById('categoryList');
         list.innerHTML = countries.map(c => `
@@ -238,6 +257,12 @@
         } else {
             subBox.style.display = 'none';
         }
+
+        // Topics
+        const topicList = document.getElementById('topicList');
+        topicList.innerHTML = topics.map(t => `
+            <div class="trend-tag ${activeTopic === t.id ? 'active' : ''}" onclick="filterTopic('${t.id}')">${t.label}</div>
+        `).join('');
     }
 
     function renderPage(clusters) {
@@ -297,7 +322,7 @@
         }
 
         try {
-            let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}`;
+            let url = `/api/news?page=${_currentPage}&page_size=${PAGE_SIZE}&topic=${encodeURIComponent(activeTopic)}`;
             if (activeCategory === 'REG') {
                 url += `&country=${encodeURIComponent('Македонија')}&sub=${encodeURIComponent(activeSubcategory)}`;
             } else if (activeCategory === 'SAVED') {
@@ -345,6 +370,13 @@
 
     function filterSub(sub) {
         activeSubcategory = sub;
+        _currentPage = 0;
+        initCategories();
+        fetchNews();
+    }
+
+    function filterTopic(topic) {
+        activeTopic = topic;
         _currentPage = 0;
         initCategories();
         fetchNews();
