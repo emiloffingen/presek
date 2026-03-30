@@ -151,10 +151,11 @@ def cluster_page(cluster_id: str):
     elif articles[0]["description"]:
         description = articles[0]["description"][:200]
 
+    cluster_image = next((a["image_url"] for a in articles if a.get("image_url")), None)
     meta = {
         "title": articles[0]["title"],
         "description": description,
-        "image": articles[0]["image_url"],
+        "image": cluster_image,
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 

@@ -206,7 +206,7 @@
     {% if hero_image %}
     <a href="{{ articles[0].link }}" target="_blank" rel="noopener" class="cluster-hero-link">
         <div class="cluster-hero fade-in">
-            <img src="/proxy?url={{ hero_image | urlencode }}" class="hero-img" alt="Hero Image">
+            <img src="{% if hero_image.startswith('/static/') %}{{ hero_image }}{% else %}/proxy?url={{ hero_image | urlencode }}{% endif %}" class="hero-img" alt="Hero Image">
             <div class="hero-overlay"></div>
         </div>
     </a>

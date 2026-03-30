@@ -37,6 +37,10 @@ celery_app.conf.update(
         'generate-daily-briefing': {
             'task': 'tasks.generate_daily_brief_task',
             'schedule': crontab(hour=6, minute=0), # Run daily at 6 AM UTC (7 AM local)
-        }
+        },
+        'backfill-cover-art': {
+            'task': 'tasks.backfill_cover_art_task',
+            'schedule': 600.0,  # Every 10 minutes — generate covers for imageless clusters
+        },
     }
 )

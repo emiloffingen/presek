@@ -353,19 +353,22 @@
             return;
         }
         
-        const top3 = clusters.filter(c => c.articles[0].image_url).slice(0, 3);
+        const top3 = clusters
+            .filter(c => c.articles.some(art => art.image_url))
+            .slice(0, 3);
         if (top3.length < 3) {
             wrap.style.display = 'none';
             return;
         }
-        
+
         wrap.style.display = 'block';
         grid.innerHTML = top3.map((c, i) => {
             const a = c.articles[0];
+            const heroImg = c.articles.find(art => art.image_url).image_url;
             const sizeClass = i === 0 ? 'large' : 'small';
             return `
                 <a href="/cluster/${c.cluster_id}" class="hero-item ${sizeClass}" onmousedown="trackClick('${a.id}')">
-                    <img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="hero-img" alt="${a.title}">
+                    <img src="${heroImg.startsWith('/static/') ? heroImg : '/proxy?url=' + encodeURIComponent(heroImg)}" class="hero-img" alt="${a.title}">
                     <div class="hero-overlay">
                         <div class="story-meta" style="color:rgba(255,255,255,0.8); margin-bottom:8px">
                             <span>${a.source}</span> • <span>${timeAgo(a.created_at)}</span>

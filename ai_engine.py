@@ -353,30 +353,40 @@ def translate_to_macedonian(text: str) -> str | None:
     return None
 
 def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
-    """Generate professional news cover art using Cloudflare Stable Diffusion."""
-    from config import CF_IMAGE_MODEL_URL, CLOUDFLARE_API_TOKEN
-    if not CLOUDFLARE_API_TOKEN:
-        return None
-        
+    """Generate news cover art using Pollinations.ai (free, no API key needed)."""
+    import os
+    os.makedirs("static/generated", exist_ok=True)
+
     lines = [l.strip('• ') for l in synthesis.split('\n') if '•' in l][:2]
-    visual_context = ". ".join(lines)
-    prompt = f"Cinematic editorial photography, {visual_context}, professional news graphics, high resolution, 16:9 aspect ratio, neutral lighting."
-    
-    payload = json.dumps({"prompt": prompt}).encode("utf-8")
+    visual_context = ". ".join(lines) if lines else synthesis[:120]
+    prompt = f"Cinematic editorial news photography, {visual_context}, professional press photo, high resolution, 16:9, neutral lighting, no text"
+
+    payload = json.dumps({
+        "prompt": prompt,
+        "width": 800,
+        "height": 450,
+        "model": "flux",
+        "nologo": True,
+    }).encode("utf-8")
     save_path = f"static/generated/{cluster_id}.jpg"
-    
+
     try:
         req = urllib.request.Request(
-            CF_IMAGE_MODEL_URL,
+            "https://image.pollinations.ai/",
             data=payload,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+                "User-Agent": "Presek/1.0",
             }
         )
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            img_data = resp.read()
+            if len(img_data) < 1000:
+                log.warning(f"[ai-image] Suspiciously small image ({len(img_data)}B) for {cluster_id}")
+                return None
             with open(save_path, "wb") as f:
-                f.write(resp.read())
+                f.write(img_data)
+        log.info(f"[ai-image] Generated cover for {cluster_id} ({len(img_data)}B)")
         return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
         log.warning(f"[ai-image] Failed to generate cover for {cluster_id}: {e}")

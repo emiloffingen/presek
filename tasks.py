@@ -1,5 +1,6 @@
 import logging
 import datetime
+import time
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
@@ -59,12 +60,12 @@ def synthesize_cluster_task(cluster_id, content):
             )
             conn.commit()
 
-            # Check if lead image is missing
-            lead_row = conn.execute("SELECT id, image_url FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1", (cluster_id,)).fetchone()
-            if lead_row and not lead_row["image_url"]:
+            # Generate cover art only if NO article in the cluster has an image
+            any_image = conn.execute("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL AND image_url != '' LIMIT 1", (cluster_id,)).fetchone()
+            if not any_image:
                 img_url = generate_cover_art(cluster_id, summary)
                 if img_url:
-                    conn.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s", (img_url, cluster_id))
+                    conn.execute("UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1)", (img_url, cluster_id))
                     conn.commit()
     except Exception as e:
         log.warning(f"[auto-summarize] Cluster synthesis failed for {cluster_id}: {e}")
@@ -417,6 +418,57 @@ def cleanup_cover_art_task():
     """Background task to remove orphaned cover art images."""
     from ai_engine import cleanup_cover_art
     cleanup_cover_art()
+
+@celery_app.task
+def backfill_cover_art_task():
+    """Generate cover art for clusters that have synthesis but no images."""
+    conn = None
+    try:
+        conn = get_db()
+        # Find clusters with synthesis but where NO article has an image
+        rows = conn.execute("""
+            SELECT cs.cluster_id, cs.summary
+            FROM cluster_summaries cs
+            WHERE NOT EXISTS (
+                SELECT 1 FROM articles a
+                WHERE a.cluster_id = cs.cluster_id
+                AND a.image_url IS NOT NULL AND a.image_url != ''
+            )
+            ORDER BY cs.created_at DESC
+            LIMIT 10
+        """).fetchall()
+
+        generated = 0
+        for r in rows:
+            cid = r["cluster_id"]
+            import os
+            if os.path.exists(f"static/generated/{cid}.jpg"):
+                # Already generated but not linked — link it
+                conn.execute(
+                    "UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1)",
+                    (f"/static/generated/{cid}.jpg", cid)
+                )
+                conn.commit()
+                generated += 1
+                continue
+
+            img_url = generate_cover_art(cid, r["summary"])
+            if img_url:
+                conn.execute(
+                    "UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1)",
+                    (img_url, cid)
+                )
+                conn.commit()
+                generated += 1
+                time.sleep(2)  # Be nice to free API
+
+        if generated:
+            log.info(f"[backfill] Generated cover art for {generated} clusters")
+    except Exception as e:
+        log.error(f"[backfill] Cover art backfill failed: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 @celery_app.task
 def run_prune_db():

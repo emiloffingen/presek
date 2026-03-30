@@ -330,7 +330,7 @@
                     ${clusterImage ? `
                         <a href="/cluster/${c.cluster_id}" class="story-thumb-link" onmousedown="trackClick('${a.id}')">
                             <div class="story-thumb-wrap">
-                                <img src="/proxy?url=${encodeURIComponent(clusterImage)}" class="story-thumb" loading="lazy" alt="${a.title}">
+                                <img src="${clusterImage.startsWith('/static/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)}" class="story-thumb" loading="lazy" alt="${a.title}">
                             </div>
                         </a>
                     ` : `
