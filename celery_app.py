@@ -1,6 +1,15 @@
 import os
+import logging
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import task_failure
+
+log = logging.getLogger("presek_celery")
+
+@task_failure.connect
+def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):
+    """Log permanently failed tasks for monitoring."""
+    log.error(f"[celery-failure] Task {sender.name} (id={task_id}) permanently failed: {exception}")
 
 # Initialize Celery
 celery_app = Celery(

@@ -185,7 +185,9 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_country_created ON articles(country, created_at DESC)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_category_created ON articles(category, created_at DESC)")
-    
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_topic_created ON articles(topic, created_at DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_source_created ON articles(source, created_at DESC)")
+
     # Full Text Search Index
     cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (to_tsvector('simple', title || ' ' || COALESCE(description, '')))")
     
@@ -194,17 +196,40 @@ def init_db():
     conn.close()
 
 def prune_db():
-    """Delete articles older than DB_RETAIN_DAYS."""
+    """Delete articles older than DB_RETAIN_DAYS and clean up orphaned metadata."""
+    conn = None
     try:
         cutoff = datetime.datetime.now() - datetime.timedelta(days=DB_RETAIN_DAYS)
         conn = get_db()
         cur = conn.cursor()
         cur.execute("DELETE FROM articles WHERE created_at < %s", (cutoff,))
         deleted = cur.rowcount
+
+        # Clean up orphaned metadata for clusters that no longer have articles
+        cur.execute("""DELETE FROM cluster_summaries
+                       WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)""")
+        orphan_summaries = cur.rowcount
+        cur.execute("""DELETE FROM cluster_metadata
+                       WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)""")
+        orphan_meta = cur.rowcount
+        cur.execute("""DELETE FROM cluster_entities
+                       WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)""")
+        orphan_entities = cur.rowcount
+        cur.execute("""DELETE FROM reactions
+                       WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)""")
+        orphan_reactions = cur.rowcount
+
         conn.commit()
         cur.close()
-        conn.close()
         if deleted:
             log.info(f"Pruned {deleted} articles older than {DB_RETAIN_DAYS} days.")
+        orphan_total = orphan_summaries + orphan_meta + orphan_entities + orphan_reactions
+        if orphan_total:
+            log.info(f"Cleaned up {orphan_total} orphaned metadata rows "
+                     f"(summaries={orphan_summaries}, meta={orphan_meta}, "
+                     f"entities={orphan_entities}, reactions={orphan_reactions}).")
     except Exception as e:
         log.error(f"Prune error: {e}")
+    finally:
+        if conn:
+            conn.close()

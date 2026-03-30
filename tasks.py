@@ -11,12 +11,12 @@ from health import record_refresh
 
 log = logging.getLogger("presek_celery")
 
-@celery_app.task(rate_limit='10/m')
+@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def summarize_article_task(article_id, title):
     """Asynchronously generates a summary for a single article."""
     conn = None
     try:
-        summary, tier = _call_ai(title, SUMMARY_SYSTEM_PROMPT)
+        summary, tier = _call_ai(title, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
         if summary:
             summary_res = clean_json_response(summary)
             # clean_json_response might return dict for synthesis but here it should be string
@@ -30,12 +30,12 @@ def summarize_article_task(article_id, title):
         if conn:
             conn.close()
 
-@celery_app.task(rate_limit='10/m')
+@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def synthesize_cluster_task(cluster_id, content):
     """Asynchronously generates a synthesis for a cluster with multiple perspectives."""
     conn = None
     try:
-        raw_res, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True)
+        raw_res, tier = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         if raw_res:
             res = clean_json_response(raw_res)
             summary = ""
@@ -72,7 +72,7 @@ def synthesize_cluster_task(cluster_id, content):
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=600, max_retries=2)
 def run_ingestion():
     """Periodic task to ingest regular and diaspora feeds."""
     log.info("Starting regular feed ingestion...")
@@ -131,7 +131,7 @@ def run_ingestion():
     
     log.info("Finished ingestion cycle.")
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def generate_daily_brief_task():
     """
     Generate a cohesive narrative summary of the top stories.
@@ -173,7 +173,7 @@ def generate_daily_brief_task():
 
         context_text = "\n\n".join(brief_context)
 
-        brief_text, tier = _call_ai(context_text, DAILY_BRIEF_SYSTEM_PROMPT, max_tokens=1000)
+        brief_text, tier = _call_ai(context_text, DAILY_BRIEF_SYSTEM_PROMPT, max_tokens=1000, task_type="daily_brief")
 
         if brief_text:
             today = datetime.date.today()
@@ -189,7 +189,7 @@ def generate_daily_brief_task():
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def generate_cluster_metadata_task():
     """
     Background task to generate tags for top clusters from the last 24h.
@@ -217,7 +217,7 @@ def generate_cluster_metadata_task():
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
 
-            res, tier = _call_ai(text, TAGGING_SYSTEM_PROMPT, max_tokens=100)
+            res, tier = _call_ai(text, TAGGING_SYSTEM_PROMPT, max_tokens=100, task_type="tagging")
             if res:
                 try:
                     # Clean the response to ensure it's a valid JSON list
@@ -237,7 +237,7 @@ def generate_cluster_metadata_task():
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def extract_entities_task():
     """
     Background task to extract key personalities and organizations from top clusters.
@@ -264,7 +264,7 @@ def extract_entities_task():
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
 
-            res, tier = _call_ai(text, ENTITY_EXTRACTION_PROMPT, max_tokens=500, json_mode=True)
+            res, tier = _call_ai(text, ENTITY_EXTRACTION_PROMPT, max_tokens=500, json_mode=True, task_type="entity")
             if res:
                 try:
                     data = clean_json_response(res)
@@ -286,7 +286,7 @@ def extract_entities_task():
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def classify_topics_task():
     """
     Background task to classify untagged clusters into topical categories (Politics, Sport, etc.)
@@ -312,7 +312,7 @@ def classify_topics_task():
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
 
-            res, tier = _call_ai(text, TOPIC_SYSTEM_PROMPT, max_tokens=10)
+            res, tier = _call_ai(text, TOPIC_SYSTEM_PROMPT, max_tokens=10, task_type="topic")
             if res:
                 topic = res.strip().strip('"').strip("'").strip('.')
                 # Simple validation
@@ -327,7 +327,7 @@ def classify_topics_task():
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def recategorize_clusters_task():
     """
     Background task to find 'Македонија' clusters with multiple sources
@@ -355,7 +355,7 @@ def recategorize_clusters_task():
             cid = r['cluster_id']
             text = f"Title: {r['title']}\nDescription: {r['description']}"
 
-            new_cat, tier = _call_ai(text, CATEGORIZATION_SYSTEM_PROMPT, max_tokens=10)
+            new_cat, tier = _call_ai(text, CATEGORIZATION_SYSTEM_PROMPT, max_tokens=10, task_type="categorize")
             if new_cat:
                 new_cat = new_cat.strip().strip('"').strip("'")
                 if new_cat in ALLOWED_CATEGORIES and new_cat != 'Македонија':
@@ -368,7 +368,7 @@ def recategorize_clusters_task():
         if conn:
             conn.close()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=2)
 def send_daily_digest_task():
     """
     Periodic task to send a daily digest of the top stories to ntfy and email subscribers.
@@ -426,7 +426,7 @@ def run_prune_db():
     log.info("Cleaning up orphaned cover art...")
     cleanup_cover_art_task.delay()
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def translate_article_task(article_id: int, original_title: str, original_description: str):
     """Background task to translate diaspora articles."""
     conn = None

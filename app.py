@@ -9,14 +9,30 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_compress import Compress
 
-# Configure logging
+class JSONFormatter(logging.Formatter):
+    """Structured JSON log formatter for machine-parseable log output."""
+    def format(self, record):
+        import json, datetime
+        log_entry = {
+            "ts": datetime.datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+        if record.exc_info and record.exc_info[0]:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry, ensure_ascii=False)
+
+# Configure logging — JSON for file (machine-parseable), human-readable for console
+file_handler = RotatingFileHandler("presek.log", maxBytes=10 * 1024 * 1024, backupCount=5)
+file_handler.setFormatter(JSONFormatter())
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        RotatingFileHandler("presek.log", maxBytes=10 * 1024 * 1024, backupCount=5),
-        logging.StreamHandler()
-    ]
+    handlers=[file_handler, console_handler]
 )
 log = logging.getLogger("presek")
 

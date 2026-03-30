@@ -8,9 +8,13 @@ import logging
 from collections import defaultdict
 
 from config import (
-    GOOGLE_API_KEY, GEMINI_URL, 
+    GOOGLE_API_KEY, GEMINI_URL,
     CLOUDFLARE_API_TOKEN, CF_AI_URL,
-    AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY
+    AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
+    GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
+    CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
+    MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
+    OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
@@ -60,25 +64,26 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     """Shared Gemini caller. Uses contents-only approach for maximum compatibility."""
     if not GOOGLE_API_KEY:
         return None
-    
+
     # Combined prompt for older API versions or restricted keys
     combined_prompt = f"{system_prompt}\n\nInput Text:\n{prompt_text}"
-    
+
     payload_dict = {
         "contents": [{"parts": [{"text": combined_prompt}]}],
         "generationConfig": {"maxOutputTokens": max_tokens}
     }
-    
+
     if json_mode:
         payload_dict["generationConfig"]["responseMimeType"] = "application/json"
-        
+
     payload = json.dumps(payload_dict).encode("utf-8")
-    
+
     delays = [2, 4, 8]
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)
         try:
+            t0 = time.time()
             req = urllib.request.Request(
                 f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
                 data=payload,
@@ -87,19 +92,24 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw_res = resp.read().decode("utf-8")
                 data = json.loads(raw_res)
-            
+            elapsed = round(time.time() - t0, 2)
+
             if "candidates" not in data or not data["candidates"]:
+                log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
                 return None
-                
+
+            log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
             return data["candidates"][0]["content"]["parts"][0]["text"].strip()
         except urllib.error.HTTPError as e:
+            elapsed = round(time.time() - t0, 2)
             err_body = e.read().decode("utf-8") if e else ""
             if e.code == 429:
+                log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
                 continue
-            log.warning(f"[gemini] HTTP {e.code}: {err_body}")
+            log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
             break
         except Exception as e:
-            log.warning(f"[gemini] Generic error: {e}")
+            log.warning(f"[gemini] Error: {e}")
             break
     return None
 
@@ -107,7 +117,7 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
     """Call Cloudflare Workers AI REST API."""
     if not CLOUDFLARE_API_TOKEN:
         return None
-    
+
     payload = json.dumps({
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -117,6 +127,7 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
     }).encode("utf-8")
 
     try:
+        t0 = time.time()
         req = urllib.request.Request(
             CF_AI_URL,
             data=payload,
@@ -128,44 +139,170 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw_body = resp.read().decode("utf-8")
             data = json.loads(raw_body)
-        
+        elapsed = round(time.time() - t0, 2)
+
         if data.get("success"):
+            log.info(f"[cloudflare] OK in {elapsed}s")
             return data["result"]["response"].strip()
+        log.info(f"[cloudflare] Non-success response in {elapsed}s")
         return None
     except Exception as e:
         log.warning(f"[cloudflare] Call failed: {e}")
         return None
 
-def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
-    """Call AI provider (Gemini first, fallback to Cloudflare) with daily usage capping."""
+def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, api_url: str, model: str, provider_name: str, timeout: int = 30, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
+    """Generic caller for OpenAI-compatible APIs (Groq, Cerebras, Mistral, OpenRouter)."""
+    if not api_key:
+        return None
+
+    payload_dict = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt_text}
+        ],
+        "max_tokens": max_tokens,
+    }
+    if json_mode:
+        payload_dict["response_format"] = {"type": "json_object"}
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": "Presek/1.0",
+    }
+    # OpenRouter requires extra headers
+    if provider_name == "openrouter":
+        headers["HTTP-Referer"] = "https://presek.mk"
+        headers["X-Title"] = "Presek News"
+
+    payload = json.dumps(payload_dict).encode("utf-8")
+
+    try:
+        t0 = time.time()
+        req = urllib.request.Request(api_url, data=payload, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw_body = resp.read().decode("utf-8")
+            data = json.loads(raw_body)
+        elapsed = round(time.time() - t0, 2)
+
+        choices = data.get("choices", [])
+        if choices and choices[0].get("message", {}).get("content"):
+            log.info(f"[{provider_name}] OK in {elapsed}s")
+            return choices[0]["message"]["content"].strip()
+        log.info(f"[{provider_name}] Empty response in {elapsed}s")
+        return None
+    except urllib.error.HTTPError as e:
+        err_body = ""
+        try:
+            err_body = e.read().decode("utf-8")[:200]
+        except Exception:
+            pass
+        log.warning(f"[{provider_name}] HTTP {e.code}: {err_body}")
+        return None
+    except Exception as e:
+        log.warning(f"[{provider_name}] Error: {e}")
+        return None
+
+
+def _call_groq(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
+    return _call_openai_compatible(prompt_text, system_prompt, GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL, "groq", timeout, max_tokens, json_mode)
+
+def _call_cerebras(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
+    return _call_openai_compatible(prompt_text, system_prompt, CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL, "cerebras", timeout, max_tokens, json_mode)
+
+def _call_mistral(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
+    return _call_openai_compatible(prompt_text, system_prompt, MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL, "mistral", timeout, max_tokens, json_mode)
+
+def _call_openrouter(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
+    return _call_openai_compatible(prompt_text, system_prompt, OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL, "openrouter", timeout, max_tokens, json_mode)
+
+
+# ── Provider Registry & Routing ──────────────────────────────────
+
+def _get_provider(name: str):
+    """Resolve provider caller by name at call time (supports patching in tests)."""
+    return {
+        "gemini":     _call_gemini,
+        "groq":       _call_groq,
+        "cerebras":   _call_cerebras,
+        "mistral":    _call_mistral,
+        "openrouter": _call_openrouter,
+        "cloudflare": _call_cloudflare_ai,
+    }.get(name)
+
+# Task-type → ordered provider chain
+# Gemini reserved for Macedonian-critical tasks; cheaper models for background work
+TASK_ROUTING = {
+    # Premium: Macedonian language quality matters
+    "translation":  ["gemini", "mistral", "groq"],
+    "synthesis":    ["gemini", "mistral", "groq"],
+    "daily_brief":  ["gemini", "mistral", "groq"],
+    "summarize":    ["gemini", "groq", "cerebras"],
+
+    # Mid-tier: quality matters but not MK-specific
+    "analysis":     ["groq", "cerebras", "gemini"],
+    "factcheck":    ["groq", "cerebras", "gemini"],
+    "ai_ask":       ["groq", "cerebras", "gemini"],
+
+    # Background: speed/cost matters most
+    "tagging":      ["cerebras", "groq", "openrouter"],
+    "topic":        ["cerebras", "groq", "openrouter"],
+    "entity":       ["groq", "mistral", "openrouter"],
+    "entity_info":  ["cerebras", "groq", "openrouter"],
+    "categorize":   ["cerebras", "groq", "openrouter"],
+
+    # Default fallback chain (same as original _call_ai)
+    "default":      ["gemini", "groq", "cerebras", "mistral", "openrouter", "cloudflare"],
+}
+
+
+def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False, task_type: str = "default") -> tuple[str | None, str | None]:
+    """Call AI provider with tiered routing and daily usage capping.
+
+    task_type controls which provider chain is used:
+    - 'translation', 'synthesis', 'daily_brief' → Gemini first (best MK quality)
+    - 'tagging', 'topic', 'entity', 'categorize' → Cheap/fast models first
+    - 'default' → Full fallback chain starting with Gemini
+    """
     from config import AI_DAILY_LIMIT
     from utils import redis_client
-    
-    # 0. Check Daily Usage Limit
+
+    # 0. Check Daily Usage Limit (counts ALL providers)
     try:
         today = datetime.date.today().isoformat()
         usage_key = f"ai_usage_count:{today}"
         current_usage = redis_client.incr(usage_key)
         if current_usage == 1:
-            redis_client.expire(usage_key, 86400) # Reset after 24h
-            
+            redis_client.expire(usage_key, 86400)
+
         if current_usage > AI_DAILY_LIMIT:
             if current_usage == AI_DAILY_LIMIT + 1:
-                log.warning(f"⚠️ AI Daily Limit ({AI_DAILY_LIMIT}) reached. Capping usage for today.")
+                log.warning(f"AI Daily Limit ({AI_DAILY_LIMIT}) reached. Capping usage for today.")
             return None, "limit_reached"
     except Exception as e:
         log.warning(f"[limit-check] Redis error: {e}")
 
-    # 1. Try Gemini first
-    gemini_result = _call_gemini(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
-    if gemini_result:
-        return gemini_result, "gemini"
+    # 1. Get provider chain for this task type
+    chain = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
 
-    # 2. Fallback to Cloudflare Workers AI
-    cf_result = _call_cloudflare_ai(prompt_text, system_prompt, timeout=timeout)
-    if cf_result:
-        return cf_result, "cloudflare"
-        
+    # 2. Try each provider in order
+    for provider_name in chain:
+        caller = _get_provider(provider_name)
+        if not caller:
+            continue
+        try:
+            if provider_name == "cloudflare":
+                # Cloudflare has different signature (no max_tokens/json_mode)
+                result = caller(prompt_text, system_prompt, timeout=timeout)
+            else:
+                result = caller(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
+            if result:
+                return result, provider_name
+        except Exception as e:
+            log.warning(f"[{provider_name}] Unexpected error in chain: {e}")
+            continue
+
     return None, None
 
 def cleanup_cover_art():
@@ -207,7 +344,7 @@ def translate_to_macedonian(text: str) -> str | None:
     if not text or not text.strip():
         return text
     
-    res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT)
+    res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
     if res:
         cleaned = clean_json_response(res)
         if isinstance(cleaned, dict):
@@ -246,16 +383,18 @@ def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
         return None
 
 def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
-    """Dispatches background tasks for summarization/synthesis."""
+    """Dispatches background tasks for summarization/synthesis with deduplication."""
+    conn = None
     try:
         from tasks import summarize_article_task, synthesize_cluster_task
+        from utils import redis_client
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(days=1)
         rows = conn.execute(
             "SELECT * FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 500",
             (cutoff,)
         ).fetchall()
-        
+
         clusters_map = defaultdict(list)
         for r in rows:
             clusters_map[r["cluster_id"]].append(dict(r))
@@ -270,18 +409,34 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
         for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
             lead = arts[0]
             if not lead.get("summary"):
+                # Dedup: skip if already queued in the last 10 minutes
+                dedup_key = f"task:summarize:{lead['id']}"
+                try:
+                    if not redis_client.set(dedup_key, 1, nx=True, ex=600):
+                        continue
+                except Exception:
+                    pass  # Redis down, proceed anyway
                 summarize_article_task.delay(lead["id"], lead["title"])
 
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
                 row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
                 if not row:
+                    # Dedup: skip if synthesis already queued recently
+                    dedup_key = f"task:synthesize:{cid}"
+                    try:
+                        if not redis_client.set(dedup_key, 1, nx=True, ex=600):
+                            continue
+                    except Exception:
+                        pass
                     lines = []
                     for a in arts[:10]:
                         line = f"- [{a['source']}]: {a['title']}"
                         lines.append(line)
                     content = "\n".join(lines)
                     synthesize_cluster_task.delay(cid, content)
-        conn.close()
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
+    finally:
+        if conn:
+            conn.close()

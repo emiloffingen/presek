@@ -5,8 +5,6 @@ import json
 import os
 import time
 import urllib.request
-import urllib.error
-import traceback
 from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
@@ -79,7 +77,11 @@ def api_news():
             sql += " AND summary LIKE %s"
             params.append(f"%{sentiment}%")
             
-        sql += " ORDER BY created_at DESC LIMIT 500"
+        # Fetch enough articles to fill requested page (estimate: page_size * 3 articles per cluster)
+        # but always fetch at least 200 to ensure accurate scoring
+        fetch_limit = max(200, (page + 1) * page_size * 3)
+        fetch_limit = min(fetch_limit, 500)
+        sql += f" ORDER BY created_at DESC LIMIT {fetch_limit}"
         rows = conn.execute(sql, tuple(params)).fetchall()
     
     # Group by cluster
@@ -174,7 +176,7 @@ def api_summarize(article_id: int):
 
         from ai_engine import _call_ai, clean_json_response
         from prompts import SUMMARY_SYSTEM_PROMPT
-        raw, tier = _call_ai(row["title"], SUMMARY_SYSTEM_PROMPT)
+        raw, tier = _call_ai(row["title"], SUMMARY_SYSTEM_PROMPT, task_type="summarize")
         summary = None
         if raw:
             cleaned = clean_json_response(raw)
@@ -197,24 +199,16 @@ def api_analyze(cluster_id: str):
     for r in rows:
         snippet = (r['description'] or "")[:120] + "..." if r['description'] else "No snippet"
         context_items.append(f"SOURCE: {r['source']}\nHEADLINE: {r['title']}\nSNIPPET: {snippet}")
-    
+
     context_text = "\n---\n".join(context_items)
-    
-    from config import GEMINI_URL, GOOGLE_API_KEY
+
+    from ai_engine import _call_ai
     from prompts import ANALYSIS_SYSTEM_PROMPT
-    
-    payload = {
-        "system_instruction": {"parts": [{"text": ANALYSIS_SYSTEM_PROMPT}]},
-        "contents": [{"parts": [{"text": f"Analyze these stories:\n{context_text}"}]}]
-    }
-    try:
-        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return jsonify({"analysis": answer})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
+    answer, tier = _call_ai(f"Analyze these stories:\n{context_text}", ANALYSIS_SYSTEM_PROMPT, max_tokens=2000, task_type="analysis")
+    if answer:
+        return jsonify({"analysis": answer})
+    return jsonify({"error": "AI service unavailable."}), 503
 
 
 @api_bp.route("/api/briefing")
@@ -423,7 +417,7 @@ def api_ai_ask():
     query = data.get("query", "").strip()
     if not query or len(query) < 3:
         return jsonify({"error": "Ве молиме внесете подолго прашање."}), 400
-    
+
     try:
         conn = get_db()
         try:
@@ -442,27 +436,21 @@ def api_ai_ask():
 
         if not rows:
             return jsonify({"response": "За жал, немам информации за оваа тема во последните вести. Можам да одговорам само за актуелни случувања."})
-            
+
         context_items = []
         for r in rows:
             context_items.append(f"SOURCE: {r['source']} | HEADLINE: {r['title']} | DESC: {(r['description'] or '')[:100]}...")
-        
+
         context_text = "\n".join(context_items)
-        
+
+        from ai_engine import _call_ai
         from prompts import GLOBAL_ASSISTANT_SYSTEM_PROMPT
-        from config import GOOGLE_API_KEY, GEMINI_URL
-        
-        payload = {
-            "system_instruction": {"parts": [{"text": GLOBAL_ASSISTANT_SYSTEM_PROMPT}]},
-            "contents": [{"parts": [{"text": f"NEWS CONTEXT:\n{context_text}\n\nUSER QUESTION: {query}"}]}]
-        }
-        
-        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
+
+        answer, tier = _call_ai(f"NEWS CONTEXT:\n{context_text}\n\nUSER QUESTION: {query}", GLOBAL_ASSISTANT_SYSTEM_PROMPT, max_tokens=2000, task_type="ai_ask")
+        if answer:
             return jsonify({"response": answer})
-            
+        return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 503
+
     except Exception as e:
         return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 500
 
@@ -472,32 +460,23 @@ def api_ai_factcheck(cluster_id: str):
     conn = get_db()
     rows = conn.execute("SELECT source, title, description FROM articles WHERE cluster_id = %s", (cluster_id,)).fetchall()
     conn.close()
-    
+
     if not rows:
         return jsonify({"error": "Кластерот не е пронајден."}), 404
-        
+
     context_items = []
     for r in rows:
         context_items.append(f"SOURCE: {r['source']} | TITLE: {r['title']} | DESC: {(r['description'] or '')[:200]}")
-    
+
     context_text = "\n---\n".join(context_items)
-    
+
+    from ai_engine import _call_ai, clean_json_response
     from prompts import FACTCHECK_SYSTEM_PROMPT
-    from config import GOOGLE_API_KEY, GEMINI_URL
-    
-    payload = {
-        "contents": [{"parts": [{"text": f"SYSTEM: {FACTCHECK_SYSTEM_PROMPT}\n\nCONTEXT:\n{context_text}"}]}],
-        "generationConfig": {"responseMimeType": "application/json"}
-    }
-    
-    try:
-        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            answer = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return Response(answer, mimetype="application/json")
-    except Exception as e:
-        return jsonify({"error": "Грешка при проверка на фактите."}), 500
+
+    answer, tier = _call_ai(context_text, FACTCHECK_SYSTEM_PROMPT, max_tokens=2000, json_mode=True, task_type="factcheck")
+    if answer:
+        return Response(answer, mimetype="application/json")
+    return jsonify({"error": "Грешка при проверка на фактите."}), 503
 
 
 @api_bp.route("/api/react", methods=["POST"])
@@ -528,7 +507,8 @@ def api_react():
 def api_subscribe():
     data = request.json
     email = data.get("email", "").strip().lower()
-    if not email or "@" not in email or "." not in email:
+    # RFC-ish email validation: local@domain.tld, no spaces, reasonable length
+    if not email or not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email) or len(email) > 254:
         return jsonify({"error": "Ве молиме внесете валидна е-пошта."}), 400
     
     try:
@@ -569,22 +549,13 @@ def api_trending_entities():
 
 @api_bp.route("/api/ai/entity_info/<name>")
 def api_ai_entity_info(name: str):
-    from config import GEMINI_URL, GOOGLE_API_KEY
-    
-    prompt = f"Дај краток, објективен и информативен опис (максимум 3 реченици) на македонски јазик за: {name}. Ако е личност, кажи ја функцијата. Ако е организација, кажи ја дејноста. Врати само чист текст."
-    
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-    
-    try:
-        req = urllib.request.Request(f"{GEMINI_URL}?key={GOOGLE_API_KEY}", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            answer = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            return jsonify({"info": answer})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    from ai_engine import _call_ai
+
+    system_prompt = "Дај краток, објективен и информативен опис (максимум 3 реченици) на македонски јазик. Ако е личност, кажи ја функцијата. Ако е организација, кажи ја дејноста. Врати само чист текст."
+    answer, tier = _call_ai(name, system_prompt, max_tokens=200, task_type="entity_info")
+    if answer:
+        return jsonify({"info": answer.strip()})
+    return jsonify({"error": "AI service unavailable."}), 503
 
 @api_bp.route("/proxy")
 def image_proxy():
