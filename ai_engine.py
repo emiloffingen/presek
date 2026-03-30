@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from config import (
     GOOGLE_API_KEY, GEMINI_URL,
-    CLOUDFLARE_API_TOKEN, CF_AI_URL,
+    CLOUDFLARE_API_TOKEN, CF_AI_URL, CF_AI_GATEWAY_URL,
     AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
     GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
@@ -78,17 +78,23 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
 
     payload = json.dumps(payload_dict).encode("utf-8")
 
+    # Routing through AI Gateway if available
+    final_url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    
+    if CF_AI_GATEWAY_URL:
+        # https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/google-ai-studio/v1beta/models/{model}:generateContent
+        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
+        final_url = f"{gateway_base}/google-ai-studio/v1beta/models/gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}"
+        headers["cf-aig-cache"] = "true"
+
     delays = [2, 4, 8]
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)
         try:
             t0 = time.time()
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GOOGLE_API_KEY}",
-                data=payload,
-                headers={"Content-Type": "application/json"},
-            )
+            req = urllib.request.Request(final_url, data=payload, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw_res = resp.read().decode("utf-8")
                 data = json.loads(raw_res)
@@ -126,16 +132,23 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
         "max_tokens": 1000
     }).encode("utf-8")
 
+    final_url = CF_AI_URL
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+    }
+
+    if CF_AI_GATEWAY_URL:
+        # https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/workers-ai/
+        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
+        # Extract the model from the original URL
+        model_part = CF_AI_URL.split("/ai/run/")[-1]
+        final_url = f"{gateway_base}/workers-ai/{model_part}"
+        headers["cf-aig-cache"] = "true"
+
     try:
         t0 = time.time()
-        req = urllib.request.Request(
-            CF_AI_URL,
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
-            }
-        )
+        req = urllib.request.Request(final_url, data=payload, headers=headers)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw_body = resp.read().decode("utf-8")
             data = json.loads(raw_body)
@@ -171,6 +184,20 @@ def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, 
         "Authorization": f"Bearer {api_key}",
         "User-Agent": "Presek/1.0",
     }
+    
+    final_url = api_url
+    if CF_AI_GATEWAY_URL:
+        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
+        # Handle different provider path structures in AI Gateway
+        if provider_name == "groq":
+            final_url = f"{gateway_base}/groq/openai/v1/chat/completions"
+        elif provider_name == "mistral":
+            final_url = f"{gateway_base}/mistral/v1/chat/completions"
+        # OpenRouter doesn't have a direct gateway alias, 
+        # but we can still use the gateway as a generic proxy or just use it directly
+        
+        headers["cf-aig-cache"] = "true"
+
     # OpenRouter requires extra headers
     if provider_name == "openrouter":
         headers["HTTP-Referer"] = "https://presek.mk"
@@ -180,7 +207,7 @@ def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, 
 
     try:
         t0 = time.time()
-        req = urllib.request.Request(api_url, data=payload, headers=headers)
+        req = urllib.request.Request(final_url, data=payload, headers=headers)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw_body = resp.read().decode("utf-8")
             data = json.loads(raw_body)

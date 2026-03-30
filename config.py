@@ -4,6 +4,7 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
 CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
 CLOUDFLARE_KV_NAMESPACE_ID = os.environ.get("CLOUDFLARE_KV_NAMESPACE_ID", "")
+CF_AI_GATEWAY_URL = os.environ.get("CF_AI_GATEWAY_URL", f"https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/presek")
 
 # ── Cloudflare R2 Configuration ──────────────────────────────────
 R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "presek-cache")
