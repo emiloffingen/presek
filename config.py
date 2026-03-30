@@ -4,6 +4,13 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
 CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
 CLOUDFLARE_KV_NAMESPACE_ID = os.environ.get("CLOUDFLARE_KV_NAMESPACE_ID", "")
+
+# ── Cloudflare R2 Configuration ──────────────────────────────────
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "presek-cache")
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", f"https://{CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 CF_AI_URL = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct"

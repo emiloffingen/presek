@@ -557,12 +557,48 @@ def api_ai_entity_info(name: str):
         return jsonify({"info": answer.strip()})
     return jsonify({"error": "AI service unavailable."}), 503
 
+def _get_r2_client():
+    import boto3
+    from config import R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+    if not R2_ACCESS_KEY_ID or not R2_SECRET_ACCESS_KEY:
+        return None
+    try:
+        return boto3.client(
+            service_name="s3",
+            endpoint_url=R2_ENDPOINT_URL,
+            aws_access_key_id=R2_ACCESS_KEY_ID,
+            aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+            region_name="auto"
+        )
+    except Exception:
+        return None
+
 @api_bp.route("/proxy")
 def image_proxy():
     from urllib.parse import urlparse, urlunparse, quote
-    import ipaddress, socket
+    import ipaddress, socket, hashlib
+    from config import R2_BUCKET_NAME
+
     url = request.args.get("url", "").strip()
     if not url or not url.startswith(("http://", "https://")): return "", 400
+
+    # 1. Check R2 Cache
+    cache_key = hashlib.sha256(url.encode("utf-8")).hexdigest()
+    r2 = _get_r2_client()
+    if r2:
+        try:
+            obj = r2.get_object(Bucket=R2_BUCKET_NAME, Key=cache_key)
+            data = obj["Body"].read()
+            content_type = obj.get("ContentType", "image/jpeg")
+            r = Response(data, mimetype=content_type)
+            r.headers["Cache-Control"] = "public, max-age=31536000" # Cache for 1 year
+            r.headers["X-Cache"] = "HIT-R2"
+            return r
+        except r2.exceptions.NoSuchKey:
+            pass # Continue to fetch
+        except Exception:
+            pass
+
     try:
         p = urlparse(url)
         # Block private/internal IPs to prevent SSRF
@@ -577,8 +613,10 @@ def image_proxy():
                     return "", 403
         except (socket.gaierror, ValueError):
             return "", 400
+
         safe_url = urlunparse(p._replace(path=quote(p.path, safe='/:@!$&\'()*+,;='), query=quote(p.query, safe='=&+%')))
         req = urllib.request.Request(safe_url, headers={"User-Agent": "Mozilla/5.0", "Referer": ""})
+        
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = resp.read()
             # Cap response size at 5MB to prevent abuse
@@ -587,9 +625,24 @@ def image_proxy():
             content_type = resp.headers.get("Content-Type", "image/jpeg")
             if not content_type.startswith("image/"):
                 return "", 400
+
+            # 2. Store in R2 for future requests
+            if r2:
+                try:
+                    r2.put_object(
+                        Bucket=R2_BUCKET_NAME,
+                        Key=cache_key,
+                        Body=data,
+                        ContentType=content_type,
+                        Metadata={"original_url": url}
+                    )
+                except Exception:
+                    pass
+
             r = Response(data, mimetype=content_type)
-            r.headers["Cache-Control"] = "public, max-age=3600"
+            r.headers["Cache-Control"] = "public, max-age=86400" # 24 hours
             r.headers["X-Content-Type-Options"] = "nosniff"
+            r.headers["X-Cache"] = "MISS"
             return r
     except Exception:
         return "", 404
