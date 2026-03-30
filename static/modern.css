@@ -738,3 +738,18 @@ html.light .story-thumb-placeholder {
 .react-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(192, 57, 43, 0.05); }
 .react-count { font-weight: var(--weight-bold); font-size: 0.75rem; }
 
+/* Focus-visible for keyboard accessibility */
+.action-btn:focus-visible, .page-btn:focus-visible, .react-btn:focus-visible,
+.story-card a:focus-visible, .bookmark-btn:focus-visible,
+.popular-item:focus-visible, button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Mobile: ticker gap and search input */
+@media (max-width: 600px) {
+    .ticker-inner { gap: var(--space-lg); }
+    .search-bar input { font-size: 1.25rem; }
+    .search-results .stories-grid { grid-template-columns: 1fr; }
+}
+

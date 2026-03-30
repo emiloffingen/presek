@@ -3,6 +3,20 @@
 {% block title %}Пресек | Вашиот Дневен Преглед{% endblock %}
 
 {% block head %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Пресек",
+    "url": "https://presek.mk/",
+    "description": "Најнапреден македонски агрегатор на вести. Групирање со вештачка интелигенција, длабинска анализа и објективни резимеа.",
+    "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://presek.mk/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+    }
+}
+</script>
 <style>
     /* Page Specific Styles */
     .nav-bar {
@@ -209,7 +223,7 @@
 </nav>
 
 <!-- Hero Section for Top 3 -->
-<div id="heroWrap" style="display:none">
+<div id="heroWrap" style="visibility:hidden; height:0; overflow:hidden">
     <div class="hero-grid" id="heroGrid"></div>
 </div>
 
@@ -349,31 +363,32 @@
         const wrap = document.getElementById('heroWrap');
         const grid = document.getElementById('heroGrid');
         if (activeCategory !== '🇲🇰' || activeTopic || activeSentiment || activeSubcategory || _currentPage > 0) {
-            wrap.style.display = 'none';
+            wrap.style.visibility = 'hidden'; wrap.style.height = '0'; wrap.style.overflow = 'hidden';
             return;
         }
-        
+
         const top3 = clusters
             .filter(c => c.articles.some(art => art.image_url))
             .slice(0, 3);
         if (top3.length < 3) {
-            wrap.style.display = 'none';
+            wrap.style.visibility = 'hidden'; wrap.style.height = '0'; wrap.style.overflow = 'hidden';
             return;
         }
 
-        wrap.style.display = 'block';
+        wrap.style.visibility = 'visible'; wrap.style.height = 'auto'; wrap.style.overflow = 'visible';
         grid.innerHTML = top3.map((c, i) => {
             const a = c.articles[0];
             const heroImg = c.articles.find(art => art.image_url).image_url;
             const sizeClass = i === 0 ? 'large' : 'small';
+            const imgSrc = heroImg.startsWith('/static/') ? heroImg : '/proxy?url=' + encodeURIComponent(heroImg);
             return `
-                <a href="/cluster/${c.cluster_id}" class="hero-item ${sizeClass}" onmousedown="trackClick('${a.id}')">
-                    <img src="${heroImg.startsWith('/static/') ? heroImg : '/proxy?url=' + encodeURIComponent(heroImg)}" class="hero-img" alt="${a.title}">
+                <a href="/cluster/${esc(c.cluster_id)}" class="hero-item ${sizeClass}" onmousedown="trackClick('${esc(String(a.id))}')">
+                    <img src="${imgSrc}" class="hero-img" loading="lazy" alt="${esc(a.title) || 'Вест'}">
                     <div class="hero-overlay">
                         <div class="story-meta" style="color:rgba(255,255,255,0.8); margin-bottom:8px">
-                            <span>${a.source}</span> • <span>${timeAgo(a.created_at)}</span>
+                            <span>${esc(a.source)}</span> • <span>${timeAgo(a.created_at)}</span>
                         </div>
-                        <h2 class="hero-title-text">${a.title}</h2>
+                        <h2 class="hero-title-text">${esc(a.title)}</h2>
                     </div>
                 </a>
             `;
@@ -580,14 +595,16 @@
             const list = document.getElementById('entitiesList');
             if (data && data.length) {
                 document.getElementById('entitiesBox').style.display = 'flex';
-                list.innerHTML = data.map(e => `
-                    <div class="trend-tag" onclick="showEntityInfo('${e.entity_name}')">
+                list.innerHTML = data.map(e => {
+                    const name = esc(e.entity_name);
+                    return `
+                    <div class="trend-tag" onclick="showEntityInfo('${name.replace(/'/g, "\\'")}')">
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                             ${e.entity_type === 'PERSON' ? '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' : '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>'}
                         </svg>
-                        ${e.entity_name}
-                    </div>
-                `).join('');
+                        ${name}
+                    </div>`;
+                }).join('');
             }
         } catch(e) { console.error(e); }
     }

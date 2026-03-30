@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 import redis
 import json
@@ -6,6 +7,7 @@ import os
 import time
 from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 
+log = logging.getLogger("presek")
 redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
 
 def cached_response(key: str, ttl: int = 60):
@@ -14,15 +16,14 @@ def cached_response(key: str, ttl: int = 60):
         if val:
             return json.loads(val)
     except Exception as e:
-        # We'll use a local logger if possible, but for simplicity let's print or ignore
-        pass
+        log.warning(f"[cache] read error on {key}: {e}")
     return None
 
 def set_cache(key: str, val, ttl: int = 60):
     try:
         redis_client.setex(key, ttl, json.dumps(val))
     except Exception as e:
-        pass
+        log.warning(f"[cache] write error on {key}: {e}")
 
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window

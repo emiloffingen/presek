@@ -25,135 +25,147 @@ def api_news():
     topic     = request.args.get("topic", "").strip()
     sentiment = request.args.get("sentiment", "").strip()
     q         = request.args.get("q", "").strip()
-    
+
     # Personalized Follows
     follow_sources = request.args.get("follow_sources", "").strip()
     follow_topics  = request.args.get("follow_topics", "").strip()
-    
+
     page_size = min(page_size, 100)
-    
+
+    # Validate sentiment to only allow known emoji values
+    if sentiment and sentiment not in ('🟢', '🔴', '⚪'):
+        sentiment = ''
+
     cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{q}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
-    
+
     conn = get_db()
-    if ids:
-        # Fetch specific clusters (Bookmarks)
-        cluster_ids = [cid.strip() for cid in ids.split(',') if cid.strip()]
-        rows = conn.execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
-            (cluster_ids,)
-        ).fetchall()
-    elif q:
-        # Full Text Search using the new search_vector
-        sql = """
-            SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
-            FROM articles
-            WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-            ORDER BY rank DESC, created_at DESC
-            LIMIT 100
-        """
-        rows = conn.execute(sql, (q, q)).fetchall()
-    else:
-        sql = "SELECT * FROM articles WHERE 1=1"
-        params = []
-        
-        if follow_sources or follow_topics:
-            # Personalized "For Me" logic
-            sub_clauses = []
-            if follow_sources:
-                sources_list = [s.strip() for s in follow_sources.split(',') if s.strip()]
-                sub_clauses.append("source = ANY(%s)")
-                params.append(sources_list)
-            if follow_topics:
-                topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
-                sub_clauses.append("topic = ANY(%s)")
-                params.append(topics_list)
-            
-            if sub_clauses:
-                sql += " AND (" + " OR ".join(sub_clauses) + ")"
+    try:
+        if ids:
+            # Fetch specific clusters (Bookmarks)
+            cluster_ids = [cid.strip() for cid in ids.split(',') if cid.strip()]
+            rows = conn.execute(
+                "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                (cluster_ids,)
+            ).fetchall()
+        elif q:
+            # Full Text Search using the new search_vector
+            sql = """
+                SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
+                FROM articles
+                WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+                ORDER BY rank DESC, created_at DESC
+                LIMIT 100
+            """
+            rows = conn.execute(sql, (q, q)).fetchall()
         else:
-            # Regular Filters
-            if country and country != '🇲🇰':
-                sql += " AND country = %s"
-                params.append(country)
-            if sub:
-                sql += " AND subcategory = %s"
-                params.append(sub)
-            if topic:
-                sql += " AND topic = %s"
-                params.append(topic)
-        
-        if sentiment:
-            sql += " AND summary LIKE %s"
-            params.append(f"%{sentiment}%")
-            
-        # Fetch enough articles to fill requested page (estimate: page_size * 3 articles per cluster)
-        # but always fetch at least 200 to ensure accurate scoring
-        fetch_limit = max(200, (page + 1) * page_size * 3)
-        fetch_limit = min(fetch_limit, 500)
-        sql += f" ORDER BY created_at DESC LIMIT {fetch_limit}"
-        rows = conn.execute(sql, tuple(params)).fetchall()
-    
-    # Group by cluster and add reading time
-    clusters = defaultdict(list)
-    for r in rows:
-        d = dict(r)
-        d['reading_time'] = calculate_reading_time(d.get('description', ''))
-        clusters[r['cluster_id']].append(d)
+            sql = "SELECT * FROM articles WHERE 1=1"
+            params = []
 
-    cluster_ids_found = list(clusters.keys())
+            if follow_sources or follow_topics:
+                # Personalized "For Me" logic
+                sub_clauses = []
+                if follow_sources:
+                    sources_list = [s.strip() for s in follow_sources.split(',') if s.strip()]
+                    sub_clauses.append("source = ANY(%s)")
+                    params.append(sources_list)
+                if follow_topics:
+                    topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
+                    sub_clauses.append("topic = ANY(%s)")
+                    params.append(topics_list)
 
-    # Synthesis cache for only the clusters found
-    cached_synthesis_ids = set()
-    if cluster_ids_found:
-        s_rows = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids_found,)).fetchall()
-        cached_synthesis_ids = {r["cluster_id"] for r in s_rows}
+                if sub_clauses:
+                    sql += " AND (" + " OR ".join(sub_clauses) + ")"
+            else:
+                # Regular Filters
+                if country and country != '🇲🇰':
+                    sql += " AND country = %s"
+                    params.append(country)
+                if sub:
+                    sql += " AND subcategory = %s"
+                    params.append(sub)
+                if topic:
+                    sql += " AND topic = %s"
+                    params.append(topic)
 
-    # Fetch all reactions for these clusters
-    reactions_map = defaultdict(lambda: defaultdict(int))
-    if cluster_ids_found:
-        react_rows = conn.execute("SELECT cluster_id, emoji, count FROM reactions WHERE cluster_id = ANY(%s)", (cluster_ids_found,)).fetchall()
-        for rr in react_rows:
-            reactions_map[rr["cluster_id"]][rr["emoji"]] = rr["count"]
+            if sentiment:
+                sql += " AND summary LIKE %s"
+                params.append(f"%{sentiment}%")
 
-    conn.close()
+            # Fetch enough articles to fill requested page (estimate: page_size * 3 articles per cluster)
+            # but always fetch at least 200 to ensure accurate scoring
+            fetch_limit = max(200, (page + 1) * page_size * 3)
+            fetch_limit = min(fetch_limit, 500)
+            sql += f" ORDER BY created_at DESC LIMIT {fetch_limit}"
+            rows = conn.execute(sql, tuple(params)).fetchall()
 
-    ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    
-    if sort_by == 'popular':
-        sorted_clusters = sorted(ranked_clusters, key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
-    else:
-        sorted_clusters = sorted(ranked_clusters, key=score_cluster, reverse=True)
+        # Group by cluster and add reading time
+        clusters = defaultdict(list)
+        for r in rows:
+            d = dict(r)
+            d['reading_time'] = calculate_reading_time(d.get('description', ''))
+            clusters[r['cluster_id']].append(d)
 
-    result = []
-    for arts in sorted_clusters:
-        s   = score_cluster(arts)
-        cid = arts[0]["cluster_id"] if arts else None
-        total_clicks = sum(a.get("clicks", 0) or 0 for a in arts)
-        result.append({
-            "articles":      arts,
-            "score":         round(s, 3),
-            "clicks":        total_clicks,
-            "cluster_id":    cid,
-            "reactions":     reactions_map.get(cid, {}),
-            "is_breaking":   s >= BREAKING_SCORE_THRESHOLD,
-            "has_summary":   any(a.get("summary") for a in arts),
-            "has_synthesis": cid in cached_synthesis_ids,
-        })
+        cluster_ids_found = list(clusters.keys())
 
-    start  = page * page_size
-    end    = start + page_size
-    paged  = result[start:end]
-    result_data = {
-        "clusters":    paged,
-        "page":        page,
-        "page_size":   page_size,
-        "total":       len(result),
-        "has_more":    end < len(result),
-    }
-    set_cache(cache_key, result_data, ttl=60)
-    return jsonify(result_data)
+        # Synthesis cache for only the clusters found
+        cached_synthesis_ids = set()
+        if cluster_ids_found:
+            s_rows = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids_found,)).fetchall()
+            cached_synthesis_ids = {r["cluster_id"] for r in s_rows}
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+
+        if sort_by == 'popular':
+            sorted_clusters = sorted(ranked_clusters, key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
+        else:
+            sorted_clusters = sorted(ranked_clusters, key=score_cluster, reverse=True)
+
+        result = []
+        for arts in sorted_clusters:
+            s   = score_cluster(arts)
+            cid = arts[0]["cluster_id"] if arts else None
+            total_clicks = sum(a.get("clicks", 0) or 0 for a in arts)
+            result.append({
+                "articles":      arts,
+                "score":         round(s, 3),
+                "clicks":        total_clicks,
+                "cluster_id":    cid,
+                "is_breaking":   s >= BREAKING_SCORE_THRESHOLD,
+                "has_summary":   any(a.get("summary") for a in arts),
+                "has_synthesis": cid in cached_synthesis_ids,
+            })
+
+        start  = page * page_size
+        end    = start + page_size
+        paged  = result[start:end]
+
+        # Fetch reactions only for the paginated clusters
+        reactions_map = defaultdict(lambda: defaultdict(int))
+        paged_cids = [c["cluster_id"] for c in paged if c["cluster_id"]]
+        if paged_cids:
+            react_rows = conn.execute("SELECT cluster_id, emoji, count FROM reactions WHERE cluster_id = ANY(%s)", (paged_cids,)).fetchall()
+            for rr in react_rows:
+                reactions_map[rr["cluster_id"]][rr["emoji"]] = rr["count"]
+        for c in paged:
+            c["reactions"] = reactions_map.get(c["cluster_id"], {})
+
+        result_data = {
+            "clusters":    paged,
+            "page":        page,
+            "page_size":   page_size,
+            "total":       len(result),
+            "has_more":    end < len(result),
+        }
+        set_cache(cache_key, result_data, ttl=60)
+        return jsonify(result_data)
+    except Exception as e:
+        import logging
+        logging.getLogger("presek").error(f"[api/news] {e}")
+        return jsonify({"clusters": [], "page": page, "page_size": page_size, "total": 0, "has_more": False, "error": "Серверска грешка"}), 500
+    finally:
+        conn.close()
 
 
 @api_bp.route("/api/scores")
@@ -278,15 +290,16 @@ def api_search():
 def api_top10():
     """Alias for news ticker data."""
     conn = get_db()
-    # Fetch top 10 clusters from last 24h
-    sql = "SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 300"
-    rows = conn.execute(sql).fetchall()
-    conn.close()
-    
+    try:
+        sql = "SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 300"
+        rows = conn.execute(sql).fetchall()
+    finally:
+        conn.close()
+
     clusters = defaultdict(list)
     for r in rows:
         clusters[r['cluster_id']].append(dict(r))
-        
+
     ranked = []
     for cid, arts in clusters.items():
         sorted_arts = rank_articles_in_cluster(arts)
@@ -588,31 +601,34 @@ def api_sources_reliability():
 def api_trending_entities():
     from tasks import _normalize_entity
     conn = get_db()
-    # Find most frequent entities in clusters from last 24h
-    sql = """
-        SELECT e.entity_name, e.entity_type, COUNT(DISTINCT e.cluster_id) as mentions
-        FROM cluster_entities e
-        JOIN articles a ON e.cluster_id = a.cluster_id
-        WHERE a.created_at >= NOW() - INTERVAL '24 hours'
-        GROUP BY e.entity_name, e.entity_type
-        ORDER BY mentions DESC
-        LIMIT 50
-    """
-    rows = conn.execute(sql).fetchall()
-    conn.close()
+    try:
+        sql = """
+            SELECT e.entity_name, e.entity_type, COUNT(DISTINCT e.cluster_id) as mentions
+            FROM cluster_entities e
+            JOIN articles a ON e.cluster_id = a.cluster_id
+            WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+            GROUP BY e.entity_name, e.entity_type
+            ORDER BY mentions DESC
+            LIMIT 50
+        """
+        rows = conn.execute(sql).fetchall()
 
-    # Deduplicate via normalization (merge Latin/Cyrillic variants)
-    merged: dict[str, dict] = {}
-    for r in rows:
-        name, etype = _normalize_entity(r['entity_name'], r['entity_type'])
-        key = name.lower()
-        if key in merged:
-            merged[key]['mentions'] += r['mentions']
-        else:
-            merged[key] = {'entity_name': name, 'entity_type': etype, 'mentions': r['mentions']}
+        # Deduplicate via normalization (merge Latin/Cyrillic variants)
+        merged: dict[str, dict] = {}
+        for r in rows:
+            name, etype = _normalize_entity(r['entity_name'], r['entity_type'])
+            key = name.lower()
+            if key in merged:
+                merged[key]['mentions'] += r['mentions']
+            else:
+                merged[key] = {'entity_name': name, 'entity_type': etype, 'mentions': r['mentions']}
 
-    results = sorted(merged.values(), key=lambda x: x['mentions'], reverse=True)[:15]
-    return jsonify(results)
+        results = sorted(merged.values(), key=lambda x: x['mentions'], reverse=True)[:15]
+        return jsonify(results)
+    except Exception:
+        return jsonify([])
+    finally:
+        conn.close()
 
 @api_bp.route("/api/ai/entity_info/<name>")
 def api_ai_entity_info(name: str):
