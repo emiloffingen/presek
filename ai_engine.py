@@ -90,7 +90,9 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
         urls_to_try = []
         if CF_AI_GATEWAY_URL:
             gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-            urls_to_try.append((f"{gateway_base}/google-ai-studio/v1beta/models/gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}", {"cf-aig-cache": "true"}))
+            # Extract model name from GEMINI_URL to stay in sync
+            gw_model = GEMINI_URL.rsplit("/models/", 1)[-1].split(":")[0] if "/models/" in GEMINI_URL else "gemini-2.5-flash"
+            urls_to_try.append((f"{gateway_base}/google-ai-studio/v1/models/{gw_model}:generateContent?key={GOOGLE_API_KEY}", {"cf-aig-cache": "true"}))
         urls_to_try.append((direct_url, {}))
 
         for url, extra_headers in urls_to_try:
