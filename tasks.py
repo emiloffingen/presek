@@ -1,6 +1,8 @@
 import logging
 import datetime
+import re as _re
 import time
+from collections import Counter
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
@@ -240,10 +242,154 @@ def generate_cluster_metadata_task():
         if conn:
             conn.close()
 
+# ── Entity normalization map (Latin → Cyrillic canonical, case-insensitive lookup) ──
+ENTITY_ALIASES: dict[str, tuple[str, str]] = {
+    # (canonical_name, entity_type)
+    "donald trump":         ("Доналд Трамп", "PERSON"),
+    "trump":                ("Доналд Трамп", "PERSON"),
+    "трамп":                ("Доналд Трамп", "PERSON"),
+    "putin":                ("Владимир Путин", "PERSON"),
+    "путин":                ("Владимир Путин", "PERSON"),
+    "vladimir putin":       ("Владимир Путин", "PERSON"),
+    "biden":                ("Џо Бајден", "PERSON"),
+    "бајден":               ("Џо Бајден", "PERSON"),
+    "joe biden":            ("Џо Бајден", "PERSON"),
+    "zelensky":             ("Володимир Зеленски", "PERSON"),
+    "zelenskyy":            ("Володимир Зеленски", "PERSON"),
+    "зеленски":             ("Володимир Зеленски", "PERSON"),
+    "macron":               ("Емануел Макрон", "PERSON"),
+    "макрон":               ("Емануел Макрон", "PERSON"),
+    "erdogan":              ("Реџеп Ердоган", "PERSON"),
+    "ердоган":              ("Реџеп Ердоган", "PERSON"),
+    "vucic":                ("Александар Вучиќ", "PERSON"),
+    "вучиќ":                ("Александар Вучиќ", "PERSON"),
+    "vučić":                ("Александар Вучиќ", "PERSON"),
+    "мицкоски":             ("Христијан Мицкоски", "PERSON"),
+    "mickoski":             ("Христијан Мицкоски", "PERSON"),
+    "ковачевски":           ("Димитар Ковачевски", "PERSON"),
+    "kovachevski":          ("Димитар Ковачевски", "PERSON"),
+    "пендаровски":          ("Стево Пендаровски", "PERSON"),
+    "pendarovski":          ("Стево Пендаровски", "PERSON"),
+    "сиљановска":           ("Гордана Сиљановска-Давкова", "PERSON"),
+    "сиљановска-давкова":   ("Гордана Сиљановска-Давкова", "PERSON"),
+    # Organizations
+    "nato":                 ("НАТО", "ORG"),
+    "нато":                 ("НАТО", "ORG"),
+    "eu":                   ("ЕУ", "ORG"),
+    "еу":                   ("ЕУ", "ORG"),
+    "european union":       ("ЕУ", "ORG"),
+    "un":                   ("ОН", "ORG"),
+    "united nations":       ("ОН", "ORG"),
+    "who":                  ("СЗО", "ORG"),
+    "сзо":                  ("СЗО", "ORG"),
+    "вмро-дпмне":           ("ВМРО-ДПМНЕ", "ORG"),
+    "vmro-dpmne":           ("ВМРО-ДПМНЕ", "ORG"),
+    "сдсм":                 ("СДСМ", "ORG"),
+    "sdsm":                 ("СДСМ", "ORG"),
+    "собрание":             ("Собрание", "ORG"),
+    "влада":                ("Влада", "ORG"),
+    "democrats":            ("Демократи", "ORG"),
+    "republicans":          ("Републиканци", "ORG"),
+}
+
+def _normalize_entity(name: str, etype: str) -> tuple[str, str]:
+    """Normalize entity name via alias map, return (canonical_name, type)."""
+    key = name.lower().strip()
+    if key in ENTITY_ALIASES:
+        return ENTITY_ALIASES[key]
+    return name.strip(), etype.strip()
+
+
+# Pattern for Cyrillic proper noun sequences (2-3 capitalized words)
+_CYRILLIC_NAME_RE = _re.compile(
+    r'\b([А-ШЃЅЈЉЊЌЏа-шѓѕјљњќџ]*[А-ШЃЅЈЉЊЌЏ][а-шѓѕјљњќџ]{2,})'
+    r'(?:\s+([А-ШЃЅЈЉЊЌЏа-шѓѕјљњќџ]*[А-ШЃЅЈЉЊЌЏ][а-шѓѕјљњќџ]{2,})){1,2}'
+)
+
+# Known MK org patterns
+_ORG_KEYWORDS = {
+    'влада', 'собрание', 'совет', 'министерство', 'суд', 'полиција',
+    'комисија', 'агенција', 'фонд', 'партија', 'странка',
+    'вмро-дпмне', 'сдсм', 'левица', 'алтернатива', 'дуи',
+}
+
+# Known locations / geographic names to filter out (not persons)
+_LOCATION_NAMES = {
+    'блискиот исток', 'кисела вода', 'ново лисиче', 'гази баба',
+    'ѓорче петров', 'карпош', 'центар', 'аеродром', 'чаир', 'бутел',
+    'шуто оризари', 'сарај', 'голема албанија', 'северна македонија',
+    'саудиска арабија', 'нова зеландија', 'јужна кореја', 'северна кореја',
+    'средна африка', 'западен балкан', 'источна европа', 'западна европа',
+    'централна азија', 'јужна америка', 'северна америка',
+    'стара чаршија', 'матка', 'водно', 'скопска црна гора',
+    'охридско езеро', 'стар град', 'нови сад', 'бања лука',
+    'црна гора', 'светиот гроб', 'света софија', 'свети николе',
+    'нова година', 'стара година', 'велигденски празници',
+    'европска унија', 'обединети нации',
+}
+
+# Title/role prefixes to strip from entity names
+_TITLE_PREFIXES = _re.compile(
+    r'^(Претседателот|Премиерот|Министерот|Градоначалникот|Обвинителот|Обвинителката|'
+    r'Амбасадорот|Портпаролот|Директорот|Професорот|Генералот|Папата|'
+    r'Претседателката|Министерката|Директорката|Портпаролката|'
+    r'Обвинетиот|Обвинетата|Осуденикот|Осудената|Судијата|'
+    r'Поранешниот|Поранешната|Актуелниот|Актуелната)\s+',
+    _re.UNICODE
+)
+
+def _extract_entities_local(titles: list[str]) -> list[tuple[str, str]]:
+    """
+    Fast regex-based entity extraction from a list of titles.
+    Returns [(name, type), ...] — no AI calls needed.
+    """
+    name_counts: Counter = Counter()
+
+    for title in titles:
+        if not title:
+            continue
+        # Find multi-word Cyrillic proper noun sequences
+        for m in _CYRILLIC_NAME_RE.finditer(title):
+            full = m.group(0).strip()
+            # Strip title/role prefixes ("Премиерот Мицкоски" → "Мицкоски" won't match 2-word,
+            # but "Претседателот Стево Пендаровски" → "Стево Пендаровски")
+            cleaned = _TITLE_PREFIXES.sub('', full).strip()
+            # After stripping, must still be a multi-word name
+            if ' ' not in cleaned:
+                continue
+            name_counts[cleaned] += 1
+
+    entities = []
+    seen = set()
+    for name, count in name_counts.most_common(20):
+        if count < 1:
+            continue
+        lower = name.lower()
+        # Skip known locations
+        if lower in _LOCATION_NAMES:
+            continue
+        if lower in seen:
+            continue
+        # Determine type
+        if any(kw in lower for kw in _ORG_KEYWORDS):
+            etype = "ORG"
+        else:
+            etype = "PERSON"
+        canonical, etype = _normalize_entity(name, etype)
+        if canonical.lower() in seen:
+            continue
+        seen.add(canonical.lower())
+        entities.append((canonical, etype))
+
+    return entities
+
+
 @celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def extract_entities_task():
     """
-    Background task to extract key personalities and organizations from top clusters.
+    Two-phase entity extraction:
+    1. Fast local regex pass on ALL clusters (no AI cost)
+    2. AI-powered extraction for top clusters (richer context with multiple titles)
     """
     conn = None
     try:
@@ -251,21 +397,52 @@ def extract_entities_task():
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
 
-        # Get clusters from last 24h that don't have entities yet
-        rows = conn.execute("""
-            SELECT DISTINCT ON (cluster_id) cluster_id, title, description
-            FROM articles a
+        # ── Phase 1: Fast local extraction for all clusters without entities ──
+        local_rows = conn.execute("""
+            SELECT cluster_id, array_agg(title) as titles
+            FROM articles
             WHERE created_at >= %s
-              AND NOT EXISTS (SELECT 1 FROM cluster_entities e WHERE e.cluster_id = a.cluster_id)
-            LIMIT 100
+              AND cluster_id IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM cluster_entities e WHERE e.cluster_id = articles.cluster_id)
+            GROUP BY cluster_id
         """, (cutoff,)).fetchall()
 
-        if not rows:
-            return
-
-        for r in rows:
+        local_count = 0
+        for r in local_rows:
             cid = r['cluster_id']
-            text = f"Title: {r['title']}\nDescription: {r['description']}"
+            titles = r['titles'] or []
+            entities = _extract_entities_local(titles)
+            for name, etype in entities:
+                if name and len(name) >= 3:
+                    conn.execute(
+                        "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT (cluster_id, entity_name) DO NOTHING",
+                        (cid, name, etype)
+                    )
+            if entities:
+                local_count += 1
+        conn.commit()
+        log.info(f"[entities] Phase 1 (local): extracted entities for {local_count}/{len(local_rows)} clusters")
+
+        # ── Phase 2: AI extraction for top clusters (2+ sources, no entities yet or only local) ──
+        ai_rows = conn.execute("""
+            SELECT cluster_id, array_agg(DISTINCT title) as titles,
+                   array_agg(DISTINCT source) as sources,
+                   MAX(description) as description
+            FROM articles
+            WHERE created_at >= %s AND cluster_id IS NOT NULL
+            GROUP BY cluster_id
+            HAVING COUNT(DISTINCT source) >= 2
+              AND NOT EXISTS (SELECT 1 FROM cluster_entities e WHERE e.cluster_id = articles.cluster_id)
+            ORDER BY COUNT(*) DESC
+            LIMIT 30
+        """, (cutoff,)).fetchall()
+
+        for r in ai_rows:
+            cid = r['cluster_id']
+            titles = r['titles'] or []
+            # Build richer context with multiple titles
+            titles_text = "\n".join(f"- {t}" for t in titles[:6])
+            text = f"Наслови:\n{titles_text}\nОпис: {r['description'] or ''}"
 
             res, tier = _call_ai(text, ENTITY_EXTRACTION_PROMPT, max_tokens=500, json_mode=True, task_type="entity")
             if res:
@@ -276,13 +453,15 @@ def extract_entities_task():
                         name = ent.get('name', '').strip()
                         etype = ent.get('type', 'PERSON').strip()
                         if name:
+                            name, etype = _normalize_entity(name, etype)
                             conn.execute(
                                 "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT (cluster_id, entity_name) DO NOTHING",
                                 (cid, name, etype)
                             )
                     conn.commit()
                 except Exception as e:
-                    log.warning(f"[entities] Failed to parse for {cid}: {e}")
+                    log.warning(f"[entities] Failed to parse AI response for {cid}: {e}")
+        log.info(f"[entities] Phase 2 (AI): processed {len(ai_rows)} multi-source clusters")
     except Exception as e:
         log.error(f"Entity extraction task failed: {e}")
     finally:

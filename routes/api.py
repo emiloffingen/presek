@@ -586,6 +586,7 @@ def api_sources_reliability():
 
 @api_bp.route("/api/trending/entities")
 def api_trending_entities():
+    from tasks import _normalize_entity
     conn = get_db()
     # Find most frequent entities in clusters from last 24h
     sql = """
@@ -595,11 +596,23 @@ def api_trending_entities():
         WHERE a.created_at >= NOW() - INTERVAL '24 hours'
         GROUP BY e.entity_name, e.entity_type
         ORDER BY mentions DESC
-        LIMIT 15
+        LIMIT 50
     """
     rows = conn.execute(sql).fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+
+    # Deduplicate via normalization (merge Latin/Cyrillic variants)
+    merged: dict[str, dict] = {}
+    for r in rows:
+        name, etype = _normalize_entity(r['entity_name'], r['entity_type'])
+        key = name.lower()
+        if key in merged:
+            merged[key]['mentions'] += r['mentions']
+        else:
+            merged[key] = {'entity_name': name, 'entity_type': etype, 'mentions': r['mentions']}
+
+    results = sorted(merged.values(), key=lambda x: x['mentions'], reverse=True)[:15]
+    return jsonify(results)
 
 @api_bp.route("/api/ai/entity_info/<name>")
 def api_ai_entity_info(name: str):
