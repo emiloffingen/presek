@@ -467,6 +467,35 @@ def api_ai_ask():
     except Exception as e:
         return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 500
 
+@api_bp.route("/api/chat_cluster", methods=["POST"])
+def api_chat_cluster():
+    data = request.json
+    cid = data.get("cluster_id")
+    query = data.get("query", "").strip()
+    
+    if not cid or not query:
+        return jsonify({"error": "Невалидно прашање."}), 400
+        
+    conn = get_db()
+    rows = conn.execute("SELECT source, title, description FROM articles WHERE cluster_id = %s", (cid,)).fetchall()
+    conn.close()
+    
+    if not rows:
+        return jsonify({"error": "Веста не е пронајдена."}), 404
+        
+    context_items = []
+    for r in rows:
+        context_items.append(f"ИЗВОР: {r['source']} | НАСЛОВ: {r['title']} | ОПИС: {r['description'] or ''}")
+    
+    context_text = "\n---\n".join(context_items)
+    
+    from ai_engine import _call_ai
+    system_prompt = "Ти си истражувачки асистент на вести. Врз основа на дадените извори за овој настан, одговори на прашањето на корисникот на македонски јазик. Биди објективен, детален и наведи ги изворите каде што е можно. Ако изворите не содржат информации за прашањето, кажи го тоа."
+    
+    answer, tier = _call_ai(f"КОНТЕКСТ:\n{context_text}\n\nПРАШАЊЕ: {query}", system_prompt, max_tokens=1500, task_type="ai_ask")
+    if answer:
+        return jsonify({"response": answer})
+    return jsonify({"error": "AI сервисот не е достапен."}), 503
 
 @api_bp.route("/api/ai/factcheck/<cluster_id>")
 def api_ai_factcheck(cluster_id: str):

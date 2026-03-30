@@ -237,4 +237,8 @@ SOURCE_CATEGORIES = {
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 
+# ── Telegram Configuration ───────────────────────────────────────
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") # Default channel or admin ID
+
 

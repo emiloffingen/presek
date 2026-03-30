@@ -160,11 +160,10 @@ def cluster_page(cluster_id: str):
     elif articles[0]["description"]:
         description = articles[0]["description"][:200]
 
-    cluster_image = next((a["image_url"] for a in articles if a.get("image_url")), None)
     meta = {
         "title": articles[0]["title"],
         "description": description,
-        "image": cluster_image,
+        "image": f"https://presek.mk/og/cluster/{cluster_id}.svg",
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 
@@ -254,4 +253,49 @@ def og_image():
     count = conn.execute("SELECT COUNT(DISTINCT source) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'").fetchone()[0]
     conn.close()
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#151310"/><rect x="0" y="0" width="1200" height="6" fill="#c04040"/><text x="600" y="260" font-family="Georgia,serif" font-size="96" font-weight="bold" text-anchor="middle" fill="#c9a030">ПРЕСЕК</text><text x="600" y="340" font-family="sans-serif" font-size="32" text-anchor="middle" fill="#d4c8a8">Македонски агрегатор на вести</text><text x="600" y="420" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#8a7c62">{count}+ извори · AI резимеа · Ажурирано на 5 мин</text><rect x="0" y="624" width="1200" height="6" fill="#c04040"/></svg>"""
+    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
+
+@views_bp.route("/og/cluster/<cluster_id>.svg")
+def cluster_og_image(cluster_id):
+    conn = get_db()
+    row = conn.execute("SELECT title FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,)).fetchone()
+    if not row:
+        conn.close()
+        return og_image()
+    
+    title = row["title"]
+    # Check if there's a generated image
+    img_path = f"static/generated/{cluster_id}.jpg"
+    has_image = os.path.exists(img_path)
+    
+    # Simple text wrapping for SVG
+    words = title.split()
+    lines = []
+    current_line = []
+    for word in words:
+        current_line.append(word)
+        if len(" ".join(current_line)) > 25:
+            lines.append(" ".join(current_line))
+            current_line = []
+    if current_line:
+        lines.append(" ".join(current_line))
+    lines = lines[:3] # Max 3 lines
+    
+    text_y = 350 if has_image else 280
+    text_content = ""
+    for i, line in enumerate(lines):
+        text_content += f'<text x="600" y="{text_y + (i*70)}" font-family="Georgia,serif" font-size="54" font-weight="bold" text-anchor="middle" fill="#ffffff">{line}</text>'
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+        <rect width="1200" height="630" fill="#0f1113"/>
+        <rect x="0" y="0" width="1200" height="8" fill="#e63946"/>
+        <text x="60" y="60" font-family="sans-serif" font-size="24" font-weight="900" fill="#e63946">ПРЕСЕК</text>
+        {f'<rect x="0" y="0" width="1200" height="300" fill="#1a1c1e"/><text x="600" y="160" font-family="sans-serif" font-size="20" text-anchor="middle" fill="#8a8d91">[ СЛИКА ОД НАСТАНОТ ]</text>' if not has_image else ''}
+        <g opacity="0.8">
+            <rect x="0" y="580" width="1200" height="50" fill="#1a1c1e"/>
+            <text x="600" y="612" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#8a8d91">Прочитајте повеќе на presek.mk • Вештачка Интелигенција • {datetime.datetime.now().strftime("%d.%m.%Y")}</text>
+        </g>
+        {text_content}
+    </svg>"""
+    conn.close()
     return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
