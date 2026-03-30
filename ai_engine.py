@@ -79,44 +79,52 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
     payload = json.dumps(payload_dict).encode("utf-8")
 
     # Routing through AI Gateway if available
-    final_url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
-    headers = {"Content-Type": "application/json"}
+    direct_url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
     
-    if CF_AI_GATEWAY_URL:
-        # https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/google-ai-studio/v1beta/models/{model}:generateContent
-        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-        final_url = f"{gateway_base}/google-ai-studio/v1beta/models/gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}"
-        headers["cf-aig-cache"] = "true"
-
     delays = [2, 4, 8]
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)
-        try:
-            t0 = time.time()
-            req = urllib.request.Request(final_url, data=payload, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw_res = resp.read().decode("utf-8")
-                data = json.loads(raw_res)
-            elapsed = round(time.time() - t0, 2)
+        
+        # Try Gateway first, then fallback to direct
+        urls_to_try = []
+        if CF_AI_GATEWAY_URL:
+            gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
+            urls_to_try.append((f"{gateway_base}/google-ai-studio/v1beta/models/gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}", {"cf-aig-cache": "true"}))
+        urls_to_try.append((direct_url, {}))
 
-            if "candidates" not in data or not data["candidates"]:
-                log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
+        for url, extra_headers in urls_to_try:
+            try:
+                t0 = time.time()
+                headers = {"Content-Type": "application/json"}
+                headers.update(extra_headers)
+                
+                req = urllib.request.Request(url, data=payload, headers=headers)
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    raw_res = resp.read().decode("utf-8")
+                    data = json.loads(raw_res)
+                elapsed = round(time.time() - t0, 2)
+
+                if "candidates" not in data or not data["candidates"]:
+                    log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
+                    return None
+
+                log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            except urllib.error.HTTPError as e:
+                elapsed = round(time.time() - t0, 2)
+                err_body = e.read().decode("utf-8") if e else ""
+                if e.code in (403, 404) and "gateway" in url:
+                    log.info(f"[gemini] Gateway error {e.code}, falling back to direct...")
+                    continue # Try direct URL
+                if e.code == 429:
+                    log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
+                    break # Go to next delay attempt
+                log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
                 return None
-
-            log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except urllib.error.HTTPError as e:
-            elapsed = round(time.time() - t0, 2)
-            err_body = e.read().decode("utf-8") if e else ""
-            if e.code == 429:
-                log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
-                continue
-            log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
-            break
-        except Exception as e:
-            log.warning(f"[gemini] Error: {e}")
-            break
+            except Exception as e:
+                log.warning(f"[gemini] Error: {e}")
+                return None
     return None
 
 def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
@@ -132,36 +140,46 @@ def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30)
         "max_tokens": 1000
     }).encode("utf-8")
 
-    final_url = CF_AI_URL
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
-    }
-
+    # Try Gateway first, fallback to direct
+    urls_to_try = []
     if CF_AI_GATEWAY_URL:
-        # https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/workers-ai/
         gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-        # Extract the model from the original URL
         model_part = CF_AI_URL.split("/ai/run/")[-1]
-        final_url = f"{gateway_base}/workers-ai/{model_part}"
-        headers["cf-aig-cache"] = "true"
+        urls_to_try.append((f"{gateway_base}/workers-ai/{model_part}", {"cf-aig-cache": "true"}))
+    urls_to_try.append((CF_AI_URL, {}))
 
-    try:
-        t0 = time.time()
-        req = urllib.request.Request(final_url, data=payload, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw_body = resp.read().decode("utf-8")
-            data = json.loads(raw_body)
-        elapsed = round(time.time() - t0, 2)
+    for url, extra_headers in urls_to_try:
+        try:
+            t0 = time.time()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
+            }
+            headers.update(extra_headers)
+            
+            req = urllib.request.Request(url, data=payload, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw_body = resp.read().decode("utf-8")
+                data = json.loads(raw_body)
+            elapsed = round(time.time() - t0, 2)
 
-        if data.get("success"):
-            log.info(f"[cloudflare] OK in {elapsed}s")
-            return data["result"]["response"].strip()
-        log.info(f"[cloudflare] Non-success response in {elapsed}s")
-        return None
-    except Exception as e:
-        log.warning(f"[cloudflare] Call failed: {e}")
-        return None
+            if data.get("success"):
+                log.info(f"[cloudflare] OK in {elapsed}s")
+                return data["result"]["response"].strip()
+            
+            if "gateway" in url:
+                log.info(f"[cloudflare] Gateway failed, falling back to direct...")
+                continue
+                
+            log.info(f"[cloudflare] Non-success response in {elapsed}s")
+            return None
+        except Exception as e:
+            if "gateway" in url:
+                log.info(f"[cloudflare] Gateway failed ({e}), falling back to direct...")
+                continue
+            log.warning(f"[cloudflare] Call failed: {e}")
+            return None
+    return None
 
 def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, api_url: str, model: str, provider_name: str, timeout: int = 30, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
     """Generic caller for OpenAI-compatible APIs (Groq, Cerebras, Mistral, OpenRouter)."""
@@ -179,57 +197,60 @@ def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, 
     if json_mode:
         payload_dict["response_format"] = {"type": "json_object"}
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-        "User-Agent": "Presek/1.0",
-    }
-    
-    final_url = api_url
-    if CF_AI_GATEWAY_URL:
-        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-        # Handle different provider path structures in AI Gateway
-        if provider_name == "groq":
-            final_url = f"{gateway_base}/groq/openai/v1/chat/completions"
-        elif provider_name == "mistral":
-            final_url = f"{gateway_base}/mistral/v1/chat/completions"
-        # OpenRouter doesn't have a direct gateway alias, 
-        # but we can still use the gateway as a generic proxy or just use it directly
-        
-        headers["cf-aig-cache"] = "true"
-
-    # OpenRouter requires extra headers
-    if provider_name == "openrouter":
-        headers["HTTP-Referer"] = "https://presek.mk"
-        headers["X-Title"] = "Presek News"
-
     payload = json.dumps(payload_dict).encode("utf-8")
 
-    try:
-        t0 = time.time()
-        req = urllib.request.Request(final_url, data=payload, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw_body = resp.read().decode("utf-8")
-            data = json.loads(raw_body)
-        elapsed = round(time.time() - t0, 2)
+    # Try Gateway first, fallback to direct
+    urls_to_try = []
+    if CF_AI_GATEWAY_URL:
+        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
+        gw_url = api_url
+        if provider_name == "groq":
+            gw_url = f"{gateway_base}/groq/openai/v1/chat/completions"
+        elif provider_name == "mistral":
+            gw_url = f"{gateway_base}/mistral/v1/chat/completions"
+        
+        if gw_url != api_url:
+            urls_to_try.append((gw_url, {"cf-aig-cache": "true"}))
+            
+    urls_to_try.append((api_url, {}))
 
-        choices = data.get("choices", [])
-        if choices and choices[0].get("message", {}).get("content"):
-            log.info(f"[{provider_name}] OK in {elapsed}s")
-            return choices[0]["message"]["content"].strip()
-        log.info(f"[{provider_name}] Empty response in {elapsed}s")
-        return None
-    except urllib.error.HTTPError as e:
-        err_body = ""
+    for url, extra_headers in urls_to_try:
         try:
-            err_body = e.read().decode("utf-8")[:200]
-        except Exception:
-            pass
-        log.warning(f"[{provider_name}] HTTP {e.code}: {err_body}")
-        return None
-    except Exception as e:
-        log.warning(f"[{provider_name}] Error: {e}")
-        return None
+            t0 = time.time()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "User-Agent": "Presek/1.0",
+            }
+            headers.update(extra_headers)
+            
+            # OpenRouter requires extra headers
+            if provider_name == "openrouter":
+                headers["HTTP-Referer"] = "https://presek.mk"
+                headers["X-Title"] = "Presek News"
+
+            req = urllib.request.Request(url, data=payload, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw_body = resp.read().decode("utf-8")
+                data = json.loads(raw_body)
+            elapsed = round(time.time() - t0, 2)
+
+            choices = data.get("choices", [])
+            if choices and choices[0].get("message", {}).get("content"):
+                log.info(f"[{provider_name}] OK in {elapsed}s")
+                return choices[0]["message"]["content"].strip()
+            
+            if "gateway" in url:
+                continue
+                
+            log.info(f"[{provider_name}] Empty response in {elapsed}s")
+            return None
+        except Exception as e:
+            if "gateway" in url:
+                continue
+            log.warning(f"[{provider_name}] Error: {e}")
+            return None
+    return None
 
 
 def _call_groq(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
@@ -438,7 +459,7 @@ def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
 
         ranked = []
         for cid, arts in clusters_map.items():
-            sorted_arts = rank_articles_fn(arts)
+            sorted_arts = rank_articles_in_cluster(arts)
             s = score_cluster_fn(sorted_arts)
             ranked.append((cid, sorted_arts, s))
         ranked.sort(key=lambda x: x[2], reverse=True)
