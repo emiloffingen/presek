@@ -161,6 +161,28 @@ def cluster_page(cluster_id: str):
 
     return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, perspectives=perspectives, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, year=datetime.datetime.now().year)
 
+@views_bp.after_request
+def add_cache_headers(response):
+    # Static files already handled or have specific headers
+    if request.path.startswith('/static/'):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+    # API and Proxy should have short or no cache
+    if request.path.startswith(('/api/', '/proxy')):
+        # We handle proxy caching separately in api.py, 
+        # but let's ensure we don't override it here if it's already set
+        if "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
+
+    # Main HTML pages: Cache at edge for 5 mins, browser for 1 min
+    # This allows Cloudflare to serve them instantly from the nearest POP
+    if response.status_code == 200:
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300"
+    
+    return response
+
 @views_bp.route("/manifest.json")
 def manifest():
     return current_app.send_static_file("manifest.json")

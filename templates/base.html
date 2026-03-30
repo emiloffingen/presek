@@ -544,6 +544,15 @@
             });
             
         document.addEventListener('DOMContentLoaded', () => {
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('SW Registered', reg.scope);
+                }).catch(err => {
+                    console.log('SW Failed', err);
+                });
+            }
+
             setTimeout(() => {
                 document.body.classList.add('theme-ready');
             }, 100);
