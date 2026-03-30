@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, Response, request, current_app, send_from_directory
 import datetime
 import os
+import math
 from database import get_db
 from utils import rank_articles_in_cluster, calculate_reading_time
 from config import SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
