@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="theme-color" id="themeMeta" content="#0B0C10">
+    <meta name="theme-color" id="themeMeta" content="#0F1113">
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     <link rel="apple-touch-icon" href="/static/logo.png">
     <link rel="manifest" href="/static/manifest.json">
@@ -35,7 +35,12 @@
         // Critical Theme Loader (No Flash)
         (function() {
             const saved = localStorage.getItem('theme');
-            if (saved === 'light') document.documentElement.classList.add('light');
+            if (saved === 'light') {
+                document.documentElement.classList.add('light');
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('themeMeta').setAttribute('content', '#F5F7F9');
+                });
+            }
         })();
     </script>
     {% block head %}{% endblock %}
@@ -394,9 +399,8 @@
             document.documentElement.classList.toggle('light');
             const isLight = document.documentElement.classList.contains('light');
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
-            document.getElementById('themeMeta').setAttribute('content', isLight ? '#F0F2F3' : '#0B0C10');
-        });
-
+            document.getElementById('themeMeta').setAttribute('content', isLight ? '#F5F7F9' : '#0F1113');
+            });
         // Search System
         const searchOpen = document.getElementById('searchOpen');
         const searchClose = document.getElementById('searchClose');

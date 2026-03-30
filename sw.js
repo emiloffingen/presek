@@ -1,8 +1,12 @@
 // Пресек — Service Worker
 // Caches the shell (HTML/CSS/JS) for instant loads; news always fetched fresh
 
-const CACHE = 'presek-v3';
-const SHELL = ['/'];
+const CACHE = 'presek-v5';
+const SHELL = [
+  '/',
+  '/static/modern.css',
+  '/static/logo.svg'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -29,11 +33,15 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Shell: cache-first with network fallback
+  // Assets and Shell: cache-first with network fallback
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      const clone = resp.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
+      // Don't cache dynamic pages (like cluster/123) unless we want offline reading
+      // For now, only cache what's in the shell or explicit static assets
+      if (resp && resp.status === 200 && e.request.method === 'GET') {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
       return resp;
     }))
   );

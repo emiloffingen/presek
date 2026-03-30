@@ -588,7 +588,12 @@
         }
     }
 
-    async function fetchEntities() {
+    function showEntityInfo(name) {
+        // We reuse the search functionality to show news about this person/org
+        searchTrend(name);
+    }
+
+    async function fetchTrending() {
         try {
             const res = await fetch('/api/trending/entities');
             const data = await res.json();

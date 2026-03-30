@@ -42,10 +42,6 @@ celery_app.conf.update(
             'task': 'tasks.backfill_cover_art_task',
             'schedule': 600.0,  # Every 10 minutes — generate covers for imageless clusters
         },
-        'sync-top-news-to-d1': {
-            'task': 'tasks.sync_top_news_to_d1_task',
-            'schedule': 600.0, # Every 10 minutes
-        },
         'send-telegram-briefing': {
             'task': 'tasks.send_telegram_briefing_task',
             'schedule': crontab(hour=7, minute=5), # Run daily at 7:05 AM UTC (8:05 AM local)

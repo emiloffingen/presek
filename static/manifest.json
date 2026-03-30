@@ -1,18 +1,47 @@
 {
   "name": "Пресек — Македонски Вести",
   "short_name": "Пресек",
-  "description": "Дневен преглед на македонски вести",
+  "description": "Најнапреден македонски агрегатор на вести.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#141618",
-  "theme_color": "#141618",
-  "orientation": "portrait-primary",
+  "background_color": "#0F1113",
+  "theme_color": "#0F1113",
+  "orientation": "portrait",
   "icons": [
+    {
+      "src": "/static/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/static/logo.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "/static/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["news", "politics"],
+  "shortcuts": [
+    {
+      "name": "Дневен Брифинг",
+      "short_name": "Брифинг",
+      "description": "Брз преглед на денот",
+      "url": "/briefing",
+      "icons": [{ "src": "/static/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Архива",
+      "short_name": "Архива",
+      "description": "Пребарајте ги минатите денови",
+      "url": "/arhiva",
+      "icons": [{ "src": "/static/logo.png", "sizes": "192x192" }]
     }
   ]
 }

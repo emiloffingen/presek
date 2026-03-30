@@ -9,7 +9,6 @@ from collections import defaultdict
 
 from config import (
     GOOGLE_API_KEY, GEMINI_URL,
-    CLOUDFLARE_API_TOKEN, CF_AI_URL, CF_AI_GATEWAY_URL,
     AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
     GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
@@ -78,108 +77,40 @@ def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_to
 
     payload = json.dumps(payload_dict).encode("utf-8")
 
-    # Routing through AI Gateway if available
-    direct_url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
+    # Direct API URL
+    url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
     
     delays = [2, 4, 8]
     for attempt, delay in enumerate([0] + delays):
         if delay:
             time.sleep(delay)
         
-        # Try Gateway first, then fallback to direct
-        urls_to_try = []
-        if CF_AI_GATEWAY_URL:
-            gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-            # Extract model name from GEMINI_URL to stay in sync
-            gw_model = GEMINI_URL.rsplit("/models/", 1)[-1].split(":")[0] if "/models/" in GEMINI_URL else "gemini-2.5-flash"
-            urls_to_try.append((f"{gateway_base}/google-ai-studio/v1/models/{gw_model}:generateContent?key={GOOGLE_API_KEY}", {"cf-aig-cache": "true"}))
-        urls_to_try.append((direct_url, {}))
-
-        for url, extra_headers in urls_to_try:
-            try:
-                t0 = time.time()
-                headers = {"Content-Type": "application/json"}
-                headers.update(extra_headers)
-                
-                req = urllib.request.Request(url, data=payload, headers=headers)
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    raw_res = resp.read().decode("utf-8")
-                    data = json.loads(raw_res)
-                elapsed = round(time.time() - t0, 2)
-
-                if "candidates" not in data or not data["candidates"]:
-                    log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
-                    return None
-
-                log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            except urllib.error.HTTPError as e:
-                elapsed = round(time.time() - t0, 2)
-                err_body = e.read().decode("utf-8") if e else ""
-                if e.code in (403, 404) and "gateway" in url:
-                    log.info(f"[gemini] Gateway error {e.code}, falling back to direct...")
-                    continue # Try direct URL
-                if e.code == 429:
-                    log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
-                    break # Go to next delay attempt
-                log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
-                return None
-            except Exception as e:
-                log.warning(f"[gemini] Error: {e}")
-                return None
-    return None
-
-def _call_cloudflare_ai(prompt_text: str, system_prompt: str, timeout: int = 30) -> str | None:
-    """Call Cloudflare Workers AI REST API."""
-    if not CLOUDFLARE_API_TOKEN:
-        return None
-
-    payload = json.dumps({
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Input: {prompt_text}"}
-        ],
-        "max_tokens": 1000
-    }).encode("utf-8")
-
-    # Try Gateway first, fallback to direct
-    urls_to_try = []
-    if CF_AI_GATEWAY_URL:
-        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-        model_part = CF_AI_URL.split("/ai/run/")[-1]
-        urls_to_try.append((f"{gateway_base}/workers-ai/{model_part}", {"cf-aig-cache": "true"}))
-    urls_to_try.append((CF_AI_URL, {}))
-
-    for url, extra_headers in urls_to_try:
         try:
             t0 = time.time()
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"
-            }
-            headers.update(extra_headers)
+            headers = {"Content-Type": "application/json"}
             
             req = urllib.request.Request(url, data=payload, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw_body = resp.read().decode("utf-8")
-                data = json.loads(raw_body)
+                raw_res = resp.read().decode("utf-8")
+                data = json.loads(raw_res)
             elapsed = round(time.time() - t0, 2)
 
-            if data.get("success"):
-                log.info(f"[cloudflare] OK in {elapsed}s")
-                return data["result"]["response"].strip()
-            
-            if "gateway" in url:
-                log.info(f"[cloudflare] Gateway failed, falling back to direct...")
+            if "candidates" not in data or not data["candidates"]:
+                log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
+                return None
+
+            log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            elapsed = round(time.time() - t0, 2)
+            err_body = e.read().decode("utf-8") if e else ""
+            if e.code == 429:
+                log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
                 continue
-                
-            log.info(f"[cloudflare] Non-success response in {elapsed}s")
+            log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
             return None
         except Exception as e:
-            if "gateway" in url:
-                log.info(f"[cloudflare] Gateway failed ({e}), falling back to direct...")
-                continue
-            log.warning(f"[cloudflare] Call failed: {e}")
+            log.warning(f"[gemini] Error: {e}")
             return None
     return None
 
@@ -201,57 +132,35 @@ def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, 
 
     payload = json.dumps(payload_dict).encode("utf-8")
 
-    # Try Gateway first, fallback to direct
-    urls_to_try = []
-    if CF_AI_GATEWAY_URL:
-        gateway_base = CF_AI_GATEWAY_URL.rstrip('/')
-        gw_url = api_url
-        if provider_name == "groq":
-            gw_url = f"{gateway_base}/groq/openai/v1/chat/completions"
-        elif provider_name == "mistral":
-            gw_url = f"{gateway_base}/mistral/v1/chat/completions"
+    try:
+        t0 = time.time()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "Presek/1.0",
+        }
         
-        if gw_url != api_url:
-            urls_to_try.append((gw_url, {"cf-aig-cache": "true"}))
-            
-    urls_to_try.append((api_url, {}))
+        # OpenRouter requires extra headers
+        if provider_name == "openrouter":
+            headers["HTTP-Referer"] = "https://presek.mk"
+            headers["X-Title"] = "Presek News"
 
-    for url, extra_headers in urls_to_try:
-        try:
-            t0 = time.time()
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-                "User-Agent": "Presek/1.0",
-            }
-            headers.update(extra_headers)
-            
-            # OpenRouter requires extra headers
-            if provider_name == "openrouter":
-                headers["HTTP-Referer"] = "https://presek.mk"
-                headers["X-Title"] = "Presek News"
+        req = urllib.request.Request(api_url, data=payload, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw_body = resp.read().decode("utf-8")
+            data = json.loads(raw_body)
+        elapsed = round(time.time() - t0, 2)
 
-            req = urllib.request.Request(url, data=payload, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw_body = resp.read().decode("utf-8")
-                data = json.loads(raw_body)
-            elapsed = round(time.time() - t0, 2)
-
-            choices = data.get("choices", [])
-            if choices and choices[0].get("message", {}).get("content"):
-                log.info(f"[{provider_name}] OK in {elapsed}s")
-                return choices[0]["message"]["content"].strip()
+        choices = data.get("choices", [])
+        if choices and choices[0].get("message", {}).get("content"):
+            log.info(f"[{provider_name}] OK in {elapsed}s")
+            return choices[0]["message"]["content"].strip()
             
-            if "gateway" in url:
-                continue
-                
-            log.info(f"[{provider_name}] Empty response in {elapsed}s")
-            return None
-        except Exception as e:
-            if "gateway" in url:
-                continue
-            log.warning(f"[{provider_name}] Error: {e}")
-            return None
+        log.info(f"[{provider_name}] Empty response in {elapsed}s")
+        return None
+    except Exception as e:
+        log.warning(f"[{provider_name}] Error: {e}")
+        return None
     return None
 
 
@@ -278,7 +187,6 @@ def _get_provider(name: str):
         "cerebras":   _call_cerebras,
         "mistral":    _call_mistral,
         "openrouter": _call_openrouter,
-        "cloudflare": _call_cloudflare_ai,
     }.get(name)
 
 # Task-type → ordered provider chain
@@ -303,7 +211,7 @@ TASK_ROUTING = {
     "categorize":   ["cerebras", "groq", "openrouter"],
 
     # Default fallback chain (same as original _call_ai)
-    "default":      ["gemini", "groq", "cerebras", "mistral", "openrouter", "cloudflare"],
+    "default":      ["gemini", "groq", "cerebras", "mistral", "openrouter"],
 }
 
 
@@ -342,11 +250,7 @@ def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens
         if not caller:
             continue
         try:
-            if provider_name == "cloudflare":
-                # Cloudflare has different signature (no max_tokens/json_mode)
-                result = caller(prompt_text, system_prompt, timeout=timeout)
-            else:
-                result = caller(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
+            result = caller(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
             if result:
                 return result, provider_name
         except Exception as e:

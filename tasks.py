@@ -7,7 +7,6 @@ from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN
-from cloudflare_d1 import sync_clusters_to_d1
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response, generate_cover_art
 from database import get_db
 from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
@@ -710,23 +709,6 @@ def translate_article_task(article_id: int, original_title: str, original_descri
     finally:
         if conn:
             conn.close()
-
-@celery_app.task
-def sync_top_news_to_d1_task():
-    """Fetches top 20 clusters and mirrors them to Cloudflare D1."""
-    import requests
-    from cloudflare_d1 import sync_clusters_to_d1
-    try:
-        # Fetch from local API
-        res = requests.get("http://localhost:5000/api/news?page_size=20", timeout=15)
-        if res.status_code == 200:
-            data = res.json()
-            clusters = data.get("clusters", [])
-            sync_clusters_to_d1(clusters)
-        else:
-            log.warning(f"[d1-sync] API responded with {res.status_code}")
-    except Exception as e:
-        log.error(f"[d1-sync] Sync failed: {e}")
 
 @celery_app.task
 def send_telegram_briefing_task():
