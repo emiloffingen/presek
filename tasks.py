@@ -127,10 +127,24 @@ def run_ingestion():
             for cid, arts in clusters_map.items():
                 sorted_arts = rank_articles_in_cluster(arts)
                 score = score_cluster(sorted_arts)
-                unique_sources = len({a["source"] for a in sorted_arts})
-                
-                if score >= BREAKING_SCORE_THRESHOLD or unique_sources >= 3:
-                    notifier.notify(sorted_arts[0]["title"], unique_sources, cid)
+                source_names = list({a["source"] for a in sorted_arts})
+
+                if score >= BREAKING_SCORE_THRESHOLD or len(source_names) >= 3:
+                    top = sorted_arts[0]
+                    # Use synthesis/description for extra detail
+                    desc = top.get("description") or ""
+                    if len(desc) > 300:
+                        desc = desc[:297] + "..."
+                    # Pick best image: prefer cover art, then any article image
+                    image = None
+                    for a in sorted_arts:
+                        if a.get("image_url"):
+                            image = a["image_url"]
+                            break
+                    notifier.notify(
+                        top["title"], len(source_names), cid,
+                        description=desc, sources=source_names, image_url=image,
+                    )
     except Exception as e:
         log.error(f"Notification check failed: {e}")
     
