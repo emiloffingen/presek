@@ -52,6 +52,48 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.2);
     
     --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Editorial Enhancements */
+    --font-nyt: 'Lora', serif;
+    --tracking-tight: -0.02em;
+    --tracking-wide: 0.05em;
+}
+
+/* Typography Polish */
+.nyt-title {
+    font-family: var(--font-nyt);
+    letter-spacing: var(--tracking-tight);
+    line-height: 1.1;
+    font-weight: 800;
+}
+
+.nyt-summary {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+
+.meta-info {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-muted);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reading-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.reading-time::before {
+    content: '•';
+    color: var(--border);
 }
 
 /* Light Mode Overrides */

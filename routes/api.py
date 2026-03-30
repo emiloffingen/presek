@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
 from database import get_db, get_db_size
-from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache
+from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 
 api_bp = Blueprint('api', __name__)
@@ -24,6 +24,7 @@ def api_news():
     sort_by   = request.args.get("sort", "recent")
     topic     = request.args.get("topic", "").strip()
     sentiment = request.args.get("sentiment", "").strip()
+    q         = request.args.get("q", "").strip()
     
     # Personalized Follows
     follow_sources = request.args.get("follow_sources", "").strip()
@@ -31,7 +32,7 @@ def api_news():
     
     page_size = min(page_size, 100)
     
-    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{page}:{page_size}"
+    cache_key = f"news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{q}:{page}:{page_size}"
     cached = cached_response(cache_key, ttl=30)
     if cached: return jsonify(cached)
     
@@ -43,6 +44,16 @@ def api_news():
             "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
             (cluster_ids,)
         ).fetchall()
+    elif q:
+        # Full Text Search using the new search_vector
+        sql = """
+            SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
+            FROM articles
+            WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+            ORDER BY rank DESC, created_at DESC
+            LIMIT 100
+        """
+        rows = conn.execute(sql, (q, q)).fetchall()
     else:
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []
@@ -84,10 +95,12 @@ def api_news():
         sql += f" ORDER BY created_at DESC LIMIT {fetch_limit}"
         rows = conn.execute(sql, tuple(params)).fetchall()
     
-    # Group by cluster
+    # Group by cluster and add reading time
     clusters = defaultdict(list)
     for r in rows:
-        clusters[r['cluster_id']].append(dict(r))
+        d = dict(r)
+        d['reading_time'] = calculate_reading_time(d.get('description', ''))
+        clusters[r['cluster_id']].append(d)
 
     cluster_ids_found = list(clusters.keys())
 

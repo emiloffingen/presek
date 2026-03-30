@@ -346,8 +346,8 @@
                         <span class="reliability-badge ${rel.class}">${rel.label}</span>
                         <span>•</span>
                         <span>${timeAgo(a.created_at)}</span>
+                        ${a.reading_time ? `<span class="reading-time">${a.reading_time} мин.</span>` : ''}
                         ${a.is_translated ? '<span class="translated-badge">AI ПРЕВОД</span>' : ''}
-                        
                         <button class="bookmark-btn ${isBookmarked(c.cluster_id) ? 'active' : ''}" 
                                 onclick="toggleBookmark(event, '${c.cluster_id}')" 
                                 title="Зачувај вест">
@@ -355,11 +355,12 @@
                                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path>
                             </svg>
                         </button>
-                    </div>
-                    <h3 class="story-headline">
+                        </div>
+                        <h3 class="story-headline nyt-title">
                         <a href="/cluster/${c.cluster_id}" onmousedown="trackClick('${a.id}')">${a.headline || a.title}</a>
-                    </h3>
-                    <p class="story-excerpt">${a.description || ''}</p>
+                        </h3>
+                        <p class="story-excerpt nyt-summary">${a.description || ''}</p>
+
                     
                     <div class="reaction-bar">${reactionHtml}</div>
 
@@ -414,7 +415,7 @@
             searchTimeout = setTimeout(async () => {
                 searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Пребарувам...</div>';
                 try {
-                    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                    const res = await fetch(`/api/news?q=${encodeURIComponent(q)}`);
                     const data = await res.json();
                     if (data.clusters && data.clusters.length) {
                         searchResults.innerHTML = data.clusters.map((c, i) => renderCard(c, i)).join('');

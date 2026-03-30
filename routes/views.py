@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, Response, request, current_app, se
 import datetime
 import os
 from database import get_db
-from utils import rank_articles_in_cluster
+from utils import rank_articles_in_cluster, calculate_reading_time
 from config import SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
 
 views_bp = Blueprint('views', __name__)
@@ -130,6 +130,14 @@ def cluster_page(cluster_id: str):
     
     articles = rank_articles_in_cluster([dict(r) for r in rows])
     
+    # Calculate reading times
+    total_reading_time = 0
+    for a in articles:
+        a['reading_time'] = calculate_reading_time(a.get('description', ''))
+        total_reading_time += a['reading_time']
+    # Average it for the cluster synthesis view
+    total_reading_time = max(1, math.ceil(total_reading_time / len(articles))) if articles else 1
+    
     # Calculate Source Distribution (Media Plurality)
     dist_map = {}
     for a in articles:
@@ -159,7 +167,7 @@ def cluster_page(cluster_id: str):
         "url": f"https://presek.mk/cluster/{cluster_id}"
     }
 
-    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, perspectives=perspectives, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, year=datetime.datetime.now().year)
+    return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, perspectives=perspectives, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, total_reading_time=total_reading_time, year=datetime.datetime.now().year)
 
 @views_bp.after_request
 def add_cache_headers(response):

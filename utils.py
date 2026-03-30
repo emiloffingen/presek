@@ -54,6 +54,12 @@ def check_rate_limit(ip: str) -> bool:
         # If Redis fails, fail open (allow request) to prevent blocking users during cache issues
         return True
 
+def calculate_reading_time(text: str) -> int:
+    """Estimates reading time in minutes (approx 200 wpm)."""
+    if not text: return 1
+    words = len(text.split())
+    return max(1, math.ceil(words / 200))
+
 def score_cluster(arts):
     """
     PageRank-style cluster importance score.

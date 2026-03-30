@@ -129,9 +129,31 @@ def init_db():
         cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS original_title TEXT DEFAULT ''")
         cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS original_description TEXT DEFAULT ''")
         cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_translated INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS search_vector tsvector")
         conn.commit()
     except:
         conn.rollback()
+
+    # Trigger for automatic search vector updates
+    cur.execute("""
+        CREATE OR REPLACE FUNCTION articles_search_trigger() RETURNS trigger AS $$
+        begin
+          new.search_vector :=
+            setweight(to_tsvector('simple', coalesce(new.title,'')), 'A') ||
+            setweight(to_tsvector('simple', coalesce(new.description,'')), 'B');
+          return new;
+        end
+        $$ LANGUAGE plpgsql;
+    """)
+    cur.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'tsvectorupdate') THEN
+                CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE
+                ON articles FOR EACH ROW EXECUTE FUNCTION articles_search_trigger();
+            END IF;
+        END $$;
+    """)
 
     cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
         cluster_id TEXT PRIMARY KEY,

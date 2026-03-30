@@ -215,7 +215,7 @@
     <article class="cluster-content">
         <header class="cluster-header fade-in">
             <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
-            <h1 class="cluster-headline">{{ articles[0].title }}</h1>
+            <h1 class="cluster-headline nyt-title">{{ articles[0].title }}</h1>
             
             {% if tags %}
             <div class="cluster-tags" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:var(--space-md)">
@@ -225,10 +225,13 @@
             </div>
             {% endif %}
 
-            <div class="story-meta">
+            <div class="story-meta meta-info">
                 <span class="source" title="Број на поврзани извори">{{ articles|length }} извори</span>
                 <span>•</span>
                 <span id="timeLabel">{{ articles[0].created_at }}</span>
+                {% if total_reading_time %}
+                <span class="reading-time">{{ total_reading_time }} мин. читање</span>
+                {% endif %}
                 <button onclick="shareCluster()" class="action-btn" style="width:24px; height:24px; border:none; background:none; margin-left:auto" title="Сподели">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
                 </button>
@@ -236,8 +239,7 @@
         </header>
 
         {% if synthesis %}
-        <section class="cluster-summary fade-in">
-            <span class="summary-label">Брз Преглед</span>
+        <section class="cluster-summary nyt-summary fade-in">
             {{ synthesis }}
         </section>
         {% endif %}
