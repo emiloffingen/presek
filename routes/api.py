@@ -545,6 +545,18 @@ def api_react():
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/api/admin/telegram_briefing")
+def api_admin_telegram_briefing():
+    # Simple security check
+    auth = request.args.get("token")
+    if auth != os.environ.get("ADMIN_TOKEN"):
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    from tasks import send_telegram_briefing_task
+    send_telegram_briefing_task.delay()
+    return jsonify({"ok": True, "message": "Telegram briefing task queued."})
+
+
 @api_bp.route("/api/subscribe", methods=["POST"])
 def api_subscribe():
     data = request.json

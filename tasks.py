@@ -4,7 +4,7 @@ import time
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN
 from cloudflare_d1 import sync_clusters_to_d1
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response, generate_cover_art
 from database import get_db
@@ -537,7 +537,7 @@ def sync_top_news_to_d1_task():
 
 @celery_app.task
 def send_telegram_briefing_task():
-    """Sends today's briefing to Telegram."""
+    """Sends today's briefing to Telegram via OpenClaw (primary) or Bot API (fallback)."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
         
@@ -551,18 +551,38 @@ def send_telegram_briefing_task():
             return
             
         content = row["content"]
-        # Format for Telegram (Markdown)
-        text = f"🗞 *Дневен Брифинг — {today.strftime('%d.%m.%Y')}*\n\n{content}\n\n🔗 Прочитај повеќе на [presek.mk](https://presek.mk)"
+        # Markdown for Bot API, HTML for OpenClaw (as per user script)
+        # Let's use a dual-safe format or adjust per method
         
+        # 1. Try OpenClaw Gateway First
+        if OPENCLAW_URL and OPENCLAW_TOKEN:
+            try:
+                import requests
+                # OpenClaw uses HTML by default in the user script
+                html_text = f"<b>🗞 Дневен Брифинг — {today.strftime('%d.%m.%Y')}</b>\n\n{content}\n\n🔗 Прочитај повеќе на <a href='https://presek.mk'>presek.mk</a>"
+                endpoint = f"{OPENCLAW_URL.rstrip('/')}/channels/presekmk/message"
+                headers = {"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"}
+                payload = {"text": html_text, "parse_mode": "HTML"}
+                
+                resp = requests.post(endpoint, headers=headers, json=payload, timeout=10)
+                if resp.status_code == 200:
+                    log.info(f"[openclaw] Briefing sent successfully.")
+                    return
+                log.warning(f"[openclaw] Gateway returned {resp.status_code}, falling back to Bot API.")
+            except Exception as e:
+                log.warning(f"[openclaw] Gateway failed: {e}, falling back to Bot API.")
+
+        # 2. Fallback: Direct Telegram Bot API
         import urllib.parse
-        encoded_text = urllib.parse.quote(text)
+        md_text = f"🗞 *Дневен Брифинг — {today.strftime('%d.%m.%Y')}*\n\n{content}\n\n🔗 Прочитај повеќе на [presek.mk](https://presek.mk)"
+        encoded_text = urllib.parse.quote(md_text)
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={TELEGRAM_CHAT_ID}&text={encoded_text}&parse_mode=Markdown"
         
         with urllib.request.urlopen(url, timeout=10) as resp:
-            log.info(f"[telegram] Briefing sent successfully.")
+            log.info(f"[telegram-bot] Briefing sent successfully.")
             
     except Exception as e:
-        log.error(f"[telegram] Failed to send briefing: {e}")
+        log.error(f"[telegram] All delivery methods failed: {e}")
     finally:
         if conn:
             conn.close()

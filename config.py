@@ -239,6 +239,10 @@ DEFAULT_SOURCE_CATEGORY = "Локални"
 
 # ── Telegram Configuration ───────────────────────────────────────
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") # Default channel or admin ID
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
+
+# ── OpenClaw Gateway Configuration ──────────────────────────────
+OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "http://100.104.186.17:18789")
+OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
 
 
