@@ -135,25 +135,71 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
             
     return None, None
 
-def translate_to_macedonian(text: str) -> str | None:
-    if not text: return text
-    res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
-    return res # Basic clean can be added here if needed
-
-def generate_cover_art(cluster_id: str, title: str) -> str | None:
-    """Uses Pollinations AI to generate editorial art."""
-    import os
-    os.makedirs("static/generated", exist_ok=True)
-    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
-    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
-    save_path = f"static/generated/{cluster_id}.jpg"
+def auto_summarize_top_clusters():
+    """Dispatches background tasks for summarization/synthesis with deduplication."""
+    from tasks import summarize_article_task, synthesize_cluster_task
+    from utils import redis_client, score_cluster, rank_articles_in_cluster
+    from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
+    from database import db_manager as db
     
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Presek/4.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            with open(save_path, "wb") as f:
-                f.write(resp.read())
-        return f"/static/generated/{cluster_id}.jpg"
+        # Get recent articles from the last 24h
+        rows = db.execute("SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '1 day' ORDER BY created_at DESC LIMIT 500")
+        
+        clusters_map = defaultdict(list)
+        for r in rows:
+            clusters_map[r["cluster_id"]].append(r)
+
+        ranked = []
+        for cid, arts in clusters_map.items():
+            sorted_arts = rank_articles_in_cluster(arts)
+            s = score_cluster(sorted_arts)
+            ranked.append((cid, sorted_arts, s))
+        
+        ranked.sort(key=lambda x: x[2], reverse=True)
+
+        for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
+            lead = arts[0]
+            if not lead.get("summary"):
+                # Dedup: skip if already queued in the last 10 minutes
+                dedup_key = f"task:summarize:{lead['id']}"
+                if not redis_client.set(dedup_key, 1, nx=True, ex=600):
+                    continue
+                summarize_article_task.delay(lead["id"], lead["title"])
+
+            unique_sources = {a["source"] for a in arts}
+            if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
+                # Check if synthesis already exists
+                if not db.get_synthesis_ids([cid]):
+                    # Dedup: skip if synthesis already queued recently
+                    dedup_key = f"task:synthesize:{cid}"
+                    if not redis_client.set(dedup_key, 1, nx=True, ex=600):
+                        continue
+                    
+                    lines = [f"- [{a['source']}]: {a['title']}" for a in arts[:10]]
+                    synthesize_cluster_task.delay(cid, "\n".join(lines))
+                    
     except Exception as e:
-        log.warning(f"[ai-img] Generation failed: {e}")
-        return None
+        log.error(f"[auto-summarize] Error: {e}")
+
+def cleanup_cover_art():
+    """Removes generated cover art for clusters that are no longer in the DB."""
+    import os
+    gen_dir = "static/generated"
+    if not os.path.exists(gen_dir): return
+
+    try:
+        rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
+        valid_ids = {r["cluster_id"] for r in rows}
+        
+        count = 0
+        for filename in os.listdir(gen_dir):
+            if filename.endswith(".jpg"):
+                cid = filename.replace(".jpg", "")
+                if cid not in valid_ids:
+                    os.remove(os.path.join(gen_dir, filename))
+                    count += 1
+        if count:
+            log.info(f"[cleanup] Removed {count} orphaned cover art images.")
+    except Exception as e:
+        log.error(f"[cleanup] Image cleanup failed: {e}")
