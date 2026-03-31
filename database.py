@@ -181,8 +181,11 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
                 # NOTE: idx_articles_embedding is disabled for 3072-dim vectors (pgvector 2000-dim limit)
-
+                
                 conn.commit()
+                log.info("Presek 4.0: Schema verification complete.")
+        finally:
+            self.put_conn(conn)
 
 
 # --- Legacy Compatibility Wrapper ---
