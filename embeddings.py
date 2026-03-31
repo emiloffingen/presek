@@ -14,7 +14,7 @@ from config import GOOGLE_API_KEY
 
 log = logging.getLogger("presek")
 
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-001"
 EMBEDDING_DIM = 768
 EMBEDDING_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:batchEmbedContents"
 
