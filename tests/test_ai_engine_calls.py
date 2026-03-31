@@ -76,15 +76,13 @@ class TestCallGemini:
         assert result == "OK"
 
 
-class TestCallCloudflareAI:
-    @patch('ai_engine.CLOUDFLARE_API_TOKEN', 'test-token')
+class TestCallOpenAICompatible:
     @patch('ai_engine.urllib.request.urlopen')
     def test_successful_call(self, mock_urlopen):
-        from ai_engine import _call_cloudflare_ai
+        from ai_engine import _call_openai_compatible
 
         response_body = json.dumps({
-            "success": True,
-            "result": {"response": "CF response text"}
+            "choices": [{"message": {"content": "OpenAI response text"}}]
         }).encode()
         mock_resp = MagicMock()
         mock_resp.read.return_value = response_body
@@ -92,40 +90,23 @@ class TestCallCloudflareAI:
         mock_resp.__exit__ = MagicMock(return_value=False)
         mock_urlopen.return_value = mock_resp
 
-        result = _call_cloudflare_ai("Test", "System")
-        assert result == "CF response text"
+        result = _call_openai_compatible("Test", "System", "key", "http://url", "model", "provider")
+        assert result == "OpenAI response text"
 
-    @patch('ai_engine.CLOUDFLARE_API_TOKEN', '')
-    def test_no_token(self):
-        from ai_engine import _call_cloudflare_ai
-        result = _call_cloudflare_ai("Test", "System")
-        assert result is None
-
-    @patch('ai_engine.CLOUDFLARE_API_TOKEN', 'test-token')
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_api_failure(self, mock_urlopen):
-        from ai_engine import _call_cloudflare_ai
-
-        response_body = json.dumps({"success": False, "errors": ["bad request"]}).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_body
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        result = _call_cloudflare_ai("Test", "System")
+    def test_no_key(self):
+        from ai_engine import _call_openai_compatible
+        result = _call_openai_compatible("Test", "System", "", "http://url", "model", "provider")
         assert result is None
 
 
 class TestCallAI:
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_gemini_first(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_gemini_first(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         from ai_engine import _call_ai
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
@@ -135,14 +116,13 @@ class TestCallAI:
         assert result == "Gemini result"
         assert tier == "gemini"
 
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_fallback_to_groq(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_fallback_to_groq(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         from ai_engine import _call_ai
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
@@ -151,20 +131,18 @@ class TestCallAI:
         mock_cerebras.return_value = None
         mock_mistral.return_value = None
         mock_openrouter.return_value = None
-        mock_cf.return_value = None
 
         result, tier = _call_ai("Test", "System")
         assert result == "Groq result"
         assert tier == "groq"
 
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_all_fail(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_all_fail(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         from ai_engine import _call_ai
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
@@ -173,36 +151,34 @@ class TestCallAI:
         mock_cerebras.return_value = None
         mock_mistral.return_value = None
         mock_openrouter.return_value = None
-        mock_cf.return_value = None
 
         result, tier = _call_ai("Test", "System")
         assert result is None
         assert tier is None
 
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_daily_limit_reached(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_daily_limit_reached(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         from ai_engine import _call_ai
-        mock_redis.incr.return_value = 5001  # Over 5000 limit
+        from config import AI_DAILY_LIMIT
+        mock_redis.incr.return_value = AI_DAILY_LIMIT + 1
 
         result, tier = _call_ai("Test", "System")
         assert result is None
         assert tier == "limit_reached"
         mock_gemini.assert_not_called()
 
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_redis_error_continues(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_redis_error_continues(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         """If Redis fails during limit check, should still try AI providers."""
         from ai_engine import _call_ai
         mock_redis.incr.side_effect = Exception("Redis down")
@@ -212,14 +188,13 @@ class TestCallAI:
         assert result == "Works anyway"
         assert tier == "gemini"
 
-    @patch('ai_engine._call_cloudflare_ai')
     @patch('ai_engine._call_openrouter')
     @patch('ai_engine._call_mistral')
     @patch('ai_engine._call_cerebras')
     @patch('ai_engine._call_groq')
     @patch('ai_engine._call_gemini')
     @patch('utils.redis_client')
-    def test_task_routing_uses_correct_chain(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter, mock_cf):
+    def test_task_routing_uses_correct_chain(self, mock_redis, mock_gemini, mock_groq, mock_cerebras, mock_mistral, mock_openrouter):
         """Tagging task should try cerebras first, not gemini."""
         from ai_engine import _call_ai
         mock_redis.incr.return_value = 1

@@ -14,7 +14,32 @@ from embeddings import generate_embeddings_batch
 
 log = logging.getLogger("presek")
 
-# ... (keep clean_rss_footer and _get_last_seen_links) ...
+def clean_rss_footer(text: str) -> str:
+    """Removes common RSS footers like 'The post ... appeared first on ...'"""
+    if not text: return ""
+    # Common patterns
+    text = re.sub(r'The post .* appeared first on .*', '', text)
+    text = re.sub(r'Прочитајте повеќе на .*', '', text)
+    text = re.sub(r'This article was originally published on .*', '', text)
+    text = re.sub(r'Source: https?://.*', '', text)
+    return text.strip()
+
+def _get_last_seen_links(conn, source, limit=50):
+    """Get recently seen links for a source to skip duplicates early."""
+    rows = conn.execute(
+        "SELECT link FROM articles WHERE source = %s ORDER BY created_at DESC LIMIT %s",
+        (source, limit)
+    ).fetchall()
+    return {r["link"] for r in rows}
+
+def fetch_feed(source, url):
+    """Fetch a single RSS feed and return entries."""
+    try:
+        feed = feedparser.parse(url)
+        entries = feed.entries[:FEED_LIMIT]
+        return source, entries, None
+    except Exception as e:
+        return source, [], str(e)
 
 def ingest_feeds():
     """Fetch all RSS feeds in parallel, then write to DB sequentially."""
