@@ -199,8 +199,9 @@ def api_news():
         return jsonify(result_data)
     except Exception as e:
         import logging
-        logging.getLogger("presek").error(f"[api/news] {e}")
-        return jsonify({"clusters": [], "page": page, "page_size": page_size, "total": 0, "has_more": False, "error": "Серверска грешка"}), 500
+        import traceback
+        logging.getLogger("presek").error(f"[api/news] ERROR: {e}\n{traceback.format_exc()}")
+        return jsonify({"clusters": [], "page": page, "page_size": page_size, "total": 0, "has_more": False, "error": str(e)}), 500
     finally:
         conn.close()
 

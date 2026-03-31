@@ -122,7 +122,7 @@ def is_balanced(arts) -> bool:
     """True if cluster contains 3+ unique sources from different categories."""
     from config import SOURCE_CATEGORIES, BALANCED_COVERAGE_THRESHOLD
     if len(arts) < BALANCED_COVERAGE_THRESHOLD:
-        return false
+        return False
     
     unique_categories = {SOURCE_CATEGORIES.get(a["source"], "Локални") for a in arts}
     unique_sources = {a["source"] for a in arts}
