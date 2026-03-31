@@ -282,7 +282,7 @@
             <div class="timeline-container" style="position:relative; padding-left:30px; border-left:2px solid var(--border); margin-left:10px">
                 {% for art in articles|reverse %}
                 <div class="timeline-item" style="margin-bottom:var(--space-lg); position:relative">
-                    <div style="position:absolute; left:-37px; top:4px; width:12px; height:12px; border-radius:50%; background:{% if loop.first %}var(--primary){% else %}var(--border){% endif %}; border:3px solid var(--bg-base)"></div>
+                    <div class="timeline-dot" style="position:absolute; left:-37px; top:4px; width:12px; height:12px; border-radius:50%; background:{% if loop.first %}var(--primary){% else %}var(--border){% endif %}; border:3px solid var(--bg-base)"></div>
                     <div style="font-size:0.75rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:2px">
                         {{ art.created_at.strftime('%H:%M') if art.created_at.strftime else art.created_at[11:16] }} — {{ art.source }}
                     </div>

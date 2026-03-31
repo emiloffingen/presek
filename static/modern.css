@@ -293,7 +293,22 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     margin-top: var(--space-lg);
 }
 
-/* STORY CARD */
+/* =========================================
+   UX ENHANCEMENTS - Editorial Luxury
+   ========================================= */
+
+#readingProgress {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--primary);
+    z-index: 1100;
+    transition: width 0.1s ease-out;
+    box-shadow: 0 0 8px var(--primary);
+}
+
 .story-card {
     background: var(--bg-surface);
     border: 1px solid var(--border);
@@ -302,16 +317,75 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
-    transition: var(--transition);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.4s ease, 
+                border-color 0.3s ease;
     position: relative;
     overflow: hidden;
     height: 100%;
 }
 
 .story-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-6px) scale(1.01);
+    border-color: var(--primary);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+html.light .story-card:hover {
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.perspective-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-md);
+    margin: var(--space-xl) 0;
+}
+
+.perspective-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.perspective-item::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--primary);
+    opacity: 0.3;
+}
+
+.perspective-item:hover {
+    background: var(--bg-surface-hover);
+    transform: translateX(4px);
+}
+
+.perspective-item:hover::after {
+    opacity: 1;
+}
+
+.perspective-label {
+    font-size: 0.7rem;
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: var(--space-xs);
+    display: block;
+    letter-spacing: 0.1em;
+}
+
+.timeline-dot {
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.timeline-item:hover .timeline-dot {
+    transform: scale(1.5);
+    background: var(--primary) !important;
 }
 
 .story-thumb-link, .archive-thumb-link, .cluster-hero-link {
@@ -321,8 +395,7 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     flex-shrink: 0;
 }
 
-.story-thumb-wrap,
-.story-thumb-placeholder {
+.story-thumb-wrap {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: var(--radius-sm);
@@ -335,12 +408,13 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
     justify-content: center;
 }
 
-.story-thumb-placeholder {
-    background: url('/static/img/placeholder.svg') center/cover no-repeat;
+/* Text-only card: no image placeholder, just more room for content */
+.story-card.no-image .story-headline {
+    font-size: 1.5rem;
+    -webkit-line-clamp: 4;
 }
-
-html.light .story-thumb-placeholder {
-    background-image: url('/static/img/placeholder_light.svg');
+.story-card.no-image .story-excerpt {
+    -webkit-line-clamp: 5;
 }
 
 .story-thumb {
@@ -353,7 +427,7 @@ html.light .story-thumb-placeholder {
 .story-card:hover .story-thumb { transform: scale(1.04); }
 
 .story-meta {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: var(--weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -361,6 +435,7 @@ html.light .story-thumb-placeholder {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    flex-wrap: wrap;
 }
 .story-meta .source { color: var(--primary); }
 .source-link { text-decoration: none; }
@@ -615,6 +690,47 @@ html.light .story-thumb-placeholder {
     letter-spacing: 0.05em;
 }
 .footer-links a:hover { color: var(--primary); }
+
+/* Featured card: first card in each time period gets extra visual weight */
+.story-card.featured {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: auto;
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+}
+.story-card.featured .story-thumb-wrap {
+    aspect-ratio: 3 / 2;
+    grid-row: 1 / span 3;
+}
+.story-card.featured .story-headline {
+    font-size: 1.75rem;
+    -webkit-line-clamp: 4;
+}
+.story-card.featured .story-excerpt {
+    -webkit-line-clamp: 4;
+}
+.story-card.featured .reaction-bar {
+    grid-column: 1 / -1;
+}
+.story-card.featured .source-ribbon {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+    .story-card.featured {
+        grid-template-columns: 1fr;
+        padding: var(--space-md);
+    }
+    .story-card.featured .story-thumb-wrap {
+        grid-row: auto;
+        aspect-ratio: 16 / 9;
+    }
+    .story-card.featured .story-headline {
+        font-size: 1.35rem;
+    }
+}
 
 /* Animation classes */
 .fade-in {

@@ -45,6 +45,16 @@
         overflow-x: auto;
         padding: 4px;
         scrollbar-width: none;
+        mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+    }
+    .category-scroll.scrolled-end {
+        mask-image: linear-gradient(to left, black calc(100% - 40px), transparent);
+        -webkit-mask-image: linear-gradient(to left, black calc(100% - 40px), transparent);
+    }
+    .category-scroll.scrolled-mid {
+        mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
     }
     .category-scroll::-webkit-scrollbar { display: none; }
 
@@ -120,6 +130,74 @@
     }
     .follow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: none; }
     .trend-tag.followed .follow-dot { display: block; }
+
+    /* Follow button on topic tags */
+    .follow-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        margin-left: 2px;
+        display: flex;
+        align-items: center;
+        transition: var(--transition);
+        opacity: 0.5;
+    }
+    .follow-btn:hover { opacity: 1; color: var(--primary); }
+    .trend-tag.followed .follow-btn { opacity: 1; color: var(--primary); }
+
+    /* Error state */
+    .error-state {
+        text-align: center;
+        padding: 80px var(--space-md);
+        color: var(--text-muted);
+    }
+    .error-state p {
+        margin-bottom: var(--space-lg);
+        font-size: 1rem;
+    }
+
+    /* Collapsible filter toggle for mobile */
+    .filter-toggle {
+        display: none;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 var(--space-md) var(--space-sm);
+    }
+    .filter-toggle-btn {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: var(--weight-semi);
+        padding: 8px 16px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: var(--transition);
+        width: 100%;
+        justify-content: center;
+    }
+    .filter-toggle-btn:hover { border-color: var(--primary); }
+    .filter-toggle-btn .arrow { transition: transform 0.2s; }
+    .filter-toggle-btn.open .arrow { transform: rotate(180deg); }
+    .filter-collapsible { transition: max-height 0.3s ease, opacity 0.2s ease; overflow: hidden; }
+
+    @media (max-width: 768px) {
+        .filter-toggle { display: block; }
+        .filter-collapsible.collapsed {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .filter-collapsible.expanded {
+            max-height: 500px;
+            opacity: 1;
+        }
+    }
 
     /* Hero Section */
     .hero-grid {
@@ -227,38 +305,48 @@
     <div class="hero-grid" id="heroGrid"></div>
 </div>
 
-<!-- Regional Sub-filters -->
-<div class="trending-container" id="regionalSubBox" style="display:none; margin-bottom: var(--space-md);">
-    <div class="trending-label">Град</div>
-    <div class="trending-scroll" id="regionalSubList"></div>
+<!-- Filter toggle for mobile -->
+<div class="filter-toggle">
+    <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()">
+        Филтри
+        <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
 </div>
 
-<!-- Sentiment Filters -->
-<div class="trending-container" id="sentimentBox" style="margin-bottom: var(--space-md);">
-    <div class="trending-label">Тон</div>
-    <div class="trending-scroll">
-        <div class="trend-tag active" id="sentAll" onclick="filterSentiment('')">Сите</div>
-        <div class="trend-tag" id="sentPos" onclick="filterSentiment('🟢')">🟢 Позитивни</div>
-        <div class="trend-tag" id="sentCrit" onclick="filterSentiment('🔴')">🔴 Критични</div>
+<div class="filter-collapsible collapsed" id="filterCollapsible">
+    <!-- Regional Sub-filters -->
+    <div class="trending-container" id="regionalSubBox" style="display:none; margin-bottom: var(--space-md);">
+        <div class="trending-label">Град</div>
+        <div class="trending-scroll" id="regionalSubList"></div>
     </div>
-</div>
 
-<!-- Topical Filters -->
-<div class="trending-container" id="topicBox" style="margin-bottom: var(--space-lg);">
-    <div class="trending-label">Тема</div>
-    <div class="trending-scroll" id="topicList">
-        <!-- Populated by JS -->
+    <!-- Sentiment Filters -->
+    <div class="trending-container" id="sentimentBox" style="margin-bottom: var(--space-md);">
+        <div class="trending-label">Тон</div>
+        <div class="trending-scroll">
+            <div class="trend-tag active" id="sentAll" data-sentiment="">Сите</div>
+            <div class="trend-tag" id="sentPos" data-sentiment="🟢">🟢 Позитивни</div>
+            <div class="trend-tag" id="sentCrit" data-sentiment="🔴">🔴 Критични</div>
+        </div>
     </div>
-</div>
 
-<div class="trending-container" id="trendingBox" style="display:none">
-    <div class="trending-label">Во Тренд</div>
-    <div class="trending-scroll" id="trendingList"></div>
-</div>
+    <!-- Topical Filters -->
+    <div class="trending-container" id="topicBox" style="margin-bottom: var(--space-lg);">
+        <div class="trending-label">Тема</div>
+        <div class="trending-scroll" id="topicList">
+            <!-- Populated by JS -->
+        </div>
+    </div>
 
-<div class="trending-container" id="entitiesBox" style="display:none; margin-bottom: var(--space-xl);">
-    <div class="trending-label">Личности</div>
-    <div class="trending-scroll" id="entitiesList"></div>
+    <div class="trending-container" id="trendingBox" style="display:none">
+        <div class="trending-label">Во Тренд</div>
+        <div class="trending-scroll" id="trendingList"></div>
+    </div>
+
+    <div class="trending-container" id="entitiesBox" style="display:none; margin-bottom: var(--space-xl);">
+        <div class="trending-label">Личности</div>
+        <div class="trending-scroll" id="entitiesList"></div>
+    </div>
 </div>
 
 <div id="pageWrap">
@@ -417,7 +505,7 @@
             if (h >= 6 && h < 12) key = '🌅 Утро';
             else if (h >= 12 && h < 18) key = '☀️ Попладне';
             else if (h >= 18) key = '🌙 Вечер';
-            
+
             if (!periodMap[key]) periodMap[key] = [];
             periodMap[key].push(c);
         });
@@ -428,7 +516,7 @@
             if (periodMap[period]) {
                 html += `<div class="time-divider"><span>${period}</span></div>`;
                 periodMap[period].forEach((c, idx) => {
-                    html += renderCard(c, idx);
+                    html += renderCard(c, idx, idx === 0);
                 });
             }
         });
@@ -588,36 +676,6 @@
         }
     }
 
-    function showEntityInfo(name) {
-        if (typeof toggleEntitySheet === 'function') {
-            toggleEntitySheet(true);
-            document.getElementById('entityName').textContent = name;
-            
-            const searchBtn = document.getElementById('entitySearchBtn');
-            searchBtn.onclick = () => {
-                toggleEntitySheet(false);
-                searchTrend(name);
-            };
-
-            fetch(`/api/ai/entity_info/${encodeURIComponent(name)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const infoEl = document.getElementById('entityInfo');
-                    if (data.info) {
-                        infoEl.textContent = data.info;
-                    } else {
-                        infoEl.textContent = 'Нема достапни информации за оваа личност во моментов.';
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('entityInfo').textContent = 'Грешка при вчитување на податоците.';
-                });
-        } else {
-            // Fallback if sheet logic not available
-            searchTrend(name);
-        }
-    }
-
     async function fetchEntities() {
         try {
             const res = await fetch('/api/trending/entities');
@@ -639,9 +697,75 @@
         } catch(e) { console.error(e); }
     }
 
+    // Category scroll fade mask based on scroll position
+    function updateScrollMask() {
+        const el = document.getElementById('categoryList');
+        if (!el) return;
+        const atStart = el.scrollLeft <= 10;
+        const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
+        el.classList.remove('scrolled-end', 'scrolled-mid');
+        if (atStart && atEnd) {
+            el.style.maskImage = 'none';
+            el.style.webkitMaskImage = 'none';
+        } else if (atEnd) {
+            el.classList.add('scrolled-end');
+        } else if (!atStart) {
+            el.classList.add('scrolled-mid');
+        }
+    }
+    document.getElementById('categoryList').addEventListener('scroll', updateScrollMask);
+    setTimeout(updateScrollMask, 100);
+
+    // ── Presek 2.0: Real-time Live Updates (SSE) ──
+    function initLiveUpdates() {
+        const source = new EventSource('/api/live');
+        source.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_articles') {
+                    showNewContentToast(data.count);
+                }
+            } catch(e) { console.error("SSE parse error", e); }
+        };
+        source.onerror = function() {
+            source.close();
+            setTimeout(initLiveUpdates, 10000); // Retry after 10s
+        };
+    }
+
+    function showNewContentToast(count) {
+        // Only show if user is on the first page of 'Македонија'
+        if (_currentPage !== 0 || activeCategory !== '🇲🇰' || activeTopic || activeSentiment) return;
+        
+        const existing = document.getElementById('liveToast');
+        if (existing) existing.remove();
+        
+        const toast = document.createElement('div');
+        toast.id = 'liveToast';
+        toast.className = 'fade-in';
+        toast.style = `
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: white; padding: 10px 24px;
+            border-radius: 30px; font-weight: bold; cursor: pointer; z-index: 1500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px;
+        `;
+        toast.innerHTML = `✨ <b>${count}</b> нови вести. Вчитај освежување.`;
+        toast.onclick = () => {
+            toast.remove();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            fetchNews();
+        };
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 30s
+        setTimeout(() => toast.remove(), 30000);
+    }
+
     initCategories();
     fetchNews();
     fetchTrending();
     fetchEntities();
+    initLiveUpdates();
 </script>
 {% endblock %}
