@@ -239,15 +239,16 @@ def init_db():
     # Full Text Search Index
     cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
 
-    # Vector similarity index (HNSW) for semantic search
+    # Vector similarity index (IVFFlat) for semantic search
+    # HNSW has a 2000-dim limit, so we use IVFFlat for 3072-dim embeddings
     try:
         cur.execute("""
             CREATE INDEX IF NOT EXISTS idx_articles_embedding
-            ON articles USING hnsw (embedding vector_cosine_ops)
-            WITH (m = 16, ef_construction = 64)
+            ON articles USING ivfflat (embedding vector_cosine_ops)
+            WITH (lists = 100)
         """)
-    except Exception:
-        log.warning("Could not create HNSW index — pgvector may not be installed")
+    except Exception as e:
+        log.warning(f"Could not create vector index: {e}")
 
     conn.commit()
     cur.close()
