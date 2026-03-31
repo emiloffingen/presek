@@ -84,8 +84,9 @@ def run_ingestion():
     log.info("Starting regular feed ingestion...")
     new_count, errors = ingest_feeds()
     
-    log.info("Starting diaspora feed ingestion...")
-    d_count, d_errors = ingest_diaspora_feeds()
+    # log.info("Starting diaspora feed ingestion...")
+    # d_count, d_errors = ingest_diaspora_feeds()
+    d_count, d_errors = 0, []
     
     # Update health monitoring
     record_refresh(new_count + d_count, errors + d_errors)
