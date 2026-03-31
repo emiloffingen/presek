@@ -211,7 +211,7 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_source_created ON articles(source, created_at DESC)")
 
     # Full Text Search Index
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (to_tsvector('simple', title || ' ' || COALESCE(description, '')))")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
     
     conn.commit()
     cur.close()

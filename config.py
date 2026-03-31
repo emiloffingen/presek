@@ -232,4 +232,13 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "http://100.104.186.17:18789")
 OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
 
+# ── Cloudflare R2 Configuration ──────────────────────────────────
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "presek-cache")
+
+# ── Image Generation Configuration ──────────────────────────────
+POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
+
 

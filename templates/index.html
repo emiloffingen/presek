@@ -589,11 +589,36 @@
     }
 
     function showEntityInfo(name) {
-        // We reuse the search functionality to show news about this person/org
-        searchTrend(name);
+        if (typeof toggleEntitySheet === 'function') {
+            toggleEntitySheet(true);
+            document.getElementById('entityName').textContent = name;
+            
+            const searchBtn = document.getElementById('entitySearchBtn');
+            searchBtn.onclick = () => {
+                toggleEntitySheet(false);
+                searchTrend(name);
+            };
+
+            fetch(`/api/ai/entity_info/${encodeURIComponent(name)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const infoEl = document.getElementById('entityInfo');
+                    if (data.info) {
+                        infoEl.textContent = data.info;
+                    } else {
+                        infoEl.textContent = 'Нема достапни информации за оваа личност во моментов.';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('entityInfo').textContent = 'Грешка при вчитување на податоците.';
+                });
+        } else {
+            // Fallback if sheet logic not available
+            searchTrend(name);
+        }
     }
 
-    async function fetchTrending() {
+    async function fetchEntities() {
         try {
             const res = await fetch('/api/trending/entities');
             const data = await res.json();

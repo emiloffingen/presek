@@ -42,6 +42,14 @@ celery_app.conf.update(
             'task': 'tasks.backfill_cover_art_task',
             'schedule': 600.0,  # Every 10 minutes — generate covers for imageless clusters
         },
+        'classify-topics': {
+            'task': 'tasks.classify_topics_task',
+            'schedule': 300.0,  # Every 5 minutes — tag new clusters
+        },
+        'recategorize-geography': {
+            'task': 'tasks.recategorize_task',
+            'schedule': 600.0,  # Every 10 minutes — fix miscategorized clusters
+        },
         'send-telegram-briefing': {
             'task': 'tasks.send_telegram_briefing_task',
             'schedule': crontab(hour=7, minute=5), # Run daily at 7:05 AM UTC (8:05 AM local)

@@ -422,28 +422,37 @@
         };
 
         let searchTimeout;
-        searchInput.oninput = (e) => {
-            clearTimeout(searchTimeout);
-            const q = e.target.value.trim();
+        const doSearch = async (q) => {
             if (q.length < 2) {
                 searchResults.innerHTML = '';
                 return;
             }
-            
-            searchTimeout = setTimeout(async () => {
-                searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Пребарувам...</div>';
-                try {
-                    const res = await fetch(`/api/news?q=${encodeURIComponent(q)}`);
-                    const data = await res.json();
-                    if (data.clusters && data.clusters.length) {
-                        searchResults.innerHTML = data.clusters.map((c, i) => renderCard(c, i)).join('');
-                    } else {
-                        searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Нема пронајдено вести.</div>';
-                    }
-                } catch(err) {
-                    console.error(err);
+            searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Пребарувам...</div>';
+            try {
+                const res = await fetch(`/api/news?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (data.clusters && data.clusters.length) {
+                    searchResults.innerHTML = data.clusters.map((c, i) => renderCard(c, i)).join('');
+                } else {
+                    searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Нема пронајдено вести.</div>';
                 }
-            }, 300);
+            } catch(err) {
+                console.error(err);
+                searchResults.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px">Грешка при пребарувањето.</div>';
+            }
+        };
+
+        searchInput.oninput = (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value.trim();
+            searchTimeout = setTimeout(() => doSearch(q), 400);
+        };
+
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                doSearch(e.target.value.trim());
+            }
         };
 
         async function subscribe(e) {

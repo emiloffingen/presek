@@ -14,6 +14,7 @@ from config import (
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
+    POLLINATIONS_API_KEY,
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
@@ -307,7 +308,7 @@ def translate_to_macedonian(text: str) -> str | None:
     return None
 
 def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
-    """Generate news cover art using Pollinations.ai (free, no API key needed)."""
+    """Generate news cover art using Pollinations.ai."""
     import os
     os.makedirs("static/generated", exist_ok=True)
 
@@ -325,13 +326,17 @@ def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
     save_path = f"static/generated/{cluster_id}.jpg"
 
     try:
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Presek/1.0",
+        }
+        if POLLINATIONS_API_KEY:
+            headers["Authorization"] = f"Bearer {POLLINATIONS_API_KEY}"
+
         req = urllib.request.Request(
             "https://image.pollinations.ai/",
             data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "User-Agent": "Presek/1.0",
-            }
+            headers=headers
         )
         with urllib.request.urlopen(req, timeout=90) as resp:
             img_data = resp.read()

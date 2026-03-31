@@ -497,7 +497,7 @@ def classify_topics_task():
             FROM articles
             WHERE created_at >= %s AND topic = 'Вести'
             GROUP BY cluster_id, title, description
-            LIMIT 30
+            LIMIT 100
         """, (cutoff,)).fetchall()
 
         if not rows:
