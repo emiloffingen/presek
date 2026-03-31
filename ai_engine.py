@@ -204,14 +204,14 @@ TASK_ROUTING = {
     "factcheck":    ["groq", "cerebras", "gemini"],
     "ai_ask":       ["groq", "cerebras", "gemini"],
 
-    # Background: speed/cost matters most
-    "tagging":      ["cerebras", "groq", "openrouter"],
-    "topic":        ["cerebras", "groq", "openrouter"],
-    "entity":       ["groq", "mistral", "openrouter"],
-    "entity_info":  ["cerebras", "groq", "openrouter"],
-    "categorize":   ["cerebras", "groq", "openrouter"],
+    # Background: speed/cost matters most (now with Gemini as final paid fallback)
+    "tagging":      ["cerebras", "groq", "openrouter", "gemini"],
+    "topic":        ["cerebras", "groq", "openrouter", "gemini"],
+    "entity":       ["groq", "mistral", "openrouter", "gemini"],
+    "entity_info":  ["cerebras", "groq", "openrouter", "gemini"],
+    "categorize":   ["cerebras", "groq", "openrouter", "gemini"],
 
-    # Default fallback chain (same as original _call_ai)
+    # Default fallback chain
     "default":      ["gemini", "groq", "cerebras", "mistral", "openrouter"],
 }
 

@@ -24,7 +24,7 @@ OPENROUTER_MODEL = "openrouter/auto"
 
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
-AI_DAILY_LIMIT = 5000 # Max AI calls per day across all tasks (Gemini only)
+AI_DAILY_LIMIT = 1000000 # Unlimited (paid Gemini fallback tier)
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 BREAKING_SCORE_THRESHOLD = 3.0
 DB_RETAIN_DAYS = 14  # articles older than this are pruned daily
