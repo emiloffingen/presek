@@ -671,7 +671,7 @@ def run_prune_db():
     log.info("Cleaning up orphaned cover art...")
     cleanup_cover_art_task.delay()
 
-@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
+@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def translate_article_task(article_id: int, original_title: str, original_description: str):
     """Background task to translate diaspora articles."""
     # We use a custom logger here to ensure it shows up in celery logs if redirected
@@ -681,32 +681,40 @@ def translate_article_task(article_id: int, original_title: str, original_descri
     try:
         conn = get_db()
 
-        translated_title = original_title
+        translated_title = None
         if original_title:
             try:
                 result = translate_to_macedonian(original_title)
-                if result is not None:
+                if result:
                     translated_title = result
             except Exception as e:
                 log.error(f"[translate] Translation error (title) for {article_id}: {e}")
 
-        translated_desc = original_description
+        translated_desc = None
         if original_description:
             try:
                 result = translate_to_macedonian(original_description)
-                if result is not None:
+                if result:
                     translated_desc = result
             except Exception as e:
                 log.error(f"[translate] Translation error (desc) for {article_id}: {e}")
 
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE articles SET title = %s, description = %s, is_translated = 1 WHERE id = %s",
-            (translated_title, translated_desc, article_id)
-        )
-        conn.commit()
-        cur.close()
-        log.info(f"[translate] Successfully translated article {article_id}")
+        if translated_title or translated_desc:
+            cur = conn.cursor()
+            # If only one was translated, we still update it but keep the other as is (but we use the original if translation failed)
+            final_title = translated_title if translated_title else original_title
+            final_desc = translated_desc if translated_desc else original_description
+            
+            cur.execute(
+                "UPDATE articles SET title = %s, description = %s, is_translated = 1 WHERE id = %s",
+                (final_title, final_desc, article_id)
+            )
+            conn.commit()
+            cur.close()
+            log.info(f"[translate] Successfully translated article {article_id}")
+        else:
+            log.warning(f"[translate] Translation failed for both title and description for article {article_id}")
+            # Do NOT mark as translated so it can be retried or picked up by repair script
     except Exception as e:
         log.error(f"[translate] Task failed for article {article_id}: {e}")
     finally:

@@ -16,7 +16,7 @@ def repair_translations():
             FROM articles 
             WHERE is_translated = 0 AND country != '🇲🇰'
             ORDER BY created_at DESC
-            LIMIT 50
+            LIMIT 200
         """).fetchall()
         
         if not rows:
