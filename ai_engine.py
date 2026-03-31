@@ -135,6 +135,26 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
             
     return None, None
 
+def clean_json_response(text: str) -> dict | str:
+    """Extracts summary and other fields from a JSON response."""
+    if not text: return ""
+    match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
+    if match:
+        json_text = match.group(1)
+        try:
+            data = json.loads(json_text)
+            if isinstance(data, dict):
+                if 'summary' in data or 'perspectives' in data or 'entities' in data:
+                    return data
+                if 'summary' in data and len(data) == 1:
+                    return data['summary'].strip()
+            elif isinstance(data, list):
+                return data
+        except: pass
+    text = re.sub(r'```(?:json)?\n?', '', text)
+    text = text.replace('```', '').strip()
+    return text.strip()
+
 def translate_to_macedonian(text: str) -> str | None:
     """Translate news text to Macedonian using AI."""
     if not text or not text.strip():
@@ -189,6 +209,24 @@ def auto_summarize_top_clusters():
                     
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
+
+def generate_cover_art(cluster_id: str, title: str) -> str | None:
+    """Uses Pollinations AI to generate editorial art."""
+    import os
+    os.makedirs("static/generated", exist_ok=True)
+    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
+    save_path = f"static/generated/{cluster_id}.jpg"
+    
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Presek/4.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            with open(save_path, "wb") as f:
+                f.write(resp.read())
+        return f"/static/generated/{cluster_id}.jpg"
+    except Exception as e:
+        log.warning(f"[ai-img] Generation failed: {e}")
+        return None
 
 def cleanup_cover_art():
     """Removes generated cover art for clusters that are no longer in the DB."""

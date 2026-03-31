@@ -126,6 +126,22 @@ class DatabaseManager:
             return round(size_bytes / (1024 * 1024), 2)
         return 0.0
 
+    def get_stats(self):
+        """Returns comprehensive database statistics for health monitoring."""
+        total = self.execute_one("SELECT COUNT(*) FROM articles")["count"]
+        by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC")
+        by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC")
+        recent_24h = self.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'")["count"]
+        summarized = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")["count"]
+        
+        return {
+            "total_articles": total,
+            "by_category": by_cat,
+            "by_source": by_source,
+            "last_24h": recent_24h,
+            "summarized": summarized
+        }
+
 # Singleton instance
 db_manager = DatabaseManager()
 
@@ -134,11 +150,76 @@ def get_db(): return db_manager
 def get_db_size(): return db_manager.get_db_size()
 
 def init_db():
-    """Ensure the schema is fully updated for Presek 4.0."""
-    db_manager.execute("CREATE EXTENSION IF NOT EXISTS vector", fetch=False)
-    # Existing tables check/creation logic...
-    # (Simplified for the refactor turn, full logic will be added in subsequent steps)
-    log.info("Presek 4.0: Schema verification complete.")
+    """Bootstrap the database schema, extensions, and triggers for Presek 4.0."""
+    conn = db_manager.get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            
+            # Articles Table
+            cur.execute("""CREATE TABLE IF NOT EXISTS articles (
+                id SERIAL PRIMARY KEY,
+                cluster_id TEXT NOT NULL,
+                source TEXT NOT NULL,
+                link TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                original_title TEXT DEFAULT '',
+                description TEXT DEFAULT '',
+                summary TEXT,
+                category TEXT,
+                subcategory TEXT DEFAULT '',
+                topic TEXT DEFAULT 'Вести',
+                country TEXT DEFAULT '🇲🇰',
+                created_at TIMESTAMP NOT NULL,
+                image_url TEXT,
+                clicks INTEGER DEFAULT 0,
+                original_description TEXT DEFAULT '',
+                is_translated INTEGER DEFAULT 0,
+                embedding vector(3072),
+                search_vector tsvector
+            )""")
+
+            # Summary Table
+            cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
+                cluster_id TEXT PRIMARY KEY,
+                summary TEXT,
+                perspectives JSONB DEFAULT '[]',
+                created_at TIMESTAMP
+            )""")
+
+            # Metadata & Entities
+            cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (cluster_id TEXT PRIMARY KEY, tags TEXT[], topics TEXT[], updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (cluster_id TEXT, entity_name TEXT, entity_type TEXT, PRIMARY KEY (cluster_id, entity_name))""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS reactions (cluster_id TEXT, emoji TEXT, count INTEGER DEFAULT 1, PRIMARY KEY (cluster_id, emoji))""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (date DATE PRIMARY KEY, content TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+
+            # Search Triggers
+            cur.execute("""
+                CREATE OR REPLACE FUNCTION articles_search_trigger() RETURNS trigger AS $$
+                begin
+                  new.search_vector := setweight(to_tsvector('simple', coalesce(new.title,'')), 'A') || setweight(to_tsvector('simple', coalesce(new.description,'')), 'B');
+                  return new;
+                end $$ LANGUAGE plpgsql;
+            """)
+            cur.execute("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'tsvectorupdate') THEN
+                        CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION articles_search_trigger();
+                    END IF;
+                END $$;
+            """)
+
+            # Indexes
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)")
+            
+            conn.commit()
+            log.info("Presek 4.0: Schema verification complete.")
+    finally:
+        db_manager.put_conn(conn)
 
 def prune_db():
     """Service method for background maintenance."""
