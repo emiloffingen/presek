@@ -532,7 +532,7 @@
                 const threshold = (typeof BREAKING_SCORE_THRESHOLD !== 'undefined') ? BREAKING_SCORE_THRESHOLD : 3.0;
 
                 // First item on domestic page is always Large if it has an image
-                if (idx === 0 && activeCategory === '🇲🇰' && hasImage && _currentPage === 0) {
+                if (idx === 0 && (activeCategory === '🇲🇰' || !activeCategory) && hasImage && _currentPage === 0) {
                     size = 'bento-large';
                 } 
                 // Breaking news with images get Wide slots

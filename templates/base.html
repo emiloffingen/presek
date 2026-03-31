@@ -359,13 +359,13 @@
                            ${isBalanced ? '<span style="color:#34c759">✓ СЕОПФАТНО</span>' : ''}
                            <span>${esc(a.source)}</span>
                            <span>•</span>
-                           <span>${timeStr}</span>
-                       </div>
+                               <span>${timeStr}</span>
+                           </div>
+                           <h2 class="bento-title">${title}</h2>
+                           ${(size === 'bento-large' || size === 'bento-wide' || size === 'bento-tall') ? `<p class="bento-desc">${desc.substring(0, 180)}...</p>` : ''}
+                           </div>
+                           `;
 
-                       <h2 class="bento-title">${title}</h2>
-                       ${size !== 'bento-standard' ? `<p class="bento-desc">${desc.substring(0, 180)}...</p>` : ''}
-                   </div>
-               `;
             } else {
                innerContent = `
                    <div class="bento-content">
