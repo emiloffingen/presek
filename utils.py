@@ -10,10 +10,20 @@ from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 log = logging.getLogger("presek")
 redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
 
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle datetime objects."""
+    def default(self, obj):
+        if isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        return super().default(obj)
+
 def cached_response(key: str, ttl: int = 60):
     try:
         val = redis_client.get(key)
         if val:
+            # We don't have a generic way to deserialize ISO strings back to datetime
+            # without knowing the schema, so we keep them as strings. 
+            # Flask's jsonify handles ISO strings well.
             return json.loads(val)
     except Exception as e:
         log.warning(f"[cache] read error on {key}: {e}")
@@ -21,7 +31,7 @@ def cached_response(key: str, ttl: int = 60):
 
 def set_cache(key: str, val, ttl: int = 60):
     try:
-        redis_client.setex(key, ttl, json.dumps(val))
+        redis_client.setex(key, ttl, json.dumps(val, cls=DateTimeEncoder))
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 
