@@ -135,6 +135,14 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
             
     return None, None
 
+def translate_to_macedonian(text: str) -> str | None:
+    """Translate news text to Macedonian using AI."""
+    if not text or not text.strip():
+        return text
+    
+    res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
+    return res
+
 def auto_summarize_top_clusters():
     """Dispatches background tasks for summarization/synthesis with deduplication."""
     from tasks import summarize_article_task, synthesize_cluster_task
