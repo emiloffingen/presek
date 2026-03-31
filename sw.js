@@ -1,23 +1,25 @@
-// Пресек — Service Worker
-// Caches the shell (HTML/CSS/JS) for instant loads; news always fetched fresh
+// Пресек — Service Worker v6
+// Caches the shell for instant loads and allows offline reading of recently viewed clusters
 
-const CACHE = 'presek-v5';
-const SHELL = [
+const CACHE_NAME = 'presek-v6';
+const STATIC_ASSETS = [
   '/',
   '/static/modern.css',
-  '/static/logo.svg'
+  '/static/logo.svg',
+  '/static/logo.png',
+  '/static/img/placeholder.svg'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -25,22 +27,43 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Always fetch API calls fresh — never cache news data
+  // 1. API Calls: Network only, with a custom "Offline" response for news
   if (url.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(e.request).catch(() =>
-      new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } })
-    ));
+    e.respondWith(fetch(e.request).catch(async () => {
+        if (url.pathname.includes('/api/news')) {
+            // Return an empty cluster set instead of a hard error
+            return new Response(JSON.stringify({ clusters: [], has_more: false, offline: true }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        return new Response(null, { status: 503 });
+    }));
     return;
   }
 
-  // Assets and Shell: cache-first with network fallback
+  // 2. Navigation & Clusters: Stale-while-revalidate for recently read clusters
+  if (e.request.mode === 'navigate' || url.pathname.startsWith('/cluster/')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        const networkFetch = fetch(e.request).then(resp => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        });
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
+  // 3. General Assets: Cache first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      // Don't cache dynamic pages (like cluster/123) unless we want offline reading
-      // For now, only cache what's in the shell or explicit static assets
       if (resp && resp.status === 200 && e.request.method === 'GET') {
           const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
       }
       return resp;
     }))

@@ -28,6 +28,22 @@
     }
   ],
   "categories": ["news", "politics"],
+  "screenshots": [
+    {
+      "src": "/screenshots/Screenshot_20260328-233031.png",
+      "type": "image/png",
+      "sizes": "1080x2400",
+      "form_factor": "narrow",
+      "label": "Македонски вести во реално време"
+    },
+    {
+      "src": "/screenshots/Screenshot_20260328-233043.png",
+      "type": "image/png",
+      "sizes": "1080x2400",
+      "form_factor": "narrow",
+      "label": "Детална AI анализа"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Дневен Брифинг",
