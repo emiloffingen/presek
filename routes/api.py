@@ -11,6 +11,7 @@ from flask import Blueprint, jsonify, request, Response
 from database import get_db, get_db_size
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
+from embeddings import generate_query_embedding
 
 api_bp = Blueprint('api', __name__)
 
@@ -50,15 +51,39 @@ def api_news():
                 (cluster_ids,)
             ).fetchall()
         elif q:
-            # Full Text Search using the new search_vector
-            sql = """
+            # Hybrid search: full-text + semantic vector search
+            fts_sql = """
                 SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
                 FROM articles
                 WHERE search_vector @@ websearch_to_tsquery('simple', %s)
                 ORDER BY rank DESC, created_at DESC
                 LIMIT 100
             """
-            rows = conn.execute(sql, (q, q)).fetchall()
+            fts_rows = conn.execute(fts_sql, (q, q)).fetchall()
+
+            # Also try semantic search if embeddings exist
+            query_vec = generate_query_embedding(q)
+            if query_vec:
+                vec_sql = """
+                    SELECT *, 1 - (embedding <=> %s::vector) as rank
+                    FROM articles
+                    WHERE embedding IS NOT NULL
+                      AND 1 - (embedding <=> %s::vector) > 0.3
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT 50
+                """
+                vec_str = str(query_vec)
+                vec_rows = conn.execute(vec_sql, (vec_str, vec_str, vec_str)).fetchall()
+                # Merge: deduplicate by link
+                seen_links = {r['link'] for r in fts_rows}
+                merged = list(fts_rows)
+                for r in vec_rows:
+                    if r['link'] not in seen_links:
+                        merged.append(r)
+                        seen_links.add(r['link'])
+                rows = merged
+            else:
+                rows = fts_rows
         else:
             sql = "SELECT * FROM articles WHERE 1=1"
             params = []
@@ -250,40 +275,82 @@ def api_briefing():
 def api_search():
     q = request.args.get("q", "").strip()
     if not q or len(q) < 2: return jsonify({"clusters": [], "total": 0})
-    
+
     conn = get_db()
-    # Weighted search: title (A) is more important than description (B)
-    sql = """
-        SELECT *, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), query) as rank
-        FROM articles, plainto_tsquery('simple', %s) query
-        WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ query
-        ORDER BY rank DESC, created_at DESC
-        LIMIT 200
-    """
-    rows = conn.execute(sql, (q,)).fetchall()
-    conn.close()
-    
-    if not rows:
-        return jsonify({"clusters": [], "total": 0})
-        
-    clusters = defaultdict(list)
-    for r in rows:
-        clusters[r["cluster_id"]].append(dict(r))
-        
-    ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-    # Re-sort by best rank in cluster
-    sorted_clusters = sorted(ranked, key=lambda arts: max(a.get("rank", 0) for a in arts), reverse=True)
-    
-    result = []
-    for arts in sorted_clusters:
-        s = score_cluster(arts)
-        result.append({
-            "articles":    arts,
-            "score":       round(s, 3),
-            "cluster_id":  arts[0]["cluster_id"] if arts else None,
-            "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
-        })
-    return jsonify({"clusters": result, "total": len(result)})
+    try:
+        # Hybrid search: combine full-text (keyword) + semantic (vector) results
+        article_scores: dict[int, float] = {}  # article_id -> combined score
+        article_data: dict[int, dict] = {}
+
+        # 1. Full-text search (keyword matching)
+        fts_sql = """
+            SELECT *, ts_rank(search_vector, websearch_to_tsquery('simple', %s)) as fts_rank
+            FROM articles
+            WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+            ORDER BY fts_rank DESC
+            LIMIT 100
+        """
+        fts_rows = conn.execute(fts_sql, (q, q)).fetchall()
+        for r in fts_rows:
+            d = dict(r)
+            article_data[r['id']] = d
+            article_scores[r['id']] = float(r['fts_rank']) * 10  # weight keyword matches
+
+        # 2. Semantic search (vector similarity)
+        query_vec = generate_query_embedding(q)
+        if query_vec:
+            vec_sql = """
+                SELECT *, 1 - (embedding <=> %s::vector) as similarity
+                FROM articles
+                WHERE embedding IS NOT NULL
+                ORDER BY embedding <=> %s::vector
+                LIMIT 100
+            """
+            vec_str = str(query_vec)
+            vec_rows = conn.execute(vec_sql, (vec_str, vec_str)).fetchall()
+            for r in vec_rows:
+                d = dict(r)
+                sim = float(r['similarity'])
+                if sim < 0.3:
+                    continue  # skip low-similarity results
+                aid = r['id']
+                if aid in article_scores:
+                    article_scores[aid] += sim * 5  # boost articles found by both methods
+                else:
+                    article_scores[aid] = sim * 5
+                    article_data[aid] = d
+
+        if not article_data:
+            return jsonify({"clusters": [], "total": 0})
+
+        # Assign combined score to each article for sorting
+        for aid, d in article_data.items():
+            d['_search_score'] = article_scores.get(aid, 0)
+
+        # Group by cluster
+        clusters = defaultdict(list)
+        for d in article_data.values():
+            clusters[d["cluster_id"]].append(d)
+
+        ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        sorted_clusters = sorted(ranked, key=lambda arts: max(a.get("_search_score", 0) for a in arts), reverse=True)
+
+        result = []
+        for arts in sorted_clusters:
+            s = score_cluster(arts)
+            result.append({
+                "articles":    arts,
+                "score":       round(s, 3),
+                "cluster_id":  arts[0]["cluster_id"] if arts else None,
+                "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
+            })
+        return jsonify({"clusters": result, "total": len(result)})
+    except Exception as e:
+        import logging
+        logging.getLogger("presek").error(f"[api/search] {e}")
+        return jsonify({"clusters": [], "total": 0, "error": "Грешка при пребарување"}), 500
+    finally:
+        conn.close()
 
 
 @api_bp.route("/api/top10")
@@ -447,38 +514,74 @@ def api_ai_ask():
     try:
         conn = get_db()
         try:
-            # Find relevant news context from last 3 days
-            sql = """
-                SELECT source, title, description, ts_rank(to_tsvector('simple', title || ' ' || COALESCE(description, '')), q) as rank
-                FROM articles, plainto_tsquery('simple', %s) q
-                WHERE to_tsvector('simple', title || ' ' || COALESCE(description, '')) @@ q
-                  AND created_at >= NOW() - INTERVAL '3 days'
-                ORDER BY rank DESC
-                LIMIT 10
-            """
-            rows = conn.execute(sql, (query,)).fetchall()
+            # 1. Semantic search for recent and synthesized content
+            query_vec = generate_query_embedding(query)
+            if query_vec:
+                # We look for articles AND synthesized summaries to get a broader perspective
+                vec_sql = """
+                    SELECT a.source, a.title, a.description, cs.summary as synthesis,
+                           1 - (a.embedding <=> %s::vector) as rank
+                    FROM articles a
+                    LEFT JOIN cluster_summaries cs ON a.cluster_id = cs.cluster_id
+                    WHERE a.embedding IS NOT NULL
+                      AND a.created_at >= NOW() - INTERVAL '7 days'
+                    ORDER BY a.embedding <=> %s::vector
+                    LIMIT 10
+                """
+                vec_str = str(query_vec)
+                rows = conn.execute(vec_sql, (vec_str, vec_str)).fetchall()
+                rows = [r for r in rows if float(r['rank']) > 0.2]
+            else:
+                # Fallback to keyword search
+                fts_sql = """
+                    SELECT source, title, description, NULL as synthesis,
+                           ts_rank(search_vector, plainto_tsquery('simple', %s)) as rank
+                    FROM articles
+                    WHERE search_vector @@ plainto_tsquery('simple', %s)
+                      AND created_at >= NOW() - INTERVAL '7 days'
+                    ORDER BY rank DESC
+                    LIMIT 10
+                """
+                rows = conn.execute(fts_sql, (query, query)).fetchall()
         finally:
             conn.close()
 
         if not rows:
-            return jsonify({"response": "За жал, немам информации за оваа тема во последните вести. Можам да одговорам само за актуелни случувања."})
+            return jsonify({"response": "За жал, немам информации за оваа тема во моите извори од последната недела."})
 
+        # 2. Build Rich Context
         context_items = []
+        seen_synthesis = set()
         for r in rows:
-            context_items.append(f"SOURCE: {r['source']} | HEADLINE: {r['title']} | DESC: {(r['description'] or '')[:100]}...")
+            item = f"SOURCE: {r['source']} | HEADLINE: {r['title']}"
+            if r['synthesis'] and r['synthesis'] not in seen_synthesis:
+                item += f"\nSYNTHESIS: {r['synthesis']}"
+                seen_synthesis.add(r['synthesis'])
+            else:
+                item += f"\nDESC: {(r['description'] or '')[:150]}..."
+            context_items.append(item)
 
-        context_text = "\n".join(context_items)
+        context_text = "\n---\n".join(context_items)
 
         from ai_engine import _call_ai
         from prompts import GLOBAL_ASSISTANT_SYSTEM_PROMPT
 
-        answer, tier = _call_ai(f"NEWS CONTEXT:\n{context_text}\n\nUSER QUESTION: {query}", GLOBAL_ASSISTANT_SYSTEM_PROMPT, max_tokens=2000, task_type="ai_ask")
+        # We use a slightly more powerful prompt for RAG v2
+        advanced_prompt = (
+            GLOBAL_ASSISTANT_SYSTEM_PROMPT + 
+            "\n\nДОПОЛНИТЕЛНО: Ако забележиш спротивставени информации меѓу изворите, нагласи ги. "
+            "Ако има синтетизирана анализа (SYNTHESIS), дај ѝ приоритет на неа за сеопфатен одговор."
+        )
+
+        answer, tier = _call_ai(f"КОНТЕКСТ ОД ВЕСТИ:\n{context_text}\n\nПРАШАЊЕ НА КОРИСНИКОТ: {query}", advanced_prompt, max_tokens=2000, task_type="ai_ask")
         if answer:
-            return jsonify({"response": answer})
+            return jsonify({"response": answer, "sources_count": len(rows)})
         return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 503
 
     except Exception as e:
-        return jsonify({"error": "Серверот е преоптоварен. Обидете се подоцна."}), 500
+        import logging
+        logging.getLogger("presek").error(f"[api/ai/ask] {e}")
+        return jsonify({"error": "Грешка при обработка на прашањето."}), 500
 
 @api_bp.route("/api/chat_cluster", methods=["POST"])
 def api_chat_cluster():
@@ -630,15 +733,28 @@ def api_trending_entities():
     finally:
         conn.close()
 
-@api_bp.route("/api/ai/entity_info/<name>")
-def api_ai_entity_info(name: str):
-    from ai_engine import _call_ai
+@api_bp.route("/api/live")
+def api_live():
+    """SSE endpoint for real-time news updates."""
+    from utils import event_stream
+    return Response(event_stream("updates"), mimetype="text/event-stream")
 
-    system_prompt = "Дај краток, објективен и информативен опис (максимум 3 реченици) на македонски јазик. Ако е личност, кажи ја функцијата. Ако е организација, кажи ја дејноста. Врати само чист текст."
-    answer, tier = _call_ai(name, system_prompt, max_tokens=200, task_type="entity_info")
-    if answer:
-        return jsonify({"info": answer.strip()})
-    return jsonify({"error": "AI service unavailable."}), 503
+@api_bp.route("/api/heartbeat")
+def api_heartbeat():
+    """Returns basic health metrics for the UI ticker."""
+    from database import get_db
+    conn = get_db()
+    try:
+        total = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
+        recent = conn.execute("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'").fetchone()[0]
+        return jsonify({
+            "status": "online",
+            "total_articles": total,
+            "last_hour": recent,
+            "time": datetime.datetime.now().isoformat()
+        })
+    finally:
+        conn.close()
 
 def _get_r2_client():
     import boto3

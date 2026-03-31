@@ -8,6 +8,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN
 from ai_engine import translate_to_macedonian, auto_summarize_top_clusters, _call_ai, clean_json_response, generate_cover_art
+from embeddings import generate_embeddings_batch
 from database import get_db
 from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
 from categories import ALLOWED_CATEGORIES
@@ -720,6 +721,54 @@ def translate_article_task(article_id: int, original_title: str, original_descri
     finally:
         if conn:
             conn.close()
+
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
+def generate_embeddings_task():
+    """Generate embeddings for articles that don't have them yet."""
+    conn = None
+    try:
+        conn = get_db()
+        # Fetch articles without embeddings (newest first, batch of 50)
+        rows = conn.execute("""
+            SELECT id, title, description
+            FROM articles
+            WHERE embedding IS NULL
+            ORDER BY created_at DESC
+            LIMIT 50
+        """).fetchall()
+
+        if not rows:
+            return
+
+        # Build text for each article: title + description snippet
+        texts = []
+        for r in rows:
+            text = r['title'] or ''
+            desc = r['description'] or ''
+            if desc:
+                text += ' ' + desc[:500]
+            texts.append(text)
+
+        embeddings = generate_embeddings_batch(texts)
+
+        count = 0
+        for r, emb in zip(rows, embeddings):
+            if emb is not None:
+                conn.execute(
+                    "UPDATE articles SET embedding = %s WHERE id = %s",
+                    (str(emb), r['id'])
+                )
+                count += 1
+
+        conn.commit()
+        if count:
+            log.info(f"[embeddings] Generated embeddings for {count}/{len(rows)} articles")
+    except Exception as e:
+        log.error(f"[embeddings] Task failed: {e}")
+    finally:
+        if conn:
+            conn.close()
+
 
 @celery_app.task
 def send_telegram_briefing_task():

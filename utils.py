@@ -110,10 +110,27 @@ def score_cluster(arts):
     return cred_score * recency * breadth * click_bonus
 
 
-def rank_articles_in_cluster(arts):
-    """Within a cluster, put the most credible source first."""
-    return sorted(
-        arts,
-        key=lambda a: SOURCE_CREDIBILITY.get(a["source"], DEFAULT_CREDIBILITY),
-        reverse=True
-    )
+def publish_event(channel: str, data: dict):
+    """Broadcast a JSON message to a Redis channel."""
+    try:
+        redis_client.publish(channel, json.dumps(data, cls=DateTimeEncoder))
+    except Exception as e:
+        log.warning(f"[pubsub] publish error on {channel}: {e}")
+
+def event_stream(channel: str):
+    """Generator for Server-Sent Events (SSE) subscribing to a Redis channel."""
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe(channel)
+    # Send an initial "ping" to keep connection alive
+    yield "retry: 10000\n\n"
+    try:
+        for message in pubsub.listen():
+            if message['type'] == 'message':
+                data = message['data']
+                yield f"data: {data}\n\n"
+    except Exception as e:
+        log.error(f"[pubsub] stream error on {channel}: {e}")
+    finally:
+        pubsub.unsubscribe(channel)
+        pubsub.close()
+

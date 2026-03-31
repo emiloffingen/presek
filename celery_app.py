@@ -54,5 +54,9 @@ celery_app.conf.update(
             'task': 'tasks.send_telegram_briefing_task',
             'schedule': crontab(hour=7, minute=5), # Run daily at 7:05 AM UTC (8:05 AM local)
         },
+        'generate-embeddings': {
+            'task': 'tasks.generate_embeddings_task',
+            'schedule': 300.0,  # Every 5 minutes — embed new articles for semantic search
+        },
     }
 )

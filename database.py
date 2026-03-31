@@ -100,7 +100,15 @@ def init_db():
     """Initialize the database schema."""
     conn = get_db()
     cur = conn.cursor()
-    
+
+    # Ensure pgvector extension is available
+    try:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        log.warning("pgvector extension not available — semantic search disabled")
+
     # Create tables with reorganized schema if new install
     cur.execute("""CREATE TABLE IF NOT EXISTS articles (
         id SERIAL PRIMARY KEY,
@@ -133,6 +141,14 @@ def init_db():
         conn.commit()
     except:
         conn.rollback()
+
+    # pgvector embedding column (768-dim for Google text-embedding-004)
+    try:
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS embedding vector(768)")
+        conn.commit()
+    except:
+        conn.rollback()
+        log.warning("Could not add embedding column — pgvector may not be installed")
 
     # Trigger for automatic search vector updates
     cur.execute("""
@@ -212,7 +228,17 @@ def init_db():
 
     # Full Text Search Index
     cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
-    
+
+    # Vector similarity index (HNSW) for semantic search
+    try:
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_articles_embedding
+            ON articles USING hnsw (embedding vector_cosine_ops)
+            WITH (m = 16, ef_construction = 64)
+        """)
+    except Exception:
+        log.warning("Could not create HNSW index — pgvector may not be installed")
+
     conn.commit()
     cur.close()
     conn.close()
