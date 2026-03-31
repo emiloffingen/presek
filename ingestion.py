@@ -9,10 +9,18 @@ import clustering
 from ai_engine import translate_to_macedonian
 from categories import detect_category, detect_subcategory, detect_country, normalize_headline
 from database import get_db
-from config import RSS_FEEDS, DIASPORA_FEEDS, FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES
+from config import RSS_FEEDS, DIASPORA_FEEDS, FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, SOURCE_LIMITS, JUNK_KEYWORDS
+from collections import defaultdict
 from embeddings import generate_embeddings_batch
 
 log = logging.getLogger("presek")
+
+def is_junk(title: str, desc: str) -> bool:
+    """True if text contains blacklisted low-quality keywords."""
+    text = f"{title} {desc}".lower()
+    return any(word in text for word in JUNK_KEYWORDS)
+
+# ... (keep other helpers) ...
 
 def clean_rss_footer(text: str) -> str:
     """Removes common RSS footers like 'The post ... appeared first on ...'"""
@@ -46,13 +54,17 @@ def ingest_feeds():
     """Fetch all RSS feeds in parallel, then write to DB sequentially."""
     conn = get_db()
     try:
-        # Pre-fetch known links to skip duplicates early
+        # Pre-fetch known links and recent source titles to skip duplicates early
         known_links = set()
-        link_rows = conn.execute(
-            "SELECT link FROM articles WHERE created_at >= %s",
-            (datetime.datetime.now() - datetime.timedelta(days=2),)
+        recent_by_source = defaultdict(list)
+        
+        rows = conn.execute(
+            "SELECT link, source, title FROM articles WHERE created_at >= %s",
+            (datetime.datetime.now() - datetime.timedelta(hours=12),)
         ).fetchall()
-        known_links = {r["link"] for r in link_rows}
+        for r in rows:
+            known_links.add(r["link"])
+            recent_by_source[r["source"]].append(r["title"].lower())
 
         all_entries = []
         errors = []
@@ -65,12 +77,22 @@ def ingest_feeds():
                     errors.append((source, err))
                 else:
                     for e in entries:
-                        title = e.get("title", "")
+                        title = e.get("title", "").strip()
                         link  = e.get("link", "")
                         if not title or not link or link in known_links:
                             continue
+                        
                         desc  = e.get("summary", "") or e.get("description", "")
                         
+                        # 1. Junk Filter
+                        if is_junk(title, desc):
+                            continue
+                            
+                        # 2. Same-Source Semantic Filter (Prevents identical titles within 12h)
+                        t_lower = title.lower()
+                        if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) for rt in recent_by_source[source]):
+                            continue
+
                         image_url = None
                         if "media_content" in e and e.media_content:
                             image_url = e.media_content[0].get("url")
@@ -178,12 +200,17 @@ def ingest_feeds():
 def ingest_diaspora_feeds():
     """Fetch diaspora RSS feeds and write to DB separately (without translation)."""
     conn = get_db()
-    # Pre-fetch known links to skip duplicates early
-    known_links_rows = conn.execute(
-        "SELECT link FROM articles WHERE country != '🇲🇰' AND created_at >= %s",
-        (datetime.datetime.now() - datetime.timedelta(days=2),)
+    # Pre-fetch known links and recent source titles to skip duplicates early
+    known_links = set()
+    recent_by_source = defaultdict(list)
+    
+    rows = conn.execute(
+        "SELECT link, source, title FROM articles WHERE country != '🇲🇰' AND created_at >= %s",
+        (datetime.datetime.now() - datetime.timedelta(hours=12),)
     ).fetchall()
-    known_links = {r["link"] for r in known_links_rows}
+    for r in rows:
+        known_links.add(r["link"])
+        recent_by_source[r["source"]].append(r["title"].lower())
     conn.close()
 
     feed_meta = {s: (cat, detect_country(s)) for s, u, cat in DIASPORA_FEEDS}
@@ -200,12 +227,22 @@ def ingest_diaspora_feeds():
             else:
                 cat, country = feed_meta[source]
                 for e in entries:
-                    title = e.get("title", "")
+                    title = e.get("title", "").strip()
                     link  = e.get("link", "")
                     if not title or not link or link in known_links:
                         continue
+                    
                     desc  = e.get("summary", "") or e.get("description", "")
                     
+                    # 1. Junk Filter
+                    if is_junk(title, desc):
+                        continue
+                        
+                    # 2. Same-Source Semantic Filter
+                    t_lower = title.lower()
+                    if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) for rt in recent_by_source[source]):
+                        continue
+
                     image_url = None
                     if "media_content" in e and e.media_content:
                         image_url = e.media_content[0].get("url")

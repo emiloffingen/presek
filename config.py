@@ -232,6 +232,16 @@ SOURCE_CATEGORIES = {
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 
+# ── Ingestion Quality Settings ──────────────────────────────────
+JUNK_KEYWORDS = [
+    "хороскоп", "временска прогноза", "виц на денот", "на денешен ден", 
+    "дневно мени", "рецепт на денот", "курсна листа", "лото резултати",
+    "го извлековме среќниот добитник"
+]
+
+# ── Balanced Coverage Settings ──────────────────────────────────
+BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
+
 # ── Telegram Configuration ───────────────────────────────────────
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 

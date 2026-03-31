@@ -160,6 +160,7 @@ def api_news():
                 "is_breaking":   s >= BREAKING_SCORE_THRESHOLD,
                 "has_summary":   any(a.get("summary") for a in arts),
                 "has_synthesis": cid in cached_synthesis_ids,
+                "has_balanced":  is_balanced(arts),
             })
 
         start  = page * page_size

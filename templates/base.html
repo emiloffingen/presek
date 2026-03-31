@@ -341,6 +341,7 @@
             const imgSrc = clusterImage ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : null;
 
             const isBreaking = (c.score || 0) >= BREAKING_SCORE_THRESHOLD;
+            const isBalanced = c.has_balanced;
             const timeStr = timeAgo(a.created_at);
             const title = esc(a.headline || a.title);
             const desc = esc(a.description || '');
@@ -355,10 +356,12 @@
                    <div class="bento-overlay">
                        <div class="bento-meta">
                            ${isBreaking ? '<span style="color:#ff3b30">● ВО ЖИВО</span>' : ''}
+                           ${isBalanced ? '<span style="color:#34c759">✓ СЕОПФАТНО</span>' : ''}
                            <span>${esc(a.source)}</span>
                            <span>•</span>
                            <span>${timeStr}</span>
                        </div>
+
                        <h2 class="bento-title">${title}</h2>
                        ${size !== 'bento-standard' ? `<p class="bento-desc">${desc.substring(0, 180)}...</p>` : ''}
                    </div>

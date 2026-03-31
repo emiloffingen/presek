@@ -612,9 +612,61 @@ def cleanup_cover_art_task():
     """Background task to remove orphaned cover art images."""
     from ai_engine import cleanup_cover_art
     cleanup_cover_art()
+import requests
+from urllib.parse import quote
+from config import POLLINATIONS_API_KEY
+
+def _generate_cover_art(title: str) -> str | None:
+    """Generate a stylized editorial illustration for a headline."""
+    try:
+        # We use a specific prompt style for Presek (Editorial, Minimalist, Midnight Noir)
+        prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, dramatic lighting, dark background, professional, cinematic."
+        safe_prompt = quote(prompt)
+        # Pollinations is free and fast for these dimensions
+        img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1024&height=576&nologo=true&seed={int(time.time())}"
+        return img_url
+    except Exception as e:
+        log.warning(f"[ai-img] Generation failed: {e}")
+        return None
 
 @celery_app.task
 def backfill_cover_art_task():
+    """Find recent clusters without images and generate AI art for them."""
+    conn = get_db()
+    try:
+        # Find clusters created in last 12h that have NO images across all articles
+        sql = """
+            SELECT cluster_id, title 
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '12 hours'
+            GROUP BY cluster_id, title
+            HAVING COUNT(image_url) FILTER (WHERE image_url IS NOT NULL) = 0
+            LIMIT 5
+        """
+        rows = conn.execute(sql).fetchall()
+
+        for r in rows:
+            cid = r["cluster_id"]
+            title = r["title"]
+            log.info(f"[ai-img] Generating art for cluster {cid}: {title[:40]}")
+
+            gen_url = _generate_cover_art(title)
+            if gen_url:
+                # Update the first article of the cluster to have this image
+                # This makes it the 'lead' image for the Bento tile
+                conn.execute(
+                    "UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s LIMIT 1)",
+                    (gen_url, cid)
+                )
+                conn.commit()
+                log.info(f"[ai-img] Success for {cid}")
+                time.sleep(2) # rate limit respect
+
+    except Exception as e:
+        log.error(f"[ai-img] Task error: {e}")
+    finally:
+        conn.close()
+
     """Generate cover art for clusters that have synthesis but no images."""
     conn = None
     try:

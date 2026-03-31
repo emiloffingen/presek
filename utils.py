@@ -118,6 +118,18 @@ def rank_articles_in_cluster(arts):
         reverse=True
     )
 
+def is_balanced(arts) -> bool:
+    """True if cluster contains 3+ unique sources from different categories."""
+    from config import SOURCE_CATEGORIES, BALANCED_COVERAGE_THRESHOLD
+    if len(arts) < BALANCED_COVERAGE_THRESHOLD:
+        return false
+    
+    unique_categories = {SOURCE_CATEGORIES.get(a["source"], "Локални") for a in arts}
+    unique_sources = {a["source"] for a in arts}
+    
+    # Balanced if 3+ sources OR 2+ distinct categories (e.g. Mainstream + Independent)
+    return len(unique_sources) >= 4 or len(unique_categories) >= 2
+
 def publish_event(channel: str, data: dict):
     """Broadcast a JSON message to a Redis channel."""
     try:
