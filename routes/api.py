@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
 from database import get_db, get_db_size
-from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time
+from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from embeddings import generate_query_embedding
 
