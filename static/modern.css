@@ -290,28 +290,30 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
    ========================================= */
 
 :root {
-    --bento-gap: 20px;
-    --bento-radius: 24px;
+    --bento-gap: 24px;
+    --bento-radius: 28px;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 .bento-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: minmax(180px, auto);
+    grid-auto-rows: minmax(200px, auto);
     gap: var(--bento-gap);
     max-width: var(--max-width);
     margin: 0 auto;
     padding: var(--space-xl) var(--space-md);
 }
 
-/* Base Tile Styling */
+/* Base Tile Styling with Glassmorphism */
 .bento-tile {
     position: relative;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--bento-radius);
     overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
     text-decoration: none;
@@ -319,32 +321,15 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
 }
 
 .bento-tile:hover {
-    transform: translateY(-8px) scale(1.01);
+    transform: translateY(-10px) scale(1.02);
     border-color: var(--primary);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     z-index: 10;
 }
 
-/* Tile Variations */
-.bento-large {
-    grid-column: span 2;
-    grid-row: span 2;
-    min-height: 400px;
-}
-
-.bento-wide {
-    grid-column: span 2;
-    grid-row: span 1;
-}
-
-.bento-tall {
-    grid-column: span 1;
-    grid-row: span 2;
-}
-
-.bento-standard {
-    grid-column: span 1;
-    grid-row: span 1;
+html.light .bento-tile {
+    --glass-bg: rgba(0, 0, 0, 0.02);
+    --glass-border: rgba(0, 0, 0, 0.05);
 }
 
 /* Visual Components within Bento */
@@ -357,18 +342,23 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
 .bento-img {
     width: 100%; height: 100%;
     object-fit: cover;
-    transition: transform 1s ease;
+    filter: brightness(0.8) contrast(1.1);
+    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bento-tile:hover .bento-img {
-    transform: scale(1.08);
+    transform: scale(1.1);
+    filter: brightness(0.9) contrast(1.1);
 }
 
 .bento-overlay {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     padding: var(--space-xl);
-    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+    background: linear-gradient(to top, 
+        rgba(15, 17, 19, 0.95) 0%, 
+        rgba(15, 17, 19, 0.6) 50%, 
+        transparent 100%);
     color: white;
     z-index: 2;
     display: flex;
@@ -378,12 +368,50 @@ html.light .site-header { background: rgba(245, 247, 249, 0.85); }
 }
 
 .bento-content {
-    padding: var(--space-lg);
+    padding: var(--space-xl);
     z-index: 2;
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+}
+
+/* Skeleton Loader 3.0 */
+.skeleton-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--bento-radius);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    overflow: hidden;
+    position: relative;
+}
+
+.skeleton-card::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255,255,255,0.05), 
+        transparent);
+    animation: shimmer 2s infinite;
+}
+
+html.light .skeleton-card::after {
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0,0,0,0.03), 
+        transparent);
+}
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
 }
 
 /* Typography Enhancements */

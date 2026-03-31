@@ -539,15 +539,18 @@
                 else if (score >= threshold && hasImage && idx < 10) {
                     size = 'bento-wide';
                 }
-                // Occasionally inject a tall tile for visual variety
-                else if (idx % 7 === 0 && hasImage && idx > 0) {
+                // Visual rhythm: Tall tiles for variety
+                else if (idx % 5 === 4 && hasImage) {
                     size = 'bento-tall';
+                }
+                // Wide tiles every 8 items for horizontal breaks
+                else if (idx % 8 === 0 && hasImage && idx > 0) {
+                    size = 'bento-wide';
                 }
 
                 if (typeof renderBentoTile === 'function') {
                     html += renderBentoTile(c, size);
                 } else if (typeof renderCard === 'function') {
-                    // Fallback to old renderCard if Bento is missing
                     html += renderCard(c, idx);
                 }
             });
@@ -576,15 +579,15 @@
             _currentPage = 0;
             allClusters = [];
             document.getElementById('pageWrap').innerHTML = `
-                <div class="skeleton-grid">
-                    ${`
-                        <div class="skeleton-card">
-                            <div class="skeleton-box" style="aspect-ratio: 16/9; width: 100%;"></div>
-                            <div class="skeleton-box" style="height: 12px; width: 30%;"></div>
-                            <div class="skeleton-box" style="height: 28px; width: 90%;"></div>
-                            <div class="skeleton-box" style="height: 60px; width: 100%;"></div>
-                        </div>
-                    `.repeat(6)}
+                <div class="bento-grid">
+                    <div class="skeleton-card bento-large"></div>
+                    <div class="skeleton-card bento-standard"></div>
+                    <div class="skeleton-card bento-standard"></div>
+                    <div class="skeleton-card bento-wide"></div>
+                    <div class="skeleton-card bento-standard"></div>
+                    <div class="skeleton-card bento-tall"></div>
+                    <div class="skeleton-card bento-standard"></div>
+                    <div class="skeleton-card bento-standard"></div>
                 </div>
             `;
         }

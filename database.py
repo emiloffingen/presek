@@ -142,13 +142,23 @@ def init_db():
     except:
         conn.rollback()
 
-    # pgvector embedding column (768-dim for Google text-embedding-004)
+    # pgvector embedding column (3072-dim for Google gemini-embedding-001)
     try:
-        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS embedding vector(768)")
+        cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS embedding vector(3072)")
+        # Check if we need to resize (handles migration from 768 to 3072)
+        cur.execute("""
+            SELECT atttypmod 
+            FROM pg_attribute 
+            WHERE attrelid = 'articles'::regclass AND attname = 'embedding'
+        """)
+        typmod = cur.fetchone()[0]
+        if typmod != 3072:
+            log.info(f"Resizing embedding column from {typmod} to 3072...")
+            cur.execute("ALTER TABLE articles ALTER COLUMN embedding TYPE vector(3072)")
         conn.commit()
-    except:
+    except Exception as e:
         conn.rollback()
-        log.warning("Could not add embedding column — pgvector may not be installed")
+        log.warning(f"Could not update embedding column: {e}")
 
     # Trigger for automatic search vector updates
     cur.execute("""
