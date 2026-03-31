@@ -125,12 +125,7 @@ const UI = {
 
         const toast = document.createElement('div');
         toast.id = 'liveToast';
-        toast.style = `
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: var(--primary); color: white; padding: 10px 24px;
-            border-radius: 30px; font-weight: bold; cursor: pointer; z-index: 1500;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 0.9rem;
-        `;
+        toast.className = 'live-toast fade-in';
         toast.innerHTML = `✨ ${count} нови вести. Освежи.`;
         toast.onclick = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -147,4 +142,36 @@ const UI = {
     }
 };
 
+const AI = {
+    toggleSheet(show) {
+        const sheet = document.getElementById('aiSheet');
+        if (sheet) sheet.classList.toggle('active', show);
+    },
+
+    async ask(query = null) {
+        const input = document.getElementById('aiInput');
+        const q = query || input?.value?.trim();
+        if (!q) return;
+
+        if (input) input.value = '';
+        const responseEl = document.getElementById('aiResponse');
+        if (responseEl) responseEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.95rem">Размислувам...</div>';
+        this.toggleSheet(true);
+
+        try {
+            const clusterId = window.location.pathname.split('/').pop();
+            const res = await fetch('/api/chat_cluster', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cluster_id: clusterId, query: q })
+            });
+            const data = await res.json();
+            if (responseEl) responseEl.innerHTML = data.error ? `<p style="color:var(--primary)">Грешка: ${data.error}</p>` : data.response.replace(/\n/g, '<br>');
+        } catch(e) {
+            if (responseEl) responseEl.innerHTML = '<p style="color:var(--primary)">Серверот не одговара.</p>';
+        }
+    }
+};
+
 window.UI = UI;
+window.AI = AI;
