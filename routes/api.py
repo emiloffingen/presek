@@ -20,6 +20,17 @@ def api_news():
     page      = request.args.get("page", 0, type=int)
     page_size = request.args.get("page_size", 50, type=int)
     country   = request.args.get("country", "🇲🇰")
+    
+    # Fix for double-encoding of emojis in some environments
+    try:
+        if country:
+            # If it's lat1-encoded utf8 bytes disguised as a string
+            country_bytes = country.encode('latin-1')
+            if b'\xf0\x9f' in country_bytes:
+                country = country_bytes.decode('utf-8')
+    except Exception:
+        pass
+
     sub       = request.args.get("sub", "").strip()
     ids       = request.args.get("ids", "").strip()
     sort_by   = request.args.get("sort", "recent")
