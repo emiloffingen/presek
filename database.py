@@ -176,13 +176,14 @@ class DatabaseManager:
                 cur.execute("""CREATE TABLE IF NOT EXISTS reactions (cluster_id TEXT, emoji TEXT, count INTEGER DEFAULT 1, PRIMARY KEY (cluster_id, emoji))""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (date DATE PRIMARY KEY, content TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+                # Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)")
+                # NOTE: idx_articles_embedding is disabled for 3072-dim vectors (pgvector 2000-dim limit)
+
                 conn.commit()
-        finally:
-            self.put_conn(conn)
+
 
 # --- Legacy Compatibility Wrapper ---
 
