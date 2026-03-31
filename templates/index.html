@@ -321,12 +321,12 @@
     </div>
 
     <!-- Sentiment Filters -->
-    <div class="trending-container" id="sentimentBox" style="display:none; margin-bottom: var(--space-md);">
+    <div class="trending-container" id="sentimentBox" style="margin-bottom: var(--space-md);">
         <div class="trending-label">Тон</div>
         <div class="trending-scroll">
-            <div class="trend-tag active" id="sentAll" data-sentiment="">Сите</div>
-            <div class="trend-tag" id="sentPos" data-sentiment="🟢">🟢 Позитивни</div>
-            <div class="trend-tag" id="sentCrit" data-sentiment="🔴">🔴 Критични</div>
+            <div class="trend-tag active" id="sentAll" onclick="filterSentiment('')" data-sentiment="">Сите</div>
+            <div class="trend-tag" id="sentPos" onclick="filterSentiment('🟢')" data-sentiment="🟢">🟢 Позитивни</div>
+            <div class="trend-tag" id="sentCrit" onclick="filterSentiment('🔴')" data-sentiment="🔴">🔴 Критични</div>
         </div>
     </div>
 
@@ -396,7 +396,7 @@
         { id: '🇹🇷', label: 'Турција' }
     ];
 
-    const topics = [
+    let topics = [
         { id: '', label: 'Сите Теми' },
         { id: 'Политика', label: 'Политика' },
         { id: 'Економија', label: 'Економија' },
@@ -405,6 +405,27 @@
         { id: 'Забава', label: 'Забава' },
         { id: 'Здравје', label: 'Здравје' }
     ];
+
+    async function fetchTopics() {
+        try {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+            if (data.by_category) {
+                const fetched = data.by_category
+                    .filter(c => c.category && c.category !== 'Македонија')
+                    .map(c => ({ id: c.category, label: c.category }));
+                // Merge with hardcoded to ensure we have standard ones even if empty
+                const unique = new Set(topics.map(t => t.id));
+                fetched.forEach(f => {
+                    if (!unique.has(f.id)) {
+                        topics.push(f);
+                        unique.add(f.id);
+                    }
+                });
+                initCategories();
+            }
+        } catch(e) { console.error("Topic fetch error", e); }
+    }
 
     function initCategories() {
         const list = document.getElementById('categoryList');
@@ -447,6 +468,13 @@
         else if (activeSentiment === '🔴') document.getElementById('sentCrit').classList.add('active');
     }
 
+    function filterSentiment(s) {
+        activeSentiment = s;
+        _currentPage = 0;
+        initCategories();
+        fetchNews();
+    }
+
     function renderHero(clusters) {
         const wrap = document.getElementById('heroWrap');
         const grid = document.getElementById('heroGrid');
@@ -466,17 +494,18 @@
         wrap.style.visibility = 'visible'; wrap.style.height = 'auto'; wrap.style.overflow = 'visible';
         grid.innerHTML = top3.map((c, i) => {
             const a = c.articles[0];
-            const heroImg = c.articles.find(art => art.image_url).image_url;
+            const heroArt = c.articles.find(art => art.image_url);
+            const heroImg = heroArt ? heroArt.image_url : '/static/img/placeholder.svg';
             const sizeClass = i === 0 ? 'large' : 'small';
-            const imgSrc = heroImg.startsWith('/static/') ? heroImg : '/proxy?url=' + encodeURIComponent(heroImg);
+            const imgSrc = heroImg.startsWith('/') ? heroImg : '/proxy?url=' + encodeURIComponent(heroImg);
             return `
-                <a href="/cluster/${esc(c.cluster_id)}" class="hero-item ${sizeClass}" onmousedown="trackClick('${esc(String(a.id))}')">
-                    <img src="${imgSrc}" class="hero-img" loading="lazy" alt="${esc(a.title) || 'Вест'}">
+                <a href="/cluster/${c.cluster_id}" class="hero-item ${sizeClass}">
+                    <img src="${imgSrc}" class="hero-img" loading="lazy" alt="${a.title}">
                     <div class="hero-overlay">
                         <div class="story-meta" style="color:rgba(255,255,255,0.8); margin-bottom:8px">
-                            <span>${esc(a.source)}</span> • <span>${timeAgo(a.created_at)}</span>
+                            <span>${a.source}</span> • <span>${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
-                        <h2 class="hero-title-text">${esc(a.title)}</h2>
+                        <h2 class="hero-title-text">${a.title}</h2>
                     </div>
                 </a>
             `;
@@ -763,6 +792,7 @@
     }
 
     initCategories();
+    fetchTopics();
     fetchNews();
     fetchTrending();
     fetchEntities();

@@ -324,6 +324,7 @@
             for (let art of c.articles) {
                 if (art.image_url) { clusterImage = art.image_url; break; }
             }
+            const imgSrc = clusterImage ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : '/static/img/placeholder.svg';
 
             const isBreaking = (c.score || 0) >= BREAKING_SCORE_THRESHOLD;
             const uniqueSources = [...new Set(c.articles.map(art => art.source))];
@@ -331,13 +332,12 @@
             const moreCount = uniqueSources.length - topSources.length;
             const rel = getReliabilityInfo(a.source);
 
-            let sentimentEmoji = '';
+            let sentimentBadge = '';
             const leadSummary = a.summary || '';
-            const match = leadSummary.match(/[🟢🔴⚪]/);
-            if (match) {
-                sentimentEmoji = `<span class="sentiment-badge" title="AI Сентимент Анализа">${match[0]}</span>`;
+            const sMatch = leadSummary.match(/[🟢🔴⚪]/) || (c.articles.some(art => art.summary && art.summary.match(/[🟢🔴⚪]/)) ? c.articles.find(art => art.summary && art.summary.match(/[🟢🔴⚪]/)).summary.match(/[🟢🔴⚪]/) : null);
+            if (sMatch) {
+                sentimentBadge = `<span class="sentiment-badge" title="AI Сентимент Анализа">${sMatch[0]}</span>`;
             }
-
             const cid = esc(c.cluster_id);
             const allowedEmojis = ["👍", "😮", "😡", "😢", "🔥"];
             const reactionHtml = allowedEmojis.map(emoji => `
@@ -350,8 +350,9 @@
             const title = esc(a.headline || a.title);
             const desc = esc(a.description || '');
             const source = esc(a.source);
-            const imgSrc = clusterImage ? (clusterImage.startsWith('/static/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : '';
-            const hasImage = !!imgSrc;
+            // imgSrc already calculated above, but ensuring it's robust
+            const finalImgSrc = clusterImage ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : '';
+            const hasImage = !!finalImgSrc;
             const cardClasses = ['story-card', 'fade-in'];
             if (featured && hasImage) cardClasses.push('featured');
             if (!hasImage) cardClasses.push('no-image');
@@ -362,12 +363,13 @@
                     ${hasImage ? `
                         <a href="/cluster/${cid}" class="story-thumb-link" onmousedown="trackClick('${esc(String(a.id))}')">
                             <div class="story-thumb-wrap">
-                                <img src="${imgSrc}" class="story-thumb" loading="lazy" alt="${title}">
+                                <img src="${finalImgSrc}" class="story-thumb" loading="lazy" alt="${title}">
+                                ${sentimentBadge}
                             </div>
                         </a>
                     ` : ''}
                     <div class="story-meta">
-                        ${sentimentEmoji}
+                        ${!hasImage ? sentimentBadge : ''}
                         <a href="/izvor/${encodeURIComponent(a.source)}" class="source-link">
                             <span class="source" title="Кредибилитет на изворот">${source}</span>
                         </a>
