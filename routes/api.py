@@ -104,7 +104,7 @@ def api_news():
                     sql += " AND (" + " OR ".join(sub_clauses) + ")"
             else:
                 # Regular Filters
-                if country and country != '🇲🇰':
+                if country:
                     sql += " AND country = %s"
                     params.append(country)
                 if sub:
