@@ -5,11 +5,11 @@ import urllib.request
 import urllib.error
 import re
 import logging
+from abc import ABC, abstractmethod
 from collections import defaultdict
 
 from config import (
     GOOGLE_API_KEY, GEMINI_URL,
-    AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC, AUTO_SUMMARIZE_DELAY,
     GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
@@ -18,394 +18,142 @@ from config import (
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
-    ANALYSIS_SYSTEM_PROMPT, TRANSLATION_SYSTEM_PROMPT, 
-    CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT,
-    GLOBAL_ASSISTANT_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT,
-    DAILY_BRIEF_SYSTEM_PROMPT, FACTCHECK_SYSTEM_PROMPT,
-    ENTITY_EXTRACTION_PROMPT
+    TRANSLATION_SYSTEM_PROMPT
 )
-from database import get_db
 
 log = logging.getLogger("presek")
 
-def clean_json_response(text: str) -> dict | str:
-    """
-    Extracts summary and other fields from a JSON response.
-    Returns a dict if valid JSON with known keys, otherwise returns cleaned string.
-    """
-    if not text:
-        return ""
-    
-    # Extract JSON block if present
-    match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
-    if match:
-        json_text = match.group(1)
-        try:
-            data = json.loads(json_text)
-            if isinstance(data, dict):
-                # Check for synthesis-specific fields
-                if 'summary' in data or 'perspectives' in data or 'entities' in data:
-                    return data
-                # Check for single-field 'summary' response
-                if 'summary' in data and len(data) == 1:
-                    return data['summary'].strip()
-            elif isinstance(data, list):
-                return data
-        except:
-            pass
+# --- Provider Circuit Breaker Registry ---
+_CIRCUIT_STATE = {} # provider_name -> {fails: int, last_fail: float}
 
-    # Fallback to cleaning markdown
-    text = re.sub(r'```(?:json)?\n?', '', text)
-    text = text.replace('```', '').strip()
-    return text.strip()
+def _is_circuit_open(name: str) -> bool:
+    state = _CIRCUIT_STATE.get(name)
+    if not state: return False
+    if state["fails"] >= 3:
+        # Re-try after 5 minutes
+        if time.time() - state["last_fail"] > 300:
+            state["fails"] = 0
+            return False
+        return True
+    return False
 
+def _record_fail(name: str):
+    state = _CIRCUIT_STATE.setdefault(name, {"fails": 0, "last_fail": 0})
+    state["fails"] += 1
+    state["last_fail"] = time.time()
 
-def _call_gemini(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    """Shared Gemini caller. Uses contents-only approach for maximum compatibility."""
-    if not GOOGLE_API_KEY:
-        return None
+def _record_success(name: str):
+    if name in _CIRCUIT_STATE:
+        _CIRCUIT_STATE[name]["fails"] = 0
 
-    # Combined prompt for older API versions or restricted keys
-    combined_prompt = f"{system_prompt}\n\nInput Text:\n{prompt_text}"
+# --- Base Classes ---
 
-    payload_dict = {
-        "contents": [{"parts": [{"text": combined_prompt}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens}
-    }
+class AIProvider(ABC):
+    @abstractmethod
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+        pass
 
-    if json_mode:
-        payload_dict["generationConfig"]["responseMimeType"] = "application/json"
-
-    payload = json.dumps(payload_dict).encode("utf-8")
-
-    # Direct API URL
-    url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
-    
-    delays = [2, 4, 8]
-    for attempt, delay in enumerate([0] + delays):
-        if delay:
-            time.sleep(delay)
+class GeminiProvider(AIProvider):
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+        if not GOOGLE_API_KEY: return None
+        url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
+        combined = f"{system}\n\nInput:\n{prompt}"
+        payload = {
+            "contents": [{"parts": [{"text": combined}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens}
+        }
+        if json_mode: payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
-            t0 = time.time()
-            headers = {"Content-Type": "application/json"}
-            
-            req = urllib.request.Request(url, data=payload, headers=headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw_res = resp.read().decode("utf-8")
-                data = json.loads(raw_res)
-            elapsed = round(time.time() - t0, 2)
-
-            if "candidates" not in data or not data["candidates"]:
-                log.info(f"[gemini] Empty response in {elapsed}s (attempt {attempt+1})")
-                return None
-
-            log.info(f"[gemini] OK in {elapsed}s (attempt {attempt+1})")
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except urllib.error.HTTPError as e:
-            elapsed = round(time.time() - t0, 2)
-            err_body = e.read().decode("utf-8") if e else ""
-            if e.code == 429:
-                log.info(f"[gemini] 429 rate-limited in {elapsed}s (attempt {attempt+1}), retrying...")
-                continue
-            log.warning(f"[gemini] HTTP {e.code} in {elapsed}s: {err_body}")
-            return None
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
         except Exception as e:
             log.warning(f"[gemini] Error: {e}")
             return None
-    return None
 
-def _call_openai_compatible(prompt_text: str, system_prompt: str, api_key: str, api_url: str, model: str, provider_name: str, timeout: int = 30, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    """Generic caller for OpenAI-compatible APIs (Groq, Cerebras, Mistral, OpenRouter)."""
-    if not api_key:
-        return None
+class OpenAICompatibleProvider(AIProvider):
+    def __init__(self, name, key, url, model):
+        self.name = name
+        self.key = key
+        self.url = url
+        self.model = model
 
-    payload_dict = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt_text}
-        ],
-        "max_tokens": max_tokens,
-    }
-    if json_mode:
-        payload_dict["response_format"] = {"type": "json_object"}
-
-    payload = json.dumps(payload_dict).encode("utf-8")
-
-    try:
-        t0 = time.time()
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "User-Agent": "Presek/1.0",
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+        if not self.key: return None
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            "max_tokens": max_tokens
         }
+        if json_mode: payload["response_format"] = {"type": "json_object"}
         
-        # OpenRouter requires extra headers
-        if provider_name == "openrouter":
-            headers["HTTP-Referer"] = "https://presek.mk"
-            headers["X-Title"] = "Presek News"
+        try:
+            headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}", "User-Agent": "Presek/4.0"}
+            req = urllib.request.Request(self.url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            log.warning(f"[{self.name}] Error: {e}")
+            return None
 
-        req = urllib.request.Request(api_url, data=payload, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw_body = resp.read().decode("utf-8")
-            data = json.loads(raw_body)
-        elapsed = round(time.time() - t0, 2)
+# --- Provider Registry ---
 
-        choices = data.get("choices", [])
-        if choices and choices[0].get("message", {}).get("content"):
-            log.info(f"[{provider_name}] OK in {elapsed}s")
-            return choices[0]["message"]["content"].strip()
-            
-        log.info(f"[{provider_name}] Empty response in {elapsed}s")
-        return None
-    except Exception as e:
-        log.warning(f"[{provider_name}] Error: {e}")
-        return None
-    return None
-
-
-def _call_groq(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    return _call_openai_compatible(prompt_text, system_prompt, GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL, "groq", timeout, max_tokens, json_mode)
-
-def _call_cerebras(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    return _call_openai_compatible(prompt_text, system_prompt, CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL, "cerebras", timeout, max_tokens, json_mode)
-
-def _call_mistral(prompt_text: str, system_prompt: str, timeout: int = 25, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    return _call_openai_compatible(prompt_text, system_prompt, MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL, "mistral", timeout, max_tokens, json_mode)
-
-def _call_openrouter(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 1000, json_mode: bool = False) -> str | None:
-    return _call_openai_compatible(prompt_text, system_prompt, OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL, "openrouter", timeout, max_tokens, json_mode)
-
-
-# ── Provider Registry & Routing ──────────────────────────────────
-
-def _get_provider(name: str):
-    """Resolve provider caller by name at call time (supports patching in tests)."""
-    return {
-        "gemini":     _call_gemini,
-        "groq":       _call_groq,
-        "cerebras":   _call_cerebras,
-        "mistral":    _call_mistral,
-        "openrouter": _call_openrouter,
-    }.get(name)
-
-# Task-type → ordered provider chain
-# Gemini reserved for Macedonian-critical tasks; cheaper models for background work
-TASK_ROUTING = {
-    # Premium: Macedonian language quality matters
-    "translation":  ["gemini", "mistral", "groq"],
-    "synthesis":    ["gemini", "mistral", "groq"],
-    "daily_brief":  ["gemini", "mistral", "groq"],
-    "summarize":    ["gemini", "groq", "cerebras"],
-
-    # Mid-tier: quality matters but not MK-specific
-    "analysis":     ["groq", "cerebras", "gemini"],
-    "factcheck":    ["groq", "cerebras", "gemini"],
-    "ai_ask":       ["groq", "cerebras", "gemini"],
-
-    # Background: speed/cost matters most (now with Gemini as final paid fallback)
-    "tagging":      ["cerebras", "groq", "openrouter", "gemini"],
-    "topic":        ["cerebras", "groq", "openrouter", "gemini"],
-    "entity":       ["groq", "mistral", "openrouter", "gemini"],
-    "entity_info":  ["cerebras", "groq", "openrouter", "gemini"],
-    "categorize":   ["cerebras", "groq", "openrouter", "gemini"],
-
-    # Default fallback chain
-    "default":      ["gemini", "groq", "cerebras", "mistral", "openrouter"],
+PROVIDERS = {
+    "gemini":     GeminiProvider(),
+    "groq":       OpenAICompatibleProvider("groq", GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL),
+    "cerebras":   OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
+    "mistral":    OpenAICompatibleProvider("mistral", MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL),
+    "openrouter": OpenAICompatibleProvider("openrouter", OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL),
 }
 
+TASK_ROUTING = {
+    "translation":  ["gemini", "mistral", "groq"],
+    "synthesis":    ["gemini", "mistral", "groq"],
+    "default":      ["gemini", "groq", "cerebras"],
+}
 
-def _call_ai(prompt_text: str, system_prompt: str, timeout: int = 30, max_tokens: int = 2000, json_mode: bool = False, task_type: str = "default") -> tuple[str | None, str | None]:
-    """Call AI provider with tiered routing and daily usage capping.
+# --- Service Methods ---
 
-    task_type controls which provider chain is used:
-    - 'translation', 'synthesis', 'daily_brief' → Gemini first (best MK quality)
-    - 'tagging', 'topic', 'entity', 'categorize' → Cheap/fast models first
-    - 'default' → Full fallback chain starting with Gemini
-    """
-    from config import AI_DAILY_LIMIT
-    from utils import redis_client
-
-    # 0. Check Daily Usage Limit (counts ALL providers)
-    try:
-        today = datetime.date.today().isoformat()
-        usage_key = f"ai_usage_count:{today}"
-        current_usage = redis_client.incr(usage_key)
-        if current_usage == 1:
-            redis_client.expire(usage_key, 86400)
-
-        if current_usage > AI_DAILY_LIMIT:
-            if current_usage == AI_DAILY_LIMIT + 1:
-                log.warning(f"AI Daily Limit ({AI_DAILY_LIMIT}) reached. Capping usage for today.")
-            return None, "limit_reached"
-    except Exception as e:
-        log.warning(f"[limit-check] Redis error: {e}")
-
-    # 1. Get provider chain for this task type
+def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
     chain = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
-
-    # 2. Try each provider in order
-    for provider_name in chain:
-        caller = _get_provider(provider_name)
-        if not caller:
-            continue
-        try:
-            result = caller(prompt_text, system_prompt, timeout=timeout, max_tokens=max_tokens, json_mode=json_mode)
-            if result:
-                return result, provider_name
-        except Exception as e:
-            log.warning(f"[{provider_name}] Unexpected error in chain: {e}")
-            continue
-
+    
+    for name in chain:
+        if _is_circuit_open(name): continue
+        
+        provider = PROVIDERS.get(name)
+        if not provider: continue
+        
+        result = provider.call(prompt, system, max_tokens, json_mode)
+        if result:
+            _record_success(name)
+            return result, name
+        else:
+            _record_fail(name)
+            
     return None, None
 
-def cleanup_cover_art():
-    """Removes generated cover art for clusters that are no longer in the DB."""
-    import os
-    gen_dir = "static/generated"
-    if not os.path.exists(gen_dir):
-        return
-
-    conn = None
-    try:
-        conn = get_db()
-        rows = conn.execute("SELECT DISTINCT cluster_id FROM articles").fetchall()
-        valid_ids = {r["cluster_id"] for r in rows}
-        rows = conn.execute("SELECT cluster_id FROM cluster_summaries").fetchall()
-        valid_ids.update({r["cluster_id"] for r in rows})
-    except Exception as e:
-        log.error(f"[cleanup] DB query failed: {e}")
-        return
-    finally:
-        if conn:
-            conn.close()
-
-    try:
-        count = 0
-        for filename in os.listdir(gen_dir):
-            if filename.endswith(".jpg"):
-                cid = filename.replace(".jpg", "")
-                if cid not in valid_ids:
-                    os.remove(os.path.join(gen_dir, filename))
-                    count += 1
-        if count:
-            log.info(f"[cleanup] Removed {count} orphaned cover art images.")
-    except Exception as e:
-        log.error(f"[cleanup] Image cleanup failed: {e}")
-
 def translate_to_macedonian(text: str) -> str | None:
-    """Translate news text to Macedonian using AI."""
-    if not text or not text.strip():
-        return text
-    
+    if not text: return text
     res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
-    if res:
-        cleaned = clean_json_response(res)
-        if isinstance(cleaned, dict):
-            return cleaned.get('summary', str(cleaned))
-        return str(cleaned)
-    return None
+    return res # Basic clean can be added here if needed
 
-def generate_cover_art(cluster_id: str, synthesis: str) -> str | None:
-    """Generate news cover art using Pollinations.ai."""
+def generate_cover_art(cluster_id: str, title: str) -> str | None:
+    """Uses Pollinations AI to generate editorial art."""
     import os
     os.makedirs("static/generated", exist_ok=True)
-
-    lines = [l.strip('• ') for l in synthesis.split('\n') if '•' in l][:2]
-    visual_context = ". ".join(lines) if lines else synthesis[:120]
-    prompt = f"Cinematic editorial news photography, {visual_context}, professional press photo, high resolution, 16:9, neutral lighting, no text"
-
-    payload = json.dumps({
-        "prompt": prompt,
-        "width": 800,
-        "height": 450,
-        "model": "flux",
-        "nologo": True,
-    }).encode("utf-8")
+    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
     save_path = f"static/generated/{cluster_id}.jpg"
-
+    
     try:
-        headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "Presek/1.0",
-        }
-        if POLLINATIONS_API_KEY:
-            headers["Authorization"] = f"Bearer {POLLINATIONS_API_KEY}"
-
-        req = urllib.request.Request(
-            "https://image.pollinations.ai/",
-            data=payload,
-            headers=headers
-        )
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            img_data = resp.read()
-            if len(img_data) < 1000:
-                log.warning(f"[ai-image] Suspiciously small image ({len(img_data)}B) for {cluster_id}")
-                return None
+        req = urllib.request.Request(url, headers={"User-Agent": "Presek/4.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
             with open(save_path, "wb") as f:
-                f.write(img_data)
-        log.info(f"[ai-image] Generated cover for {cluster_id} ({len(img_data)}B)")
+                f.write(resp.read())
         return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
-        log.warning(f"[ai-image] Failed to generate cover for {cluster_id}: {e}")
+        log.warning(f"[ai-img] Generation failed: {e}")
         return None
-
-def auto_summarize_top_clusters(rank_articles_fn, score_cluster_fn):
-    """Dispatches background tasks for summarization/synthesis with deduplication."""
-    conn = None
-    try:
-        from tasks import summarize_article_task, synthesize_cluster_task
-        from utils import redis_client
-        conn = get_db()
-        cutoff = datetime.datetime.now() - datetime.timedelta(days=1)
-        rows = conn.execute(
-            "SELECT * FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 500",
-            (cutoff,)
-        ).fetchall()
-
-        clusters_map = defaultdict(list)
-        for r in rows:
-            clusters_map[r["cluster_id"]].append(dict(r))
-
-        ranked = []
-        for cid, arts in clusters_map.items():
-            sorted_arts = rank_articles_in_cluster(arts)
-            s = score_cluster_fn(sorted_arts)
-            ranked.append((cid, sorted_arts, s))
-        ranked.sort(key=lambda x: x[2], reverse=True)
-
-        for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
-            lead = arts[0]
-            if not lead.get("summary"):
-                # Dedup: skip if already queued in the last 10 minutes
-                dedup_key = f"task:summarize:{lead['id']}"
-                try:
-                    if not redis_client.set(dedup_key, 1, nx=True, ex=600):
-                        continue
-                except Exception:
-                    pass  # Redis down, proceed anyway
-                summarize_article_task.delay(lead["id"], lead["title"])
-
-            unique_sources = {a["source"] for a in arts}
-            if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
-                row = conn.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = %s", (cid,)).fetchone()
-                if not row:
-                    # Dedup: skip if synthesis already queued recently
-                    dedup_key = f"task:synthesize:{cid}"
-                    try:
-                        if not redis_client.set(dedup_key, 1, nx=True, ex=600):
-                            continue
-                    except Exception:
-                        pass
-                    lines = []
-                    for a in arts[:10]:
-                        line = f"- [{a['source']}]: {a['title']}"
-                        lines.append(line)
-                    content = "\n".join(lines)
-                    synthesize_cluster_task.delay(cid, content)
-    except Exception as e:
-        log.error(f"[auto-summarize] Error: {e}")
-    finally:
-        if conn:
-            conn.close()
