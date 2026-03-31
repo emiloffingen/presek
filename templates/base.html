@@ -317,7 +317,63 @@
             return d.innerHTML;
         }
 
+        function renderBentoTile(c, size = 'bento-standard') {
+            if(!c || !c.articles || !c.articles.length) return '';
+            const a = c.articles[0];
+            const cid = esc(c.cluster_id);
+
+            let clusterImage = null;
+            for (let art of c.articles) {
+                if (art.image_url) { clusterImage = art.image_url; break; }
+            }
+            const imgSrc = clusterImage ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : null;
+
+            const isBreaking = (c.score || 0) >= BREAKING_SCORE_THRESHOLD;
+            const timeStr = timeAgo(a.created_at);
+            const title = esc(a.headline || a.title);
+            const desc = esc(a.description || '');
+
+            let innerContent = '';
+
+            if (imgSrc) {
+               innerContent = `
+                   <div class="bento-img-wrap">
+                       <img src="${imgSrc}" class="bento-img" loading="lazy" alt="${title}">
+                   </div>
+                   <div class="bento-overlay">
+                       <div class="bento-meta">
+                           ${isBreaking ? '<span style="color:#ff3b30">● ВО ЖИВО</span>' : ''}
+                           <span>${esc(a.source)}</span>
+                           <span>•</span>
+                           <span>${timeStr}</span>
+                       </div>
+                       <h2 class="bento-title">${title}</h2>
+                       ${size !== 'bento-standard' ? `<p class="bento-desc">${desc.substring(0, 180)}...</p>` : ''}
+                   </div>
+               `;
+            } else {
+               innerContent = `
+                   <div class="bento-content">
+                       <div class="bento-meta">
+                           <span>${esc(a.source)}</span>
+                           <span>•</span>
+                           <span>${timeStr}</span>
+                       </div>
+                       <h2 class="bento-title" style="color:var(--text-primary)">${title}</h2>
+                       <p class="bento-desc" style="color:var(--text-secondary)">${desc.substring(0, 120)}...</p>
+                   </div>
+               `;
+            }
+
+            return `
+               <a href="/cluster/${cid}" class="bento-tile ${size} fade-in" onmousedown="trackClick('${esc(String(a.id))}')">
+                   ${innerContent}
+               </a>
+            `;
+        }
+
         function renderCard(c, index, featured = false) {
+
             if(!c || !c.articles || !c.articles.length) return '';
             const a = c.articles[0];
             let clusterImage = null;
