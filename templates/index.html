@@ -529,13 +529,14 @@
                 let size = 'bento-standard';
                 const hasImage = c.articles && c.articles.some(a => a.image_url);
                 const score = c.score || 0;
+                const threshold = (typeof BREAKING_SCORE_THRESHOLD !== 'undefined') ? BREAKING_SCORE_THRESHOLD : 3.0;
 
                 // First item on domestic page is always Large if it has an image
                 if (idx === 0 && activeCategory === '🇲🇰' && hasImage && _currentPage === 0) {
                     size = 'bento-large';
                 } 
                 // Breaking news with images get Wide slots
-                else if (score >= (typeof BREAKING_SCORE_THRESHOLD !== 'undefined' ? BREAKING_SCORE_THRESHOLD : 3.0) && hasImage && idx < 10) {
+                else if (score >= threshold && hasImage && idx < 10) {
                     size = 'bento-wide';
                 }
                 // Occasionally inject a tall tile for visual variety
@@ -545,8 +546,9 @@
 
                 if (typeof renderBentoTile === 'function') {
                     html += renderBentoTile(c, size);
-                } else {
-                    console.error("renderBentoTile not defined");
+                } else if (typeof renderCard === 'function') {
+                    // Fallback to old renderCard if Bento is missing
+                    html += renderCard(c, idx);
                 }
             });
             
@@ -555,10 +557,14 @@
             
             // Hide legacy hero wrap if it exists
             const oldHero = document.getElementById('heroWrap');
-            if (oldHero) { oldHero.style.display = 'none'; }
+            if (oldHero) { 
+                oldHero.style.display = 'none'; 
+                oldHero.style.visibility = 'hidden';
+                oldHero.style.height = '0';
+            }
         } catch (err) {
-            console.error("renderPage error:", err);
-            document.getElementById('pageWrap').innerHTML = '<div style="text-align:center; padding:50px">Грешка при вчитување на вестите.</div>';
+            console.error("renderPage failed:", err);
+            document.getElementById('pageWrap').innerHTML = '<div style="text-align:center; padding:50px; color:var(--text-muted)">Настана грешка при прикажување на вестите.</div>';
         }
     }
 
