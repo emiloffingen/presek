@@ -16,6 +16,29 @@ const Presek = {
         hasMore: true
     },
 
+    countries: [
+        { id: '🇲🇰', label: 'Македонија' },
+        { id: 'POPULAR', label: 'Популарно' },
+        { id: '🇩🇪', label: 'Германија' },
+        { id: '🇷🇸', label: 'Србија' },
+        { id: '🇺🇸', label: 'САД' },
+        { id: '🇧🇬', label: 'Бугарија' },
+        { id: '🇬🇷', label: 'Грција' },
+        { id: '🇦🇱', label: 'Албанија' },
+        { id: '🇨🇭', label: 'Швајцарија' },
+        { id: '🇹🇷', label: 'Турција' }
+    ],
+
+    topics: [
+        { id: '', label: 'Сите Теми' },
+        { id: 'Политика', label: 'Политика' },
+        { id: 'Економија', label: 'Економија' },
+        { id: 'Технологија', label: 'Технологија' },
+        { id: 'Спорт', label: 'Спорт' },
+        { id: 'Забава', label: 'Забава' },
+        { id: 'Здравје', label: 'Здравје' }
+    ],
+
     async fetchNews(isLoadMore = false) {
         if (this.state.isFetching) return;
         this.state.isFetching = true;
@@ -29,12 +52,16 @@ const Presek = {
         const params = new URLSearchParams({
             page: this.state.page,
             page_size: this.state.pageSize,
-            country: this.state.category,
-            sub: this.state.subcategory,
             topic: this.state.topic,
             sentiment: this.state.sentiment,
             q: this.state.query
         });
+
+        if (this.state.category === 'POPULAR') {
+            params.set('sort', 'popular');
+        } else {
+            params.set('country', this.state.category);
+        }
 
         try {
             const res = await fetch(`/api/news?${params}`);
@@ -48,6 +75,8 @@ const Presek = {
                 }
                 this.state.hasMore = json.has_more;
                 UI.renderPage(this.state.clusters);
+            } else {
+                UI.showError();
             }
         } catch (e) {
             console.error("Fetch error:", e);
@@ -63,6 +92,7 @@ const Presek = {
         this.state.topic = '';
         this.fetchNews();
         UI.updateNav();
+        UI.updateFilters();
     },
 
     setTopic(topic) {
@@ -73,8 +103,10 @@ const Presek = {
 
     init() {
         console.log("Presek 4.0 Initialized");
-        this.fetchNews();
         UI.initTheme();
+        UI.updateNav();
+        UI.updateFilters();
+        this.fetchNews();
         LiveUpdates.connect();
     }
 };
@@ -85,6 +117,10 @@ const LiveUpdates = {
         source.onmessage = (e) => {
             const data = JSON.parse(e.data);
             if (data.type === 'new_articles') UI.showToast(data.count);
+        };
+        source.onerror = () => {
+            source.close();
+            setTimeout(() => this.connect(), 10000);
         };
     }
 };
