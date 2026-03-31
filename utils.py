@@ -110,6 +110,14 @@ def score_cluster(arts):
     return cred_score * recency * breadth * click_bonus
 
 
+def rank_articles_in_cluster(arts):
+    """Within a cluster, put the most credible source first."""
+    return sorted(
+        arts,
+        key=lambda a: SOURCE_CREDIBILITY.get(a["source"], DEFAULT_CREDIBILITY),
+        reverse=True
+    )
+
 def publish_event(channel: str, data: dict):
     """Broadcast a JSON message to a Redis channel."""
     try:
