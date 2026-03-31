@@ -697,19 +697,24 @@
             const list = document.getElementById('trendingList');
             if (data && data.length) {
                 document.getElementById('trendingBox').style.display = 'flex';
-                list.innerHTML = data.map(t => `
-                    <div class="trend-tag" onclick="searchTrend('${t.word}')">${t.word}</div>
-                `).join('');
+                list.innerHTML = data.map(t => {
+                    const q = t.word.replace(/'/g, "\\'");
+                    return `<div class="trend-tag" onclick="searchTrend('${q}')">${esc(t.word)}</div>`;
+                }).join('');
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Trending error", e); }
     }
 
     function searchTrend(q) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         const searchOpen = document.getElementById('searchOpen');
         const searchInput = document.getElementById('searchInput');
         if (searchOpen && searchInput) {
-            searchOpen.click();
+            if (!document.getElementById('searchOverlay').classList.contains('active')) {
+                searchOpen.click();
+            }
             searchInput.value = q;
+            searchInput.focus();
             searchInput.dispatchEvent(new Event('input'));
         }
     }
@@ -722,17 +727,18 @@
             if (data && data.length) {
                 document.getElementById('entitiesBox').style.display = 'flex';
                 list.innerHTML = data.map(e => {
-                    const name = esc(e.entity_name);
+                    const name = e.entity_name;
+                    const q = name.replace(/'/g, "\\'");
                     return `
-                    <div class="trend-tag" onclick="showEntityInfo('${name.replace(/'/g, "\\'")}')">
+                    <div class="trend-tag" onclick="searchTrend('${q}')">
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                             ${e.entity_type === 'PERSON' ? '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' : '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>'}
                         </svg>
-                        ${name}
+                        ${esc(name)}
                     </div>`;
                 }).join('');
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Entities error", e); }
     }
 
     // Category scroll fade mask based on scroll position
