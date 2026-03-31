@@ -85,7 +85,6 @@ RSS_FEEDS = [
     ("Ekonomija",       "https://ekonomija.com.mk/feed/"),
     ("Zdravje",         "https://zdravje.com.mk/feed/"),
     ("MRT",             "https://mrt.com.mk/feed/"),
-    ("Time.mk",         "https://time.mk/rss"),
     ("Kolumna",         "https://kolumna.mk/feed/"),
     ("Okno",            "https://okno.mk/feed/"),
     ("Alfa TV",         "https://alfa.mk/feed/"),
@@ -106,12 +105,21 @@ RSS_FEEDS = [
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
 
+# Specific per-source limits to prevent low-quality aggregators from flooding the system
+SOURCE_LIMITS = {
+    "Kurir": 5,
+    "Republika": 5,
+    "Infomax": 5,
+    "Sitel": 8,
+    "Kanal 5": 8
+}
+
 MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Sloboden Pecat", "Kanal 5", "MIA", "Sitel", "Telma", "Kurir",
     "Republika", "Fokus", "Nezavisen", "Faktor", "Vecer", "Meta",
     "360 Stepeni", "Makfax", "Nova Makedonija", "Infomax", "Press24",
     "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
-    "Portalb", "Lider", "MKD", "NetPress", "Akademik", "Skopje Info",
+    "Portalb", "Lider", "MKD", "Akademik", "Skopje Info",
     "Prizma", "Expres", "Tetovo Info", "Koha", "A1on", "SportSport",
     "Strumica Info", "24 Вести", "TV21", "Слободна Европа",
     "Deutsche Welle", "Журнал", "Civil Media", "Радио МОФ",

@@ -35,8 +35,9 @@ def _get_last_seen_links(conn, source, limit=50):
 def fetch_feed(source, url):
     """Fetch a single RSS feed and return entries."""
     try:
+        limit = SOURCE_LIMITS.get(source, FEED_LIMIT)
         feed = feedparser.parse(url)
-        entries = feed.entries[:FEED_LIMIT]
+        entries = feed.entries[:limit]
         return source, entries, None
     except Exception as e:
         return source, [], str(e)
