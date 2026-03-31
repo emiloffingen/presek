@@ -190,6 +190,12 @@
             return `${Math.floor(diff/86400)}д`;
         }
 
+        function calculateReadingTime(text) {
+            if (!text) return 1;
+            const words = text.trim().split(/\s+/).length;
+            return Math.ceil(words / 200) || 1;
+        }
+
         // Bookmark System
         function getBookmarks() {
             try {

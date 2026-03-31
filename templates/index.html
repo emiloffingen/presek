@@ -513,44 +513,53 @@
     }
 
     function renderPage(clusters) {
-        const wrap = document.getElementById('pageWrap');
-        if (!clusters || !clusters.length) {
-            wrap.innerHTML = `<div style="text-align:center; padding:100px; color:var(--text-muted)">
-                ${activeCategory === 'SAVED' ? 'Немате зачувано вести.' : (activeCategory === 'FOLLOWING' ? 'Не следите ниту еден извор или тема. Одете на профилот на изворот или десен клик на тема за да почнете да следите.' : 'Нема вести за избраната категорија.')}
-            </div>`;
-            return;
+        try {
+            const wrap = document.getElementById('pageWrap');
+            if (!clusters || !clusters.length) {
+                wrap.innerHTML = `<div style="text-align:center; padding:100px; color:var(--text-muted)">
+                    ${activeCategory === 'SAVED' ? 'Немате зачувано вести.' : (activeCategory === 'FOLLOWING' ? 'Не следите ниту еден извор или тема. Одете на профилот на изворот или десен клик на тема за да почнете да следите.' : 'Нема вести за избраната категорија.')}
+                </div>`;
+                return;
+            }
+
+            // ── Presek 3.0: Bento Grid Engine ──
+            let html = '<div class="bento-grid">';
+            
+            clusters.forEach((c, idx) => {
+                let size = 'bento-standard';
+                const hasImage = c.articles && c.articles.some(a => a.image_url);
+                const score = c.score || 0;
+
+                // First item on domestic page is always Large if it has an image
+                if (idx === 0 && activeCategory === '🇲🇰' && hasImage && _currentPage === 0) {
+                    size = 'bento-large';
+                } 
+                // Breaking news with images get Wide slots
+                else if (score >= (typeof BREAKING_SCORE_THRESHOLD !== 'undefined' ? BREAKING_SCORE_THRESHOLD : 3.0) && hasImage && idx < 10) {
+                    size = 'bento-wide';
+                }
+                // Occasionally inject a tall tile for visual variety
+                else if (idx % 7 === 0 && hasImage && idx > 0) {
+                    size = 'bento-tall';
+                }
+
+                if (typeof renderBentoTile === 'function') {
+                    html += renderBentoTile(c, size);
+                } else {
+                    console.error("renderBentoTile not defined");
+                }
+            });
+            
+            html += '</div>';
+            wrap.innerHTML = html;
+            
+            // Hide legacy hero wrap if it exists
+            const oldHero = document.getElementById('heroWrap');
+            if (oldHero) { oldHero.style.display = 'none'; }
+        } catch (err) {
+            console.error("renderPage error:", err);
+            document.getElementById('pageWrap').innerHTML = '<div style="text-align:center; padding:50px">Грешка при вчитување на вестите.</div>';
         }
-
-        // ── Presek 3.0: Bento Grid Engine ──
-        let html = '<div class="bento-grid">';
-        
-        clusters.forEach((c, idx) => {
-            let size = 'bento-standard';
-            const hasImage = c.articles.some(a => a.image_url);
-            const score = c.score || 0;
-
-            // First item on domestic page is always Large if it has an image
-            if (idx === 0 && activeCategory === '🇲🇰' && hasImage) {
-                size = 'bento-large';
-            } 
-            // Breaking news with images get Wide slots
-            else if (score >= BREAKING_SCORE_THRESHOLD && hasImage && idx < 10) {
-                size = 'bento-wide';
-            }
-            // Occasionally inject a tall tile for visual variety
-            else if (idx % 7 === 0 && hasImage && idx > 0) {
-                size = 'bento-tall';
-            }
-
-            html += renderBentoTile(c, size);
-        });
-        
-        html += '</div>';
-        wrap.innerHTML = html;
-        
-        // Hide legacy hero wrap if it exists
-        const oldHero = document.getElementById('heroWrap');
-        if (oldHero) { oldHero.style.display = 'none'; }
     }
 
     async function fetchNews(isLoadMore = false) {
