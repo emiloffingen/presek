@@ -12,6 +12,7 @@ from database import get_db
 from prompts import CATEGORIZATION_SYSTEM_PROMPT, TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
 from categories import ALLOWED_CATEGORIES
 from health import record_refresh
+from utils import rank_articles_in_cluster, score_cluster
 
 log = logging.getLogger("presek_celery")
 
@@ -101,7 +102,6 @@ def run_ingestion():
     extract_entities_task.delay()
     
     log.info("Starting auto-summarization...")
-    from utils import rank_articles_in_cluster, score_cluster
     auto_summarize_top_clusters(rank_articles_in_cluster, score_cluster)
     
     log.info("Checking for breaking news to notify...")
@@ -157,7 +157,6 @@ def generate_daily_brief_task():
     """
     conn = None
     try:
-        from utils import rank_articles_in_cluster, score_cluster
         from collections import defaultdict
         conn = get_db()
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
@@ -675,6 +674,9 @@ def run_prune_db():
 @celery_app.task(autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=300, max_retries=3)
 def translate_article_task(article_id: int, original_title: str, original_description: str):
     """Background task to translate diaspora articles."""
+    # We use a custom logger here to ensure it shows up in celery logs if redirected
+    log = logging.getLogger("presek_celery")
+    log.info(f"[translate] Starting translation for article {article_id}")
     conn = None
     try:
         conn = get_db()
@@ -686,7 +688,7 @@ def translate_article_task(article_id: int, original_title: str, original_descri
                 if result is not None:
                     translated_title = result
             except Exception as e:
-                log.error(f"Translation error (title) for {article_id}: {e}")
+                log.error(f"[translate] Translation error (title) for {article_id}: {e}")
 
         translated_desc = original_description
         if original_description:
@@ -695,7 +697,7 @@ def translate_article_task(article_id: int, original_title: str, original_descri
                 if result is not None:
                     translated_desc = result
             except Exception as e:
-                log.error(f"Translation error (desc) for {article_id}: {e}")
+                log.error(f"[translate] Translation error (desc) for {article_id}: {e}")
 
         cur = conn.cursor()
         cur.execute(
@@ -704,8 +706,9 @@ def translate_article_task(article_id: int, original_title: str, original_descri
         )
         conn.commit()
         cur.close()
+        log.info(f"[translate] Successfully translated article {article_id}")
     except Exception as e:
-        log.error(f"Task failed for article {article_id}: {e}")
+        log.error(f"[translate] Task failed for article {article_id}: {e}")
     finally:
         if conn:
             conn.close()

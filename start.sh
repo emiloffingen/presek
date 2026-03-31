@@ -79,11 +79,11 @@ screen -dmS "$SESSION" -t "app" bash -c "cd $APP_DIR && $PYTHON $APP; exec bash"
 sleep 1
 
 # Start Celery Worker
-screen -S "$SESSION" -X screen -t "worker" bash -c "cd $APP_DIR && $CELERY -A tasks worker --loglevel=info; exec bash"
+screen -S "$SESSION" -X screen -t "worker" bash -c "cd $APP_DIR && $CELERY -A tasks worker --loglevel=info >> $LOG_FILE 2>&1; exec bash"
 sleep 1
 
 # Start Celery Beat
-screen -S "$SESSION" -X screen -t "beat" bash -c "cd $APP_DIR && $CELERY -A celery_app beat --loglevel=info; exec bash"
+screen -S "$SESSION" -X screen -t "beat" bash -c "cd $APP_DIR && $CELERY -A celery_app beat --loglevel=info >> $LOG_FILE 2>&1; exec bash"
 sleep 1
 
 # Start Trending Backfill
