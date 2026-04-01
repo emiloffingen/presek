@@ -1,7 +1,7 @@
 // Пресек — Service Worker v7 (Hybrid 5.1)
 // Optimized for Instant Loads + Offline Reliability
 
-const CACHE_NAME = 'presek-v7';
+const CACHE_NAME = 'presek-v8';
 const STATIC_ASSETS = [
   '/',
   '/static/modern.css',
