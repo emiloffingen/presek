@@ -244,8 +244,7 @@ html.light .theme-toggle .sun  { display: none; }
    ========================================= */
 
 #pageWrap { 
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: var(--space-md);
     padding-top: var(--space-sm); 
 }
