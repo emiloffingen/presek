@@ -168,6 +168,7 @@ def generate_query_embedding(text: str) -> list[float] | None:
             "model": f"models/{EMBEDDING_MODEL}",
             "content": {"parts": [{"text": truncated}]},
             "taskType": "RETRIEVAL_QUERY",
+            "outputDimensionality": EMBEDDING_DIM
         }]
     }).encode("utf-8")
 

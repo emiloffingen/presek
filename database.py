@@ -211,8 +211,28 @@ class DatabaseManager:
                     title TEXT NOT NULL, original_title TEXT DEFAULT '', description TEXT DEFAULT '', summary TEXT,
                     category TEXT, subcategory TEXT DEFAULT '', topic TEXT DEFAULT 'Вести', country TEXT DEFAULT '🇲🇰',
                     created_at TIMESTAMP NOT NULL, image_url TEXT, clicks INTEGER DEFAULT 0, original_description TEXT DEFAULT '',
-                    is_translated INTEGER DEFAULT 0, embedding vector(3072), search_vector tsvector
+                    is_translated INTEGER DEFAULT 0, embedding vector(768), search_vector tsvector
                 )""")
+                # Migration: if column is 3072, alter to 768
+                cur.execute("""
+                    DO $$ 
+                    BEGIN 
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name='articles' AND column_name='embedding' AND character_maximum_length IS NULL
+                        ) THEN
+                            -- We can't easily check dimensions via information_schema for vector type, 
+                            -- but we can try to alter it. If it fails due to existing data, we might need to truncate.
+                            -- For this audit, we assume we can redeploy embeddings.
+                            BEGIN
+                                ALTER TABLE articles ALTER COLUMN embedding TYPE vector(768);
+                            EXCEPTION WHEN OTHERS THEN
+                                UPDATE articles SET embedding = NULL;
+                                ALTER TABLE articles ALTER COLUMN embedding TYPE vector(768);
+                            END;
+                        END IF;
+                    END $$;
+                """)
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (cluster_id TEXT PRIMARY KEY, summary TEXT, perspectives JSONB DEFAULT '[]', created_at TIMESTAMP)""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (cluster_id TEXT PRIMARY KEY, tags TEXT[], topics TEXT[], updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (cluster_id TEXT, entity_name TEXT, entity_type TEXT, PRIMARY KEY (cluster_id, entity_name))""")
