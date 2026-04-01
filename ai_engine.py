@@ -118,8 +118,19 @@ TASK_ROUTING = {
 # --- Service Methods ---
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
+    from config import AI_DAILY_LIMIT
+    from utils import redis_client
+    try:
+        count = redis_client.incr("ai:daily_calls")
+        redis_client.expire("ai:daily_calls", 86400)
+        if count > AI_DAILY_LIMIT:
+            log.warning(f"[ai] Daily limit reached ({count}/{AI_DAILY_LIMIT})")
+            return None, "limit_reached"
+    except Exception as e:
+        log.warning(f"[ai] Redis limit check failed: {e}")
+
     chain = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
-    
+
     for name in chain:
         if _is_circuit_open(name): continue
         
@@ -159,8 +170,14 @@ def translate_to_macedonian(text: str) -> str | None:
     """Translate news text to Macedonian using AI."""
     if not text or not text.strip():
         return text
-    
+
     res, _ = _call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
+    if not res:
+        return None
+    # Unwrap JSON response if AI returned {"summary": "..."} style
+    parsed = clean_json_response(res)
+    if isinstance(parsed, dict):
+        return parsed.get("summary") or parsed.get("translation") or res
     return res
 
 def auto_summarize_top_clusters():

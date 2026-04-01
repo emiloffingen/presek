@@ -1,6 +1,6 @@
 """Tests for database.py — connection wrapper and utility functions."""
 import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 
 
 class TestLoadEnv:
@@ -14,81 +14,133 @@ class TestLoadEnv:
         ))
         mock_open.return_value.__exit__ = MagicMock(return_value=False)
 
-        import importlib
         import database
-        database.load_env()
-        # Variables should be set (if not already in env)
-        # Can't assert os.environ directly due to test isolation,
-        # but at least it shouldn't raise
+        database._load_env()
 
     @patch('os.path.exists', return_value=False)
     def test_missing_env_file_no_error(self, mock_exists):
         import database
         # Should not raise when .env doesn't exist
-        database.load_env()
+        database._load_env()
 
 
-class TestPooledConnectionWrapper:
-    def test_execute_uses_dict_cursor(self):
-        from database import PooledConnectionWrapper
-        mock_conn = MagicMock()
-        mock_pool = MagicMock()
-        wrapper = PooledConnectionWrapper(mock_conn, mock_pool)
+class TestDBWrapper:
+    """Tests for the DBWrapper connection wrapper."""
 
-        wrapper.execute("SELECT 1")
-        mock_conn.cursor.assert_called()
-
-    def test_close_returns_to_pool(self):
-        from database import PooledConnectionWrapper
-        mock_conn = MagicMock()
-        mock_pool = MagicMock()
-        wrapper = PooledConnectionWrapper(mock_conn, mock_pool)
-
-        wrapper.close()
-        mock_pool.putconn.assert_called_once_with(mock_conn)
-
-    def test_close_twice_safe(self):
-        from database import PooledConnectionWrapper
-        mock_conn = MagicMock()
-        mock_pool = MagicMock()
-        wrapper = PooledConnectionWrapper(mock_conn, mock_pool)
-
-        wrapper.close()
-        wrapper.close()  # Second close should be safe
-        assert mock_pool.putconn.call_count == 1
-
-    def test_commit_delegates(self):
-        from database import PooledConnectionWrapper
-        mock_conn = MagicMock()
-        mock_pool = MagicMock()
-        wrapper = PooledConnectionWrapper(mock_conn, mock_pool)
-
-        wrapper.commit()
-        mock_conn.commit.assert_called_once()
-
-    def test_cursor_default_dict(self):
-        from database import PooledConnectionWrapper
+    def test_cursor_uses_dict_cursor(self):
+        from database import DBWrapper
         from psycopg2.extras import DictCursor
+        mock_manager = MagicMock()
         mock_conn = MagicMock()
-        mock_pool = MagicMock()
-        wrapper = PooledConnectionWrapper(mock_conn, mock_pool)
+        mock_manager.get_conn.return_value = mock_conn
 
+        wrapper = DBWrapper(mock_manager)
         wrapper.cursor()
         mock_conn.cursor.assert_called_with(cursor_factory=DictCursor)
 
+    def test_close_returns_to_manager(self):
+        from database import DBWrapper
+        mock_manager = MagicMock()
+        mock_conn = MagicMock()
+        mock_manager.get_conn.return_value = mock_conn
+
+        wrapper = DBWrapper(mock_manager)
+        wrapper.close()
+        mock_manager.put_conn.assert_called_once_with(mock_conn)
+
+    def test_commit_delegates(self):
+        from database import DBWrapper
+        mock_manager = MagicMock()
+        mock_conn = MagicMock()
+        mock_manager.get_conn.return_value = mock_conn
+
+        wrapper = DBWrapper(mock_manager)
+        wrapper.commit()
+        mock_conn.commit.assert_called_once()
+
+    def test_rollback_delegates(self):
+        from database import DBWrapper
+        mock_manager = MagicMock()
+        mock_conn = MagicMock()
+        mock_manager.get_conn.return_value = mock_conn
+
+        wrapper = DBWrapper(mock_manager)
+        wrapper.rollback()
+        mock_conn.rollback.assert_called_once()
+
+    def test_context_manager(self):
+        from database import DBWrapper
+        mock_manager = MagicMock()
+        mock_conn = MagicMock()
+        mock_manager.get_conn.return_value = mock_conn
+
+        with DBWrapper(mock_manager) as wrapper:
+            assert wrapper is not None
+        mock_manager.put_conn.assert_called_once_with(mock_conn)
+
+
+class TestDatabaseManagerExecute:
+    """Tests for DatabaseManager.execute method."""
+
+    def test_execute_fetch_returns_dicts(self):
+        from database import DatabaseManager
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+        mock_cursor.fetchall.return_value = [{"id": 1}]
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager._pool = mock_pool
+        result = manager.execute("SELECT 1")
+        assert isinstance(result, list)
+
+    def test_execute_no_fetch_commits(self):
+        from database import DatabaseManager
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.rowcount = 1
+        mock_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager._pool = mock_pool
+        result = manager.execute("INSERT INTO foo VALUES (1)", fetch=False)
+        mock_conn.commit.assert_called_once()
+
+    def test_execute_rolls_back_on_error(self):
+        from database import DatabaseManager
+        mock_pool = MagicMock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.execute.side_effect = Exception("DB error")
+        mock_pool.getconn.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager._pool = mock_pool
+        with pytest.raises(Exception):
+            manager.execute("SELECT boom")
+        mock_conn.rollback.assert_called_once()
+
 
 class TestGetDb:
-    @patch('database._db_pool')
-    def test_get_db_from_pool(self, mock_pool):
-        from database import get_db, PooledConnectionWrapper
-        mock_pool.getconn.return_value = MagicMock()
-        conn = get_db()
-        assert isinstance(conn, PooledConnectionWrapper)
+    def test_get_db_returns_wrapper(self):
+        from database import get_db, DBWrapper
+        with patch('database.db_manager') as mock_manager:
+            mock_manager.get_conn.return_value = MagicMock()
+            conn = get_db()
+            assert isinstance(conn, DBWrapper)
 
-    @patch('database._db_pool', None)
-    @patch('database.psycopg2.connect')
-    def test_get_db_fallback_no_pool(self, mock_connect):
-        from database import get_db
-        mock_connect.return_value = MagicMock()
-        conn = get_db()
-        mock_connect.assert_called_once()
+    def test_search_articles_empty_query(self):
+        """search_articles returns [] for empty/too-long queries."""
+        from database import DatabaseManager
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager._pool = MagicMock()
+        assert manager.search_articles("") == []
+        assert manager.search_articles("x" * 501) == []
