@@ -15,6 +15,10 @@ ALLOWED_CATEGORIES = {
     "Македонија", "Балкан", "Европа", "Германија", "Америка", "Свет",
 }
 
+THEMATIC_TOPICS = {
+    "Политика", "Економија", "Технологија", "Спорт", "Забава", "Здравје", "Вести",
+}
+
 
 def validate_category(category: str) -> str:
     """Return category if it is in the allowed list, else default to 'Македонија'."""

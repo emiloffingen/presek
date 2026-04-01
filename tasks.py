@@ -115,7 +115,8 @@ def classify_topics_task():
             res, _ = _call_ai(r['title'], TOPIC_SYSTEM_PROMPT, task_type="topic", max_tokens=20)
             if res:
                 topic = res.strip().strip('"').strip('.')
-                if topic in ALLOWED_CATEGORIES:
+                from categories import THEMATIC_TOPICS
+                if topic in THEMATIC_TOPICS:
                     db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, r['cluster_id']), fetch=False)
     except Exception as e:
         log.error(f"[tasks] Topic classification failed: {e}")

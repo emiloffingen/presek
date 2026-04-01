@@ -68,7 +68,22 @@ def api_news():
         follow_sources = request.args.get("follow_sources", "").strip()
         follow_topics  = request.args.get("follow_topics", "").strip()
 
-        cache_key = f"v4:news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{q}:{page}:{page_size}"
+        from categories import ALLOWED_CATEGORIES, THEMATIC_TOPICS
+        req_category = None
+        req_topic = topic
+        
+        # If the user selected a geographic category
+        if topic in ALLOWED_CATEGORIES:
+            req_category = topic
+            req_topic = ""
+        # If the user selected a thematic topic (Sport, Tech, Economy)
+        # we treat it as a global filter by clearing the default country if not explicitly set
+        elif topic in THEMATIC_TOPICS:
+            # If country was default 🇲🇰 and user clicked "Sport", make it global
+            if "country" not in request.args:
+                country = "" 
+
+        cache_key = f"v4:news:{country}:{sub}:{ids}:{sort_by}:{topic}:{sentiment}:{follow_sources}:{follow_topics}:{q}:{page}:{page_size}:{req_category}"
         cached = cached_response(cache_key, ttl=30)
         if cached: return jsonify(cached)
 
@@ -95,7 +110,7 @@ def api_news():
             topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
             rows = db.get_personalized_articles(sources_list, topics_list)
         else:
-            rows = db.get_articles_by_country(country, sub=sub, topic=topic, sentiment=sentiment)
+            rows = db.get_articles_by_country(country, sub=sub, topic=req_topic, sentiment=sentiment, category=req_category)
 
         # Logic Layer: Grouping & Scoring
         clusters = defaultdict(list)

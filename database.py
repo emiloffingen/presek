@@ -98,15 +98,19 @@ class DatabaseManager:
         vec_str = str(query_embedding)
         return self.execute(sql, (vec_str, vec_str, limit))
 
-    def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None):
+    def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []
-        if country and country != '🇲🇰':
+        
+        if category:
+            sql += " AND category = %s"; params.append(category)
+        elif country and country != '🇲🇰':
             sql += " AND country = %s"; params.append(country)
         # If country is 🇲🇰, we show everything that isn't another country flag
         # but for simplicity, we allow 🇲🇰 to match directly too
         elif country == '🇲🇰':
             sql += " AND (country = '🇲🇰' OR country IS NULL OR country = '')"
+            
         if sub:
             sql += " AND subcategory = %s"; params.append(sub)
         if topic:
