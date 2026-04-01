@@ -1,204 +1,141 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {% if articles %}
-    {{ articles[0].title | truncate(70, True, '') }} | Пресек
-  {% else %}
-    Вест | Пресек
-  {% endif %}
+  {% if articles %}{{ articles[0].title | truncate(70, True, '') }} | Пресек
+  {% else %}Вест | Пресек{% endif %}
 {% endblock %}
 
 {% block head %}
-<style>
-    .cluster-hero {
-        position: relative;
-        margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-lg);
-        height: 35vh;
-        min-height: 260px;
-        overflow: hidden;
-        border-bottom: 1px solid var(--border);
-    }
-    .hero-img {
-        width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5);
-    }
-    .hero-overlay {
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        padding: var(--space-xl) var(--space-md) var(--space-md);
-        background: linear-gradient(to top, var(--bg-base) 0%, transparent 100%);
-    }
-
-    .cluster-header {
-        padding: 0 0 var(--space-md) 0;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: var(--space-lg);
-    }
-    
-    .cluster-headline {
-        font-size: clamp(1.5rem, 4vw, 2.5rem);
-        margin-bottom: var(--space-xs);
-        line-height: var(--lh-tight);
-        letter-spacing: -0.01em;
-    }
-
-    .cluster-summary {
-        font-family: var(--font-heading);
-        font-size: 1.2rem;
-        font-style: italic;
-        line-height: var(--lh-base);
-        color: var(--text-primary);
-        background: var(--bg-surface);
-        padding: var(--space-lg) var(--space-xl);
-        border-left: 2px solid var(--primary);
-        margin: var(--space-xl) 0;
-        position: relative;
-        max-width: 800px;
-        border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    }
-
-    .sources-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: var(--space-lg);
-        margin-bottom: var(--space-2xl);
-    }
-
-    .source-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-lg);
-        display: flex;
-        gap: var(--space-md);
-        transition: var(--transition);
-        text-decoration: none;
-        color: inherit;
-    }
-    .source-card:hover {
-        border-color: var(--primary);
-        transform: translateY(-2px);
-    }
-
-    .source-content { flex: 1; min-width: 0; }
-    .source-name {
-        font-size: 0.7rem;
-        font-weight: var(--weight-bold);
-        text-transform: uppercase;
-        color: var(--primary);
-        margin-bottom: 2px;
-    }
-    .source-title {
-        font-family: var(--font-heading);
-        font-size: 1.05rem;
-        font-weight: var(--weight-semi);
-        margin-bottom: var(--space-xs);
-        line-height: var(--lh-tight);
-    }
-    .source-snippet {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        opacity: 0.8;
-    }
-
-    .source-thumb-wrap {
-        width: 100px; height: 75px; border-radius: var(--radius-sm); overflow: hidden; flex-shrink: 0;
-        background: var(--bg-base); border: 1px solid var(--border);
-    }
-    .source-thumb { width: 100%; height: 100%; object-fit: cover; }
-
-    .ai-sheet {
-        position: fixed; bottom: -100%; left: 0; right: 0;
-        background: var(--bg-surface); border-top: 2px solid var(--primary);
-        border-radius: 24px 24px 0 0; padding: var(--space-xl);
-        max-height: 80vh; overflow-y: auto; z-index: 2000;
-        transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
-    }
-    .ai-sheet.active { bottom: 0; }
-    .ai-content { font-size: 1.1rem; line-height: var(--lh-base); }
-
-    .cluster-content { max-width: var(--content-width); margin: 0 auto; }
-</style>
+{% if meta %}
+<meta property="og:title"       content="{{ meta.title | e }}">
+<meta property="og:description" content="{{ meta.description | e }}">
+<meta property="og:image"       content="{{ meta.image }}">
+<meta property="og:url"         content="{{ meta.url }}">
+<meta name="twitter:card"       content="summary_large_image">
+{% endif %}
 {% endblock %}
 
 {% block content %}
 {% if articles %}
-    {% set hero_image = None %}
-    {% for art in articles %}{% if art.image_url and not hero_image %}{% set hero_image = art.image_url %}{% endif %}{% endfor %}
+  {% set hero_image = namespace(url=None) %}
+  {% for art in articles %}{% if art.image_url and not hero_image.url %}{% set hero_image.url = art.image_url %}{% endif %}{% endfor %}
 
-    {% if hero_image %}
-    <div class="cluster-hero fade-in">
-        <img src="{% if hero_image.startswith('/static/') %}{{ hero_image }}{% else %}/proxy?url={{ hero_image | urlencode }}{% endif %}" class="hero-img" alt="Hero Image">
-        <div class="hero-overlay"></div>
+  {% if hero_image.url %}
+  <div class="cluster-hero fade-in">
+    <img src="{% if hero_image.url.startswith('/static/') %}{{ hero_image.url }}{% else %}/proxy?url={{ hero_image.url | urlencode }}{% endif %}"
+         class="hero-img" alt="{{ articles[0].title | e }}" loading="eager">
+    <div class="hero-overlay"></div>
+  </div>
+  {% endif %}
+
+  <article class="cluster-content">
+
+    <header class="cluster-header fade-in">
+      <a href="/" class="back-link">← Назад</a>
+      <h1 class="cluster-headline nyt-title">{{ articles[0].title }}</h1>
+      <div class="story-meta meta-info">
+        <span class="source">{{ articles | length }} извори</span>
+        <span>·</span>
+        <span id="timeLabel">{{ articles[0].created_at }}</span>
+        {% if total_reading_time %}<span>·</span><span>{{ total_reading_time }} мин читање</span>{% endif %}
+      </div>
+      {% if tags %}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:var(--space-md)">
+        {% for tag in tags[:6] %}
+        <span style="font-size:0.72rem;padding:3px 10px;border-radius:20px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-muted)">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </header>
+
+    {% if synthesis %}
+    <section class="cluster-summary nyt-summary fade-in">
+      <span class="summary-label">AI Резиме</span>
+      {{ synthesis | e }}
+    </section>
+    {% endif %}
+
+    {% if source_distribution and source_distribution | length > 1 %}
+    <div style="margin-bottom:var(--space-xl)">
+      <div class="meta-info" style="margin-bottom:var(--space-sm)">Медиумска дистрибуција</div>
+      <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap">
+        {% for d in source_distribution %}
+        <div style="font-size:0.75rem;padding:4px 12px;border-radius:20px;background:var(--bg-surface);border:1px solid var(--border)">
+          {{ d.label }} <strong style="color:var(--primary)">{{ d.pct }}%</strong>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
 
-    <article class="cluster-content">
-        <header class="cluster-header fade-in">
-            <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
-            <h1 class="cluster-headline nyt-title">{{ articles[0].title }}</h1>
-            
-            <div class="story-meta meta-info">
-                <span class="source">{{ articles|length }} извори</span>
-                <span>•</span>
-                <span id="timeLabel">{{ articles[0].created_at }}</span>
-            </div>
-        </header>
-
-        {% if synthesis %}
-        <section class="cluster-summary nyt-summary fade-in">
-            {{ synthesis }}
-        </section>
-        {% endif %}
-
-        <div class="sources-grid">
-            {% for art in articles %}
-            <a href="{{ art.link }}" target="_blank" rel="noopener" class="source-card fade-in">
-                <div class="source-content">
-                    <div class="source-name">{{ art.source }}</div>
-                    <h3 class="source-title">{{ art.title }}</h3>
-                    <p class="source-snippet">{{ art.description | truncate(200) }}</p>
-                </div>
-                {% if art.image_url %}
-                <div class="source-thumb-wrap">
-                    <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
-                </div>
-                {% endif %}
-            </a>
-            {% endfor %}
+    <div class="sources-grid">
+      {% for art in articles %}
+      <a href="{{ art.link }}" target="_blank" rel="noopener noreferrer" class="source-card fade-in">
+        <div class="source-content">
+          <div class="source-name">{{ art.source }}</div>
+          <h3 class="source-title">{{ art.title }}</h3>
+          <p class="source-snippet">{{ art.description | truncate(180) }}</p>
         </div>
+        {% if art.image_url %}
+        <div class="source-thumb-wrap">
+          <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
+        </div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
 
-        <section class="ai-section fade-in" style="text-align:center; padding: 40px 0; border-top: 1px solid var(--border)">
-            <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:var(--space-md)">Имате прашање?</h2>
-            <div style="max-width: 500px; margin: 0 auto; display: flex; gap: 10px">
-                <input type="text" id="aiInput" class="trend-tag" style="flex:1; padding: 12px 20px" placeholder="Прашај ја вештачката интелигенција..." onkeypress="if(event.key==='Enter') AI.ask()">
-                <button class="page-btn" onclick="AI.ask()">Прашај</button>
-            </div>
-        </section>
-    </article>
+    {% if related_clusters %}
+    <section style="margin-bottom:var(--space-2xl)">
+      <h2 class="section-title">Поврзани Вести</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--space-md)">
+        {% for rc in related_clusters %}
+        <a href="/cluster/{{ rc.cluster_id }}" class="story-card fade-in">
+          <div class="story-meta"><span class="source">Пресек</span></div>
+          <h3 class="story-headline">{{ rc.title | truncate(100) }}</h3>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="ai-ask-section fade-in">
+      <h2>Имате прашање за оваа вест?</h2>
+      <div class="ai-ask-row">
+        <input type="text" id="aiInput" class="ai-ask-input"
+               placeholder="Прашај ја вештачката интелигенција…"
+               onkeypress="if(event.key==='Enter') AI.ask()">
+        <button class="page-btn" onclick="AI.ask()">Прашај</button>
+      </div>
+    </section>
+
+  </article>
 {% endif %}
 
 <div class="ai-sheet" id="aiSheet">
-    <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-lg); align-items:center">
-        <h2 style="font-family:var(--font-display); font-size:1.25rem">Пресек Дијалог</h2>
-        <button onclick="AI.toggleSheet(false)" style="background:var(--bg-surface-hover); border:none; color:var(--text-muted); width:32px; height:32px; border-radius:50%; cursor:pointer">&times;</button>
-    </div>
-    <div id="aiResponse" class="ai-content"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
+    <h2 style="font-family:var(--font-heading);font-size:1.15rem;letter-spacing:var(--tracking-tight)">Пресек Дијалог</h2>
+    <button class="icon-btn" onclick="AI.toggleSheet(false)" aria-label="Затвори">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div id="aiResponse" class="ai-content"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const timeEl = document.getElementById('timeLabel');
-        if (timeEl) {
-            const date = new Date(timeEl.textContent);
-            timeEl.textContent = date.toLocaleString('mk-MK', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('timeLabel');
+    if (el) {
+        const d = new Date(el.textContent);
+        if (!isNaN(d)) {
+            el.textContent = d.toLocaleString('mk-MK', {
+                hour: '2-digit', minute: '2-digit',
+                day: '2-digit', month: 'short', year: 'numeric'
+            });
         }
-    });
+    }
+});
 </script>
 {% endblock %}

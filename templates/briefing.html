@@ -2,61 +2,24 @@
 
 {% block title %}Дневен Брифинг | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .briefing-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: var(--space-2xl) 0;
-    }
-    .briefing-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-2xl);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-    .briefing-meta {
-        font-size: 0.8rem;
-        font-weight: var(--weight-bold);
-        text-transform: uppercase;
-        color: var(--primary);
-        letter-spacing: 0.15em;
-        margin-bottom: var(--space-md);
-        display: block;
-    }
-    .briefing-content {
-        font-family: var(--font-body);
-        font-size: 1.15rem;
-        line-height: 1.8;
-        color: var(--text-primary);
-    }
-    .briefing-content p {
-        margin-bottom: var(--space-lg);
-    }
-    .briefing-footer {
-        margin-top: var(--space-2xl);
-        padding-top: var(--space-xl);
-        border-top: 1px solid var(--border);
-        text-align: center;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        font-style: italic;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="briefing-container fade-in">
     <div class="briefing-card">
-        <span class="briefing-meta" id="briefingDate">Вчитувам...</span>
-        <h1 class="hero-title" style="margin-bottom: var(--space-xl);">Дневен <span style="color:var(--primary)">Брифинг</span></h1>
-        
+        <span class="briefing-meta" id="briefingDate">Вчитувам…</span>
+        <h1 class="hero-title" style="margin-bottom:var(--space-xl)">
+            Дневен <span style="color:var(--primary)">Брифинг</span>
+        </h1>
+
         <div id="briefingContent" class="briefing-content">
-            <div style="text-align:center; padding:50px">
-                <div class="skeleton-box" style="height: 20px; width: 80%; margin-bottom: 15px;"></div>
-                <div class="skeleton-box" style="height: 20px; width: 90%; margin-bottom: 15px;"></div>
-                <div class="skeleton-box" style="height: 20px; width: 70%; margin-bottom: 15px;"></div>
+            <div>
+                <div class="skeleton-box" style="height:18px;width:82%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:91%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:74%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:88%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:65%;margin-bottom:30px"></div>
+                <div class="skeleton-box" style="height:18px;width:79%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:93%;margin-bottom:12px"></div>
+                <div class="skeleton-box" style="height:18px;width:70%"></div>
             </div>
         </div>
 
@@ -69,29 +32,33 @@
 
 {% block scripts %}
 <script>
-    async function loadBriefing() {
-        try {
-            const res = await fetch('/api/briefing');
-            const data = await res.json();
-            
-            if (data.error) {
-                document.getElementById('briefingContent').innerHTML = `<p style="text-align:center; color:var(--text-muted)">${data.error}</p>`;
-                document.getElementById('briefingDate').textContent = 'Нема податоци';
-                return;
-            }
+async function loadBriefing() {
+    try {
+        const res = await fetch('/api/briefing');
+        const data = await res.json();
 
-            const date = new Date(data.date);
-            document.getElementById('briefingDate').textContent = date.toLocaleDateString('mk-MK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            
-            // Format content into paragraphs
-            const paragraphs = data.content.split('\n\n').filter(p => p.trim());
-            document.getElementById('briefingContent').innerHTML = paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-
-        } catch(e) {
-            console.error(e);
-            document.getElementById('briefingContent').innerHTML = '<p style="text-align:center; color:var(--primary)">Грешка при вчитување на брифингот.</p>';
+        if (data.error) {
+            document.getElementById('briefingContent').innerHTML =
+                `<p style="text-align:center;color:var(--text-muted)">${data.error}</p>`;
+            document.getElementById('briefingDate').textContent = 'Нема податоци';
+            return;
         }
+
+        const d = new Date(data.date);
+        document.getElementById('briefingDate').textContent = d.toLocaleDateString('mk-MK', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        const paragraphs = data.content.split('\n\n').filter(p => p.trim());
+        document.getElementById('briefingContent').innerHTML =
+            paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('briefingContent').innerHTML =
+            '<p style="text-align:center;color:var(--primary)">Грешка при вчитување на брифингот.</p>';
     }
-    loadBriefing();
+}
+loadBriefing();
 </script>
 {% endblock %}

@@ -2,164 +2,100 @@
 
 {% block title %}Архива | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .archive-header {
-        margin-bottom: var(--space-xl);
-        padding-bottom: var(--space-md);
-        border-bottom: 1px solid var(--border);
-    }
-    .date-picker-wrap {
-        display: flex;
-        align-items: center;
-        gap: var(--space-md);
-        margin-top: var(--space-lg);
-        background: var(--bg-surface);
-        padding: var(--space-md);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border);
-    }
-    .date-input {
-        background: var(--bg-base);
-        border: 1px solid var(--border);
-        color: var(--text-primary);
-        padding: 8px 16px;
-        border-radius: var(--radius-sm);
-        font-family: inherit;
-        outline: none;
-    }
-    .date-input:focus { border-color: var(--primary); }
-
-    .archive-grid {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-    }
-    .archive-row {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: var(--space-md);
-        display: flex;
-        gap: var(--space-md);
-        transition: var(--transition);
-    }
-    .archive-row:hover {
-        transform: translateX(4px);
-        border-color: var(--border-hover);
-    }
-    .archive-thumb {
-        width: 80px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: var(--radius-sm);
-        background: var(--bg-base);
-        border: 1px solid var(--border);
-    }
-    .archive-body { flex: 1; min-width: 0; }
-    .archive-meta {
-        font-size: 0.7rem;
-        font-weight: var(--weight-bold);
-        text-transform: uppercase;
-        color: var(--text-muted);
-        margin-bottom: 2px;
-    }
-    .archive-title {
-        font-size: 1rem;
-        font-weight: var(--weight-semi);
-        line-height: 1.4;
-    }
-    .archive-title a:hover { color: var(--primary); }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: var(--space-md);
-        margin-top: var(--space-2xl);
-        align-items: center;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="fade-in">
     <div class="archive-header">
         <h1 class="hero-title">Дигитална <span style="color:var(--primary)">Архива</span></h1>
         <div class="date-picker-wrap">
-            <label for="archiveDate" style="font-size:0.9rem; font-weight:var(--weight-semi)">Избери датум:</label>
+            <label for="archiveDate" style="font-size:0.88rem;font-weight:var(--weight-semi)">Избери датум:</label>
             <input type="date" id="archiveDate" class="date-input" onchange="fetchArchive()">
-            <div id="archiveStats" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto; font-weight:var(--weight-semi)"></div>
+            <div id="archiveStats" style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;font-weight:var(--weight-semi)"></div>
         </div>
     </div>
 
     <div id="archiveList" class="archive-grid">
-        <!-- Populated by JS -->
+        <div style="text-align:center;padding:80px 16px;color:var(--text-muted)">
+            <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+            <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+            <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+            <div class="skeleton-box" style="height:54px"></div>
+        </div>
     </div>
 
     <div class="pagination">
-        <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>Претходна</button>
-        <span id="pageInfo" class="page-info" style="font-size:0.9rem; font-weight:var(--weight-semi)">Страна 1</span>
-        <button id="nextBtn" class="page-btn" onclick="changePage(1)" disabled>Следна</button>
+        <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>← Претходна</button>
+        <span id="pageInfo" class="page-info">Страна 1</span>
+        <button id="nextBtn" class="page-btn" onclick="changePage(1)" disabled>Следна →</button>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    let currentPage = 0;
-    const pageSize = 50;
+let currentPage = 0;
+const pageSize = 50;
 
-    document.getElementById('archiveDate').valueAsDate = new Date();
+document.getElementById('archiveDate').valueAsDate = new Date();
 
-    async function fetchArchive() {
-        if (event && event.type === 'change') currentPage = 0;
-        
-        const date = document.getElementById('archiveDate').value;
-        const list = document.getElementById('archiveList');
-        const stats = document.getElementById('archiveStats');
-        
-        list.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted)">Се вчитува...</div>';
+async function fetchArchive() {
+    if (event && event.type === 'change') currentPage = 0;
+    const date = document.getElementById('archiveDate').value;
+    const list = document.getElementById('archiveList');
+    const stats = document.getElementById('archiveStats');
 
-        try {
-            const res = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
-            const data = await res.json();
+    list.innerHTML = `
+        <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+        <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+        <div class="skeleton-box" style="height:54px;margin-bottom:6px"></div>
+        <div class="skeleton-box" style="height:54px"></div>`;
 
-            if (!data.articles || data.articles.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted)">Нема пронајдени вести за овој датум.</div>';
-                stats.textContent = '';
-                return;
-            }
+    try {
+        const res = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
+        const data = await res.json();
 
-            stats.textContent = `${data.total} вести • ${data.sources} извори`;
-            
-            list.innerHTML = data.articles.map(a => `
-                <div class="archive-row fade-in">
-                    <a href="${a.link}" target="_blank" rel="noopener" class="archive-thumb-link">
-                        ${a.image_url ? `<img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy">` : `<div class="story-thumb-placeholder" style="width:80px; height:60px;"></div>`}
-                    </a>
-                    <div class="archive-body">
-                        <div class="archive-meta">${a.source} • ${new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'})}</div>
-                        <h3 class="archive-title"><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h3>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('prevBtn').disabled = currentPage === 0;
-            document.getElementById('nextBtn').disabled = !data.has_more;
-            document.getElementById('pageInfo').textContent = `Страна ${currentPage + 1}`;
-
-        } catch(e) {
-            console.error(e);
-            list.innerHTML = '<div style="text-align:center; padding:100px; color:var(--primary)">Грешка при вчитување.</div>';
+        if (!data.articles || data.articles.length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--text-muted);font-size:0.95rem">Нема пронајдени вести за овој датум.</div>';
+            stats.textContent = '';
+            return;
         }
-    }
 
-    function changePage(delta) {
-        currentPage += delta;
-        fetchArchive();
-        window.scrollTo({top: 0, behavior: 'smooth'});
-    }
+        stats.textContent = `${data.total.toLocaleString()} вести · ${data.sources} извори`;
 
+        list.innerHTML = data.articles.map(a => {
+            const time = new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'});
+            const thumb = a.image_url
+                ? `<a href="${a.link}" target="_blank" rel="noopener" class="archive-thumb-link">
+                     <img src="/proxy?url=${encodeURIComponent(a.image_url)}" class="archive-thumb" loading="lazy" alt="">
+                   </a>`
+                : '';
+            return `
+                <div class="archive-row fade-in">
+                    ${thumb}
+                    <div class="archive-body">
+                        <div class="archive-meta">${a.source} · ${time}</div>
+                        <h3 class="archive-title">
+                            <a href="${a.link}" target="_blank" rel="noopener">${a.title}</a>
+                        </h3>
+                    </div>
+                </div>`;
+        }).join('');
+
+        document.getElementById('prevBtn').disabled = currentPage === 0;
+        document.getElementById('nextBtn').disabled = !data.has_more;
+        document.getElementById('pageInfo').textContent = `Страна ${currentPage + 1}`;
+
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--primary);font-size:0.95rem">Грешка при вчитување.</div>';
+    }
+}
+
+function changePage(delta) {
+    currentPage += delta;
     fetchArchive();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+fetchArchive();
 </script>
 {% endblock %}

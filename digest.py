@@ -281,6 +281,38 @@ def generate_digest(days: int = 1,
     return html
 
 
+def send_digest(days: int = 1) -> bool:
+    """
+    Entry point called by send_daily_digest_task in tasks.py.
+    Sends digest via ntfy and optionally email if SMTP env vars are set.
+    Returns True if at least one delivery succeeded.
+    """
+    import os
+    ntfy_topic = os.environ.get("NTFY_TOPIC", "")
+    smtp_user  = os.environ.get("SMTP_USER", "")
+    smtp_pass  = os.environ.get("SMTP_PASS", "")
+    to_address = os.environ.get("DIGEST_TO", "")
+
+    stories = fetch_top_stories(days=days)
+    if not stories:
+        print("[digest] No stories found, skipping digest.")
+        return False
+
+    ok = False
+
+    if ntfy_topic:
+        ok = send_ntfy_digest(stories, ntfy_topic, period_days=days) or ok
+
+    if smtp_user and smtp_pass and to_address:
+        now   = datetime.now()
+        start = now - timedelta(days=days)
+        html  = render_html(stories, start, now)
+        subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
+        ok = send_email(html, subject, smtp_user, smtp_pass, to_address) or ok
+
+    return ok
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Пресек digest generator")

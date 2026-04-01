@@ -2,127 +2,123 @@
 
 {% block title %}{{ source_name }} | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .source-header {
-        margin-bottom: var(--space-2xl);
-        padding-bottom: var(--space-xl);
-        border-bottom: 1px solid var(--border);
-    }
-    .source-stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: var(--space-lg);
-        margin-top: var(--space-lg);
-    }
-    .source-stat-card {
-        background: var(--bg-surface);
-        padding: var(--space-md);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border);
-        text-align: center;
-    }
-    .stat-val { font-size: 1.5rem; font-weight: var(--weight-bold); color: var(--primary); display: block; }
-    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="fade-in">
     <div class="source-header">
-        <a href="/" style="font-size:0.7rem; font-weight:var(--weight-bold); color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--space-sm); display:block; letter-spacing:0.1em;">← Назад</a>
-        <div style="display:flex; align-items:center; gap:var(--space-md); margin-bottom: var(--space-md);">
-            <h1 class="hero-title" style="margin-bottom: 0;">Извор: <span style="color:var(--primary)">{{ source_name }}</span></h1>
-            <button id="followBtn" onclick="toggleSourceFollow()" class="page-btn" style="padding: 6px 16px; font-size: 0.8rem; border-radius: 20px;">
+        <a href="/izvori" class="back-link">← Сите Извори</a>
+        <div style="display:flex;align-items:center;gap:var(--space-md);flex-wrap:wrap;margin-top:var(--space-xs)">
+            <h1 class="hero-title" style="margin-bottom:0">
+                <span style="color:var(--primary)">{{ source_name }}</span>
+            </h1>
+            <button id="followBtn" onclick="toggleSourceFollow()" class="page-btn"
+                    style="border-radius:20px;font-size:0.78rem;padding:6px 16px">
                 Следи го изворот
             </button>
         </div>
-        
+
         <div class="source-stats-grid">
             <div class="source-stat-card">
-                <span class="stat-val">{{ stats.total }}</span>
-                <span class="stat-label">Вкупно објави</span>
+                <span class="stat-val">{{ stats.total or 0 }}</span>
+                <span class="stat-label">Вкупно Објави</span>
             </div>
             <div class="source-stat-card">
-                <span class="stat-val">{{ stats.last_24h }}</span>
+                <span class="stat-val">{{ stats.last_24h or 0 }}</span>
                 <span class="stat-label">Последни 24ч</span>
             </div>
             <div class="source-stat-card">
-                <span class="stat-val" style="font-size: 1.1rem; padding: 6px 0;">{{ stats.top_cat or 'Вести' }}</span>
+                <span class="stat-val" style="font-size:1.05rem">{{ stats.top_cat or 'Вести' }}</span>
                 <span class="stat-label">Примарна Категорија</span>
             </div>
+            {% if freq %}
+            <div class="source-stat-card">
+                <span class="stat-val">{{ "%.1f" | format(freq.daily_avg or 0) }}</span>
+                <span class="stat-label">Objavi/Den (7д)</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    <section class="source-dna" style="margin-bottom: var(--space-2xl);">
-        <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:var(--space-lg); color:var(--text-secondary)">Динамика на изворот (Source DNA)</h2>
-        <div class="source-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-            <div class="source-stat-card" style="text-align:left; display:flex; align-items:center; gap:var(--space-md)">
-                <div style="width:40px; height:40px; border-radius:50%; background:rgba(52, 152, 219, 0.1); display:flex; align-items:center; justify-content:center; color:#3498db">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                </div>
-                <div>
-                    <span style="font-weight:var(--weight-bold); display:block">{{ "%.1f"|format(freq.daily_avg|default(0)) }} објави/ден</span>
-                    <span class="stat-label">Фреквенција (7 дена)</span>
-                </div>
-            </div>
-            <div class="source-stat-card" style="text-align:left; display:flex; align-items:center; gap:var(--space-md)">
-                <div style="width:40px; height:40px; border-radius:50%; background:rgba({% if stats.avg_sent|default(0) >= 0 %}46, 204, 113{% else %}231, 76, 60{% endif %}, 0.1); display:flex; align-items:center; justify-content:center; color:{% if stats.avg_sent|default(0) >= 0 %}#2ecc71{% else %}#e74c3c{% endif %}">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path d="M9 10h.01M15 10h.01"></path><path d="M{% if stats.avg_sent|default(0) >= 0 %}9 15s1.5 2 3 2 3-2 3-2{% else %}15 17s-1.5-2-3-2-3 2-3 2{% endif %}"></path></svg>
-                </div>
-                <div>
-                    <span style="font-weight:var(--weight-bold); display:block">{{ "Позитивен" if stats.avg_sent|default(0) >= 0.1 else ("Критичен" if stats.avg_sent|default(0) <= -0.1 else "Неутрален") }}</span>
-                    <span class="stat-label">Уредувачки Тон</span>
-                </div>
-            </div>
-            <div class="source-stat-card" style="text-align:left; display:flex; align-items:center; gap:var(--space-md)">
-                <div style="width:40px; height:40px; border-radius:50%; background:rgba(155, 89, 182, 0.1); display:flex; align-items:center; justify-content:center; color:#9b59b6">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </div>
-                <div>
-                    <span style="font-weight:var(--weight-bold); display:block">{{ stats.top_topic or 'Општо' }}</span>
-                    <span class="stat-label">Специјализација</span>
-                </div>
+    <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-lg);flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:var(--space-sm);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3498db" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <div>
+                <span style="font-weight:var(--weight-bold);font-size:0.9rem;display:block">{{ "%.1f" | format(freq.daily_avg or 0) }} / ден</span>
+                <span class="stat-label">Фреквенција</span>
             </div>
         </div>
-    </section>
-
-    <h2 style="font-family:var(--font-display); font-size:1.25rem; margin-bottom:var(--space-xl)">Последни објави</h2>
-    
-    <div class="stories-grid" id="sourceStories">
-        <!-- Rendered by JS -->
+        <div style="display:flex;align-items:center;gap:var(--space-sm);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <div>
+                <span style="font-weight:var(--weight-bold);font-size:0.9rem;display:block">{{ stats.top_topic or 'Општо' }}</span>
+                <span class="stat-label">Специјализација</span>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-sm);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md)">
+            {% set sent = stats.avg_sent or 0 %}
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="{{ '#2ecc71' if sent >= 0.1 else ('#e74c3c' if sent <= -0.1 else '#95a5a6') }}" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 10h.01M15 10h.01"/><path d="{{ 'M9 15s1.5 2 3 2 3-2 3-2' if sent >= 0.1 else ('M15 17s-1.5-2-3-2-3 2-3 2' if sent <= -0.1 else 'M9 15h6') }}"/></svg>
+            <div>
+                <span style="font-weight:var(--weight-bold);font-size:0.9rem;display:block">{{ 'Позитивен' if sent >= 0.1 else ('Критичен' if sent <= -0.1 else 'Неутрален') }}</span>
+                <span class="stat-label">Уредувачки Тон</span>
+            </div>
+        </div>
     </div>
+
+    <h2 class="section-title">Последни Објави</h2>
+
+    <div class="stories-grid" id="sourceStories"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Pass the cluster data from Jinja to JS
-    const initialClusters = {{ clusters | tojson | safe }};
-    
-    function renderSourcePage() {
-        const wrap = document.getElementById('sourceStories');
-        if (!initialClusters || !initialClusters.length) {
-            wrap.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted)">Нема активни објави за овој извор.</div>';
-            return;
-        }
-        wrap.innerHTML = initialClusters.map((c, i) => renderCard(c, i)).join('');
-    }
+const initialClusters = {{ clusters | tojson | safe }};
+const sourceName = {{ source_name | tojson | safe }};
 
-    const sourceName = "{{ source_name }}";
-    function updateFollowBtn() {
-        const btn = document.getElementById('followBtn');
-        const following = isFollowing('sources', sourceName);
-        btn.textContent = following ? 'Следено ✓' : 'Следи го изворот';
-        btn.style.borderColor = following ? 'var(--primary)' : '';
-    }
+function renderCard(c) {
+    const a = c.articles && c.articles[0];
+    if (!a) return '';
+    const img = a.image_url
+        ? `/proxy?url=${encodeURIComponent(a.image_url)}`
+        : null;
+    const title = a.title || '';
+    const desc = (a.description || '').replace(/<[^>]*>/g, '').slice(0, 150);
+    const time = new Date(a.created_at).toLocaleString('mk-MK', {
+        hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
+    });
+    return `
+        <a href="/cluster/${c.cluster_id}" class="story-card fade-in${!img ? ' no-image' : ''}">
+            ${img ? `<div class="story-thumb-wrap"><img src="${img}" class="story-thumb" loading="lazy" alt=""></div>` : ''}
+            <div class="story-meta"><span class="source">${a.source}</span><span>${time}</span></div>
+            <h3 class="story-headline">${title}</h3>
+            ${desc ? `<p class="story-excerpt">${desc}</p>` : ''}
+        </a>`;
+}
 
-    function toggleSourceFollow() {
-        toggleFollow('sources', sourceName);
-        updateFollowBtn();
+function renderSourcePage() {
+    const wrap = document.getElementById('sourceStories');
+    if (!initialClusters || !initialClusters.length) {
+        wrap.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--text-muted)">Нема активни објави за овој извор.</div>';
+        return;
     }
+    wrap.innerHTML = initialClusters.map(c => renderCard(c)).join('');
+}
 
-    renderSourcePage();
+function updateFollowBtn() {
+    const btn = document.getElementById('followBtn');
+    if (!btn || typeof isFollowing !== 'function') return;
+    const following = isFollowing('sources', sourceName);
+    btn.textContent = following ? 'Следено ✓' : 'Следи го изворот';
+    btn.style.borderColor = following ? 'var(--primary)' : '';
+    btn.style.color = following ? 'var(--primary)' : '';
+}
+
+function toggleSourceFollow() {
+    if (typeof toggleFollow !== 'function') return;
+    toggleFollow('sources', sourceName);
     updateFollowBtn();
+}
+
+renderSourcePage();
+updateFollowBtn();
 </script>
 {% endblock %}

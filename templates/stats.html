@@ -3,119 +3,77 @@
 {% block title %}Статистики | Пресек{% endblock %}
 
 {% block head %}
-<style>
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--space-lg);
-        margin-bottom: var(--space-2xl);
-    }
-    .kpi-card {
-        background: var(--bg-surface);
-        padding: var(--space-lg);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-        text-align: center;
-    }
-    .kpi-val { font-size: 2rem; font-weight: var(--weight-bold); color: var(--primary); display: block; }
-    .kpi-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-
-    .charts-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: var(--space-xl);
-        margin-bottom: var(--space-2xl);
-    }
-    .chart-container {
-        background: var(--bg-surface);
-        padding: var(--space-lg);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-    }
-    .chart-title {
-        font-size: 1.1rem;
-        font-family: var(--font-display);
-        margin-bottom: var(--space-lg);
-        color: var(--text-primary);
-    }
-
-    .stats-table-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-xl);
-    }
-    
-    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 0.85rem; }
-    .bar-label { width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; height: 6px; background: var(--bg-base); border-radius: 3px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 1s ease; }
-    .bar-val { width: 40px; text-align: right; color: var(--text-muted); font-family: monospace; }
-
-    @media (max-width: 900px) {
-        .charts-grid { grid-template-columns: 1fr; }
-        .stats-table-grid { grid-template-columns: 1fr; }
-    }
-</style>
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
 <div class="fade-in">
     <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
-    
+
     <div class="kpi-grid">
         <div class="kpi-card">
-            <span class="kpi-val" id="totalArticles">-</span>
-            <span class="kpi-label">Вкупно објави</span>
+            <span class="kpi-val" id="totalArticles">—</span>
+            <span class="kpi-label">Вкупно Објави</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="last24h">-</span>
-            <span class="kpi-label">Во последни 24ч</span>
+            <span class="kpi-val" id="last24h">—</span>
+            <span class="kpi-label">Во Последни 24ч</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="summarizedPct">-</span>
+            <span class="kpi-val" id="summarizedPct">—</span>
             <span class="kpi-label">AI Резимирани</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="uptimeVal">-</span>
+            <span class="kpi-val" id="uptimeVal">—</span>
             <span class="kpi-label">Uptime</span>
         </div>
     </div>
 
     <div class="charts-grid">
         <div class="chart-container">
-            <h3 class="chart-title">Брзина на ингестија (24ч)</h3>
+            <h3 class="chart-title">Брзина на Ингестија (24ч)</h3>
             <canvas id="velocityChart" height="150"></canvas>
         </div>
         <div class="chart-container">
-            <h3 class="chart-title">Индекс на Сентимент</h3>
+            <h3 class="chart-title">Сентимент по Извор</h3>
             <canvas id="sentimentChart" height="150"></canvas>
         </div>
         <div class="chart-container">
-            <h3 class="chart-title">Дистрибуција по категорија</h3>
+            <h3 class="chart-title">Дистрибуција по Категорија</h3>
             <canvas id="categoryChart" height="150"></canvas>
         </div>
     </div>
 
     <div class="stats-table-grid">
         <div class="chart-container">
-            <h3 class="chart-title">Топ 10 Извори (Волумен)</h3>
+            <h3 class="chart-title">Топ 10 Извори — Волумен</h3>
             <div id="sourcesStats"></div>
         </div>
         <div class="chart-container">
-            <h3 class="chart-title">Кој прв објавува? (7д)</h3>
+            <h3 class="chart-title">Кој Прв Објавува? (7д)</h3>
             <div id="speedStats"></div>
         </div>
     </div>
 
-    <div class="chart-container" style="margin-top: var(--space-xl)">
+    <div class="chart-container" style="margin-top:var(--space-lg)">
         <h3 class="chart-title">Технички Детали</h3>
-        <div style="font-size: 0.9rem; line-height: 2;">
-            <div style="display:flex; justify-content:space-between"><span>База на податоци (PostgreSQL):</span> <strong id="dbSize">-</strong></div>
-            <div style="display:flex; justify-content:space-between"><span>Број на активни RSS фидови:</span> <strong id="totalFeeds">-</strong></div>
-            <div style="display:flex; justify-content:space-between"><span>Најстара статија во база:</span> <strong id="oldestArt">-</strong></div>
-            <div style="display:flex; justify-content:space-between"><span>Последно ажурирање:</span> <strong id="newestArt">-</strong></div>
+        <div style="font-size:0.9rem;line-height:2.2;color:var(--text-secondary)">
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
+                <span>База на податоци (PostgreSQL)</span>
+                <strong id="dbSize" style="color:var(--text-primary)">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
+                <span>Активни RSS фидови</span>
+                <strong id="totalFeeds" style="color:var(--text-primary)">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
+                <span>Најстара статија</span>
+                <strong id="oldestArt" style="color:var(--text-primary)">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+                <span>Последно ажурирање</span>
+                <strong id="newestArt" style="color:var(--text-primary)">—</strong>
+            </div>
         </div>
     </div>
 </div>
@@ -123,116 +81,121 @@
 
 {% block scripts %}
 <script>
-    async function loadStats() {
-        try {
-            const res = await fetch('/api/stats/full');
-            const data = await res.json();
+const PRIMARY = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#E63946';
+const TEXT_MUTED = '#888';
+const GRID_COLOR = document.documentElement.classList.contains('light')
+    ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
 
-            document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
-            document.getElementById('last24h').textContent = data.last_24h.toLocaleString();
-            document.getElementById('summarizedPct').textContent = data.summarized_pct + '%';
-            document.getElementById('uptimeVal').textContent = data.uptime;
-            
-            document.getElementById('dbSize').textContent = data.db_size_mb + ' MB';
-            document.getElementById('totalFeeds').textContent = data.total_feeds;
-            document.getElementById('oldestArt').textContent = new Date(data.oldest_article).toLocaleDateString('mk-MK');
-            document.getElementById('newestArt').textContent = new Date(data.new_article).toLocaleTimeString('mk-MK');
+const chartDefaults = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+};
 
-            // Volume Stats
-            const maxSrc = Math.max(...data.by_source.map(s => s.n));
-            document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
-                <div class="bar-row">
-                    <span class="bar-label">${s.source}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.n/maxSrc)*100}%"></div></div>
-                    <span class="bar-val">${s.n}</span>
-                </div>
-            `).join('');
+async function loadStats() {
+    try {
+        const res  = await fetch('/api/stats/full');
+        const data = await res.json();
 
-            // Speed Stats
-            const maxSpeed = Math.max(...data.speed_leaderboard.map(s => s.first_count));
-            document.getElementById('speedStats').innerHTML = data.speed_leaderboard.map(s => `
-                <div class="bar-row">
-                    <span class="bar-label">${s.source}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width: ${(s.first_count/maxSpeed)*100}%; background:var(--primary)"></div></div>
-                    <span class="bar-val">${s.first_count}</span>
-                </div>
-            `).join('');
+        document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
+        document.getElementById('last24h').textContent       = data.last_24h.toLocaleString();
+        document.getElementById('summarizedPct').textContent = data.summarized_pct + '%';
+        document.getElementById('uptimeVal').textContent     = data.uptime;
+        document.getElementById('dbSize').textContent        = data.db_size_mb + ' MB';
+        document.getElementById('totalFeeds').textContent    = data.total_feeds;
+        document.getElementById('oldestArt').textContent     = new Date(data.oldest_article).toLocaleDateString('mk-MK');
+        document.getElementById('newestArt').textContent     = new Date(data.new_article).toLocaleTimeString('mk-MK');
 
-            // Velocity Chart (Line)
-            const ctxV = document.getElementById('velocityChart').getContext('2d');
-            new Chart(ctxV, {
-                type: 'line',
-                data: {
-                    labels: data.velocity.map(v => new Date(v.t).getHours() + ':00'),
-                    datasets: [{
-                        label: 'Статии на час',
-                        data: data.velocity.map(v => v.n),
-                        borderColor: '#c0392b',
-                        backgroundColor: 'rgba(192, 57, 43, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                        x: { grid: { display: false }, ticks: { color: '#888', maxRotation: 0 } }
+        // Volume bar chart
+        const maxSrc = Math.max(...data.by_source.map(s => s.n));
+        document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
+            <div class="bar-row">
+                <span class="bar-label">${s.source}</span>
+                <div class="bar-track"><div class="bar-fill" style="width:${(s.n/maxSrc)*100}%"></div></div>
+                <span class="bar-val">${s.n}</span>
+            </div>`).join('');
+
+        // Speed bar chart
+        const maxSpd = Math.max(...data.speed_leaderboard.map(s => s.first_count));
+        document.getElementById('speedStats').innerHTML = data.speed_leaderboard.map(s => `
+            <div class="bar-row">
+                <span class="bar-label">${s.source}</span>
+                <div class="bar-track"><div class="bar-fill" style="width:${(s.first_count/maxSpd)*100}%"></div></div>
+                <span class="bar-val">${s.first_count}</span>
+            </div>`).join('');
+
+        // Velocity line chart
+        new Chart(document.getElementById('velocityChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: data.velocity.map(v => new Date(v.t).getHours() + ':00'),
+                datasets: [{
+                    data: data.velocity.map(v => v.n),
+                    borderColor: PRIMARY,
+                    backgroundColor: 'rgba(230,57,70,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
+                    x: { grid: { display: false },    ticks: { color: TEXT_MUTED, maxRotation: 0 } }
+                }
+            }
+        });
+
+        // Category doughnut
+        new Chart(document.getElementById('categoryChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: data.by_category.map(c => c.cat),
+                datasets: [{
+                    data: data.by_category.map(c => c.n),
+                    backgroundColor: [PRIMARY,'#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#2c3e50'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: { color: TEXT_MUTED, padding: 10, boxWidth: 8, font: { size: 9 } }
                     }
                 }
-            });
+            }
+        });
 
-            // Category Chart (Doughnut)
-            const ctxC = document.getElementById('categoryChart').getContext('2d');
-            new Chart(ctxC, {
-                type: 'doughnut',
-                data: {
-                    labels: data.by_category.map(c => c.cat),
-                    datasets: [{
-                        data: data.by_category.map(c => c.n),
-                        backgroundColor: [
-                            '#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#2980b9', '#8e44ad', '#2c3e50'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    cutout: '70%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#888', padding: 10, boxWidth: 8, font: { size: 9 } } }
-                    }
+        // Sentiment horizontal bar
+        new Chart(document.getElementById('sentimentChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: data.sentiment_index.map(s => s.source),
+                datasets: [{
+                    data: data.sentiment_index.map(s => s.score),
+                    backgroundColor: data.sentiment_index.map(s =>
+                        s.score >= 0 ? 'rgba(46,204,113,0.6)' : 'rgba(230,57,70,0.6)'),
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                ...chartDefaults,
+                scales: {
+                    x: { min: -1, max: 1, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
+                    y: { grid: { display: false },    ticks: { color: TEXT_MUTED, font: { size: 9 } } }
                 }
-            });
+            }
+        });
 
-            // Sentiment Index Chart (Horizontal Bar)
-            const ctxS = document.getElementById('sentimentChart').getContext('2d');
-            new Chart(ctxS, {
-                type: 'bar',
-                data: {
-                    labels: data.sentiment_index.map(s => s.source),
-                    datasets: [{
-                        data: data.sentiment_index.map(s => s.score),
-                        backgroundColor: data.sentiment_index.map(s => s.score >= 0 ? 'rgba(46, 204, 113, 0.6)' : 'rgba(231, 76, 60, 0.6)'),
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { min: -1, max: 1, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                        y: { grid: { display: false }, ticks: { color: '#888', font: { size: 9 } } }
-                    }
-                }
-            });
+    } catch (e) { console.error(e); }
+}
 
-        } catch(e) { console.error(e); }
-    }
-    loadStats();
+loadStats();
 </script>
 {% endblock %}

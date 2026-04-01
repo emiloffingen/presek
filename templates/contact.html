@@ -2,38 +2,13 @@
 
 {% block title %}Контакт | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .contact-content {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: var(--space-xl) 0;
-    }
-    .contact-card {
-        background: var(--bg-surface);
-        padding: var(--space-2xl);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-        margin: var(--space-2xl) 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-md);
-        align-items: center;
-        text-align: center;
-    }
-    .contact-item { font-size: 1.5rem; font-weight: var(--weight-bold); color: var(--primary); font-family: var(--font-body); }
-    .contact-content h2 { margin-top: var(--space-2xl); color: var(--text-primary); font-size: 1.5rem; }
-    .contact-content p { color: var(--text-secondary); line-height: 1.8; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="contact-content fade-in">
     <h1 class="hero-title">Контактирајте го <span style="color:var(--primary)">Пресек</span></h1>
     <p class="hero-subtitle">Тука сме за вашите предлози, прашања или соработка.</p>
 
     <div class="contact-card">
-        <div class="contact-item">📧 contact@presek.mk</div>
+        <div class="contact-item">contact@presek.mk</div>
         <p>Најбрзиот начин да не контактирате е преку е-пошта. Одговараме во рок од 24 часа.</p>
     </div>
 

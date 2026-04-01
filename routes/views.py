@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, Response, request, current_app, send_from_directory
 import datetime
 import os
+import re
 import math
 from database import get_db
 from utils import rank_articles_in_cluster, calculate_reading_time
@@ -30,6 +31,8 @@ def briefing_page():
 
 @views_bp.route("/izvor/<source_name>")
 def source_page(source_name: str):
+    if not source_name or len(source_name) > 100:
+        return "Невалиден извор.", 400
     conn = get_db()
     # Fetch recent articles from this source
     rows = conn.execute(
@@ -92,6 +95,8 @@ def contact_page():
 
 @views_bp.route("/cluster/<cluster_id>")
 def cluster_page(cluster_id: str):
+    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+        return "Невалиден кластер.", 400
     conn = get_db()
     rows = conn.execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,)).fetchall()
     

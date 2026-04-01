@@ -47,7 +47,7 @@ celery_app.conf.update(
             'schedule': 300.0,  # Every 5 minutes — tag new clusters
         },
         'recategorize-geography': {
-            'task': 'tasks.recategorize_task',
+            'task': 'tasks.recategorize_clusters_task',
             'schedule': 600.0,  # Every 10 minutes — fix miscategorized clusters
         },
         'send-telegram-briefing': {

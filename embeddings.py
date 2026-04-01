@@ -109,6 +109,54 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
     return [None] * len(texts)
 
 
+def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
+    """
+    Generate and store embeddings for recent articles that don't have one yet.
+    Returns the count of articles embedded.
+    """
+    from database import db_manager as db
+
+    if not GOOGLE_API_KEY:
+        log.warning("[embeddings] Skipping embed_recent_articles: no GOOGLE_API_KEY")
+        return 0
+
+    try:
+        rows = db.execute(
+            """SELECT id, title, description FROM articles
+               WHERE embedding IS NULL
+                 AND created_at >= NOW() - INTERVAL '%s hours'
+               ORDER BY created_at DESC
+               LIMIT %s""",
+            (hours, limit)
+        )
+    except Exception as e:
+        log.error(f"[embeddings] Failed to fetch articles for embedding: {e}")
+        return 0
+
+    if not rows:
+        return 0
+
+    texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
+    vectors = generate_embeddings_batch(texts)
+
+    embedded = 0
+    for row, vec in zip(rows, vectors):
+        if vec is None:
+            continue
+        try:
+            db.execute(
+                "UPDATE articles SET embedding = %s WHERE id = %s",
+                (vec, row["id"]),
+                fetch=False,
+            )
+            embedded += 1
+        except Exception as e:
+            log.warning(f"[embeddings] Failed to store embedding for article {row['id']}: {e}")
+
+    log.info(f"[embeddings] Embedded {embedded}/{len(rows)} recent articles")
+    return embedded
+
+
 def generate_query_embedding(text: str) -> list[float] | None:
     """Generate an embedding optimized for search queries (uses RETRIEVAL_QUERY task type)."""
     if not GOOGLE_API_KEY or not text:

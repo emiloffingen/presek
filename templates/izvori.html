@@ -2,108 +2,60 @@
 
 {% block title %}Извори | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .izvori-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: var(--space-md);
-        margin-top: var(--space-xl);
-    }
-    .izvor-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: var(--space-md);
-        display: flex;
-        align-items: center;
-        gap: var(--space-md);
-        transition: var(--transition);
-    }
-    .izvor-card:hover {
-        border-color: var(--primary);
-        transform: translateY(-2px);
-    }
-    .izvor-dot {
-        width: 6px;
-        height: 6px;
-        background: var(--primary);
-        border-radius: 50%;
-        box-shadow: 0 0 8px var(--primary);
-    }
-    .izvor-name {
-        font-weight: var(--weight-semi);
-        font-size: 0.95rem;
-        color: var(--text-primary);
-    }
-    .section-title {
-        margin-top: var(--space-2xl);
-        margin-bottom: var(--space-lg);
-        padding-bottom: var(--space-xs);
-        border-bottom: 1px solid var(--border);
-        color: var(--primary);
-        font-size: 1.25rem;
-        font-family: var(--font-display);
-        letter-spacing: 0.05em;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="fade-in">
     <h1 class="hero-title">Медиумски <span style="color:var(--primary)">Извори</span></h1>
-    <p class="hero-subtitle">Пресек агрегира вести од над 100 релевантни македонски и меѓународни извори во реално време.</p>
+    <p class="hero-subtitle">Пресек агрегира вести од 60+ македонски и меѓународни извори во реално време.</p>
 
-    <h2 class="section-title">Македонски Медиуми</h2>
+    <h2 class="section-title">🇲🇰 Македонски Медиуми</h2>
     <div class="izvori-grid" id="mkIzvori"></div>
 
-    <h2 class="section-title">Меѓународни Медиуми</h2>
+    <h2 class="section-title">🌍 Меѓународни Медиуми</h2>
     <div class="izvori-grid" id="intIzvori"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const mk = [
-        "Sloboden Pecat", "Kanal 5", "MIA", "Sitel", "Telma", "Kurir",
-        "Republika", "Fokus", "Nezavisen", "Faktor", "Vecer", "Meta",
-        "360 Stepeni", "Makfax", "Nova Makedonija", "Infomax", "Press24",
-        "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
-        "Portalb", "Lider", "MKD", "NetPress", "Akademik", "Skopje Info",
-        "Prizma", "Expres", "Tetovo Info", "Koha", "A1on", "SportSport",
-        "Strumica Info", "24 Вести", "TV21", "Слободна Европа",
-        "Deutsche Welle", "Журнал", "Civil Media", "Радио МОФ",
-        "Сакам да кажам", "Бизнис Вести", "Ohrid News", "Vecer Sport",
-        "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
-        "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
-        "Kajgana", "Pari.com.mk", "Bloomberg Adria", "E-Magazin",
-        "IT.mk", "Sportmanija", "Fakulteti", "Magazin"
-    ];
-    const diaspora = [
-        "Tagesschau", "Der Spiegel", "ZDF Heute", "Süddeutsche Zeitung", "Die Zeit",
-        "SRF News", "20 Minuten", "CNN", "NPR", "Reuters", "CBC News",
-        "Fox News", "BBC News", "The Guardian", "France24", "EuroNews",
-        "Politico Europe", "ABC Australia", "Al Jazeera", "SCMP", "NHK World",
-        "Times of India", "RFI English", "ANSA", "RTVSLO", "ORF", "SVT News",
-        "N1 Info", "B92", "Kurir.rs", "Blic.rs", "Novinite", "Dnevnik.bg",
-        "Kathimerini", "RTS", "FAZ", "Swissinfo", "AP News", "The Verge",
-        "Ars Technica", "TechCrunch", "Axios", "ESPN", "Exit News",
-        "Balkan Insight", "Telegrafi", "Daily Sabah", "TRT World",
-        "Index.hr", "Jutarnji", "Klix.ba", "Vijesti.me"
-    ];
+const mk = [
+    "Sloboden Pecat","Kanal 5","MIA","Sitel","Telma","Kurir",
+    "Republika","Fokus","Nezavisen","Faktor","Vecer","Meta",
+    "360 Stepeni","Makfax","Nova Makedonija","Infomax","Press24",
+    "Skopje1","Plusinfo","Lokalno","4News","Makpress","Vistinomer",
+    "Portalb","Lider","MKD","NetPress","Akademik","Skopje Info",
+    "Prizma","Expres","Tetovo Info","Koha","A1on","SportSport",
+    "Strumica Info","24 Вести","TV21","Слободна Европа",
+    "Deutsche Welle","Журнал","Civil Media","Радио МОФ",
+    "Сакам да кажам","Бизнис Вести","Ohrid News","Vecer Sport",
+    "Ekonomija","Zdravje","MRT","Time.mk","Kolumna","Okno",
+    "Alfa TV","Tocka","IRL","Nova TV","Libertas","Racin",
+    "Kajgana","Pari.com.mk","Bloomberg Adria","E-Magazin",
+    "IT.mk","Sportmanija","Fakulteti","Magazin"
+];
 
-    document.getElementById('mkIzvori').innerHTML = mk.sort().map(name => `
-        <div class="izvor-card">
-            <div class="izvor-dot"></div>
-            <span class="izvor-name">${name}</span>
-        </div>
-    `).join('');
+const diaspora = [
+    "Tagesschau","Der Spiegel","ZDF Heute","Süddeutsche Zeitung","Die Zeit",
+    "SRF News","20 Minuten","CNN","NPR","Reuters","CBC News",
+    "Fox News","BBC News","The Guardian","France24","EuroNews",
+    "Politico Europe","ABC Australia","Al Jazeera","SCMP","NHK World",
+    "Times of India","RFI English","ANSA","RTVSLO","ORF","SVT News",
+    "N1 Info","B92","Kurir.rs","Blic.rs","Novinite","Dnevnik.bg",
+    "Kathimerini","RTS","FAZ","Swissinfo","AP News","The Verge",
+    "Ars Technica","TechCrunch","Axios","ESPN","Exit News",
+    "Balkan Insight","Telegrafi","Daily Sabah","TRT World",
+    "Index.hr","Jutarnji","Klix.ba","Vijesti.me"
+];
 
-    document.getElementById('intIzvori').innerHTML = diaspora.sort().map(name => `
-        <div class="izvor-card">
-            <div class="izvor-dot" style="background:var(--text-muted); box-shadow:none;"></div>
+function makeCards(list, muted) {
+    return list.sort().map(name => `
+        <a href="/izvor/${encodeURIComponent(name)}" class="izvor-card">
+            <div class="izvor-dot${muted ? ' muted' : ''}"></div>
             <span class="izvor-name">${name}</span>
-        </div>
-    `).join('');
+        </a>`
+    ).join('');
+}
+
+document.getElementById('mkIzvori').innerHTML  = makeCards(mk, false);
+document.getElementById('intIzvori').innerHTML = makeCards(diaspora, true);
 </script>
 {% endblock %}

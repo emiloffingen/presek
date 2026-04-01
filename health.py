@@ -44,14 +44,25 @@ def register_health_routes(app):
             conn.close()
             db_size_mb = database.get_db_size()
             db_ok = True
-        except Exception as e:
+        except Exception:
+            pass
+
+        # Redis probe
+        redis_ok = False
+        try:
+            import os, redis as _redis
+            r = _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+            r.ping()
+            redis_ok = True
+        except Exception:
             pass
 
         with _refresh_lock:
             last = dict(_last_refresh)
 
+        overall = "ok" if (db_ok and redis_ok) else "degraded"
         return jsonify({
-            "status": "ok" if db_ok else "degraded",
+            "status": overall,
             "uptime": f"{hours}h {mins}m {secs}s",
             "uptime_seconds": uptime_s,
             "database": {
@@ -59,6 +70,7 @@ def register_health_routes(app):
                 "article_count": article_count,
                 "size_mb": db_size_mb,
             },
+            "redis": {"ok": redis_ok},
             "last_refresh": {
                 "time": last["time"],
                 "new_articles": last["count"],

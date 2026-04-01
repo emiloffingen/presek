@@ -2,37 +2,6 @@
 
 {% block title %}За Нас | Пресек{% endblock %}
 
-{% block head %}
-<style>
-    .about-content {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: var(--space-xl) 0;
-    }
-    .about-content h2 {
-        margin-top: var(--space-2xl);
-        margin-bottom: var(--space-md);
-        color: var(--primary);
-        font-size: 1.5rem;
-    }
-    .feature-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-lg);
-        margin: var(--space-2xl) 0;
-    }
-    .feature-card {
-        background: var(--bg-surface);
-        padding: var(--space-lg);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-    }
-    .feature-card h3 { font-size: 1.15rem; margin-bottom: var(--space-sm); color: var(--text-primary); }
-    .feature-card p { font-size: 0.95rem; color: var(--text-secondary); line-height: var(--lh-base); }
-    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="about-content fade-in">
     <h1 class="hero-title">За <span style="color:var(--primary)">Пресек</span></h1>
@@ -40,24 +9,27 @@
 
     <div class="feature-grid">
         <div class="feature-card">
-            <h3>🤖 AI Кластеризација</h3>
+            <h3>AI Кластеризација</h3>
             <p>Нашиот алгоритам ги групира сите вести за ист настан од различни извори, овозможувајќи ви да ги видите сите страни на приказната.</p>
         </div>
         <div class="feature-card">
-            <h3>📝 Автоматски Резимеа</h3>
+            <h3>Автоматски Резимеа</h3>
             <p>Вештачката интелигенција ги анализира вестите и генерира кратки, објективни резимеа за да заштедите време.</p>
         </div>
         <div class="feature-card">
-            <h3>🌍 Светски Вести</h3>
+            <h3>Светски Вести</h3>
             <p>Ги следиме најголемите светски медиуми и автоматски ги преведуваме најважните вести на македонски јазик.</p>
         </div>
         <div class="feature-card">
-            <h3>⚡ Реално Време</h3>
+            <h3>Реално Време</h3>
             <p>Пресек ги проверува изворите на секои 5 минути за да бидете секогаш во тек со најновите случувања.</p>
         </div>
     </div>
 
     <h2>Нашата Мисија</h2>
-    <p style="color:var(--text-secondary); line-height:1.8;">Во ера на информациски преоптоварување и поларизирани медиуми, нашата цел е да обезбедиме чист, технолошки напреден и објективен поглед врз вестите. Пресек не е медиум, туку алатка која ви помага да ја разберете реалноста побрзо и подобро.</p>
+    <p>Во ера на информациско преоптоварување и поларизирани медиуми, нашата цел е да обезбедиме чист, технолошки напреден и објективен поглед врз вестите. Пресек не е медиум, туку алатка која ви помага да ја разберете реалноста побрзо и подобро.</p>
+
+    <h2>Технологија</h2>
+    <p>Пресек користи TF-IDF кластеризација со македонски стемер за групирање на вести, pgvector за семантичка претрага, и мулти-провајдерски AI систем (Gemini, Groq, Mistral) со автоматски резерви при недостапност.</p>
 </div>
 {% endblock %}

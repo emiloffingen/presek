@@ -4,7 +4,7 @@ import time
 import json
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
-from database import db_manager as db
+from database import db_manager as db, prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
     translate_to_macedonian, auto_summarize_top_clusters, 
@@ -148,6 +148,90 @@ def generate_daily_brief_task():
 @celery_app.task
 def run_prune_db():
     """Standard maintenance."""
-    db.prune()
+    prune_db()
     from ai_engine import cleanup_cover_art
     cleanup_cover_art()
+
+
+@celery_app.task
+def generate_cluster_metadata_task():
+    """Tag recent clusters with metadata (titles, source count)."""
+    try:
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=6)
+        rows = db.execute("""
+            SELECT cluster_id, array_agg(DISTINCT source) as sources,
+                   COUNT(*) as article_count, MAX(title) as title
+            FROM articles WHERE created_at >= %s
+            GROUP BY cluster_id HAVING COUNT(*) >= 2
+        """, (cutoff,))
+        for r in rows:
+            db.execute(
+                """INSERT INTO cluster_metadata (cluster_id, tags, updated_at)
+                   VALUES (%s, %s, NOW())
+                   ON CONFLICT (cluster_id) DO UPDATE SET updated_at = NOW()""",
+                (r['cluster_id'], r['sources']), fetch=False
+            )
+    except Exception as e:
+        log.error(f"[tasks] Cluster metadata generation failed: {e}")
+
+
+@celery_app.task
+def send_daily_digest_task():
+    """Send daily email digest. Placeholder — implement with digest module."""
+    try:
+        import digest as digest_module
+        digest_module.send_digest()
+    except Exception as e:
+        log.warning(f"[tasks] Daily digest skipped: {e}")
+
+
+@celery_app.task
+def send_telegram_briefing_task():
+    """Send daily briefing to Telegram channel."""
+    try:
+        row = db.execute_one(
+            "SELECT content FROM daily_briefings WHERE date = CURRENT_DATE"
+        )
+        if not row or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+            return
+        import urllib.request
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": row["content"][:4096]}).encode()
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10)
+        log.info("[tasks] Telegram briefing sent.")
+    except Exception as e:
+        log.warning(f"[tasks] Telegram briefing failed: {e}")
+
+
+@celery_app.task
+def backfill_cover_art_task():
+    """Generate AI cover art for clusters that have no image."""
+    try:
+        rows = db.execute("""
+            SELECT DISTINCT a.cluster_id, cs.summary
+            FROM articles a
+            JOIN cluster_summaries cs ON a.cluster_id = cs.cluster_id
+            WHERE a.image_url IS NULL
+              AND a.created_at >= NOW() - INTERVAL '24 hours'
+            LIMIT 5
+        """)
+        for r in rows:
+            img_url = generate_cover_art(r['cluster_id'], r['summary'] or '')
+            if img_url:
+                db.execute(
+                    "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
+                    (img_url, r['cluster_id']), fetch=False
+                )
+    except Exception as e:
+        log.warning(f"[tasks] Cover art backfill failed: {e}")
+
+
+@celery_app.task
+def generate_embeddings_task():
+    """Generate pgvector embeddings for articles that don't have one yet."""
+    try:
+        from embeddings import embed_recent_articles
+        embed_recent_articles()
+    except Exception as e:
+        log.warning(f"[tasks] Embedding generation failed: {e}")

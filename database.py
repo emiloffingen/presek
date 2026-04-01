@@ -76,7 +76,7 @@ class DatabaseManager:
                 return cur.rowcount
         except Exception as e:
             conn.rollback()
-            log.error(f"Presek 4.0 DB Error: {e} | SQL: {sql}")
+            log.error(f"Presek 4.0 DB Error: {e}")
             raise
         finally:
             self.put_conn(conn)
@@ -104,7 +104,9 @@ class DatabaseManager:
         if topic:
             sql += " AND topic = %s"; params.append(topic)
         if sentiment:
-            sql += " AND summary LIKE %s"; params.append(f"%{sentiment}%")
+            safe_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            sql += " AND summary LIKE %s ESCAPE '\\'"
+            params.append(f"%{safe_sentiment}%")
         sql += f" ORDER BY created_at DESC LIMIT {limit}"
         return self.execute(sql, tuple(params))
 
@@ -122,6 +124,8 @@ class DatabaseManager:
         return self.execute(sql, tuple(params))
 
     def search_articles(self, q, limit=100):
+        if not q or len(q) > 500:
+            return []
         sql = """
             SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
             FROM articles

@@ -1,5 +1,5 @@
 /**
- * Presek 4.0 - UI Rendering Module
+ * Presek 4.0 — UI Rendering Module
  */
 
 const UI = {
@@ -8,7 +8,8 @@ const UI = {
         if (!wrap) return;
 
         if (!clusters || !clusters.length) {
-            wrap.innerHTML = `<div style="text-align:center; padding:100px; color:var(--text-muted)">Нема вести за избраната категорија.</div>`;
+            wrap.innerHTML = `<div style="text-align:center;padding:100px 16px;color:var(--text-muted);font-size:0.95rem">Нема вести за избраната категорија.</div>`;
+            this._setLoadMore(false);
             return;
         }
 
@@ -16,7 +17,7 @@ const UI = {
         clusters.forEach((c, idx) => {
             let size = 'bento-standard';
             const hasImage = c.articles && c.articles.some(a => a.image_url);
-            
+
             if (idx === 0 && Presek.state.page === 0 && hasImage) size = 'bento-large';
             else if (c.is_breaking && hasImage) size = 'bento-wide';
             else if (idx % 5 === 4 && hasImage) size = 'bento-tall';
@@ -25,17 +26,24 @@ const UI = {
         });
         html += '</div>';
         wrap.innerHTML = html;
+
+        this._setLoadMore(Presek.state.hasMore);
+    },
+
+    _setLoadMore(show) {
+        const el = document.getElementById('loadMoreWrap');
+        if (el) el.style.display = show ? 'flex' : 'none';
     },
 
     renderBentoTile(c, size) {
         const a = c.articles[0];
         const cid = c.cluster_id;
+
         let clusterImage = null;
-        for (let art of c.articles) {
+        for (const art of c.articles) {
             if (art.image_url) { clusterImage = art.image_url; break; }
         }
-        
-        // Helper for escaping
+
         const esc = (str) => {
             if (!str) return '';
             const d = document.createElement('div');
@@ -43,32 +51,42 @@ const UI = {
             return d.innerHTML;
         };
 
-        const imgSrc = clusterImage ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage)) : null;
-        const desc = esc(a.description || '').substring(0, 180) + '...';
-        const title = esc(a.title);
+        const imgSrc = clusterImage
+            ? (clusterImage.startsWith('/') ? clusterImage : '/proxy?url=' + encodeURIComponent(clusterImage))
+            : null;
 
-        let inner = '';
+        const title = esc(a.title || '');
+        const rawDesc = (a.description || '').replace(/<[^>]*>/g, '').trim();
+        const desc = esc(rawDesc.length > 160 ? rawDesc.slice(0, 160) + '…' : rawDesc);
+        const source = esc(a.source || '');
+
+        const showDesc = size === 'bento-large' || size === 'bento-wide' || size === 'bento-tall';
+
+        let inner;
         if (imgSrc) {
             inner = `
-                <div class="bento-img-wrap"><img src="${imgSrc}" class="bento-img" loading="lazy"></div>
+                <div class="bento-img-wrap">
+                    <img src="${imgSrc}" class="bento-img" loading="lazy" decoding="async" alt="${title}">
+                </div>
                 <div class="bento-overlay">
                     <div class="bento-meta">
-                        ${c.is_breaking ? '<span style="color:#ff3b30">● ВО ЖИВО</span>' : ''}
-                        ${c.has_balanced ? '<span style="color:#34c759">✓ СЕОПФАТНО</span>' : ''}
-                        <span>${esc(a.source)}</span>
+                        ${c.is_breaking ? '<span style="color:#ff5f5f">● ВО ЖИВО</span>' : ''}
+                        ${c.has_balanced ? '<span style="color:#4cd964">✓ СЕОПФАТНО</span>' : ''}
+                        <span>${source}</span>
                     </div>
                     <h2 class="bento-title">${title}</h2>
-                    ${(size === 'bento-large' || size === 'bento-wide' || size === 'bento-tall') ? `<p class="bento-desc">${desc}</p>` : ''}
-                </div>
-            `;
+                    ${showDesc && desc ? `<p class="bento-desc">${desc}</p>` : ''}
+                </div>`;
         } else {
             inner = `
                 <div class="bento-content">
-                    <div class="bento-meta"><span>${esc(a.source)}</span></div>
+                    <div class="bento-meta">
+                        ${c.is_breaking ? '<span style="color:var(--primary)">● ВО ЖИВО</span>' : ''}
+                        <span>${source}</span>
+                    </div>
                     <h2 class="bento-title">${title}</h2>
-                    <p class="bento-desc" style="color:var(--text-secondary)">${desc.substring(0, 120)}...</p>
-                </div>
-            `;
+                    ${desc ? `<p class="bento-desc">${desc}</p>` : ''}
+                </div>`;
         }
 
         return `<a href="/cluster/${cid}" class="bento-tile ${size} fade-in">${inner}</a>`;
@@ -77,9 +95,9 @@ const UI = {
     updateNav() {
         const list = document.getElementById('categoryList');
         if (!list) return;
-        
         list.innerHTML = Presek.countries.map(c => `
-            <button class="cat-btn ${c.id === Presek.state.category ? 'active' : ''}" onclick="Presek.setCategory('${c.id}')">
+            <button class="cat-btn ${c.id === Presek.state.category ? 'active' : ''}"
+                    onclick="Presek.setCategory('${c.id}')">
                 ${c.label}
             </button>
         `).join('');
@@ -88,9 +106,9 @@ const UI = {
     updateFilters() {
         const list = document.getElementById('topicList');
         if (!list) return;
-
         list.innerHTML = Presek.topics.map(t => `
-            <div class="trend-tag ${Presek.state.topic === t.id ? 'active' : ''}" onclick="Presek.setTopic('${t.id}')">
+            <div class="trend-tag ${Presek.state.topic === t.id ? 'active' : ''}"
+                 onclick="Presek.setTopic('${t.id}')">
                 ${t.label}
             </div>
         `).join('');
@@ -98,25 +116,28 @@ const UI = {
 
     showSkeleton() {
         const wrap = document.getElementById('pageWrap');
-        if (wrap) {
-            wrap.innerHTML = `<div class="bento-grid">
+        if (!wrap) return;
+        this._setLoadMore(false);
+        wrap.innerHTML = `
+            <div class="bento-grid">
                 <div class="skeleton-card bento-large"></div>
                 <div class="skeleton-card bento-standard"></div>
                 <div class="skeleton-card bento-wide"></div>
                 <div class="skeleton-card bento-standard"></div>
                 <div class="skeleton-card bento-tall"></div>
+                <div class="skeleton-card bento-standard"></div>
             </div>`;
-        }
     },
 
     showError() {
         const wrap = document.getElementById('pageWrap');
-        if (wrap) {
-            wrap.innerHTML = `<div class="error-state">
+        if (!wrap) return;
+        this._setLoadMore(false);
+        wrap.innerHTML = `
+            <div class="error-state">
                 <p>Настана грешка при вчитување на вестите.</p>
                 <button class="page-btn" onclick="Presek.fetchNews()">Обиди се повторно</button>
             </div>`;
-        }
     },
 
     showToast(count) {
@@ -126,14 +147,14 @@ const UI = {
         const toast = document.createElement('div');
         toast.id = 'liveToast';
         toast.className = 'live-toast fade-in';
-        toast.innerHTML = `✨ ${count} нови вести. Освежи.`;
+        toast.textContent = `${count} нов${count === 1 ? 'а вест' : 'и вести'} — освежи`;
         toast.onclick = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             Presek.fetchNews();
             toast.remove();
         };
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 15000);
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 15000);
     },
 
     initTheme() {
@@ -155,7 +176,7 @@ const AI = {
 
         if (input) input.value = '';
         const responseEl = document.getElementById('aiResponse');
-        if (responseEl) responseEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.95rem">Размислувам...</div>';
+        if (responseEl) responseEl.innerHTML = '<div style="color:var(--text-muted);font-size:0.9rem">Размислувам…</div>';
         this.toggleSheet(true);
 
         try {
@@ -166,8 +187,22 @@ const AI = {
                 body: JSON.stringify({ cluster_id: clusterId, query: q })
             });
             const data = await res.json();
-            if (responseEl) responseEl.innerHTML = data.error ? `<p style="color:var(--primary)">Грешка: ${data.error}</p>` : data.response.replace(/\n/g, '<br>');
-        } catch(e) {
+            if (responseEl) {
+                responseEl.innerHTML = '';
+                const p = document.createElement('p');
+                if (data.error) {
+                    p.style.color = 'var(--primary)';
+                    p.textContent = 'Грешка: ' + data.error;
+                    responseEl.appendChild(p);
+                } else {
+                    const text = data.response || '';
+                    text.split('\n').forEach((line, i) => {
+                        if (i > 0) responseEl.appendChild(document.createElement('br'));
+                        responseEl.appendChild(document.createTextNode(line));
+                    });
+                }
+            }
+        } catch (e) {
             if (responseEl) responseEl.innerHTML = '<p style="color:var(--primary)">Серверот не одговара.</p>';
         }
     }

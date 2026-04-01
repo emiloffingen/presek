@@ -2,8 +2,11 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import re
 import time
 import logging
+import urllib.request
+import urllib.error
 from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
@@ -15,6 +18,13 @@ from embeddings import generate_query_embedding
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
 
+MAX_PAGE = 1000
+MAX_Q_LEN = 500
+
+# Allowed image content types for proxy
+_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
+_PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
 def success_response(data, meta=None):
     return jsonify({
         "status": "success",
@@ -23,19 +33,23 @@ def success_response(data, meta=None):
     })
 
 def error_response(message, code=500, details=None):
-    return jsonify({
-        "status": "error",
-        "message": message,
-        "details": details
-    }), code
+    resp = {"status": "error", "message": message}
+    if details:
+        resp["details"] = details
+    return jsonify(resp), code
 
 @api_bp.route("/api/news")
 def api_news():
     try:
-        page      = request.args.get("page", 0, type=int)
-        page_size = request.args.get("page_size", 50, type=int)
+        page      = min(max(0, request.args.get("page", 0, type=int)), MAX_PAGE)
+        page_size = min(200, max(1, request.args.get("page_size", 50, type=int)))
+
+        # Safety: prevent runaway OFFSET queries
+        if page * page_size > 50000:
+            return error_response("Page offset too large", 400)
+
         country   = request.args.get("country", "🇲🇰")
-        
+
         # Handle double-encoding of emojis
         try:
             if country:
@@ -49,7 +63,7 @@ def api_news():
         sort_by   = request.args.get("sort", "recent")
         topic     = request.args.get("topic", "").strip()
         sentiment = request.args.get("sentiment", "").strip()
-        q         = request.args.get("q", "").strip()
+        q         = request.args.get("q", "").strip()[:MAX_Q_LEN]
         follow_sources = request.args.get("follow_sources", "").strip()
         follow_topics  = request.args.get("follow_topics", "").strip()
 
@@ -62,8 +76,7 @@ def api_news():
             cluster_ids = [cid.strip() for cid in ids.split(',') if cid.strip()]
             rows = db.get_articles_by_ids(cluster_ids)
         elif q:
-            # Full rewrite of search logic in DAL would happen here, keeping it local for now
-            rows = db.search_articles(q) 
+            rows = db.search_articles(q)
         elif follow_sources or follow_topics:
             sources_list = [s.strip() for s in follow_sources.split(',') if s.strip()]
             topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
@@ -78,7 +91,7 @@ def api_news():
             clusters[r['cluster_id']].append(r)
 
         ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        
+
         if sort_by == 'popular':
             ranked_clusters.sort(key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
         else:
@@ -88,7 +101,7 @@ def api_news():
         start = page * page_size
         end = start + page_size
         paged_clusters = ranked_clusters[start:end]
-        
+
         synthesis_ids = db.get_synthesis_ids([c[0]["cluster_id"] for c in paged_clusters])
 
         result = []
@@ -109,32 +122,157 @@ def api_news():
             "has_more": end < len(ranked_clusters),
             "total_clusters": len(ranked_clusters)
         }
-        
-        # We wrap the existing structure for backward compatibility but add status
+
         final_json = {
             "status": "success",
             "page": page,
             "page_size": page_size,
             **response_data
         }
-        
+
         set_cache(cache_key, final_json, ttl=60)
         return jsonify(final_json)
 
     except Exception as e:
-        log.error(f"API Error: {e}", exc_info=True)
-        return error_response("Failed to fetch news", details=str(e))
+        log.error(f"[api/news] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch news")
 
 @api_bp.route("/api/stats")
 def api_stats():
     try:
         return success_response(db.get_stats())
     except Exception as e:
-        return error_response("Failed to fetch stats", details=str(e))
+        log.error(f"[api/stats] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch stats")
 
 @api_bp.route("/api/live")
 def api_live():
     from utils import event_stream
     return Response(event_stream("updates"), mimetype="text/event-stream")
 
-# (Other routes remain functional and will be standardized in the final pass)
+@api_bp.route("/api/chat_cluster", methods=["POST"])
+def chat_cluster():
+    """AI-powered Q&A about a specific news cluster."""
+    try:
+        data = request.get_json(silent=True) or {}
+        cluster_id = (data.get("cluster_id") or "").strip()
+        query = (data.get("query") or "").strip()
+
+        if not cluster_id or not query:
+            return error_response("cluster_id and query are required", 400)
+
+        if not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+            return error_response("Invalid cluster_id", 400)
+
+        if len(query) > MAX_Q_LEN:
+            return error_response("Query too long", 400)
+
+        # Fetch cluster articles and synthesis for context
+        rows = db.execute(
+            "SELECT title, description, source FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 10",
+            (cluster_id,)
+        )
+        if not rows:
+            return error_response("Cluster not found", 404)
+
+        synthesis_row = db.execute_one(
+            "SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)
+        )
+
+        # Build context
+        context_lines = []
+        if synthesis_row and synthesis_row.get("summary"):
+            context_lines.append(f"AI Резиме: {synthesis_row['summary']}\n")
+        context_lines.append("Статии:")
+        for r in rows:
+            context_lines.append(f"- [{r['source']}] {r['title']}")
+            if r.get('description'):
+                context_lines.append(f"  {r['description'][:200]}")
+
+        context = "\n".join(context_lines)
+        prompt = f"{context}\n\nПрашање: {query}"
+
+        from ai_engine import _call_ai
+        from prompts import SYNTHESIS_SYSTEM_PROMPT
+        system = "Ти си новинарски асистент. Одговори на прашањето на корисникот врз основа само на дадените статии. Биди краток и точен. Одговори на македонски јазик."
+
+        response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=500)
+        if not response_text:
+            return error_response("AI не можеше да одговори", 503)
+
+        return jsonify({"status": "success", "response": response_text})
+
+    except Exception as e:
+        log.error(f"[api/chat_cluster] Error: {e}", exc_info=True)
+        return error_response("Failed to process query")
+
+@api_bp.route("/proxy")
+def proxy_image():
+    """Proxy external images to avoid mixed-content and CORS issues."""
+    url = request.args.get("url", "").strip()
+    if not url:
+        return error_response("Missing url parameter", 400)
+
+    # Only allow http/https
+    if not re.match(r'^https?://', url):
+        return error_response("Invalid URL scheme", 400)
+
+    # Block internal/private ranges
+    import urllib.parse
+    parsed = urllib.parse.urlparse(url)
+    hostname = parsed.hostname or ""
+    blocked_patterns = [
+        r'^localhost$', r'^127\.', r'^10\.', r'^192\.168\.',
+        r'^172\.(1[6-9]|2[0-9]|3[01])\.', r'^::1$', r'^0\.0\.0\.0'
+    ]
+    for pat in blocked_patterns:
+        if re.match(pat, hostname):
+            return error_response("Blocked URL", 403)
+
+    cache_key = f"proxy:{url}"
+    cached = cached_response(cache_key, ttl=3600)
+    if cached:
+        return Response(
+            bytes.fromhex(cached["data"]),
+            content_type=cached["content_type"],
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Presek/4.0 ImageProxy"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
+            if content_type not in _PROXY_ALLOWED_TYPES:
+                return error_response("Unsupported content type", 415)
+
+            # Read with size limit
+            chunks = []
+            total = 0
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > _PROXY_MAX_BYTES:
+                    return error_response("Image too large", 413)
+                chunks.append(chunk)
+            image_data = b"".join(chunks)
+
+        # Cache the proxied image (store as hex for JSON serialization)
+        set_cache(cache_key, {"data": image_data.hex(), "content_type": content_type}, ttl=3600)
+
+        return Response(
+            image_data,
+            content_type=content_type,
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+
+    except urllib.error.HTTPError as e:
+        log.warning(f"[proxy] HTTP {e.code} for {url}")
+        return error_response("Failed to fetch image", 502)
+    except Exception as e:
+        log.warning(f"[proxy] Error fetching {url}: {e}")
+        return error_response("Failed to fetch image", 502)

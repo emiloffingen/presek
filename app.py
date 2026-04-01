@@ -54,7 +54,16 @@ from routes.api import api_bp
 from routes.views import views_bp
 
 app = Flask(__name__)
-CORS(app)
+
+_secret_key = os.environ.get("SECRET_KEY")
+if not _secret_key:
+    import sys
+    log.error("FATAL: SECRET_KEY environment variable is not set. Refusing to start.")
+    sys.exit(1)
+app.secret_key = _secret_key
+
+_cors_origins = os.environ.get("CORS_ORIGINS", "")
+CORS(app, origins=_cors_origins.split(",") if _cors_origins else [])
 Compress(app)
 
 # Register Blueprints
@@ -74,10 +83,22 @@ def rate_limit_check():
 
 @app.after_request
 def add_security_headers(response):
-    # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    # CSP: allow self + CDN fonts, block inline scripts except known nonces not used yet
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
     return response
 
 ntfy = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
