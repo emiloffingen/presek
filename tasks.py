@@ -15,7 +15,8 @@ from prompts import (
     SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, 
     DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
 )
-from categories import ALLOWED_CATEGORIES
+from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
+from entities import extract_entities
 from health import record_refresh
 from utils import rank_articles_in_cluster, score_cluster, redis_client
 
@@ -83,7 +84,7 @@ def run_ingestion():
 
 @celery_app.task
 def extract_entities_task():
-    """AI-powered entity extraction for top clusters."""
+    """Extract entities for top clusters using free rule-based logic first."""
     try:
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
@@ -93,43 +94,69 @@ def extract_entities_task():
         """, (cutoff,))
 
         for r in rows:
-            text = f"Titles: {' | '.join(r['titles'])}\nDesc: {r['desc']}"
-            res, _ = _call_ai(text, ENTITY_EXTRACTION_PROMPT, json_mode=True, task_type="entity")
-            if res:
-                data = clean_json_response(res)
-                entities = data.get('entities', []) if isinstance(data, dict) else []
-                for ent in entities:
-                    db.execute(
-                        "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                        (r['cluster_id'], ent.get('name'), ent.get('type')), fetch=False
-                    )
+            text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
+            
+            # Rule-based (Free)
+            entities = extract_entities(text)
+            
+            # AI Fallback (Commented out to save money)
+            """
+            if not entities:
+                res, _ = _call_ai(text, ENTITY_EXTRACTION_PROMPT, json_mode=True, task_type="entity")
+                if res:
+                    data = clean_json_response(res)
+                    entities = data.get('entities', []) if isinstance(data, dict) else []
+            """
+
+            for ent in entities:
+                db.execute(
+                    "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                    (r['cluster_id'], ent.get('name'), ent.get('type')), fetch=False
+                )
     except Exception as e:
         log.error(f"[tasks] Entity extraction failed: {e}")
 
 @celery_app.task
 def classify_topics_task():
-    """Classify default 'Вести' clusters into specific topics."""
+    """Classify default 'Вести' clusters into specific topics using rule-based detection first."""
     try:
         rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 50")
         for r in rows:
+            # Rule-based first (Free)
+            topic = detect_topic(r['title'])
+            if topic != 'Вести':
+                db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, r['cluster_id']), fetch=False)
+                continue
+            
+            # AI Fallback (Optional, commented out to save money as requested)
+            """
             res, _ = _call_ai(r['title'], TOPIC_SYSTEM_PROMPT, task_type="topic", max_tokens=20)
             if res:
                 topic = res.strip().strip('"').strip('.')
-                from categories import THEMATIC_TOPICS
                 if topic in THEMATIC_TOPICS:
                     db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, r['cluster_id']), fetch=False)
+            """
     except Exception as e:
         log.error(f"[tasks] Topic classification failed: {e}")
 
 @celery_app.task
 def recategorize_clusters_task():
-    """Verify if 'Македонија' articles belong in specialized categories."""
+    """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
     try:
-        rows = db.execute("SELECT cluster_id, title FROM articles WHERE category = 'Македонија' LIMIT 20")
+        rows = db.execute("SELECT cluster_id, title, description FROM articles WHERE category = 'Македонија' LIMIT 20")
         for r in rows:
+            # Rule-based first (Free)
+            res = detect_category(r['title'], description=r.get('description', ''))
+            if res != 'Македонија':
+                db.execute("UPDATE articles SET category = %s WHERE cluster_id = %s", (res, r['cluster_id']), fetch=False)
+                continue
+
+            # AI Fallback (Commented out to save money)
+            """
             res, _ = _call_ai(r['title'], "Категоризирај ја веста: " + r['title'], task_type="categorize", max_tokens=20)
             if res and res in ALLOWED_CATEGORIES and res != 'Македонија':
                 db.execute("UPDATE articles SET category = %s WHERE cluster_id = %s", (res, r['cluster_id']), fetch=False)
+            """
     except Exception as e:
         log.error(f"[tasks] Recategorization failed: {e}")
 
@@ -156,21 +183,30 @@ def run_prune_db():
 
 @celery_app.task
 def generate_cluster_metadata_task():
-    """Tag recent clusters with metadata (titles, source count)."""
+    """Tag recent clusters with metadata (entities, source count)."""
     try:
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=6)
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
-            SELECT cluster_id, array_agg(DISTINCT source) as sources,
-                   COUNT(*) as article_count, MAX(title) as title
+            SELECT cluster_id, array_agg(DISTINCT source) as sources
             FROM articles WHERE created_at >= %s
             GROUP BY cluster_id HAVING COUNT(*) >= 2
         """, (cutoff,))
         for r in rows:
+            # Fetch entities for this cluster to use as high-quality tags
+            entities = db.execute("SELECT entity_name FROM cluster_entities WHERE cluster_id = %s", (r['cluster_id'],))
+            tags = [e['entity_name'] for e in entities]
+            
+            # If no entities, fallback to sources as lower-quality tags
+            if not tags:
+                tags = r['sources']
+            
             db.execute(
                 """INSERT INTO cluster_metadata (cluster_id, tags, updated_at)
                    VALUES (%s, %s, NOW())
-                   ON CONFLICT (cluster_id) DO UPDATE SET updated_at = NOW()""",
-                (r['cluster_id'], r['sources']), fetch=False
+                   ON CONFLICT (cluster_id) DO UPDATE SET 
+                   tags = EXCLUDED.tags, 
+                   updated_at = NOW()""",
+                (r['cluster_id'], tags), fetch=False
             )
     except Exception as e:
         log.error(f"[tasks] Cluster metadata generation failed: {e}")

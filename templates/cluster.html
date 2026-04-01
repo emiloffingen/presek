@@ -141,9 +141,15 @@
       <h2 class="section-title">Поврзани Вести</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--space-md)">
         {% for rc in related_clusters %}
-        <a href="/cluster/{{ rc.cluster_id }}" class="story-card fade-in">
-          <div class="story-meta"><span class="source">Пресек</span></div>
-          <h3 class="story-headline">{{ rc.title | truncate(100) }}</h3>
+        <a href="/cluster/{{ rc.cluster_id }}" class="story-card fade-in" style="text-decoration:none; color:inherit; display:flex; flex-direction:column;">
+          {% if rc.image_url %}
+          <div style="width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:var(--radius-md); margin-bottom:var(--space-sm); background:var(--bg-secondary);">
+            <img src="{% if rc.image_url.startswith('/') %}{{ rc.image_url }}{% else %}/proxy?url={{ rc.image_url | urlencode }}{% endif %}" 
+                 style="width:100%; height:100%; object-fit:cover;" loading="lazy" alt="{{ rc.title }}">
+          </div>
+          {% endif %}
+          <div class="story-meta" style="margin-bottom:4px;"><span class="source">Пресек</span></div>
+          <h3 class="story-headline" style="font-size:1rem; margin:0; line-height:1.4;">{{ rc.title | truncate(100) }}</h3>
         </a>
         {% endfor %}
       </div>

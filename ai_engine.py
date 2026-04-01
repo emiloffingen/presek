@@ -153,9 +153,10 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["gemini", "mistral", "groq"],
-    "synthesis":    ["gemini", "mistral", "groq"],
-    "default":      ["gemini", "groq", "cerebras"],
+    "translation":  ["groq", "mistral", "gemini"],
+    "summarize":    ["groq", "gemini"],
+    "synthesis":    ["groq", "mistral", "gemini"],
+    "default":      ["groq", "cerebras", "gemini"],
 }
 
 # --- Service Methods ---

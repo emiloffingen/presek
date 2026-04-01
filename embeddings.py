@@ -15,7 +15,7 @@ from config import GOOGLE_API_KEY
 log = logging.getLogger("presek")
 
 EMBEDDING_MODEL = "gemini-embedding-001"
-EMBEDDING_DIM = 3072
+EMBEDDING_DIM = 768
 EMBEDDING_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:batchEmbedContents"
 
 # Max texts per batch (Google API limit is 100)
@@ -64,6 +64,7 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
             "model": f"models/{EMBEDDING_MODEL}",
             "content": {"parts": [{"text": t}]},
             "taskType": "RETRIEVAL_DOCUMENT",
+            "outputDimensionality": EMBEDDING_DIM
         }
         for t in truncated
     ]

@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import clustering
 from ai_engine import translate_to_macedonian
-from categories import detect_category, detect_subcategory, detect_country, normalize_headline
+from categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
 from database import get_db
 from config import RSS_FEEDS, DIASPORA_FEEDS, FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, SOURCE_LIMITS, JUNK_KEYWORDS
 from collections import defaultdict
@@ -131,6 +131,7 @@ def ingest_feeds():
                 forced     = HARDCODED_FEED_CATEGORIES.get(source)
                 category   = detect_category(title, description=desc, source=source, forced_category=forced)
                 subcategory = detect_subcategory(title, description=desc) or ""
+                topic      = detect_topic(title, description=desc)
                 
                 # Try to find cluster in batch first (to group identical stories in same fetch)
                 cluster_id = None
@@ -157,7 +158,7 @@ def ingest_feeds():
 
                 # Store result for DB
                 emb_str = str(emb) if emb else None
-                prepared_rows.append((title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc, emb_str))
+                prepared_rows.append((title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc, emb_str, topic))
                 
                 # Update trackers
                 if emb:
@@ -177,7 +178,7 @@ def ingest_feeds():
             try:
                 result = execute_values(
                     cur,
-                    """INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description, embedding)
+                    """INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description, embedding, topic)
                        VALUES %s
                        ON CONFLICT (link) DO NOTHING RETURNING id""",
                     prepared_rows,
@@ -300,9 +301,10 @@ def ingest_diaspora_feeds():
                 
                 now = datetime.datetime.now()
                 emb_str = str(emb) if emb else None
+                topic   = detect_topic(display_title, description=clean_desc)
 
                 prepared_rows.append((display_title, title, link, source, category, "", cluster_id,
-                                     now, image_url, clean_desc, clean_desc, country, 0, emb_str))
+                                     now, image_url, clean_desc, clean_desc, country, 0, emb_str, topic))
                 
                 if emb:
                     batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
@@ -323,7 +325,7 @@ def ingest_diaspora_feeds():
                     cur,
                     """INSERT INTO articles
                     (title, original_title, link, source, category, subcategory, cluster_id,
-                    created_at, image_url, description, original_description, country, is_translated, embedding)
+                    created_at, image_url, description, original_description, country, is_translated, embedding, topic)
                     VALUES %s
                     ON CONFLICT (link) DO NOTHING RETURNING id""",
                     prepared_rows,

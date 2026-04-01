@@ -112,13 +112,3 @@ if __name__ == "__main__":
     # Start ingestion loop in a background thread
     
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
- = 0
-_digest_counter = 0
-
-health.register_health_routes(app)
-
-if __name__ == "__main__":
-    init_db()
-    # Start ingestion loop in a background thread
-    
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

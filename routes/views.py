@@ -157,16 +157,19 @@ def cluster_page(cluster_id: str):
     related_clusters = []
     if tags:
         related_rows = conn.execute("""
-            SELECT m.cluster_id, m.tags, min(a.title) as title, min(a.image_url) as image_url, COUNT(*) as shared_count
+            SELECT 
+                m.cluster_id, 
+                m.tags, 
+                (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
+                (SELECT image_url FROM articles WHERE cluster_id = m.cluster_id AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1) as image_url,
+                CARDINALITY(ARRAY(SELECT UNNEST(m.tags) INTERSECT SELECT UNNEST(%s))) as shared_count
             FROM cluster_metadata m
-            JOIN articles a ON m.cluster_id = a.cluster_id
             WHERE m.cluster_id != %s 
-              AND a.created_at >= NOW() - INTERVAL '48 hours'
+              AND m.updated_at >= NOW() - INTERVAL '48 hours'
               AND m.tags && %s
-            GROUP BY m.cluster_id, m.tags
-            ORDER BY shared_count DESC, MAX(a.created_at) DESC
+            ORDER BY shared_count DESC, m.updated_at DESC
             LIMIT 4
-        """, (cluster_id, tags)).fetchall()
+        """, (tags, cluster_id, tags)).fetchall()
         related_clusters = [dict(r) for r in related_rows]
 
     conn.close()
