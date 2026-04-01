@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <header class="site-header">
+    <header class="site-header glass">
         <div class="header-inner">
             <a href="/" class="header-logo" aria-label="Пресек Почетна">
                 <img src="/static/logo.svg" alt="Presek" width="120" height="30" onerror="this.src='/static/logo.png'">
@@ -53,17 +53,17 @@
         </div>
     </header>
 
-    <nav class="nav-bar">
+    <nav class="nav-bar glass">
         <div class="nav-inner">
             <div class="category-scroll" id="categoryNav">
-                <button class="cat-btn active" data-category="Сите">Сите</button>
-                <button class="cat-btn" data-category="Македонија">Македонија</button>
-                <button class="cat-btn" data-category="Економија">Економија</button>
-                <button class="cat-btn" data-category="Балкан">Балкан</button>
-                <button class="cat-btn" data-category="Европа">Европа</button>
-                <button class="cat-btn" data-category="Свет">Свет</button>
-                <button class="cat-btn" data-category="Спорт">Спорт</button>
-                <button class="cat-btn" data-category="Технологија">Техно</button>
+                <button class="cat-btn active" data-category="Сите" data-topic="">Сите</button>
+                <button class="cat-btn" data-category="Македонија" data-topic="Македонија">Македонија</button>
+                <button class="cat-btn" data-category="Економија" data-topic="Економија">Економија</button>
+                <button class="cat-btn" data-category="Балкан" data-topic="Балкан">Балкан</button>
+                <button class="cat-btn" data-category="Европа" data-topic="Европа">Европа</button>
+                <button class="cat-btn" data-category="Свет" data-topic="Свет">Свет</button>
+                <button class="cat-btn" data-category="Спорт" data-topic="Спорт">Спорт</button>
+                <button class="cat-btn" data-category="Технологија" data-topic="Технологија">Техно</button>
             </div>
         </div>
     </nav>
@@ -74,10 +74,10 @@
             <div class="sidebar-widget">
                 <h3 class="widget-title">Избор</h3>
                 <nav class="widget-nav">
-                    <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
-                    <a href="/stats"><span class="w-icon">📊</span> Медиумски Пулс</a>
-                    <a href="/archive"><span class="w-icon">📅</span> Архива</a>
-                    <a href="/izvori"><span class="w-icon">🔗</span> Извори</a>
+                    <a href="/briefing" data-topic="Македонија"><span class="w-icon">☕</span> Дневен Брифинг</a>
+                    <a href="/stats" data-topic="Економија"><span class="w-icon">📊</span> Медиумски Пулс</a>
+                    <a href="/archive" data-topic="Свет"><span class="w-icon">📅</span> Архива</a>
+                    <a href="/izvori" data-topic="Технологија"><span class="w-icon">🔗</span> Извори</a>
                 </nav>
             </div>
         </aside>
@@ -87,12 +87,14 @@
             {% block content %}{% endblock %}
         </div>
 
-        <!-- Sidebar Right (Trending / AQI) -->
+        <!-- Sidebar Right (Pulse / AQI) -->
         <aside class="sidebar-right">
-            <div class="sidebar-widget" id="trending-widget">
-                <h3 class="widget-title">Трендинг</h3>
-                <div class="trending-list" id="sidebarTrending">
+            <div class="sidebar-widget">
+                <h3 class="widget-title">ENTITY PULSE</h3>
+                <div class="pulse-terminal" id="entityPulse">
                     <!-- Loaded via JS -->
+                    <div class="pulse-line"><span>INITIALIZING SYSTEM...</span><span class="val">OK</span></div>
+                    <div class="pulse-line"><span>LOADING ENTITIES...</span><span class="val">WAIT</span></div>
                 </div>
             </div>
             

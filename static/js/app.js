@@ -1,5 +1,5 @@
 /**
- * Presek 4.0 - Core Application Logic (Portal Edition)
+ * Presek 5.0 - Living Portal Engine (Core Logic)
  */
 
 const app = {
@@ -13,11 +13,16 @@ const app = {
     },
 
     init() {
-        this._bindEvents();
-        this._restoreFromURL();
-        this.fetchNews();
-        this.fetchTrending();
-        this._setupInfiniteScroll();
+        try {
+            this._bindEvents();
+            this._restoreFromURL();
+            this.fetchNews();
+            this.fetchTrending();
+            this.fetchPulse();
+            this._setupInfiniteScroll();
+        } catch (e) {
+            console.error("Critical error during app.init:", e);
+        }
     },
 
     _bindEvents() {
@@ -26,7 +31,7 @@ const app = {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                this.setCategory(btn.dataset.category);
+                this.setCategory(btn.dataset.topic || '');
             });
         });
 
@@ -36,14 +41,14 @@ const app = {
         const searchClose = document.getElementById('searchClose');
         const searchInput = document.getElementById('searchInput');
 
-        if (searchTrigger) {
+        if (searchTrigger && searchOverlay) {
             searchTrigger.addEventListener('click', () => {
                 searchOverlay.classList.add('active');
-                searchInput.focus();
+                if (searchInput) searchInput.focus();
             });
         }
 
-        if (searchClose) {
+        if (searchClose && searchOverlay) {
             searchClose.addEventListener('click', () => {
                 searchOverlay.classList.remove('active');
             });
@@ -53,7 +58,7 @@ const app = {
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     this.setSearch(searchInput.value);
-                    searchOverlay.classList.remove('active');
+                    if (searchOverlay) searchOverlay.classList.remove('active');
                 }
             });
         }
@@ -71,12 +76,12 @@ const app = {
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
-            if (e.key === '/' && !searchOverlay.classList.contains('active')) {
+            if (e.key === '/' && searchTrigger && searchOverlay && !searchOverlay.classList.contains('active')) {
                 e.preventDefault();
                 searchTrigger.click();
             }
-            if (e.key === 'Escape' && searchOverlay.classList.contains('active')) {
-                searchClose.click();
+            if (e.key === 'Escape' && searchOverlay && searchOverlay.classList.contains('active')) {
+                searchOverlay.classList.remove('active');
             }
         });
     },
@@ -84,13 +89,12 @@ const app = {
     _restoreFromURL() {
         const params = new URLSearchParams(location.search);
         this.state.topic = params.get('topic') || '';
-        this.state.query = params.get('q') || '';
+        this.state.query = params.get('query') || params.get('q') || '';
         
-        if (this.state.topic) {
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.category === this.state.topic);
-            });
-        }
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.classList.toggle('active', (btn.dataset.topic || '') === this.state.topic);
+        });
+        
         if (this.state.query && document.getElementById('searchInput')) {
             document.getElementById('searchInput').value = this.state.query;
         }
@@ -98,7 +102,7 @@ const app = {
 
     _pushState() {
         const params = new URLSearchParams();
-        if (this.state.topic && this.state.topic !== 'Сите') params.set('topic', this.state.topic);
+        if (this.state.topic) params.set('topic', this.state.topic);
         if (this.state.query) params.set('q', this.state.query);
         const url = params.toString() ? `/?${params}` : '/';
         history.pushState(null, '', url);
@@ -108,26 +112,25 @@ const app = {
         if (this.state.isFetching) return;
         this.state.isFetching = true;
 
-        if (!append) {
+        const container = document.getElementById('pageWrap');
+        if (!append && container) {
             this.state.page = 0;
-            const container = document.getElementById('newsContainer') || document.getElementById('pageWrap');
-            if (container) container.innerHTML = '<div class="loading-state">Вчитување...</div>';
+            container.innerHTML = '<div class="loading-state" style="padding: 2rem; text-align: center; color: var(--text-muted);">Вчитување вести...</div>';
         }
 
         const params = new URLSearchParams({
             page: this.state.page,
-            page_size: this.state.pageSize,
-            country: '🇲🇰'
+            page_size: this.state.pageSize
         });
 
-        if (this.state.topic && this.state.topic !== 'Сите') params.set('topic', this.state.topic);
+        if (this.state.topic) params.set('topic', this.state.topic);
         if (this.state.query) params.set('q', this.state.query);
 
         try {
             const res = await fetch(`/api/news?${params}`);
             const data = await res.json();
             
-            if (data.status === 'success') {
+            if (data && data.status === 'success' && data.clusters) {
                 UI.renderPage(data.clusters, append);
                 this.state.hasMore = data.has_more;
             }
@@ -142,10 +145,16 @@ const app = {
         try {
             const res = await fetch('/api/trending');
             const data = await res.json();
-            UI.renderTrending(data);
-        } catch (e) {
-            console.error('Fetch trending error:', e);
-        }
+            // Optional: fallback for trending nav if needed
+        } catch (e) { console.error(e); }
+    },
+
+    async fetchPulse() {
+        try {
+            const res = await fetch('/api/trending');
+            const data = await res.json();
+            if (window.UI) UI.renderPulse(data);
+        } catch (e) { console.error("Pulse fetch failed", e); }
     },
 
     setCategory(cat) {
@@ -166,13 +175,17 @@ const app = {
     _setupInfiniteScroll() {
         window.addEventListener('scroll', () => {
             if (this.state.isFetching || !this.state.hasMore) return;
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
                 this.state.page++;
                 this.fetchNews(true);
             }
-        });
+        }, { passive: true });
     }
 };
 
 window.app = app;
-document.addEventListener('DOMContentLoaded', () => app.init());
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+    app.init();
+}
