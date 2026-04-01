@@ -238,7 +238,22 @@ class DatabaseManager:
                     END $$;
                 """)
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (cluster_id TEXT PRIMARY KEY, summary TEXT, perspectives JSONB DEFAULT '[]', created_at TIMESTAMP)""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (cluster_id TEXT PRIMARY KEY, tags TEXT[], topics TEXT[], updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
+                    cluster_id TEXT PRIMARY KEY, 
+                    tags TEXT[], 
+                    topics TEXT[], 
+                    representative_image TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                # Migration: Add representative_image if it doesn't exist
+                cur.execute("""
+                    DO $$ 
+                    BEGIN 
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cluster_metadata' AND column_name='representative_image') THEN
+                            ALTER TABLE cluster_metadata ADD COLUMN representative_image TEXT;
+                        END IF;
+                    END $$;
+                """)
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (cluster_id TEXT, entity_name TEXT, entity_type TEXT, PRIMARY KEY (cluster_id, entity_name))""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS reactions (cluster_id TEXT, emoji TEXT, count INTEGER DEFAULT 1, PRIMARY KEY (cluster_id, emoji))""")
                 cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (date DATE PRIMARY KEY, content TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")

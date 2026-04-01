@@ -183,7 +183,7 @@ def run_prune_db():
 
 @celery_app.task
 def generate_cluster_metadata_task():
-    """Tag recent clusters with metadata (entities, source count)."""
+    """Tag recent clusters with metadata (entities, source count, and representative image)."""
     try:
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
@@ -192,21 +192,44 @@ def generate_cluster_metadata_task():
             GROUP BY cluster_id HAVING COUNT(*) >= 2
         """, (cutoff,))
         for r in rows:
-            # Fetch entities for this cluster to use as high-quality tags
+            # 1. Fetch entities for this cluster to use as high-quality tags
             entities = db.execute("SELECT entity_name FROM cluster_entities WHERE cluster_id = %s", (r['cluster_id'],))
             tags = [e['entity_name'] for e in entities]
-            
-            # If no entities, fallback to sources as lower-quality tags
             if not tags:
                 tags = r['sources']
             
+            # 2. Representative Image Selection
+            # First, try to get an image from the current cluster
+            img_row = db.execute_one(
+                "SELECT image_url FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+                (r['cluster_id'],)
+            )
+            rep_image = img_row['image_url'] if img_row else None
+            
+            # Fallback: if no image in current cluster, try similar clusters (sharing tags)
+            if not rep_image and tags:
+                similar_img_row = db.execute_one("""
+                    SELECT a.image_url 
+                    FROM cluster_metadata m
+                    JOIN articles a ON m.cluster_id = a.cluster_id
+                    WHERE m.cluster_id != %s 
+                      AND m.tags && %s
+                      AND a.image_url IS NOT NULL
+                      AND a.created_at >= NOW() - INTERVAL '48 hours'
+                    ORDER BY a.created_at DESC
+                    LIMIT 1
+                """, (r['cluster_id'], tags))
+                if similar_img_row:
+                    rep_image = similar_img_row['image_url']
+
             db.execute(
-                """INSERT INTO cluster_metadata (cluster_id, tags, updated_at)
-                   VALUES (%s, %s, NOW())
+                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, updated_at)
+                   VALUES (%s, %s, %s, NOW())
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                    tags = EXCLUDED.tags, 
+                   representative_image = EXCLUDED.representative_image,
                    updated_at = NOW()""",
-                (r['cluster_id'], tags), fetch=False
+                (r['cluster_id'], tags, rep_image), fetch=False
             )
     except Exception as e:
         log.error(f"[tasks] Cluster metadata generation failed: {e}")

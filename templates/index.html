@@ -18,12 +18,14 @@
                 {% set span_class = "span-6" %}
             {% endif %}
 
-            {% set thumb = None %}
-            {% for a in cluster.articles %}
-                {% if a.image_url and not thumb %}
-                    {% set thumb = a.image_url %}
-                {% endif %}
-            {% endfor %}
+            {% set thumb = cluster.representative_image %}
+            {% if not thumb %}
+                {% for a in cluster.articles %}
+                    {% if a.image_url and not thumb %}
+                        {% set thumb = a.image_url %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
 
             <article class="bento-card {{ span_class }} fade-in">
                 {% if thumb %}

@@ -83,11 +83,17 @@ const UI = {
         const main = articles[0];
         const count = articles.length;
         
-        let thumbUrl = null;
-        for (const a of articles) {
-            if (a && a.image_url) {
-                thumbUrl = a.image_url.startsWith('/') ? a.image_url : `/proxy?url=${encodeURIComponent(a.image_url)}`;
-                break;
+        let thumbUrl = cluster.representative_image;
+        if (thumbUrl && !thumbUrl.startsWith('/')) {
+            thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
+        }
+
+        if (!thumbUrl) {
+            for (const a of articles) {
+                if (a && a.image_url) {
+                    thumbUrl = a.image_url.startsWith('/') ? a.image_url : `/proxy?url=${encodeURIComponent(a.image_url)}`;
+                    break;
+                }
             }
         }
         

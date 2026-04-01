@@ -27,6 +27,15 @@ def index():
             ranked.sort(key=score_cluster, reverse=True)
             
             top_clusters = []
+            
+            # Fetch representative images
+            cid_list = [arts[0]["cluster_id"] for arts in ranked[:10]]
+            metadata_rows = db.execute(
+                "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+                (cid_list,)
+            )
+            rep_images = {r['cluster_id']: r['representative_image'] for r in metadata_rows}
+
             # We only need the first 10 for Instant Paint
             for arts in ranked[:10]:
                 s = score_cluster(arts)
@@ -34,6 +43,7 @@ def index():
                 top_clusters.append({
                     "cluster_id": cid,
                     "articles": arts,
+                    "representative_image": rep_images.get(cid),
                     "score": round(s, 3),
                     "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                     "has_balanced": is_balanced(arts)
@@ -86,12 +96,22 @@ def vesti_portal():
                 ranked.sort(key=score_cluster, reverse=True)
                 
                 cat_clusters = []
+                
+                # Fetch representative images for these 3 clusters
+                cid_list = [arts[0]["cluster_id"] for arts in ranked[:3]]
+                metadata_rows = db.execute(
+                    "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+                    (cid_list,)
+                )
+                rep_images = {r['cluster_id']: r['representative_image'] for r in metadata_rows}
+
                 for arts in ranked[:3]: # Top 3 per category
                     s = score_cluster(arts)
                     cid = arts[0]["cluster_id"]
                     cat_clusters.append({
                         "cluster_id": cid,
                         "articles": arts,
+                        "representative_image": rep_images.get(cid),
                         "score": round(s, 3),
                         "is_breaking": s >= BREAKING_SCORE_THRESHOLD
                     })

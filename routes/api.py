@@ -131,6 +131,13 @@ def api_news():
         paged_clusters = ranked_clusters[start:end]
 
         synthesis_ids = db.get_synthesis_ids([c[0]["cluster_id"] for c in paged_clusters])
+        
+        # Fetch representative images
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            ([c[0]["cluster_id"] for c in paged_clusters],)
+        )
+        rep_images = {r['cluster_id']: r['representative_image'] for r in metadata_rows}
 
         result = []
         for arts in paged_clusters:
@@ -139,6 +146,7 @@ def api_news():
             result.append({
                 "cluster_id": cid,
                 "articles": arts,
+                "representative_image": rep_images.get(cid),
                 "score": round(s, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,
