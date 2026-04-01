@@ -33,6 +33,9 @@
 </head>
 <body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
     <div id="readingProgress"></div>
+    <button id="backToTop" class="icon-btn glass" title="Назад на почеток" style="position: fixed; bottom: 24px; right: 24px; z-index: 999; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all var(--t-fast); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
 
     <!-- Utility Bar (Weather/AQI) -->
     <div class="utility-bar">

@@ -37,9 +37,9 @@
                     {% endif %}
                 {% endfor %}
 
-                <article class="bento-card {{ span_class }} fade-in" style="min-height: 280px;">
+                <article class="bento-card {{ span_class }} fade-in" style="min-height: 300px;">
                     {% if thumb %}
-                        <div class="bento-thumb-wrap" style="height: 140px;">
+                        <div class="bento-thumb-wrap" style="height: 160px;">
                             <a href="/cluster/{{ cluster.cluster_id }}" style="display: block; width: 100%; height: 100%;">
                                 <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
                                      class="bento-thumb" loading="lazy">
@@ -51,14 +51,17 @@
                         <div class="bento-meta">
                             <span class="source">{{ main.source }}</span>
                             <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                            {% if cluster.is_breaking %}
+                                <span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.6rem;">🚨 БРЕЈКИНГ</span>
+                            {% endif %}
                         </div>
                         
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.1rem' if span_class == 'span-6' else '0.95rem' }};">
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.3rem' if span_class == 'span-6' else '1.05rem' }};">
                             {{ main.title | truncate(90) }}
                         </a>
                         
                         <div class="bento-footer">
-                            <span class="count-badge">{{ cluster.articles|length }} извори</span>
+                            <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 4px 10px; font-size: 0.6rem;">{{ cluster.articles|length }} извори</span>
                         </div>
                     </div>
                 </article>

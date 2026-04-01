@@ -40,19 +40,22 @@
                         <span class="source">{{ main.source }}</span>
                         <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
                         {% if main.category %}
-                            <span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 6px; border-radius:4px; font-size:0.6rem;">{{ main.category }}</span>
+                            <span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:800; letter-spacing:0.04em;">{{ main.category }}</span>
+                        {% endif %}
+                        {% if cluster.is_breaking %}
+                            <span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.65rem;">🚨 БРЕЈКИНГ</span>
                         {% endif %}
                     </div>
                     
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline">
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.5rem' if 'featured' in span_class else '1.15rem' }};">
                         {{ main.title }}
                     </a>
                     
                     <div class="bento-footer">
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff;">
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800; padding: 6px 14px;">
                             ВИДИ РЕЗИМЕ
                         </a>
-                        <span class="count-badge">Вкупно {{ cluster.articles|length }} извори</span>
+                        <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 6px 14px;">Вкупно {{ cluster.articles|length }} извори {{ '· ⚖️ Балансирано' if cluster.has_balanced else '' }}</span>
                     </div>
                 </div>
             </article>

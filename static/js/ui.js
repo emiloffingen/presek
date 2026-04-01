@@ -93,7 +93,7 @@ const UI = {
         
         // Determine bento size
         let spanClass = "span-12";
-        if (idx % 5 === 0) spanClass = "span-12 row-2 featured";
+        if (idx % 6 === 0) spanClass = "span-12 row-2 featured";
         else if (idx % 3 === 1) spanClass = "span-6";
         else if (idx % 3 === 2) spanClass = "span-6";
 
@@ -110,16 +110,17 @@ const UI = {
                     <div class="bento-meta">
                         <span class="source">${this._esc(main.source)}</span>
                         <span class="time">• ${this._relativeTime(main.created_at)}</span>
-                        ${main.category ? `<span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 6px; border-radius:4px; font-size:0.6rem;">${this._esc(main.category)}</span>` : ''}
+                        ${main.category ? `<span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:800; letter-spacing:0.04em;">${this._esc(main.category)}</span>` : ''}
+                        ${cluster.is_breaking ? `<span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.65rem;">🚨 БРЕЈКИНГ</span>` : ''}
                     </div>
                     
-                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline">
+                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline" style="font-size: ${spanClass.includes('featured') ? '1.5rem' : '1.15rem'};">
                         ${this._esc(main.title)}
                     </a>
                     
                     <div class="bento-footer">
-                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800;">ВИДИ РЕЗИМЕ</a>
-                        <span class="count-badge">${count} извори</span>
+                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800; padding: 6px 14px;">ВИДИ РЕЗИМЕ</a>
+                        <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 6px 14px;">Вкупно ${count} извори ${cluster.has_balanced ? '· ⚖️ Балансирано' : ''}</span>
                     </div>
                 </div>
             </article>`;
