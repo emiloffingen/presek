@@ -1,22 +1,17 @@
-from flask import Blueprint, render_template, Response, request, current_app, send_from_directory
+from flask import Blueprint, render_template, current_app, request
+from database import db_manager as db, get_db
+from utils import score_cluster, is_balanced, cached_response, set_cache, rank_articles_in_cluster, calculate_reading_time
+from config import BREAKING_SCORE_THRESHOLD, SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
+from collections import defaultdict
 import datetime
-import os
-import re
 import math
-from database import get_db
-from utils import rank_articles_in_cluster, calculate_reading_time
-from config import SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
+import logging
 
 views_bp = Blueprint('views', __name__)
 
 @views_bp.route("/")
 def index():
     # SSR Optimization: Fetch first fold of news (10 clusters)
-    from database import db_manager as db
-    from utils import score_cluster, is_balanced, cached_response, set_cache
-    from config import BREAKING_SCORE_THRESHOLD
-    from collections import defaultdict
-    
     try:
         cached = cached_response("ssr:index:top_clusters", ttl=60)
         if cached:
@@ -68,6 +63,48 @@ def archive_page():
 def briefing_page():
     return render_template("briefing.html", year=datetime.datetime.now().year)
 
+@views_bp.route("/vesti")
+def vesti_portal():
+    """Portal view showing top clusters from each major category."""
+    from collections import defaultdict
+    
+    categories = ["Македонија", "Економија", "Балкан", "Свет", "Спорт", "Технологија"]
+    
+    try:
+        cached = cached_response("ssr:portal:top_categories", ttl=300)
+        if cached:
+            portal_data = cached
+        else:
+            portal_data = {}
+            for cat in categories:
+                rows = db.get_articles_by_country("🇲🇰", category=cat)
+                clusters = defaultdict(list)
+                for r in rows:
+                    clusters[r['cluster_id']].append(r)
+                
+                ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+                ranked.sort(key=score_cluster, reverse=True)
+                
+                cat_clusters = []
+                for arts in ranked[:3]: # Top 3 per category
+                    s = score_cluster(arts)
+                    cid = arts[0]["cluster_id"]
+                    cat_clusters.append({
+                        "cluster_id": cid,
+                        "articles": arts,
+                        "score": round(s, 3),
+                        "is_breaking": s >= BREAKING_SCORE_THRESHOLD
+                    })
+                portal_data[cat] = cat_clusters
+            set_cache("ssr:portal:top_categories", portal_data, ttl=300)
+    except Exception as e:
+        current_app.logger.error(f"Portal Error: {e}")
+        portal_data = {}
+
+    return render_template("portal.html", 
+                           portal_data=portal_data,
+                           year=datetime.datetime.now().year)
+
 @views_bp.route("/izvor/<source_name>")
 def source_page(source_name: str):
     if not source_name or len(source_name) > 100:
@@ -108,29 +145,23 @@ def source_page(source_name: str):
     seen_clusters = set()
     for a in articles:
         if a["cluster_id"] not in seen_clusters:
-            clusters.append({"articles": [a], "cluster_id": a["cluster_id"], "score": 0})
+            clusters.append({
+                "cluster_id": a["cluster_id"],
+                "articles": [a]
+            })
             seen_clusters.add(a["cluster_id"])
-
-    return render_template(
-        "source.html", 
-        source_name=source_name, 
-        clusters=clusters, 
-        stats=stats,
-        freq=freq_row,
-        year=datetime.datetime.now().year
-    )
-
-@views_bp.route("/about")
-def about_page():
-    return render_template("about.html", year=datetime.datetime.now().year)
-
-@views_bp.route("/privacy")
-def privacy_page():
-    return render_template("privacy.html", year=datetime.datetime.now().year)
-
-@views_bp.route("/contact")
-def contact_page():
-    return render_template("contact.html", year=datetime.datetime.now().year)
+        else:
+            for c in clusters:
+                if c["cluster_id"] == a["cluster_id"]:
+                    c["articles"].append(a)
+                    break
+    
+    return render_template("source.html", 
+                           source_name=source_name, 
+                           clusters=clusters[:20],
+                           stats=stats,
+                           freq=freq_row["daily_avg"] if freq_row else 0,
+                           year=datetime.datetime.now().year)
 
 @views_bp.route("/cluster/<cluster_id>")
 def cluster_page(cluster_id: str):
@@ -216,133 +247,14 @@ def cluster_page(cluster_id: str):
 
     return render_template("cluster.html", cluster_id=cluster_id, articles=articles, synthesis=synthesis, perspectives=perspectives, meta=meta, tags=tags, related_clusters=related_clusters, source_distribution=source_distribution, total_reading_time=total_reading_time, year=datetime.datetime.now().year)
 
-@views_bp.after_request
-def add_cache_headers(response):
-    # Static files already handled or have specific headers
-    if request.path.startswith('/static/'):
-        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        return response
+@views_bp.route("/about")
+def about_page():
+    return render_template("about.html", year=datetime.datetime.now().year)
 
-    # API and Proxy should have short or no cache
-    if request.path.startswith(('/api/', '/proxy')):
-        # We handle proxy caching separately in api.py, 
-        # but let's ensure we don't override it here if it's already set
-        if "Cache-Control" not in response.headers:
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        return response
+@views_bp.route("/contact")
+def contact_page():
+    return render_template("contact.html", year=datetime.datetime.now().year)
 
-    # Main HTML pages: Cache at edge for 5 mins, browser for 1 min
-    # This allows Cloudflare to serve them instantly from the nearest POP
-    if response.status_code == 200:
-        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300"
-    
-    return response
-
-@views_bp.route("/manifest.json")
-def manifest():
-    return current_app.send_static_file("manifest.json")
-
-@views_bp.route("/sw.js")
-def service_worker():
-    static_folder = current_app.static_folder
-    resp = current_app.send_static_file("sw.js") if os.path.exists(os.path.join(static_folder, "sw.js")) else Response("", mimetype="application/javascript")
-    if os.path.exists("sw.js") and not os.path.exists(os.path.join(static_folder, "sw.js")):
-         resp = send_from_directory(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sw.js")
-    resp.headers["Service-Worker-Allowed"] = "/"
-    resp.headers["Cache-Control"] = "no-cache"
-    return resp
-
-@views_bp.route("/robots.txt")
-def robots_txt():
-    content = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /proxy\n\nSitemap: https://presek.mk/sitemap.xml\n"
-    return Response(content, mimetype="text/plain")
-
-@views_bp.route("/sitemap.xml")
-def sitemap_xml():
-    from utils import cached_response, set_cache
-    cached = cached_response("sitemap", ttl=3600)
-    if cached: return Response(cached, mimetype="application/xml")
-    
-    now = datetime.datetime.now().strftime("%Y-%m-%d")
-    urls = [
-        ("https://presek.mk/", now, "always", "1.0"),
-        ("https://presek.mk/izvori", now, "monthly", "0.5"),
-        ("https://presek.mk/stats", now, "daily", "0.4"),
-        ("https://presek.mk/arhiva", now, "daily", "0.6"),
-        ("https://presek.mk/about", now, "monthly", "0.3"),
-        ("https://presek.mk/privacy", now, "monthly", "0.2"),
-        ("https://presek.mk/contact", now, "monthly", "0.2"),
-    ]
-    try:
-        conn = get_db()
-        clusters = conn.execute("SELECT cluster_id, MAX(created_at) as latest FROM articles WHERE created_at >= NOW() - INTERVAL '14 days' GROUP BY cluster_id ORDER BY latest DESC").fetchall()
-        conn.close()
-        for c in clusters:
-            lastmod = c['latest'].strftime("%Y-%m-%d") if isinstance(c['latest'], datetime.datetime) else (str(c['latest'])[:10] if c['latest'] else now)
-            urls.append((f"https://presek.mk/cluster/{c['cluster_id']}", lastmod, "daily", "0.7"))
-    except Exception as e:
-        pass
-
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for loc, lastmod, freq, priority in urls:
-        xml += f'  <url>\n    <loc>{loc}</loc>\n    <lastmod>{lastmod}</lastmod>\n    <changefreq>{freq}</changefreq>\n    <priority>{priority}</priority>\n  </url>\n'
-    set_cache("sitemap", xml, ttl=3600)
-    return Response(xml, mimetype="application/xml")
-
-@views_bp.route("/favicon.ico")
-def favicon():
-    svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#8b1a1a"/><text x="16" y="23" font-family="serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#f2ead8">П</text></svg>"""
-    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
-
-@views_bp.route("/og-image.svg")
-def og_image():
-    conn = get_db()
-    count = conn.execute("SELECT COUNT(DISTINCT source) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'").fetchone()[0]
-    conn.close()
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#151310"/><rect x="0" y="0" width="1200" height="6" fill="#c04040"/><text x="600" y="260" font-family="Georgia,serif" font-size="96" font-weight="bold" text-anchor="middle" fill="#c9a030">ПРЕСЕК</text><text x="600" y="340" font-family="sans-serif" font-size="32" text-anchor="middle" fill="#d4c8a8">Македонски агрегатор на вести</text><text x="600" y="420" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#8a7c62">{count}+ извори · AI резимеа · Ажурирано на 5 мин</text><rect x="0" y="624" width="1200" height="6" fill="#c04040"/></svg>"""
-    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
-
-@views_bp.route("/og/cluster/<cluster_id>.svg")
-def cluster_og_image(cluster_id):
-    conn = get_db()
-    row = conn.execute("SELECT title FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,)).fetchone()
-    if not row:
-        conn.close()
-        return og_image()
-    
-    title = row["title"]
-    # Check if there's a generated image
-    img_path = f"static/generated/{cluster_id}.jpg"
-    has_image = os.path.exists(img_path)
-    
-    # Simple text wrapping for SVG
-    words = title.split()
-    lines = []
-    current_line = []
-    for word in words:
-        current_line.append(word)
-        if len(" ".join(current_line)) > 25:
-            lines.append(" ".join(current_line))
-            current_line = []
-    if current_line:
-        lines.append(" ".join(current_line))
-    lines = lines[:3] # Max 3 lines
-    
-    text_y = 350 if has_image else 280
-    text_content = ""
-    for i, line in enumerate(lines):
-        text_content += f'<text x="600" y="{text_y + (i*70)}" font-family="Georgia,serif" font-size="54" font-weight="bold" text-anchor="middle" fill="#ffffff">{line}</text>'
-
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-        <rect width="1200" height="630" fill="#0f1113"/>
-        <rect x="0" y="0" width="1200" height="8" fill="#e63946"/>
-        <text x="60" y="60" font-family="sans-serif" font-size="24" font-weight="900" fill="#e63946">ПРЕСЕК</text>
-        {f'<rect x="0" y="0" width="1200" height="300" fill="#1a1c1e"/><text x="600" y="160" font-family="sans-serif" font-size="20" text-anchor="middle" fill="#8a8d91">[ СЛИКА ОД НАСТАНОТ ]</text>' if not has_image else ''}
-        <g opacity="0.8">
-            <rect x="0" y="580" width="1200" height="50" fill="#1a1c1e"/>
-            <text x="600" y="612" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#8a8d91">Прочитајте повеќе на presek.mk • Вештачка Интелигенција • {datetime.datetime.now().strftime("%d.%m.%Y")}</text>
-        </g>
-        {text_content}
-    </svg>"""
-    conn.close()
-    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=3600"})
+@views_bp.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html", year=datetime.datetime.now().year)
