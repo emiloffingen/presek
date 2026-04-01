@@ -10,10 +10,10 @@
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     <link rel="apple-touch-icon" href="/static/logo.png">
 
-    <!-- Google Fonts: Lora (headings) + Inter (body) -->
+    <!-- Google Fonts: Fraunces (Variable Serif) + Inter (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
     <script>
@@ -32,6 +32,18 @@
     {% block head %}{% endblock %}
 </head>
 <body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
+    <svg style="display:none;">
+        <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+                <feFuncR type="linear" slope="0.3"/>
+                <feFuncG type="linear" slope="0.3"/>
+                <feFuncB type="linear" slope="0.3"/>
+            </feComponentTransfer>
+        </filter>
+    </svg>
+    <div class="noise-overlay"></div>
     <div id="readingProgress"></div>
     <button id="backToTop" class="icon-btn glass" title="Назад на почеток" style="position: fixed; bottom: 24px; right: 24px; z-index: 999; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all var(--t-fast); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>

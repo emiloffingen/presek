@@ -5,31 +5,31 @@
 
 :root {
     --p-h: 4;
-    --p-s: 75%;
-    --p-l: 55%;
+    --p-s: 80%;
+    --p-l: 58%;
 
     --primary:       hsl(var(--p-h), var(--p-s), var(--p-l));
     --primary-hover: hsl(var(--p-h), var(--p-s), calc(var(--p-l) + 10%));
-    --primary-muted: hsla(var(--p-h), var(--p-s), var(--p-l), 0.15);
+    --primary-muted: hsla(var(--p-h), var(--p-s), var(--p-l), 0.12);
 
-    --bg-base:          #050608;
-    --bg-surface:       #0D1116;
-    --bg-surface-hover: #141920;
-    --bg-elevated:      #1C232B;
+    --bg-base:          #0D0C0B; /* Warm Ink Black */
+    --bg-surface:       #151412;
+    --bg-surface-hover: #1C1B19;
+    --bg-elevated:      #242321;
 
-    --text-primary:   #F0F3F8;
-    --text-secondary: #B0C0D0;
-    --text-muted:     #6B7B8C;
+    --text-primary:   #F5F2F0; /* Off-white Paper */
+    --text-secondary: #B8B2AE;
+    --text-muted:     #7D7672;
 
     --accent:       #4A9EFF;
-    --border:       rgba(255,255,255,0.08);
-    --border-hover: rgba(255,255,255,0.15);
+    --border:       rgba(245,242,240,0.08);
+    --border-hover: rgba(245,242,240,0.15);
 
-    --glass-bg:     rgba(5,6,8,0.8);
-    --glass-border: rgba(255,255,255,0.06);
-    --glass-blur:   16px;
+    --glass-bg:     rgba(13,12,11,0.8);
+    --glass-border: rgba(245,242,240,0.06);
+    --glass-blur:   20px;
 
-    --font-heading: 'Lora', 'Georgia', serif;
+    --font-heading: 'Fraunces', serif;
     --font-body:    'Inter', system-ui, -apple-system, sans-serif;
     --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
 
@@ -39,50 +39,67 @@
     --space-md:  16px;
     --space-lg:  24px;
     --space-xl:  32px;
-    --space-2xl: 48px;
+    --space-2xl: 64px;
 
-    --t-fast: 0.2s cubic-bezier(0.2, 0, 0, 1);
-    --t-slow: 0.6s cubic-bezier(0.2, 0, 0, 1);
+    --t-fast: 0.25s cubic-bezier(0.2, 0, 0, 1);
+    --t-slow: 0.8s cubic-bezier(0.2, 0, 0, 1);
 
-    --max-width:       1440px;
-    --content-width:   800px;
-    --sidebar-left-w:  220px;
-    --sidebar-right-w: 300px;
-    --header-h:        60px;
+    --max-width:       1560px;
+    --content-width:   840px;
+    --header-h:        72px;
     --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 20px;
+    --radius-md: 16px;
+    --radius-lg: 40px; /* Biomorphic rounding */
 
     --weight-semi:    600;
-    --weight-bold:    700;
-    --tracking-tight: -0.03em;
-    --tracking-wide:   0.08em;
-    --lh-tight: 1.15;
-    --lh-snug:  1.3;
-    --lh-base:  1.6;
-    --lh-loose: 1.8;
+    --weight-bold:    800;
+    --tracking-tight: -0.04em;
+    --tracking-wide:   0.1em;
+    --lh-tight: 1.1;
+    --lh-snug:  1.25;
+    --lh-base:  1.7;
+    --lh-loose: 1.9;
 }
 
 html.light {
-    --bg-base:          #F9FBFF;
+    --bg-base:          #FBF9F7; /* Warm Paper */
     --bg-surface:       #FFFFFF;
-    --bg-surface-hover: #F2F6FA;
-    --bg-elevated:      #E8EEF5;
-    --text-primary:     #0A1425;
-    --text-secondary:   #4A5B75;
-    --text-muted:       #7A8BA0;
-    --border:       rgba(0,0,0,0.07);
-    --border-hover: rgba(0,0,0,0.12);
-    --glass-bg:     rgba(255,255,255,0.85);
-    --glass-border: rgba(0,0,0,0.06);
+    --bg-surface-hover: #F5F2F0;
+    --bg-elevated:      #EBE7E4;
+    --text-primary:     #1A1817;
+    --text-secondary:   #544F4D;
+    --text-muted:       #8C8481;
+    --border:       rgba(26,24,23,0.07);
+    --border-hover: rgba(26,24,23,0.12);
+    --glass-bg:     rgba(251,249,247,0.85);
+    --glass-border: rgba(26,24,23,0.06);
 }
 
 /* =========================================
-   BASE
+   NOISE OVERLAY
+   ========================================= */
+
+.noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    filter: url(#noiseFilter);
+}
+
+/* =========================================
+   BASE & TYPOGRAPHY
    ========================================= */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; transition: background 0.4s ease; }
+html { 
+    -webkit-font-smoothing: antialiased; 
+    -moz-osx-font-smoothing: grayscale; 
+    scroll-behavior: smooth; 
+    transition: background 0.5s ease;
+}
 
 body {
     background: var(--bg-base);
@@ -94,8 +111,63 @@ body {
     min-height: 100vh;
 }
 
-h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 700; line-height: var(--lh-snug); letter-spacing: var(--tracking-tight); }
-a { color: inherit; text-decoration: none; transition: all var(--t-fast); }
+h1, h2, h3, h4 { 
+    font-family: var(--font-heading); 
+    font-weight: 800; 
+    line-height: var(--lh-tight); 
+    letter-spacing: var(--tracking-tight);
+    font-variation-settings: "SOFT" 100, "WONK" 1;
+}
+
+.hero-title {
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 900;
+    margin-bottom: var(--space-xl);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+}
+
+.section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--primary);
+    margin-bottom: var(--space-md);
+    font-family: var(--font-mono);
+    font-weight: 800;
+}
+
+.bento-headline {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: var(--lh-snug);
+    color: var(--text-primary);
+    transition: font-variation-settings var(--t-fast), color var(--t-fast);
+    font-variation-settings: "SOFT" 0, "WONK" 0;
+}
+
+.bento-card:hover .bento-headline {
+    color: var(--primary);
+    font-variation-settings: "SOFT" 100, "WONK" 1;
+}
+
+.bento-card.featured .bento-headline {
+    font-size: 2.2rem;
+    letter-spacing: -0.03em;
+}
+
+.bento-meta {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-bottom: 12px;
+}
+
+a { color: inherit; text-decoration: none; transition: color var(--t-fast); }
 button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
 
 .glass {
@@ -119,21 +191,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .pulse { animation: pulse-primary 2s infinite ease-in-out; }
 
-a { color: inherit; text-decoration: none; transition: color var(--t-fast); }
-button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
-
-.glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-    border-bottom: 1px solid var(--glass-border);
-}
-
-.fade-in { animation: fadeIn 0.35s ease forwards; opacity: 0; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-
 #readingProgress {
-    position: fixed; top: 0; left: 0; height: 2px;
+    position: fixed; top: 0; left: 0; height: 3px;
     background: var(--primary); z-index: 9999; width: 0%;
     transition: width 0.1s linear;
 }
@@ -432,8 +491,8 @@ a.count-badge:hover {
 .bento-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    grid-auto-rows: auto;
-    gap: var(--space-md);
+    grid-auto-rows: minmax(80px, auto);
+    gap: var(--space-lg);
     width: 100%;
 }
 
@@ -453,17 +512,17 @@ a.count-badge:hover {
     text-decoration: none;
     color: inherit;
     box-shadow: 
-        0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        0 10px 30px -10px rgba(0, 0, 0, 0.3), 
+        0 4px 10px -5px rgba(0, 0, 0, 0.2);
 }
 
 .bento-card:hover {
     background: var(--bg-surface-hover);
-    border-color: var(--primary);
-    transform: translateY(-6px) scale(1.01);
+    border-color: var(--primary-muted);
+    transform: translateY(-8px) scale(1.005);
     box-shadow: 
-        0 20px 25px -5px rgba(0, 0, 0, 0.2), 
-        0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        0 30px 60px -12px rgba(0, 0, 0, 0.45), 
+        0 18px 36px -18px rgba(0, 0, 0, 0.3);
     z-index: 10;
 }
 
@@ -508,10 +567,11 @@ a.count-badge:hover {
 .bento-card:hover .bento-thumb { transform: scale(1.05); }
 
 .bento-body {
-    padding: var(--space-md);
+    padding: var(--space-xl) var(--space-lg);
     display: flex;
     flex-direction: column;
     flex: 1;
+    max-width: 60ch; /* Hyper-legibility line length */
 }
 
 .bento-meta {
