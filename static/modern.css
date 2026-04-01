@@ -29,9 +29,9 @@
     --glass-border: rgba(245,242,240,0.06);
     --glass-blur:   20px;
 
-    --font-heading: 'Fraunces', serif;
-    --font-body:    'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+    --font-heading: 'Playfair Display', serif;
+    --font-body:    'Golos Text', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
 
     --space-2xs: 4px;
     --space-xs:  8px;
@@ -53,12 +53,12 @@
 
     --weight-semi:    600;
     --weight-bold:    800;
-    --tracking-tight: -0.04em;
-    --tracking-wide:   0.1em;
+    --tracking-tight: -0.02em; /* Adjusted for Golos/Playfair */
+    --tracking-wide:   0.08em;
     --lh-tight: 1.1;
-    --lh-snug:  1.25;
-    --lh-base:  1.7;
-    --lh-loose: 1.9;
+    --lh-snug:  1.3;
+    --lh-base:  1.75;
+    --lh-loose: 1.95;
 }
 
 html.light {
@@ -111,6 +111,7 @@ body {
     min-height: 100vh;
     font-feature-settings: "locl" 1; /* Authentic Macedonian Cyrillic */
     font-optical-sizing: auto;
+    letter-spacing: -0.01em; /* Tighter for Golos body text */
 }
 
 h1, h2, h3, h4 { 
@@ -118,46 +119,45 @@ h1, h2, h3, h4 {
     font-weight: 800; 
     line-height: var(--lh-tight); 
     letter-spacing: var(--tracking-tight);
-    font-variation-settings: "SOFT" 100, "WONK" 1;
     font-feature-settings: "locl" 1;
 }
 
 .hero-title {
-    font-size: clamp(3rem, 10vw, 6rem);
+    font-size: clamp(3rem, 10vw, 6.5rem);
     font-weight: 900;
     margin-bottom: var(--space-xl);
-    line-height: 0.95;
-    letter-spacing: -0.06em;
+    line-height: 0.9;
+    letter-spacing: -0.05em;
 }
 
 .section-title {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-wide);
+    letter-spacing: 0.15em;
     color: var(--primary);
     margin-bottom: var(--space-md);
-    font-family: var(--font-mono);
+    font-family: var(--font-body); /* Using sans for labels */
     font-weight: 800;
 }
 
 .bento-headline {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-family: var(--font-body); /* Standard headlines use bold Golos for readability */
+    font-size: 1.45rem;
     font-weight: 700;
     line-height: var(--lh-snug);
     color: var(--text-primary);
-    transition: font-variation-settings var(--t-fast), color var(--t-fast);
-    font-variation-settings: "SOFT" 0, "WONK" 0;
+    transition: color var(--t-fast);
 }
 
 .bento-card:hover .bento-headline {
     color: var(--primary);
-    font-variation-settings: "SOFT" 100, "WONK" 1;
 }
 
 .bento-card.featured .bento-headline {
-    font-size: 2.2rem;
-    letter-spacing: -0.03em;
+    font-family: var(--font-heading); /* Featured headlines use Playfair for prestige */
+    font-size: 2.6rem;
+    letter-spacing: -0.02em;
+    font-weight: 900;
 }
 
 .bento-meta {
