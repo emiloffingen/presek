@@ -46,8 +46,10 @@ def fetch_feed(source, url):
         limit = SOURCE_LIMITS.get(source, FEED_LIMIT)
         feed = feedparser.parse(url)
         entries = feed.entries[:limit]
+        log.debug(f"Fetched {len(entries)} articles from {source}")
         return source, entries, None
     except Exception as e:
+        log.error(f"Failed to fetch feed from {source} ({url}): {e}")
         return source, [], str(e)
 
 def ingest_feeds():

@@ -31,6 +31,9 @@ def summarize_article_task(article_id, title):
             clean = clean_json_response(summary)
             final = clean.get('summary', str(clean)) if isinstance(clean, dict) else clean
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final, article_id), fetch=False)
+            log.info(f"Successfully summarized article {article_id}")
+        else:
+            log.warning(f"No summary generated for article {article_id}")
     except Exception as e:
         log.error(f"[tasks] Summarize failed for {article_id}: {e}")
 
@@ -59,6 +62,9 @@ def synthesize_cluster_task(cluster_id, content):
                 img_url = generate_cover_art(cluster_id, summary)
                 if img_url:
                     db.execute("UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s LIMIT 1)", (img_url, cluster_id), fetch=False)
+            log.info(f"Successfully synthesized cluster {cluster_id}")
+        else:
+            log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
