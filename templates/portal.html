@@ -58,7 +58,7 @@
                             {% endif %}
                         </div>
                         
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.3rem' if span_class == 'span-6' else '1.05rem' }};">
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.8rem' if span_class == 'span-6' else '1.2rem' }}; font-weight: {{ 400 + (cluster.score * 80) | int }};">
                             {{ main.title | truncate(90) }}
                         </a>
                         

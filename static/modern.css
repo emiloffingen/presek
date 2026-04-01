@@ -109,6 +109,8 @@ body {
     line-height: var(--lh-base);
     overflow-x: hidden;
     min-height: 100vh;
+    font-feature-settings: "locl" 1; /* Authentic Macedonian Cyrillic */
+    font-optical-sizing: auto;
 }
 
 h1, h2, h3, h4 { 
@@ -117,6 +119,7 @@ h1, h2, h3, h4 {
     line-height: var(--lh-tight); 
     letter-spacing: var(--tracking-tight);
     font-variation-settings: "SOFT" 100, "WONK" 1;
+    font-feature-settings: "locl" 1;
 }
 
 .hero-title {
@@ -158,14 +161,37 @@ h1, h2, h3, h4 {
 }
 
 .bento-meta {
-    font-size: 0.6rem;
-    font-weight: 800;
+    font-size: 0.62rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     color: var(--text-muted);
-    font-family: var(--font-mono);
-    margin-bottom: 12px;
+    font-family: var(--font-body);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
+
+.bento-meta .source { color: var(--primary); font-weight: 800; }
+
+.count-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    background: var(--bg-elevated);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    transition: all var(--t-fast);
+    font-family: var(--font-body);
+}
+
+/* Optical Sizing for Dark/Light Halation Correction */
+html.light body { letter-spacing: -0.01em; }
+html:not(.light) body { letter-spacing: 0.01em; font-weight: 450; } /* Thinner weight for dark mode */
+html:not(.light) .bento-headline { font-weight: 700; }
 
 a { color: inherit; text-decoration: none; transition: color var(--t-fast); }
 button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }

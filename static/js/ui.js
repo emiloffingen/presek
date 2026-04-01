@@ -120,7 +120,7 @@ const UI = {
                         ${cluster.is_breaking ? `<span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.65rem;">🚨 БРЕЈКИНГ</span>` : ''}
                     </div>
                     
-                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline" style="font-size: ${spanClass.includes('featured') ? '1.5rem' : '1.15rem'};">
+                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline" style="font-size: ${spanClass.includes('featured') ? '2.4rem' : '1.4rem'}; font-weight: ${400 + Math.min(500, Math.floor((cluster.score || 0) * 80))};">
                         ${this._esc(main.title)}
                     </a>
                     
