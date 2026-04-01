@@ -1,5 +1,6 @@
 /**
  * Presek 5.0 - Living Portal Engine (Core Logic)
+ * Enhanced with SSR Support, Infinite Scroll, and Local Personalization
  */
 
 const app = {
@@ -16,13 +17,62 @@ const app = {
         try {
             this._bindEvents();
             this._restoreFromURL();
-            this.fetchNews();
+            this._initPersonalization();
+            
+            // SSR (Instant Paint) Optimization
+            const container = document.getElementById('pageWrap');
+            const hasSSR = container && container.querySelector('.news-cluster');
+            const isFresh = !this.state.topic && !this.state.query;
+
+            if (hasSSR && isFresh) {
+                console.log("Presek SSR: Content detected, starting infinite scroll from page 1.");
+                this.state.page = 1;
+            } else {
+                this.fetchNews();
+            }
+
             this.fetchTrending();
             this.fetchPulse();
             this._setupInfiniteScroll();
         } catch (e) {
             console.error("Critical error during app.init:", e);
         }
+    },
+
+    _initPersonalization() {
+        // Track interest when clicking news clusters
+        document.addEventListener('click', (e) => {
+            const clusterLink = e.target.closest('a[href^="/cluster/"]');
+            if (clusterLink) {
+                const cluster = clusterLink.closest('.news-cluster');
+                if (cluster) {
+                    const cat = cluster.querySelector('.category')?.textContent.replace('•', '').trim();
+                    if (cat) this._trackInterest('topic', cat);
+                }
+            }
+        });
+    },
+
+    _trackInterest(type, value) {
+        const key = `presek_interests_${type}`;
+        let data = {};
+        try {
+            data = JSON.parse(localStorage.getItem(key) || '{}');
+        } catch(e) {}
+        data[value] = (data[value] || 0) + 1;
+        localStorage.setItem(key, JSON.stringify(data));
+    },
+
+    _getTopInterests(type) {
+        const key = `presek_interests_${type}`;
+        try {
+            const data = JSON.parse(localStorage.getItem(key) || '{}');
+            return Object.entries(data)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(e => e[0])
+                .join(',');
+        } catch(e) { return ''; }
     },
 
     _bindEvents() {
@@ -125,13 +175,23 @@ const app = {
 
         if (this.state.topic) params.set('topic', this.state.topic);
         if (this.state.query) params.set('q', this.state.query);
+        
+        // Add local interests if browsing home page
+        let isPersonalized = false;
+        if (!this.state.topic && !this.state.query) {
+            const topCats = this._getTopInterests('topic');
+            if (topCats) {
+                params.set('follow_topics', topCats);
+                isPersonalized = true;
+            }
+        }
 
         try {
             const res = await fetch(`/api/news?${params}`);
             const data = await res.json();
             
             if (data && data.status === 'success' && data.clusters) {
-                UI.renderPage(data.clusters, append);
+                if (window.UI) UI.renderPage(data.clusters, append, isPersonalized);
                 this.state.hasMore = data.has_more;
             }
         } catch (e) {
@@ -145,7 +205,6 @@ const app = {
         try {
             const res = await fetch('/api/trending');
             const data = await res.json();
-            // Optional: fallback for trending nav if needed
         } catch (e) { console.error(e); }
     },
 
@@ -175,7 +234,7 @@ const app = {
     _setupInfiniteScroll() {
         window.addEventListener('scroll', () => {
             if (this.state.isFetching || !this.state.hasMore) return;
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1200) {
                 this.state.page++;
                 this.fetchNews(true);
             }

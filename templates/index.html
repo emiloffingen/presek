@@ -4,6 +4,75 @@
 
 {% block content %}
 <div id="pageWrap" class="portal-main">
-    <!-- Living Clusters loaded via UI.js -->
+    {% if initial_clusters %}
+        {% for cluster in initial_clusters %}
+            {% set main = cluster.articles[0] %}
+            {% set sameNews = cluster.articles[1:4] %}
+            {% set similarStories = cluster.articles[4:8] %}
+            
+            <article class="news-cluster">
+                <div class="cluster-main">
+                    <div class="cluster-meta">
+                        <span class="source">{{ main.source }}</span>
+                        <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                        {% if main.category %}<span class="category">• {{ main.category }}</span>{% endif %}
+                    </div>
+                    
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline">
+                        {{ main.title }}
+                    </a>
+                    
+                    {% if sameNews %}
+                        <div class="cluster-tier-label">ИСТАТА ВЕСТ ОД ДРУГИ ИЗВОРИ:</div>
+                        <ul class="cluster-related same-tier">
+                            {% for art in sameNews %}
+                                <li>
+                                    <a href="/cluster/{{ cluster.cluster_id }}" class="related-link">
+                                        <span class="src-badge">{{ art.source }}</span>
+                                        <span class="rel-title">{{ art.title }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if similarStories %}
+                        <div class="cluster-tier-label similar-label">ПОВРЗАНИ ПРИКАЗНИ:</div>
+                        <ul class="cluster-related similar-tier">
+                            {% for art in similarStories %}
+                                <li>
+                                    <a href="/cluster/{{ cluster.cluster_id }}" class="related-link">
+                                        <span class="src-badge" style="opacity:0.6">{{ art.source }}</span>
+                                        <span class="rel-title" style="color:var(--text-muted)">{{ art.title }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    
+                    <div class="cluster-footer">
+                        <span class="count-badge">{{ cluster.articles|length }} извори</span>
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff;">ВИДИ РЕЗИМЕ</a>
+                    </div>
+                </div>
+                
+                {% set thumb = None %}
+                {% for a in cluster.articles %}
+                    {% if a.image_url and not thumb %}
+                        {% set thumb = a.image_url %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if thumb %}
+                    <div class="cluster-thumb-wrap">
+                        <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
+                             class="cluster-thumb" loading="eager">
+                    </div>
+                {% endif %}
+            </article>
+        {% endfor %}
+    {% else %}
+        <div class="loading-state">Вчитување...</div>
+    {% endif %}
 </div>
 {% endblock %}

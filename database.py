@@ -90,6 +90,22 @@ class DatabaseManager:
     def get_articles_by_ids(self, ids):
         return self.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
 
+    def search_semantic(self, query_embedding: list[float], limit: int = 100):
+        """
+        Search for articles using vector similarity (cosine distance).
+        Returns articles from clusters that are semantically close to the query.
+        """
+        sql = """
+            SELECT *, embedding <=> %s::vector as distance
+            FROM articles
+            WHERE embedding IS NOT NULL
+              AND created_at >= NOW() - INTERVAL '7 days'
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """
+        vec_str = str(query_embedding)
+        return self.execute(sql, (vec_str, vec_str, limit))
+
     def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None):
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []

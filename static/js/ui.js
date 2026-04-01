@@ -29,12 +29,20 @@ const UI = {
 
     /* ── Core Rendering ──────────────────────────────────── */
 
-    renderPage(clusters, append = false) {
+    renderPage(clusters, append = false, isPersonalized = false) {
         const container = document.getElementById('pageWrap');
         if (!container) return;
 
         if (!append) {
             container.innerHTML = '';
+            
+            if (isPersonalized) {
+                container.innerHTML = `
+                    <div class="personalization-notice fade-in">
+                        <span class="p-icon">✨</span> ПЕРСОНАЛИЗИРАН ИЗБОР ЗА ВАС
+                    </div>`;
+            }
+
             // Trigger dynamic theme update on fresh load
             if (clusters && clusters.length > 0) {
                 this.updateDynamicTheme(clusters);
@@ -65,8 +73,17 @@ const UI = {
 
     _renderCluster(cluster, idx) {
         const articles = cluster.articles || [];
-        const main = articles[0] || {};
-        const related = articles.slice(1, 6); 
+        if (articles.length === 0) return '';
+        
+        const main = articles[0];
+        
+        // Tier 1: Same News (Extremely high similarity)
+        // Since backend already clustered them, we use a heuristic or just first 3
+        const sameNews = articles.slice(1, 4); 
+        
+        // Tier 2: Similar Stories (The rest)
+        const similarStories = articles.slice(4, 8);
+        
         const count = articles.length;
         
         let thumbUrl = null;
@@ -77,15 +94,32 @@ const UI = {
             }
         }
         
-        let relatedHtml = '';
-        if (related.length > 0) {
-            relatedHtml = `
-                <ul class="cluster-related">
-                    ${related.map(art => `
+        let sameHtml = '';
+        if (sameNews.length > 0) {
+            sameHtml = `
+                <div class="cluster-tier-label">ИСТАТА ВЕСТ ОД ДРУГИ ИЗВОРИ:</div>
+                <ul class="cluster-related same-tier">
+                    ${sameNews.map(art => `
                         <li>
                             <a href="/cluster/${cluster.cluster_id}" class="related-link">
                                 <span class="src-badge">${this._esc(art.source)}</span>
                                 <span class="rel-title">${this._esc(art.title)}</span>
+                            </a>
+                        </li>`).join('')}
+                </ul>
+            `;
+        }
+
+        let similarHtml = '';
+        if (similarStories.length > 0) {
+            similarHtml = `
+                <div class="cluster-tier-label similar-label">ПОВРЗАНИ ПРИКАЗНИ:</div>
+                <ul class="cluster-related similar-tier">
+                    ${similarStories.map(art => `
+                        <li>
+                            <a href="/cluster/${cluster.cluster_id}" class="related-link">
+                                <span class="src-badge" style="opacity:0.6">${this._esc(art.source)}</span>
+                                <span class="rel-title" style="color:var(--text-muted)">${this._esc(art.title)}</span>
                             </a>
                         </li>`).join('')}
                 </ul>
@@ -99,17 +133,20 @@ const UI = {
                         <span class="source">${this._esc(main.source)}</span>
                         <span class="time">• ${this._relativeTime(main.created_at)}</span>
                         ${main.category ? `<span class="category">• ${this._esc(main.category)}</span>` : ''}
+                        ${main.distance !== undefined ? `<span class="src-badge" style="background:var(--accent); color:#fff; border:none">СЕМАНТИЧКО СОВПАЃАЊЕ</span>` : ''}
+                        ${count === 1 ? `<span class="src-badge" style="background:var(--primary-muted); color:var(--primary); border:1px solid var(--primary)">УНИКАТНО</span>` : ''}
                     </div>
                     
                     <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
                         ${this._esc(main.title)}
                     </a>
                     
-                    ${relatedHtml}
+                    ${sameHtml}
+                    ${similarHtml}
                     
                     <div class="cluster-footer">
-                        <span class="count-badge">${count} вести</span>
-                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff;">Резиме</a>
+                        <span class="count-badge">${count} извори</span>
+                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff;">ВИДИ РЕЗИМЕ</a>
                     </div>
                 </div>
                 

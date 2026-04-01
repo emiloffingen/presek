@@ -77,7 +77,19 @@ def api_news():
             cluster_ids = [cid.strip() for cid in ids.split(',') if cid.strip()]
             rows = db.get_articles_by_ids(cluster_ids)
         elif q:
-            rows = db.search_articles(q)
+            # Semantic Upgrade: If query has more than 3 words, try semantic search
+            if len(q.split()) >= 3:
+                try:
+                    emb = generate_query_embedding(q)
+                    if emb:
+                        rows = db.search_semantic(emb, limit=100)
+                    else:
+                        rows = db.search_articles(q)
+                except Exception as e:
+                    log.warning(f"Semantic search failed, falling back to keyword: {e}")
+                    rows = db.search_articles(q)
+            else:
+                rows = db.search_articles(q)
         elif follow_sources or follow_topics:
             sources_list = [s.strip() for s in follow_sources.split(',') if s.strip()]
             topics_list = [t.strip() for t in follow_topics.split(',') if t.strip()]
@@ -345,12 +357,11 @@ def chat_cluster():
 
 @api_bp.route("/proxy")
 def proxy_image():
-    """Proxy external images to avoid mixed-content and CORS issues."""
+    """Proxy and optimize external images."""
     url = request.args.get("url", "").strip()
     if not url:
         return error_response("Missing url parameter", 400)
 
-    # Only allow http/https
     if not re.match(r'^https?://', url):
         return error_response("Invalid URL scheme", 400)
 
@@ -366,50 +377,58 @@ def proxy_image():
         if re.match(pat, hostname):
             return error_response("Blocked URL", 403)
 
-    cache_key = f"proxy:{url}"
-    cached = cached_response(cache_key, ttl=3600)
+    cache_key = f"proxy:webp:v1:{url}"
+    cached = cached_response(cache_key, ttl=86400) # Longer cache for optimized images
     if cached:
         return Response(
             bytes.fromhex(cached["data"]),
-            content_type=cached["content_type"],
-            headers={"Cache-Control": "public, max-age=3600"}
+            content_type="image/webp",
+            headers={"Cache-Control": "public, max-age=86400"}
         )
 
     try:
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Presek/4.0 ImageProxy"},
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Presek/5.0 ImageProxy"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             content_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
             if content_type not in _PROXY_ALLOWED_TYPES:
                 return error_response("Unsupported content type", 415)
 
-            # Read with size limit
-            chunks = []
-            total = 0
-            while True:
-                chunk = resp.read(65536)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > _PROXY_MAX_BYTES:
-                    return error_response("Image too large", 413)
-                chunks.append(chunk)
-            image_data = b"".join(chunks)
+            image_data = resp.read(_PROXY_MAX_BYTES + 1)
+            if len(image_data) > _PROXY_MAX_BYTES:
+                return error_response("Image too large", 413)
 
-        # Cache the proxied image (store as hex for JSON serialization)
-        set_cache(cache_key, {"data": image_data.hex(), "content_type": content_type}, ttl=3600)
+        # Optimize using Pillow
+        from io import BytesIO
+        from PIL import Image
+        
+        img = Image.open(BytesIO(image_data))
+        
+        # Convert to RGB if needed (for WebP/JPEG consistency)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+            
+        # Resize if too large (width > 600px)
+        max_width = 600
+        if img.width > max_width:
+            w_percent = (max_width / float(img.width))
+            h_size = int((float(img.height) * float(w_percent)))
+            img = img.resize((max_width, h_size), Image.Resampling.LANCZOS)
+            
+        # Save as WebP
+        webp_io = BytesIO()
+        img.save(webp_io, "WEBP", quality=80, method=6)
+        optimized_data = webp_io.getvalue()
+
+        # Cache optimized version
+        set_cache(cache_key, {"data": optimized_data.hex(), "content_type": "image/webp"}, ttl=86400)
 
         return Response(
-            image_data,
-            content_type=content_type,
-            headers={"Cache-Control": "public, max-age=3600"}
+            optimized_data,
+            content_type="image/webp",
+            headers={"Cache-Control": "public, max-age=86400"}
         )
 
-    except urllib.error.HTTPError as e:
-        log.warning(f"[proxy] HTTP {e.code} for {url}")
-        return error_response("Failed to fetch image", 502)
     except Exception as e:
-        log.warning(f"[proxy] Error fetching {url}: {e}")
-        return error_response("Failed to fetch image", 502)
+        log.warning(f"[proxy] Optimization error for {url}: {e}")
+        # Fallback: if optimization fails but we have raw data, serve raw (if safe)
+        return error_response("Failed to process image", 502)

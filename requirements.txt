@@ -11,3 +11,4 @@ pgvector
 redis
 celery
 boto3
+Pillow
