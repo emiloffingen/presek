@@ -221,7 +221,15 @@ def auto_summarize_top_clusters():
                     if not redis_client.set(dedup_key, 1, nx=True, ex=600):
                         continue
                     
-                    lines = [f"- [{a['source']}]: {a['title']}" for a in arts[:10]]
+                    lines = []
+                    for a in arts[:10]:
+                        desc = (a.get('description') or '').strip()
+                        # Strip HTML tags and truncate
+                        desc = re.sub(r'<[^>]+>', '', desc)[:300]
+                        line = f"- [{a['source']}]: {a['title']}"
+                        if desc:
+                            line += f"\n  {desc}"
+                        lines.append(line)
                     synthesize_cluster_task.delay(cid, "\n".join(lines))
                     
     except Exception as e:
