@@ -98,6 +98,9 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
 
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8") if e else ""
+            if e.code == 400 and "API key expired" in err_body:
+                log.error("[embeddings] Google API Key has EXPIRED. Please renew it. Falling back to keyword clustering.")
+                return [None] * len(texts)
             if e.code == 429:
                 log.info(f"[embeddings] 429 rate-limited (attempt {attempt + 1}), retrying...")
                 continue
