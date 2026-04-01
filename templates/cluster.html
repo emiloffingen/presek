@@ -32,27 +32,59 @@
   <article class="cluster-content">
 
     <header class="cluster-header fade-in">
-      <a href="/" class="back-link">← Назад</a>
+      <a href="/" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Назад на насловна
+      </a>
       <h1 class="cluster-headline nyt-title">{{ articles[0].title }}</h1>
       <div class="story-meta meta-info">
-        <span class="source">{{ articles | length }} извори</span>
+        <span class="src-badge" style="background: var(--primary); color: #fff; border: none;">{{ articles | length }} извори</span>
         <span>·</span>
-        <span id="timeLabel">{{ articles[0].created_at }}</span>
-        {% if total_reading_time %}<span>·</span><span>{{ total_reading_time }} мин читање</span>{% endif %}
+        <span id="timeLabel" style="font-family: var(--font-mono); font-size: 0.75rem;">{{ articles[0].created_at }}</span>
+        {% if total_reading_time %}
+        <span>·</span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            {{ total_reading_time }} мин читање
+        </span>
+        {% endif %}
       </div>
       {% if tags %}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:var(--space-md)">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-lg)">
         {% for tag in tags[:6] %}
-        <span style="font-size:0.72rem;padding:3px 10px;border-radius:20px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-muted)">{{ tag }}</span>
+        <span class="src-badge" style="opacity: 0.8;">#{{ tag }}</span>
         {% endfor %}
       </div>
       {% endif %}
     </header>
 
     {% if synthesis %}
-    <section class="cluster-summary nyt-summary fade-in">
-      <span class="summary-label">Резиме</span>
-      {% for para in synthesis.split('\n\n') %}{% if para.strip() %}<p>{{ para | e }}</p>{% endif %}{% endfor %}
+    <section class="cluster-summary nyt-summary fade-in" style="position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 0; right: 0; padding: 12px; opacity: 0.05;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </div>
+      <span class="summary-label">Резиме од Пресек</span>
+      <div style="font-family: var(--font-body); font-weight: 400; letter-spacing: -0.01em;">
+        {% for para in synthesis.split('\n\n') %}{% if para.strip() %}<p style="margin-bottom: var(--space-md);">{{ para | e }}</p>{% endif %}{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if perspectives %}
+    <section class="perspectives-list fade-in" style="margin-bottom: var(--space-2xl);">
+      <h2 class="section-title">Анализа на перспективи</h2>
+      <div style="display: grid; gap: var(--space-md);">
+        {% for p in perspectives %}
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); padding: var(--space-lg); border-radius: var(--radius-md); display: flex; gap: var(--space-md); align-items: flex-start; transition: all var(--t-fast);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="background: var(--primary-muted); color: var(--primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; font-size: 0.8rem;">
+                {{ loop.index }}
+            </div>
+            <div style="font-size: 0.98rem; line-height: var(--lh-base); color: var(--text-secondary); font-family: var(--font-body);">
+                {{ p | e }}
+            </div>
+        </div>
+        {% endfor %}
+      </div>
     </section>
     {% endif %}
 
@@ -67,29 +99,36 @@
     </section>
 
     {% if source_distribution and source_distribution | length > 1 %}
-    <div style="margin-bottom:var(--space-xl)">
-      <div class="meta-info" style="margin-bottom:var(--space-sm)">Медиумска дистрибуција</div>
-      <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap">
+    <div style="margin-bottom:var(--space-2xl)">
+      <div class="meta-info" style="margin-bottom:var(--space-sm)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+        Медиумска дистрибуција
+      </div>
+      <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
         {% for d in source_distribution %}
-        <div style="font-size:0.75rem;padding:4px 12px;border-radius:20px;background:var(--bg-surface);border:1px solid var(--border)">
-          {{ d.label }} <strong style="color:var(--primary)">{{ d.pct }}%</strong>
+        <div style="font-size:0.75rem;padding:6px 14px;border-radius:20px;background:var(--bg-surface);border:1px solid var(--border);box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+          <span style="color: var(--text-muted); font-weight: 500;">{{ d.label }}</span> <strong style="color:var(--primary); margin-left: 6px; font-family: var(--font-mono);">{{ d.pct }}%</strong>
         </div>
         {% endfor %}
       </div>
     </div>
     {% endif %}
 
+    <h2 class="section-title">Сите извори</h2>
     <div class="sources-grid">
       {% for art in articles %}
       <a href="{{ art.link }}" target="_blank" rel="noopener noreferrer" class="source-card fade-in">
         <div class="source-content">
-          <div class="source-name">{{ art.source }}</div>
+          <div style="margin-bottom: 8px;">
+            <span class="src-badge" style="border-color: var(--primary); color: var(--primary);">{{ art.source }}</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); margin-left: 8px; font-family: var(--font-mono);">{{ art.created_at.strftime('%H:%M') if art.created_at is defined and art.created_at.strftime is defined else '' }}</span>
+          </div>
           <h3 class="source-title">{{ art.title }}</h3>
           <p class="source-snippet">{{ art.description | truncate(180) }}</p>
         </div>
         {% if art.image_url %}
         <div class="source-thumb-wrap">
-          <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}"
+          <img src="{% if art.image_url.startswith('/') %}{{ art.image_url }}{% else %}/proxy?url={{ art.image_url | urlencode }}{% endif %}" class="source-thumb" loading="lazy" alt="{{ art.source }}"
                onerror="this.closest('.source-thumb-wrap').style.display='none';">
         </div>
         {% endif %}

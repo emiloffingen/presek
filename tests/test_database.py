@@ -3,27 +3,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
-class TestLoadEnv:
-    @patch('builtins.open')
-    @patch('os.path.exists', return_value=True)
-    @patch.dict('os.environ', {}, clear=False)
-    def test_loads_env_file(self, mock_exists, mock_open):
-        from io import StringIO
-        mock_open.return_value.__enter__ = MagicMock(return_value=StringIO(
-            'MY_VAR=hello\nANOTHER=world\n# comment\n'
-        ))
-        mock_open.return_value.__exit__ = MagicMock(return_value=False)
-
-        import database
-        database._load_env()
-
-    @patch('os.path.exists', return_value=False)
-    def test_missing_env_file_no_error(self, mock_exists):
-        import database
-        # Should not raise when .env doesn't exist
-        database._load_env()
-
-
 class TestDBWrapper:
     """Tests for the DBWrapper connection wrapper."""
 

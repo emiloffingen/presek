@@ -112,8 +112,8 @@ class TestCallAI:
         mock_redis.expire.return_value = True
         providers = self._mock_providers(gemini="Gemini result")
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result == "Gemini result"
@@ -125,8 +125,8 @@ class TestCallAI:
         mock_redis.expire.return_value = True
         providers = self._mock_providers(gemini=None, groq="Groq result")
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result == "Groq result"
@@ -138,8 +138,8 @@ class TestCallAI:
         mock_redis.expire.return_value = True
         providers = self._mock_providers()  # all None
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result is None
@@ -151,8 +151,8 @@ class TestCallAI:
         mock_redis.incr.return_value = AI_DAILY_LIMIT + 1
         providers = self._mock_providers(gemini="Should not be called")
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result is None
@@ -165,8 +165,8 @@ class TestCallAI:
         mock_redis.incr.side_effect = Exception("Redis down")
         providers = self._mock_providers(gemini="Works anyway")
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result == "Works anyway"
@@ -179,8 +179,8 @@ class TestCallAI:
         mock_redis.expire.return_value = True
         providers = self._mock_providers(gemini="Translated")
 
-        with patch('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine._CIRCUIT_STATE', {}):
+        with patch.dict('ai_engine.PROVIDERS', providers), \
+             patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Text", "System", task_type="translation")
         assert result == "Translated"

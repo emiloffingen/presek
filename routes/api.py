@@ -365,12 +365,23 @@ def proxy_image():
     if not re.match(r'^https?://', url):
         return error_response("Invalid URL scheme", 400)
 
-    # Block internal/private ranges
+    # Block internal/private ranges and metadata services
     import urllib.parse
+    import socket
     parsed = urllib.parse.urlparse(url)
-    hostname = parsed.hostname or ""
+    hostname = (parsed.hostname or "").lower()
+    
+    # 1. Block known local hostnames
+    if hostname in ["localhost", "127.0.0.1", "0.0.0.0", "metadata.google.internal"]:
+        return error_response("Blocked URL", 403)
+        
+    # 2. Block cloud metadata IPs (AWS/GCP/Azure/DO)
+    if hostname == "169.254.169.254" or hostname == "100.100.100.200":
+        return error_response("Blocked URL", 403)
+
+    # 3. Pattern match for common private ranges
     blocked_patterns = [
-        r'^localhost$', r'^127\.', r'^10\.', r'^192\.168\.',
+        r'^127\.', r'^10\.', r'^192\.168\.',
         r'^172\.(1[6-9]|2[0-9]|3[01])\.', r'^::1$', r'^0\.0\.0\.0'
     ]
     for pat in blocked_patterns:

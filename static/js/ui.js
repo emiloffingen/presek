@@ -29,7 +29,7 @@ const UI = {
 
     /* ── Core Rendering ──────────────────────────────────── */
 
-    renderPage(clusters, append = false, isPersonalized = false) {
+    renderPage(clusters, append = false, isPersonalized = false, isSearch = false) {
         const container = document.getElementById('pageWrap');
         if (!container) return;
 
@@ -37,14 +37,21 @@ const UI = {
             // Smoothly clear container without jump
             container.innerHTML = '';
             
-            if (isPersonalized) {
+            if (isPersonalized && !isSearch) {
                 container.innerHTML = `
                     <div class="personalization-notice fade-in">
                         <span class="p-icon">✨</span> ПЕРСОНАЛИЗИРАН ИЗБОР ЗА ВАС
                     </div>`;
             }
 
-            if (clusters && clusters.length > 0) {
+            if (isSearch) {
+                container.innerHTML = `
+                    <div class="search-notice fade-in" style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                        <h2 style="font-size: 1.2rem; font-family: var(--font-heading);">Резултати од пребарувањето</h2>
+                    </div>`;
+            }
+
+            if (clusters && clusters.length > 0 && !isSearch) {
                 this.updateDynamicTheme(clusters);
             }
         }
@@ -76,7 +83,7 @@ const UI = {
         const main = articles[0];
         
         // With extreme backend thresholds, all articles in a cluster are the same news.
-        const sameNews = articles.slice(1, 7); 
+        const sameNews = articles.slice(1, 4); 
         const count = articles.length;
         
         let thumbUrl = null;
@@ -90,15 +97,14 @@ const UI = {
         let sameHtml = '';
         if (sameNews.length > 0) {
             sameHtml = `
-                <div class="cluster-tier-label">ИСТАТА ВЕСТ ОД ДРУГИ ИЗВОРИ:</div>
                 <ul class="cluster-related same-tier">
                     ${sameNews.map(art => `
                         <li>
                             <a href="/cluster/${cluster.cluster_id}" class="related-link">
                                 <span class="src-badge">${this._esc(art.source)}</span>
-                                <span class="rel-title">${this._esc(art.title)}</span>
                             </a>
                         </li>`).join('')}
+                    ${count > 4 ? `<li><span class="src-badge" style="opacity:0.5">+${count - 4}</span></li>` : ''}
                 </ul>`;
         }
 
@@ -108,9 +114,8 @@ const UI = {
                     <div class="cluster-meta">
                         <span class="source">${this._esc(main.source)}</span>
                         <span class="time">• ${this._relativeTime(main.created_at)}</span>
-                        ${main.category ? `<span class="category">• ${this._esc(main.category)}</span>` : ''}
-                        ${main.distance !== undefined ? `<span class="src-badge" style="background:var(--accent); color:#fff; border:none">СЕМАНТИЧКО СОВПАЃАЊЕ</span>` : ''}
-                        ${count === 1 ? `<span class="src-badge" style="background:var(--primary-muted); color:var(--primary); border:1px solid var(--primary)">УНИКАТНО</span>` : ''}
+                        ${main.category ? `<span class="category">${this._esc(main.category)}</span>` : ''}
+                        ${cluster.is_breaking ? `<span class="src-badge" style="background:var(--primary); color:#fff; border:none; padding:2px 8px;">БРЕЈКИНГ</span>` : ''}
                     </div>
                     
                     <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
@@ -121,7 +126,7 @@ const UI = {
                     
                     <div class="cluster-footer">
                         <span class="count-badge">${count} извори</span>
-                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff;">ВИДИ РЕЗИМЕ</a>
+                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800;">ВИДИ РЕЗИМЕ</a>
                     </div>
                 </div>
                 

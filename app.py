@@ -84,25 +84,35 @@ def rate_limit_check():
 @app.after_request
 def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-    # response.headers["Content-Security-Policy"] = (
-    #     "default-src 'self'; "
-    #     "script-src 'self' 'unsafe-inline'; "
-    #     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    #     "font-src 'self' https://fonts.gstatic.com; "
-    #     "img-src 'self' data: https:; "
-    #     "connect-src 'self'; "
-    #     "frame-ancestors 'none';"
-    # )
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
     return response
 
 ntfy = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
 
 _prune_counter = 0
+_digest_counter = 0
+
+health.register_health_routes(app)
+
+if __name__ == "__main__":
+    init_db()
+    # Start ingestion loop in a background thread
+    
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+ = 0
 _digest_counter = 0
 
 health.register_health_routes(app)

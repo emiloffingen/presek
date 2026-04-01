@@ -1,30 +1,13 @@
 import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
+from collections import defaultdict
 import datetime
 import logging
 import os
 import json
 
 log = logging.getLogger("presek")
-
-def _load_env():
-    """Fallback: manually load .env file if not set in process environment."""
-    if os.environ.get("DATABASE_URL"): return
-    try:
-        env_path = os.path.join(os.path.dirname(__file__), '.env')
-        if os.path.exists(env_path):
-            with open(env_path) as f:
-                for line in f:
-                    if '=' in line and not line.startswith('#'):
-                        parts = line.strip().split('=', 1)
-                        if len(parts) == 2:
-                            k, v = parts
-                            os.environ[k] = v.strip('"').strip("'")
-    except Exception as e:
-        log.warning(f"Could not manual-load .env: {e}")
-
-_load_env()
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
 
@@ -50,6 +33,15 @@ class DatabaseManager:
         except Exception as e:
             log.error(f"Failed to initialize database connection pool: {e}")
             self._pool = None
+
+    def _reset_pool(self):
+        """Force re-initialization of the pool. Crucial after process forking."""
+        if self._pool:
+            try:
+                self._pool.closeall()
+            except: pass
+        self._pool = None
+        self._init_pool()
 
     def get_conn(self):
         if not self._pool:
@@ -123,7 +115,15 @@ class DatabaseManager:
             safe_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
             sql += " AND summary LIKE %s ESCAPE '\\'"
             params.append(f"%{safe_sentiment}%")
-        sql += f" ORDER BY created_at DESC LIMIT {limit}"
+        
+        # Ensure limit is an integer
+        try:
+            limit = int(limit)
+        except (ValueError, TypeError):
+            limit = 200
+            
+        sql += " ORDER BY created_at DESC LIMIT %s"
+        params.append(limit)
         return self.execute(sql, tuple(params))
 
     def get_personalized_articles(self, follow_sources, follow_topics, limit=200):
@@ -136,12 +136,27 @@ class DatabaseManager:
             clauses.append("topic = ANY(%s)"); params.append(follow_topics)
         if clauses:
             sql += " AND (" + " OR ".join(clauses) + ")"
-        sql += f" ORDER BY created_at DESC LIMIT {limit}"
+            
+        # Ensure limit is an integer
+        try:
+            limit = int(limit)
+        except (ValueError, TypeError):
+            limit = 200
+            
+        sql += " ORDER BY created_at DESC LIMIT %s"
+        params.append(limit)
         return self.execute(sql, tuple(params))
 
     def search_articles(self, q, limit=100):
         if not q or len(q) > 500:
             return []
+            
+        # Ensure limit is an integer
+        try:
+            limit = int(limit)
+        except (ValueError, TypeError):
+            limit = 100
+            
         sql = """
             SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
             FROM articles
@@ -155,6 +170,14 @@ class DatabaseManager:
         if not cluster_ids: return []
         rows = self.execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids,))
         return [r["cluster_id"] for r in rows]
+
+    def get_cluster_entities(self, cluster_ids):
+        if not cluster_ids: return {}
+        rows = self.execute("SELECT cluster_id, entity_name FROM cluster_entities WHERE cluster_id = ANY(%s)", (cluster_ids,))
+        result = defaultdict(set)
+        for r in rows:
+            result[r["cluster_id"]].add(r["entity_name"])
+        return result
 
     def get_db_size(self):
         db_name = DATABASE_URL.split('/')[-1].split('?')[0]
@@ -200,7 +223,33 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
-                # NOTE: idx_articles_embedding is disabled for 3072-dim vectors (pgvector 2000-dim limit)
+                
+                # Performance Indexes
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
+                
+                # FTS Trigger
+                cur.execute("""
+                    CREATE OR REPLACE FUNCTION articles_search_trigger() RETURNS trigger AS $$
+                    BEGIN
+                      new.search_vector :=
+                        setweight(to_tsvector('simple', coalesce(new.title,'')), 'A') ||
+                        setweight(to_tsvector('simple', coalesce(new.description,'')), 'B');
+                      return new;
+                    END
+                    $$ LANGUAGE plpgsql;
+                """)
+                cur.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'tsvectorupdate') THEN
+                            CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE
+                            ON articles FOR EACH ROW EXECUTE FUNCTION articles_search_trigger();
+                        END IF;
+                    END
+                    $$;
+                """)
                 
                 conn.commit()
                 log.info("Presek 4.0: Schema verification complete.")

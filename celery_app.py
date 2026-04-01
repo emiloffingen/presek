@@ -2,9 +2,16 @@ import os
 import logging
 from celery import Celery
 from celery.schedules import crontab
-from celery.signals import task_failure
+from celery.signals import task_failure, worker_process_init
 
 log = logging.getLogger("presek_celery")
+
+@worker_process_init.connect
+def reset_db_pool(**kwargs):
+    """Ensure each worker process gets a fresh DB connection pool after forking."""
+    from database import db_manager
+    log.info("[celery] Resetting database connection pool for worker process.")
+    db_manager._reset_pool()
 
 @task_failure.connect
 def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):

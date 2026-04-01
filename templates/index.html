@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Пресек | Living Portal{% endblock %}
+{% block title %}Пресек | Главни Вести{% endblock %}
 
 {% block content %}
 <div id="pageWrap">
@@ -10,12 +10,20 @@
             {% set sameNews = cluster.articles[1:4] %}
             {% set similarStories = cluster.articles[4:8] %}
             
-            <article class="news-cluster">
+            <article class="news-cluster fade-in">
                 <div class="cluster-main">
                     <div class="cluster-meta">
                         <span class="source">{{ main.source }}</span>
-                        <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
-                        {% if main.category %}<span class="category">• {{ main.category }}</span>{% endif %}
+                        <span class="time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                        {% if main.category %}
+                            <span class="category">{{ main.category }}</span>
+                        {% endif %}
+                        {% if cluster.is_breaking %}
+                            <span class="src-badge" style="background:var(--primary); color:#fff; border:none;">🚨 БРЕЈКИНГ</span>
+                        {% endif %}
+                        {% if cluster.has_balanced %}
+                            <span class="src-badge" style="border-color: var(--primary); color: var(--primary);">⚖️ Балансирано</span>
+                        {% endif %}
                     </div>
                     
                     <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline">
@@ -23,36 +31,26 @@
                     </a>
                     
                     {% if sameNews %}
-                        <div class="cluster-tier-label">ИСТАТА ВЕСТ ОД ДРУГИ ИЗВОРИ:</div>
                         <ul class="cluster-related same-tier">
                             {% for art in sameNews %}
                                 <li>
                                     <a href="/cluster/{{ cluster.cluster_id }}" class="related-link">
                                         <span class="src-badge">{{ art.source }}</span>
-                                        <span class="rel-title">{{ art.title }}</span>
                                     </a>
                                 </li>
                             {% endfor %}
-                        </ul>
-                    {% endif %}
-
-                    {% if similarStories %}
-                        <div class="cluster-tier-label similar-label">ПОВРЗАНИ ПРИКАЗНИ:</div>
-                        <ul class="cluster-related similar-tier">
-                            {% for art in similarStories %}
-                                <li>
-                                    <a href="/cluster/{{ cluster.cluster_id }}" class="related-link">
-                                        <span class="src-badge" style="opacity:0.6">{{ art.source }}</span>
-                                        <span class="rel-title" style="color:var(--text-muted)">{{ art.title }}</span>
-                                    </a>
-                                </li>
-                            {% endfor %}
+                            {% if cluster.articles|length > 4 %}
+                                <li><span class="src-badge" style="opacity:0.6; border: 1px dashed var(--border);">+{{ cluster.articles|length - 4 }} други</span></li>
+                            {% endif %}
                         </ul>
                     {% endif %}
                     
                     <div class="cluster-footer">
-                        <span class="count-badge">{{ cluster.articles|length }} извори</span>
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff;">ВИДИ РЕЗИМЕ</a>
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            ВИДИ РЕЗИМЕ
+                        </a>
+                        <span class="count-badge" style="background: transparent; border: 1px solid var(--border);">Вкупно {{ cluster.articles|length }} извори</span>
                     </div>
                 </div>
                 
@@ -65,14 +63,16 @@
 
                 {% if thumb %}
                     <div class="cluster-thumb-wrap">
-                        <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
-                             class="cluster-thumb" loading="eager">
+                        <a href="/cluster/{{ cluster.cluster_id }}" style="display: block; width: 100%; height: 100%;">
+                            <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
+                                 class="cluster-thumb" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'">
+                        </a>
                     </div>
                 {% endif %}
             </article>
         {% endfor %}
     {% else %}
-        <div class="loading-state">Вчитување...</div>
+        <div class="loading-state">Вчитување вести...</div>
     {% endif %}
 </div>
 {% endblock %}

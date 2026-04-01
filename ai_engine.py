@@ -23,28 +23,36 @@ from prompts import (
 
 log = logging.getLogger("presek")
 
-# --- Provider Circuit Breaker Registry ---
-_CIRCUIT_STATE = {} # provider_name -> {fails: int, last_fail: float}
+from utils import redis_client
+
+# --- Provider Circuit Breaker (Global via Redis) ---
+CIRCUIT_PREFIX = "ai:circuit:"
+CIRCUIT_FAIL_THRESHOLD = 3
+CIRCUIT_RETRY_AFTER = 300 # 5 minutes
 
 def _is_circuit_open(name: str) -> bool:
-    state = _CIRCUIT_STATE.get(name)
-    if not state: return False
-    if state["fails"] >= 3:
-        # Re-try after 5 minutes
-        if time.time() - state["last_fail"] > 300:
-            state["fails"] = 0
-            return False
-        return True
+    try:
+        fails = int(redis_client.get(f"{CIRCUIT_PREFIX}{name}:fails") or 0)
+        if fails >= CIRCUIT_FAIL_THRESHOLD:
+            last_fail = float(redis_client.get(f"{CIRCUIT_PREFIX}{name}:last_fail") or 0)
+            if time.time() - last_fail > CIRCUIT_RETRY_AFTER:
+                # Reset for a retry attempt
+                redis_client.set(f"{CIRCUIT_PREFIX}{name}:fails", 0)
+                return False
+            return True
+    except: pass
     return False
 
 def _record_fail(name: str):
-    state = _CIRCUIT_STATE.setdefault(name, {"fails": 0, "last_fail": 0})
-    state["fails"] += 1
-    state["last_fail"] = time.time()
+    try:
+        redis_client.incr(f"{CIRCUIT_PREFIX}{name}:fails")
+        redis_client.set(f"{CIRCUIT_PREFIX}{name}:last_fail", time.time())
+    except: pass
 
 def _record_success(name: str):
-    if name in _CIRCUIT_STATE:
-        _CIRCUIT_STATE[name]["fails"] = 0
+    try:
+        redis_client.set(f"{CIRCUIT_PREFIX}{name}:fails", 0)
+    except: pass
 
 # --- Base Classes ---
 
@@ -55,22 +63,52 @@ class AIProvider(ABC):
 
 class GeminiProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
-        if not GOOGLE_API_KEY: return None
+        if not GOOGLE_API_KEY or not GEMINI_URL: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
         combined = f"{system}\n\nInput:\n{prompt}"
         payload = {
             "contents": [{"parts": [{"text": combined}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens}
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "temperature": 0.1 # Lower temperature for more factual summaries
+            },
+            "safetySettings": [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_CIVIC_INTEGRITY", "threshold": "BLOCK_NONE"}
+            ]
         }
-        if json_mode: payload["generationConfig"]["responseMimeType"] = "application/json"
+        if json_mode: 
+            payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                
+                # Robust response parsing
+                if not data or "candidates" not in data or not data["candidates"]:
+                    if "promptFeedback" in data:
+                        log.warning(f"[gemini] Prompt blocked by safety: {data['promptFeedback']}")
+                    else:
+                        log.warning(f"[gemini] Empty or invalid response: {data}")
+                    return None
+                    
+                candidate = data["candidates"][0]
+                if "content" not in candidate or "parts" not in candidate["content"]:
+                    finish_reason = candidate.get("finishReason", "UNKNOWN")
+                    # If safety blocked, the parts list will be missing
+                    if finish_reason == "SAFETY":
+                        log.warning(f"[gemini] Candidate blocked by safety: {candidate.get('safetyRatings')}")
+                    else:
+                        log.warning(f"[gemini] No content in candidate. Finish reason: {finish_reason}")
+                    return None
+                    
+                return candidate["content"]["parts"][0]["text"].strip()
         except Exception as e:
-            log.warning(f"[gemini] Error: {e}")
+            log.warning(f"[gemini] API Error: {e}")
             return None
 
 class OpenAICompatibleProvider(AIProvider):
@@ -84,10 +122,15 @@ class OpenAICompatibleProvider(AIProvider):
         if not self.key: return None
         payload = {
             "model": self.model,
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
-            "max_tokens": max_tokens
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.1
         }
-        if json_mode: payload["response_format"] = {"type": "json_object"}
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
         
         try:
             headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}", "User-Agent": "Presek/4.0"}
@@ -181,11 +224,12 @@ def translate_to_macedonian(text: str) -> str | None:
     return res
 
 def auto_summarize_top_clusters():
-    """Dispatches background tasks for summarization/synthesis with deduplication."""
+    """Dispatches background tasks for summarization/synthesis with parallel execution."""
     from tasks import summarize_article_task, synthesize_cluster_task
     from utils import redis_client, score_cluster, rank_articles_in_cluster
     from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
     from database import db_manager as db
+    from concurrent.futures import ThreadPoolExecutor
     
     try:
         # Get recent articles from the last 24h
@@ -205,32 +249,28 @@ def auto_summarize_top_clusters():
 
         for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
             lead = arts[0]
+            # 1. Individual Summarization (Single Lead Article)
             if not lead.get("summary"):
-                # Dedup: skip if already queued in the last 10 minutes
                 dedup_key = f"task:summarize:{lead['id']}"
-                if not redis_client.set(dedup_key, 1, nx=True, ex=600):
-                    continue
-                summarize_article_task.delay(lead["id"], lead["title"])
+                if redis_client.set(dedup_key, 1, nx=True, ex=600):
+                    summarize_article_task.delay(lead["id"], lead["title"])
 
+            # 2. Multi-Source Synthesis
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
-                # Check if synthesis already exists
                 if not db.get_synthesis_ids([cid]):
-                    # Dedup: skip if synthesis already queued recently
                     dedup_key = f"task:synthesize:{cid}"
-                    if not redis_client.set(dedup_key, 1, nx=True, ex=600):
-                        continue
-                    
-                    lines = []
-                    for a in arts[:10]:
-                        desc = (a.get('description') or '').strip()
-                        # Strip HTML tags and truncate
-                        desc = re.sub(r'<[^>]+>', '', desc)[:300]
-                        line = f"- [{a['source']}]: {a['title']}"
-                        if desc:
-                            line += f"\n  {desc}"
-                        lines.append(line)
-                    synthesize_cluster_task.delay(cid, "\n".join(lines))
+                    if redis_client.set(dedup_key, 1, nx=True, ex=600):
+                        # Construct context with better structure
+                        lines = []
+                        for a in arts[:12]: # Slightly more sources for synthesis
+                            desc = (a.get('description') or '').strip()
+                            desc = re.sub(r'<[^>]+>', '', desc)[:250]
+                            line = f"- [{a['source']}]: {a['title']}"
+                            if desc: line += f"\n  {desc}"
+                            lines.append(line)
+                        
+                        synthesize_cluster_task.delay(cid, "\n".join(lines))
                     
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")

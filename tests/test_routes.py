@@ -13,8 +13,7 @@ from unittest.mock import patch, MagicMock
 @pytest.fixture
 def app():
     """Create Flask test app with mocked DB and Redis."""
-    with patch('database._load_env'), \
-         patch.dict(os.environ, {"SECRET_KEY": "test-secret-key-for-tests"}), \
+    with patch.dict(os.environ, {"SECRET_KEY": "test-secret-key-for-tests"}), \
          patch('utils.redis_client') as mock_redis:
 
         mock_redis.get.return_value = None

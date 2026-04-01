@@ -1,8 +1,6 @@
 import logging
 import json
 import os
-from database import _load_env
-_load_env()
 from ai_engine import _call_ai
 from prompts import ENTITY_EXTRACTION_PROMPT
 

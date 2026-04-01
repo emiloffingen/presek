@@ -13,32 +13,37 @@ views_bp = Blueprint('views', __name__)
 def index():
     # SSR Optimization: Fetch first fold of news (10 clusters)
     from database import db_manager as db
-    from utils import score_cluster, is_balanced
+    from utils import score_cluster, is_balanced, cached_response, set_cache
     from config import BREAKING_SCORE_THRESHOLD
     from collections import defaultdict
     
     try:
-        # Get latest MK news
-        rows = db.get_articles_by_country("🇲🇰")
-        clusters = defaultdict(list)
-        for r in rows:
-            clusters[r['cluster_id']].append(r)
+        cached = cached_response("ssr:index:top_clusters", ttl=60)
+        if cached:
+            top_clusters = cached
+        else:
+            # Get latest MK news
+            rows = db.get_articles_by_country("🇲🇰")
+            clusters = defaultdict(list)
+            for r in rows:
+                clusters[r['cluster_id']].append(r)
+                
+            ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+            ranked.sort(key=score_cluster, reverse=True)
             
-        ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        ranked.sort(key=score_cluster, reverse=True)
-        
-        top_clusters = []
-        # We only need the first 10 for Instant Paint
-        for arts in ranked[:10]:
-            s = score_cluster(arts)
-            cid = arts[0]["cluster_id"]
-            top_clusters.append({
-                "cluster_id": cid,
-                "articles": arts,
-                "score": round(s, 3),
-                "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
-                "has_balanced": is_balanced(arts)
-            })
+            top_clusters = []
+            # We only need the first 10 for Instant Paint
+            for arts in ranked[:10]:
+                s = score_cluster(arts)
+                cid = arts[0]["cluster_id"]
+                top_clusters.append({
+                    "cluster_id": cid,
+                    "articles": arts,
+                    "score": round(s, 3),
+                    "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
+                    "has_balanced": is_balanced(arts)
+                })
+            set_cache("ssr:index:top_clusters", top_clusters, ttl=60)
     except Exception as e:
         current_app.logger.error(f"SSR Error: {e}")
         top_clusters = []

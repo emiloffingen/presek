@@ -94,7 +94,7 @@ const app = {
         if (searchTrigger && searchOverlay) {
             searchTrigger.addEventListener('click', () => {
                 searchOverlay.classList.add('active');
-                if (searchInput) searchInput.focus();
+                setTimeout(() => searchInput && searchInput.focus(), 50);
             });
         }
 
@@ -104,11 +104,23 @@ const app = {
             });
         }
 
+        // Close search on backdrop click
+        if (searchOverlay) {
+            searchOverlay.addEventListener('click', (e) => {
+                if (e.target === searchOverlay) {
+                    searchOverlay.classList.remove('active');
+                }
+            });
+        }
+
         if (searchInput) {
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    this.setSearch(searchInput.value);
-                    if (searchOverlay) searchOverlay.classList.remove('active');
+                    const q = searchInput.value.trim();
+                    if (q) {
+                        this.setSearch(q);
+                        if (searchOverlay) searchOverlay.classList.remove('active');
+                    }
                 }
             });
         }
@@ -124,21 +136,27 @@ const app = {
                 const meta = document.getElementById('themeMeta');
                 if (meta) meta.content = isLight ? '#F3F5F7' : '#0A0C0E';
                 
-                // Sync body class if needed (for legacy styles)
                 document.body.classList.toggle('light', isLight);
+                
+                // Add a small rotation effect to the button
+                themeToggle.style.transform = 'rotate(15deg)';
+                setTimeout(() => themeToggle.style.transform = '', 200);
             });
         }
 
-        // Listen for system theme changes
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
-                if (!localStorage.getItem('theme')) {
-                    const isLight = e.matches;
-                    document.documentElement.classList.toggle('light', isLight);
-                    document.body.classList.toggle('light', isLight);
-                }
-            });
-        }
+        // Auto System Theme Sync
+        const sysTheme = window.matchMedia('(prefers-color-scheme: light)');
+        const applySystemTheme = (e) => {
+            if (!localStorage.getItem('theme')) {
+                const isLight = e.matches;
+                document.documentElement.classList.toggle('light', isLight);
+                document.body.classList.toggle('light', isLight);
+                const meta = document.getElementById('themeMeta');
+                if (meta) meta.content = isLight ? '#F3F5F7' : '#0A0C0E';
+            }
+        };
+        if (sysTheme.addEventListener) sysTheme.addEventListener('change', applySystemTheme);
+        else sysTheme.addListener(applySystemTheme); // Legacy support
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
@@ -179,9 +197,11 @@ const app = {
         this.state.isFetching = true;
 
         const container = document.getElementById('pageWrap');
+        const isSearch = !!this.state.query;
+
         if (!append && container) {
             this.state.page = 0;
-            container.innerHTML = '<div class="loading-state" style="padding: 2rem; text-align: center; color: var(--text-muted);">Вчитување вести...</div>';
+            container.innerHTML = `<div class="loading-state" style="padding: 2rem; text-align: center; color: var(--text-muted);">${isSearch ? 'Пребарување...' : 'Вчитување вести...'}</div>`;
         }
 
         const params = new URLSearchParams({
@@ -207,7 +227,7 @@ const app = {
             const data = await res.json();
             
             if (data && data.status === 'success' && data.clusters) {
-                if (window.UI) UI.renderPage(data.clusters, append, isPersonalized);
+                if (window.UI) UI.renderPage(data.clusters, append, isPersonalized, isSearch);
                 this.state.hasMore = data.has_more;
             }
         } catch (e) {

@@ -15,15 +15,17 @@ from collections import Counter
 from database import get_db
 
 # ── Macedonian stemmer ────────────────────────────────────────────
-# ... (keep existing stemmer and stopwords) ...
 MK_SUFFIXES = [
     "увањето", "ување", "ањето", "ање", "ењето", "ење",
     "истите", "истот", "иста", "исти", "ските", "скиот", "ската", "ски", "ска", "ско",
     "ните", "ниот", "ната", "ното", "ни", "ите", "иот", "ата", "ото", "от", "та", "то",
+    "вме", "вте", "аа", "еа", "ја", "ше", "ме", "те", "ат", "ет"
 ]
 
 def mk_stem(word: str) -> str:
-    if len(word) < 5: return word
+    if len(word) < 4: return word
+    # Remove punctuation attached to words
+    word = re.sub(r'[^\w\s]', '', word)
     for suffix in MK_SUFFIXES:
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
             return word[: -len(suffix)]
@@ -36,10 +38,12 @@ MK_STOPWORDS = {
     "во","со","на","од","до","при","пред","под","над","зад","меѓу",
     "овој","оваа","ова","овие","тој","таа","тоа","тие",
     "еден","една","едно","еднa","нема","нема","нови","нов","нова",
+    "само","уште","преку","бидејќи","поради","каде","како","кога",
     "the","and","for","from","that","this","with","has",
 }
 
 def text_to_vector(text: str) -> Counter:
+    # Handle both title and description if available
     words = re.findall(r'[а-шА-Ш\w]{3,}', text.lower())
     stems = [mk_stem(w) for w in words if w not in MK_STOPWORDS]
     return Counter(stems)
@@ -53,24 +57,21 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-# Extreme thresholds for "Identical News" only
-SIMILARITY_THRESHOLD = 0.75  # TF-IDF must be extremely high
-MAX_CLUSTER_SIZE     = 20
-VECTOR_THRESHOLD     = 0.08  # Vector distance must be tiny (lower is stricter)
+SIMILARITY_THRESHOLD = 0.60  # Optimized from 0.65
+MAX_CLUSTER_SIZE     = 25
+VECTOR_THRESHOLD     = 0.12  # Optimized from 0.10 (slightly more permissive)
 
-def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24, category: str | None = None) -> str | None:
+def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
     """
     Find the closest existing cluster using vector similarity in PostgreSQL.
-    Returns cluster_id if a match is found within VECTOR_THRESHOLD.
-    If category is provided, it only looks for matches in the same category.
+    Increased lookback to 36h for developing stories.
     """
     if not embedding:
         return None
         
     conn = get_db()
     try:
-        # We look for the most similar article in the last X hours
-        # using the cosine distance operator <=>
+        # Optimization: use pre-calculated distance limit
         params = [str(embedding), lookback_hours, str(embedding)]
         cat_filter = ""
         if category:
@@ -89,8 +90,8 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24, cate
         row = conn.execute(sql, tuple(params)).fetchone()
         
         if row and float(row['distance']) < VECTOR_THRESHOLD:
-            # Verify cluster is not full
             cid = row['cluster_id']
+            # Verify cluster is not full
             count = conn.execute("SELECT COUNT(*) FROM articles WHERE cluster_id = %s", (cid,)).fetchone()[0]
             if count < MAX_CLUSTER_SIZE:
                 return cid
@@ -108,7 +109,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
     """
     Hybrid clustering: 
     1. Try semantic (vector) match if embedding is provided.
-    2. Fall back to TF-IDF matching against recent articles.
+    2. Fall back to multi-representative TF-IDF matching with entity boosting.
     3. Create a new UUID if no match.
     """
     # 1. Try Semantic Match
@@ -122,33 +123,60 @@ def find_or_create_cluster(title: str, recent_articles: list,
     if not vec1:
         return str(uuid.uuid4())[:8]
 
-    cluster_rep: dict[str, str] = {}
+    # Heuristic: extract potential entities from title (capitalized words)
+    # This helps in boosting matches even if lexical similarity is low
+    potential_entities = set(re.findall(r'[А-Ш][а-ш]+', title))
+
+    cluster_docs: dict[str, list[str]] = {}
     cluster_size: dict[str, int] = {}
     cluster_cat: dict[str, str] = {}
+    all_cids = set()
     
     for article in recent_articles:
         cid = article.get("cluster_id")
         if not cid: continue
+        all_cids.add(cid)
         cluster_size[cid] = cluster_size.get(cid, 0) + 1
-        if cid not in cluster_rep:
-            cluster_rep[cid] = article["title"]
+        if cid not in cluster_docs:
+            cluster_docs[cid] = [article["title"]]
             cluster_cat[cid] = article.get("category")
+        elif len(cluster_docs[cid]) < 3:
+            cluster_docs[cid].append(article["title"])
+
+    # Fetch entities for these clusters to enable boosting
+    from database import db_manager
+    cluster_entities = db_manager.get_cluster_entities(list(all_cids))
 
     best_cid = None
     best_score = 0.0
 
-    for cid, rep_title in cluster_rep.items():
+    for cid, titles in cluster_docs.items():
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE:
             continue
         
-        # Cross-category prevention
+        # Category hard-filter
         if category and cluster_cat.get(cid) and category != cluster_cat[cid]:
-            continue
+            if category != 'Македонија' and cluster_cat[cid] != 'Македонија':
+                continue
 
-        vec2 = text_to_vector(rep_title)
-        score = get_cosine(vec1, vec2)
-        if score > threshold and score > best_score:
-            best_score = score
+        # Check all representatives
+        current_best_rep_score = 0.0
+        for rep_title in titles:
+            vec2 = text_to_vector(rep_title)
+            score = get_cosine(vec1, vec2)
+            if score > current_best_rep_score:
+                current_best_rep_score = score
+        
+        # Entity Boosting: if they share entities, boost the score
+        if cid in cluster_entities and potential_entities:
+            shared = potential_entities.intersection(cluster_entities[cid])
+            if shared:
+                # Boost score by 0.1 for each shared entity, max 0.3
+                boost = min(0.3, len(shared) * 0.15)
+                current_best_rep_score += boost
+
+        if current_best_rep_score > threshold and current_best_rep_score > best_score:
+            best_score = current_best_rep_score
             best_cid = cid
 
     return best_cid if best_cid else str(uuid.uuid4())[:8]

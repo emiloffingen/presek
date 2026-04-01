@@ -3,7 +3,7 @@ import os
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -58,7 +58,6 @@ RSS_FEEDS = [
     ("4News",           "https://4news.mk/feed/"),
     ("Makpress",        "https://makpress.mk/feed/"),
     ("Vistinomer",      "https://vistinomer.mk/feed/"),
-    ("Portalb",         "https://portalb.mk/feed/"),
     ("Lider",           "https://lider.mk/feed/"),
     ("MKD",             "https://mkd.mk/feed/"),
     ("NetPress",        "https://netpress.com.mk/feed/"),
@@ -67,7 +66,6 @@ RSS_FEEDS = [
     ("Prizma",          "https://prizma.mk/feed/"),
     ("Expres",          "https://expres.mk/feed/"),
     ("Tetovo Info",     "https://tetovoinfo.mk/feed/"),
-    ("Koha",            "https://koha.mk/feed/"),
     ("A1on",            "https://a1on.mk/feed/"),
     ("SportSport",      "https://sportsport.mk/feed/"),
     ("Strumica Info",   "https://strumicainfo.mk/feed/"),
@@ -75,7 +73,6 @@ RSS_FEEDS = [
     ("TV21",            "https://tv21.mk/feed/"),
     ("Слободна Европа", "https://www.slobodnaevropa.mk/api/zryoyqpmou"),
     ("Deutsche Welle",  "https://feeds.dw.com/rss/rss-mac-all"),
-    ("Журнал",          "https://zurnal.mk/feed/"),
     ("Civil Media",     "https://civil.mk/feed/"),
     ("Радио МОФ",       "https://radiomof.mk/feed/"),
     ("Сакам да кажам",  "https://sdk.mk/feed/"),
@@ -119,10 +116,10 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Republika", "Fokus", "Nezavisen", "Faktor", "Vecer", "Meta",
     "360 Stepeni", "Makfax", "Nova Makedonija", "Infomax", "Press24",
     "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
-    "Portalb", "Lider", "MKD", "Akademik", "Skopje Info",
-    "Prizma", "Expres", "Tetovo Info", "Koha", "A1on", "SportSport",
+    "Lider", "MKD", "Akademik", "Skopje Info",
+    "Prizma", "Expres", "Tetovo Info", "A1on", "SportSport",
     "Strumica Info", "24 Вести", "TV21", "Слободна Европа",
-    "Deutsche Welle", "Журнал", "Civil Media", "Радио МОФ",
+    "Deutsche Welle", "Civil Media", "Радио МОФ",
     "Сакам да кажам", "Бизнис Вести", "Ohrid News", "Vecer Sport",
     "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
     "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
@@ -182,7 +179,6 @@ DIASPORA_FEEDS = [
     ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Балкан"),
     ("Слободна Европа Balkan", "https://www.slobodnaevropa.org/api/z-pq_te_iqpp",                "Балкан"),
 
-    ("Telegrafi",    "https://telegrafi.com/feed/",                                              "Балкан"),
     ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Балкан"),
     ("TRT World",    "https://www.trtworld.com/content/rss.xml",                                 "Балкан"),
     ("Index.hr",     "https://index.hr/rss",                                                     "Балкан"),
@@ -196,11 +192,11 @@ SOURCE_CREDIBILITY = {
     "Sloboden Pecat": 1.5, "Nova Makedonija": 1.5, "Republika": 1.4, "Makfax": 1.4,
     "Fokus": 1.3, "Nezavisen": 1.3, "Kurir": 1.2, "Faktor": 1.2, "Vecer": 1.2, "Meta": 1.2,
     "360 Stepeni": 1.1, "Infomax": 1.1, "Lider": 1.1, "Vistinomer": 1.8, "Birn": 1.3,
-    "Akademik": 1.1, "NetPress": 1.0, "Portalb": 1.0, "MKD": 1.0, "Press24": 0.9,
+    "Akademik": 1.1, "NetPress": 1.0, "MKD": 1.0, "Press24": 0.9,
     "Skopje1": 0.9, "Plusinfo": 0.9, "Lokalno": 0.9, "4News": 0.9, "Makpress": 0.9,
-    "Skopje Info": 0.8, "Prizma": 0.8, "Expres": 0.8, "Tetovo Info": 0.8, "Koha": 0.8,
+    "Skopje Info": 0.8, "Prizma": 0.8, "Expres": 0.8, "Tetovo Info": 0.8,
     "A1on": 0.8, "SportSport": 0.8, "Strumica Info": 0.8, "24 Вести": 1.6, "TV21": 1.6,
-    "Слободна Европа": 1.8, "Deutsche Welle": 1.7, "Журнал": 1.2, "Civil Media": 1.3,
+    "Слободна Европа": 1.8, "Deutsche Welle": 1.7, "Civil Media": 1.3,
     "Радио МОФ": 1.1, "Сакам да кажам": 1.1, "Бизнис Вести": 1.0, "Ohrid News": 0.8,
     "Vecer Sport": 1.0, "Ekonomija": 0.9, "Zdravje": 0.8, "Time.mk": 1.1, "Kolumna": 0.9,
     "Okno": 1.0, "Tocka": 1.1, "IRL": 1.8, "Nova TV": 1.3, "Libertas": 1.1, "Racin": 1.3,
@@ -210,7 +206,7 @@ SOURCE_CREDIBILITY = {
     "CNN": 1.6, "NPR": 1.6, "Reuters": 1.9, "CBC News": 1.7, "BBC News": 1.8,
     "The Guardian": 1.7, "ABC Australia": 1.6, "ANSA": 1.6, "RTVSLO": 1.7,
     "ORF": 1.7, "SVT News": 1.7, "Top Channel": 1.6, "N1 Info": 1.5, "B92": 1.4,
-    "Novinite": 1.2, "Kathimerini": 1.5, "Exit News": 1.3, "Telegrafi": 1.3,
+    "Novinite": 1.2, "Kathimerini": 1.5, "Exit News": 1.3,
     "FAZ": 1.8, "Swissinfo": 1.8, "AP News": 1.9, "RTS": 1.6, "Dnevnik.bg": 1.5,
     "The Verge": 1.4, "TechCrunch": 1.4, "Axios": 1.7, "Ars Technica": 1.6, "ESPN": 1.6,
     "Слободна Европа Balkan": 1.7,

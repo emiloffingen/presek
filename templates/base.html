@@ -19,10 +19,12 @@
     <script>
         (function() {
             const saved = localStorage.getItem('theme');
-            if (saved) {
-                if (saved === 'light') document.documentElement.classList.add('light');
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches)) {
                 document.documentElement.classList.add('light');
+                if (meta) meta.content = '#F3F5F8';
+            } else {
+                if (meta) meta.content = '#0A0C0F';
             }
         })();
     </script>
@@ -36,10 +38,10 @@
     <div class="utility-bar">
         <div class="utility-inner">
             <div class="utility-item" id="utility-weather">
-                <span class="u-icon">☀️</span> <span class="u-val">Скопје 24°C</span>
+                <span class="u-icon" style="color:var(--primary);">☀️</span> <span class="u-val">Скопје 24°C</span>
             </div>
             <div class="utility-item" id="utility-aqi">
-                <span class="u-icon">🍃</span> <span class="u-val">AQI: 42 (Одличен)</span>
+                <span class="u-icon" style="color:var(--primary);">🍃</span> <span class="u-val">AQI: 42</span>
             </div>
             <div class="utility-item u-time" id="live-clock"></div>
         </div>
@@ -151,11 +153,14 @@
     <div class="search-overlay" id="searchOverlay">
         <div class="search-bar-wrap">
             <div class="search-bar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="searchInput" placeholder="Пребарај вести..." autocomplete="off">
-                <button class="icon-btn" id="searchClose" aria-label="Затвори">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="searchInput" placeholder="Што ве интересира денес?" autocomplete="off" spellcheck="false">
+                <button class="icon-btn" id="searchClose" aria-label="Затвори пребарување">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
+            </div>
+            <div style="margin-top:20px; color:var(--text-muted); font-size:0.8rem; text-align:center;">
+                Притиснете <kbd style="background:var(--bg-elevated); padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">Enter</kbd> за пребарување
             </div>
         </div>
     </div>
