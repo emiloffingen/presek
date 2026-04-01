@@ -1,95 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Пресек | Македонски Вести{% endblock %}
-
-{% block head %}
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Пресек",
-    "url": "https://presek.mk/",
-    "description": "Македонски агрегатор на вести со автоматско групирање и синтеза.",
-    "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://presek.mk/?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-    }
-}
-</script>
-{% endblock %}
+{% block title %}Пресек | Вести{% endblock %}
 
 {% block content %}
-
-<!-- ── Topic Navigation ────────────────────────────────────────── -->
-<nav class="topic-nav" id="topicNav">
-    <div class="topic-nav-inner">
-        <div class="topic-scroll" id="topicBtnList">
-            <!-- Populated by Presek.renderTopicNav() -->
-        </div>
-    </div>
-</nav>
-
-<!-- ── Trending + Pulse strip ─────────────────────────────────── -->
-<div class="meta-strip" id="metaStrip">
-    <div class="meta-strip-inner">
-        <div class="trending-strip" id="trendingStrip">
-            <span class="strip-label">Трендирање</span>
-            <div class="trending-words" id="trendingWords">
-                <span class="trend-skeleton"></span>
-                <span class="trend-skeleton"></span>
-                <span class="trend-skeleton"></span>
-            </div>
-        </div>
-        <div class="pulse-strip" id="pulseStrip">
-            <span class="strip-label">Активни</span>
-            <div class="pulse-sources" id="pulseSources">
-                <span class="trend-skeleton"></span>
-                <span class="trend-skeleton"></span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ── Main Content ───────────────────────────────────────────── -->
-<div id="pageWrap">
-    <div class="editorial-grid">
-        <div class="ed-hero-skel">
-            <div class="skeleton-box" style="width:100%;aspect-ratio:16/7;margin-bottom:var(--space-lg);border-radius:2px"></div>
-            <div class="skeleton-box" style="width:80px;height:11px;margin-bottom:var(--space-sm)"></div>
-            <div class="skeleton-box" style="width:78%;height:40px;margin-bottom:8px"></div>
-            <div class="skeleton-box" style="width:52%;height:40px;margin-bottom:var(--space-md)"></div>
-            <div class="skeleton-box" style="width:100%;height:17px;margin-bottom:6px"></div>
-            <div class="skeleton-box" style="width:68%;height:17px;margin-bottom:var(--space-sm)"></div>
-            <div class="skeleton-box" style="width:100px;height:11px"></div>
-        </div>
-        <div class="ed-featured-row">
-            <div>
-                <div class="skeleton-box" style="width:100%;aspect-ratio:3/2;margin-bottom:var(--space-md);border-radius:2px"></div>
-                <div class="skeleton-box" style="width:60px;height:10px;margin-bottom:8px"></div>
-                <div class="skeleton-box" style="width:95%;height:16px;margin-bottom:5px"></div>
-                <div class="skeleton-box" style="width:70%;height:16px;margin-bottom:var(--space-sm)"></div>
-                <div class="skeleton-box" style="width:80px;height:10px"></div>
-            </div>
-            <div>
-                <div class="skeleton-box" style="width:100%;aspect-ratio:3/2;margin-bottom:var(--space-md);border-radius:2px"></div>
-                <div class="skeleton-box" style="width:55px;height:10px;margin-bottom:8px"></div>
-                <div class="skeleton-box" style="width:90%;height:16px;margin-bottom:5px"></div>
-                <div class="skeleton-box" style="width:65%;height:16px;margin-bottom:var(--space-sm)"></div>
-                <div class="skeleton-box" style="width:90px;height:10px"></div>
-            </div>
-            <div>
-                <div class="skeleton-box" style="width:100%;aspect-ratio:3/2;margin-bottom:var(--space-md);border-radius:2px"></div>
-                <div class="skeleton-box" style="width:70px;height:10px;margin-bottom:8px"></div>
-                <div class="skeleton-box" style="width:85%;height:16px;margin-bottom:5px"></div>
-                <div class="skeleton-box" style="width:75%;height:16px;margin-bottom:var(--space-sm)"></div>
-                <div class="skeleton-box" style="width:75px;height:10px"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="loadMoreWrap" class="load-more-wrap" style="display:none">
-    <button class="page-btn" onclick="Presek.state.page++; Presek.fetchNews(true)">Вчитај повеќе</button>
+<div id="newsContainer">
+    <!-- Clusters loaded via JS -->
 </div>
 {% endblock %}

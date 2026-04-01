@@ -19,35 +19,92 @@
     <link rel="stylesheet" href="/static/modern.css">
     {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
+    <div id="readingProgress"></div>
+
+    <!-- Utility Bar (Weather/AQI) -->
+    <div class="utility-bar">
+        <div class="utility-inner">
+            <div class="utility-item" id="utility-weather">
+                <span class="u-icon">☀️</span> <span class="u-val">Скопје 24°C</span>
+            </div>
+            <div class="utility-item" id="utility-aqi">
+                <span class="u-icon">🍃</span> <span class="u-val">AQI: 42 (Одличен)</span>
+            </div>
+            <div class="utility-item u-time" id="live-clock"></div>
+        </div>
+    </div>
+
     <header class="site-header">
         <div class="header-inner">
-            <a href="/" class="header-logo">
-                <img src="/static/logo.svg" alt="Пресек">
+            <a href="/" class="header-logo" aria-label="Пресек Почетна">
+                <img src="/static/logo.svg" alt="Presek" width="120" height="30" onerror="this.src='/static/logo.png'">
             </a>
+            
             <div class="header-actions">
-                <button class="icon-btn" id="searchOpen"
-                    onclick="document.getElementById('searchOverlay').classList.add('active'); document.getElementById('searchInput').focus();"
-                    aria-label="Пребарај">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <button class="icon-btn" id="searchTrigger" title="Пребарај (/)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </button>
-                <button class="icon-btn" id="themeToggle" aria-label="Промени тема">
-                    <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <button class="icon-btn theme-toggle" id="themeToggle" title="Промени тема">
+                    <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                 </button>
             </div>
         </div>
     </header>
 
-    <div id="readingProgress"></div>
-
-    <noscript>
-        <div style="padding:1.5rem 2rem;background:var(--bg-surface);border-bottom:1px solid var(--border);color:var(--text-secondary);text-align:center;font-size:0.9rem">
-            За да ги видите вестите, овозможете JavaScript во вашиот прелистувач.
+    <nav class="nav-bar">
+        <div class="nav-inner">
+            <div class="category-scroll" id="categoryNav">
+                <button class="cat-btn active" data-category="Сите">Сите</button>
+                <button class="cat-btn" data-category="Македонија">Македонија</button>
+                <button class="cat-btn" data-category="Економија">Економија</button>
+                <button class="cat-btn" data-category="Балкан">Балкан</button>
+                <button class="cat-btn" data-category="Европа">Европа</button>
+                <button class="cat-btn" data-category="Свет">Свет</button>
+                <button class="cat-btn" data-category="Спорт">Спорт</button>
+                <button class="cat-btn" data-category="Технологија">Техно</button>
+            </div>
         </div>
-    </noscript>
+    </nav>
 
-    <main class="site-layout">
-        {% block content %}{% endblock %}
+    <main class="site-layout portal-layout">
+        <!-- Sidebar Left (Navigation / Archive) -->
+        <aside class="sidebar-left">
+            <div class="sidebar-widget">
+                <h3 class="widget-title">Избор</h3>
+                <nav class="widget-nav">
+                    <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
+                    <a href="/stats"><span class="w-icon">📊</span> Медиумски Пулс</a>
+                    <a href="/archive"><span class="w-icon">📅</span> Архива</a>
+                    <a href="/izvori"><span class="w-icon">🔗</span> Извори</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content Feed -->
+        <div class="portal-main">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Sidebar Right (Trending / AQI) -->
+        <aside class="sidebar-right">
+            <div class="sidebar-widget" id="trending-widget">
+                <h3 class="widget-title">Трендинг</h3>
+                <div class="trending-list" id="sidebarTrending">
+                    <!-- Loaded via JS -->
+                </div>
+            </div>
+            
+            <div class="sidebar-widget">
+                <h3 class="widget-title">Квалитет на Воздух</h3>
+                <div class="aqi-board">
+                    <div class="aqi-item"><span>Центар</span><b class="aqi-good">32</b></div>
+                    <div class="aqi-item"><span>Карпош</span><b class="aqi-mod">54</b></div>
+                    <div class="aqi-item"><span>Лисиче</span><b class="aqi-bad">102</b></div>
+                </div>
+            </div>
+        </aside>
     </main>
 
     <footer class="site-footer">
@@ -74,10 +131,10 @@
     <div class="search-overlay" id="searchOverlay">
         <div class="search-bar-wrap">
             <div class="search-bar">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;opacity:.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 <input type="text" id="searchInput" placeholder="Пребарај вести..." autocomplete="off">
                 <button class="icon-btn" id="searchClose" aria-label="Затвори">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
         </div>
@@ -86,86 +143,5 @@
     <!-- Presek 4.0 Core -->
     <script src="/static/js/ui.js"></script>
     <script src="/static/js/app.js"></script>
-
-    <script>
-        // Theme toggle
-        (function () {
-            var btn = document.getElementById('themeToggle');
-            var meta = document.getElementById('themeMeta');
-            if (!btn) return;
-            btn.addEventListener('click', function () {
-                var isLight = document.documentElement.classList.toggle('light');
-                localStorage.setItem('theme', isLight ? 'light' : 'dark');
-                if (meta) meta.content = isLight ? '#F3F5F7' : '#0D0F11';
-            });
-        })();
-
-        // Reading progress bar
-        (function () {
-            var bar = document.getElementById('readingProgress');
-            if (!bar) return;
-            window.addEventListener('scroll', function () {
-                var doc = document.documentElement;
-                var top = doc.scrollTop || document.body.scrollTop;
-                var height = doc.scrollHeight - doc.clientHeight;
-                bar.style.width = height > 0 ? (top / height * 100) + '%' : '0%';
-            }, { passive: true });
-        })();
-
-        // Search: debounce input, ESC to close, close button
-        (function () {
-            var overlay  = document.getElementById('searchOverlay');
-            var input    = document.getElementById('searchInput');
-            var closeBtn = document.getElementById('searchClose');
-            var openBtn  = document.getElementById('searchOpen');
-            var timer    = null;
-
-            function closeSearch(clearQuery) {
-                overlay.classList.remove('active');
-                if (clearQuery && input.value) {
-                    input.value = '';
-                    if (window.Presek) { Presek.state.query = ''; Presek.fetchNews(); }
-                }
-            }
-
-            if (openBtn) {
-                openBtn.addEventListener('click', function () {
-                    overlay.classList.add('active');
-                    input.focus();
-                });
-            }
-
-            if (closeBtn) closeBtn.addEventListener('click', function () { closeSearch(true); });
-
-            if (overlay) {
-                overlay.addEventListener('click', function (e) {
-                    if (e.target === overlay) closeSearch(false);
-                });
-            }
-
-            if (input) {
-                input.addEventListener('input', function () {
-                    clearTimeout(timer);
-                    var val = input.value;
-                    timer = setTimeout(function () {
-                        if (window.Presek) { Presek.state.query = val; Presek.fetchNews(); }
-                    }, 400);
-                });
-
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        clearTimeout(timer);
-                        if (window.Presek) { Presek.state.query = input.value; Presek.fetchNews(); }
-                    }
-                });
-            }
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') closeSearch(false);
-            });
-        })();
-    </script>
-
-    {% block scripts %}{% endblock %}
 </body>
 </html>
