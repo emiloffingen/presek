@@ -10,21 +10,21 @@
 <div class="fade-in">
     <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
 
-    <div class="kpi-grid">
+    <div class="kpi-grid" id="kpiGrid">
         <div class="kpi-card">
-            <span class="kpi-val" id="totalArticles">—</span>
+            <span class="kpi-val" id="totalArticles"><span class="skeleton-box" style="width:60px;height:28px;display:inline-block"></span></span>
             <span class="kpi-label">Вкупно Објави</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="last24h">—</span>
+            <span class="kpi-val" id="last24h"><span class="skeleton-box" style="width:50px;height:28px;display:inline-block"></span></span>
             <span class="kpi-label">Во Последни 24ч</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="summarizedPct">—</span>
-            <span class="kpi-label">AI Резимирани</span>
+            <span class="kpi-val" id="summarizedPct"><span class="skeleton-box" style="width:45px;height:28px;display:inline-block"></span></span>
+            <span class="kpi-label">Резимирани</span>
         </div>
         <div class="kpi-card">
-            <span class="kpi-val" id="uptimeVal">—</span>
+            <span class="kpi-val" id="uptimeVal"><span class="skeleton-box" style="width:55px;height:28px;display:inline-block"></span></span>
             <span class="kpi-label">Uptime</span>
         </div>
     </div>
@@ -35,7 +35,7 @@
             <canvas id="velocityChart" height="150"></canvas>
         </div>
         <div class="chart-container">
-            <h3 class="chart-title">Сентимент по Извор</h3>
+            <h3 class="chart-title">Волумен по Извор (24ч)</h3>
             <canvas id="sentimentChart" height="150"></canvas>
         </div>
         <div class="chart-container">
@@ -81,10 +81,11 @@
 
 {% block scripts %}
 <script>
-const PRIMARY = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#E63946';
-const TEXT_MUTED = '#888';
-const GRID_COLOR = document.documentElement.classList.contains('light')
-    ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+// Fix #5: read all colors from CSS variables so light/dark mode works
+const _cs       = getComputedStyle(document.documentElement);
+const PRIMARY   = _cs.getPropertyValue('--primary').trim()      || '#E63946';
+const TEXT_MUTED= _cs.getPropertyValue('--text-muted').trim()   || '#636970';
+const GRID_COLOR= _cs.getPropertyValue('--border').trim()       || 'rgba(255,255,255,0.07)';
 
 const chartDefaults = {
     responsive: true,
@@ -96,40 +97,45 @@ async function loadStats() {
         const res  = await fetch('/api/stats/full');
         const data = await res.json();
 
-        document.getElementById('totalArticles').textContent = data.total_articles.toLocaleString();
-        document.getElementById('last24h').textContent       = data.last_24h.toLocaleString();
-        document.getElementById('summarizedPct').textContent = data.summarized_pct + '%';
-        document.getElementById('uptimeVal').textContent     = data.uptime;
-        document.getElementById('dbSize').textContent        = data.db_size_mb + ' MB';
-        document.getElementById('totalFeeds').textContent    = data.total_feeds;
-        document.getElementById('oldestArt').textContent     = new Date(data.oldest_article).toLocaleDateString('mk-MK');
-        document.getElementById('newestArt').textContent     = new Date(data.new_article).toLocaleTimeString('mk-MK');
+        document.getElementById('totalArticles').textContent = (data.total_articles || 0).toLocaleString();
+        document.getElementById('last24h').textContent       = (data.last_24h || 0).toLocaleString();
+        document.getElementById('summarizedPct').textContent = (data.summarized_pct || 0) + '%';
+        document.getElementById('uptimeVal').textContent     = data.uptime || '—';
+        document.getElementById('dbSize').textContent        = (data.db_size_mb || 0) + ' MB';
+        document.getElementById('totalFeeds').textContent    = data.total_feeds || '—';
+        document.getElementById('oldestArt').textContent     = data.oldest_article
+            ? new Date(data.oldest_article).toLocaleDateString('mk-MK') : '—';
+        document.getElementById('newestArt').textContent     = data.new_article
+            ? new Date(data.new_article).toLocaleTimeString('mk-MK') : '—';
 
         // Volume bar chart
-        const maxSrc = Math.max(...data.by_source.map(s => s.n));
-        document.getElementById('sourcesStats').innerHTML = data.by_source.slice(0, 10).map(s => `
+        const bySrc = data.by_source || [];
+        const maxSrc = bySrc.length ? Math.max(...bySrc.map(s => s.n)) : 1;
+        document.getElementById('sourcesStats').innerHTML = bySrc.slice(0, 10).map(s => `
             <div class="bar-row">
                 <span class="bar-label">${s.source}</span>
-                <div class="bar-track"><div class="bar-fill" style="width:${(s.n/maxSrc)*100}%"></div></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((s.n/maxSrc)*100)}%"></div></div>
                 <span class="bar-val">${s.n}</span>
-            </div>`).join('');
+            </div>`).join('') || '<p style="color:var(--text-muted);font-size:.85rem">Нема податоци.</p>';
 
         // Speed bar chart
-        const maxSpd = Math.max(...data.speed_leaderboard.map(s => s.first_count));
-        document.getElementById('speedStats').innerHTML = data.speed_leaderboard.map(s => `
+        const spd = data.speed_leaderboard || [];
+        const maxSpd = spd.length ? Math.max(...spd.map(s => s.first_count)) : 1;
+        document.getElementById('speedStats').innerHTML = spd.map(s => `
             <div class="bar-row">
                 <span class="bar-label">${s.source}</span>
-                <div class="bar-track"><div class="bar-fill" style="width:${(s.first_count/maxSpd)*100}%"></div></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((s.first_count/maxSpd)*100)}%"></div></div>
                 <span class="bar-val">${s.first_count}</span>
-            </div>`).join('');
+            </div>`).join('') || '<p style="color:var(--text-muted);font-size:.85rem">Нема податоци.</p>';
 
         // Velocity line chart
+        const vel = data.velocity || [];
         new Chart(document.getElementById('velocityChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: data.velocity.map(v => new Date(v.t).getHours() + ':00'),
+                labels: vel.map(v => new Date(v.t).getHours() + ':00'),
                 datasets: [{
-                    data: data.velocity.map(v => v.n),
+                    data: vel.map(v => v.n),
                     borderColor: PRIMARY,
                     backgroundColor: 'rgba(230,57,70,0.08)',
                     fill: true,
@@ -142,19 +148,20 @@ async function loadStats() {
                 ...chartDefaults,
                 scales: {
                     y: { beginAtZero: true, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
-                    x: { grid: { display: false },    ticks: { color: TEXT_MUTED, maxRotation: 0 } }
+                    x: { grid: { display: false }, ticks: { color: TEXT_MUTED, maxRotation: 0 } }
                 }
             }
         });
 
         // Category doughnut
+        const cats = data.by_category || [];
         new Chart(document.getElementById('categoryChart').getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: data.by_category.map(c => c.cat),
+                labels: cats.map(c => c.cat),
                 datasets: [{
-                    data: data.by_category.map(c => c.n),
-                    backgroundColor: [PRIMARY,'#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#2c3e50'],
+                    data: cats.map(c => c.n),
+                    backgroundColor: [PRIMARY,'#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#2c3e50','#34495e'],
                     borderWidth: 0
                 }]
             },
@@ -171,15 +178,16 @@ async function loadStats() {
             }
         });
 
-        // Sentiment horizontal bar
+        // Volume horizontal bar (top sources)
+        const allSrc = data.by_source || [];
         new Chart(document.getElementById('sentimentChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: data.sentiment_index.map(s => s.source),
+                labels: allSrc.slice(0, 8).map(s => s.source),
                 datasets: [{
-                    data: data.sentiment_index.map(s => s.score),
-                    backgroundColor: data.sentiment_index.map(s =>
-                        s.score >= 0 ? 'rgba(46,204,113,0.6)' : 'rgba(230,57,70,0.6)'),
+                    label: 'Објави',
+                    data: allSrc.slice(0, 8).map(s => s.n),
+                    backgroundColor: 'rgba(230,57,70,0.55)',
                     borderRadius: 3
                 }]
             },
@@ -187,13 +195,13 @@ async function loadStats() {
                 indexAxis: 'y',
                 ...chartDefaults,
                 scales: {
-                    x: { min: -1, max: 1, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
-                    y: { grid: { display: false },    ticks: { color: TEXT_MUTED, font: { size: 9 } } }
+                    x: { beginAtZero: true, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
+                    y: { grid: { display: false }, ticks: { color: TEXT_MUTED, font: { size: 9 } } }
                 }
             }
         });
 
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error('[stats]', e); }
 }
 
 loadStats();

@@ -2,8 +2,8 @@ import logging
 import json
 import os
 import datetime
-from database import load_env, get_db
-load_env()
+from database import _load_env, get_db
+_load_env()
 from ai_engine import _call_ai
 from prompts import ENTITY_EXTRACTION_PROMPT
 

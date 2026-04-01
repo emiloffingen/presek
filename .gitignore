@@ -12,3 +12,6 @@ __pycache__/
 venv/
 celerybeat-schedule
 *.log
+node_modules/
+static/generated/
+package-lock.json

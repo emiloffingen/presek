@@ -146,10 +146,147 @@ def api_stats():
         log.error(f"[api/stats] Error: {e}", exc_info=True)
         return error_response("Failed to fetch stats")
 
+@api_bp.route("/api/stats/full")
+def api_stats_full():
+    try:
+        cached = cached_response("stats:full", ttl=120)
+        if cached:
+            return jsonify(cached)
+
+        total = db.execute_one("SELECT COUNT(*) FROM articles")["count"] or 0
+        last_24h = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )["count"] or 0
+        summarized = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''"
+        )["count"] or 0
+        summarized_pct = round((summarized / total * 100), 1) if total else 0
+
+        db_size_row = db.execute_one(
+            "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"
+        )
+        db_size_mb = float(db_size_row["mb"]) if db_size_row else 0
+
+        total_feeds = db.execute_one(
+            "SELECT COUNT(DISTINCT source) AS n FROM articles"
+        )["n"] or 0
+
+        dates_row = db.execute_one(
+            "SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"
+        )
+        oldest_article = dates_row["oldest"].isoformat() if dates_row and dates_row["oldest"] else None
+        newest_article = dates_row["newest"].isoformat() if dates_row and dates_row["newest"] else None
+
+        by_source = db.execute(
+            "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "AND (country = '🇲🇰' OR country IS NULL OR country = '') "
+            "GROUP BY source ORDER BY n DESC LIMIT 10"
+        )
+
+        by_category = [
+            {"cat": r["category"] or "Друго", "n": r["n"]}
+            for r in db.execute(
+                "SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"
+            )
+        ]
+
+        velocity = db.execute(
+            "SELECT date_trunc('hour', created_at) AS t, COUNT(*) AS n "
+            "FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "GROUP BY t ORDER BY t"
+        )
+        velocity_out = [{"t": r["t"].isoformat(), "n": r["n"]} for r in velocity]
+
+        speed_leaderboard = db.execute(
+            "SELECT source, COUNT(*) AS first_count FROM ("
+            "  SELECT DISTINCT ON (cluster_id) cluster_id, source "
+            "  FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' "
+            "  AND (country = '🇲🇰' OR country IS NULL OR country = '') "
+            "  ORDER BY cluster_id, created_at ASC"
+            ") first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
+        )
+
+        result = {
+            "total_articles": total,
+            "last_24h": last_24h,
+            "summarized_pct": summarized_pct,
+            "uptime": "Online",
+            "db_size_mb": db_size_mb,
+            "total_feeds": total_feeds,
+            "oldest_article": oldest_article,
+            "new_article": newest_article,
+            "by_source": [{"source": r["source"], "n": r["n"]} for r in by_source],
+            "by_category": by_category,
+            "velocity": velocity_out,
+            "speed_leaderboard": [{"source": r["source"], "first_count": r["first_count"]} for r in speed_leaderboard],
+            "sentiment_index": []
+        }
+
+        set_cache("stats:full", result, ttl=120)
+        return jsonify(result)
+
+    except Exception as e:
+        log.error(f"[api/stats/full] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch stats")
+
+@api_bp.route("/api/briefing")
+def api_briefing():
+    try:
+        row = db.execute_one(
+            "SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE"
+        )
+        if not row:
+            # Fall back to most recent briefing
+            row = db.execute_one(
+                "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1"
+            )
+        if not row:
+            return jsonify({"error": "Брифингот сè уште не е подготвен. Обидете се подоцна."}), 200
+
+        return jsonify({
+            "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]),
+            "content": row["content"] or ""
+        })
+    except Exception as e:
+        log.error(f"[api/briefing] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch briefing")
+
 @api_bp.route("/api/live")
 def api_live():
     from utils import event_stream
     return Response(event_stream("updates"), mimetype="text/event-stream")
+
+@api_bp.route("/api/trending")
+def api_trending():
+    """Return cached trending keywords."""
+    try:
+        cached = cached_response("trending", ttl=900)
+        if cached:
+            return jsonify(cached[:30])
+        # Fallback: compute now and cache
+        from trending import get_trending
+        words = get_trending(hours=6, limit=30)
+        if words:
+            set_cache("trending", words, ttl=900)
+        return jsonify(words)
+    except Exception as e:
+        log.warning(f"[api/trending] {e}")
+        return jsonify([])
+
+@api_bp.route("/api/sources/pulse")
+def api_sources_pulse():
+    """Return top MK sources by article count in last 24h."""
+    try:
+        rows = db.execute(
+            "SELECT source, COUNT(*) as n FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "AND (country = '🇲🇰' OR country IS NULL OR country = '') "
+            "GROUP BY source ORDER BY n DESC LIMIT 10"
+        )
+        return jsonify([{"source": r["source"], "count": r["n"]} for r in rows])
+    except Exception as e:
+        log.warning(f"[api/sources/pulse] {e}")
+        return jsonify([])
 
 @api_bp.route("/api/chat_cluster", methods=["POST"])
 def chat_cluster():

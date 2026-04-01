@@ -23,7 +23,8 @@
   {% if hero_image.url %}
   <div class="cluster-hero fade-in">
     <img src="{% if hero_image.url.startswith('/static/') %}{{ hero_image.url }}{% else %}/proxy?url={{ hero_image.url | urlencode }}{% endif %}"
-         class="hero-img" alt="{{ articles[0].title | e }}" loading="eager">
+         class="hero-img" alt="{{ articles[0].title | e }}" loading="eager"
+         onerror="this.style.display='none'; this.closest('.cluster-hero').style.display='none';">
     <div class="hero-overlay"></div>
   </div>
   {% endif %}
@@ -50,10 +51,20 @@
 
     {% if synthesis %}
     <section class="cluster-summary nyt-summary fade-in">
-      <span class="summary-label">AI Резиме</span>
-      {{ synthesis | e }}
+      <span class="summary-label">Резиме</span>
+      {% for para in synthesis.split('\n\n') %}{% if para.strip() %}<p>{{ para | e }}</p>{% endif %}{% endfor %}
     </section>
     {% endif %}
+
+    {# Fix #6: ask section moved here — close to synthesis, visible without scrolling #}
+    <section class="ai-ask-section fade-in">
+      <div class="ai-ask-row">
+        <input type="text" id="aiInput" class="ai-ask-input"
+               placeholder="Прашај за оваа вест…"
+               onkeypress="if(event.key==='Enter') AI.ask()">
+        <button class="page-btn" onclick="AI.ask()">Прашај</button>
+      </div>
+    </section>
 
     {% if source_distribution and source_distribution | length > 1 %}
     <div style="margin-bottom:var(--space-xl)">
@@ -78,7 +89,8 @@
         </div>
         {% if art.image_url %}
         <div class="source-thumb-wrap">
-          <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}">
+          <img src="/proxy?url={{ art.image_url | urlencode }}" class="source-thumb" loading="lazy" alt="{{ art.source }}"
+               onerror="this.closest('.source-thumb-wrap').style.display='none';">
         </div>
         {% endif %}
       </a>
@@ -98,16 +110,6 @@
       </div>
     </section>
     {% endif %}
-
-    <section class="ai-ask-section fade-in">
-      <h2>Имате прашање за оваа вест?</h2>
-      <div class="ai-ask-row">
-        <input type="text" id="aiInput" class="ai-ask-input"
-               placeholder="Прашај ја вештачката интелигенција…"
-               onkeypress="if(event.key==='Enter') AI.ask()">
-        <button class="page-btn" onclick="AI.ask()">Прашај</button>
-      </div>
-    </section>
 
   </article>
 {% endif %}

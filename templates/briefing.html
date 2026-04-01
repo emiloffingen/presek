@@ -24,7 +24,7 @@
         </div>
 
         <div class="briefing-footer">
-            Генерирано од Пресек AI врз основа на најважните вести во последните 24 часа.
+            Составено врз основа на најважните вести во последните 24 часа.
         </div>
     </div>
 </div>
@@ -49,9 +49,23 @@ async function loadBriefing() {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
 
-        const paragraphs = data.content.split('\n\n').filter(p => p.trim());
-        document.getElementById('briefingContent').innerHTML =
-            paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+        const content = document.getElementById('briefingContent');
+        content.innerHTML = '';
+        
+        const rawContent = data.content || '';
+        const paragraphs = rawContent.split('\n\n').filter(p => p.trim());
+        
+        paragraphs.forEach(para => {
+            const p = document.createElement('p');
+            // Simple mini-markdown: **bold** and * bullet points
+            let html = para
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^[\*•-]\s+(.*)/gm, '• $1')
+                .replace(/\n/g, '<br>');
+            
+            p.innerHTML = html;
+            content.appendChild(p);
+        });
 
     } catch (e) {
         console.error(e);
