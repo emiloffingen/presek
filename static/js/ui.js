@@ -173,11 +173,33 @@ const UI = {
         const el = document.getElementById('live-clock');
         if (!el) return;
         el.textContent = new Date().toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
+    },
+
+    init() {
+        this._initBackToTop();
+    },
+
+    _initBackToTop() {
+        const btn = document.getElementById('backToTop');
+        if (!btn) return;
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                btn.style.transform = 'translateY(0)';
+            } else {
+                btn.style.opacity = '0';
+                btn.style.pointerEvents = 'none';
+                btn.style.transform = 'translateY(10px)';
+            }
+        }, { passive: true });
+        btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
 
 setInterval(() => UI.updateClock(), 1000);
 UI.updateClock();
+UI.init();
 
 window.UI = UI;
 

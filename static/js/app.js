@@ -18,7 +18,6 @@ const app = {
             this._bindEvents();
             this._restoreFromURL();
             this._initPersonalization();
-            this._initBackToTop();
             
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
@@ -38,23 +37,6 @@ const app = {
         } catch (e) {
             console.error("Critical error during app.init:", e);
         }
-    },
-
-    _initBackToTop() {
-        const btn = document.getElementById('backToTop');
-        if (!btn) return;
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 500) {
-                btn.style.opacity = '1';
-                btn.style.pointerEvents = 'auto';
-                btn.style.transform = 'translateY(0)';
-            } else {
-                btn.style.opacity = '0';
-                btn.style.pointerEvents = 'none';
-                btn.style.transform = 'translateY(10px)';
-            }
-        }, { passive: true });
-        btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     _initPersonalization() {
