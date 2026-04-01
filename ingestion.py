@@ -116,14 +116,14 @@ def ingest_feeds():
 
         # Pre-fetch recent articles for TF-IDF fallback
         recent_rows = conn.execute(
-            "SELECT title, cluster_id, created_at FROM articles ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at, category FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         ).fetchall()
-        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"]} for r in recent_rows]
+        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in recent_rows]
 
         prepared_rows = []
         # Keep track of clusters created in this batch for local matching
-        batch_clusters: list[dict] = [] # List of {cid, embedding}
+        batch_clusters: list[dict] = [] # List of {cid, embedding, category}
 
         for i, (source, title, link, desc, image_url) in enumerate(all_entries):
             try:
@@ -143,12 +143,13 @@ def ingest_feeds():
                         return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
                     for bc in batch_clusters:
-                        if cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
+                        # Stricter batch check: same category + vector match
+                        if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
                             cluster_id = bc['cid']
                             break
                 
                 if not cluster_id:
-                    cluster_id = clustering.find_or_create_cluster(title, recent_articles, embedding=emb)
+                    cluster_id = clustering.find_or_create_cluster(title, recent_articles, embedding=emb, category=category)
                 
                 now = datetime.datetime.now()
                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
@@ -160,8 +161,8 @@ def ingest_feeds():
                 
                 # Update trackers
                 if emb:
-                    batch_clusters.append({'cid': cluster_id, 'embedding': emb})
-                recent_articles.insert(0, {"title": title, "cluster_id": cluster_id, "created_at": now})
+                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
+                recent_articles.insert(0, {"title": title, "cluster_id": cluster_id, "created_at": now, "category": category})
                 if len(recent_articles) > CLUSTER_LOOKBACK:
                     recent_articles.pop()
                     
@@ -263,13 +264,13 @@ def ingest_diaspora_feeds():
     try:
         # Pre-fetch recent articles for TF-IDF fallback
         diaspora_recent = conn.execute(
-            "SELECT title, cluster_id, created_at FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at, category FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         ).fetchall()
-        diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"]} for r in diaspora_recent]
+        diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in diaspora_recent]
 
         prepared_rows = []
-        batch_clusters: list[dict] = []
+        batch_clusters: list[dict] = [] # List of {cid, embedding, category}
 
         for i, (source, title, link, desc, image_url, category, country) in enumerate(all_entries):
             try:
@@ -289,12 +290,13 @@ def ingest_diaspora_feeds():
                         return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
                     for bc in batch_clusters:
-                        if cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
+                        # Stricter batch check: same category + vector match
+                        if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
                             cluster_id = bc['cid']
                             break
                 
                 if not cluster_id:
-                    cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent, embedding=emb)
+                    cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent, embedding=emb, category=category)
                 
                 now = datetime.datetime.now()
                 emb_str = str(emb) if emb else None
@@ -303,8 +305,8 @@ def ingest_diaspora_feeds():
                                      now, image_url, clean_desc, clean_desc, country, 0, emb_str))
                 
                 if emb:
-                    batch_clusters.append({'cid': cluster_id, 'embedding': emb})
-                diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": now})
+                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
+                diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": now, "category": category})
                 if len(diaspora_recent) > CLUSTER_LOOKBACK:
                     diaspora_recent.pop()
             except Exception as e:

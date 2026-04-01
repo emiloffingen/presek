@@ -53,14 +53,15 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.35
+SIMILARITY_THRESHOLD = 0.48
 MAX_CLUSTER_SIZE     = 30
-VECTOR_THRESHOLD     = 0.25 # Cosine distance threshold (lower is closer)
+VECTOR_THRESHOLD     = 0.18 # Cosine distance threshold (lower is closer)
 
-def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24) -> str | None:
+def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24, category: str | None = None) -> str | None:
     """
     Find the closest existing cluster using vector similarity in PostgreSQL.
     Returns cluster_id if a match is found within VECTOR_THRESHOLD.
+    If category is provided, it only looks for matches in the same category.
     """
     if not embedding:
         return None
@@ -69,16 +70,22 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24) -> s
     try:
         # We look for the most similar article in the last X hours
         # using the cosine distance operator <=>
-        sql = """
+        params = [str(embedding), lookback_hours, str(embedding)]
+        cat_filter = ""
+        if category:
+            cat_filter = "AND category = %s"
+            params.insert(1, category)
+
+        sql = f"""
             SELECT cluster_id, embedding <=> %s::vector as distance
             FROM articles
             WHERE embedding IS NOT NULL
+              {cat_filter}
               AND created_at >= NOW() - %s * INTERVAL '1 hour'
             ORDER BY embedding <=> %s::vector
             LIMIT 1
         """
-        vec_str = str(embedding)
-        row = conn.execute(sql, (vec_str, lookback_hours, vec_str)).fetchone()
+        row = conn.execute(sql, tuple(params)).fetchone()
         
         if row and float(row['distance']) < VECTOR_THRESHOLD:
             # Verify cluster is not full
@@ -95,7 +102,8 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24) -> s
 
 def find_or_create_cluster(title: str, recent_articles: list, 
                             threshold: float = SIMILARITY_THRESHOLD,
-                            embedding: list[float] | None = None) -> str:
+                            embedding: list[float] | None = None,
+                            category: str | None = None) -> str:
     """
     Hybrid clustering: 
     1. Try semantic (vector) match if embedding is provided.
@@ -104,7 +112,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
     """
     # 1. Try Semantic Match
     if embedding:
-        cid = find_cluster_semantic(embedding)
+        cid = find_cluster_semantic(embedding, category=category)
         if cid:
             return cid
 
@@ -115,6 +123,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
 
     cluster_rep: dict[str, str] = {}
     cluster_size: dict[str, int] = {}
+    cluster_cat: dict[str, str] = {}
     
     for article in recent_articles:
         cid = article.get("cluster_id")
@@ -122,6 +131,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
         cluster_size[cid] = cluster_size.get(cid, 0) + 1
         if cid not in cluster_rep:
             cluster_rep[cid] = article["title"]
+            cluster_cat[cid] = article.get("category")
 
     best_cid = None
     best_score = 0.0
@@ -130,6 +140,10 @@ def find_or_create_cluster(title: str, recent_articles: list,
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE:
             continue
         
+        # Cross-category prevention
+        if category and cluster_cat.get(cid) and category != cluster_cat[cid]:
+            continue
+
         vec2 = text_to_vector(rep_title)
         score = get_cosine(vec1, vec2)
         if score > threshold and score > best_score:
