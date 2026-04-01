@@ -4,8 +4,7 @@ from psycopg2.pool import ThreadedConnectionPool
 from collections import defaultdict
 import datetime
 import logging
-import os
-import json
+import time
 
 log = logging.getLogger("presek")
 
@@ -22,17 +21,25 @@ class DatabaseManager:
             cls._instance._init_pool()
         return cls._instance
 
-    def _init_pool(self):
-        try:
-            self._pool = ThreadedConnectionPool(
-                minconn=5,
-                maxconn=50,
-                dsn=DATABASE_URL
-            )
-            log.info("Presek 4.0: Database connection pool initialized.")
-        except Exception as e:
-            log.error(f"Failed to initialize database connection pool: {e}")
-            self._pool = None
+    def _init_pool(self, retries=3, backoff_base=2):
+        """Initialize connection pool with exponential backoff retry logic."""
+        for attempt in range(retries):
+            try:
+                self._pool = ThreadedConnectionPool(
+                    minconn=5,
+                    maxconn=50,
+                    dsn=DATABASE_URL
+                )
+                log.info("Presek 4.0: Database connection pool initialized.")
+                return
+            except Exception as e:
+                if attempt < retries - 1:
+                    wait_time = backoff_base ** attempt
+                    log.warning(f"Database connection failed (attempt {attempt + 1}/{retries}): {e}. Retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    log.error(f"Failed to initialize database connection pool after {retries} attempts: {e}")
+                    self._pool = None
 
     def _reset_pool(self):
         """Force re-initialization of the pool. Crucial after process forking."""

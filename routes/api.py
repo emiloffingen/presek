@@ -13,14 +13,11 @@ from flask import Blueprint, jsonify, request, Response
 from database import db_manager as db
 from ai_engine import _call_ai
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
-from config import BREAKING_SCORE_THRESHOLD
+from config import BREAKING_SCORE_THRESHOLD, API_API_MAX_PAGE, API_API_MAX_Q_LEN
 from embeddings import generate_query_embedding
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
-
-MAX_PAGE = 1000
-MAX_Q_LEN = 500
 
 # Allowed image content types for proxy
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
@@ -42,8 +39,15 @@ def error_response(message, code=500, details=None):
 @api_bp.route("/api/news")
 def api_news():
     try:
-        page      = min(max(0, request.args.get("page", 0, type=int)), MAX_PAGE)
-        page_size = min(200, max(1, request.args.get("page_size", 50, type=int)))
+        # Validate and constrain pagination parameters
+        try:
+            page = int(request.args.get("page", 0))
+            page_size = int(request.args.get("page_size", 50))
+        except ValueError:
+            return error_response("Invalid page or page_size: must be integers", 400)
+        
+        page = min(max(0, page), API_MAX_PAGE)
+        page_size = min(200, max(1, page_size))
 
         # Safety: prevent runaway OFFSET queries
         if page * page_size > 50000:
@@ -65,7 +69,7 @@ def api_news():
         sort_by   = request.args.get("sort", "recent")
         topic     = request.args.get("topic", "").strip()
         sentiment = request.args.get("sentiment", "").strip()
-        q         = request.args.get("q", "").strip()[:MAX_Q_LEN]
+        q         = request.args.get("q", "").strip()[:API_MAX_Q_LEN]
         follow_sources = request.args.get("follow_sources", "").strip()
         follow_topics  = request.args.get("follow_topics", "").strip()
 
@@ -338,7 +342,7 @@ def chat_cluster():
         if not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
             return error_response("Invalid cluster_id", 400)
 
-        if len(query) > MAX_Q_LEN:
+        if len(query) > API_MAX_Q_LEN:
             return error_response("Query too long", 400)
 
         # Fetch cluster articles and synthesis for context

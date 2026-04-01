@@ -108,7 +108,14 @@ _digest_counter = 0
 health.register_health_routes(app)
 
 if __name__ == "__main__":
-    init_db()
-    # Start ingestion loop in a background thread
+    try:
+        log.info("Initializing database...")
+        init_db()
+        log.info("Database initialization complete")
+    except Exception as e:
+        log.error(f"Failed to initialize database on startup: {e}")
+        log.error("Application cannot start without database connectivity")
+        import sys
+        sys.exit(1)
     
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

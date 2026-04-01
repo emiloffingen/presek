@@ -44,6 +44,10 @@ AUTO_SUMMARIZE_TOP_N   = 5    # summarize the top N clusters each cycle
 AUTO_SUMMARIZE_MIN_SRC = 2    # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY   = 1.5  # seconds between API calls (rate limit protection)
 
+# ── API limits ────────────────────────────────────────────────────
+API_MAX_PAGE = 1000           # Maximum page number for pagination
+API_MAX_Q_LEN = 500           # Maximum search query length
+
 RSS_FEEDS = [
     ("Sloboden Pecat",  "https://slobodenpecat.mk/feed/"),
     ("Kanal 5",         "https://kanal5.com.mk/feed/"),
