@@ -40,19 +40,22 @@ def _is_circuit_open(name: str) -> bool:
                 redis_client.set(f"{CIRCUIT_PREFIX}{name}:fails", 0)
                 return False
             return True
-    except: pass
+    except Exception as e:
+        log.error(f"Circuit breaker check failed for {name}: {e}")
     return False
 
 def _record_fail(name: str):
     try:
         redis_client.incr(f"{CIRCUIT_PREFIX}{name}:fails")
         redis_client.set(f"{CIRCUIT_PREFIX}{name}:last_fail", time.time())
-    except: pass
+    except Exception as e:
+        log.error(f"Failed to record circuit breaker fail for {name}: {e}")
 
 def _record_success(name: str):
     try:
         redis_client.set(f"{CIRCUIT_PREFIX}{name}:fails", 0)
-    except: pass
+    except Exception as e:
+        log.error(f"Failed to record circuit breaker success for {name}: {e}")
 
 # --- Base Classes ---
 
@@ -205,7 +208,8 @@ def clean_json_response(text: str) -> dict | str:
                     return data['summary'].strip()
             elif isinstance(data, list):
                 return data
-        except: pass
+        except json.JSONDecodeError as e:
+            log.debug(f"Failed to parse JSON from text: {e}")
     text = re.sub(r'```(?:json)?\n?', '', text)
     text = text.replace('```', '').strip()
     return text.strip()

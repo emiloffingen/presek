@@ -19,7 +19,7 @@ def clean_json_response(text: str) -> str:
             data = json.loads(json_part)
             if isinstance(data, dict) and 'summary' in data:
                 return data['summary'].strip()
-        except:
+        except json.JSONDecodeError:
             pass
     return text.strip()
 

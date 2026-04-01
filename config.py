@@ -1,4 +1,14 @@
 import os
+import sys
+
+def _validate_required_env():
+    """Validate that critical environment variables are set at startup."""
+    required_keys = ["GOOGLE_API_KEY", "DATABASE_URL", "SECRET_KEY"]
+    missing = [k for k in required_keys if not os.environ.get(k)]
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+
+_validate_required_env()
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 

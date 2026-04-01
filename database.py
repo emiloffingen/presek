@@ -39,7 +39,8 @@ class DatabaseManager:
         if self._pool:
             try:
                 self._pool.closeall()
-            except: pass
+            except Exception as e:
+                log.warning(f"Failed to close connection pool: {e}")
         self._pool = None
         self._init_pool()
 
@@ -52,7 +53,8 @@ class DatabaseManager:
         if self._pool:
             try:
                 self._pool.putconn(conn)
-            except: pass
+            except Exception as e:
+                log.warning(f"Failed to return connection to pool: {e}")
         else:
             conn.close()
 
@@ -116,9 +118,11 @@ class DatabaseManager:
         if topic:
             sql += " AND topic = %s"; params.append(topic)
         if sentiment:
-            safe_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-            sql += " AND summary LIKE %s ESCAPE '\\'"
-            params.append(f"%{safe_sentiment}%")
+            # Use parameterized queries for safety (LIKE with ESCAPE is still vulnerable)
+            # Escape special characters for LIKE: % and _ are wildcards, \ is escape char
+            escaped_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            sql += " AND summary ILIKE %s"
+            params.append(f"%{escaped_sentiment}%")
         
         # Ensure limit is an integer
         try:

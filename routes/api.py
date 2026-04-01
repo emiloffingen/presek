@@ -57,7 +57,8 @@ def api_news():
                 country_bytes = country.encode('latin-1')
                 if b'\xf0\x9f' in country_bytes:
                     country = country_bytes.decode('utf-8')
-        except: pass
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
+            log.debug(f"Failed to decode country emoji: {e}")
 
         sub       = request.args.get("sub", "").strip()
         ids       = request.args.get("ids", "").strip()
