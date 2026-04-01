@@ -139,5 +139,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+const AI = {
+    clusterId: '{{ cluster_id }}',
+
+    toggleSheet(show) {
+        const sheet = document.getElementById('aiSheet');
+        if (sheet) sheet.classList.toggle('active', show !== false);
+    },
+
+    async ask() {
+        const input = document.getElementById('aiInput');
+        const query = input?.value?.trim();
+        if (!query) return;
+
+        this.toggleSheet(true);
+        const responseEl = document.getElementById('aiResponse');
+        if (responseEl) responseEl.innerHTML = '<p style="color:var(--text-muted);font-style:italic">Размислувам...</p>';
+
+        try {
+            const res = await fetch('/api/chat_cluster', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cluster_id: this.clusterId, query })
+            });
+            const data = await res.json();
+            if (responseEl) {
+                responseEl.innerHTML = data.response
+                    ? '<p>' + data.response.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>'
+                    : '<p style="color:var(--text-muted)">Нема одговор.</p>';
+            }
+        } catch (e) {
+            if (responseEl) responseEl.innerHTML = '<p style="color:var(--text-muted)">Грешка при поврзување.</p>';
+        }
+    }
+};
 </script>
 {% endblock %}

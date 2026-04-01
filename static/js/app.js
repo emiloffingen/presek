@@ -119,8 +119,24 @@ const app = {
             themeToggle.addEventListener('click', () => {
                 const isLight = document.documentElement.classList.toggle('light');
                 localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                
+                // Update theme color meta
                 const meta = document.getElementById('themeMeta');
-                if (meta) meta.content = isLight ? '#FFFFFF' : '#0A0C0E';
+                if (meta) meta.content = isLight ? '#F3F5F7' : '#0A0C0E';
+                
+                // Sync body class if needed (for legacy styles)
+                document.body.classList.toggle('light', isLight);
+            });
+        }
+
+        // Listen for system theme changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+                if (!localStorage.getItem('theme')) {
+                    const isLight = e.matches;
+                    document.documentElement.classList.toggle('light', isLight);
+                    document.body.classList.toggle('light', isLight);
+                }
             });
         }
 
@@ -205,6 +221,7 @@ const app = {
         try {
             const res = await fetch('/api/trending');
             const data = await res.json();
+            if (window.UI) UI.renderTrendingSidebar(data);
         } catch (e) { console.error(e); }
     },
 

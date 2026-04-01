@@ -53,10 +53,10 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-# Extremely strict thresholds to prevent "mega-clusters"
-SIMILARITY_THRESHOLD = 0.65  # TF-IDF must be very high
-MAX_CLUSTER_SIZE     = 25
-VECTOR_THRESHOLD     = 0.11  # Vector distance must be very small (lower is stricter)
+# Extreme thresholds for "Identical News" only
+SIMILARITY_THRESHOLD = 0.75  # TF-IDF must be extremely high
+MAX_CLUSTER_SIZE     = 20
+VECTOR_THRESHOLD     = 0.08  # Vector distance must be tiny (lower is stricter)
 
 def find_cluster_semantic(embedding: list[float], lookback_hours: int = 24, category: str | None = None) -> str | None:
     """

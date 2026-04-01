@@ -3,7 +3,7 @@
 {% block title %}Пресек | Living Portal{% endblock %}
 
 {% block content %}
-<div id="pageWrap" class="portal-main">
+<div id="pageWrap">
     {% if initial_clusters %}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}

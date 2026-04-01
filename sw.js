@@ -1,12 +1,14 @@
-// Пресек — Service Worker v6
-// Caches the shell for instant loads and allows offline reading of recently viewed clusters
+// Пресек — Service Worker v7 (Hybrid 5.1)
+// Optimized for Instant Loads + Offline Reliability
 
-const CACHE_NAME = 'presek-v6';
+const CACHE_NAME = 'presek-v7';
 const STATIC_ASSETS = [
   '/',
   '/static/modern.css',
+  '/static/js/ui.js',
+  '/static/js/app.js',
   '/static/logo.svg',
-  '/static/logo.png',
+  '/static/img/presek_emblem.svg',
   '/static/img/placeholder.svg'
 ];
 
@@ -27,12 +29,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // 1. API Calls: Network only, with a custom "Offline" response for news
+  // 1. API: Network Only, fallback to offline response
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(fetch(e.request).catch(async () => {
         if (url.pathname.includes('/api/news')) {
-            // Return an empty cluster set instead of a hard error
-            return new Response(JSON.stringify({ clusters: [], has_more: false, offline: true }), {
+            return new Response(JSON.stringify({ status: 'success', clusters: [], has_more: false, offline: true }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
@@ -41,7 +42,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 2. Navigation & Clusters: Stale-while-revalidate for recently read clusters
+  // 2. Navigation & Clusters: Stale-While-Revalidate
   if (e.request.mode === 'navigate' || url.pathname.startsWith('/cluster/')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
@@ -51,21 +52,23 @@ self.addEventListener('fetch', e => {
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
           }
           return resp;
-        });
+        }).catch(() => null);
         return cached || networkFetch;
       })
     );
     return;
   }
 
-  // 3. General Assets: Cache first
+  // 3. Static Assets: Cache First
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      if (resp && resp.status === 200 && e.request.method === 'GET') {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-      }
-      return resp;
-    }))
+    caches.match(e.request).then(cached => {
+      return cached || fetch(e.request).then(resp => {
+        if (resp && resp.status === 200 && e.request.method === 'GET') {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      });
+    })
   );
 });

@@ -1,63 +1,45 @@
 {
   "name": "Пресек — Македонски Вести",
   "short_name": "Пресек",
-  "description": "Најнапреден македонски агрегатор на вести.",
-  "start_url": "/",
+  "description": "Најнапреден македонски агрегатор на вести со AI анализа.",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
-  "background_color": "#0F1113",
-  "theme_color": "#0F1113",
+  "background_color": "#0A0C0E",
+  "theme_color": "#0A0C0E",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/static/logo.svg",
+      "src": "/static/img/presek_emblem.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/static/logo.svg",
+      "src": "/static/img/presek_emblem.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/static/logo.png",
+      "src": "/static/img/presek_emblem.png",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ],
   "categories": ["news", "politics"],
-  "screenshots": [
-    {
-      "src": "/screenshots/Screenshot_20260328-233031.png",
-      "type": "image/png",
-      "sizes": "1080x2400",
-      "form_factor": "narrow",
-      "label": "Македонски вести во реално време"
-    },
-    {
-      "src": "/screenshots/Screenshot_20260328-233043.png",
-      "type": "image/png",
-      "sizes": "1080x2400",
-      "form_factor": "narrow",
-      "label": "Детална AI анализа"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Дневен Брифинг",
       "short_name": "Брифинг",
-      "description": "Брз преглед на денот",
       "url": "/briefing",
-      "icons": [{ "src": "/static/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/img/presek_emblem.png", "sizes": "192x192" }]
     },
     {
-      "name": "Архива",
-      "short_name": "Архива",
-      "description": "Пребарајте ги минатите денови",
-      "url": "/arhiva",
-      "icons": [{ "src": "/static/logo.png", "sizes": "192x192" }]
+      "name": "Медиумски Пулс",
+      "short_name": "Статистика",
+      "url": "/stats",
+      "icons": [{ "src": "/static/img/presek_emblem.png", "sizes": "192x192" }]
     }
   ]
 }
