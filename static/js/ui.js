@@ -187,3 +187,23 @@ setInterval(() => UI.updateClock(), 1000);
 UI.updateClock();
 
 window.UI = UI;
+
+/* ── Follow helpers (used by source.html) ───────────────── */
+
+function isFollowing(type, value) {
+    try {
+        const data = JSON.parse(localStorage.getItem(`presek_follow_${type}`) || '[]');
+        return data.includes(value);
+    } catch(e) { return false; }
+}
+
+function toggleFollow(type, value) {
+    try {
+        const key = `presek_follow_${type}`;
+        let data = JSON.parse(localStorage.getItem(key) || '[]');
+        const idx = data.indexOf(value);
+        if (idx === -1) data.push(value);
+        else data.splice(idx, 1);
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch(e) {}
+}

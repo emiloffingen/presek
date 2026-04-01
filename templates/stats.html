@@ -105,8 +105,8 @@ async function loadStats() {
         document.getElementById('totalFeeds').textContent    = data.total_feeds || '—';
         document.getElementById('oldestArt').textContent     = data.oldest_article
             ? new Date(data.oldest_article).toLocaleDateString('mk-MK') : '—';
-        document.getElementById('newestArt').textContent     = data.new_article
-            ? new Date(data.new_article).toLocaleTimeString('mk-MK') : '—';
+        document.getElementById('newestArt').textContent     = (data.new_article || data.newest_article)
+            ? new Date(data.new_article || data.newest_article).toLocaleTimeString('mk-MK') : '—';
 
         // Volume bar chart
         const bySrc = data.by_source || [];

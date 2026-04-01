@@ -8,7 +8,7 @@
         <h1 class="hero-title">Дигитална <span style="color:var(--primary)">Архива</span></h1>
         <div class="date-picker-wrap">
             <label for="archiveDate" style="font-size:0.88rem;font-weight:var(--weight-semi)">Избери датум:</label>
-            <input type="date" id="archiveDate" class="date-input" onchange="fetchArchive()">
+            <input type="date" id="archiveDate" class="date-input" onchange="fetchArchive(true)">
             <div id="archiveStats" style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;font-weight:var(--weight-semi)"></div>
         </div>
     </div>
@@ -37,8 +37,8 @@ const pageSize = 50;
 
 document.getElementById('archiveDate').valueAsDate = new Date();
 
-async function fetchArchive() {
-    if (event && event.type === 'change') currentPage = 0;
+async function fetchArchive(resetPage) {
+    if (resetPage) currentPage = 0;
     const date = document.getElementById('archiveDate').value;
     const list = document.getElementById('archiveList');
     const stats = document.getElementById('archiveStats');
