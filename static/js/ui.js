@@ -81,9 +81,6 @@ const UI = {
     _renderCluster(cluster, idx) {
         const articles = cluster.articles || [];
         const main = articles[0];
-        
-        // With extreme backend thresholds, all articles in a cluster are the same news.
-        const sameNews = articles.slice(1, 4); 
         const count = articles.length;
         
         let thumbUrl = null;
@@ -94,47 +91,37 @@ const UI = {
             }
         }
         
-        let sameHtml = '';
-        if (sameNews.length > 0) {
-            sameHtml = `
-                <ul class="cluster-related same-tier">
-                    ${sameNews.map(art => `
-                        <li>
-                            <a href="/cluster/${cluster.cluster_id}" class="related-link">
-                                <span class="src-badge">${this._esc(art.source)}</span>
-                            </a>
-                        </li>`).join('')}
-                    ${count > 4 ? `<li><span class="src-badge" style="opacity:0.5">+${count - 4}</span></li>` : ''}
-                </ul>`;
-        }
+        // Determine bento size
+        let spanClass = "span-12";
+        if (idx % 5 === 0) spanClass = "span-12 row-2 featured";
+        else if (idx % 3 === 1) spanClass = "span-6";
+        else if (idx % 3 === 2) spanClass = "span-6";
 
         return `
-            <article class="news-cluster fade-in">
-                <div class="cluster-main">
-                    <div class="cluster-meta">
+            <article class="bento-card ${spanClass} fade-in">
+                ${thumbUrl ? `
+                    <div class="bento-thumb-wrap">
+                        <a href="/cluster/${cluster.cluster_id}" style="display: block; width: 100%; height: 100%;">
+                            <img src="${thumbUrl}" class="bento-thumb" loading="lazy">
+                        </a>
+                    </div>` : ''}
+                
+                <div class="bento-body">
+                    <div class="bento-meta">
                         <span class="source">${this._esc(main.source)}</span>
                         <span class="time">• ${this._relativeTime(main.created_at)}</span>
-                        ${main.category ? `<span class="category">${this._esc(main.category)}</span>` : ''}
-                        ${cluster.is_breaking ? `<span class="src-badge" style="background:var(--primary); color:#fff; border:none; padding:2px 8px;">БРЕЈКИНГ</span>` : ''}
+                        ${main.category ? `<span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 6px; border-radius:4px; font-size:0.6rem;">${this._esc(main.category)}</span>` : ''}
                     </div>
                     
-                    <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
+                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline">
                         ${this._esc(main.title)}
                     </a>
                     
-                    ${sameHtml}
-                    
-                    <div class="cluster-footer">
-                        <span class="count-badge">${count} извори</span>
+                    <div class="bento-footer">
                         <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800;">ВИДИ РЕЗИМЕ</a>
+                        <span class="count-badge">${count} извори</span>
                     </div>
                 </div>
-                
-                ${thumbUrl ? `
-                    <div class="cluster-thumb-wrap">
-                        <img src="${thumbUrl}" class="cluster-thumb" loading="lazy" 
-                             onerror="this.parentElement.style.display='none'; this.closest('.news-cluster').style.gridTemplateColumns='1fr';">
-                    </div>` : ''}
             </article>`;
     },
 

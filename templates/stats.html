@@ -7,57 +7,51 @@
 {% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
-
-    <div class="kpi-grid" id="kpiGrid">
-        <div class="kpi-card">
-            <span class="kpi-val" id="totalArticles"><span class="skeleton-box" style="width:60px;height:28px;display:inline-block"></span></span>
-            <span class="kpi-label">Вкупно Објави</span>
-        </div>
-        <div class="kpi-card">
-            <span class="kpi-val" id="last24h"><span class="skeleton-box" style="width:50px;height:28px;display:inline-block"></span></span>
-            <span class="kpi-label">Во Последни 24ч</span>
-        </div>
-        <div class="kpi-card">
-            <span class="kpi-val" id="summarizedPct"><span class="skeleton-box" style="width:45px;height:28px;display:inline-block"></span></span>
-            <span class="kpi-label">Резимирани</span>
-        </div>
-        <div class="kpi-card">
-            <span class="kpi-val" id="uptimeVal"><span class="skeleton-box" style="width:55px;height:28px;display:inline-block"></span></span>
-            <span class="kpi-label">Uptime</span>
-        </div>
+<div class="fade-in bento-grid">
+    <div class="span-12">
+        <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
     </div>
 
-    <div class="charts-grid">
-        <div class="chart-container">
-            <h3 class="chart-title">Брзина на Ингестија (24ч)</h3>
-            <canvas id="velocityChart" height="150"></canvas>
-        </div>
-        <div class="chart-container">
-            <h3 class="chart-title">Волумен по Извор (24ч)</h3>
-            <canvas id="sentimentChart" height="150"></canvas>
-        </div>
-        <div class="chart-container">
-            <h3 class="chart-title">Дистрибуција по Категорија</h3>
-            <canvas id="categoryChart" height="150"></canvas>
-        </div>
+    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
+        <span class="kpi-val" id="totalArticles" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
+        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Вкупно Објави</span>
+    </div>
+    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
+        <span class="kpi-val" id="last24h" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
+        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Во Последни 24ч</span>
+    </div>
+    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
+        <span class="kpi-val" id="summarizedPct" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
+        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Резимирани</span>
+    </div>
+    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
+        <span class="kpi-val" id="uptimeVal" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
+        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Uptime</span>
     </div>
 
-    <div class="stats-table-grid">
-        <div class="chart-container">
-            <h3 class="chart-title">Топ 10 Извори — Волумен</h3>
-            <div id="sourcesStats"></div>
-        </div>
-        <div class="chart-container">
-            <h3 class="chart-title">Кој Прв Објавува? (7д)</h3>
-            <div id="speedStats"></div>
-        </div>
+    <div class="bento-card span-8 row-2" style="padding: var(--space-lg);">
+        <h3 class="chart-title">Брзина на Ингестија (24ч)</h3>
+        <canvas id="velocityChart"></canvas>
+    </div>
+    
+    <div class="bento-card span-4 row-2" style="padding: var(--space-lg);">
+        <h3 class="chart-title">Дистрибуција по Категорија</h3>
+        <canvas id="categoryChart"></canvas>
     </div>
 
-    <div class="chart-container" style="margin-top:var(--space-lg)">
+    <div class="bento-card span-6" style="padding: var(--space-lg);">
+        <h3 class="chart-title">Топ 10 Извори — Волумен</h3>
+        <div id="sourcesStats"></div>
+    </div>
+    
+    <div class="bento-card span-6" style="padding: var(--space-lg);">
+        <h3 class="chart-title">Кој Прв Објавува? (7д)</h3>
+        <div id="speedStats"></div>
+    </div>
+
+    <div class="bento-card span-12" style="padding: var(--space-lg);">
         <h3 class="chart-title">Технички Детали</h3>
-        <div style="font-size:0.9rem;line-height:2.2;color:var(--text-secondary)">
+        <div style="font-size:0.9rem;line-height:2.2;color:var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px;">
             <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
                 <span>База на податоци (PostgreSQL)</span>
                 <strong id="dbSize" style="color:var(--text-primary)">—</strong>
@@ -70,7 +64,7 @@
                 <span>Најстара статија</span>
                 <strong id="oldestArt" style="color:var(--text-primary)">—</strong>
             </div>
-            <div style="display:flex;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
                 <span>Последно ажурирање</span>
                 <strong id="newestArt" style="color:var(--text-primary)">—</strong>
             </div>

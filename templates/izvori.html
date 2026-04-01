@@ -4,14 +4,16 @@
 
 {% block content %}
 <div class="fade-in">
-    <h1 class="hero-title">Медиумски <span style="color:var(--primary)">Извори</span></h1>
-    <p class="hero-subtitle">Пресек агрегира вести од 60+ македонски и меѓународни извори во реално време.</p>
+    <div class="hero-section" style="margin-bottom: var(--space-xl);">
+        <h1 class="hero-title">Медиумски <span style="color:var(--primary)">Извори</span></h1>
+        <p class="hero-subtitle">Пресек агрегира вести од 60+ македонски и меѓународни извори во реално време.</p>
+    </div>
 
     <h2 class="section-title">🇲🇰 Македонски Медиуми</h2>
-    <div class="izvori-grid" id="mkIzvori"></div>
+    <div class="bento-grid" id="mkIzvori" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: auto; margin-bottom: var(--space-2xl);"></div>
 
     <h2 class="section-title">🌍 Меѓународни Медиуми</h2>
-    <div class="izvori-grid" id="intIzvori"></div>
+    <div class="bento-grid" id="intIzvori" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: auto;"></div>
 </div>
 {% endblock %}
 
@@ -48,9 +50,9 @@ const diaspora = [
 
 function makeCards(list, muted) {
     return list.sort().map(name => `
-        <a href="/izvor/${encodeURIComponent(name)}" class="izvor-card">
-            <div class="izvor-dot${muted ? ' muted' : ''}"></div>
-            <span class="izvor-name">${name}</span>
+        <a href="/izvor/${encodeURIComponent(name)}" class="bento-card" style="padding: var(--space-md); flex-direction: row; align-items: center; gap: 12px;">
+            <div class="izvor-dot${muted ? ' muted' : ''}" style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0;"></div>
+            <span class="izvor-name" style="font-weight: 600; font-size: 0.9rem;">${name}</span>
         </a>`
     ).join('');
 }
