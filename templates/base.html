@@ -131,7 +131,38 @@
         </div>
     </div>
 
-    <main id="pageWrap" style="padding-top: var(--space-xl);"></main>
+    <main class="site-layout">
+        <div class="portal-layout">
+            <!-- Left Sidebar (Archive/Discovery) -->
+            <aside class="sidebar-left mobile-hide">
+                <div class="rail-widget" style="border-top: 2px solid var(--text-primary);">
+                    <h3 class="rail-label">ИЗБОР</h3>
+                    <nav class="widget-nav">
+                        <a href="/briefing">Дневен Брифинг</a>
+                        <a href="/arhiva">Архива</a>
+                        <a href="/izvori">Сите Извори</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content Feed -->
+            <div class="portal-main">
+                <div id="pageWrap">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+
+            <!-- Right Sidebar (Popular) -->
+            <aside class="sidebar-right mobile-hide">
+                <div class="rail-widget" style="border-top: 2px solid var(--text-primary);">
+                    <h3 class="rail-label">ПОПУЛАРНО</h3>
+                    <div id="sidebarTrending">
+                        <div class="loading-state" style="padding: 20px 0; font-size: 0.7rem;">Вчитување...</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
 
     <footer class="site-footer">
         <div class="footer-inner">

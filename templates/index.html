@@ -3,7 +3,6 @@
 {% block title %}Пресек | Главни Вести{% endblock %}
 
 {% block content %}
-<div id="pageWrap" class="bento-grid">
     {% if initial_clusters %}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
@@ -53,7 +52,6 @@
     {% else %}
         <div class="loading-state span-12">Вчитување вести...</div>
     {% endif %}
-</div>
 
 <!-- Infinite Scroll Trigger -->
 <div id="scrollTrigger" style="height: 20px; width: 100%;"></div>
