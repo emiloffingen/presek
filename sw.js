@@ -1,12 +1,12 @@
-// Пресек — Service Worker v7 (Hybrid 5.1)
-// Optimized for Instant Loads + Offline Reliability
+// Пресек — Service Worker v10
+// Forced Refresh for Identical NYT Style
 
-const CACHE_NAME = 'presek-v9';
+const CACHE_NAME = 'presek-v10';
 const STATIC_ASSETS = [
   '/',
-  '/static/modern.css?v=2026.4.2',
-  '/static/js/ui.js?v=2026.4.2',
-  '/static/js/app.js?v=2026.4.2',
+  '/static/modern.css?v=2026.final.1',
+  '/static/js/ui.js?v=2026.final.1',
+  '/static/js/app.js?v=2026.final.1',
   '/static/logo.svg',
   '/static/img/presek_emblem.svg'
 ];
@@ -19,49 +19,23 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+    )).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-
-  // 1. API: Network Only, fallback to offline response
-  if (url.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(e.request).catch(async () => {
-        if (url.pathname.includes('/api/news')) {
-            return new Response(JSON.stringify({ status: 'success', clusters: [], has_more: false, offline: true }), {
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-        return new Response(null, { status: 503 });
-    }));
+  // Bypassing cache for API calls to ensure fresh data
+  if (e.request.url.includes('/api/')) {
+    e.respondWith(fetch(e.request));
     return;
   }
 
-  // 2. Navigation & Clusters: Stale-While-Revalidate
-  if (e.request.mode === 'navigate' || url.pathname.startsWith('/cluster/')) {
-    e.respondWith(
-      caches.match(e.request).then(cached => {
-        const networkFetch = fetch(e.request).then(resp => {
-          if (resp && resp.status === 200) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-          }
-          return resp;
-        }).catch(() => null);
-        return cached || networkFetch;
-      })
-    );
-    return;
-  }
-
-  // 3. Static Assets: Cache First
   e.respondWith(
     caches.match(e.request).then(cached => {
-      return cached || fetch(e.request).then(resp => {
+      if (cached) return cached;
+      return fetch(e.request).then(resp => {
         if (resp && resp.status === 200 && e.request.method === 'GET') {
             const clone = resp.clone();
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));

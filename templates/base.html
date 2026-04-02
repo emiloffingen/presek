@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="theme-color" id="themeMeta" content="#0D0F11">
+    <meta name="theme-color" id="themeMeta" content="#FFFFFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/static/manifest.json">
@@ -19,76 +19,47 @@
     <script>
         (function() {
             const saved = localStorage.getItem('theme');
-            const meta = document.querySelector('meta[name="theme-color"]');
             if (saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches)) {
                 document.documentElement.classList.add('light');
-                if (meta) meta.content = '#F3F5F8';
-            } else {
-                if (meta) meta.content = '#0A0C0F';
             }
         })();
     </script>
-    <link rel="stylesheet" href="/static/modern.css?v=2026.4.2">
+    <link rel="stylesheet" href="/static/modern.css?v=2026.final.1">
     {% block head %}{% endblock %}
 </head>
 <body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
-    <svg style="display:none;">
-        <filter id="noiseFilter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch"/>
-            <feColorMatrix type="saturate" values="0"/>
-            <feComponentTransfer>
-                <feFuncR type="linear" slope="0.3"/>
-                <feFuncG type="linear" slope="0.3"/>
-                <feFuncB type="linear" slope="0.3"/>
-            </feComponentTransfer>
-        </filter>
-    </svg>
-    <div class="noise-overlay"></div>
     <div id="readingProgress"></div>
-    <button id="backToTop" class="icon-btn glass" title="Назад на почеток" style="position: fixed; bottom: 24px; right: 24px; z-index: 999; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all var(--t-fast); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-    </button>
-
-    <!-- Utility Bar (Weather/AQI) -->
-    <div class="utility-bar">
-        <div class="utility-inner">
-            <div class="utility-item" id="utility-weather">
-                <span class="u-icon" style="color:var(--primary);" id="weatherIcon">🌡️</span> <span class="u-val" id="weatherVal">Скопје —°C</span>
-            </div>
-            <div class="utility-item" id="utility-aqi">
-                <span class="u-icon" style="color:var(--primary);">🍃</span> <span class="u-val" id="aqiVal">AQI: —</span>
-            </div>
-            <div class="utility-item u-time" id="live-clock"></div>
-        </div>
-    </div>
-    <script>
-      fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
-        if (!d) return;
-        if (d.temp !== null) {
-          document.getElementById('weatherIcon').textContent = d.icon;
-          document.getElementById('weatherVal').textContent = `Скопје ${d.temp}°C`;
-        }
-        if (d.aqi !== null) {
-          document.getElementById('aqiVal').textContent = `AQI: ${d.aqi}`;
-        }
-      }).catch(() => {});
-    </script>
-
+    
+    <!-- Unified NYT Masthead Bar -->
     <div class="utility-bar">
         <div class="utility-inner">
             <div style="display: flex; flex-direction: column; gap: 2px;">
                 <span id="currentDate" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Четврток, 2 Април 2026</span>
                 <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Скопје, Македонија</span>
             </div>
+            
+            <!-- Weather/AQI integrated subtlely -->
+            <div style="margin-left: 40px; display: flex; gap: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
+                <span id="weatherVal">...</span>
+                <span id="aqiVal">...</span>
+            </div>
+
             <div style="margin-left: auto; display: flex; gap: 24px; align-items: center;">
                 <a href="/briefing" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Дневен Брифинг</a>
                 <a href="/stats" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Статистика</a>
             </div>
         </div>
     </div>
+    <script>
+      fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
+        if (!d) return;
+        if (d.temp !== null) document.getElementById('weatherVal').textContent = `${d.icon} ${d.temp}°C`;
+        if (d.aqi !== null) document.getElementById('aqiVal').textContent = `AQI ${d.aqi}`;
+      }).catch(() => {});
+    </script>
 
     <header class="site-header">
-        <div style="text-align: center; padding: 25px 0;">
+        <div style="text-align: center; padding: 30px 0;">
             <a href="/" aria-label="Пресек Почетна" style="display: inline-block;">
                 <img src="/static/logo.svg" alt="Presek" style="height: 64px; filter: grayscale(1);" onerror="this.src='/static/logo.png'" id="mainLogo">
                 <script>if(document.documentElement.classList.contains('light')) document.getElementById('mainLogo').style.filter='none';</script>
@@ -107,7 +78,7 @@
                 <button class="cat-btn" data-topic="Технологија">Технологија</button>
             </div>
             
-            <div class="header-actions">
+            <div class="header-actions" style="justify-content: center; margin-top: 10px;">
                 <button class="icon-btn" id="searchTrigger" title="Пребарај (/)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </button>
@@ -119,7 +90,6 @@
         </nav>
     </header>
 
-    <!-- Mobile Navigation Drawer (Now also for desktop secondary nav) -->
     <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
     <div class="mobile-drawer" id="mobileDrawer">
         <div class="drawer-header">
@@ -150,8 +120,7 @@
         </nav>
     </div>
 
-    <!-- ── Civic Dashboard Strip (Refined for Magazine Style) ── -->
-    <div class="civic-strip glass">
+    <div class="civic-strip">
         <div class="civic-inner">
             <div class="civic-section pulse-ticker-wrap">
                 <span class="civic-label">PULSE:</span>
@@ -159,44 +128,10 @@
                     <span class="ticker-item">LOADING SYSTEM...</span>
                 </div>
             </div>
-            <div class="civic-section aqi-pills" id="aqiPills">
-                <span class="civic-label">AQI:</span>
-                <div class="aqi-item"><span id="aqiPillVal" class="aqi-good">Скопје —</span></div>
-            </div>
         </div>
     </div>
 
-    <main class="site-layout bento-grid" style="padding-top: var(--space-xl);">
-        <!-- Sidebar Left (Navigation / Archive) -->
-        <aside class="span-3 row-2 sidebar-left">
-            <div style="height: 100%; padding: var(--space-lg);">
-                <h3 class="widget-title">Избор</h3>
-                <nav class="widget-nav">
-                    <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
-                    <a href="/saved"><span class="w-icon">🔖</span> Зачувани</a>
-                    <a href="/stats"><span class="w-icon">📊</span> Медиумски Пулс</a>
-                    <a href="/arhiva"><span class="w-icon">📅</span> Архива</a>
-                    <a href="/izvori"><span class="w-icon">🔗</span> Извори</a>
-                </nav>
-            </div>
-        </aside>
-
-        <!-- Main Content Feed -->
-        <div class="portal-main span-6">
-            {% block content %}{% endblock %}
-        </div>
-
-        <!-- Sidebar Right (Context / Trends) -->
-        <aside class="span-3 row-2 sidebar-right">
-            <div style="height: 100%; padding: var(--space-lg);">
-                <h3 class="widget-title">Популарно</h3>
-                <div id="sidebarTrending">
-                    <!-- Standard trending words if needed -->
-                    <div class="loading-state" style="padding: 20px 0;">Вчитување...</div>
-                </div>
-            </div>
-        </aside>
-    </main>
+    <main id="pageWrap" style="padding-top: var(--space-xl);"></main>
 
     <footer class="site-footer">
         <div class="footer-inner">
@@ -214,7 +149,7 @@
             </nav>
         </div>
         <div class="footer-bottom">
-            <span class="footer-copy">&copy; 2025 Пресек. Сите права се задржани.</span>
+            <span class="footer-copy">&copy; 2026 Пресек. Сите права се задржани.</span>
         </div>
     </footer>
 
@@ -222,45 +157,38 @@
     <div class="search-overlay" id="searchOverlay">
         <div class="search-bar-wrap">
             <div class="search-bar">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="searchInput" placeholder="Пребарајте низ архивата..." autocomplete="off" spellcheck="false">
-                <button class="icon-btn" id="searchClose" aria-label="Затвори пребарување">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <input type="text" id="searchInput" placeholder="Search..." autocomplete="off" spellcheck="false">
+                <button class="icon-btn" id="searchClose" aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
-            </div>
-            
-            <div class="search-suggestions fade-in">
-                <h3 class="suggestion-title">АКТУЕЛНИ ТЕМИ</h3>
-                <div class="suggestion-pills" id="searchTrending">
-                    <!-- Populated by JS -->
-                    <div class="loading-state" style="padding: 20px 0; font-size: 0.8rem;">Вчитување трендови...</div>
-                </div>
-            </div>
-
-            <div class="search-hint">
-                Притиснете <kbd>Enter</kbd> за пребарување
             </div>
         </div>
     </div>
 
     <!-- Privacy Banner -->
     <div class="privacy-banner" id="privacyBanner">
-        <div class="privacy-text">
-            Ние користиме колачиња за да го подобриме вашето искуство и да ја анализираме посетеноста на нашиот портал.
-        </div>
+        <div class="privacy-text">Ние користиме колачиња за да го подобриме вашето искуство.</div>
         <div class="privacy-actions">
             <span class="privacy-link" id="privacyReject">Одбиј</span>
             <span class="privacy-link primary" id="privacyAccept">Прифати</span>
         </div>
     </div>
 
-    <!-- Presek 4.0 Core -->
-    <script src="/static/js/ui.js?v=2026.4.2"></script>
-    <script src="/static/js/app.js?v=2026.4.2"></script>
+    <script src="/static/js/ui.js?v=2026.final.1"></script>
+    <script src="/static/js/app.js?v=2026.final.1"></script>
     {% block scripts %}{% endblock %}
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        location.reload();
+                    }
+                };
+            };
+        });
       }
     </script>
 </body>
