@@ -337,4 +337,18 @@ def get_db_size(): return db_manager.get_db_size()
 def init_db(): db_manager.init_schema()
 def prune_db():
     from config import DB_RETAIN_DAYS
-    db_manager.execute(f"DELETE FROM articles WHERE created_at < NOW() - INTERVAL '{int(DB_RETAIN_DAYS)} days'", fetch=False)
+    interval = f"{int(DB_RETAIN_DAYS)} days"
+    db_manager.execute(f"DELETE FROM articles WHERE created_at < NOW() - INTERVAL '{interval}'", fetch=False)
+    # Remove orphaned rows from related tables (no FK cascade defined in schema)
+    db_manager.execute(
+        "DELETE FROM cluster_summaries WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
+        fetch=False
+    )
+    db_manager.execute(
+        "DELETE FROM cluster_metadata WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
+        fetch=False
+    )
+    db_manager.execute(
+        "DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
+        fetch=False
+    )
