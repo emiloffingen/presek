@@ -7,17 +7,9 @@
     {% if initial_clusters %}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
-            
-            {# Determine size based on index — must match ui.js _renderCluster logic #}
-            {% set span_class = "span-12" %}
-            {% if loop.index0 % 6 == 0 %}
-                {% set span_class = "span-12 row-2 featured" %}
-            {% elif loop.index0 % 3 == 1 %}
-                {% set span_class = "span-6" %}
-            {% elif loop.index0 % 3 == 2 %}
-                {% set span_class = "span-6" %}
-            {% endif %}
+            {% set idx = loop.index0 %}
 
+            {# Find best thumbnail #}
             {% set thumb = cluster.representative_image %}
             {% if not thumb %}
                 {% for a in cluster.articles %}
@@ -26,41 +18,92 @@
                     {% endif %}
                 {% endfor %}
             {% endif %}
-
-            <article class="bento-card {{ span_class }} fade-in">
-                {% if thumb %}
-                    <div class="bento-thumb-wrap">
-                        <a href="/cluster/{{ cluster.cluster_id }}" style="display: block; width: 100%; height: 100%;">
-                            <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
-                                 class="bento-thumb" loading="lazy">
-                        </a>
-                    </div>
+            {% if thumb %}
+                {% if thumb.startswith('/') %}
+                    {% set thumb_src = thumb %}
+                {% else %}
+                    {% set thumb_src = '/proxy?url=' ~ (thumb|urlencode) %}
                 {% endif %}
-                
-                <div class="bento-body">
-                    <div class="bento-meta">
-                        <span class="source">{{ main.source }}</span>
-                        <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
-                        {% if main.category %}
-                            <span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:800; letter-spacing:0.04em;">{{ main.category }}</span>
-                        {% endif %}
-                        {% if cluster.is_breaking %}
-                            <span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.65rem;">🚨 БРЕЈКИНГ</span>
-                        {% endif %}
-                    </div>
-                    
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '2.4rem' if 'featured' in span_class else '1.4rem' }}; font-weight: {{ [900, 400 + (cluster.score * 80) | int] | min }};">
-                        {{ main.title }}
-                    </a>
-                    
-                    <div class="bento-footer">
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800; padding: 6px 14px;">
-                            ВИДИ РЕЗИМЕ
-                        </a>
-                        <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 6px 14px;">Вкупно {{ cluster.articles|length }} извори {{ '· ⚖️ Балансирано' if cluster.has_balanced else '' }}</span>
+            {% else %}
+                {% set thumb_src = '' %}
+            {% endif %}
+
+            {# Shared eyebrow fragment #}
+            {% macro eyebrow() %}
+            <div class="card-eyebrow">
+                <span class="card-source">{{ main.source }}</span>
+                <span class="card-dot">·</span>
+                <span class="card-time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                {% if main.category %}<span class="card-category">{{ main.category }}</span>{% endif %}
+                {% if cluster.is_breaking %}<span class="card-breaking">🚨 БРЕЈКИНГ</span>{% endif %}
+            </div>
+            {% endmacro %}
+
+            {# Shared count badge fragment #}
+            {% macro countbadge() %}
+            <span class="card-eyebrow">
+                <span class="card-count">{{ cluster.articles|length }} извори</span>
+                {% if cluster.has_balanced %}<span class="card-balanced">⚖️ Балансирано</span>{% endif %}
+            </span>
+            {% endmacro %}
+
+            {% if idx % 6 == 0 %}
+            {# ── HERO CARD ── full width, large editorial split #}
+            <article class="card-hero span-12 row-2 fade-in">
+                <div class="card-hero__body">
+                    {{ eyebrow() }}
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__headline">{{ main.title }}</a>
+                    <div class="card-hero__foot">
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__cta">ВИДИ РЕЗИМЕ</a>
+                        {{ countbadge() }}
                     </div>
                 </div>
+                {% if thumb_src %}
+                <div class="card-hero__image">
+                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                        <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="eager">
+                    </a>
+                </div>
+                {% endif %}
             </article>
+
+            {% elif idx % 6 == 3 %}
+            {# ── ROW CARD ── compact newspaper list entry #}
+            <article class="card-row span-12 fade-in">
+                <div class="card-row__body">
+                    {{ eyebrow() }}
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-row__headline">{{ main.title }}</a>
+                    <div class="card-row__foot">{{ countbadge() }}</div>
+                </div>
+                {% if thumb_src %}
+                <div class="card-row__image">
+                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                        <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="lazy">
+                    </a>
+                </div>
+                {% endif %}
+            </article>
+
+            {% else %}
+            {# ── MID CARD ── half-width with 16:9 image #}
+            <article class="card-mid span-6 fade-in">
+                {% if thumb_src %}
+                <div class="card-mid__image">
+                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                        <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="lazy">
+                    </a>
+                </div>
+                {% else %}
+                <div class="card-mid__image-placeholder">📰</div>
+                {% endif %}
+                <div class="card-mid__body">
+                    {{ eyebrow() }}
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-mid__headline">{{ main.title }}</a>
+                    <div class="card-mid__foot">{{ countbadge() }}</div>
+                </div>
+            </article>
+            {% endif %}
+
         {% endfor %}
     {% else %}
         <div class="loading-state span-12">Вчитување вести...</div>

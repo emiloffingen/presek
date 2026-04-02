@@ -655,6 +655,253 @@ a.count-badge:hover {
 }
 
 /* =========================================
+   EDITORIAL CARD TYPES
+   ========================================= */
+
+/* --- Shared Primitives --- */
+.card-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+}
+.card-eyebrow .card-source { color: var(--primary); }
+.card-eyebrow .card-dot { opacity: 0.4; }
+.card-category {
+    background: var(--primary-muted);
+    color: var(--primary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+}
+.card-breaking {
+    background: var(--primary);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    font-family: var(--font-mono);
+    animation: pulse-dot 1.5s infinite;
+}
+.card-count {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-family: var(--font-mono);
+}
+.card-balanced { color: var(--text-muted); font-size: 0.62rem; }
+
+/* --- Hero Card (idx % 6 === 0) --- */
+.card-hero {
+    display: flex;
+    flex-direction: row;
+    border-top: 3px solid var(--primary);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    overflow: hidden;
+    transition: box-shadow var(--t-fast);
+}
+.card-hero:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+.card-hero__body {
+    flex: 0 0 56%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-xl);
+    min-width: 0;
+}
+.card-hero__image {
+    flex: 0 0 44%;
+    position: relative;
+    overflow: hidden;
+    min-height: 280px;
+}
+.card-hero__image img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    transition: transform 0.5s ease;
+}
+.card-hero:hover .card-hero__image img { transform: scale(1.03); }
+.card-hero__headline {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    flex: 1;
+    transition: color var(--t-fast);
+    display: block;
+}
+.card-hero:hover .card-hero__headline { color: var(--primary); }
+.card-hero__foot {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    padding-top: var(--space-sm);
+    border-top: 1px dashed var(--border);
+    margin-top: auto;
+}
+.card-hero__cta {
+    background: var(--primary);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    transition: opacity var(--t-fast);
+    white-space: nowrap;
+}
+.card-hero__cta:hover { opacity: 0.85; color: #fff; }
+
+/* --- Mid Card (idx % 6 === 1,2,4,5) --- */
+.card-mid {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    overflow: hidden;
+    transition: box-shadow var(--t-fast);
+    height: 100%;
+}
+.card-mid:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.14); }
+.card-mid__image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.card-mid__image img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    transition: transform 0.5s ease;
+}
+.card-mid:hover .card-mid__image img { transform: scale(1.04); }
+.card-mid__image-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+.card-mid__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    flex: 1;
+    min-width: 0;
+}
+.card-mid__headline {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.28;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    flex: 1;
+    display: block;
+    transition: color var(--t-fast);
+}
+.card-mid:hover .card-mid__headline { color: var(--primary); }
+.card-mid__foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: var(--space-xs);
+    border-top: 1px dashed var(--border);
+    margin-top: auto;
+}
+
+/* --- Row Card (idx % 6 === 3) --- */
+.card-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    padding: var(--space-md);
+    overflow: hidden;
+    transition: box-shadow var(--t-fast), background var(--t-fast);
+}
+.card-row:hover { background: var(--bg-elevated); box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.card-row__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+.card-row__headline {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    display: block;
+    transition: color var(--t-fast);
+}
+.card-row:hover .card-row__headline { color: var(--primary); }
+.card-row__foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+.card-row__image {
+    flex: 0 0 110px;
+    height: 72px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+}
+.card-row__image img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    transition: transform 0.4s ease;
+}
+.card-row:hover .card-row__image img { transform: scale(1.05); }
+
+/* Responsive: editorial cards on small screens */
+@media (max-width: 768px) {
+    .card-hero { flex-direction: column; }
+    .card-hero__body { flex: none; padding: var(--space-md); }
+    .card-hero__image { flex: none; min-height: 200px; }
+    .card-hero__headline { font-size: 1.5rem; }
+    .card-row__image { flex: 0 0 80px; height: 56px; }
+}
+
+/* =========================================
    SKELETON / LOADING
    ========================================= */
 

@@ -82,12 +82,9 @@ const UI = {
         const articles = cluster.articles || [];
         const main = articles[0];
         const count = articles.length;
-        
-        let thumbUrl = cluster.representative_image;
-        if (thumbUrl && !thumbUrl.startsWith('/')) {
-            thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
-        }
 
+        let thumbUrl = cluster.representative_image;
+        if (thumbUrl && !thumbUrl.startsWith('/')) thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
         if (!thumbUrl) {
             for (const a of articles) {
                 if (a && a.image_url) {
@@ -96,38 +93,77 @@ const UI = {
                 }
             }
         }
-        
-        // Determine bento size
-        let spanClass = "span-12";
-        if (idx % 6 === 0) spanClass = "span-12 row-2 featured";
-        else if (idx % 3 === 1) spanClass = "span-6";
-        else if (idx % 3 === 2) spanClass = "span-6";
 
-        return `
-            <article class="bento-card ${spanClass} fade-in">
-                ${thumbUrl ? `
-                    <div class="bento-thumb-wrap">
-                        <a href="/cluster/${cluster.cluster_id}" style="display: block; width: 100%; height: 100%;">
-                            <img src="${thumbUrl}" class="bento-thumb" loading="lazy">
-                        </a>
-                    </div>` : ''}
-                
-                <div class="bento-body">
-                    <div class="bento-meta">
-                        <span class="source">${this._esc(main.source)}</span>
-                        <span class="time">• ${this._relativeTime(main.created_at)}</span>
-                        ${main.category ? `<span class="category" style="background:var(--primary-muted); color:var(--primary); padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:800; letter-spacing:0.04em;">${this._esc(main.category)}</span>` : ''}
-                        ${cluster.is_breaking ? `<span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.65rem;">🚨 БРЕЈКИНГ</span>` : ''}
-                    </div>
-                    
-                    <a href="/cluster/${cluster.cluster_id}" class="bento-headline" style="font-size: ${spanClass.includes('featured') ? '2.4rem' : '1.4rem'}; font-weight: ${400 + Math.min(500, Math.floor((cluster.score || 0) * 80))};">
-                        ${this._esc(main.title)}
+        const eyebrow = `
+            <div class="card-eyebrow">
+                <span class="card-source">${this._esc(main.source)}</span>
+                <span class="card-dot">·</span>
+                <span class="card-time">${this._relativeTime(main.created_at)}</span>
+                ${main.category ? `<span class="card-category">${this._esc(main.category)}</span>` : ''}
+                ${cluster.is_breaking ? `<span class="card-breaking">🚨 БРЕЈКИНГ</span>` : ''}
+            </div>`;
+
+        const countBadge = `
+            <span class="card-eyebrow">
+                <span class="card-count">${count} извори</span>
+                ${cluster.has_balanced ? `<span class="card-balanced">⚖️ Балансирано</span>` : ''}
+            </span>`;
+
+        // Hero card (every 6th: 0, 6, 12, ...)
+        if (idx % 6 === 0) {
+            const imgHtml = thumbUrl ? `
+                <div class="card-hero__image">
+                    <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
+                        <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="eager">
                     </a>
-                    
-                    <div class="bento-footer">
-                        <a href="/cluster/${cluster.cluster_id}" class="count-badge" style="background: var(--primary); color: #fff; font-weight:800; padding: 6px 14px;">ВИДИ РЕЗИМЕ</a>
-                        <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 6px 14px;">Вкупно ${count} извори ${cluster.has_balanced ? '· ⚖️ Балансирано' : ''}</span>
+                </div>` : '';
+            return `
+                <article class="card-hero span-12 row-2 fade-in">
+                    <div class="card-hero__body">
+                        ${eyebrow}
+                        <a href="/cluster/${cluster.cluster_id}" class="card-hero__headline">${this._esc(main.title)}</a>
+                        <div class="card-hero__foot">
+                            <a href="/cluster/${cluster.cluster_id}" class="card-hero__cta">ВИДИ РЕЗИМЕ</a>
+                            ${countBadge}
+                        </div>
                     </div>
+                    ${imgHtml}
+                </article>`;
+        }
+
+        // Row card (every 4th in the pattern: 3, 9, 15, ...)
+        if (idx % 6 === 3) {
+            const imgHtml = thumbUrl ? `
+                <div class="card-row__image">
+                    <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
+                        <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="lazy">
+                    </a>
+                </div>` : '';
+            return `
+                <article class="card-row span-12 fade-in">
+                    <div class="card-row__body">
+                        ${eyebrow}
+                        <a href="/cluster/${cluster.cluster_id}" class="card-row__headline">${this._esc(main.title)}</a>
+                        <div class="card-row__foot">${countBadge}</div>
+                    </div>
+                    ${imgHtml}
+                </article>`;
+        }
+
+        // Mid card (idx%6 === 1,2,4,5)
+        const imgHtml = thumbUrl ? `
+            <div class="card-mid__image">
+                <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
+                    <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="lazy">
+                </a>
+            </div>` : `<div class="card-mid__image-placeholder">📰</div>`;
+        return `
+            <article class="card-mid span-6 fade-in">
+                ${imgHtml}
+                <div class="card-mid__body">
+                    ${eyebrow}
+                    <a href="/cluster/${cluster.cluster_id}" class="card-mid__headline">${this._esc(main.title)}</a>
+                    <div class="card-mid__foot">${countBadge}</div>
                 </div>
             </article>`;
     },
