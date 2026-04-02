@@ -40,7 +40,7 @@ const app = {
     },
 
     _initPersonalization() {
-        // Track interest when clicking news clusters
+        // Track interest when clicking news clusters - DO NOT prevent default
         document.addEventListener('click', (e) => {
             const clusterLink = e.target.closest('a[href^="/cluster/"]');
             if (clusterLink) {
@@ -49,6 +49,7 @@ const app = {
                     const cat = cluster.querySelector('.category')?.textContent.replace('•', '').trim();
                     if (cat) this._trackInterest('topic', cat);
                 }
+                // Allow normal link navigation - don't preventDefault!
             }
         });
     },

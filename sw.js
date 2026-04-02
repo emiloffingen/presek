@@ -1,9 +1,8 @@
-// Пресек — Service Worker v12
-// NYT Layout Fix
+// Пресек — Service Worker v13
+// Enhanced navigation support - prioritize fresh content for HTML pages
 
-const CACHE_NAME = 'presek-v12';
+const CACHE_NAME = 'presek-v13';
 const STATIC_ASSETS = [
-  '/',
   '/static/modern.css?v=2026.nyt.5',
   '/static/js/ui.js?v=2026.nyt.5',
   '/static/js/app.js?v=2026.nyt.5',
@@ -26,19 +25,34 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Bypassing cache for API calls to ensure fresh data
+  // Always fetch API calls fresh
   if (e.request.url.includes('/api/')) {
-    e.respondWith(fetch(e.request));
+    e.respondWith(fetch(e.request).catch(() => new Response('API unavailable', { status: 503 })));
     return;
   }
 
+  // For HTML pages (navigation), try network first, then cache
+  if (e.request.headers.get('accept')?.includes('text/html')) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // For static assets, use cache-first strategy
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(resp => {
         if (resp && resp.status === 200 && e.request.method === 'GET') {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
         }
         return resp;
       });

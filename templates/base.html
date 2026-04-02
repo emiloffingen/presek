@@ -213,17 +213,28 @@
     <script src="/static/js/app.js?v=2026.nyt.5"></script>
     {% block scripts %}{% endblock %}
     <script>
+      // Global error handler for debugging
+      window.addEventListener('error', e => {
+        console.error('Uncaught error:', e.error);
+      });
+      window.addEventListener('unhandledrejection', e => {
+        console.error('Unhandled rejection:', e.reason);
+      });
+      
+      // Service Worker registration
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(reg => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
+            console.log('SW registered');
             reg.onupdatefound = () => {
                 const installingWorker = reg.installing;
                 installingWorker.onstatechange = () => {
                     if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('SW updated, reloading');
                         location.reload();
                     }
                 };
             };
-        });
+        }).catch(err => console.error('SW registration failed:', err));
       }
     </script>
 </body>
