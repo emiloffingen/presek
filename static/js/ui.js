@@ -129,12 +129,12 @@ const UI = {
             <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" 
                     onclick="UI.toggleBookmark(event, '${cluster.cluster_id}')" 
                     title="${isBookmarked ? 'Отстрани од зачувани' : 'Зачувај за подоцна'}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                     <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
                 </svg>
             </button>`;
 
-        const imgHtml = (thumbUrl && (isLead || idx % 3 === 0)) ? `
+        const imgHtml = thumbUrl ? `
             <div class="cluster-thumb-wrap">
                 <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
                     <img src="${thumbUrl}" alt="${this._esc(main.title)}" class="cluster-thumb" loading="${idx < 3 ? 'eager' : 'lazy'}">
@@ -142,7 +142,7 @@ const UI = {
             </div>` : '';
 
         const excerptHtml = (isLead && main.description) 
-            ? `<p class="cluster-excerpt">${this._esc(main.description).substring(0, 180)}...</p>` 
+            ? `<p class="cluster-excerpt">${this._esc(main.description).substring(0, 220)}...</p>` 
             : '';
 
         return `
@@ -154,10 +154,9 @@ const UI = {
                     </a>
                     ${excerptHtml}
                     <div class="cluster-meta">
-                        <span class="time">${this._relativeTime(main.created_at)}</span>
-                        <span class="card-dot">·</span>
-                        <span class="count">${count} извори</span>
-                        ${cluster.has_balanced ? `<span style="font-size:0.65rem; margin-left:4px;">⚖️</span>` : ''}
+                        <span>${this._relativeTime(main.created_at)}</span>
+                        <span>·</span>
+                        <span>${count} извори</span>
                         ${bookmarkHtml}
                     </div>
                 </div>
