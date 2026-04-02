@@ -58,6 +58,10 @@ def index():
                            initial_clusters=top_clusters,
                            year=datetime.datetime.now().year)
 
+@views_bp.route("/saved")
+def saved_page():
+    return render_template("index.html", initial_clusters=[], year=datetime.datetime.now().year)
+
 @views_bp.route("/izvori")
 def izvori_page():
     return render_template("izvori.html", year=datetime.datetime.now().year)
@@ -284,6 +288,36 @@ def privacy_page():
 def robots_txt():
     content = "User-agent: *\nDisallow: /api/\nAllow: /\n"
     return Response(content, mimetype="text/plain")
+
+@views_bp.route("/og/cluster/<cluster_id>.svg")
+def og_cluster_image(cluster_id: str):
+    conn = get_db()
+    row = conn.execute("SELECT title FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,)).fetchone()
+    count_row = conn.execute("SELECT COUNT(*) FROM articles WHERE cluster_id = %s", (cluster_id,)).fetchone()
+    conn.close()
+    
+    title = row["title"] if row else "Вест"
+    count = count_row[0] if count_row else 1
+    
+    # Simple SVG with wrapped title (pseudo-wrapping)
+    safe_title = title.replace('"', '&quot;').replace('&', '&amp;')
+    if len(safe_title) > 65:
+        line1 = safe_title[:65]
+        line2 = safe_title[65:130] + ("..." if len(safe_title) > 130 else "")
+    else:
+        line1 = safe_title
+        line2 = ""
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1a1a1a"/>
+  <rect width="1200" height="10" y="0" fill="#E63946"/>
+  <text x="80" y="120" font-family="serif" font-size="32" font-weight="800" fill="#E63946" text-transform="uppercase" letter-spacing="2">ПРЕСЕК АНАЛИЗА</text>
+  <text x="80" y="240" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line1}</text>
+  <text x="80" y="320" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line2}</text>
+  <text x="80" y="520" font-family="sans-serif" font-size="28" fill="#aaaaaa">{count} извори анализирани во овој кластер</text>
+  <text x="1120" y="560" font-family="serif" font-size="48" font-weight="bold" fill="#E63946" text-anchor="end">пресек.мк</text>
+</svg>"""
+    return Response(svg, mimetype="image/svg+xml")
 
 @views_bp.route("/favicon.ico")
 def favicon():

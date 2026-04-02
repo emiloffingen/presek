@@ -111,6 +111,7 @@ const UI = {
         const articles = cluster.articles || [];
         const main = articles[0];
         const count = articles.length;
+        const isBookmarked = this.isBookmarked(cluster.cluster_id);
 
         let thumbUrl = cluster.representative_image;
         if (thumbUrl && !thumbUrl.startsWith('/')) thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
@@ -123,6 +124,15 @@ const UI = {
             }
         }
 
+        const bookmarkHtml = `
+            <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" 
+                    onclick="UI.toggleBookmark(event, '${cluster.cluster_id}')" 
+                    title="${isBookmarked ? 'Отстрани од зачувани' : 'Зачувај за подоцна'}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                </svg>
+            </button>`;
+
         const eyebrow = `
             <div class="card-eyebrow">
                 <span class="card-source">${this._esc(main.source)}</span>
@@ -130,6 +140,7 @@ const UI = {
                 <span class="card-time">${this._relativeTime(main.created_at)}</span>
                 ${main.category ? `<span class="card-category">${this._esc(main.category)}</span>` : ''}
                 ${cluster.is_breaking ? `<span class="card-breaking">🚨 БРЕЈКИНГ</span>` : ''}
+                ${bookmarkHtml}
             </div>`;
 
         const countBadge = `
@@ -195,6 +206,70 @@ const UI = {
                     <div class="card-mid__foot">${countBadge}</div>
                 </div>
             </article>`;
+    },
+
+    /* ── Bookmark Helpers ────────────────────────────────── */
+
+    isBookmarked(clusterId) {
+        try {
+            const saved = JSON.parse(localStorage.getItem('presek_saved_clusters') || '[]');
+            return saved.includes(clusterId);
+        } catch (e) { return false; }
+    },
+
+    toggleBookmark(event, clusterId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        try {
+            let saved = JSON.parse(localStorage.getItem('presek_saved_clusters') || '[]');
+            const idx = saved.indexOf(clusterId);
+            const isAdding = idx === -1;
+
+            if (isAdding) {
+                saved.push(clusterId);
+            } else {
+                saved.splice(idx, 1);
+            }
+            
+            localStorage.setItem('presek_saved_clusters', JSON.stringify(saved));
+
+            // Update UI globally
+            document.querySelectorAll(`[onclick*="'${clusterId}'"]`).forEach(btn => {
+                if (btn.classList.contains('bookmark-btn')) {
+                    btn.classList.toggle('active', isAdding);
+                    const svg = btn.querySelector('svg');
+                    if (svg) svg.setAttribute('fill', isAdding ? 'currentColor' : 'none');
+                    btn.title = isAdding ? 'Отстрани од зачувани' : 'Зачувај за подоцна';
+                }
+            });
+
+            // If we are on the saved page, removing should trigger a refresh
+            if (!isAdding && location.pathname === '/saved') {
+                app.fetchNews();
+            }
+
+        } catch (e) { console.error("Bookmark toggle error:", e); }
+    },
+
+    _renderSkeletons(count = 3) {
+        let html = '';
+        for (let i = 0; i < count; i++) {
+            html += `
+                <div class="bento-card span-4 skeleton-card" style="min-height: 300px;">
+                    <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+                    <div class="skeleton-box" style="width: 40%; height: 0.7rem; margin-bottom: 0.8rem;"></div>
+                    <div class="skeleton-box" style="width: 90%; height: 1.2rem; margin-bottom: 0.5rem;"></div>
+                    <div class="skeleton-box" style="width: 70%; height: 1.2rem; margin-bottom: 1rem;"></div>
+                    <div style="display:flex; gap: 8px;">
+                        <div class="skeleton-box" style="width: 60px; height: 1.5rem; border-radius: 20px;"></div>
+                        <div class="skeleton-box" style="width: 40px; height: 1.5rem; border-radius: 20px;"></div>
+                    </div>
+                </div>`;
+        }
+        return html;
     },
 
     /* ── Intelligence & Widgets ─────────────────────────── */

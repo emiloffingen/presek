@@ -9,6 +9,7 @@ const app = {
         pageSize: 30,
         topic: '',
         query: '',
+        isSaved: false,
         isFetching: false,
         hasMore: true
     },
@@ -22,7 +23,7 @@ const app = {
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
             const hasSSR = container && container.querySelector('.news-cluster');
-            const isFresh = !this.state.topic && !this.state.query;
+            const isFresh = !this.state.topic && !this.state.query && !this.state.isSaved;
 
             if (hasSSR && isFresh) {
                 console.log("Presek SSR: Content detected, starting infinite scroll from page 1.");
@@ -175,6 +176,7 @@ const app = {
         const params = new URLSearchParams(location.search);
         this.state.topic = params.get('topic') || '';
         this.state.query = params.get('query') || params.get('q') || '';
+        this.state.isSaved = location.pathname === '/saved';
         
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.classList.toggle('active', (btn.dataset.topic || '') === this.state.topic);
@@ -189,7 +191,8 @@ const app = {
         const params = new URLSearchParams();
         if (this.state.topic) params.set('topic', this.state.topic);
         if (this.state.query) params.set('q', this.state.query);
-        const url = params.toString() ? `/?${params}` : '/';
+        let url = params.toString() ? `/?${params}` : '/';
+        if (this.state.isSaved) url = '/saved';
         history.pushState(null, '', url);
     },
 
@@ -205,6 +208,38 @@ const app = {
             container.innerHTML = `<div class="loading-state" style="padding: 2rem; text-align: center; color: var(--text-muted);">${isSearch ? 'Пребарување...' : 'Вчитување вести...'}</div>`;
         }
 
+        // PERCEPTION UPGRADE: Append skeletons immediately if infinite scrolling
+        let skeletonBuffer = null;
+        if (append && container && window.UI) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = UI._renderSkeletons(3);
+            skeletonBuffer = Array.from(tempDiv.children);
+            skeletonBuffer.forEach(s => container.appendChild(s));
+        }
+
+        // Handle Saved mode (offline/local)
+        if (this.state.isSaved) {
+            try {
+                if (skeletonBuffer) skeletonBuffer.forEach(s => s.remove());
+                const savedIds = JSON.parse(localStorage.getItem('presek_saved_clusters') || '[]');
+                if (savedIds.length === 0) {
+                    if (container) container.innerHTML = `<div class="error-state fade-in" style="padding: 4rem; text-align: center; color: var(--text-muted);"><p>Немате зачувано вести.</p></div>`;
+                    this.state.isFetching = false;
+                    return;
+                }
+                
+                // Fetch full cluster data for these IDs
+                const res = await fetch(`/api/news?ids=${savedIds.join(',')}`);
+                const data = await res.json();
+                if (data && data.clusters) {
+                    if (window.UI) UI.renderPage(data.clusters, false, false, false);
+                }
+                this.state.hasMore = false;
+            } catch (e) { console.error(e); }
+            this.state.isFetching = false;
+            return;
+        }
+
         const params = new URLSearchParams({
             page: this.state.page,
             page_size: this.state.pageSize
@@ -215,7 +250,7 @@ const app = {
         
         // Add local interests if browsing home page
         let isPersonalized = false;
-        if (!this.state.topic && !this.state.query) {
+        if (!this.state.topic && !this.state.query && !this.state.isSaved) {
             const topCats = this._getTopInterests('topic');
             if (topCats) {
                 params.set('follow_topics', topCats);
@@ -228,14 +263,17 @@ const app = {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
 
+            // Remove skeletons
+            if (skeletonBuffer) skeletonBuffer.forEach(s => s.remove());
+
             if (data && data.status === 'success' && data.clusters) {
                 if (window.UI) UI.renderPage(data.clusters, append, isPersonalized, isSearch);
                 this.state.hasMore = data.has_more;
             }
         } catch (e) {
             console.error('Fetch news error:', e);
+            if (skeletonBuffer) skeletonBuffer.forEach(s => s.remove());
             if (!append) {
-                const container = document.getElementById('pageWrap');
                 if (container) container.innerHTML = `<div class="error-state fade-in" style="padding:4rem;text-align:center;color:var(--text-muted);"><p>Грешка при вчитување на вести.</p><button class="cat-btn" style="margin-top:1rem;background:var(--bg-elevated);" onclick="location.reload()">Обиди се повторно</button></div>`;
             }
         } finally {
@@ -271,13 +309,21 @@ const app = {
     },
 
     _setupInfiniteScroll() {
-        window.addEventListener('scroll', () => {
-            if (this.state.isFetching || !this.state.hasMore) return;
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1200) {
+        const trigger = document.getElementById('scrollTrigger');
+        const loader = document.getElementById('feedLoading');
+        if (!trigger) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !this.state.isFetching && this.state.hasMore) {
+                if (loader) loader.style.display = 'block';
                 this.state.page++;
-                this.fetchNews(true);
+                this.fetchNews(true).then(() => {
+                    if (loader) loader.style.display = 'none';
+                });
             }
-        }, { passive: true });
+        }, { rootMargin: '400px' });
+
+        observer.observe(trigger);
     }
 };
 

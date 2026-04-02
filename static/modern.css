@@ -779,6 +779,19 @@ a.count-badge:hover {
     color: var(--text-muted);
 }
 
+.bookmark-btn {
+    margin-left: auto;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: all var(--t-fast);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bookmark-btn:hover { color: var(--primary); opacity: 1; transform: scale(1.1); }
+.bookmark-btn.active { color: var(--primary); opacity: 1; }
+
 /* --- Hero Card (idx % 6 === 0) --- */
 .card-hero {
     display: flex;
@@ -892,6 +905,12 @@ a.count-badge:hover {
    SKELETON / LOADING
    ========================================= */
 
+.skeleton-card {
+    border: none !important;
+    background: none !important;
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--border);
+}
 .skeleton-box {
     background: var(--bg-elevated); border-radius: var(--radius-sm);
     position: relative; overflow: hidden; display: block;
