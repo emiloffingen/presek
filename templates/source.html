@@ -3,85 +3,67 @@
 {% block title %}{{ source_name }} | Пресек{% endblock %}
 
 {% block content %}
-<div class="fade-in" style="max-width: var(--max-width); margin: 0 auto; padding: var(--space-xl) var(--space-md);">
-    <header style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--text-primary); padding-bottom: var(--space-lg);">
-        <div style="margin-bottom: var(--space-md);">
-            <a href="/izvori" style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.1em;">← Сите Извори</a>
-        </div>
-        <div style="display:flex; justify-content: space-between; align-items: flex-end;">
+<div class="page-content fade-in">
+    <header class="page-header-left">
+        <a href="/izvori" class="source-back">← Сите Извори</a>
+        <div class="source-header-row">
             <div>
-                <h1 class="nyt-title" style="margin-bottom: 0;">{{ source_name }}</h1>
-                <p style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">Профил на медиум и преглед на објави</p>
+                <h1 class="nyt-title" style="margin-bottom:0;">{{ source_name }}</h1>
+                <p class="source-desc">Профил на медиум и преглед на објави</p>
             </div>
-            <button id="followBtn" onclick="toggleSourceFollow()" class="tk-btn" style="width: auto; height: auto; padding: 8px 20px; border: 1px solid var(--border-strong); font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">
-                Следи
-            </button>
+            <button id="followBtn" class="tk-btn follow-btn" onclick="toggleSourceFollow()">Следи</button>
         </div>
     </header>
 
-    <div style="display: grid; grid-template-columns: 3fr 1fr; gap: var(--space-2xl);">
+    <div class="source-layout">
+        <!-- Articles -->
         <div>
-            <h2 class="rail-label" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 25px;">Последни Објави</h2>
-            <div id="sourceStories" style="display: flex; flex-direction: column;"></div>
+            <h2 class="rail-label section-header">Последни Објави</h2>
+            <div id="sourceStories" class="source-stories"></div>
         </div>
 
+        <!-- Sidebar -->
         <aside>
-            <div class="rail-widget" style="border-top: 2px solid var(--text-primary);">
-                <span class="rail-label">Статистика</span>
-                <div style="font-size: 0.85rem; display: grid; gap: 12px;">
-                    <div style="display:flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);">Вкупно објави:</span>
-                        <strong style="color: var(--text-primary);">{{ stats.total or 0 }}</strong>
+            <div class="rail-widget" style="border-top:2px solid var(--text-primary); padding-top:var(--space-sm);">
+                <span class="rail-label widget-title">Статистика</span>
+                <div class="source-stat-grid">
+                    <div class="source-stat-row">
+                        <span class="source-stat-label">Вкупно објави</span>
+                        <span class="source-stat-val">{{ stats.total or 0 }}</span>
                     </div>
-                    <div style="display:flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);">Фреквенција:</span>
-                        <strong style="color: var(--text-primary);">{{ "%.1f" | format(freq.daily_avg or 0) }} / ден</strong>
+                    <div class="source-stat-row">
+                        <span class="source-stat-label">Фреквенција</span>
+                        <span class="source-stat-val">{{ "%.1f"|format(freq.daily_avg or 0) }} / ден</span>
                     </div>
-                    <div style="display:flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);">Категорија:</span>
-                        <strong style="color: var(--text-primary);">{{ stats.top_cat or 'Вести' }}</strong>
+                    <div class="source-stat-row">
+                        <span class="source-stat-label">Категорија</span>
+                        <span class="source-stat-val">{{ stats.top_cat or 'Вести' }}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="rail-widget">
-                <span class="rail-label">Тон на известување</span>
+            <div class="rail-widget" style="margin-top:var(--space-lg);">
+                <span class="rail-label widget-title">Тон на известување</span>
                 {% set sent = stats.avg_sent or 0 %}
-                <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 12px; height: 12px; border-radius: 50%; background: {{ '#2ecc71' if sent >= 0.1 else ('#e74c3c' if sent <= -0.1 else '#95a5a6') }}"></div>
-                    <strong style="color: var(--text-primary);">{{ 'Позитивен' if sent >= 0.1 else ('Критичен' if sent <= -0.1 else 'Неутрален') }}</strong>
+                <div class="tone-row">
+                    <div class="tone-dot" style="background:{{ '#2ecc71' if sent >= 0.1 else ('#e74c3c' if sent <= -0.1 else '#95a5a6') }};"></div>
+                    <strong>{{ 'Позитивен' if sent >= 0.1 else ('Критичен' if sent <= -0.1 else 'Неутрален') }}</strong>
                 </div>
             </div>
         </aside>
     </div>
 </div>
-
-<style>
-    .source-story-card {
-        display: flex;
-        gap: 20px;
-        padding: 20px 0;
-        border-bottom: 1px solid var(--border);
-        transition: opacity 0.2s ease;
-    }
-    .source-story-card:hover { opacity: 0.7; }
-    .source-story-main { flex: 1; }
-    .source-story-thumb { width: 120px; height: 80px; object-fit: cover; flex-shrink: 0; background: var(--bg-elevated); }
-    .source-story-title { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
-    .source-story-meta { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const initialClusters = {{ clusters | tojson | safe }};
-const sourceName = {{ source_name | tojson | safe }};
+const sourceName      = {{ source_name | tojson | safe }};
 
 function renderCard(c) {
     const a = c.articles && c.articles[0];
     if (!a) return '';
-    const img = a.image_url ? `/proxy?url=${encodeURIComponent(a.image_url)}` : null;
-    const title = a.title || '';
+    const img  = a.image_url ? `/proxy?url=${encodeURIComponent(a.image_url)}` : null;
     const time = new Date(a.created_at).toLocaleString('mk-MK', {
         hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short'
     });
@@ -89,17 +71,17 @@ function renderCard(c) {
         <a href="/cluster/${c.cluster_id}" class="source-story-card fade-in">
             <div class="source-story-main">
                 <div class="source-story-meta">${time}</div>
-                <h3 class="source-story-title">${title}</h3>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">${(a.description || '').substring(0, 160)}...</p>
+                <h3 class="source-story-title">${a.title || ''}</h3>
+                <p class="source-story-excerpt">${(a.description || '').substring(0, 160)}…</p>
             </div>
-            ${img ? `<img src="${img}" class="source-story-thumb" loading="lazy">` : ''}
+            ${img ? `<img src="${img}" class="source-story-thumb" loading="lazy" alt="">` : ''}
         </a>`;
 }
 
 function renderSourcePage() {
     const wrap = document.getElementById('sourceStories');
     if (!initialClusters || !initialClusters.length) {
-        wrap.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--text-muted)">Нема активни објави за овој извор.</div>';
+        wrap.innerHTML = '<div class="loading-state" style="padding:80px 0;">Нема активни објави за овој извор.</div>';
         return;
     }
     wrap.innerHTML = initialClusters.map(c => renderCard(c)).join('');
@@ -110,8 +92,7 @@ function updateFollowBtn() {
     if (!btn || typeof isFollowing !== 'function') return;
     const following = isFollowing('sources', sourceName);
     btn.textContent = following ? 'Следено ✓' : 'Следи';
-    btn.style.background = following ? 'var(--text-primary)' : '';
-    btn.style.color = following ? 'var(--bg-base)' : '';
+    btn.classList.toggle('following', following);
 }
 
 function toggleSourceFollow() {

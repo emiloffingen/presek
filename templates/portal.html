@@ -3,67 +3,64 @@
 {% block title %}Пресек | Вести Портал{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="hero-section" style="margin-bottom: var(--space-xl);">
+<div class="page-content fade-in">
+    <div class="hero-section">
         <h1 class="hero-title">Пресек <span style="color:var(--primary)">Портал</span></h1>
-        <p class="hero-subtitle">Најважните вести од сите категории на едно место.</p>
+        <p class="hero-subtitle">Најважните вести од сите категории на едно место</p>
     </div>
 
     <div class="bento-grid">
         {% for category, clusters in portal_data.items() %}
-            <!-- Category Section -->
-            <div class="span-12" style="margin-top: var(--space-lg); margin-bottom: var(--space-xs);">
-                <h2 class="section-title" style="display: flex; align-items: center; gap: 10px;">
+            <div class="span-12" style="margin-top: var(--space-lg);">
+                <h2 class="section-title">
                     {{ category }}
-                    <a href="/?topic={{ category }}" style="font-size: 0.75rem; color: var(--primary); font-family: var(--font-body); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Види сè →</a>
+                    <a href="/?topic={{ category }}">Види сè →</a>
                 </h2>
             </div>
 
             {% for cluster in clusters %}
                 {% set main = cluster.articles[0] %}
-                {% set span_class = "span-4" %}
                 {% if loop.index0 == 0 %}
                     {% set span_class = "span-6" %}
-                {% elif loop.index0 == 1 %}
-                    {% set span_class = "span-3" %}
+                    {% set font_size  = "1.8rem" %}
                 {% else %}
                     {% set span_class = "span-3" %}
+                    {% set font_size  = "1.1rem" %}
                 {% endif %}
 
                 {% set thumb = cluster.representative_image %}
                 {% if not thumb %}
                     {% for a in cluster.articles %}
-                        {% if a.image_url and not thumb %}
-                            {% set thumb = a.image_url %}
-                        {% endif %}
+                        {% if a.image_url and not thumb %}{% set thumb = a.image_url %}{% endif %}
                     {% endfor %}
                 {% endif %}
 
-                <article class="bento-card {{ span_class }} fade-in" style="min-height: 300px;">
+                <article class="bento-card {{ span_class }} fade-in">
                     {% if thumb %}
-                        <div class="bento-thumb-wrap" style="height: 160px;">
-                            <a href="/cluster/{{ cluster.cluster_id }}" style="display: block; width: 100%; height: 100%;">
-                                <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}" 
-                                     class="bento-thumb" loading="lazy">
-                            </a>
-                        </div>
+                    <div class="bento-thumb-wrap" style="height:160px;">
+                        <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                            <img src="{% if thumb.startswith('/') %}{{ thumb }}{% else %}/proxy?url={{ thumb|urlencode }}{% endif %}"
+                                 class="bento-thumb" loading="lazy">
+                        </a>
+                    </div>
                     {% endif %}
-                    
+
                     <div class="bento-body">
                         <div class="bento-meta">
                             <span class="source">{{ main.source }}</span>
-                            <span class="time">• {{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                            <span>·</span>
+                            <span>{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
                             {% if cluster.is_breaking %}
-                                <span class="src-badge pulse" style="background:var(--primary); color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.6rem;">🚨 БРЕЈКИНГ</span>
+                                <span class="src-badge pulse">БРЕЈКИНГ</span>
                             {% endif %}
                         </div>
-                        
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '1.8rem' if span_class == 'span-6' else '1.2rem' }}; font-weight: {{ 400 + (cluster.score * 80) | int }};">
+
+                        <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size:{{ font_size }};">
                             {{ main.title | truncate(90) }}
                         </a>
-                        
+
                         <div class="bento-footer">
-                            <span class="count-badge" style="background: var(--bg-elevated); border: 1px solid var(--border); padding: 4px 10px; font-size: 0.6rem;">{{ cluster.articles|length }} извори</span>
+                            <span class="count-badge">{{ cluster.articles|length }} извори</span>
                         </div>
                     </div>
                 </article>
