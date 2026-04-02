@@ -119,6 +119,7 @@ const UI = {
                 </div>` : '';
             return `
                 <article class="card-hero span-12 row-2 fade-in">
+                    ${imgHtml}
                     <div class="card-hero__body">
                         ${eyebrow}
                         <a href="/cluster/${cluster.cluster_id}" class="card-hero__headline">${this._esc(main.title)}</a>
@@ -127,7 +128,6 @@ const UI = {
                             ${countBadge}
                         </div>
                     </div>
-                    ${imgHtml}
                 </article>`;
         }
 

@@ -41,11 +41,6 @@
             {% if idx % 6 == 0 %}
             {# ── HERO CARD ── Dramatic editorial split #}
             <article class="card-hero span-12 row-2 fade-in">
-                <div class="card-hero__body">
-                    {{ eyebrow() }}
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__headline">{{ main.title }}</a>
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__cta">ПРОЧИТАЈТЕ ПОВЕЌЕ</a>
-                </div>
                 {% if thumb_src %}
                 <div class="card-hero__image">
                     <a href="/cluster/{{ cluster.cluster_id }}">
@@ -53,6 +48,11 @@
                     </a>
                 </div>
                 {% endif %}
+                <div class="card-hero__body">
+                    {{ eyebrow() }}
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__headline">{{ main.title }}</a>
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__cta">ПРОЧИТАЈТЕ ПОВЕЌЕ</a>
+                </div>
             </article>
 
             {% elif idx % 6 == 3 %}
