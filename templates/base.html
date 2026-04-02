@@ -10,10 +10,10 @@
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     <link rel="apple-touch-icon" href="/static/logo.png">
 
-    <!-- Google Fonts: Playfair Display (Headlines) + Golos Text (Reading & UI) -->
+    <!-- Google Fonts: Lora (Headlines) + Inter (Reading & UI) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Golos+Text:wght@400..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
     <script>
@@ -136,7 +136,7 @@
     <main class="site-layout bento-grid" style="padding-top: var(--space-xl);">
         <!-- Sidebar Left (Navigation / Archive) -->
         <aside class="span-3 row-2">
-            <div class="bento-card" style="height: 100%; padding: var(--space-lg);">
+            <div style="height: 100%; padding: var(--space-lg);">
                 <h3 class="widget-title">Избор</h3>
                 <nav class="widget-nav">
                     <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
@@ -154,7 +154,7 @@
 
         <!-- Sidebar Right (Context / Trends) -->
         <aside class="span-3 row-2">
-            <div class="bento-card" style="height: 100%; padding: var(--space-lg);">
+            <div style="height: 100%; padding: var(--space-lg);">
                 <h3 class="widget-title">Популарно</h3>
                 <div id="sidebarTrending">
                     <!-- Standard trending words if needed -->

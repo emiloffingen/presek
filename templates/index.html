@@ -32,35 +32,23 @@
             {% macro eyebrow() %}
             <div class="card-eyebrow">
                 <span class="card-source">{{ main.source }}</span>
-                <span class="card-dot">·</span>
-                <span class="card-time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
                 {% if main.category %}<span class="card-category">{{ main.category }}</span>{% endif %}
-                {% if cluster.is_breaking %}<span class="card-breaking">🚨 БРЕЈКИНГ</span>{% endif %}
+                <span class="card-time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                {% if cluster.is_breaking %}<span class="card-breaking">БРЕЈКИНГ</span>{% endif %}
             </div>
             {% endmacro %}
 
-            {# Shared count badge fragment #}
-            {% macro countbadge() %}
-            <span class="card-eyebrow">
-                <span class="card-count">{{ cluster.articles|length }} извори</span>
-                {% if cluster.has_balanced %}<span class="card-balanced">⚖️ Балансирано</span>{% endif %}
-            </span>
-            {% endmacro %}
-
             {% if idx % 6 == 0 %}
-            {# ── HERO CARD ── full width, large editorial split #}
+            {# ── HERO CARD ── Dramatic editorial split #}
             <article class="card-hero span-12 row-2 fade-in">
                 <div class="card-hero__body">
                     {{ eyebrow() }}
                     <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__headline">{{ main.title }}</a>
-                    <div class="card-hero__foot">
-                        <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__cta">ВИДИ РЕЗИМЕ</a>
-                        {{ countbadge() }}
-                    </div>
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="card-hero__cta">ПРОЧИТАЈТЕ ПОВЕЌЕ</a>
                 </div>
                 {% if thumb_src %}
                 <div class="card-hero__image">
-                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                    <a href="/cluster/{{ cluster.cluster_id }}">
                         <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="eager">
                     </a>
                 </div>
@@ -68,16 +56,18 @@
             </article>
 
             {% elif idx % 6 == 3 %}
-            {# ── ROW CARD ── compact newspaper list entry #}
+            {# ── ROW CARD ── Newspaper list style #}
             <article class="card-row span-12 fade-in">
                 <div class="card-row__body">
                     {{ eyebrow() }}
                     <a href="/cluster/{{ cluster.cluster_id }}" class="card-row__headline">{{ main.title }}</a>
-                    <div class="card-row__foot">{{ countbadge() }}</div>
+                    <div style="margin-top: 8px;">
+                        <span class="card-count">{{ cluster.articles|length }} извори</span>
+                    </div>
                 </div>
                 {% if thumb_src %}
                 <div class="card-row__image">
-                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                    <a href="/cluster/{{ cluster.cluster_id }}">
                         <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="lazy">
                     </a>
                 </div>
@@ -85,21 +75,21 @@
             </article>
 
             {% else %}
-            {# ── MID CARD ── half-width with 16:9 image #}
+            {# ── MID CARD ── Standard editorial block #}
             <article class="card-mid span-6 fade-in">
                 {% if thumb_src %}
                 <div class="card-mid__image">
-                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                    <a href="/cluster/{{ cluster.cluster_id }}">
                         <img src="{{ thumb_src }}" alt="{{ main.title }}" loading="lazy">
                     </a>
                 </div>
-                {% else %}
-                <div class="card-mid__image-placeholder">📰</div>
                 {% endif %}
                 <div class="card-mid__body">
                     {{ eyebrow() }}
                     <a href="/cluster/{{ cluster.cluster_id }}" class="card-mid__headline">{{ main.title }}</a>
-                    <div class="card-mid__foot">{{ countbadge() }}</div>
+                    <div style="margin-top: auto;">
+                        <span class="card-count">{{ cluster.articles|length }} извори</span>
+                    </div>
                 </div>
             </article>
             {% endif %}
