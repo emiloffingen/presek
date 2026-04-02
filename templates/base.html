@@ -19,12 +19,13 @@
     <script>
         (function() {
             const saved = localStorage.getItem('theme');
-            if (saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            // Default to light mode (NYT-style); only go dark if explicitly saved
+            if (saved !== 'dark') {
                 document.documentElement.classList.add('light');
             }
         })();
     </script>
-    <link rel="stylesheet" href="/static/modern.css?v=2026.final.1">
+    <link rel="stylesheet" href="/static/modern.css?v=2026.nyt.3">
     {% block head %}{% endblock %}
 </head>
 <body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
@@ -59,10 +60,13 @@
     </script>
 
     <header class="site-header">
-        <div style="text-align: center; padding: 30px 0;">
+        <div style="text-align: center; padding: 30px 0; position: relative;">
+            <!-- Mobile hamburger -->
+            <button class="icon-btn mobile-only mobile-menu-btn" id="menuTrigger" aria-label="Мени" style="position: absolute; left: var(--space-md); top: 50%; transform: translateY(-50%);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+            </button>
             <a href="/" aria-label="Пресек Почетна" style="display: inline-block;">
-                <img src="/static/logo.svg" alt="Presek" style="height: 64px; filter: grayscale(1);" onerror="this.src='/static/logo.png'" id="mainLogo">
-                <script>if(document.documentElement.classList.contains('light')) document.getElementById('mainLogo').style.filter='none';</script>
+                <img src="/static/logo.svg" alt="Presek" style="height: 64px;" onerror="this.src='/static/logo.png'" id="mainLogo">
             </a>
         </div>
 
@@ -205,8 +209,8 @@
         </div>
     </div>
 
-    <script src="/static/js/ui.js?v=2026.final.1"></script>
-    <script src="/static/js/app.js?v=2026.final.1"></script>
+    <script src="/static/js/ui.js?v=2026.nyt.3"></script>
+    <script src="/static/js/app.js?v=2026.nyt.3"></script>
     {% block scripts %}{% endblock %}
     <script>
       if ('serviceWorker' in navigator) {

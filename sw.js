@@ -1,12 +1,12 @@
-// Пресек — Service Worker v10
-// Forced Refresh for Identical NYT Style
+// Пресек — Service Worker v12
+// NYT Layout Fix
 
-const CACHE_NAME = 'presek-v10';
+const CACHE_NAME = 'presek-v12';
 const STATIC_ASSETS = [
   '/',
-  '/static/modern.css?v=2026.final.1',
-  '/static/js/ui.js?v=2026.final.1',
-  '/static/js/app.js?v=2026.final.1',
+  '/static/modern.css?v=2026.nyt.3',
+  '/static/js/ui.js?v=2026.nyt.3',
+  '/static/js/app.js?v=2026.nyt.3',
   '/static/logo.svg',
   '/static/img/presek_emblem.svg'
 ];
