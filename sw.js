@@ -1,15 +1,14 @@
 // Пресек — Service Worker v7 (Hybrid 5.1)
 // Optimized for Instant Loads + Offline Reliability
 
-const CACHE_NAME = 'presek-v8';
+const CACHE_NAME = 'presek-v9';
 const STATIC_ASSETS = [
   '/',
-  '/static/modern.css?v=2026.1.1',
-  '/static/js/ui.js?v=2026.1.1',
-  '/static/js/app.js?v=2026.1.1',
+  '/static/modern.css?v=2026.4.2',
+  '/static/js/ui.js?v=2026.4.2',
+  '/static/js/app.js?v=2026.4.2',
   '/static/logo.svg',
-  '/static/img/presek_emblem.svg',
-  '/static/img/placeholder.svg'
+  '/static/img/presek_emblem.svg'
 ];
 
 self.addEventListener('install', e => {

@@ -327,6 +327,29 @@ const UI = {
         this._initReadingToolkit();
         this._initProgressBar();
         this._initPrivacyBanner();
+        this._initStickyHeader();
+    },
+
+    _initStickyHeader() {
+        const header = document.querySelector('.site-header');
+        if (!header) return;
+
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            if (currentScroll <= 0) {
+                header.classList.remove('hidden');
+                return;
+            }
+            if (currentScroll > lastScroll && !header.classList.contains('hidden') && currentScroll > 200) {
+                // Scroll Down
+                header.classList.add('hidden');
+            } else if (currentScroll < lastScroll && header.classList.contains('hidden')) {
+                // Scroll Up
+                header.classList.remove('hidden');
+            }
+            lastScroll = currentScroll;
+        }, { passive: true });
     },
 
     _initReadingToolkit() {

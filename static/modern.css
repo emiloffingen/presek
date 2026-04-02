@@ -339,7 +339,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     position: sticky; top: 0; z-index: 1000; 
     height: var(--header-h); background: var(--bg-base); 
     border-bottom: 1px solid var(--border);
+    transition: transform 0.4s var(--t-fast);
 }
+.site-header.hidden { transform: translateY(-100%); }
+
 .header-inner {
     max-width: var(--max-width); margin: 0 auto; height: 100%;
     display: flex; align-items: center; justify-content: space-between;
@@ -362,6 +365,36 @@ html.light .header-logo img { filter: none; }
 }
 
 .header-actions { display: flex; align-items: center; gap: var(--space-xs); }
+
+/* --- AI Perspective (Pull-Quote Style) --- */
+.perspective-quote {
+    padding: var(--space-xl) 0;
+    margin: var(--space-2xl) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.perspective-quote:nth-child(even) { text-align: right; }
+.perspective-quote:nth-child(even)::before { left: auto; right: -10px; }
+
+.perspective-quote::before {
+    content: '“';
+    position: absolute; top: -20px; left: -10px;
+    font-family: var(--font-heading); font-size: 5rem;
+    color: var(--primary); opacity: 0.2;
+}
+.perspective-text {
+    font-family: var(--font-heading);
+    font-size: 1.4rem; font-weight: 400; line-height: 1.5;
+    color: var(--text-primary); font-style: italic;
+    letter-spacing: -0.01em;
+}
+.perspective-label {
+    display: block; margin-top: var(--space-md);
+    font-family: var(--font-mono); font-size: 0.65rem;
+    font-weight: 800; text-transform: uppercase;
+    color: var(--primary); letter-spacing: 0.15em;
+}
 
 /* =========================================
    CIVIC STRIP

@@ -68,18 +68,12 @@
         {% if perspectives %}
         <section class="perspectives-list fade-in" style="margin-bottom: var(--space-2xl);">
           <h2 class="section-title" style="margin-top: 0;">Анализа на перспективи</h2>
-          <div style="display: grid; gap: var(--space-md);">
-            {% for p in perspectives %}
-            <div style="padding: var(--space-lg); border-top: 1px solid var(--border); display: flex; gap: var(--space-lg); align-items: flex-start;">
-                <div style="color: var(--primary); font-family: var(--font-mono); font-weight: 800; font-size: 0.8rem;">
-                    0{{ loop.index }}
-                </div>
-                <div style="font-size: 1.05rem; line-height: 1.7; color: var(--text-secondary); font-family: var(--font-body);">
-                    {{ p | e }}
-                </div>
-            </div>
-            {% endfor %}
+          {% for p in perspectives %}
+          <div class="perspective-quote">
+              <div class="perspective-text">{{ p | e }}</div>
+              <span class="perspective-label">Перспектива {{ loop.index }}</span>
           </div>
+          {% endfor %}
         </section>
         {% endif %}
 
