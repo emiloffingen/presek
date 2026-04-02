@@ -3,18 +3,41 @@
 {% block title %}Извори | Пресек{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="hero-section" style="margin-bottom: var(--space-xl);">
-        <h1 class="hero-title">Медиумски <span style="color:var(--primary)">Извори</span></h1>
-        <p class="hero-subtitle">Пресек агрегира вести од 60+ македонски и меѓународни извори во реално време.</p>
+<div class="fade-in" style="max-width: var(--max-width); margin: 0 auto; padding: var(--space-xl) var(--space-md);">
+    <header style="margin-bottom: var(--space-2xl); border-bottom: 3px double var(--text-primary); padding-bottom: var(--space-lg); text-align: center;">
+        <h1 class="nyt-title" style="margin-bottom: 10px;">Медиумски Именик</h1>
+        <p style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700;">
+            Целосна листа на индексирани извори во мрежата на Пресек
+        </p>
+    </header>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl);">
+        <div>
+            <h2 class="rail-label" style="border-bottom: 1px solid var(--text-primary); padding-bottom: 8px; margin-bottom: 20px; font-size: 0.9rem;">🇲🇰 Македонски Медиуми</h2>
+            <div id="mkIzvori" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px;"></div>
+        </div>
+        <div>
+            <h2 class="rail-label" style="border-bottom: 1px solid var(--text-primary); padding-bottom: 8px; margin-bottom: 20px; font-size: 0.9rem;">🌍 Меѓународни Медиуми</h2>
+            <div id="intIzvori" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px;"></div>
+        </div>
     </div>
-
-    <h2 class="section-title">🇲🇰 Македонски Медиуми</h2>
-    <div class="bento-grid" id="mkIzvori" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: auto; margin-bottom: var(--space-2xl);"></div>
-
-    <h2 class="section-title">🌍 Меѓународни Медиуми</h2>
-    <div class="bento-grid" id="intIzvori" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: auto;"></div>
 </div>
+
+<style>
+    .source-link {
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: color 0.2s ease;
+    }
+    .source-link:hover { color: var(--primary); border-bottom-color: var(--primary); }
+    .source-link::after { content: '→'; font-size: 0.7rem; opacity: 0.3; }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -48,16 +71,15 @@ const diaspora = [
     "Index.hr","Jutarnji","Klix.ba","Vijesti.me"
 ];
 
-function makeCards(list, muted) {
+function makeList(list) {
     return list.sort().map(name => `
-        <a href="/izvor/${encodeURIComponent(name)}" class="bento-card" style="padding: var(--space-md); flex-direction: row; align-items: center; gap: 12px;">
-            <div class="izvor-dot${muted ? ' muted' : ''}" style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0;"></div>
-            <span class="izvor-name" style="font-weight: 600; font-size: 0.9rem;">${name}</span>
+        <a href="/izvor/${encodeURIComponent(name)}" class="source-link">
+            <span>${name}</span>
         </a>`
     ).join('');
 }
 
-document.getElementById('mkIzvori').innerHTML  = makeCards(mk, false);
-document.getElementById('intIzvori').innerHTML = makeCards(diaspora, true);
+document.getElementById('mkIzvori').innerHTML  = makeList(mk);
+document.getElementById('intIzvori').innerHTML = makeList(diaspora);
 </script>
 {% endblock %}

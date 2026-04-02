@@ -7,197 +7,178 @@
 {% endblock %}
 
 {% block content %}
-<div class="fade-in bento-grid">
-    <div class="span-12">
-        <h1 class="hero-title">Пулсот на <span style="color:var(--primary)">Медиумите</span></h1>
+<div class="fade-in" style="max-width: var(--max-width); margin: 0 auto; padding: var(--space-xl) var(--space-md);">
+    <header style="text-align: center; margin-bottom: var(--space-2xl); border-bottom: 1px solid var(--text-primary); padding-bottom: var(--space-lg);">
+        <h1 class="nyt-title" style="margin-bottom: 10px;">Медиумски Пулс</h1>
+        <p style="font-family: var(--font-body); font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">
+            Анализа на македонскиот информативен простор во реално време
+        </p>
+    </header>
+
+    <!-- KPI Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-2xl); text-align: center;">
+        <div style="border-right: 1px solid var(--border); padding: 0 var(--space-md);">
+            <span style="display: block; font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading);" id="totalArticles">—</span>
+            <span class="rail-label" style="margin-top: 8px;">Вкупно Објави</span>
+        </div>
+        <div style="border-right: 1px solid var(--border); padding: 0 var(--space-md);">
+            <span style="display: block; font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading);" id="last24h">—</span>
+            <span class="rail-label" style="margin-top: 8px;">Последни 24ч</span>
+        </div>
+        <div style="border-right: 1px solid var(--border); padding: 0 var(--space-md);">
+            <span style="display: block; font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading);" id="summarizedPct">—</span>
+            <span class="rail-label" style="margin-top: 8px;">AI Резимирани</span>
+        </div>
+        <div style="padding: 0 var(--space-md);">
+            <span style="display: block; font-size: 2.2rem; font-weight: 800; font-family: var(--font-heading);" id="uptimeVal">—</span>
+            <span class="rail-label" style="margin-top: 8px;">Системски Uptime</span>
+        </div>
     </div>
 
-    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
-        <span class="kpi-val" id="totalArticles" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
-        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Вкупно Објави</span>
-    </div>
-    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
-        <span class="kpi-val" id="last24h" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
-        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Во Последни 24ч</span>
-    </div>
-    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
-        <span class="kpi-val" id="summarizedPct" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
-        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Резимирани</span>
-    </div>
-    <div class="bento-card span-3" style="padding: var(--space-lg); text-align: center;">
-        <span class="kpi-val" id="uptimeVal" style="font-size: 2rem; font-weight: 800; color: var(--primary); display: block;">—</span>
-        <span class="kpi-label" style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Uptime</span>
-    </div>
-
-    <div class="bento-card span-8 row-2" style="padding: var(--space-lg);">
-        <h3 class="chart-title">Брзина на Ингестија (24ч)</h3>
-        <canvas id="velocityChart"></canvas>
-    </div>
-    
-    <div class="bento-card span-4 row-2" style="padding: var(--space-lg);">
-        <h3 class="chart-title">Дистрибуција по Категорија</h3>
-        <canvas id="categoryChart"></canvas>
-    </div>
-
-    <div class="bento-card span-6" style="padding: var(--space-lg);">
-        <h3 class="chart-title">Топ 10 Извори — Волумен</h3>
-        <div id="sourcesStats"></div>
-    </div>
-    
-    <div class="bento-card span-6" style="padding: var(--space-lg);">
-        <h3 class="chart-title">Кој Прв Објавува? (7д)</h3>
-        <div id="speedStats"></div>
-    </div>
-
-    <div class="bento-card span-12" style="padding: var(--space-lg);">
-        <h3 class="chart-title">Технички Детали</h3>
-        <div style="font-size:0.9rem;line-height:2.2;color:var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px;">
-            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
-                <span>База на податоци (PostgreSQL)</span>
-                <strong id="dbSize" style="color:var(--text-primary)">—</strong>
+    <!-- Charts Grid -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-2xl); margin-bottom: var(--space-2xl);">
+        <div>
+            <h3 class="rail-label" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 20px;">Брзина на Ингестија (24ч)</h3>
+            <div style="height: 300px;">
+                <canvas id="velocityChart"></canvas>
             </div>
-            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
-                <span>Активни RSS фидови</span>
-                <strong id="totalFeeds" style="color:var(--text-primary)">—</strong>
+        </div>
+        <div>
+            <h3 class="rail-label" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 20px;">По Категорија</h3>
+            <div style="height: 300px;">
+                <canvas id="categoryChart"></canvas>
             </div>
-            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
-                <span>Најстара статија</span>
-                <strong id="oldestArt" style="color:var(--text-primary)">—</strong>
+        </div>
+    </div>
+
+    <!-- Tables Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); margin-bottom: var(--space-2xl);">
+        <div>
+            <h3 class="rail-label" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 20px;">Најактивни Извори</h3>
+            <div id="sourcesStats" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+        <div>
+            <h3 class="rail-label" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 20px;">Најбрзи Медиуми (7д)</h3>
+            <div id="speedStats" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+    </div>
+
+    <!-- Tech Details Table -->
+    <div style="border-top: 2px solid var(--text-primary); padding-top: var(--space-lg);">
+        <h3 class="rail-label">Системски Информации</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg); margin-top: var(--space-md); font-size: 0.9rem;">
+            <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <span style="color: var(--text-secondary);">База (PostgreSQL)</span>
+                <strong id="dbSize">—</strong>
             </div>
-            <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:6px">
-                <span>Последно ажурирање</span>
-                <strong id="newestArt" style="color:var(--text-primary)">—</strong>
+            <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Активни Фидови</span>
+                <strong id="totalFeeds">—</strong>
+            </div>
+            <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Најстара Статија</span>
+                <strong id="oldestArt">—</strong>
+            </div>
+            <div style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <span style="color: var(--text-secondary);">Последно Ажурирање</span>
+                <strong id="newestArt">—</strong>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .bar-row { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; }
+    .bar-label { flex: 0 0 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+    .bar-track { flex: 1; height: 4px; background: var(--bg-elevated); }
+    .bar-fill { height: 100%; background: var(--text-primary); transition: width 1s ease; }
+    .bar-val { flex: 0 0 40px; text-align: right; font-family: var(--font-mono); color: var(--text-muted); font-size: 0.75rem; }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Fix #5: read all colors from CSS variables so light/dark mode works
-const _cs       = getComputedStyle(document.documentElement);
-const PRIMARY   = _cs.getPropertyValue('--primary').trim()      || '#E63946';
-const TEXT_MUTED= _cs.getPropertyValue('--text-muted').trim()   || '#636970';
-const GRID_COLOR= _cs.getPropertyValue('--border').trim()       || 'rgba(255,255,255,0.07)';
-
-const chartDefaults = {
-    responsive: true,
-    plugins: { legend: { display: false } },
-};
+const _cs = getComputedStyle(document.documentElement);
+const TEXT_COLOR = _cs.getPropertyValue('--text-primary').trim();
+const BORDER_COLOR = _cs.getPropertyValue('--border').trim();
 
 async function loadStats() {
     try {
-        const res  = await fetch('/api/stats/full');
+        const res = await fetch('/api/stats/full');
         const data = await res.json();
 
         document.getElementById('totalArticles').textContent = (data.total_articles || 0).toLocaleString();
-        document.getElementById('last24h').textContent       = (data.last_24h || 0).toLocaleString();
+        document.getElementById('last24h').textContent = (data.last_24h || 0).toLocaleString();
         document.getElementById('summarizedPct').textContent = (data.summarized_pct || 0) + '%';
-        document.getElementById('uptimeVal').textContent     = data.uptime || '—';
-        document.getElementById('dbSize').textContent        = (data.db_size_mb || 0) + ' MB';
-        document.getElementById('totalFeeds').textContent    = data.total_feeds || '—';
-        document.getElementById('oldestArt').textContent     = data.oldest_article
+        document.getElementById('uptimeVal').textContent = data.uptime || '—';
+        document.getElementById('dbSize').textContent = (data.db_size_mb || 0) + ' MB';
+        document.getElementById('totalFeeds').textContent = data.total_feeds || '—';
+        document.getElementById('oldestArt').textContent = data.oldest_article
             ? new Date(data.oldest_article).toLocaleDateString('mk-MK') : '—';
-        document.getElementById('newestArt').textContent     = (data.new_article || data.newest_article)
+        document.getElementById('newestArt').textContent = (data.new_article || data.newest_article)
             ? new Date(data.new_article || data.newest_article).toLocaleTimeString('mk-MK') : '—';
 
-        // Volume bar chart
-        const bySrc = data.by_source || [];
-        const maxSrc = bySrc.length ? Math.max(...bySrc.map(s => s.n)) : 1;
-        document.getElementById('sourcesStats').innerHTML = bySrc.slice(0, 10).map(s => `
-            <div class="bar-row">
-                <span class="bar-label">${s.source}</span>
-                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((s.n/maxSrc)*100)}%"></div></div>
-                <span class="bar-val">${s.n}</span>
-            </div>`).join('') || '<p style="color:var(--text-muted);font-size:.85rem">Нема податоци.</p>';
+        // Custom Bar Renderers
+        const renderBars = (containerId, items, valKey, labelKey) => {
+            const container = document.getElementById(containerId);
+            const max = items.length ? Math.max(...items.map(i => i[valKey])) : 1;
+            container.innerHTML = items.slice(0, 8).map(i => `
+                <div class="bar-row">
+                    <span class="bar-label">${i[labelKey]}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${(i[valKey]/max)*100}%"></div></div>
+                    <span class="bar-val">${i[valKey]}</span>
+                </div>`).join('');
+        };
 
-        // Speed bar chart
-        const spd = data.speed_leaderboard || [];
-        const maxSpd = spd.length ? Math.max(...spd.map(s => s.first_count)) : 1;
-        document.getElementById('speedStats').innerHTML = spd.map(s => `
-            <div class="bar-row">
-                <span class="bar-label">${s.source}</span>
-                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((s.first_count/maxSpd)*100)}%"></div></div>
-                <span class="bar-val">${s.first_count}</span>
-            </div>`).join('') || '<p style="color:var(--text-muted);font-size:.85rem">Нема податоци.</p>';
+        renderBars('sourcesStats', data.by_source || [], 'n', 'source');
+        renderBars('speedStats', data.speed_leaderboard || [], 'first_count', 'source');
 
-        // Velocity line chart
-        const vel = data.velocity || [];
-        new Chart(document.getElementById('velocityChart').getContext('2d'), {
+        // Velocity Chart
+        new Chart(document.getElementById('velocityChart'), {
             type: 'line',
             data: {
-                labels: vel.map(v => new Date(v.t).getHours() + ':00'),
+                labels: (data.velocity || []).map(v => new Date(v.t).getHours() + ':00'),
                 datasets: [{
-                    data: vel.map(v => v.n),
-                    borderColor: PRIMARY,
-                    backgroundColor: 'rgba(230,57,70,0.08)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointRadius: 0
+                    data: (data.velocity || []).map(v => v.n),
+                    borderColor: TEXT_COLOR,
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.3
                 }]
             },
             options: {
-                ...chartDefaults,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
-                    x: { grid: { display: false }, ticks: { color: TEXT_MUTED, maxRotation: 0 } }
+                    y: { grid: { color: BORDER_COLOR }, ticks: { color: TEXT_COLOR, font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { color: TEXT_COLOR, font: { size: 10 }, maxRotation: 0 } }
                 }
             }
         });
 
-        // Category doughnut
-        const cats = data.by_category || [];
-        new Chart(document.getElementById('categoryChart').getContext('2d'), {
+        // Category Chart
+        new Chart(document.getElementById('categoryChart'), {
             type: 'doughnut',
             data: {
-                labels: cats.map(c => c.cat),
+                labels: (data.by_category || []).map(c => c.cat),
                 datasets: [{
-                    data: cats.map(c => c.n),
-                    backgroundColor: [PRIMARY,'#e67e22','#f1c40f','#27ae60','#2980b9','#8e44ad','#2c3e50','#34495e'],
+                    data: (data.by_category || []).map(c => c.n),
+                    backgroundColor: [TEXT_COLOR, '#333', '#666', '#999', '#AAA', '#CCC', '#DDD', '#EEE'],
                     borderWidth: 0
                 }]
             },
             options: {
-                ...chartDefaults,
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom',
-                        labels: { color: TEXT_MUTED, padding: 10, boxWidth: 8, font: { size: 9 } }
-                    }
-                }
-            }
-        });
-
-        // Volume horizontal bar (top sources)
-        const allSrc = data.by_source || [];
-        new Chart(document.getElementById('sentimentChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: allSrc.slice(0, 8).map(s => s.source),
-                datasets: [{
-                    label: 'Објави',
-                    data: allSrc.slice(0, 8).map(s => s.n),
-                    backgroundColor: 'rgba(230,57,70,0.55)',
-                    borderRadius: 3
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                ...chartDefaults,
-                scales: {
-                    x: { beginAtZero: true, grid: { color: GRID_COLOR }, ticks: { color: TEXT_MUTED } },
-                    y: { grid: { display: false }, ticks: { color: TEXT_MUTED, font: { size: 9 } } }
-                }
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: { legend: { display: false } }
             }
         });
 
     } catch (e) { console.error('[stats]', e); }
 }
-
 loadStats();
 </script>
 {% endblock %}

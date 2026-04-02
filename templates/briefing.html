@@ -3,28 +3,35 @@
 {% block title %}Дневен Брифинг | Пресек{% endblock %}
 
 {% block content %}
-<div class="briefing-container fade-in">
-    <div class="briefing-card">
-        <span class="briefing-meta" id="briefingDate">Вчитувам…</span>
-        <h1 class="hero-title" style="margin-bottom:var(--space-xl)">
-            Дневен <span style="color:var(--primary)">Брифинг</span>
-        </h1>
+<div class="article-wrap fade-in" style="padding-top: var(--space-xl);">
+    <header class="article-header">
+        <div style="text-align: center; margin-bottom: var(--space-md);">
+            <span class="rail-label" id="briefingDate">Вчитувам…</span>
+        </div>
+        <h1 class="nyt-title" style="text-align: center; margin-bottom: var(--space-xl);">Дневен Брифинг</h1>
+        <div class="article-meta-block">
+            <div class="meta-info-left">
+                <span style="color: var(--text-primary); font-weight: 700;">ПРЕСЕК УТРО</span>
+                <span>Најважните настани резимирани за вас</span>
+            </div>
+        </div>
+    </header>
 
-        <div id="briefingContent" class="briefing-content">
+    <div class="reading-column">
+        <div id="briefingContent" class="briefing-content" style="font-family: var(--font-heading); font-size: 1.2rem; line-height: 1.8; color: var(--text-primary);">
             <div>
-                <div class="skeleton-box" style="height:18px;width:82%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:91%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:74%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:88%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:65%;margin-bottom:30px"></div>
-                <div class="skeleton-box" style="height:18px;width:79%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:93%;margin-bottom:12px"></div>
-                <div class="skeleton-box" style="height:18px;width:70%"></div>
+                <div class="skeleton-box" style="height:20px;width:100%;margin-bottom:15px"></div>
+                <div class="skeleton-box" style="height:20px;width:95%;margin-bottom:15px"></div>
+                <div class="skeleton-box" style="height:20px;width:98%;margin-bottom:15px"></div>
+                <div class="skeleton-box" style="height:20px;width:92%;margin-bottom:30px"></div>
+                <div class="skeleton-box" style="height:20px;width:100%;margin-bottom:15px"></div>
+                <div class="skeleton-box" style="height:20px;width:96%;margin-bottom:15px"></div>
+                <div class="skeleton-box" style="height:20px;width:90%"></div>
             </div>
         </div>
 
-        <div class="briefing-footer">
-            Составено врз основа на најважните вести во последните 24 часа.
+        <div class="briefing-footer" style="margin-top: var(--space-2xl); padding-top: var(--space-lg); border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); font-style: italic; text-align: center;">
+            Овој брифинг е генериран од Пресек AI врз основа на медиумското покривање во последните 24 часа.
         </div>
     </div>
 </div>
@@ -57,9 +64,10 @@ async function loadBriefing() {
         
         paragraphs.forEach(para => {
             const p = document.createElement('p');
+            p.style.marginBottom = '25px';
             // Simple mini-markdown: **bold** and * bullet points
             let html = para
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-primary);font-weight:800">$1</strong>')
                 .replace(/^[\*•-]\s+(.*)/gm, '• $1')
                 .replace(/\n/g, '<br>');
             

@@ -3,79 +3,70 @@
 {% block title %}За Нас | Пресек{% endblock %}
 
 {% block content %}
-<div class="fade-in bento-grid">
-    <!-- Hero / Intro -->
-    <div class="bento-card span-12" style="padding: var(--space-2xl); background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%); position: relative; overflow: hidden;">
-        <div style="position: absolute; right: -20px; bottom: -20px; opacity: 0.05;">
-            <svg width="240" height="240" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+<div class="article-wrap fade-in" style="padding-top: var(--space-xl);">
+    <header class="article-header">
+        <h1 class="nyt-title">Мисијата на Пресек</h1>
+        <p class="cluster-excerpt" style="font-size: 1.25rem; color: var(--text-secondary); margin-bottom: var(--space-lg); line-height: 1.4;">
+            Првиот македонски паметен агрегатор кој ја дефинира иднината на дигиталното информирање преку вештачка интелигенција и објективна анализа.
+        </p>
+        <div class="article-meta-block">
+            <div class="meta-info-left">
+                <span style="color: var(--text-primary); font-weight: 700;">КОМПАНИЈА</span>
+                <span>Основано 2026</span>
+                <span>Скопје, Македонија</span>
+            </div>
         </div>
-        <div style="position: relative; z-index: 2; max-width: 600px;">
-            <h1 class="hero-title" style="margin-bottom: var(--space-md);">Како работи <span style="color:var(--primary)">Пресек</span>?</h1>
-            <p style="font-size: 1.1rem; line-height: var(--lh-loose); color: var(--text-secondary);">
-                Пресек е првиот македонски паметен агрегатор кој не само што ги собира вестите, туку ги разбира, ги групира и ги резимира за вас користејќи најсовремена технологија.
+    </header>
+
+    <div class="reading-column">
+        <section class="cluster-summary">
+            <p>
+                Во ера на дезинформации и информациско преоптоварување, Пресек стои како неутрален технолошки филтер. Нашата цел е да го заштитиме вашето време и да ви овозможиме да бидете информирани без да бидете изгубени во шумата од наслови.
             </p>
+            <p>
+                Пресек не е само собирач на линкови. Тоа е интелигентен систем кој ги разбира вестите, ги групира по настан и генерира објективни резимеа, овозможувајќи ви да ја видите целата слика од различни перспективи со еден поглед.
+            </p>
+        </section>
+
+        <div style="margin: var(--space-2xl) 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl);">
+            <div style="border-right: 1px solid var(--border); padding-right: var(--space-xl);">
+                <h3 class="rail-label">Автоматска Кластеризација</h3>
+                <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">
+                    Нашиот алгоритам ги анализира насловите во реално време. Доколку 20 различни медиуми известуваат за ист настан, Пресек ги препознава и ги спојува во еден единствен "кластер". Веќе нема потреба да го читате истото 20 пати.
+                </p>
+            </div>
+            <div>
+                <h3 class="rail-label">Интелигентно Резимирање</h3>
+                <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">
+                    За секоја група вести, нашиот систем генерира објективно резиме на македонски јазик. Добивате суштина од сите извори во неколку реченици, без пристрасност и непотребни детали.
+                </p>
+            </div>
         </div>
-    </div>
 
-    <!-- Core Features Section -->
-    <div class="bento-card span-6" style="padding: var(--space-xl);">
-        <div style="font-size: 2rem; margin-bottom: var(--space-md);">🧬</div>
-        <h3 class="bento-headline" style="margin-bottom: var(--space-sm);">Автоматска Кластеризација</h3>
-        <p style="color: var(--text-secondary); line-height: var(--lh-base); font-size: 0.95rem;">
-            Нашиот алгоритам ги анализира насловите во реално време. Доколку 20 различни медиуми известуваат за ист настан, Пресек ги препознава и ги спојува во еден единствен "кластер". Веќе нема потреба да го читате истото 20 пати.
-        </p>
-    </div>
+        <div class="perspective-quote">
+            <div class="perspective-text">
+                "Технологијата треба да му служи на граѓанинот, а не да го збунува. Пресек е нашиот одговор на дигиталниот хаос."
+            </div>
+            <span class="perspective-label">Уредувачки Тим</span>
+        </div>
 
-    <div class="bento-card span-6" style="padding: var(--space-xl);">
-        <div style="font-size: 2rem; margin-bottom: var(--space-md);">✍️</div>
-        <h3 class="bento-headline" style="margin-bottom: var(--space-sm);">Интелигентно Резимирање</h3>
-        <p style="color: var(--text-secondary); line-height: var(--lh-base); font-size: 0.95rem;">
-            За секоја група вести, нашиот систем генерира објективно резиме на македонски јазик. Добивате суштина од сите извори во неколку реченици, без пристрасност и непотребни детали.
-        </p>
-    </div>
-
-    <!-- Stats / Trust -->
-    <div class="bento-card span-4" style="padding: var(--space-xl); background: var(--primary-muted); border-color: var(--primary);">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); margin-bottom: 5px;">60+</div>
-        <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; color: var(--primary);">Активни Извори</div>
-        <p style="margin-top: var(--space-md); font-size: 0.85rem; color: var(--text-secondary);">
-            Следиме сè — од најголемите национални телевизии до локални портали и светски агенции.
-        </p>
-    </div>
-
-    <div class="bento-card span-4" style="padding: var(--space-xl);">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 5px;">5 <span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);">мин</span></div>
-        <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; color: var(--text-muted);">Интервал на Освежување</div>
-        <p style="margin-top: var(--space-md); font-size: 0.85rem; color: var(--text-secondary);">
-            Нашиот систем работи 24/7. Вестите се појавуваат на Пресек веднаш штом се објавени на оригиналниот извор.
-        </p>
-    </div>
-
-    <div class="bento-card span-4" style="padding: var(--space-xl);">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 5px;">🌍</div>
-        <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; color: var(--text-muted);">Глобален Опсег</div>
-        <p style="margin-top: var(--space-md); font-size: 0.85rem; color: var(--text-secondary);">
-            Автоматски преведуваме и обработуваме вести од Reuters, CNN, BBC и други светски гиганти.
-        </p>
-    </div>
-
-    <!-- Mission -->
-    <div class="bento-card span-8" style="padding: var(--space-xl);">
-        <h3 class="bento-headline" style="margin-bottom: var(--space-md);">Нашата Мисија</h3>
-        <p style="color: var(--text-secondary); line-height: var(--lh-loose); font-size: 1rem;">
-            Во ера на дезинформации и информациско преоптоварување, Пресек стои како неутрален технолошки филтер. Нашата цел е да го заштитиме вашето време и да ви овозможиме да бидете информирани без да бидете изгубени во шумата од наслови.
-        </p>
-    </div>
-
-    <!-- Tech Stack -->
-    <div class="bento-card span-4" style="padding: var(--space-xl); background: var(--bg-surface);">
-        <h3 class="bento-headline" style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: var(--space-md);">Технологија</h3>
-        <ul style="list-style: none; padding: 0; font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
-            <li>• Vector Embeddings (Semantic Search)</li>
-            <li>• LLM Synthesis (Summarization)</li>
-            <li>• TF-IDF Clustering (Grouping)</li>
-            <li>• Real-time RSS Ingestion</li>
-        </ul>
+        <div style="margin-top: var(--space-2xl); border-top: 1px solid var(--border); padding-top: var(--space-xl);">
+            <h2 class="rail-label">Технолошки Столбови</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg); margin-top: var(--space-md);">
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: var(--text-primary);">Vector Embeddings</strong>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Семантичко пребарување и поврзување на настани.</span>
+                </div>
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: var(--text-primary);">LLM Synthesis</strong>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Напредно сумирање на комплексни вести.</span>
+                </div>
+                <div>
+                    <strong style="display: block; margin-bottom: 4px; color: var(--text-primary);">Real-time Ingestion</strong>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Процесирање на илјадници статии секој час.</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
