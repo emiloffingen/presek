@@ -112,6 +112,7 @@ const UI = {
         const main = articles[0];
         const count = articles.length;
         const isBookmarked = this.isBookmarked(cluster.cluster_id);
+        const isFeatured = idx % 6 === 0;
 
         let thumbUrl = cluster.representative_image;
         if (thumbUrl && !thumbUrl.startsWith('/')) thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
@@ -124,86 +125,46 @@ const UI = {
             }
         }
 
+        const catMap = {
+            'Македонија': 'Balkans', 'Балкан': 'Balkans',
+            'Економија': 'Economy', 'Политика': 'Politics',
+            'Технологија': 'Tech', 'Свет': 'World', 'Спорт': 'Sport'
+        };
+        const catClass = `cat-${catMap[main.category] || 'General'}`;
+
         const bookmarkHtml = `
             <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" 
                     onclick="UI.toggleBookmark(event, '${cluster.cluster_id}')" 
                     title="${isBookmarked ? 'Отстрани од зачувани' : 'Зачувај за подоцна'}">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.5">
                     <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
                 </svg>
             </button>`;
 
-        const eyebrow = `
-            <div class="card-eyebrow">
-                <span class="card-source">${this._esc(main.source)}</span>
-                <span class="card-dot">·</span>
-                <span class="card-time">${this._relativeTime(main.created_at)}</span>
-                ${main.category ? `<span class="card-category">${this._esc(main.category)}</span>` : ''}
-                ${cluster.is_breaking ? `<span class="card-breaking">🚨 БРЕЈКИНГ</span>` : ''}
-                ${bookmarkHtml}
-            </div>`;
-
-        const countBadge = `
-            <span class="card-eyebrow">
-                <span class="card-count">${count} извори</span>
-                ${cluster.has_balanced ? `<span class="card-balanced">⚖️ Балансирано</span>` : ''}
-            </span>`;
-
-        // Hero card (every 6th: 0, 6, 12, ...)
-        if (idx % 6 === 0) {
-            const imgHtml = thumbUrl ? `
-                <div class="card-hero__image">
-                    <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
-                        <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="eager">
-                    </a>
-                </div>` : '';
-            return `
-                <article class="card-hero span-12 row-2 fade-in">
-                    ${imgHtml}
-                    <div class="card-hero__body">
-                        ${eyebrow}
-                        <a href="/cluster/${cluster.cluster_id}" class="card-hero__headline">${this._esc(main.title)}</a>
-                        <div class="card-hero__foot">
-                            <a href="/cluster/${cluster.cluster_id}" class="card-hero__cta">ВИДИ РЕЗИМЕ</a>
-                            ${countBadge}
-                        </div>
-                    </div>
-                </article>`;
-        }
-
-        // Row card (every 4th in the pattern: 3, 9, 15, ...)
-        if (idx % 6 === 3) {
-            const imgHtml = thumbUrl ? `
-                <div class="card-row__image">
-                    <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
-                        <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="lazy">
-                    </a>
-                </div>` : '';
-            return `
-                <article class="card-row span-12 fade-in">
-                    <div class="card-row__body">
-                        ${eyebrow}
-                        <a href="/cluster/${cluster.cluster_id}" class="card-row__headline">${this._esc(main.title)}</a>
-                        <div class="card-row__foot">${countBadge}</div>
-                    </div>
-                    ${imgHtml}
-                </article>`;
-        }
-
-        // Mid card (idx%6 === 1,2,4,5)
         const imgHtml = thumbUrl ? `
-            <div class="card-mid__image">
+            <div class="cluster-thumb-wrap">
                 <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
-                    <img src="${thumbUrl}" alt="${this._esc(main.title)}" loading="lazy">
+                    <img src="${thumbUrl}" alt="${this._esc(main.title)}" class="cluster-thumb" loading="${idx < 3 ? 'eager' : 'lazy'}">
                 </a>
-            </div>` : `<div class="card-mid__image-placeholder">📰</div>`;
+            </div>` : '';
+
         return `
-            <article class="card-mid span-6 fade-in">
+            <article class="news-cluster ${isFeatured ? 'featured' : ''} ${catClass} fade-in">
                 ${imgHtml}
-                <div class="card-mid__body">
-                    ${eyebrow}
-                    <a href="/cluster/${cluster.cluster_id}" class="card-mid__headline">${this._esc(main.title)}</a>
-                    <div class="card-mid__foot">${countBadge}</div>
+                <div class="cluster-main">
+                    <div class="cluster-meta">
+                        <span class="category">${this._esc(main.category || 'Вести')}</span>
+                        <span class="card-dot">·</span>
+                        <span class="time">${this._relativeTime(main.created_at)}</span>
+                        ${bookmarkHtml}
+                    </div>
+                    <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
+                        ${this._esc(main.title)}
+                    </a>
+                    <div class="cluster-footer" style="border:none; padding:0; margin-top: var(--space-xs);">
+                        <span class="card-count">${count} извори</span>
+                        ${cluster.has_balanced ? `<span style="font-size:0.65rem; margin-left:10px;">⚖️</span>` : ''}
+                    </div>
                 </div>
             </article>`;
     },

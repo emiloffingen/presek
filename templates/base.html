@@ -76,14 +76,22 @@
 
     <header class="site-header glass">
         <div class="header-inner">
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <button class="icon-btn mobile-only" id="menuTrigger" title="Мени" style="display: none;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <div style="display: flex; align-items: center; gap: 24px;">
+                <button class="icon-btn" id="menuTrigger" title="Мени">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <a href="/" class="header-logo" aria-label="Пресек Почетна">
-                    <img src="/static/logo.svg" alt="Presek" width="120" height="30" onerror="this.src='/static/logo.png'">
+                    <img src="/static/logo.svg" alt="Presek" width="130" height="32" onerror="this.src='/static/logo.png'">
                 </a>
             </div>
+
+            <nav class="desktop-nav" id="categoryNav">
+                <button class="cat-btn active" data-topic="">Сите</button>
+                <button class="cat-btn" data-topic="Македонија">Македонија</button>
+                <button class="cat-btn" data-topic="Економија">Економија</button>
+                <button class="cat-btn" data-topic="Свет">Свет</button>
+                <button class="cat-btn" data-topic="Технологија">Технологија</button>
+            </nav>
             
             <div class="header-actions">
                 <button class="icon-btn" id="searchTrigger" title="Пребарај (/)">
@@ -97,7 +105,7 @@
         </div>
     </header>
 
-    <!-- Mobile Navigation Drawer -->
+    <!-- Mobile Navigation Drawer (Now also for desktop secondary nav) -->
     <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
     <div class="mobile-drawer" id="mobileDrawer">
         <div class="drawer-header">
@@ -107,6 +115,18 @@
             </button>
         </div>
         <nav class="drawer-nav">
+            <div class="mobile-only" style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--border); padding-bottom: var(--space-lg);">
+                <h3 class="widget-title" style="margin-left: var(--space-md); margin-bottom: var(--space-sm);">ТЕМУ</h3>
+                <button class="cat-btn active" data-topic="" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Сите</button>
+                <button class="cat-btn" data-topic="Македонија" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Македонија</button>
+                <button class="cat-btn" data-topic="Балкан" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Балкан</button>
+                <button class="cat-btn" data-topic="Европа" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Европа</button>
+                <button class="cat-btn" data-topic="Свет" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Свет</button>
+                <button class="cat-btn" data-topic="Економија" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Економија</button>
+                <button class="cat-btn" data-topic="Спорт" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Спорт</button>
+                <button class="cat-btn" data-topic="Технологија" style="display: block; width: 100%; text-align: left; padding: 12px var(--space-lg);">Технологија</button>
+            </div>
+
             <h3 class="widget-title" style="margin-left: var(--space-md); margin-bottom: var(--space-sm);">ИЗБОР</h3>
             <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
             <a href="/saved"><span class="w-icon">🔖</span> Зачувани</a>
@@ -116,23 +136,7 @@
         </nav>
     </div>
 
-    <nav class="nav-bar glass">
-        <div class="nav-inner">
-            <div class="category-scroll" id="categoryNav">
-                <a href="/vesti" class="cat-btn" style="color: var(--primary); font-weight: 800;">ПОРТАЛ</a>
-                <button class="cat-btn active" data-topic="">Сите</button>
-                <button class="cat-btn" data-topic="Македонија">Македонија</button>
-                <button class="cat-btn" data-topic="Балкан">Балкан</button>
-                <button class="cat-btn" data-topic="Европа">Европа</button>
-                <button class="cat-btn" data-topic="Свет">Свет</button>
-                <button class="cat-btn" data-topic="Економија">Економија</button>
-                <button class="cat-btn" data-topic="Спорт">Спорт</button>
-                <button class="cat-btn" data-topic="Технологија">Технологија</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- ── Civic Dashboard Strip ── -->
+    <!-- ── Civic Dashboard Strip (Refined for Magazine Style) ── -->
     <div class="civic-strip glass">
         <div class="civic-inner">
             <div class="civic-section pulse-ticker-wrap">
@@ -145,15 +149,6 @@
                 <span class="civic-label">AQI:</span>
                 <div class="aqi-item"><span id="aqiPillVal" class="aqi-good">Скопје —</span></div>
             </div>
-            <script>
-              fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
-                if (!d || d.aqi === null) return;
-                const el = document.getElementById('aqiPillVal');
-                if (!el) return;
-                el.textContent = `Скопје ${d.aqi}`;
-                el.className = d.aqi <= 50 ? 'aqi-good' : d.aqi <= 100 ? 'aqi-mod' : 'aqi-bad';
-              }).catch(() => {});
-            </script>
         </div>
     </div>
 
