@@ -112,7 +112,10 @@ const UI = {
         const main = articles[0];
         const count = articles.length;
         const isBookmarked = this.isBookmarked(cluster.cluster_id);
+        
+        // NYT Organic Grid Logic
         const isLead = app.state.page === 0 && idx === 0;
+        const isThumbRight = !isLead && (idx % 5 === 0); // Break monotony every 5th item
 
         let thumbUrl = cluster.representative_image;
         if (thumbUrl && !thumbUrl.startsWith('/')) thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
@@ -129,7 +132,7 @@ const UI = {
             <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" 
                     onclick="UI.toggleBookmark(event, '${cluster.cluster_id}')" 
                     title="${isBookmarked ? 'Отстрани од зачувани' : 'Зачувај за подоцна'}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.5">
                     <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
                 </svg>
             </button>`;
@@ -141,13 +144,15 @@ const UI = {
                 </a>
             </div>` : '';
 
-        const excerptHtml = (isLead && main.description) 
-            ? `<p class="cluster-excerpt">${this._esc(main.description).substring(0, 220)}...</p>` 
+        const excerptHtml = (isLead || idx < 3) 
+            ? `<p class="cluster-excerpt">${this._esc(main.description || '').substring(0, isLead ? 220 : 120)}...</p>` 
             : '';
 
+        const variantClass = isLead ? 'lead-story' : (isThumbRight ? 'thumb-right' : '');
+
         return `
-            <article class="news-cluster ${isLead ? 'lead-story' : ''} fade-in">
-                ${imgHtml}
+            <article class="news-cluster ${variantClass} fade-in">
+                ${isThumbRight ? '' : imgHtml}
                 <div class="cluster-main">
                     <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
                         ${this._esc(main.title)}
@@ -160,6 +165,7 @@ const UI = {
                         ${bookmarkHtml}
                     </div>
                 </div>
+                ${isThumbRight ? imgHtml : ''}
             </article>`;
     },
 

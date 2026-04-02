@@ -9,6 +9,7 @@
             {% set main = cluster.articles[0] %}
             {% set idx = loop.index0 %}
             {% set is_lead = idx == 0 %}
+            {% set is_thumb_right = (not is_lead and idx % 5 == 0) %}
 
             {# Find best thumbnail #}
             {% set thumb = cluster.representative_image %}
@@ -19,8 +20,8 @@
             {% endif %}
             {% set thumb_src = ('/proxy?url=' ~ (thumb|urlencode)) if (thumb and not thumb.startswith('/')) else (thumb or '') %}
 
-            <article class="news-cluster {{ 'lead-story' if is_lead else '' }} fade-in">
-                {% if thumb_src %}
+            <article class="news-cluster {{ 'lead-story' if is_lead else ('thumb-right' if is_thumb_right else '') }} fade-in">
+                {% if thumb_src and not is_thumb_right %}
                 <div class="cluster-thumb-wrap">
                     <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
                         <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="{{ 'eager' if idx < 3 else 'lazy' }}">
@@ -31,15 +32,22 @@
                     <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline">
                         {{ main.title }}
                     </a>
-                    {% if is_lead and main.description %}
-                    <p class="cluster-excerpt">{{ main.description | truncate(220) }}</p>
+                    {% if (is_lead or idx < 3) and main.description %}
+                    <p class="cluster-excerpt">{{ main.description | truncate(is_lead and 220 or 120) }}</p>
                     {% endif %}
                     <div class="cluster-meta">
-                        <span class="time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
-                        <span class="card-dot">·</span>
-                        <span class="count">{{ cluster.articles|length }} извори</span>
+                        <span>{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                        <span>·</span>
+                        <span>{{ cluster.articles|length }} извори</span>
                     </div>
                 </div>
+                {% if thumb_src and is_thumb_right %}
+                <div class="cluster-thumb-wrap">
+                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+                        <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="lazy">
+                    </a>
+                </div>
+                {% endif %}
             </article>
         {% endfor %}
     {% else %}
