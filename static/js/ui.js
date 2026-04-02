@@ -252,14 +252,14 @@ const UI = {
 
     renderPulse(entities) {
         const terminal = document.getElementById('entityPulse');
-        if (!terminal) return;
+        if (!terminal || !entities || !Array.isArray(entities)) return;
 
         // Duplicate entities for seamless scroll effect
         const items = [...entities, ...entities]; 
 
         terminal.innerHTML = items.map(e => `
-            <span class="ticker-item" data-search="${encodeURIComponent(e.word || e.name)}">
-                #${this._esc(e.word || e.name)} <span class="val">${e.count || e.n || ''}</span>
+            <span class="ticker-item" data-search="${encodeURIComponent(e.word || e.name || e.source)}">
+                #${this._esc(e.word || e.name || e.source)} <span class="val">${e.count || e.n || ''}</span>
             </span>
         `).join('');
         terminal.querySelectorAll('.ticker-item[data-search]').forEach(el => {
@@ -321,13 +321,13 @@ const UI = {
     },
 
     init() {
-        this._initBackToTop();
-        this._initMobileDrawer();
-        this._initSearchOverlay();
-        this._initReadingToolkit();
-        this._initProgressBar();
-        this._initPrivacyBanner();
-        this._initStickyHeader();
+        try { this._initBackToTop(); } catch(e) { console.error("BackToTop init error", e); }
+        try { this._initMobileDrawer(); } catch(e) { console.error("MobileDrawer init error", e); }
+        try { this._initSearchOverlay(); } catch(e) { console.error("SearchOverlay init error", e); }
+        try { this._initReadingToolkit(); } catch(e) { console.error("ReadingToolkit init error", e); }
+        try { this._initProgressBar(); } catch(e) { console.error("ProgressBar init error", e); }
+        try { this._initPrivacyBanner(); } catch(e) { console.error("PrivacyBanner init error", e); }
+        try { this._initStickyHeader(); } catch(e) { console.error("StickyHeader init error", e); }
     },
 
     _initStickyHeader() {
@@ -358,7 +358,10 @@ const UI = {
         const root = document.documentElement;
 
         // Load saved size or default
-        let currentSize = parseFloat(localStorage.getItem('presek_reading_size')) || 1.15;
+        let currentSize = 1.15;
+        try {
+            currentSize = parseFloat(localStorage.getItem('presek_reading_size')) || 1.15;
+        } catch (e) {}
         root.style.setProperty('--article-text-size', `${currentSize}rem`);
 
         if (btnInc && btnDec) {
@@ -378,7 +381,9 @@ const UI = {
 
         function update() {
             root.style.setProperty('--article-text-size', `${currentSize}rem`);
-            localStorage.setItem('presek_reading_size', currentSize);
+            try {
+                localStorage.setItem('presek_reading_size', currentSize);
+            } catch (e) {}
         }
     },
 
@@ -399,18 +404,23 @@ const UI = {
         const accept = document.getElementById('privacyAccept');
         const reject = document.getElementById('privacyReject');
 
-        if (!localStorage.getItem('presek_cookie_consent')) {
+        let consent = null;
+        try {
+            consent = localStorage.getItem('presek_cookie_consent');
+        } catch (e) {}
+
+        if (!consent) {
             setTimeout(() => {
                 if (banner) banner.classList.add('active');
             }, 2000);
         }
 
         if (accept) accept.onclick = () => {
-            localStorage.setItem('presek_cookie_consent', 'accepted');
+            try { localStorage.setItem('presek_cookie_consent', 'accepted'); } catch(e) {}
             if (banner) banner.classList.remove('active');
         };
         if (reject) reject.onclick = () => {
-            localStorage.setItem('presek_cookie_consent', 'rejected');
+            try { localStorage.setItem('presek_cookie_consent', 'rejected'); } catch(e) {}
             if (banner) banner.classList.remove('active');
         };
     },

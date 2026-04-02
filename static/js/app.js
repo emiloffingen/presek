@@ -46,8 +46,11 @@ const app = {
             if (clusterLink) {
                 const cluster = clusterLink.closest('.news-cluster');
                 if (cluster) {
-                    const cat = cluster.querySelector('.category')?.textContent.replace('•', '').trim();
-                    if (cat) this._trackInterest('topic', cat);
+                    const catEl = cluster.querySelector('.category');
+                    if (catEl) {
+                        const cat = catEl.textContent.replace('•', '').trim();
+                        this._trackInterest('topic', cat);
+                    }
                 }
                 // Allow normal link navigation - don't preventDefault!
             }
@@ -61,7 +64,9 @@ const app = {
             data = JSON.parse(localStorage.getItem(key) || '{}');
         } catch(e) {}
         data[value] = (data[value] || 0) + 1;
-        localStorage.setItem(key, JSON.stringify(data));
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch(e) {}
     },
 
     _getTopInterests(type) {
@@ -131,7 +136,9 @@ const app = {
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
                 const isLight = document.documentElement.classList.toggle('light');
-                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                try {
+                    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                } catch (e) {}
                 // Sync cookie so server-side body class stays consistent on next load
                 document.cookie = `theme=${isLight ? 'light' : 'dark'}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
 
@@ -150,7 +157,12 @@ const app = {
         // Auto System Theme Sync
         const sysTheme = window.matchMedia('(prefers-color-scheme: light)');
         const applySystemTheme = (e) => {
-            if (!localStorage.getItem('theme')) {
+            let hasSavedTheme = false;
+            try {
+                hasSavedTheme = !!localStorage.getItem('theme');
+            } catch (err) {}
+
+            if (!hasSavedTheme) {
                 const isLight = e.matches;
                 document.documentElement.classList.toggle('light', isLight);
                 document.body.classList.toggle('light', isLight);
