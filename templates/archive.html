@@ -3,74 +3,57 @@
 {% block title %}Архива | Пресек{% endblock %}
 
 {% block content %}
-<div class="fade-in" style="max-width: var(--max-width); margin: 0 auto; padding: var(--space-xl) var(--space-md);">
-    <header style="margin-bottom: var(--space-xl); border-bottom: 1px solid var(--text-primary); padding-bottom: var(--space-lg);">
+<div class="page-content fade-in">
+    <header class="page-header-left">
         <h1 class="nyt-title">Архива на вести</h1>
-        <div style="display: flex; align-items: center; gap: 20px; margin-top: var(--space-md);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <label for="archiveDate" style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Избери датум:</label>
-                <input type="date" id="archiveDate" style="border: 1px solid var(--border); padding: 4px 8px; font-family: var(--font-body); font-size: 0.85rem; outline: none;" onchange="fetchArchive(true)">
-            </div>
-            <div id="archiveStats" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-left: auto;"></div>
+        <div class="archive-controls">
+            <span class="archive-date-label">Избери датум:</span>
+            <input type="date" id="archiveDate" class="archive-date-input" onchange="fetchArchive(true)">
+            <span id="archiveStats" class="archive-stats-label"></span>
         </div>
     </header>
 
-    <div id="archiveList" style="display: flex; flex-direction: column;">
-        <!-- Loading skeletons -->
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>
+    <div id="archiveList" class="archive-list">
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
     </div>
 
-    <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: var(--space-2xl); border-top: 1px solid var(--border); padding-top: var(--space-lg);">
-        <button id="prevBtn" onclick="changePage(-1)" style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-primary); cursor: pointer;" disabled>← Претходна</button>
-        <span id="pageInfo" style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">СТРАНА 1</span>
-        <button id="nextBtn" onclick="changePage(1)" style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-primary); cursor: pointer;" disabled>Следна →</button>
+    <div class="pagination-row">
+        <button id="prevBtn" class="pag-btn" onclick="changePage(-1)" disabled>← Претходна</button>
+        <span id="pageInfo" class="page-label">СТРАНА 1</span>
+        <button id="nextBtn" class="pag-btn" onclick="changePage(1)" disabled>Следна →</button>
     </div>
 </div>
-
-<style>
-    .archive-row-nyt {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border);
-        transition: background 0.2s ease;
-    }
-    .archive-row-nyt:hover { background: var(--bg-surface-hover); }
-    .archive-row-nyt .main-info { flex: 1; display: flex; align-items: center; gap: 20px; }
-    .archive-row-nyt .time { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; width: 50px; }
-    .archive-row-nyt .source { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--primary); width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .archive-row-nyt .title { font-family: var(--font-heading); font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
 let currentPage = 0;
-const pageSize = 50;
+const pageSize  = 50;
 
 document.getElementById('archiveDate').valueAsDate = new Date();
 
 async function fetchArchive(resetPage) {
     if (resetPage) currentPage = 0;
-    const date = document.getElementById('archiveDate').value;
-    const list = document.getElementById('archiveList');
+    const date  = document.getElementById('archiveDate').value;
+    const list  = document.getElementById('archiveList');
     const stats = document.getElementById('archiveStats');
 
     list.innerHTML = `
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px; width:100%; margin-bottom:1px"></div>`;
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
+        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>`;
 
     try {
-        const res = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
+        const res  = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
         const data = await res.json();
 
         if (!data.articles || data.articles.length === 0) {
-            list.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--text-muted);font-size:0.95rem">Нема пронајдени вести за овој датум.</div>';
+            list.innerHTML = '<div class="loading-state" style="padding:80px 0;">Нема пронајдени вести за овој датум.</div>';
             stats.textContent = '';
+            document.getElementById('prevBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
             return;
         }
 
@@ -81,11 +64,11 @@ async function fetchArchive(resetPage) {
             return `
                 <a href="${a.link}" target="_blank" rel="noopener" class="archive-row-nyt fade-in">
                     <div class="main-info">
-                        <span class="time">${time}</span>
-                        <span class="source">${a.source}</span>
-                        <span class="title">${a.title}</span>
+                        <span class="ar-time">${time}</span>
+                        <span class="ar-source">${a.source}</span>
+                        <span class="ar-title">${a.title}</span>
                     </div>
-                    <span style="font-size: 0.7rem; opacity: 0.3;">↗</span>
+                    <span class="archive-arrow">↗</span>
                 </a>`;
         }).join('');
 
@@ -95,7 +78,7 @@ async function fetchArchive(resetPage) {
 
     } catch (e) {
         console.error(e);
-        list.innerHTML = '<div style="text-align:center;padding:80px 16px;color:var(--primary);font-size:0.95rem">Грешка при вчитување.</div>';
+        list.innerHTML = '<div class="loading-state" style="padding:80px 0;color:var(--primary);">Грешка при вчитување.</div>';
     }
 }
 

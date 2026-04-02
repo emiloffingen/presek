@@ -4,9 +4,9 @@
 const CACHE_NAME = 'presek-v12';
 const STATIC_ASSETS = [
   '/',
-  '/static/modern.css?v=2026.nyt.3',
-  '/static/js/ui.js?v=2026.nyt.3',
-  '/static/js/app.js?v=2026.nyt.3',
+  '/static/modern.css?v=2026.nyt.4',
+  '/static/js/ui.js?v=2026.nyt.4',
+  '/static/js/app.js?v=2026.nyt.4',
   '/static/logo.svg',
   '/static/img/presek_emblem.svg'
 ];

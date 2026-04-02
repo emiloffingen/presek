@@ -3,41 +3,23 @@
 {% block title %}Извори | Пресек{% endblock %}
 
 {% block content %}
-<div class="fade-in" style="max-width: var(--max-width); margin: 0 auto; padding: var(--space-xl) var(--space-md);">
-    <header style="margin-bottom: var(--space-2xl); border-bottom: 3px double var(--text-primary); padding-bottom: var(--space-lg); text-align: center;">
-        <h1 class="nyt-title" style="margin-bottom: 10px;">Медиумски Именик</h1>
-        <p style="font-family: var(--font-body); font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700;">
-            Целосна листа на индексирани извори во мрежата на Пресек
-        </p>
+<div class="page-content fade-in">
+    <header class="page-header">
+        <h1 class="nyt-title">Медиумски Именик</h1>
+        <p class="page-subtitle">Целосна листа на индексирани извори во мрежата на Пресек</p>
     </header>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl);">
+    <div class="sources-directory">
         <div>
-            <h2 class="rail-label" style="border-bottom: 1px solid var(--text-primary); padding-bottom: 8px; margin-bottom: 20px; font-size: 0.9rem;">🇲🇰 Македонски Медиуми</h2>
-            <div id="mkIzvori" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px;"></div>
+            <h2 class="rail-label sources-section-title">Македонски Медиуми</h2>
+            <div id="mkIzvori" class="sources-columns"></div>
         </div>
         <div>
-            <h2 class="rail-label" style="border-bottom: 1px solid var(--text-primary); padding-bottom: 8px; margin-bottom: 20px; font-size: 0.9rem;">🌍 Меѓународни Медиуми</h2>
-            <div id="intIzvori" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px;"></div>
+            <h2 class="rail-label sources-section-title">Меѓународни Медиуми</h2>
+            <div id="intIzvori" class="sources-columns"></div>
         </div>
     </div>
 </div>
-
-<style>
-    .source-link {
-        font-family: var(--font-body);
-        font-size: 0.9rem;
-        color: var(--text-primary);
-        padding: 4px 0;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: color 0.2s ease;
-    }
-    .source-link:hover { color: var(--primary); border-bottom-color: var(--primary); }
-    .source-link::after { content: '→'; font-size: 0.7rem; opacity: 0.3; }
-</style>
 {% endblock %}
 
 {% block scripts %}
