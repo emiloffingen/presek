@@ -288,6 +288,72 @@ const UI = {
         this._initBackToTop();
         this._initMobileDrawer();
         this._initSearchOverlay();
+        this._initReadingToolkit();
+        this._initProgressBar();
+        this._initPrivacyBanner();
+    },
+
+    _initReadingToolkit() {
+        const btnInc = document.getElementById('tkInc');
+        const btnDec = document.getElementById('tkDec');
+        const root = document.documentElement;
+
+        // Load saved size or default
+        let currentSize = parseFloat(localStorage.getItem('presek_reading_size')) || 1.15;
+        root.style.setProperty('--article-text-size', `${currentSize}rem`);
+
+        if (btnInc && btnDec) {
+            btnInc.onclick = () => {
+                if (currentSize < 1.6) {
+                    currentSize += 0.1;
+                    update();
+                }
+            };
+            btnDec.onclick = () => {
+                if (currentSize > 0.9) {
+                    currentSize -= 0.1;
+                    update();
+                }
+            };
+        }
+
+        function update() {
+            root.style.setProperty('--article-text-size', `${currentSize}rem`);
+            localStorage.setItem('presek_reading_size', currentSize);
+        }
+    },
+
+    _initProgressBar() {
+        const bar = document.getElementById('readingProgress');
+        if (!bar) return;
+
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            bar.style.width = scrolled + "%";
+        }, { passive: true });
+    },
+
+    _initPrivacyBanner() {
+        const banner = document.getElementById('privacyBanner');
+        const accept = document.getElementById('privacyAccept');
+        const reject = document.getElementById('privacyReject');
+
+        if (!localStorage.getItem('presek_cookie_consent')) {
+            setTimeout(() => {
+                if (banner) banner.classList.add('active');
+            }, 2000);
+        }
+
+        if (accept) accept.onclick = () => {
+            localStorage.setItem('presek_cookie_consent', 'accepted');
+            if (banner) banner.classList.remove('active');
+        };
+        if (reject) reject.onclick = () => {
+            localStorage.setItem('presek_cookie_consent', 'rejected');
+            if (banner) banner.classList.remove('active');
+        };
     },
 
     _initSearchOverlay() {

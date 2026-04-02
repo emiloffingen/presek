@@ -12,6 +12,9 @@
     --primary-hover: hsl(var(--p-h), var(--p-s), calc(var(--p-l) + 10%));
     --primary-muted: hsla(var(--p-h), var(--p-s), var(--p-l), 0.1);
 
+    /* Accessibility */
+    --article-text-size: 1.15rem;
+
     /* Dark Mode Defaults (Deep Charcoal Editorial) */
     --bg-base:          #1A1A1A;
     --bg-surface:       #1A1A1A;
@@ -253,6 +256,41 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     background: var(--primary); z-index: 9999; width: 0%;
     transition: width 0.1s linear;
 }
+
+/* --- Reading Toolkit --- */
+.reading-toolkit {
+    display: flex; align-items: center; gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 2px;
+    background: var(--bg-surface);
+}
+.tk-btn {
+    width: 32px; height: 32px; display: flex; align-items: center;
+    justify-content: center; font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);
+    transition: all var(--t-fast); cursor: pointer;
+}
+.tk-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.tk-btn.inc { font-size: 0.95rem; }
+
+/* --- Privacy Banner --- */
+.privacy-banner {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg-surface); border-top: 1px solid var(--border);
+    padding: var(--space-md) var(--space-lg); z-index: 5000;
+    display: flex; align-items: center; justify-content: space-between;
+    transform: translateY(100%); transition: transform 0.5s var(--t-slow);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+}
+.privacy-banner.active { transform: translateY(0); }
+.privacy-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; max-width: 60ch; }
+.privacy-actions { display: flex; gap: var(--space-lg); align-items: center; }
+.privacy-link {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-muted); cursor: pointer;
+}
+.privacy-link:hover { color: var(--text-primary); }
+.privacy-link.primary { color: var(--primary); }
 
 /* =========================================
    LAYOUT
@@ -938,11 +976,12 @@ a.count-badge:hover {
 }
 
 .cluster-summary {
-    font-size: 1.05rem; line-height: 1.8; color: var(--text-primary);
+    font-size: var(--article-text-size); line-height: 1.8; color: var(--text-primary);
     background: var(--bg-surface); padding: 32px;
     border-left: 4px solid var(--primary);
     border-radius: 0 var(--radius-lg) var(--radius-lg) 0; margin-bottom: var(--space-2xl);
     box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    transition: font-size 0.2s ease;
 }
 .summary-label {
     font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
@@ -1202,8 +1241,9 @@ a.count-badge:hover {
     display: block; letter-spacing: 0.15em; font-family: var(--font-mono);
 }
 .briefing-content { 
-    font-size: 1.15rem; line-height: 1.85; color: var(--text-primary); 
+    font-size: var(--article-text-size); line-height: 1.85; color: var(--text-primary); 
     font-family: var(--font-heading); font-weight: 400;
+    transition: font-size 0.2s ease;
 }
 .briefing-content p { margin-bottom: var(--space-xl); }
 .briefing-content strong { color: var(--text-primary); font-weight: 700; background: var(--primary-muted); padding: 0 4px; }
