@@ -76,9 +76,14 @@
 
     <header class="site-header glass">
         <div class="header-inner">
-            <a href="/" class="header-logo" aria-label="Пресек Почетна">
-                <img src="/static/logo.svg" alt="Presek" width="120" height="30" onerror="this.src='/static/logo.png'">
-            </a>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <button class="icon-btn mobile-only" id="menuTrigger" title="Мени" style="display: none;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <a href="/" class="header-logo" aria-label="Пресек Почетна">
+                    <img src="/static/logo.svg" alt="Presek" width="120" height="30" onerror="this.src='/static/logo.png'">
+                </a>
+            </div>
             
             <div class="header-actions">
                 <button class="icon-btn" id="searchTrigger" title="Пребарај (/)">
@@ -91,6 +96,24 @@
             </div>
         </div>
     </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
+    <div class="mobile-drawer" id="mobileDrawer">
+        <div class="drawer-header">
+            <span class="drawer-logo">Пресек</span>
+            <button class="icon-btn" id="drawerClose">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <nav class="drawer-nav">
+            <h3 class="widget-title" style="margin-left: var(--space-md); margin-bottom: var(--space-sm);">ИЗБОР</h3>
+            <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
+            <a href="/stats"><span class="w-icon">📊</span> Медиумски Пулс</a>
+            <a href="/arhiva"><span class="w-icon">📅</span> Архива</a>
+            <a href="/izvori"><span class="w-icon">🔗</span> Извори</a>
+        </nav>
+    </div>
 
     <nav class="nav-bar glass">
         <div class="nav-inner">

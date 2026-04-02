@@ -29,6 +29,10 @@ const UI = {
 
     /* ── Core Rendering ──────────────────────────────────── */
 
+    state: {
+        trends: []
+    },
+
     renderPage(clusters, append = false, isPersonalized = false, isSearch = false) {
         const container = document.getElementById('pageWrap');
         if (!container) return;
@@ -67,15 +71,40 @@ const UI = {
             return;
         }
 
+        const isMobile = window.innerWidth <= 780;
         let htmlBuffer = '';
+        
         clusters.forEach((cluster, idx) => {
             try {
                 if (!cluster || !cluster.articles || !cluster.articles.length) return;
+                
+                // Inject Discovery Ribbon on mobile between 3rd and 4th item (idx 2 and 3)
+                if (isMobile && !append && idx === 3 && this.state.trends.length > 0) {
+                    htmlBuffer += this._renderDiscoveryRibbon();
+                }
+                
                 htmlBuffer += this._renderCluster(cluster, idx);
             } catch (e) { console.error("Cluster render error:", e); }
         });
         
         container.insertAdjacentHTML('beforeend', htmlBuffer);
+    },
+
+    _renderDiscoveryRibbon() {
+        const items = this.state.trends.slice(0, 10).map(t => `
+            <a href="#" class="ribbon-item" data-search="${encodeURIComponent(t.word)}">
+                <span class="src-badge">HOT</span>
+                <span class="ribbon-word">${this._esc(t.word)}</span>
+            </a>
+        `).join('');
+
+        return `
+            <div class="discovery-ribbon fade-in">
+                <div class="ribbon-title">Трендови во моментов</div>
+                <div class="ribbon-scroll">
+                    ${items}
+                </div>
+            </div>`;
     },
 
     _renderCluster(cluster, idx) {
@@ -203,6 +232,7 @@ const UI = {
     },
 
     renderTrendingSidebar(trends) {
+        this.state.trends = trends || []; // Store for Discovery Ribbon
         const sidebar = document.getElementById('sidebarTrending');
         if (!sidebar) return;
         
@@ -212,8 +242,17 @@ const UI = {
                 <span>${this._esc(t.word)}</span>
             </a>
         `).join('');
-        sidebar.querySelectorAll('.related-link[data-search]').forEach(el => {
-            el.addEventListener('click', (e) => { e.preventDefault(); app.setSearch(decodeURIComponent(el.dataset.search)); });
+        
+        // Delegate to handle both sidebar and ribbon clicks if needed
+        document.querySelectorAll('[data-search]').forEach(el => {
+            if (!el.dataset.searchBound) {
+                el.addEventListener('click', (e) => { 
+                    e.preventDefault(); 
+                    app.setSearch(decodeURIComponent(el.dataset.search)); 
+                    this.toggleDrawer(false); // Close drawer if open
+                });
+                el.dataset.searchBound = "true";
+            }
         });
     },
 
@@ -225,6 +264,27 @@ const UI = {
 
     init() {
         this._initBackToTop();
+        this._initMobileDrawer();
+    },
+
+    toggleDrawer(show) {
+        const drawer = document.getElementById('mobileDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (!drawer || !overlay) return;
+        
+        drawer.classList.toggle('active', show !== false);
+        overlay.classList.toggle('active', show !== false);
+        document.body.style.overflow = (show !== false) ? 'hidden' : '';
+    },
+
+    _initMobileDrawer() {
+        const trigger = document.getElementById('menuTrigger');
+        const close = document.getElementById('drawerClose');
+        const overlay = document.getElementById('drawerOverlay');
+
+        if (trigger) trigger.onclick = () => this.toggleDrawer(true);
+        if (close) close.onclick = () => this.toggleDrawer(false);
+        if (overlay) overlay.onclick = () => this.toggleDrawer(false);
     },
 
     _initBackToTop() {
