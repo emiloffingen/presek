@@ -212,28 +212,13 @@ def generate_cluster_metadata_task():
                 tags = r['sources']
             
             # 2. Representative Image Selection
-            # First, try to get an image from the current cluster
+            # We ONLY use images that belong to this specific cluster.
+            # Using fallbacks from "similar clusters" causes massive duplication.
             img_row = db.execute_one(
                 "SELECT image_url FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1",
                 (r['cluster_id'],)
             )
             rep_image = img_row['image_url'] if img_row else None
-            
-            # Fallback: if no image in current cluster, try similar clusters (sharing tags)
-            if not rep_image and tags:
-                similar_img_row = db.execute_one("""
-                    SELECT a.image_url 
-                    FROM cluster_metadata m
-                    JOIN articles a ON m.cluster_id = a.cluster_id
-                    WHERE m.cluster_id != %s 
-                      AND m.tags && %s
-                      AND a.image_url IS NOT NULL
-                      AND a.created_at >= NOW() - INTERVAL '48 hours'
-                    ORDER BY a.created_at DESC
-                    LIMIT 1
-                """, (r['cluster_id'], tags))
-                if similar_img_row:
-                    rep_image = similar_img_row['image_url']
 
             db.execute(
                 """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, updated_at)
