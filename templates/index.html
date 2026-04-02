@@ -8,9 +8,9 @@
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
             
-            {# Determine size based on index #}
+            {# Determine size based on index — must match ui.js _renderCluster logic #}
             {% set span_class = "span-12" %}
-            {% if loop.index0 == 0 %}
+            {% if loop.index0 % 6 == 0 %}
                 {% set span_class = "span-12 row-2 featured" %}
             {% elif loop.index0 % 3 == 1 %}
                 {% set span_class = "span-6" %}
@@ -49,7 +49,7 @@
                         {% endif %}
                     </div>
                     
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '2.4rem' if 'featured' in span_class else '1.4rem' }}; font-weight: {{ 400 + (cluster.score * 80) | int }};">
+                    <a href="/cluster/{{ cluster.cluster_id }}" class="bento-headline" style="font-size: {{ '2.4rem' if 'featured' in span_class else '1.4rem' }}; font-weight: {{ [900, 400 + (cluster.score * 80) | int] | min }};">
                         {{ main.title }}
                     </a>
                     

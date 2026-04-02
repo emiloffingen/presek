@@ -123,6 +123,14 @@ def ingest_feeds():
         ).fetchall()
         recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in recent_rows]
 
+        from clustering import VECTOR_THRESHOLD
+
+        def cosine_dist(a, b):
+            dot = sum(x*y for x, y in zip(a, b))
+            norm_a = sum(x*x for x in a)**0.5
+            norm_b = sum(x*x for x in b)**0.5
+            return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
+
         prepared_rows = []
         # Keep track of clusters created in this batch for local matching
         batch_clusters: list[dict] = [] # List of {cid, embedding, category}
@@ -134,17 +142,10 @@ def ingest_feeds():
                 category   = detect_category(title, description=desc, source=source, forced_category=forced)
                 subcategory = detect_subcategory(title, description=desc) or ""
                 topic      = detect_topic(title, description=desc)
-                
+
                 # Try to find cluster in batch first (to group identical stories in same fetch)
                 cluster_id = None
                 if emb:
-                    from clustering import VECTOR_THRESHOLD
-                    def cosine_dist(a, b):
-                        dot = sum(x*y for x, y in zip(a, b))
-                        norm_a = sum(x*x for x in a)**0.5
-                        norm_b = sum(x*x for x in b)**0.5
-                        return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
-
                     for bc in batch_clusters:
                         # Stricter batch check: same category + vector match
                         if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
@@ -272,6 +273,14 @@ def ingest_diaspora_feeds():
         ).fetchall()
         diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in diaspora_recent]
 
+        from clustering import VECTOR_THRESHOLD
+
+        def cosine_dist(a, b):
+            dot = sum(x*y for x, y in zip(a, b))
+            norm_a = sum(x*x for x in a)**0.5
+            norm_b = sum(x*x for x in b)**0.5
+            return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
+
         prepared_rows = []
         batch_clusters: list[dict] = [] # List of {cid, embedding, category}
 
@@ -281,17 +290,10 @@ def ingest_diaspora_feeds():
                 display_title = normalize_headline(title)
                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
-                
+
                 # Batch match
                 cluster_id = None
                 if emb:
-                    from clustering import VECTOR_THRESHOLD
-                    def cosine_dist(a, b):
-                        dot = sum(x*y for x, y in zip(a, b))
-                        norm_a = sum(x*x for x in a)**0.5
-                        norm_b = sum(x*x for x in b)**0.5
-                        return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
-
                     for bc in batch_clusters:
                         # Stricter batch check: same category + vector match
                         if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:

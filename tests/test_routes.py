@@ -226,14 +226,19 @@ class TestProxy:
 
     def test_valid_url_fetched(self, client):
         import urllib.request
+        import socket
         mock_resp = MagicMock()
         mock_resp.headers.get.return_value = "image/jpeg"
         mock_resp.read.side_effect = [b"\xff\xd8\xff" * 100, b""]
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
 
+        # Return a public IP so the DNS-based SSRF check passes in CI (no real network)
+        public_addrinfo = [(socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 0))]
+
         with patch('routes.api.cached_response', return_value=None), \
              patch('routes.api.set_cache'), \
+             patch('socket.getaddrinfo', return_value=public_addrinfo), \
              patch('urllib.request.urlopen', return_value=mock_resp):
             resp = client.get("/proxy?url=https://example.com/image.jpg")
         assert resp.status_code in (200, 502)

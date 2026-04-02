@@ -157,10 +157,13 @@ const UI = {
         const items = [...entities, ...entities]; 
 
         terminal.innerHTML = items.map(e => `
-            <span class="ticker-item" onclick="app.setSearch('${this._esc(e.word || e.name)}')">
+            <span class="ticker-item" data-search="${encodeURIComponent(e.word || e.name)}">
                 #${this._esc(e.word || e.name)} <span class="val">${e.count || e.n || ''}</span>
             </span>
         `).join('');
+        terminal.querySelectorAll('.ticker-item[data-search]').forEach(el => {
+            el.addEventListener('click', () => app.setSearch(decodeURIComponent(el.dataset.search)));
+        });
     },
 
     renderTrendingSidebar(trends) {
@@ -168,11 +171,14 @@ const UI = {
         if (!sidebar) return;
         
         sidebar.innerHTML = (trends || []).slice(0, 8).map(t => `
-            <a href="#" class="related-link" style="padding: 8px 0; border-bottom: 1px solid var(--border);" onclick="app.setSearch('${this._esc(t.word)}'); return false;">
+            <a href="#" class="related-link" style="padding: 8px 0; border-bottom: 1px solid var(--border);" data-search="${encodeURIComponent(t.word)}">
                 <span class="src-badge">HOT</span>
                 <span>${this._esc(t.word)}</span>
             </a>
         `).join('');
+        sidebar.querySelectorAll('.related-link[data-search]').forEach(el => {
+            el.addEventListener('click', (e) => { e.preventDefault(); app.setSearch(decodeURIComponent(el.dataset.search)); });
+        });
     },
 
     updateClock() {

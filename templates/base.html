@@ -53,14 +53,26 @@
     <div class="utility-bar">
         <div class="utility-inner">
             <div class="utility-item" id="utility-weather">
-                <span class="u-icon" style="color:var(--primary);">☀️</span> <span class="u-val">Скопје 24°C</span>
+                <span class="u-icon" style="color:var(--primary);" id="weatherIcon">🌡️</span> <span class="u-val" id="weatherVal">Скопје —°C</span>
             </div>
             <div class="utility-item" id="utility-aqi">
-                <span class="u-icon" style="color:var(--primary);">🍃</span> <span class="u-val">AQI: 42</span>
+                <span class="u-icon" style="color:var(--primary);">🍃</span> <span class="u-val" id="aqiVal">AQI: —</span>
             </div>
             <div class="utility-item u-time" id="live-clock"></div>
         </div>
     </div>
+    <script>
+      fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
+        if (!d) return;
+        if (d.temp !== null) {
+          document.getElementById('weatherIcon').textContent = d.icon;
+          document.getElementById('weatherVal').textContent = `Скопје ${d.temp}°C`;
+        }
+        if (d.aqi !== null) {
+          document.getElementById('aqiVal').textContent = `AQI: ${d.aqi}`;
+        }
+      }).catch(() => {});
+    </script>
 
     <header class="site-header glass">
         <div class="header-inner">
@@ -105,12 +117,19 @@
                     <span class="ticker-item">LOADING SYSTEM...</span>
                 </div>
             </div>
-            <div class="civic-section aqi-pills">
+            <div class="civic-section aqi-pills" id="aqiPills">
                 <span class="civic-label">AQI:</span>
-                <div class="aqi-item"><span class="aqi-good">Центар 32</span></div>
-                <div class="aqi-item"><span class="aqi-mod">Карпош 54</span></div>
-                <div class="aqi-item"><span class="aqi-bad">Лисиче 102</span></div>
+                <div class="aqi-item"><span id="aqiPillVal" class="aqi-good">Скопје —</span></div>
             </div>
+            <script>
+              fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
+                if (!d || d.aqi === null) return;
+                const el = document.getElementById('aqiPillVal');
+                if (!el) return;
+                el.textContent = `Скопје ${d.aqi}`;
+                el.className = d.aqi <= 50 ? 'aqi-good' : d.aqi <= 100 ? 'aqi-mod' : 'aqi-bad';
+              }).catch(() => {});
+            </script>
         </div>
     </div>
 
@@ -122,7 +141,7 @@
                 <nav class="widget-nav">
                     <a href="/briefing"><span class="w-icon">☕</span> Дневен Брифинг</a>
                     <a href="/stats"><span class="w-icon">📊</span> Медиумски Пулс</a>
-                    <a href="/archive"><span class="w-icon">📅</span> Архива</a>
+                    <a href="/arhiva"><span class="w-icon">📅</span> Архива</a>
                     <a href="/izvori"><span class="w-icon">🔗</span> Извори</a>
                 </nav>
             </div>
@@ -185,5 +204,10 @@
     <script src="/static/js/ui.js?v=2026.1.1"></script>
     <script src="/static/js/app.js?v=2026.1.1"></script>
     {% block scripts %}{% endblock %}
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    </script>
 </body>
 </html>

@@ -32,7 +32,6 @@ const app = {
             }
 
             this.fetchTrending();
-            this.fetchPulse();
             this._setupInfiniteScroll();
         } catch (e) {
             console.error("Critical error during app.init:", e);
@@ -131,13 +130,15 @@ const app = {
             themeToggle.addEventListener('click', () => {
                 const isLight = document.documentElement.classList.toggle('light');
                 localStorage.setItem('theme', isLight ? 'light' : 'dark');
-                
+                // Sync cookie so server-side body class stays consistent on next load
+                document.cookie = `theme=${isLight ? 'light' : 'dark'}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+
                 // Update theme color meta
                 const meta = document.getElementById('themeMeta');
                 if (meta) meta.content = isLight ? '#F3F5F7' : '#0A0C0E';
-                
+
                 document.body.classList.toggle('light', isLight);
-                
+
                 // Add a small rotation effect to the button
                 themeToggle.style.transform = 'rotate(15deg)';
                 setTimeout(() => themeToggle.style.transform = '', 200);
@@ -224,14 +225,19 @@ const app = {
 
         try {
             const res = await fetch(`/api/news?${params}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            
+
             if (data && data.status === 'success' && data.clusters) {
                 if (window.UI) UI.renderPage(data.clusters, append, isPersonalized, isSearch);
                 this.state.hasMore = data.has_more;
             }
         } catch (e) {
             console.error('Fetch news error:', e);
+            if (!append) {
+                const container = document.getElementById('pageWrap');
+                if (container) container.innerHTML = `<div class="error-state fade-in" style="padding:4rem;text-align:center;color:var(--text-muted);"><p>Грешка при вчитување на вести.</p><button class="cat-btn" style="margin-top:1rem;background:var(--bg-elevated);" onclick="location.reload()">Обиди се повторно</button></div>`;
+            }
         } finally {
             this.state.isFetching = false;
         }
@@ -240,17 +246,13 @@ const app = {
     async fetchTrending() {
         try {
             const res = await fetch('/api/trending');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            if (window.UI) UI.renderTrendingSidebar(data);
-        } catch (e) { console.error(e); }
-    },
-
-    async fetchPulse() {
-        try {
-            const res = await fetch('/api/trending');
-            const data = await res.json();
-            if (window.UI) UI.renderPulse(data);
-        } catch (e) { console.error("Pulse fetch failed", e); }
+            if (window.UI) {
+                UI.renderTrendingSidebar(data);
+                UI.renderPulse(data);
+            }
+        } catch (e) { console.error('Trending fetch failed:', e); }
     },
 
     setCategory(cat) {

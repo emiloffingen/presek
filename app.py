@@ -8,6 +8,7 @@ from collections import defaultdict
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_compress import Compress
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 class JSONFormatter(logging.Formatter):
     """Structured JSON log formatter for machine-parseable log output."""
@@ -65,6 +66,8 @@ app.secret_key = _secret_key
 _cors_origins = os.environ.get("CORS_ORIGINS", "")
 CORS(app, origins=_cors_origins.split(",") if _cors_origins else [])
 Compress(app)
+# Trust exactly one proxy hop (reverse proxy / load balancer) for correct IP forwarding
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Register Blueprints
 app.register_blueprint(api_bp)
@@ -72,12 +75,13 @@ app.register_blueprint(views_bp)
 
 @app.before_request
 def rate_limit_check():
-    if request.path in ('/', '/favicon.ico') or request.path.startswith('/static'):
+    # Only rate-limit API endpoints — HTML pages must never return JSON 429
+    if not request.path.startswith('/api/'):
         return None
-    if request.headers.get("X-Forwarded-For"):
-        ip = request.headers.get("X-Forwarded-For").split(",")[0].strip()
-    else:
-        ip = request.remote_addr or '0.0.0.0'
+    if request.path in ('/api/health',):
+        return None
+    # ProxyFix sets request.remote_addr correctly from X-Forwarded-For
+    ip = request.remote_addr or '0.0.0.0'
     if not check_rate_limit(ip):
         return jsonify({"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}), 429
 
@@ -99,11 +103,6 @@ def add_security_headers(response):
         "form-action 'self';"
     )
     return response
-
-ntfy = BreakingNewsNotifier(topic=NTFY_TOPIC, threshold=3)
-
-_prune_counter = 0
-_digest_counter = 0
 
 health.register_health_routes(app)
 

@@ -7,7 +7,7 @@ from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import db_manager as db, prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
-    translate_to_macedonian, auto_summarize_top_clusters, 
+    translate_to_macedonian,
     _call_ai, clean_json_response, generate_cover_art
 )
 from prompts import (
@@ -85,8 +85,15 @@ def run_ingestion():
     classify_topics_task.delay()
     extract_entities_task.delay()
     
-    auto_summarize_top_clusters()
+    auto_summarize_task.delay()
     log.info(f"Ingestion cycle complete. Added {new_count} articles.")
+
+@celery_app.task
+def auto_summarize_task():
+    """Dispatch summarization/synthesis tasks for top clusters."""
+    from ai_engine import auto_summarize_top_clusters
+    auto_summarize_top_clusters()
+
 
 @celery_app.task
 def extract_entities_task():

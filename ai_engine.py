@@ -3,6 +3,7 @@ import time
 import datetime
 import urllib.request
 import urllib.error
+import urllib.parse
 import re
 import logging
 from abc import ABC, abstractmethod
@@ -67,7 +68,7 @@ class AIProvider(ABC):
 class GeminiProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         if not GOOGLE_API_KEY or not GEMINI_URL: return None
-        url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
+        url = GEMINI_URL
         combined = f"{system}\n\nInput:\n{prompt}"
         payload = {
             "contents": [{"parts": [{"text": combined}]}],
@@ -87,7 +88,7 @@ class GeminiProvider(AIProvider):
             payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY})
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 
@@ -301,6 +302,7 @@ def generate_cover_art(cluster_id: str, title: str) -> str | None:
 def cleanup_cover_art():
     """Removes generated cover art for clusters that are no longer in the DB."""
     import os
+    from database import db_manager as db
     gen_dir = "static/generated"
     if not os.path.exists(gen_dir): return
 

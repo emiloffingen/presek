@@ -62,7 +62,7 @@ class TestCheckRateLimit:
 
     @patch('utils.redis_client')
     def test_redis_failure_allows_request(self, mock_redis):
-        """If Redis is down, rate limiter should fail open."""
+        """If Redis is down, rate limiter should fail open to keep the site up."""
         from utils import check_rate_limit
         mock_redis.pipeline.side_effect = Exception("Connection refused")
         assert check_rate_limit("1.2.3.4") is True

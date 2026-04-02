@@ -296,6 +296,54 @@ def api_live():
     from utils import event_stream
     return Response(event_stream("updates"), mimetype="text/event-stream")
 
+_WMO_ICON = {
+    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 53: "🌦️", 55: "🌦️",
+    61: "🌧️", 63: "🌧️", 65: "🌧️",
+    71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️",
+    80: "🌦️", 81: "🌦️", 82: "🌦️",
+    85: "❄️", 86: "❄️",
+    95: "⛈️", 96: "⛈️", 99: "⛈️",
+}
+
+@api_bp.route("/api/weather")
+def api_weather():
+    """Live weather and AQI for Skopje via Open-Meteo (no API key required)."""
+    cached = cached_response("weather:skopje", ttl=900)
+    if cached:
+        return jsonify(cached)
+    try:
+        weather_req = urllib.request.Request(
+            "https://api.open-meteo.com/v1/forecast"
+            "?latitude=41.9981&longitude=21.4254"
+            "&current=temperature_2m,weather_code&timezone=Europe%2FSkopje",
+            headers={"User-Agent": "Presek/5.0"}
+        )
+        aqi_req = urllib.request.Request(
+            "https://air-quality-api.open-meteo.com/v1/air-quality"
+            "?latitude=41.9981&longitude=21.4254"
+            "&current=us_aqi&timezone=Europe%2FSkopje",
+            headers={"User-Agent": "Presek/5.0"}
+        )
+        with urllib.request.urlopen(weather_req, timeout=5) as r:
+            w = json.loads(r.read())
+        with urllib.request.urlopen(aqi_req, timeout=5) as r:
+            a = json.loads(r.read())
+
+        temp = round(w["current"]["temperature_2m"])
+        code = w["current"]["weather_code"]
+        icon = _WMO_ICON.get(code, "🌡️")
+        aqi  = a["current"]["us_aqi"]
+
+        result = {"temp": temp, "icon": icon, "aqi": aqi}
+        set_cache("weather:skopje", result, ttl=900)
+        return jsonify(result)
+    except Exception as e:
+        log.warning(f"[api/weather] {e}")
+        return jsonify({"temp": None, "icon": "🌡️", "aqi": None})
+
+
 @api_bp.route("/api/trending")
 def api_trending():
     """Return cached trending keywords."""
@@ -332,6 +380,10 @@ def api_sources_pulse():
 def chat_cluster():
     """AI-powered Q&A about a specific news cluster."""
     try:
+        # Require JSON content-type to prevent cross-site form-based CSRF
+        if not request.is_json:
+            return error_response("Content-Type must be application/json", 415)
+
         data = request.get_json(silent=True) or {}
         cluster_id = (data.get("cluster_id") or "").strip()
         query = (data.get("query") or "").strip()
@@ -396,24 +448,42 @@ def proxy_image():
     # Block internal/private ranges and metadata services
     import urllib.parse
     import socket
+    import ipaddress
     parsed = urllib.parse.urlparse(url)
     hostname = (parsed.hostname or "").lower()
-    
-    # 1. Block known local hostnames
-    if hostname in ["localhost", "127.0.0.1", "0.0.0.0", "metadata.google.internal"]:
-        return error_response("Blocked URL", 403)
-        
-    # 2. Block cloud metadata IPs (AWS/GCP/Azure/DO)
-    if hostname == "169.254.169.254" or hostname == "100.100.100.200":
+
+    if not hostname:
         return error_response("Blocked URL", 403)
 
-    # 3. Pattern match for common private ranges
-    blocked_patterns = [
-        r'^127\.', r'^10\.', r'^192\.168\.',
-        r'^172\.(1[6-9]|2[0-9]|3[01])\.', r'^::1$', r'^0\.0\.0\.0'
-    ]
-    for pat in blocked_patterns:
-        if re.match(pat, hostname):
+    def _is_private_ip(addr: str) -> bool:
+        """Return True if addr is a valid IP in a private/reserved range."""
+        ip = ipaddress.ip_address(addr)  # raises ValueError for non-IP strings
+        return (
+            ip.is_private or ip.is_loopback or ip.is_link_local
+            or ip.is_multicast or ip.is_reserved or ip.is_unspecified
+        )
+
+    # 1. Block known local hostnames and cloud metadata endpoints
+    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+        return error_response("Blocked URL", 403)
+
+    # 2. If hostname is a bare IP address, reject if it's in a private range
+    try:
+        if _is_private_ip(hostname):
+            return error_response("Blocked URL", 403)
+        # It's a public IP — no DNS resolution needed
+    except ValueError:
+        # Not a bare IP — resolve the hostname and check the resolved address(es)
+        try:
+            resolved_infos = socket.getaddrinfo(hostname, None)
+            for info in resolved_infos:
+                resolved_ip = info[4][0]
+                try:
+                    if _is_private_ip(resolved_ip):
+                        return error_response("Blocked URL", 403)
+                except ValueError:
+                    return error_response("Blocked URL", 403)
+        except socket.gaierror:
             return error_response("Blocked URL", 403)
 
     cache_key = f"proxy:webp:v1:{url}"

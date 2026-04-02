@@ -62,7 +62,8 @@ def check_rate_limit(ip: str) -> bool:
             return False
         return True
     except Exception as e:
-        # If Redis fails, fail open (allow request) to prevent blocking users during cache issues
+        # Fail-open: Redis outage should not take down the site
+        log.warning(f"[rate_limit] Redis unavailable for {ip}, allowing request: {e}")
         return True
 
 def calculate_reading_time(text: str) -> int:

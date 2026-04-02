@@ -1,6 +1,13 @@
 import pytest
+from unittest.mock import patch, MagicMock
 from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster
 from collections import Counter
+
+# db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
+# so we must patch the source attribute on the database module.
+_mock_db = MagicMock()
+_mock_db.get_cluster_entities.return_value = {}
+_DB_PATCH = 'database.db_manager'
 
 def test_mk_stem():
     assert mk_stem("владата") == "влад"
@@ -33,24 +40,26 @@ def test_get_cosine():
     score = get_cosine(vec1, vec2)
     assert 0.0 < score < 1.0
 
+@patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
     recent_articles = [
         {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
         {"cluster_id": "c1", "title": "Нова мерка на владата за економија"},
         {"cluster_id": "c2", "title": "Спортски настан во Скопје"}
     ]
-    
+
     # Should match cluster 1 (use very similar words to pass threshold 0.35)
     title1 = "Владата донесе мерка за економијата"
     cid1 = find_or_create_cluster(title1, recent_articles)
     assert cid1 == "c1"
-    
+
     # Should create new cluster
     title2 = "Временска прогноза за утре"
     cid2 = find_or_create_cluster(title2, recent_articles)
     assert cid2 != "c1"
     assert cid2 != "c2"
 
+@patch(_DB_PATCH, _mock_db)
 def test_max_cluster_size():
     # Mocking a full cluster
     recent_articles = [{"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"}] * 30
@@ -70,6 +79,7 @@ def test_no_recent_articles():
     cid = find_or_create_cluster("Нова важна вест", [])
     assert len(cid) == 8  # uuid[:8]
 
+@patch(_DB_PATCH, _mock_db)
 def test_completely_different_topic():
     """Completely unrelated titles should not cluster together."""
     recent = [
@@ -100,6 +110,7 @@ def test_get_cosine_identical():
     vec = Counter({"тест": 3, "влад": 2})
     assert abs(get_cosine(vec, vec) - 1.0) < 0.001
 
+@patch(_DB_PATCH, _mock_db)
 def test_cluster_age_decay():
     """Older cluster representatives should be harder to match (higher threshold)."""
     import datetime

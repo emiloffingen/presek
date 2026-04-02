@@ -40,7 +40,7 @@
       <div class="story-meta meta-info">
         <span class="src-badge" style="background: var(--primary); color: #fff; border: none;">{{ articles | length }} извори</span>
         <span>·</span>
-        <span id="timeLabel" style="font-family: var(--font-mono); font-size: 0.75rem;">{{ articles[0].created_at }}</span>
+        <span id="timeLabel" style="font-family: var(--font-mono); font-size: 0.75rem;">{{ articles[0].created_at.strftime('%d.%m.%Y %H:%M') if articles[0].created_at else '' }}</span>
         {% if total_reading_time %}
         <span>·</span>
         <span style="display: flex; align-items: center; gap: 4px;">

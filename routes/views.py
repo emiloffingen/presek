@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, current_app, request
+from flask import Blueprint, render_template, current_app, request, Response
 from database import db_manager as db, get_db
 from utils import score_cluster, is_balanced, cached_response, set_cache, rank_articles_in_cluster, calculate_reading_time
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
@@ -6,6 +6,7 @@ from collections import defaultdict
 import datetime
 import math
 import logging
+import re
 
 views_bp = Blueprint('views', __name__)
 
@@ -278,3 +279,24 @@ def contact_page():
 @views_bp.route("/privacy")
 def privacy_page():
     return render_template("privacy.html", year=datetime.datetime.now().year)
+
+@views_bp.route("/robots.txt")
+def robots_txt():
+    content = "User-agent: *\nDisallow: /api/\nAllow: /\n"
+    return Response(content, mimetype="text/plain")
+
+@views_bp.route("/favicon.ico")
+def favicon():
+    return current_app.send_static_file("logo.svg")
+
+@views_bp.route("/og-image.svg")
+def og_image():
+    conn = get_db()
+    row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
+    count = row[0] if row else 0
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1a1a2e"/>
+  <text x="600" y="280" font-family="sans-serif" font-size="72" font-weight="bold" fill="#ffffff" text-anchor="middle">Пресек</text>
+  <text x="600" y="380" font-family="sans-serif" font-size="36" fill="#aaaaaa" text-anchor="middle">{count} статии индексирани</text>
+</svg>"""
+    return Response(svg, mimetype="image/svg+xml")

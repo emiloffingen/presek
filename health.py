@@ -79,31 +79,3 @@ def register_health_routes(app):
             "server_time": datetime.now(timezone.utc).isoformat(),
         })
 
-    @app.route("/api/stats")
-    def stats():
-        try:
-            conn = database.get_db()
-            total     = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
-            by_cat    = conn.execute(
-                "SELECT category, COUNT(*) as n FROM articles GROUP BY category ORDER BY n DESC"
-            ).fetchall()
-            by_source = conn.execute(
-                "SELECT source, COUNT(*) as n FROM articles GROUP BY source ORDER BY n DESC LIMIT 10"
-            ).fetchall()
-            recent_24h = conn.execute(
-                "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'"
-            ).fetchone()[0]
-            summarized = conn.execute(
-                "SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''"
-            ).fetchone()[0]
-            conn.close()
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-        return jsonify({
-            "total_articles": total,
-            "last_24h": recent_24h,
-            "summarized": summarized,
-            "by_category": [{"category": r[0] or "Македонија", "count": r[1]} for r in by_cat],
-            "top_sources": [{"source": r[0], "count": r[1]} for r in by_source],
-        })

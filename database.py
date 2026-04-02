@@ -335,4 +335,6 @@ db_manager = DatabaseManager()
 def get_db(): return DBWrapper(db_manager)
 def get_db_size(): return db_manager.get_db_size()
 def init_db(): db_manager.init_schema()
-def prune_db(): db_manager.execute("DELETE FROM articles WHERE created_at < NOW() - INTERVAL '14 days'", fetch=False)
+def prune_db():
+    from config import DB_RETAIN_DAYS
+    db_manager.execute(f"DELETE FROM articles WHERE created_at < NOW() - INTERVAL '{int(DB_RETAIN_DAYS)} days'", fetch=False)
