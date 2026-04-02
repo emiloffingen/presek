@@ -72,7 +72,9 @@ ok "Preflight complete"
 # ── Kill existing ────────────────────────────────────────────────
 info "Cleaning up old processes..."
 screen -S "$SESSION" -X quit 2>/dev/null
-sleep 1
+# Also kill any stray gunicorn processes holding the port
+pkill -f "gunicorn.*app:app" 2>/dev/null || true
+sleep 3
 
 # ── Init DB schema ───────────────────────────────────────────────
 info "Verifying database schema..."

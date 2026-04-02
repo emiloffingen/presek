@@ -5,21 +5,29 @@ Add to app.py: from health import register_health_routes; register_health_routes
 
 import database
 import time
-import threading
+import json
 from datetime import datetime, timezone
 
-# Module-level state
 _start_time = time.time()
-_last_refresh: dict = {"time": None, "count": 0, "errors": []}
-_refresh_lock = threading.Lock()
+_REDIS_KEY = "presek:last_refresh"
+
+
+def _get_redis():
+    import os, redis as _redis
+    return _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
 
 
 def record_refresh(article_count: int, errors: list[str] | None = None):
-    """Call this after each RSS refresh cycle in your auto_refresh_loop."""
-    with _refresh_lock:
-        _last_refresh["time"] = datetime.now(timezone.utc).isoformat()
-        _last_refresh["count"] = article_count
-        _last_refresh["errors"] = errors or []
+    """Call this after each RSS refresh cycle. Writes to Redis so all workers see it."""
+    payload = {
+        "time": datetime.now(timezone.utc).isoformat(),
+        "count": article_count,
+        "errors": errors or [],
+    }
+    try:
+        _get_redis().set(_REDIS_KEY, json.dumps(payload), ex=3600)
+    except Exception:
+        pass  # Non-critical; health endpoint falls back gracefully
 
 
 def register_health_routes(app):
@@ -57,8 +65,13 @@ def register_health_routes(app):
         except Exception:
             pass
 
-        with _refresh_lock:
-            last = dict(_last_refresh)
+        last = {"time": None, "count": 0, "errors": []}
+        try:
+            raw = _get_redis().get(_REDIS_KEY)
+            if raw:
+                last = json.loads(raw)
+        except Exception:
+            pass
 
         overall = "ok" if (db_ok and redis_ok) else "degraded"
         return jsonify({

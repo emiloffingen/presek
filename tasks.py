@@ -281,6 +281,7 @@ def backfill_cover_art_task():
                     "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
                     (img_url, r['cluster_id']), fetch=False
                 )
+            time.sleep(4)  # Avoid flooding Pollinations AI rate limit
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
 
