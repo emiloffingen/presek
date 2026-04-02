@@ -212,13 +212,22 @@
         <div class="search-bar-wrap">
             <div class="search-bar">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="searchInput" placeholder="Што ве интересира денес?" autocomplete="off" spellcheck="false">
+                <input type="text" id="searchInput" placeholder="Пребарајте низ архивата..." autocomplete="off" spellcheck="false">
                 <button class="icon-btn" id="searchClose" aria-label="Затвори пребарување">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
-            <div style="margin-top:20px; color:var(--text-muted); font-size:0.8rem; text-align:center;">
-                Притиснете <kbd style="background:var(--bg-elevated); padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">Enter</kbd> за пребарување
+            
+            <div class="search-suggestions fade-in">
+                <h3 class="suggestion-title">АКТУЕЛНИ ТЕМИ</h3>
+                <div class="suggestion-pills" id="searchTrending">
+                    <!-- Populated by JS -->
+                    <div class="loading-state" style="padding: 20px 0; font-size: 0.8rem;">Вчитување трендови...</div>
+                </div>
+            </div>
+
+            <div class="search-hint">
+                Притиснете <kbd>Enter</kbd> за пребарување
             </div>
         </div>
     </div>

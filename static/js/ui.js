@@ -233,6 +233,7 @@ const UI = {
 
     renderTrendingSidebar(trends) {
         this.state.trends = trends || []; // Store for Discovery Ribbon
+        this._populateSearchSuggestions(trends); // Populate search overlay suggestions
         const sidebar = document.getElementById('sidebarTrending');
         if (!sidebar) return;
         
@@ -250,9 +251,30 @@ const UI = {
                     e.preventDefault(); 
                     app.setSearch(decodeURIComponent(el.dataset.search)); 
                     this.toggleDrawer(false); // Close drawer if open
+                    const searchOverlay = document.getElementById('searchOverlay');
+                    if (searchOverlay) searchOverlay.classList.remove('active');
                 });
                 el.dataset.searchBound = "true";
             }
+        });
+    },
+
+    _populateSearchSuggestions(trends) {
+        const container = document.getElementById('searchTrending');
+        if (!container || !trends) return;
+
+        container.innerHTML = trends.slice(0, 8).map(t => `
+            <div class="suggestion-item" data-search="${encodeURIComponent(t.word)}">
+                ${this._esc(t.word)}
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.suggestion-item').forEach(el => {
+            el.onclick = () => {
+                app.setSearch(decodeURIComponent(el.dataset.search));
+                const searchOverlay = document.getElementById('searchOverlay');
+                if (searchOverlay) searchOverlay.classList.remove('active');
+            };
         });
     },
 
@@ -265,6 +287,19 @@ const UI = {
     init() {
         this._initBackToTop();
         this._initMobileDrawer();
+        this._initSearchOverlay();
+    },
+
+    _initSearchOverlay() {
+        const overlay = document.getElementById('searchOverlay');
+        const close = document.getElementById('searchClose');
+        if (overlay && close) {
+            close.onclick = () => overlay.classList.remove('active');
+            // Close on backdrop click
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            };
+        }
     },
 
     toggleDrawer(show) {
