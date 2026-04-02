@@ -112,7 +112,7 @@ const UI = {
         const main = articles[0];
         const count = articles.length;
         const isBookmarked = this.isBookmarked(cluster.cluster_id);
-        const isFeatured = idx % 6 === 0;
+        const isLead = app.state.page === 0 && idx === 0;
 
         let thumbUrl = cluster.representative_image;
         if (thumbUrl && !thumbUrl.startsWith('/')) thumbUrl = `/proxy?url=${encodeURIComponent(thumbUrl)}`;
@@ -125,13 +125,6 @@ const UI = {
             }
         }
 
-        const catMap = {
-            'Македонија': 'Balkans', 'Балкан': 'Balkans',
-            'Економија': 'Economy', 'Политика': 'Politics',
-            'Технологија': 'Tech', 'Свет': 'World', 'Спорт': 'Sport'
-        };
-        const catClass = `cat-${catMap[main.category] || 'General'}`;
-
         const bookmarkHtml = `
             <button class="bookmark-btn ${isBookmarked ? 'active' : ''}" 
                     onclick="UI.toggleBookmark(event, '${cluster.cluster_id}')" 
@@ -141,29 +134,31 @@ const UI = {
                 </svg>
             </button>`;
 
-        const imgHtml = thumbUrl ? `
+        const imgHtml = (thumbUrl && (isLead || idx % 3 === 0)) ? `
             <div class="cluster-thumb-wrap">
                 <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
                     <img src="${thumbUrl}" alt="${this._esc(main.title)}" class="cluster-thumb" loading="${idx < 3 ? 'eager' : 'lazy'}">
                 </a>
             </div>` : '';
 
+        const excerptHtml = (isLead && main.description) 
+            ? `<p class="cluster-excerpt">${this._esc(main.description).substring(0, 180)}...</p>` 
+            : '';
+
         return `
-            <article class="news-cluster ${isFeatured ? 'featured' : ''} ${catClass} fade-in">
+            <article class="news-cluster ${isLead ? 'lead-story' : ''} fade-in">
                 ${imgHtml}
                 <div class="cluster-main">
-                    <div class="cluster-meta">
-                        <span class="category">${this._esc(main.category || 'Вести')}</span>
-                        <span class="card-dot">·</span>
-                        <span class="time">${this._relativeTime(main.created_at)}</span>
-                        ${bookmarkHtml}
-                    </div>
                     <a href="/cluster/${cluster.cluster_id}" class="cluster-headline">
                         ${this._esc(main.title)}
                     </a>
-                    <div class="cluster-footer" style="border:none; padding:0; margin-top: var(--space-xs);">
-                        <span class="card-count">${count} извори</span>
-                        ${cluster.has_balanced ? `<span style="font-size:0.65rem; margin-left:10px;">⚖️</span>` : ''}
+                    ${excerptHtml}
+                    <div class="cluster-meta">
+                        <span class="time">${this._relativeTime(main.created_at)}</span>
+                        <span class="card-dot">·</span>
+                        <span class="count">${count} извори</span>
+                        ${cluster.has_balanced ? `<span style="font-size:0.65rem; margin-left:4px;">⚖️</span>` : ''}
+                        ${bookmarkHtml}
                     </div>
                 </div>
             </article>`;

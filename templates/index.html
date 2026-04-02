@@ -8,11 +8,7 @@
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
             {% set idx = loop.index0 %}
-            {% set is_featured = idx % 6 == 0 %}
-
-            {# Category Mapping for CSS Classes #}
-            {% set cat_map = {'Македонија': 'Balkans', 'Балкан': 'Balkans', 'Економија': 'Economy', 'Политика': 'Politics', 'Технологија': 'Tech', 'Свет': 'World', 'Спорт': 'Sport'} %}
-            {% set cat_class = 'cat-' ~ (cat_map[main.category] if main.category in cat_map else 'General') %}
+            {% set is_lead = idx == 0 %}
 
             {# Find best thumbnail #}
             {% set thumb = cluster.representative_image %}
@@ -23,8 +19,8 @@
             {% endif %}
             {% set thumb_src = ('/proxy?url=' ~ (thumb|urlencode)) if (thumb and not thumb.startswith('/')) else (thumb or '') %}
 
-            <article class="news-cluster {{ 'featured' if is_featured else '' }} {{ cat_class }} fade-in">
-                {% if thumb_src %}
+            <article class="news-cluster {{ 'lead-story' if is_lead else '' }} fade-in">
+                {% if thumb_src and (is_lead or idx % 3 == 0) %}
                 <div class="cluster-thumb-wrap">
                     <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
                         <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="{{ 'eager' if idx < 3 else 'lazy' }}">
@@ -32,17 +28,16 @@
                 </div>
                 {% endif %}
                 <div class="cluster-main">
-                    <div class="cluster-meta">
-                        <span class="category">{{ main.category or 'Вести' }}</span>
-                        <span class="card-dot">·</span>
-                        <span class="time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
-                    </div>
                     <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline">
                         {{ main.title }}
                     </a>
-                    <div class="cluster-footer" style="border:none; padding:0; margin-top: var(--space-xs);">
-                        <span class="card-count">{{ cluster.articles|length }} извори</span>
-                        {% if cluster.has_balanced %}<span style="font-size:0.65rem; margin-left:10px;">⚖️</span>{% endif %}
+                    {% if is_lead and main.description %}
+                    <p class="cluster-excerpt">{{ main.description | truncate(180) }}</p>
+                    {% endif %}
+                    <div class="cluster-meta">
+                        <span class="time">{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                        <span class="card-dot">·</span>
+                        <span class="count">{{ cluster.articles|length }} извори</span>
                     </div>
                 </div>
             </article>
