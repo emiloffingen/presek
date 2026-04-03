@@ -174,6 +174,7 @@ const app = {
                 if (e.key === 'Enter') {
                     const q = searchInput.value.trim();
                     if (q) {
+                        if (window.UI && UI._saveSearchToHistory) UI._saveSearchToHistory(q);
                         this.setSearch(q);
                         if (searchOverlay) searchOverlay.classList.remove('active');
                     }

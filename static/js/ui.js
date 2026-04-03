@@ -332,11 +332,57 @@ const UI = {
 
         container.querySelectorAll('.suggestion-item').forEach(el => {
             el.addEventListener('click', () => {
-                app.setSearch(decodeURIComponent(el.dataset.search));
+                const query = decodeURIComponent(el.dataset.search);
+                this._saveSearchToHistory(query);
+                app.setSearch(query);
                 const searchOverlay = document.getElementById('searchOverlay');
                 if (searchOverlay) searchOverlay.classList.remove('active');
             });
         });
+    },
+
+    _saveSearchToHistory(query) {
+        if (!query) return;
+        try {
+            let history = JSON.parse(localStorage.getItem('presek_search_history') || '[]');
+            history = history.filter(h => h.toLowerCase() !== query.toLowerCase());
+            history.unshift(query);
+            history = history.slice(0, 5);
+            localStorage.setItem('presek_search_history', JSON.stringify(history));
+            this._renderSearchHistory();
+        } catch (e) {}
+    },
+
+    _renderSearchHistory() {
+        const container = document.getElementById('searchHistory');
+        const section = document.getElementById('searchHistorySection');
+        if (!container || !section) return;
+
+        try {
+            const history = JSON.parse(localStorage.getItem('presek_search_history') || '[]');
+            if (history.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = history.map(h => `
+                <div class="suggestion-item history-item" data-search="${encodeURIComponent(h)}">
+                    <span style="opacity: 0.5; margin-right: 6px;">⏳</span> ${this._esc(h)}
+                </div>
+            `).join('');
+
+            container.querySelectorAll('.history-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const query = decodeURIComponent(el.dataset.search);
+                    app.setSearch(query);
+                    const searchOverlay = document.getElementById('searchOverlay');
+                    if (searchOverlay) searchOverlay.classList.remove('active');
+                });
+            });
+        } catch (e) {
+            section.style.display = 'none';
+        }
     },
 
     updateClock() {
@@ -346,6 +392,7 @@ const UI = {
     },
 
     init() {
+        try { this._renderSearchHistory(); } catch(e) {}
         try { this._initBackToTop(); } catch(e) { console.error("BackToTop init error", e); }
         try { this._initMobileDrawer(); } catch(e) { console.error("MobileDrawer init error", e); }
         try { this._initSearchOverlay(); } catch(e) { console.error("SearchOverlay init error", e); }
@@ -461,10 +508,24 @@ const UI = {
     _initSearchOverlay() {
         const overlay = document.getElementById('searchOverlay');
         const close = document.getElementById('searchClose');
+        const clear = document.getElementById('searchClear');
+        const input = document.getElementById('searchInput');
+
         if (overlay && close) {
             close.addEventListener('click', () => overlay.classList.remove('active'));
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) overlay.classList.remove('active');
+            });
+        }
+
+        if (input && clear) {
+            input.addEventListener('input', () => {
+                clear.style.display = input.value ? 'flex' : 'none';
+            });
+            clear.addEventListener('click', () => {
+                input.value = '';
+                clear.style.display = 'none';
+                input.focus();
             });
         }
     },

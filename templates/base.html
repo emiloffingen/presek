@@ -177,10 +177,26 @@
     <div class="search-overlay" id="searchOverlay">
         <div class="search-bar-wrap">
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search..." autocomplete="off" spellcheck="false">
-                <button class="icon-btn" id="searchClose" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-input-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="searchInput" placeholder="Пребарајте вести..." autocomplete="off" spellcheck="false">
+                <button class="icon-btn" id="searchClear" aria-label="Исчисти" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </button>
+                <button class="icon-btn" id="searchClose" aria-label="Затвори">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
+            </div>
+            
+            <div class="search-suggestions-container">
+                <div id="searchHistorySection" style="display: none;">
+                    <div class="suggestion-label">СКОРЕШНИ ПРЕБАРУВАЊА</div>
+                    <div id="searchHistory" class="suggestion-list"></div>
+                </div>
+                
+                <div id="searchTrendingSection">
+                    <div class="suggestion-label">ТРЕНДОВИ ВО МОМЕНТОВ</div>
+                    <div id="searchTrending" class="suggestion-list"></div>
+                </div>
             </div>
         </div>
     </div>
