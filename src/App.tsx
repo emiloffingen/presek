@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useNewsStore } from '@/store/useNewsStore';
 import { NewsFeed } from './components/news/NewsFeed';
+import { FrontendV2 } from './pages/FrontendV2';
 import { Briefing } from './pages/Briefing';
 import { Stats } from './pages/Stats';
 import { ClusterDetail } from './pages/ClusterDetail';
@@ -38,7 +39,8 @@ const AppContent: React.FC = () => {
     <>
       <NavigationBridge />
       <Routes>
-        <Route path="/" element={<NewsFeed />} />
+        <Route path="/" element={<FrontendV2 />} />
+        <Route path="/legacy" element={<NewsFeed />} />
         <Route path="/saved" element={<NewsFeed />} />
         <Route path="/briefing" element={<Briefing />} />
         <Route path="/stats" element={<Stats />} />
