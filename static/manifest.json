@@ -33,13 +33,13 @@
       "name": "Дневен Брифинг",
       "short_name": "Брифинг",
       "url": "/briefing",
-      "icons": [{ "src": "/static/img/presek_emblem.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/img/presek_emblem.svg", "sizes": "any" }]
     },
     {
       "name": "Медиумски Пулс",
       "short_name": "Статистика",
       "url": "/stats",
-      "icons": [{ "src": "/static/img/presek_emblem.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/img/presek_emblem.svg", "sizes": "any" }]
     }
   ]
 }
