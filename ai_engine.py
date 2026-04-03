@@ -169,8 +169,8 @@ PROVIDERS = {
 
 TASK_ROUTING = {
     "translation":  ["groq", "mistral", "gemini"],
-    "summarize":    ["groq", "gemini"],
-    "synthesis":    ["groq", "mistral", "gemini"],
+    "summarize":    ["groq", "mistral", "cerebras", "gemini", "openrouter"],
+    "synthesis":    ["groq", "mistral", "cerebras", "gemini", "openrouter"],
     "default":      ["groq", "cerebras", "gemini"],
 }
 
