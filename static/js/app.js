@@ -273,6 +273,14 @@ const app = {
                 params.set('follow_topics', topCats);
                 isPersonalized = true;
             }
+            
+            try {
+                const followedSources = JSON.parse(localStorage.getItem('presek_follow_sources') || '[]');
+                if (followedSources.length > 0) {
+                    params.set('follow_sources', followedSources.join(','));
+                    isPersonalized = true;
+                }
+            } catch (e) {}
         }
 
         try {
