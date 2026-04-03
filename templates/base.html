@@ -18,9 +18,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
+    <meta http-equiv="Cache-Control" content="no-transform">
     {{ vite_asset('style.css') }}
 
-    <script type="speculationrules">
+    <script data-cfasync="false" type="speculationrules">
     {
       "prerender": [
         {
@@ -241,7 +242,7 @@
 
     {{ vite_asset('main.js') }}
     {% block scripts %}{% endblock %}
-    <script>
+    <script data-cfasync="false">
       // Global error handler for debugging
       window.addEventListener('error', e => {
         console.error('Uncaught error:', e.error);
