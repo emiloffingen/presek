@@ -259,6 +259,7 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 # ── OpenClaw Gateway Configuration ──────────────────────────────
 OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "")
 OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
+CF_AI_GATEWAY_URL = os.environ.get("CF_AI_GATEWAY_URL", "")
 
 # ── Cloudflare R2 Configuration ──────────────────────────────────
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
