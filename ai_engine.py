@@ -342,11 +342,15 @@ def search_google_image(query: str) -> str | None:
     return None
 
 def generate_cover_art(cluster_id: str, title: str) -> str | None:
-    """First tries to find a real image via Google Search, falls back to Pollinations AI."""
+    """First tries to find a real image via Google Search, falls back to a locally generated SVG."""
     import os
     import requests
+    from local_nlp import generate_local_placeholder
+    from database import db_manager as db
+    
     os.makedirs("static/generated", exist_ok=True)
-    save_path = f"static/generated/{cluster_id}.jpg"
+    save_path_jpg = f"static/generated/{cluster_id}.jpg"
+    save_path_svg = f"static/generated/{cluster_id}.svg"
     
     # 1. Try Google Search first (Real photo/illustration)
     img_url = search_google_image(title)
@@ -360,26 +364,26 @@ def generate_cover_art(cluster_id: str, title: str) -> str | None:
             }
             resp = requests.get(img_url, headers=headers, timeout=15, stream=True)
             if resp.status_code == 200:
-                with open(save_path, "wb") as f:
+                with open(save_path_jpg, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=8192):
                         f.write(chunk)
                 return f"/static/generated/{cluster_id}.jpg"
         except Exception as e:
             log.warning(f"[google-img] Download failed from {img_url}: {e}")
 
-    # 2. Fallback to Pollinations AI (Generated art)
-    log.info(f"[cover-art] Falling back to AI generation for '{title}'")
-    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
-    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
-    
+    # 2. Local Fallback (Styled SVG)
+    log.info(f"[cover-art] Generating local styled SVG for '{title}'")
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Presek/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            with open(save_path, "wb") as f:
-                f.write(resp.read())
-        return f"/static/generated/{cluster_id}.jpg"
+        # Get category for better branding
+        cat_row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+        category = cat_row['category'] if cat_row else "Вести"
+        
+        svg_content = generate_local_placeholder(cluster_id, title, category)
+        with open(save_path_svg, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+        return f"/static/generated/{cluster_id}.svg"
     except Exception as e:
-        log.warning(f"[ai-img] Fallback generation failed: {e}")
+        log.error(f"[cover-art] Local SVG generation failed: {e}")
         return None
 
 def cleanup_cover_art():
@@ -395,8 +399,8 @@ def cleanup_cover_art():
         
         count = 0
         for filename in os.listdir(gen_dir):
-            if filename.endswith(".jpg"):
-                cid = filename.replace(".jpg", "")
+            if filename.endswith((".jpg", ".svg")):
+                cid = filename.split(".")[0]
                 if cid not in valid_ids:
                     os.remove(os.path.join(gen_dir, filename))
                     count += 1
