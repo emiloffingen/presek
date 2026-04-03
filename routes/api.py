@@ -508,6 +508,31 @@ def proxy_image():
     if not url:
         return error_response("Missing url parameter", 400)
 
+    # Allow serving local static files directly
+    if url.startswith("/static/"):
+        # Security check: Ensure we stay within the static folder
+        if ".." in url:
+            return error_response("Blocked URL", 403)
+        
+        # Determine mimetype
+        mimetype = "image/jpeg"
+        if url.endswith(".svg"): mimetype = "image/svg+xml"
+        elif url.endswith(".png"): mimetype = "image/png"
+        elif url.endswith(".webp"): mimetype = "image/webp"
+        
+        try:
+            full_path = os.path.join(os.getcwd(), url.lstrip("/"))
+            if os.path.exists(full_path):
+                with open(full_path, "rb") as f:
+                    return Response(
+                        f.read(),
+                        content_type=mimetype,
+                        headers={"Cache-Control": "public, max-age=86400"}
+                    )
+            return error_response("Local file not found", 404)
+        except Exception as e:
+            return error_response(f"Failed to serve local file: {e}", 500)
+
     if not re.match(r'^https?://', url):
         return error_response("Invalid URL scheme", 400)
 
