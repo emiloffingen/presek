@@ -298,22 +298,78 @@ def auto_summarize_top_clusters():
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
 
-def generate_cover_art(cluster_id: str, title: str) -> str | None:
-    """Uses Pollinations AI to generate editorial art."""
-    import os
-    os.makedirs("static/generated", exist_ok=True)
-    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
-    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
-    save_path = f"static/generated/{cluster_id}.jpg"
+def search_google_image(query: str) -> str | None:
+    """Searches Google for an image and returns the first high-res result URL."""
+    import requests
+    import re
+    
+    # We use a broad search term to find relevant editorial images
+    search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&tbm=isch"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
     
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Presek/4.0"})
+        resp = requests.get(search_url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return None
+            
+        # Look for image patterns in Google's obfuscated HTML
+        pattern = r'\["(http[^"]+)",\d+,\d+\]'
+        matches = re.findall(pattern, resp.text)
+        
+        for m in matches:
+            # Skip google-hosted thumbs and encrypted links
+            if "gstatic.com" in m or "encrypted-tbn" in m:
+                continue
+            # Decode unicode escapes if present
+            m = m.replace("\\u003d", "=").replace("\\u0026", "&")
+            if m.lower().split('?')[0].endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                return m
+    except Exception as e:
+        log.warning(f"[google-img] Search failed for '{query}': {e}")
+        
+    return None
+
+def generate_cover_art(cluster_id: str, title: str) -> str | None:
+    """First tries to find a real image via Google Search, falls back to Pollinations AI."""
+    import os
+    import requests
+    os.makedirs("static/generated", exist_ok=True)
+    save_path = f"static/generated/{cluster_id}.jpg"
+    
+    # 1. Try Google Search first (Real photo/illustration)
+    img_url = search_google_image(title)
+    
+    if img_url:
+        try:
+            log.info(f"[cover-art] Found Google image for '{title}': {img_url}")
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://www.google.com/"
+            }
+            resp = requests.get(img_url, headers=headers, timeout=15, stream=True)
+            if resp.status_code == 200:
+                with open(save_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                return f"/static/generated/{cluster_id}.jpg"
+        except Exception as e:
+            log.warning(f"[google-img] Download failed from {img_url}: {e}")
+
+    # 2. Fallback to Pollinations AI (Generated art)
+    log.info(f"[cover-art] Falling back to AI generation for '{title}'")
+    prompt = f"Editorial digital illustration for news headline: {title}. Style: minimalist, cinematic, midnight noir."
+    url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}?width=1024&height=576&nologo=true&seed={int(time.time())}"
+    
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Presek/5.0"})
         with urllib.request.urlopen(req, timeout=60) as resp:
             with open(save_path, "wb") as f:
                 f.write(resp.read())
         return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
-        log.warning(f"[ai-img] Generation failed: {e}")
+        log.warning(f"[ai-img] Fallback generation failed: {e}")
         return None
 
 def cleanup_cover_art():

@@ -267,15 +267,15 @@ def backfill_cover_art_task():
     """Generate AI cover art for clusters that have no image."""
     try:
         rows = db.execute("""
-            SELECT DISTINCT a.cluster_id, cs.summary
+            SELECT DISTINCT a.cluster_id, 
+                   (SELECT title FROM articles WHERE cluster_id = a.cluster_id ORDER BY created_at DESC LIMIT 1) as title
             FROM articles a
-            JOIN cluster_summaries cs ON a.cluster_id = cs.cluster_id
             WHERE a.image_url IS NULL
               AND a.created_at >= NOW() - INTERVAL '24 hours'
             LIMIT 5
         """)
         for r in rows:
-            img_url = generate_cover_art(r['cluster_id'], r['summary'] or '')
+            img_url = generate_cover_art(r['cluster_id'], r['title'] or '')
             if img_url:
                 db.execute(
                     "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
