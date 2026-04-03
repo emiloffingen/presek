@@ -4,7 +4,7 @@
 
 {% block content %}
     <h1 class="visually-hidden">Најнови вести од Пресек</h1>
-    <div id="newsFeed" aria-live="polite">
+    <div id="newsFeed" class="news-feed-grid" aria-live="polite">
     {% if initial_clusters %}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
@@ -64,30 +64,28 @@
             </article>
         {% endfor %}
     {% else %}
-        <div id="initialSkeletons" class="span-12 bento-grid" style="grid-template-columns: repeat(3, 1fr); gap: 30px;">
-            <!-- Skeletons will be injected by JS or shown as static HTML -->
-            <div class="news-cluster skeleton-card">
-                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
-                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
-                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
-            </div>
-            <div class="news-cluster skeleton-card">
-                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
-                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
-                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
-            </div>
-            <div class="news-cluster skeleton-card">
-                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
-                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
-                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
-            </div>
+        <!-- Skeletons will be injected by JS or shown as static HTML -->
+        <div class="news-cluster skeleton-card span-3">
+            <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+            <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+            <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
+        </div>
+        <div class="news-cluster skeleton-card span-3">
+            <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+            <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+            <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
+        </div>
+        <div class="news-cluster skeleton-card span-3">
+            <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+            <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+            <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
         </div>
     {% endif %}
     </div>
 
-<!-- Infinite Scroll Trigger -->
-<div id="scrollTrigger" style="height: 20px; width: 100%;"></div>
-<div id="feedLoading" class="loading-state" style="display: none; padding: 2rem;">
-    Вчитување на повеќе вести...
-</div>
+    <!-- Infinite Scroll Trigger -->
+    <div id="scrollTrigger" style="height: 20px; width: 100%;"></div>
+    <div id="feedLoading" class="loading-state" style="display: none; padding: 2rem;">
+        Вчитување на повеќе вести...
+    </div>
 {% endblock %}

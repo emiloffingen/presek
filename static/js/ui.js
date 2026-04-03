@@ -34,7 +34,7 @@ const UI = {
     },
 
     renderPage(clusters, append = false, isPersonalized = false, isSearch = false) {
-        const container = document.getElementById('pageWrap');
+        const container = document.getElementById('newsFeed');
         if (!container) return;
 
         if (!append) {
@@ -42,17 +42,17 @@ const UI = {
             container.innerHTML = '';
             
             if (isPersonalized && !isSearch) {
-                container.innerHTML = `
+                container.insertAdjacentHTML('beforebegin', `
                     <div class="personalization-notice fade-in">
                         <span class="p-icon">✨</span> ПЕРСОНАЛИЗИРАН ИЗБОР ЗА ВАС
-                    </div>`;
+                    </div>`);
             }
 
             if (isSearch) {
-                container.innerHTML = `
+                container.insertAdjacentHTML('beforebegin', `
                     <div class="search-notice fade-in" style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
                         <h2 style="font-size: 1.2rem; font-family: var(--font-heading);">Резултати од пребарувањето</h2>
-                    </div>`;
+                    </div>`);
             }
 
             if (clusters && clusters.length > 0 && !isSearch) {

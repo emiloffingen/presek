@@ -25,7 +25,7 @@ const app = {
             this._fetchWeather();
             
             // SSR (Instant Paint) Optimization
-            const container = document.getElementById('pageWrap');
+            const container = document.getElementById('newsFeed');
             if (!container) return;
 
             const isFeedPage = location.pathname === '/' || location.pathname === '/saved';
