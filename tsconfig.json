@@ -18,8 +18,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"]
   },
-  "include": ["src"],
+  "include": ["src", "index.html"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

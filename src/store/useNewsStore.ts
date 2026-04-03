@@ -1,102 +1,77 @@
 import { create } from 'zustand';
-import { Cluster, TrendingItem } from '../types';
-import * as api from '../api/client';
+import { NewsCluster, FullStats } from '../types';
 
-interface NewsState {
-  clusters: Cluster[];
-  trending: TrendingItem[];
+interface NewsStore {
+  clusters: NewsCluster[];
+  isLoading: boolean;
+  error: string | null;
   page: number;
   pageSize: number;
   hasMore: boolean;
-  isFetching: boolean;
-  topic: string;
-  query: string;
-  isSaved: boolean;
-  
-  // Actions
-  setClusters: (clusters: Cluster[]) => void;
-  appendClusters: (clusters: Cluster[]) => void;
-  setTrending: (trending: TrendingItem[]) => void;
-  setFilter: (filter: { topic?: string; query?: string; isSaved?: boolean }) => void;
+  totalClusters: number;
+
+  setClusters: (clusters: NewsCluster[]) => void;
+  addClusters: (clusters: NewsCluster[]) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
   setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
   setHasMore: (hasMore: boolean) => void;
-  setIsFetching: (isFetching: boolean) => void;
-  fetchInitial: () => Promise<void>;
-  fetchMore: () => Promise<void>;
+  setTotalClusters: (total: number) => void;
   reset: () => void;
 }
 
-export const useNewsStore = create<NewsState>((set, get) => ({
+export const useNewsStore = create<NewsStore>((set) => ({
   clusters: [],
-  trending: [],
+  isLoading: false,
+  error: null,
   page: 0,
-  pageSize: 20,
+  pageSize: 50,
   hasMore: true,
-  isFetching: false,
-  topic: '',
-  query: '',
-  isSaved: false,
+  totalClusters: 0,
 
   setClusters: (clusters) => set({ clusters }),
-  appendClusters: (newClusters) => set((state) => ({ 
-    clusters: [...state.clusters, ...newClusters] 
-  })),
-  setTrending: (trending) => set({ trending }),
-  setFilter: (filter) => {
-    const { topic, query, isSaved } = get();
-    const changed = (filter.topic !== undefined && filter.topic !== topic) ||
-                    (filter.query !== undefined && filter.query !== query) ||
-                    (filter.isSaved !== undefined && filter.isSaved !== isSaved);
-    
-    set((state) => ({
-      ...state,
-      ...filter,
-      clusters: changed ? [] : state.clusters,
-      page: changed ? 0 : state.page,
-      hasMore: changed ? true : state.hasMore
-    }));
-    
-    if (changed) {
-      get().fetchInitial();
-    }
-  },
+  addClusters: (clusters) => set((state) => ({ clusters: [...state.clusters, ...clusters] })),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
   setPage: (page) => set({ page }),
+  setPageSize: (size) => set({ pageSize: size }),
   setHasMore: (hasMore) => set({ hasMore }),
-  setIsFetching: (isFetching) => set({ isFetching }),
-  
-  fetchInitial: async () => {
-    const { isFetching, topic, query, isSaved } = get();
-    if (isFetching) return;
-    
-    set({ isFetching: true, page: 0, clusters: [] });
-    try {
-      const { data, has_more } = await api.fetchNews(0, topic, query, isSaved);
-      set({ clusters: data, hasMore: has_more, isFetching: false });
-    } catch (e) {
-      console.error(e);
-      set({ isFetching: false });
-    }
-  },
-  
-  fetchMore: async () => {
-    const { isFetching, hasMore, page, topic, query, isSaved } = get();
-    if (isFetching || !hasMore) return;
-    
-    set({ isFetching: true });
-    try {
-      const nextPage = page + 1;
-      const { data, has_more } = await api.fetchNews(nextPage, topic, query, isSaved);
-      set((state) => ({
-        clusters: [...state.clusters, ...data],
-        page: nextPage,
-        hasMore: has_more,
-        isFetching: false
-      }));
-    } catch (e) {
-      console.error(e);
-      set({ isFetching: false });
-    }
-  },
+  setTotalClusters: (total) => set({ totalClusters: total }),
+  reset: () =>
+    set({
+      clusters: [],
+      isLoading: false,
+      error: null,
+      page: 0,
+      hasMore: true,
+    }),
+}));
 
-  reset: () => set({ clusters: [], page: 0, hasMore: true, isFetching: false }),
+interface UIStore {
+  sidebarOpen: boolean;
+  selectedCategory: string;
+  selectedTopic: string;
+  searchQuery: string;
+  stats: FullStats | null;
+
+  setSidebarOpen: (open: boolean) => void;
+  setSelectedCategory: (category: string) => void;
+  setSelectedTopic: (topic: string) => void;
+  setSearchQuery: (query: string) => void;
+  setStats: (stats: FullStats | null) => void;
+}
+
+export const useUIStore = create<UIStore>((set) => ({
+  sidebarOpen: true,
+  selectedCategory: 'Македонија',
+  selectedTopic: '',
+  searchQuery: '',
+  stats: null,
+
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  setSelectedCategory: (category) => set({ selectedCategory: category }),
+  setSelectedTopic: (topic) => set({ selectedTopic: topic }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setStats: (stats) => set({ stats }),
 }));

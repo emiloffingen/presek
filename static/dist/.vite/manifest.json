@@ -1,13 +1,11 @@
 {
-  "css/style.css": {
-    "file": "assets/style-DpoX5_kA.css",
-    "src": "css/style.css",
-    "isEntry": true
-  },
-  "main.tsx": {
-    "file": "assets/main-DjZkJuZ6.js",
+  "index.html": {
+    "file": "assets/main-BK4Lv-NW.js",
     "name": "main",
-    "src": "main.tsx",
-    "isEntry": true
+    "src": "index.html",
+    "isEntry": true,
+    "css": [
+      "assets/main-DCSLzMWD.css"
+    ]
   }
 }

@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: 'src',
+  root: '.',
   base: '/static/dist/',
   resolve: {
     alias: {
@@ -17,14 +17,22 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/main.tsx'),
-        style: resolve(__dirname, 'src/css/style.css'),
+        main: resolve(__dirname, 'index.html'),
       },
     },
   },
   server: {
     port: 5173,
-    strictPort: true,
-    origin: 'http://localhost:5173',
+    strictPort: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/proxy': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
 });

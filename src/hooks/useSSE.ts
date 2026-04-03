@@ -1,35 +1,47 @@
-import { useEffect } from 'react';
-import { useNewsStore } from '@/store/useNewsStore';
+import { useEffect, useRef, useCallback } from 'react';
 
-export const useSSE = () => {
-  const { appendClusters } = useNewsStore();
+interface SSEUpdate {
+  cluster_id: string;
+  new_articles: number;
+}
+
+export const useSSE = (url: string, onUpdate: (data: SSEUpdate) => void) => {
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const connect = useCallback(() => {
+    if (typeof EventSource === 'undefined') {
+      console.warn('Server-Sent Events not supported');
+      return;
+    }
+
+    eventSourceRef.current = new EventSource(url);
+
+    eventSourceRef.current.addEventListener('update', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onUpdate(data);
+      } catch (error) {
+        console.error('Error parsing SSE data:', error);
+      }
+    });
+
+    eventSourceRef.current.onerror = () => {
+      console.error('SSE connection error');
+      disconnect();
+    };
+  }, [url, onUpdate]);
+
+  const disconnect = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    if (!window.EventSource) return;
+    connect();
+    return () => disconnect();
+  }, [connect, disconnect]);
 
-    const source = new EventSource('/api/live');
-
-    source.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === 'new_clusters') {
-          // If we want to automatically add new clusters to the top
-          // We could prepend them, but for now let's just show a notification
-          // or we could use useNewsStore to add them.
-          console.log('New clusters available:', data.count);
-        }
-      } catch (err) {
-        console.error('SSE error parsing message:', err);
-      }
-    };
-
-    source.onerror = () => {
-      console.warn('SSE connection closed, reconnecting...');
-      source.close();
-    };
-
-    return () => {
-      source.close();
-    };
-  }, [appendClusters]);
+  return { disconnect };
 };

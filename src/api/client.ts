@@ -1,117 +1,159 @@
-import { Cluster, TrendingItem, WeatherData, Article } from '../types';
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import {
+  NewsResponse,
+  TrendingWord,
+  Stats,
+  FullStats,
+  Weather,
+  HealthResponse,
+  BriefingResponse,
+  ClusterDetail,
+  ChatResponse,
+} from '../types';
 
-export const fetchNews = async (page = 0, topic = '', query = '', isSaved = false): Promise<{ data: Cluster[]; has_more: boolean }> => {
-  if (isSaved) {
-    const savedIds = JSON.parse(localStorage.getItem('presek_saved_clusters') || '[]');
-    if (savedIds.length === 0) return { data: [], has_more: false };
-    
-    const res = await fetch(`/api/news?ids=${savedIds.join(',')}`);
-    const data = await res.json();
-    return { data: data.clusters || [], has_more: false };
+class ApiClient {
+  private client: AxiosInstance;
+  private baseURL: string;
+
+  constructor() {
+    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    this.client = axios.create({
+      baseURL: this.baseURL,
+      timeout: 10000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        if (error.response?.status === 429) {
+          console.warn('Rate limited. Please wait before making more requests.');
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
-  const params = new URLSearchParams({
-    page: page.toString(),
-    page_size: '20'
-  });
-
-  if (topic) params.set('topic', topic);
-  if (query) params.set('q', query);
-
-  const res = await fetch(`/api/news?${params}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-
-  if (data.status === 'success') {
-    return { 
-      data: data.clusters || [], 
-      has_more: data.has_more || false 
-    };
+  async getNews(params: {
+    country?: string;
+    page?: number;
+    page_size?: number;
+    category?: string;
+    topic?: string;
+    q?: string;
+    sort?: 'recent' | 'popular';
+    follow_sources?: string;
+    follow_topics?: string;
+  }): Promise<NewsResponse> {
+    try {
+      const response = await this.client.get<NewsResponse>('/api/news', { params });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
-  
-  throw new Error(data.message || 'Unknown error');
-};
 
-export const fetchTrending = async (): Promise<TrendingItem[]> => {
-  const res = await fetch('/api/trending');
-  if (!res.ok) return [];
-  return res.json();
-};
-
-export const fetchWeather = async (): Promise<WeatherData | null> => {
-  try {
-    const res = await fetch('/api/weather');
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
+  async getClusterDetail(clusterId: string): Promise<{ status: string; data: ClusterDetail }> {
+    try {
+      const response = await this.client.get(`/api/cluster/${clusterId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
-};
 
-export interface BriefingData {
-  date: string;
-  content: string;
-  error?: string;
+  async getTrending(): Promise<TrendingWord[]> {
+    try {
+      const response = await this.client.get<TrendingWord[]>('/api/trending');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getStats(): Promise<{ status: string; data: Stats }> {
+    try {
+      const response = await this.client.get('/api/stats');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getFullStats(): Promise<FullStats> {
+    try {
+      const response = await this.client.get<FullStats>('/api/stats/full');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPulse(): Promise<Array<{ source: string; count: number }>> {
+    try {
+      const response = await this.client.get('/api/sources/pulse');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getWeather(): Promise<Weather> {
+    try {
+      const response = await this.client.get<Weather>('/api/weather');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBriefing(): Promise<BriefingResponse> {
+    try {
+      const response = await this.client.get<BriefingResponse>('/api/briefing');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getHealth(): Promise<HealthResponse> {
+    try {
+      const response = await this.client.get<HealthResponse>('/api/health');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async chatCluster(clusterId: string, query: string): Promise<ChatResponse> {
+    try {
+      const response = await this.client.post<ChatResponse>('/api/chat_cluster', {
+        cluster_id: clusterId,
+        query,
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  getImageUrl(url: string | null, width: number = 600): string {
+    if (!url) return '';
+    if (url.startsWith('/')) return url;
+    return `/proxy?url=${encodeURIComponent(url)}&w=${width}`;
+  }
+
+  private handleError(error: unknown): Error {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.data?.message) {
+        return new Error(error.response.data.message);
+      }
+      return new Error(error.message || 'API request failed');
+    }
+    return error instanceof Error ? error : new Error('Unknown error');
+  }
 }
 
-export const fetchBriefing = async (): Promise<BriefingData> => {
-  const res = await fetch('/api/briefing');
-  if (!res.ok) throw new Error('Failed to fetch briefing');
-  return res.json();
-};
-
-export interface StatsFullData {
-  total_articles: number;
-  last_24h: number;
-  summarized_pct: number;
-  uptime: string;
-  db_size_mb: number;
-  total_feeds: number;
-  oldest_article: string;
-  new_article?: string;
-  newest_article?: string;
-  by_source: { source: string; n: number }[];
-  speed_leaderboard: { source: string; first_count: number }[];
-  velocity: { t: string; n: number }[];
-  by_category: { cat: string; n: number }[];
-}
-
-export const fetchStatsFull = async (): Promise<StatsFullData> => {
-  const res = await fetch('/api/stats/full');
-  if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
-};
-
-export interface ClusterDetailData {
-  cluster_id: string;
-  articles: Article[];
-  synthesis: string | null;
-  perspectives: string[];
-  tags: string[];
-  topics: string[];
-  related: {
-    cluster_id: string;
-    title: string;
-    image_url: string | null;
-  }[];
-  total_reading_time: number;
-}
-
-export const fetchClusterDetail = async (clusterId: string): Promise<ClusterDetailData> => {
-  const res = await fetch(`/api/cluster/${clusterId}`);
-  if (!res.ok) throw new Error('Failed to fetch cluster detail');
-  const json = await res.json();
-  if (json.status === 'success') return json.data;
-  throw new Error(json.message || 'Unknown error');
-};
-
-export const askAI = async (clusterId: string, query: string): Promise<string> => {
-  const res = await fetch('/api/chat_cluster', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cluster_id: clusterId, query })
-  });
-  if (!res.ok) throw new Error('AI Chat failed');
-  const data = await res.json();
-  return data.response || 'No response';
-};
+export const apiClient = new ApiClient();

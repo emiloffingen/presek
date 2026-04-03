@@ -1,57 +1,22 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { useNewsStore } from '@/store/useNewsStore';
-import { NewsFeed } from './components/news/NewsFeed';
-import { Briefing } from './pages/Briefing';
-import { Stats } from './pages/Stats';
-import { ClusterDetail } from './pages/ClusterDetail';
-import { useSSE } from './hooks/useSSE';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
+import { ClusterDetailPage } from './pages/ClusterDetailPage';
+import { StatsPage } from './pages/StatsPage';
+import { BriefingPage } from './pages/BriefingPage';
 
-// Bridge to allow non-React code (like the legacy nav) to trigger React Router transitions
-const NavigationBridge: React.FC = () => {
-  const navigate = useNavigate();
-  useEffect(() => {
-    (window as any).presekNavigate = (path: string) => {
-      navigate(path);
-    };
-    return () => { delete (window as any).presekNavigate; };
-  }, [navigate]);
-  return null;
-};
-
-const AppContent: React.FC = () => {
-  const location = useLocation();
-  const { setFilter } = useNewsStore();
-  
-  useSSE();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setFilter({
-      topic: params.get('topic') || '',
-      query: params.get('q') || '',
-      isSaved: location.pathname === '/saved'
-    });
-  }, [location, setFilter]);
-
-  return (
-    <>
-      <NavigationBridge />
-      <Routes>
-        <Route path="/" element={<NewsFeed />} />
-        <Route path="/saved" element={<NewsFeed />} />
-        <Route path="/briefing" element={<Briefing />} />
-        <Route path="/stats" element={<Stats />} />
-        <Route path="/cluster/:id" element={<ClusterDetail />} />
-      </Routes>
-    </>
-  );
-};
-
-export const App: React.FC = () => {
+function App() {
   return (
     <Router>
-      <AppContent />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/cluster/:clusterId" element={<ClusterDetailPage />} />
+        <Route path="/stats" element={<StatsPage />} />
+        <Route path="/briefing" element={<BriefingPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
-};
+}
+
+export default App;
