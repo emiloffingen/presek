@@ -157,7 +157,16 @@ class OpenAICompatibleProvider(AIProvider):
                 except: pass
             return None
 
+from local_nlp import summarize_locally
+
 # --- Provider Registry ---
+
+class LocalProvider(AIProvider):
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+        # The prompt for summarization tasks usually contains the text to summarize
+        # or the titles. We'll strip the system instructions if they are prepended.
+        text = prompt.replace("Summarize the following:", "").strip()
+        return summarize_locally(text)
 
 PROVIDERS = {
     "gemini":     GeminiProvider(),
@@ -165,13 +174,14 @@ PROVIDERS = {
     "cerebras":   OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
     "mistral":    OpenAICompatibleProvider("mistral", MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL),
     "openrouter": OpenAICompatibleProvider("openrouter", OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL),
+    "local":      LocalProvider(),
 }
 
 TASK_ROUTING = {
     "translation":  ["groq", "mistral", "gemini"],
-    "summarize":    ["groq", "mistral", "cerebras", "gemini", "openrouter"],
-    "synthesis":    ["groq", "mistral", "cerebras", "gemini", "openrouter"],
-    "default":      ["groq", "cerebras", "gemini"],
+    "summarize":    ["groq", "mistral", "cerebras", "gemini", "openrouter", "local"],
+    "synthesis":    ["groq", "mistral", "cerebras", "gemini", "openrouter", "local"],
+    "default":      ["groq", "cerebras", "gemini", "local"],
 }
 
 # --- Service Methods ---
