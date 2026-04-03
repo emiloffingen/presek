@@ -152,6 +152,7 @@ def api_news():
                 "cluster_id": cid,
                 "articles": arts,
                 "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get('reading_time', 1),
                 "score": round(s, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,

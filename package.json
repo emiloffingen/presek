@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@openai/codex": "^0.118.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.3"
   }
 }

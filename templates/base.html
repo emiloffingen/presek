@@ -18,7 +18,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
-    <link rel="stylesheet" href="/static/modern.css?v=2026.nyt.5">
+    {{ vite_asset('style.css') }}
+
+    <script type="speculationrules">
+    {
+      "prerender": [
+        {
+          "source": "list",
+          "urls": ["/briefing", "/stats", "/izvori", "/arhiva"],
+          "score": 0.5
+        },
+        {
+          "source": "document",
+          "where": { "href_matches": "/cluster/*" },
+          "eagerness": "moderate"
+        }
+      ]
+    }
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
@@ -222,7 +239,7 @@
         <span id="toastMsg">НОВИ ВЕСТИ СЕ ПРИСТИГНАТИ</span>
     </div>
 
-    <script type="module" src="/static/js/main.js?v=2026.nyt.5"></script>
+    {{ vite_asset('main.js') }}
     {% block scripts %}{% endblock %}
     <script>
       // Global error handler for debugging

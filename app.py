@@ -69,9 +69,49 @@ Compress(app)
 # Trust exactly one proxy hop (reverse proxy / load balancer) for correct IP forwarding
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
+import json
+from markupsafe import Markup
+
 # Register Blueprints
 app.register_blueprint(api_bp)
 app.register_blueprint(views_bp)
+
+# Vite Asset Helper
+VITE_DEV_SERVER = os.environ.get("VITE_DEV_SERVER", "http://localhost:5173")
+VITE_MANIFEST_PATH = "static/dist/.vite/manifest.json"
+
+@app.context_processor
+def vite_assets():
+    def vite_asset(entry_name):
+        # In development, point to the Vite dev server
+        if os.environ.get("FLASK_ENV") == "development":
+            if entry_name.endswith('.css'):
+                return Markup(f'<link rel="stylesheet" href="{VITE_DEV_SERVER}/css/style.css">')
+            return Markup(f'<script type="module" src="{VITE_DEV_SERVER}/js/{entry_name}"></script>')
+        
+        # In production, read from the manifest
+        try:
+            with open(VITE_MANIFEST_PATH, "r") as f:
+                manifest = json.load(f)
+            
+            if entry_name == 'main.js':
+                asset = manifest.get('js/main.js')
+                if not asset: return ""
+                return Markup(f'<script type="module" src="/static/dist/{asset["file"]}"></script>')
+            
+            if entry_name == 'style.css':
+                asset = manifest.get('css/style.css')
+                if not asset: return ""
+                return Markup(f'<link rel="stylesheet" href="/static/dist/{asset["file"]}">')
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Fallback to legacy static if manifest is missing
+            if entry_name == 'main.js':
+                return Markup('<script type="module" src="/static/js/main.js"></script>')
+            if entry_name == 'style.css':
+                return Markup('<link rel="stylesheet" href="/static/modern.css">')
+        return ""
+    
+    return {"vite_asset": vite_asset}
 
 @app.before_request
 def rate_limit_check():
