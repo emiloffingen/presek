@@ -23,13 +23,16 @@ const app = {
             
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
-            const hasSSR = container && container.querySelector('.news-cluster');
+            if (!container) return;
+
+            const isFeedPage = location.pathname === '/' || location.pathname === '/saved';
+            const hasSSR = container.querySelector('.news-cluster');
             const isFresh = !this.state.topic && !this.state.query && !this.state.isSaved;
 
             if (hasSSR && isFresh) {
                 console.log("Presek SSR: Content detected, starting infinite scroll from page 1.");
                 this.state.page = 1;
-            } else {
+            } else if (isFeedPage || (location.pathname === '/' && (this.state.topic || this.state.query))) {
                 this.fetchNews();
             }
 
