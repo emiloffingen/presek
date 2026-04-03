@@ -605,7 +605,7 @@ def proxy_image():
             headers=headers, 
             timeout=10, 
             stream=True, 
-            verify=False # Temporary test to see if it bypasses handshake issues
+            verify=True
         )
         
         if response.status_code != 200:

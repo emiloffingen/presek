@@ -99,27 +99,40 @@ def vesti_portal():
         if cached:
             portal_data = cached
         else:
-            portal_data = {}
+            # Single query for all categories, then partition in Python
+            all_rows = db.execute(
+                "SELECT * FROM articles WHERE category = ANY(%s) AND (country = '🇲🇰' OR country IS NULL OR country = '') ORDER BY created_at DESC LIMIT 1000",
+                (categories,)
+            )
+
+            # Group by category then cluster_id
+            by_cat: dict = {cat: defaultdict(list) for cat in categories}
+            for r in all_rows:
+                cat = r['category']
+                if cat in by_cat:
+                    by_cat[cat][r['cluster_id']].append(r)
+
+            # Collect all candidate cluster_ids to batch-fetch rep images
+            all_cids = []
+            ranked_by_cat: dict = {}
             for cat in categories:
-                rows = db.get_articles_by_country("🇲🇰", category=cat)
-                clusters = defaultdict(list)
-                for r in rows:
-                    clusters[r['cluster_id']].append(r)
-                
-                ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+                ranked = [rank_articles_in_cluster(arts) for arts in by_cat[cat].values()]
                 ranked.sort(key=score_cluster, reverse=True)
-                
-                cat_clusters = []
-                
-                # Fetch representative images for these 3 clusters
-                cid_list = [arts[0]["cluster_id"] for arts in ranked[:3]]
+                ranked_by_cat[cat] = ranked[:3]
+                all_cids.extend(arts[0]["cluster_id"] for arts in ranked[:3])
+
+            rep_images: dict = {}
+            if all_cids:
                 metadata_rows = db.execute(
                     "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
-                    (cid_list,)
+                    (all_cids,)
                 )
                 rep_images = {r['cluster_id']: r['representative_image'] for r in metadata_rows}
 
-                for arts in ranked[:3]: # Top 3 per category
+            portal_data = {}
+            for cat in categories:
+                cat_clusters = []
+                for arts in ranked_by_cat[cat]:
                     s = score_cluster(arts)
                     cid = arts[0]["cluster_id"]
                     cat_clusters.append({
@@ -222,18 +235,28 @@ def cluster_page(cluster_id: str):
     related_clusters = []
     if tags:
         related_rows = conn.execute("""
-            SELECT 
-                m.cluster_id, 
-                m.tags, 
-                (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-                (SELECT image_url FROM articles WHERE cluster_id = m.cluster_id AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1) as image_url,
-                CARDINALITY(ARRAY(SELECT UNNEST(m.tags) INTERSECT SELECT UNNEST(%s))) as shared_count
-            FROM cluster_metadata m
-            WHERE m.cluster_id != %s 
-              AND m.updated_at >= NOW() - INTERVAL '48 hours'
-              AND m.tags && %s
-            ORDER BY shared_count DESC, m.updated_at DESC
-            LIMIT 4
+            WITH candidates AS (
+                SELECT
+                    m.cluster_id,
+                    m.tags,
+                    CARDINALITY(ARRAY(SELECT UNNEST(m.tags) INTERSECT SELECT UNNEST(%s::text[]))) as shared_count,
+                    m.updated_at
+                FROM cluster_metadata m
+                WHERE m.cluster_id != %s
+                  AND m.updated_at >= NOW() - INTERVAL '48 hours'
+                  AND m.tags && %s::text[]
+                ORDER BY shared_count DESC, m.updated_at DESC
+                LIMIT 4
+            ),
+            latest_arts AS (
+                SELECT DISTINCT ON (cluster_id) cluster_id, title, image_url
+                FROM articles
+                WHERE cluster_id IN (SELECT cluster_id FROM candidates)
+                ORDER BY cluster_id, created_at DESC
+            )
+            SELECT c.cluster_id, c.tags, c.shared_count, a.title, a.image_url
+            FROM candidates c
+            JOIN latest_arts a ON a.cluster_id = c.cluster_id
         """, (tags, cluster_id, tags)).fetchall()
         related_clusters = [dict(r) for r in related_rows]
 

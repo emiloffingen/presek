@@ -62,6 +62,41 @@ interface UIStore {
   setStats: (stats: FullStats | null) => void;
 }
 
+// ── Saved Articles ─────────────────────────────────────────────
+interface SavedStore {
+  savedIds: Set<string>;
+  toggle: (id: string) => void;
+  isSaved: (id: string) => boolean;
+}
+
+const _loadSaved = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem('presek:saved');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const _persistSaved = (ids: Set<string>) => {
+  try {
+    localStorage.setItem('presek:saved', JSON.stringify([...ids]));
+  } catch {}
+};
+
+export const useSavedStore = create<SavedStore>((set, get) => ({
+  savedIds: _loadSaved(),
+  toggle: (id) =>
+    set((state) => {
+      const next = new Set(state.savedIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      _persistSaved(next);
+      return { savedIds: next };
+    }),
+  isSaved: (id) => get().savedIds.has(id),
+}));
+
 export const useUIStore = create<UIStore>((set) => ({
   sidebarOpen: true,
   selectedCategory: 'Македонија',
