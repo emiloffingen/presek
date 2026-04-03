@@ -13,7 +13,7 @@ _validate_required_env()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
