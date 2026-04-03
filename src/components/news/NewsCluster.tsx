@@ -32,6 +32,18 @@ export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, isLead }
     ? (thumbUrl.startsWith('/') ? thumbUrl : `/proxy?url=${encodeURIComponent(thumbUrl)}`)
     : null;
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const img = e.currentTarget;
+    if (thumbUrl && !img.src.includes(thumbUrl) && !thumbUrl.startsWith('/')) {
+      // If proxy failed, try the original URL directly
+      img.src = thumbUrl;
+    } else {
+      // If even original failed, hide the image container
+      const wrap = img.closest('.cluster-thumb-wrap') as HTMLElement;
+      if (wrap) wrap.style.display = 'none';
+    }
+  };
+
   const isBookmarked = false; // TODO: Implement bookmark state
 
   return (
@@ -49,6 +61,7 @@ export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, isLead }
               alt={main.title} 
               className="cluster-thumb" 
               loading={idx < 3 ? 'eager' : 'lazy'} 
+              onError={handleImageError}
             />
           </Link>
         </div>
@@ -93,7 +106,13 @@ export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, isLead }
       {thumbSrc && isThumbRight && (
         <div className="cluster-thumb-wrap">
           <Link to={`/cluster/${cluster.cluster_id}`} style={{ display: 'block', width: '100%', height: '100%' }}>
-            <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading="lazy" />
+            <img 
+              src={thumbSrc} 
+              alt={main.title} 
+              className="cluster-thumb" 
+              loading="lazy" 
+              onError={handleImageError}
+            />
           </Link>
         </div>
       )}

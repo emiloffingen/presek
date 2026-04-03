@@ -23,6 +23,22 @@ from utils import rank_articles_in_cluster, score_cluster, redis_client
 log = logging.getLogger("presek_celery")
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def translate_article_task(article_id, title, description):
+    """Translates non-Macedonian articles to Macedonian."""
+    try:
+        translated_title = translate_to_macedonian(title)
+        translated_desc = translate_to_macedonian(description) if description else None
+        
+        if translated_title:
+            db.execute(
+                "UPDATE articles SET title = %s, description = %s WHERE id = %s",
+                (translated_title, translated_desc, article_id), fetch=False
+            )
+            log.info(f"Translated article {article_id}")
+    except Exception as e:
+        log.error(f"[tasks] Translation failed for {article_id}: {e}")
+
+@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
     try:

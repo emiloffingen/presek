@@ -24,8 +24,8 @@ export const fetchNews = async (page = 0, topic = '', query = '', isSaved = fals
 
   if (data.status === 'success') {
     return { 
-      data: data.data || [], 
-      has_more: data.meta?.has_more || false 
+      data: data.clusters || [], 
+      has_more: data.has_more || false 
     };
   }
   

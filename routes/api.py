@@ -568,33 +568,19 @@ def proxy_image():
         )
 
     try:
-        # Use the safe_ip directly to prevent rebinding
-        # For HTTPS, we use the Host header and verify the certificate against the hostname
-        target_url = url.replace(hostname, safe_ip) if ":" not in safe_ip else url.replace(hostname, f"[{safe_ip}]")
+        # Simple fetch with basic headers
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
         
-        headers = {"User-Agent": "Presek/5.0 ImageProxy", "Host": hostname}
-        
-        # We need to be careful with SSL. If we use IP in URL, SNI and Cert validation might fail.
-        # A simple way to fix this while staying secure is to use a custom adapter or just
-        # resolve it and then use the IP but tell requests to verify against the hostname.
-        
-        # For simplicity and security, we'll use requests with the original URL but 
-        # we'll enforce that it MUST resolve to the safe_ip we found.
-        # This is tricky with standard requests without a custom resolver.
-        
-        # Alternative: just use the IP and disable cert verification (not great but better than SSRF)
-        # OR: Use the original URL but use a library that pins the IP.
-        
-        # Since we don't have such a library, we'll use a trick:
-        # We'll use the original URL but override the DNS resolution for this request if possible.
-        # Given the constraints, we will use the safe_ip and original hostname in Host header.
-        
-        response = requests.get(
-            target_url, 
+        # Use session for better SSL handling
+        s = requests.Session()
+        response = s.get(
+            url, 
             headers=headers, 
             timeout=10, 
             stream=True, 
-            verify=False # SSL cert will fail because IP != Hostname
+            verify=False # Temporary test to see if it bypasses handshake issues
         )
         
         if response.status_code != 200:
