@@ -259,10 +259,6 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 # ── OpenClaw Gateway Configuration ──────────────────────────────
 OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "")
 OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
-CF_AI_GATEWAY_URL = os.environ.get("CF_AI_GATEWAY_URL", "")
-CF_AI_GATEWAY_TOKEN = os.environ.get("CF_AI_GATEWAY_TOKEN", "")
-CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "f368eacc80be4ddcfa1d6ff49717275b")
-CF_WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 
 # ── Cloudflare R2 Configuration ──────────────────────────────────
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")

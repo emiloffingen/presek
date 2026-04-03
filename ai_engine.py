@@ -15,8 +15,7 @@ from config import (
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
-    POLLINATIONS_API_KEY, CF_AI_GATEWAY_URL, CF_AI_GATEWAY_TOKEN,
-    CLOUDFLARE_ACCOUNT_ID, CF_WORKERS_AI_MODEL,
+    POLLINATIONS_API_KEY,
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
@@ -70,13 +69,7 @@ class GeminiProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         if not GOOGLE_API_KEY or not GEMINI_URL: return None
         
-        # Route through Cloudflare AI Gateway if configured
-        if CF_AI_GATEWAY_URL:
-            # Cloudflare AI Gateway for Google AI Studio usually looks like:
-            # {GATEWAY_URL}/google-ai-studio/v1beta/models/gemini-1.5-flash:generateContent
-            url = f"{CF_AI_GATEWAY_URL.rstrip('/')}/google-ai-studio/v1beta/models/gemini-1.5-flash:generateContent"
-        else:
-            url = GEMINI_URL
+        url = GEMINI_URL
         combined = f"{system}\n\nInput:\n{prompt}"
         payload = {
             "contents": [{"parts": [{"text": combined}]}],
@@ -97,8 +90,6 @@ class GeminiProvider(AIProvider):
         
         try:
             headers = {"Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY}
-            if CF_AI_GATEWAY_URL and CF_AI_GATEWAY_TOKEN:
-                headers["cf-aig-authorization"] = f"Bearer {CF_AI_GATEWAY_TOKEN}"
 
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -124,10 +115,8 @@ class GeminiProvider(AIProvider):
                     
                 return candidate["content"]["parts"][0]["text"].strip()
         except Exception as e:
-            msg = f"[gemini] API Error: {e}"
-            if CF_AI_GATEWAY_URL:
-                msg += f" (URL: {url})"
-            log.warning(msg)
+            log.warning(f"[gemini] API Error: {e}")
+            
             if hasattr(e, 'read'):
                 try: log.warning(f"[gemini] Error detail: {e.read().decode()}")
                 except: pass
@@ -156,71 +145,15 @@ class OpenAICompatibleProvider(AIProvider):
         
         try:
             headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}", "User-Agent": "Presek/4.0"}
-            if CF_AI_GATEWAY_URL and CF_AI_GATEWAY_TOKEN:
-                headers["cf-aig-authorization"] = f"Bearer {CF_AI_GATEWAY_TOKEN}"
 
-            # Route through Cloudflare AI Gateway if configured
-            url = self.url
-            if CF_AI_GATEWAY_URL:
-                # Cloudflare AI Gateway expects: {GATEWAY_URL}/{provider_slug}/{endpoint}
-                # e.g. https://gateway.ai.cloudflare.com/v1/{account}/default/groq/chat/completions
-                provider_slug = self.name # 'groq', 'cerebras', 'mistral', 'openrouter'
-                if provider_slug == "mistral": provider_slug = "mistralai"
-                
-                # Strip protocol and base from direct URL to get endpoint
-                # e.g. "https://api.groq.com/openai/v1/chat/completions" -> "chat/completions"
-                endpoint = "chat/completions" # Default for these providers
-                url = f"{CF_AI_GATEWAY_URL.rstrip('/')}/{provider_slug}/{endpoint}"
-
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            req = urllib.request.Request(self.url, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            msg = f"[{self.name}] Error: {e}"
-            if CF_AI_GATEWAY_URL:
-                msg += f" (URL: {url})"
-            log.warning(msg)
+            log.warning(f"[{self.name}] Error: {e}")
             if hasattr(e, 'read'):
                 try: log.warning(f"[{self.name}] Error detail: {e.read().decode()}")
-                except: pass
-            return None
-
-class CloudflareWorkersAIProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
-        if not CF_AI_GATEWAY_URL or not CF_AI_GATEWAY_TOKEN: return None
-        
-        # Workers AI compatibility endpoint via Gateway
-        url = f"{CF_AI_GATEWAY_URL.rstrip('/')}/workers-ai/v1/chat/completions"
-        
-        payload = {
-            "model": CF_WORKERS_AI_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0.1
-        }
-        
-        try:
-            headers = {
-                "Content-Type": "application/json",
-                "cf-aig-authorization": f"Bearer {CF_AI_GATEWAY_TOKEN}",
-                # If Gateway Authentication is ON, this token (cfut_...) is used for both 
-                # Gateway access and Workers AI authorization within the same account.
-                "Authorization": f"Bearer {CF_AI_GATEWAY_TOKEN}",
-                "User-Agent": "Presek/4.0"
-            }
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            msg = f"[cloudflare] Error: {e} (URL: {url})"
-            log.warning(msg)
-            if hasattr(e, 'read'):
-                try: log.warning(f"[cloudflare] Error detail: {e.read().decode()}")
                 except: pass
             return None
 
@@ -232,14 +165,13 @@ PROVIDERS = {
     "cerebras":   OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
     "mistral":    OpenAICompatibleProvider("mistral", MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL),
     "openrouter": OpenAICompatibleProvider("openrouter", OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL),
-    "cloudflare": CloudflareWorkersAIProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["groq", "cloudflare", "mistral", "gemini"],
-    "summarize":    ["groq", "cloudflare", "gemini"],
-    "synthesis":    ["groq", "cloudflare", "mistral", "gemini"],
-    "default":      ["groq", "cloudflare", "cerebras", "gemini"],
+    "translation":  ["groq", "mistral", "gemini"],
+    "summarize":    ["groq", "gemini"],
+    "synthesis":    ["groq", "mistral", "gemini"],
+    "default":      ["groq", "cerebras", "gemini"],
 }
 
 # --- Service Methods ---
