@@ -242,14 +242,14 @@ const UI = {
         let html = '';
         for (let i = 0; i < count; i++) {
             html += `
-                <div class="bento-card span-4 skeleton-card" style="min-height: 300px;">
+                <div class="news-cluster span-3 skeleton-card" style="min-height: 300px;">
                     <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
                     <div class="skeleton-box" style="width: 40%; height: 0.7rem; margin-bottom: 0.8rem;"></div>
                     <div class="skeleton-box" style="width: 90%; height: 1.2rem; margin-bottom: 0.5rem;"></div>
                     <div class="skeleton-box" style="width: 70%; height: 1.2rem; margin-bottom: 1rem;"></div>
                     <div style="display:flex; gap: 8px;">
-                        <div class="skeleton-box" style="width: 60px; height: 1.5rem; border-radius: 20px;"></div>
-                        <div class="skeleton-box" style="width: 40px; height: 1.5rem; border-radius: 20px;"></div>
+                        <div class="skeleton-box" style="width: 60px; height: 1.2rem; border-radius: 4px;"></div>
+                        <div class="skeleton-box" style="width: 40px; height: 1.2rem; border-radius: 4px;"></div>
                     </div>
                 </div>`;
         }
@@ -261,8 +261,10 @@ const UI = {
     updateDynamicTheme(clusters) {
         const counts = {};
         clusters.forEach(c => {
-            const cat = c.articles[0]?.category || 'Сите';
-            counts[cat] = (counts[cat] || 0) + 1;
+            if (c.articles && c.articles[0]) {
+                const cat = c.articles[0].category || 'Сите';
+                counts[cat] = (counts[cat] || 0) + 1;
+            }
         });
 
         const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -329,11 +331,11 @@ const UI = {
         `).join('');
 
         container.querySelectorAll('.suggestion-item').forEach(el => {
-            el.onclick = () => {
+            el.addEventListener('click', () => {
                 app.setSearch(decodeURIComponent(el.dataset.search));
                 const searchOverlay = document.getElementById('searchOverlay');
                 if (searchOverlay) searchOverlay.classList.remove('active');
-            };
+            });
         });
     },
 
@@ -387,19 +389,22 @@ const UI = {
         } catch (e) {}
         root.style.setProperty('--article-text-size', `${currentSize}rem`);
 
-        if (btnInc && btnDec) {
-            btnInc.onclick = () => {
+        if (btnInc) {
+            btnInc.addEventListener('click', () => {
                 if (currentSize < 1.6) {
                     currentSize += 0.1;
                     update();
                 }
-            };
-            btnDec.onclick = () => {
+            });
+        }
+        
+        if (btnDec) {
+            btnDec.addEventListener('click', () => {
                 if (currentSize > 0.9) {
                     currentSize -= 0.1;
                     update();
                 }
-            };
+            });
         }
 
         function update() {
@@ -438,25 +443,29 @@ const UI = {
             }, 2000);
         }
 
-        if (accept) accept.onclick = () => {
-            try { localStorage.setItem('presek_cookie_consent', 'accepted'); } catch(e) {}
-            if (banner) banner.classList.remove('active');
-        };
-        if (reject) reject.onclick = () => {
-            try { localStorage.setItem('presek_cookie_consent', 'rejected'); } catch(e) {}
-            if (banner) banner.classList.remove('active');
-        };
+        if (accept) {
+            accept.addEventListener('click', () => {
+                try { localStorage.setItem('presek_cookie_consent', 'accepted'); } catch(e) {}
+                if (banner) banner.classList.remove('active');
+            });
+        }
+        
+        if (reject) {
+            reject.addEventListener('click', () => {
+                try { localStorage.setItem('presek_cookie_consent', 'rejected'); } catch(e) {}
+                if (banner) banner.classList.remove('active');
+            });
+        }
     },
 
     _initSearchOverlay() {
         const overlay = document.getElementById('searchOverlay');
         const close = document.getElementById('searchClose');
         if (overlay && close) {
-            close.onclick = () => overlay.classList.remove('active');
-            // Close on backdrop click
-            overlay.onclick = (e) => {
+            close.addEventListener('click', () => overlay.classList.remove('active'));
+            overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) overlay.classList.remove('active');
-            };
+            });
         }
     },
 
@@ -492,9 +501,9 @@ const UI = {
         const close = document.getElementById('drawerClose');
         const overlay = document.getElementById('drawerOverlay');
 
-        if (trigger) trigger.onclick = () => this.toggleDrawer(true);
-        if (close) close.onclick = () => this.toggleDrawer(false);
-        if (overlay) overlay.onclick = () => this.toggleDrawer(false);
+        if (trigger) trigger.addEventListener('click', () => this.toggleDrawer(true));
+        if (close) close.addEventListener('click', () => this.toggleDrawer(false));
+        if (overlay) overlay.addEventListener('click', () => this.toggleDrawer(false));
     },
 
     _initBackToTop() {
@@ -511,8 +520,9 @@ const UI = {
                 btn.style.transform = 'translateY(10px)';
             }
         }, { passive: true });
-        btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
+
 };
 
 setInterval(() => UI.updateClock(), 1000);

@@ -16,11 +16,13 @@ const app = {
 
     init() {
         try {
+            this._initTheme();
             this._bindEvents();
             this._restoreFromURL();
             this._initPersonalization();
             this._initLiveUpdates();
             this._updateMacedonianDate();
+            this._fetchWeather();
             
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
@@ -44,6 +46,33 @@ const app = {
         }
     },
 
+    _initTheme() {
+        try {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isLight = saved ? saved === 'light' : !prefersDark;
+            
+            document.documentElement.classList.toggle('light', isLight);
+            document.body.classList.toggle('light', isLight);
+            
+            const meta = document.getElementById('themeMeta');
+            if (meta) meta.content = isLight ? '#FFFFFF' : '#0A0A0A';
+        } catch (e) { console.error("Theme init error", e); }
+    },
+
+    _fetchWeather() {
+        fetch('/api/weather')
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (!d) return;
+                const wEl = document.getElementById('weatherVal');
+                const aEl = document.getElementById('aqiVal');
+                if (wEl && d.temp !== null) wEl.textContent = `${d.icon || ''} ${d.temp}°C`;
+                if (aEl && d.aqi !== null) aEl.textContent = `AQI ${d.aqi}`;
+            })
+            .catch(() => {});
+    },
+
     _updateMacedonianDate() {
         const el = document.getElementById('currentDate');
         if (!el) return;
@@ -51,10 +80,13 @@ const app = {
         const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
         try {
             let dateStr = now.toLocaleDateString('mk-MK', options);
-            // Capitalize first letter
-            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            // Capitalize every word
+            dateStr = dateStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             el.textContent = dateStr;
-        } catch (e) { console.error("Date formatting error", e); }
+        } catch (e) { 
+            console.error("Date formatting error", e);
+            el.textContent = now.toDateString(); 
+        }
     },
 
     _initPersonalization() {

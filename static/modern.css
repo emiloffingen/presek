@@ -78,7 +78,12 @@ body {
     color: var(--text-primary);
     font-family: var(--font-body);
     line-height: var(--lh-base);
-    transition: background-color 0.4s ease, color 0.4s ease;
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+/* Global transitions for theme switching */
+*, *::before, *::after {
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, fill 0.4s ease, stroke 0.4s ease;
 }
 
 /* Visually Hidden - Accessible Focus */
@@ -351,9 +356,25 @@ html:not(.light) #mainLogo { filter: invert(1); }
 .mobile-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .mobile-drawer-overlay.active { opacity: 1; pointer-events: auto; }
 
-.skeleton-box { background: var(--bg-elevated); position: relative; overflow: hidden; }
-.skeleton-box::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); animation: shimmer 1.5s infinite; }
+.skeleton-box { 
+    background: var(--bg-elevated); 
+    position: relative; 
+    overflow: hidden; 
+}
+.skeleton-box::after { 
+    content: ''; 
+    position: absolute; 
+    inset: 0; 
+    transform: translateX(-100%); 
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); 
+    animation: shimmer 1.5s infinite; 
+}
 @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+.skeleton-card {
+    pointer-events: none;
+    border-bottom: 1px solid var(--border);
+}
 
 .discovery-ribbon { grid-column: 1 / -1; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 15px 0; margin: 20px 0; }
 .ribbon-scroll { display: flex; overflow-x: auto; scrollbar-width: none; gap: 15px; padding: 0 var(--space-md); scroll-snap-type: x mandatory; }

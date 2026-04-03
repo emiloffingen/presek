@@ -16,15 +16,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
-    <script>
-        (function() {
-            const saved = localStorage.getItem('theme');
-            // Default to light mode (NYT-style); only go dark if explicitly saved
-            if (saved !== 'dark') {
-                document.documentElement.classList.add('light');
-            }
-        })();
-    </script>
     <link rel="stylesheet" href="/static/modern.css?v=2026.nyt.5">
     {% block head %}{% endblock %}
 </head>
@@ -36,14 +27,14 @@
     <div class="utility-bar">
         <div class="utility-inner">
             <div style="display: flex; flex-direction: column; gap: 2px;">
-                <span id="currentDate" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">Четврток, 2 Април 2026</span>
+                <span id="currentDate" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">&nbsp;</span>
                 <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Скопје, Македонија</span>
             </div>
             
             <!-- Weather/AQI integrated subtlely -->
             <div style="margin-left: 40px; display: flex; gap: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); min-width: 130px;">
-                <span id="weatherVal" style="display:inline-block; min-width: 45px;"><span class="skeleton-box" style="display:inline-block; width:100%; height:10px;"></span></span>
-                <span id="aqiVal" style="display:inline-block; min-width: 45px;"><span class="skeleton-box" style="display:inline-block; width:100%; height:10px;"></span></span>
+                <span id="weatherVal" style="display:inline-block; min-width: 45px;"></span>
+                <span id="aqiVal" style="display:inline-block; min-width: 45px;"></span>
             </div>
 
             <div style="margin-left: auto; display: flex; gap: 24px; align-items: center;">
@@ -52,13 +43,6 @@
             </div>
         </div>
     </div>
-    <script>
-      fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => {
-        if (!d) return;
-        if (d.temp !== null) document.getElementById('weatherVal').textContent = `${d.icon} ${d.temp}°C`;
-        if (d.aqi !== null) document.getElementById('aqiVal').textContent = `AQI ${d.aqi}`;
-      }).catch(() => {});
-    </script>
 
     <header class="site-header">
         <div style="text-align: center; padding: 30px 0; position: relative;">
@@ -67,7 +51,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
             </button>
             <a href="/" aria-label="Пресек Почетна" style="display: inline-block;">
-                <img src="/static/logo.svg" alt="Presek" style="height: 64px;" onerror="this.src='/static/logo.png'" id="mainLogo">
+                <img src="/static/logo.svg" alt="Presek" style="height: 64px;" onerror="if(!this.src.includes('logo.png')) this.src='/static/logo.png'" id="mainLogo">
             </a>
         </div>
 

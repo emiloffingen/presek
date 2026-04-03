@@ -206,25 +206,32 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
     return None, None
 
 def clean_json_response(text: str) -> dict | str:
-    """Extracts summary and other fields from a JSON response."""
+    """Extracts summary and other fields from a JSON response with high robustness."""
     if not text: return ""
+    
+    # Try to find JSON block
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
     if match:
         json_text = match.group(1)
         try:
             data = json.loads(json_text)
+            # If it's a dict, try to extract common fields
             if isinstance(data, dict):
-                if 'summary' in data or 'perspectives' in data or 'entities' in data:
+                # Return the whole dict if it has structured data we want
+                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category')):
                     return data
-                if 'summary' in data and len(data) == 1:
-                    return data['summary'].strip()
-            elif isinstance(data, list):
-                return data
-        except json.JSONDecodeError as e:
-            log.debug(f"Failed to parse JSON from text: {e}")
+                # If it's a single-key dict like {"result": "text"}, return the value
+                if len(data) == 1:
+                    return str(list(data.values())[0]).strip()
+            return data
+        except json.JSONDecodeError:
+            # Fallback: if regex match failed to parse, maybe it's just raw text with braces
+            pass
+
+    # Fallback: Clean markdown and return as string
     text = re.sub(r'```(?:json)?\n?', '', text)
     text = text.replace('```', '').strip()
-    return text.strip()
+    return text
 
 def translate_to_macedonian(text: str) -> str | None:
     """Translate news text to Macedonian using AI."""
@@ -237,8 +244,8 @@ def translate_to_macedonian(text: str) -> str | None:
     # Unwrap JSON response if AI returned {"summary": "..."} style
     parsed = clean_json_response(res)
     if isinstance(parsed, dict):
-        return parsed.get("summary") or parsed.get("translation") or res
-    return res
+        return parsed.get("summary") or parsed.get("translation") or parsed.get("text") or res
+    return str(parsed)
 
 def auto_summarize_top_clusters():
     """Dispatches background tasks for summarization/synthesis with parallel execution."""
@@ -246,7 +253,6 @@ def auto_summarize_top_clusters():
     from utils import redis_client, score_cluster, rank_articles_in_cluster
     from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
     from database import db_manager as db
-    from concurrent.futures import ThreadPoolExecutor
     
     try:
         # Get recent articles from the last 24h

@@ -223,33 +223,36 @@ class DatabaseManager:
             with conn.cursor() as cur:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 cur.execute("""CREATE TABLE IF NOT EXISTS articles (
-                    id SERIAL PRIMARY KEY, cluster_id TEXT NOT NULL, source TEXT NOT NULL, link TEXT UNIQUE NOT NULL,
-                    title TEXT NOT NULL, original_title TEXT DEFAULT '', description TEXT DEFAULT '', summary TEXT,
-                    category TEXT, subcategory TEXT DEFAULT '', topic TEXT DEFAULT 'Вести', country TEXT DEFAULT '🇲🇰',
-                    created_at TIMESTAMP NOT NULL, image_url TEXT, clicks INTEGER DEFAULT 0, original_description TEXT DEFAULT '',
-                    is_translated INTEGER DEFAULT 0, embedding vector(768), search_vector tsvector
+                    id SERIAL PRIMARY KEY, 
+                    cluster_id TEXT NOT NULL, 
+                    source TEXT NOT NULL, 
+                    link TEXT UNIQUE NOT NULL,
+                    title TEXT NOT NULL, 
+                    original_title TEXT DEFAULT '', 
+                    description TEXT DEFAULT '', 
+                    summary TEXT,
+                    category TEXT, 
+                    subcategory TEXT DEFAULT '', 
+                    topic TEXT DEFAULT 'Вести', 
+                    country TEXT DEFAULT '🇲🇰',
+                    created_at TIMESTAMP NOT NULL, 
+                    image_url TEXT, 
+                    clicks INTEGER DEFAULT 0, 
+                    original_description TEXT DEFAULT '',
+                    is_translated INTEGER DEFAULT 0, 
+                    embedding vector(768), 
+                    search_vector tsvector
                 )""")
-                # Migration: if column is 3072, alter to 768
-                cur.execute("""
-                    DO $$ 
-                    BEGIN 
-                        IF EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name='articles' AND column_name='embedding' AND character_maximum_length IS NULL
-                        ) THEN
-                            -- We can't easily check dimensions via information_schema for vector type, 
-                            -- but we can try to alter it. If it fails due to existing data, we might need to truncate.
-                            -- For this audit, we assume we can redeploy embeddings.
-                            BEGIN
-                                ALTER TABLE articles ALTER COLUMN embedding TYPE vector(768);
-                            EXCEPTION WHEN OTHERS THEN
-                                UPDATE articles SET embedding = NULL;
-                                ALTER TABLE articles ALTER COLUMN embedding TYPE vector(768);
-                            END;
-                        END IF;
-                    END $$;
-                """)
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (cluster_id TEXT PRIMARY KEY, summary TEXT, perspectives JSONB DEFAULT '[]', created_at TIMESTAMP)""")
+
+                # Table for cluster summaries with FK to articles (via cluster_id)
+                # Note: cluster_id is not unique in articles, so we use it as a logical link
+                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
+                    cluster_id TEXT PRIMARY KEY, 
+                    summary TEXT, 
+                    perspectives JSONB DEFAULT '[]', 
+                    created_at TIMESTAMP
+                )""")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
                     cluster_id TEXT PRIMARY KEY, 
                     tags TEXT[], 
@@ -257,25 +260,37 @@ class DatabaseManager:
                     representative_image TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
-                # Migration: Add representative_image if it doesn't exist
-                cur.execute("""
-                    DO $$ 
-                    BEGIN 
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cluster_metadata' AND column_name='representative_image') THEN
-                            ALTER TABLE cluster_metadata ADD COLUMN representative_image TEXT;
-                        END IF;
-                    END $$;
-                """)
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (cluster_id TEXT, entity_name TEXT, entity_type TEXT, PRIMARY KEY (cluster_id, entity_name))""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS reactions (cluster_id TEXT, emoji TEXT, count INTEGER DEFAULT 1, PRIMARY KEY (cluster_id, emoji))""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (date DATE PRIMARY KEY, content TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+
+                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (
+                    cluster_id TEXT, 
+                    entity_name TEXT, 
+                    entity_type TEXT, 
+                    PRIMARY KEY (cluster_id, entity_name)
+                )""")
+
+                cur.execute("""CREATE TABLE IF NOT EXISTS reactions (
+                    cluster_id TEXT, 
+                    emoji TEXT, 
+                    count INTEGER DEFAULT 1, 
+                    PRIMARY KEY (cluster_id, emoji)
+                )""")
+
+                cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (
+                    date DATE PRIMARY KEY, 
+                    content TEXT, 
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                
+                cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
+                    id SERIAL PRIMARY KEY, 
+                    email TEXT UNIQUE NOT NULL, 
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+
                 # Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
-                
-                # Performance Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
@@ -307,7 +322,6 @@ class DatabaseManager:
         finally:
             self.put_conn(conn)
 
-
 # --- Legacy Compatibility Wrapper ---
 
 class DBWrapper:
@@ -338,17 +352,14 @@ def init_db(): db_manager.init_schema()
 def prune_db():
     from config import DB_RETAIN_DAYS
     interval = f"{int(DB_RETAIN_DAYS)} days"
+    # Delete old articles
     db_manager.execute(f"DELETE FROM articles WHERE created_at < NOW() - INTERVAL '{interval}'", fetch=False)
-    # Remove orphaned rows from related tables (no FK cascade defined in schema)
-    db_manager.execute(
-        "DELETE FROM cluster_summaries WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
-        fetch=False
-    )
-    db_manager.execute(
-        "DELETE FROM cluster_metadata WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
-        fetch=False
-    )
-    db_manager.execute(
-        "DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles)",
-        fetch=False
-    )
+    
+    # Clean up orphaned metadata/summaries (since we use logical cluster_ids instead of hard FKs)
+    db_manager.execute("""
+        DELETE FROM cluster_summaries WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
+        DELETE FROM cluster_metadata WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
+        DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
+        DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
+    """, fetch=False)
+
