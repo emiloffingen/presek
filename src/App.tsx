@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useNewsStore } from '@/store/useNewsStore';
 import { NewsFeed } from './components/news/NewsFeed';
 import { Briefing } from './pages/Briefing';
 import { Stats } from './pages/Stats';
 import { ClusterDetail } from './pages/ClusterDetail';
 import { useSSE } from './hooks/useSSE';
+
+// Bridge to allow non-React code (like the legacy nav) to trigger React Router transitions
+const NavigationBridge: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    (window as any).presekNavigate = (path: string) => {
+      navigate(path);
+    };
+    return () => { delete (window as any).presekNavigate; };
+  }, [navigate]);
+  return null;
+};
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -23,13 +35,16 @@ const AppContent: React.FC = () => {
   }, [location, setFilter]);
 
   return (
-    <Routes>
-      <Route path="/" element={<NewsFeed />} />
-      <Route path="/saved" element={<NewsFeed />} />
-      <Route path="/briefing" element={<Briefing />} />
-      <Route path="/stats" element={<Stats />} />
-      <Route path="/cluster/:id" element={<ClusterDetail />} />
-    </Routes>
+    <>
+      <NavigationBridge />
+      <Routes>
+        <Route path="/" element={<NewsFeed />} />
+        <Route path="/saved" element={<NewsFeed />} />
+        <Route path="/briefing" element={<Briefing />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/cluster/:id" element={<ClusterDetail />} />
+      </Routes>
+    </>
   );
 };
 

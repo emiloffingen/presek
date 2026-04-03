@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useNewsStore } from '@/store/useNewsStore';
 import * as api from '@/api/client';
 
@@ -22,10 +23,10 @@ export const TrendingSidebar: React.FC = () => {
       <h3 className="widget-title">Во Трендов</h3>
       <div className="trending-list">
         {trending.slice(0, 10).map((t, i) => (
-          <a key={i} href={`/?q=${encodeURIComponent(t.word)}`} className="trending-item">
+          <Link key={i} to={`/?q=${encodeURIComponent(t.word)}`} className="trending-item">
             <span className="trending-rank">{i + 1}</span>
             <span className="trending-word">{t.word}</span>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

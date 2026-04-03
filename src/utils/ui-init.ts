@@ -152,8 +152,13 @@ export function initNavigation() {
       params.delete('q');
 
       const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-      window.history.pushState({}, '', newURL);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      
+      if ((window as any).presekNavigate) {
+        (window as any).presekNavigate(newURL);
+      } else {
+        window.history.pushState({}, '', newURL);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
       
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -171,8 +176,13 @@ export function initNavigation() {
         else params.delete('q');
         
         const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-        window.history.pushState({}, '', newURL);
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        
+        if ((window as any).presekNavigate) {
+          (window as any).presekNavigate(newURL);
+        } else {
+          window.history.pushState({}, '', newURL);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
         
         if (searchOverlay) searchOverlay.classList.remove('active');
       }
@@ -199,8 +209,12 @@ export function setupLinkInterception() {
 
       if (isReactRoute && anchor.target !== '_blank') {
         e.preventDefault();
-        window.history.pushState({}, '', path);
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        if ((window as any).presekNavigate) {
+          (window as any).presekNavigate(path);
+        } else {
+          window.history.pushState({}, '', path);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
       }
     }
   });

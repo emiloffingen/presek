@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useNewsStore } from '@/store/useNewsStore';
 
 export const PulseTicker: React.FC = () => {
@@ -26,9 +27,9 @@ export const PulseTicker: React.FC = () => {
   return (
     <>
       {entities.map((e, i) => (
-        <a key={i} href={`/?q=${encodeURIComponent(e.word)}`} className="ticker-item">
+        <Link key={i} to={`/?q=${encodeURIComponent(e.word)}`} className="ticker-item">
           #{e.word} <span className="val">{e.count}</span>
-        </a>
+        </Link>
       ))}
     </>
   );
