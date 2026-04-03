@@ -19,6 +19,10 @@ const app = {
             utils._updateMacedonianDate();
             api.fetchWeather();
             
+            // Show Skeletons for widgets early
+            uiRender.renderPulse(null);
+            uiRender.renderTrendingSidebar(null);
+            
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('newsFeed');
             if (!container) return;

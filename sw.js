@@ -1,19 +1,15 @@
-// Пресек — Service Worker v13
-// Enhanced navigation support - prioritize fresh content for HTML pages
+// Пресек — Service Worker v15
+// Enhanced navigation support - Stale-While-Revalidate for API and Cache-First for assets
 
-const CACHE_NAME = 'presek-v14';
+const CACHE_NAME = 'presek-v15';
+const API_CACHE_NAME = 'presek-api-v15';
+
+// Assets from Vite manifest are hashed, so we can cache them aggressively
 const STATIC_ASSETS = [
-  '/static/modern.css?v=2026.nyt.5',
-  '/static/js/main.js?v=2026.nyt.5',
-  '/static/js/modules/state.js',
-  '/static/js/modules/utils.js',
-  '/static/js/modules/theme.js',
-  '/static/js/modules/api.js',
-  '/static/js/modules/ui-render.js',
-  '/static/js/modules/navigation.js',
-  '/static/js/modules/personalization.js',
   '/static/logo.svg',
-  '/static/img/presek_emblem.svg'
+  '/static/img/presek_emblem.svg',
+  '/static/img/placeholder.svg',
+  '/static/manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -25,19 +21,52 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      keys.filter(k => k !== CACHE_NAME && k !== API_CACHE_NAME).map(k => caches.delete(k))
     )).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
-  // Always fetch API calls fresh
-  if (e.request.url.includes('/api/')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('API unavailable', { status: 503 })));
+  const url = new URL(e.request.url);
+
+  // Stale-While-Revalidate for API calls
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(
+      caches.open(API_CACHE_NAME).then(cache => {
+        return cache.match(e.request).then(cachedResponse => {
+          const fetchPromise = fetch(e.request).then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(e.request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => null);
+
+          // Return cached response if available, otherwise wait for network
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
     return;
   }
 
-  // For HTML pages (navigation), try network first, then cache
+  // Cache-First for static assets (images, Vite bundles)
+  if (url.pathname.startsWith('/static/dist/') || url.pathname.startsWith('/static/img/')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(resp => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-First for HTML pages (navigation)
   if (e.request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
       fetch(e.request).then(resp => {
@@ -51,17 +80,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // For static assets, use cache-first strategy
+  // Default: Network only or Cache-First for other assets
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && e.request.method === 'GET') {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return resp;
-      });
-    })
+    caches.match(e.request).then(cached => cached || fetch(e.request))
   );
 });

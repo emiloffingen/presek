@@ -108,10 +108,10 @@ export function _renderCluster(cluster, idx) {
     const imgHtml = thumbUrl ? `
         <div class="cluster-thumb-wrap">
             <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
-                <img src="${thumbUrl}" alt="${_esc(main.title)}" 
+                <img src="${thumbUrl}&w=20" alt="${_esc(main.title)}" 
                      class="cluster-thumb loading" 
                      loading="${idx < 3 ? 'eager' : 'lazy'}"
-                     onload="this.classList.remove('loading')"
+                     onload="const fullImg = new Image(); fullImg.src='${thumbUrl}'; fullImg.onload = () => { this.src = fullImg.src; this.classList.remove('loading'); };"
                      onerror="this.classList.remove('loading'); this.classList.add('error'); this.src='/static/img/placeholder.svg';">
             </a>
         </div>` : '';
@@ -181,7 +181,16 @@ export function updateDynamicTheme(clusters) {
 
 export function renderPulse(entities) {
     const terminal = document.getElementById('entityPulse');
-    if (!terminal || !entities || !Array.isArray(entities)) return;
+    if (!terminal) return;
+
+    if (!entities || !Array.isArray(entities) || entities.length === 0) {
+        terminal.innerHTML = `
+            <span class="skeleton-box" style="width: 80px; height: 12px; display: inline-block; margin-right: 20px; border-radius: 2px;"></span>
+            <span class="skeleton-box" style="width: 120px; height: 12px; display: inline-block; margin-right: 20px; border-radius: 2px;"></span>
+            <span class="skeleton-box" style="width: 100px; height: 12px; display: inline-block; margin-right: 20px; border-radius: 2px;"></span>
+        `;
+        return;
+    }
 
     // Duplicate entities for seamless scroll effect
     const items = [...entities, ...entities]; 
@@ -202,6 +211,17 @@ export function renderTrendingSidebar(trends) {
     const sidebar = document.getElementById('sidebarTrending');
     if (!sidebar) return;
     
+    if (!trends || !Array.isArray(trends) || trends.length === 0) {
+        sidebar.innerHTML = `
+            <div style="padding: 10px 0;">
+                <div class="skeleton-box" style="width: 90%; height: 1rem; margin-bottom: 12px;"></div>
+                <div class="skeleton-box" style="width: 80%; height: 1rem; margin-bottom: 12px;"></div>
+                <div class="skeleton-box" style="width: 85%; height: 1rem; margin-bottom: 12px;"></div>
+                <div class="skeleton-box" style="width: 70%; height: 1rem;"></div>
+            </div>`;
+        return;
+    }
+
     sidebar.innerHTML = (trends || []).slice(0, 8).map(t => `
         <a href="#" class="related-link" style="padding: 8px 0; border-bottom: 1px solid var(--border);" data-search="${encodeURIComponent(t.word)}">
             <span class="src-badge">HOT</span>

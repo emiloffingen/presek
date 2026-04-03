@@ -485,7 +485,15 @@ def proxy_image():
     except socket.gaierror:
         return error_response("Could not resolve hostname", 404)
 
-    cache_key = f"proxy:webp:v1:{url}"
+    try:
+        width_arg = request.args.get("w")
+        target_width = int(width_arg) if width_arg and width_arg.isdigit() else 600
+        # Sanitize width: min 20 (LQIP), max 1200
+        target_width = max(20, min(1200, target_width))
+    except ValueError:
+        target_width = 600
+
+    cache_key = f"proxy:webp:v2:{target_width}:{url}"
     cached = cached_response(cache_key, ttl=86400)
     if cached:
         return Response(
@@ -545,14 +553,15 @@ def proxy_image():
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
             
-        max_width = 600
-        if img.width > max_width:
-            w_percent = (max_width / float(img.width))
+        if img.width > target_width:
+            w_percent = (target_width / float(img.width))
             h_size = int((float(img.height) * float(w_percent)))
-            img = img.resize((max_width, h_size), Image.Resampling.LANCZOS)
+            img = img.resize((target_width, h_size), Image.Resampling.LANCZOS)
             
         webp_io = BytesIO()
-        img.save(webp_io, "WEBP", quality=80, method=6)
+        # For LQIP (very small width), use lower quality to save more space
+        quality = 20 if target_width <= 50 else 80
+        img.save(webp_io, "WEBP", quality=quality, method=6)
         optimized_data = webp_io.getvalue()
 
         set_cache(cache_key, {"data": optimized_data.hex(), "content_type": "image/webp"}, ttl=86400)
