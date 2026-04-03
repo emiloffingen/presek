@@ -5,126 +5,15 @@
 {% block content %}
 <div class="article-wrap fade-in" style="padding-top: var(--space-xl);">
     <header class="article-header">
-        <span class="rail-label" id="briefingDate">Вчитувам…</span>
+        <span class="rail-label">Вчитувам…</span>
         <h1 class="nyt-title" style="margin-top: var(--space-sm); margin-bottom: var(--space-xl);">Дневен Брифинг</h1>
-        <div class="article-meta-block">
-            <div class="meta-info-left">
-                <span>ПРЕСЕК УТРО</span>
-                <span>Најважните настани резимирани за вас</span>
-            </div>
-            <div class="meta-info-right" style="display: flex; gap: 12px; align-items: center;">
-                <button class="icon-btn" id="listenBtn" title="Слушни го брифингот" onclick="toggleAudio()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                </button>
-            </div>
-        </div>
     </header>
-
     <div class="reading-column">
-        <div id="briefingContent" class="briefing-content">
+        <div class="briefing-content">
             <div class="skeleton-box" style="height:20px;width:100%;margin-bottom:15px"></div>
             <div class="skeleton-box" style="height:20px;width:95%;margin-bottom:15px"></div>
             <div class="skeleton-box" style="height:20px;width:98%;margin-bottom:15px"></div>
-            <div class="skeleton-box" style="height:20px;width:92%;margin-bottom:30px"></div>
-            <div class="skeleton-box" style="height:20px;width:100%;margin-bottom:15px"></div>
-            <div class="skeleton-box" style="height:20px;width:96%;margin-bottom:15px"></div>
-            <div class="skeleton-box" style="height:20px;width:90%"></div>
-        </div>
-
-        <div class="briefing-footer">
-            Овој брифинг е генериран од Пресек AI врз основа на медиумското покривање во последните 24 часа.
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-let briefingText = "";
-let synth = window.speechSynthesis;
-let isPlaying = false;
-
-function toggleAudio() {
-    if (!synth) {
-        alert("Вашиот прелистувач не поддржува аудио читање.");
-        return;
-    }
-    
-    const btn = document.getElementById('listenBtn');
-    
-    if (isPlaying) {
-        synth.cancel();
-        isPlaying = false;
-        btn.style.color = "var(--text-primary)";
-    } else {
-        // Clean text for reading
-        const cleanText = briefingText.replace(/\*\*/g, '').replace(/[\*•-]/g, '').trim();
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'mk-MK'; // Attempt Macedonian
-        utterance.rate = 1.0;
-        
-        utterance.onend = () => {
-            isPlaying = false;
-            btn.style.color = "var(--text-primary)";
-        };
-        
-        synth.speak(utterance);
-        isPlaying = true;
-        btn.style.color = "var(--primary)"; // Highlight when playing
-    }
-}
-
-// Stop audio when leaving the page
-window.addEventListener('beforeunload', () => {
-    if (synth && isPlaying) synth.cancel();
-});
-
-async function loadBriefing() {
-    try {
-        const res  = await fetch('/api/briefing');
-        const data = await res.json();
-
-        if (data.error) {
-            document.getElementById('briefingContent').innerHTML =
-                `<p style="text-align:center;color:var(--text-muted)">${data.error}</p>`;
-            document.getElementById('briefingDate').textContent = 'Нема податоци';
-            return;
-        }
-        
-        briefingText = data.content || '';
-
-        document.getElementById('briefingDate').textContent =
-            new Date(data.date).toLocaleDateString('mk-MK', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            });
-
-        const content = document.getElementById('briefingContent');
-        content.innerHTML = '';
-
-        (data.content || '').split('\n\n').filter(p => p.trim()).forEach(para => {
-            if (para.startsWith('**') && para.endsWith('**') && !para.includes('\n')) {
-                // Main Section Headers
-                const h2 = document.createElement('h2');
-                h2.className = 'rail-label section-header';
-                h2.style.marginTop = 'var(--space-xl)';
-                h2.textContent = para.replace(/\*\*/g, '');
-                content.appendChild(h2);
-            } else {
-                const p = document.createElement('p');
-                p.innerHTML = para
-                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--text-primary);">$1</strong>')
-                    .replace(/^[\*•-]\s+(.*)/gm, '<span style="color: var(--primary); margin-right: 8px;">•</span> $1')
-                    .replace(/\n/g, '<br>');
-                content.appendChild(p);
-            }
-        });
-
-    } catch (e) {
-        console.error(e);
-        document.getElementById('briefingContent').innerHTML =
-            '<p style="text-align:center;color:var(--primary)">Грешка при вчитување на брифингот.</p>';
-    }
-}
-loadBriefing();
-</script>
 {% endblock %}

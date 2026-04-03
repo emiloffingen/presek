@@ -6,6 +6,7 @@
     <h1 class="visually-hidden">Најнови вести од Пресек</h1>
     <div id="newsFeed" class="news-feed-grid" aria-live="polite">
     {% if initial_clusters %}
+        {# Initial SSR Fold #}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
             {% set idx = loop.index0 %}
@@ -82,6 +83,13 @@
         </div>
     {% endif %}
     </div>
+
+    <!-- React Hydration State -->
+    {% if initial_clusters %}
+    <script id="initial-state" type="application/json">
+        {{ initial_clusters | tojson | safe }}
+    </script>
+    {% endif %}
 
     <!-- Infinite Scroll Trigger -->
     <div id="scrollTrigger" style="height: 20px; width: 100%;"></div>

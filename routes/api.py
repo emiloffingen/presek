@@ -179,6 +179,71 @@ def api_news():
         log.error(f"[api/news] Error: {e}", exc_info=True)
         return error_response("Failed to fetch news")
 
+@api_bp.route("/api/cluster/<cluster_id>")
+def api_cluster_detail(cluster_id):
+    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+        return error_response("Invalid cluster ID", 400)
+        
+    try:
+        # 1. Fetch articles
+        rows = db.execute(
+            "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", 
+            (cluster_id,)
+        )
+        if not rows:
+            return error_response("Cluster not found", 404)
+            
+        articles = rank_articles_in_cluster(rows)
+        for a in articles:
+            a['reading_time'] = calculate_reading_time(a.get('description', ''))
+
+        # 2. Fetch synthesis and perspectives
+        s_row = db.execute_one(
+            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", 
+            (cluster_id,)
+        )
+        synthesis = s_row["summary"] if s_row else None
+        perspectives = s_row["perspectives"] if s_row and s_row["perspectives"] else []
+
+        # 3. Fetch metadata (tags, etc)
+        m_row = db.execute_one(
+            "SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", 
+            (cluster_id,)
+        )
+        tags = m_row["tags"] if m_row else []
+        topics = m_row["topics"] if m_row else []
+
+        # 4. Related clusters
+        related = []
+        if tags:
+            related_rows = db.execute("""
+                SELECT 
+                    m.cluster_id, 
+                    (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
+                    (SELECT image_url FROM articles WHERE cluster_id = m.cluster_id AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1) as image_url
+                FROM cluster_metadata m
+                WHERE m.cluster_id != %s
+                  AND m.updated_at >= NOW() - INTERVAL '48 hours'
+                  AND m.tags && %s
+                ORDER BY m.updated_at DESC
+                LIMIT 4
+            """, (cluster_id, tags))
+            related = related_rows
+
+        return success_response({
+            "cluster_id": cluster_id,
+            "articles": articles,
+            "synthesis": synthesis,
+            "perspectives": perspectives,
+            "tags": tags,
+            "topics": topics,
+            "related": related,
+            "total_reading_time": sum(a['reading_time'] for a in articles)
+        })
+    except Exception as e:
+        log.error(f"[api/cluster] {e}", exc_info=True)
+        return error_response("Failed to fetch cluster detail")
+
 @api_bp.route("/api/stats")
 def api_stats():
     try:

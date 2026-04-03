@@ -54,7 +54,16 @@ from utils import score_cluster, rank_articles_in_cluster, check_rate_limit
 from routes.api import api_bp
 from routes.views import views_bp
 
+from flask.json.provider import DefaultJSONProvider
+from utils import DateTimeEncoder
+
+class CustomJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        kwargs.setdefault("cls", DateTimeEncoder)
+        return super().dumps(obj, **kwargs)
+
 app = Flask(__name__)
+app.json = CustomJSONProvider(app)
 
 _secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key:
@@ -95,7 +104,8 @@ def vite_assets():
                 manifest = json.load(f)
             
             if entry_name == 'main.js':
-                asset = manifest.get('js/main.js')
+                # Check for both .js and .tsx in manifest
+                asset = manifest.get('js/main.js') or manifest.get('main.tsx') or manifest.get('js/main.tsx')
                 if not asset: return ""
                 return Markup(f'<script type="module" src="/static/dist/{asset["file"]}"></script>')
             
