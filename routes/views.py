@@ -54,8 +54,12 @@ def index():
         current_app.logger.error(f"SSR Error: {e}")
         top_clusters = []
 
+    # Fetch trending for SSR
+    trending = db.get_trending_keywords(limit=10)
+
     return render_template("index.html", 
                            initial_clusters=top_clusters,
+                           initial_trending=trending,
                            year=datetime.datetime.now().year)
 
 @views_bp.route("/saved")

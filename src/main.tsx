@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { TrendingSidebar } from './components/layout/TrendingSidebar';
+import { PulseTicker } from './components/layout/PulseTicker';
 import { useNewsStore } from './store/useNewsStore';
 import { Cluster } from './types';
 import { initNavigation } from './js/modules/navigation';
@@ -38,10 +39,15 @@ const hydrateStore = () => {
   const initialStateElement = document.getElementById('initial-state');
   if (initialStateElement) {
     try {
-      const initialClusters: Cluster[] = JSON.parse(initialStateElement.textContent || '[]');
-      if (initialClusters.length > 0) {
-        useNewsStore.getState().setClusters(initialClusters);
-        console.log('Presek React: Hydrated from SSR state.');
+      const { clusters, trending } = JSON.parse(initialStateElement.textContent || '{"clusters":[], "trending":[]}');
+      const store = useNewsStore.getState();
+      if (clusters && clusters.length > 0) {
+        store.setClusters(clusters);
+        console.log('Presek React: Hydrated clusters.');
+      }
+      if (trending && trending.length > 0) {
+        store.setTrending(trending);
+        console.log('Presek React: Hydrated trending.');
       }
     } catch (e) {
       console.error('Presek React: Hydration failed:', e);
@@ -60,8 +66,8 @@ const init = () => {
   const container = document.getElementById('pageWrap');
   if (container) {
     hydrateStore();
-    const root = ReactDOM.createRoot(container);
-    root.render(
+    ReactDOM.hydrateRoot(
+      container,
       <React.StrictMode>
         <App />
       </React.StrictMode>
@@ -74,6 +80,16 @@ const init = () => {
     tRoot.render(
       <React.StrictMode>
         <TrendingSidebar />
+      </React.StrictMode>
+    );
+  }
+
+  const pulseContainer = document.getElementById('entityPulse');
+  if (pulseContainer) {
+    const pRoot = ReactDOM.createRoot(pulseContainer);
+    pRoot.render(
+      <React.StrictMode>
+        <PulseTicker />
       </React.StrictMode>
     );
   }

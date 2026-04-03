@@ -2,20 +2,20 @@ import React from 'react';
 import { Cluster } from '@/types';
 import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
+import { Bookmark } from 'lucide-react';
 
 interface NewsClusterProps {
   cluster: Cluster;
   idx: number;
-  page: number;
+  isLead: boolean;
 }
 
-export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, page }) => {
+export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, isLead }) => {
   const articles = cluster.articles || [];
   const main = articles[0];
   const count = articles.length;
   
   // NYT Organic Grid Logic
-  const isLead = page === 0 && idx === 0;
   const isThumbRight = !isLead && (idx % 5 === 0);
 
   let thumbUrl = cluster.representative_image;
@@ -31,6 +31,8 @@ export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, page }) 
   const thumbSrc = thumbUrl 
     ? (thumbUrl.startsWith('/') ? thumbUrl : `/proxy?url=${encodeURIComponent(thumbUrl)}`)
     : null;
+
+  const isBookmarked = false; // TODO: Implement bookmark state
 
   return (
     <article className={clsx(
@@ -82,6 +84,9 @@ export const NewsCluster: React.FC<NewsClusterProps> = ({ cluster, idx, page }) 
           <span>{new Date(main.created_at).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' })}</span>
           <span>·</span>
           <span>{count} извори</span>
+          <button className={clsx('bookmark-btn', isBookmarked && 'active')} style={{ marginLeft: 'auto' }}>
+            <Bookmark size={14} fill={isBookmarked ? 'currentColor' : 'none'} />
+          </button>
         </div>
       </div>
 

@@ -518,14 +518,14 @@ html:not(.light) #mainLogo { filter: invert(1); }
    ========================================= */
 
 @media (max-width: 1024px) {
-    #pageWrap { grid-template-columns: repeat(2, 1fr); gap: 30px; }
+    #pageWrap { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
     .news-cluster { grid-column: span 1 !important; }
     .news-cluster.lead-story { grid-column: span 2 !important; }
     .news-cluster::after { display: none !important; }
 }
 
 @media (max-width: 768px) {
-    #pageWrap { grid-template-columns: 1fr; gap: 30px; }
+    #pageWrap { display: grid; grid-template-columns: 1fr; gap: 30px; }
     .news-cluster { grid-column: 1 / -1 !important; border-bottom: 1px solid var(--border); }
     .header-logo img { height: 40px; }
     .desktop-nav { display: none; }

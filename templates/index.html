@@ -85,11 +85,12 @@
     </div>
 
     <!-- React Hydration State -->
-    {% if initial_clusters %}
     <script id="initial-state" type="application/json">
-        {{ initial_clusters | tojson | safe }}
+        {
+            "clusters": {{ initial_clusters | tojson | safe if initial_clusters else '[]' }},
+            "trending": {{ initial_trending | tojson | safe if initial_trending else '[]' }}
+        }
     </script>
-    {% endif %}
 
     <!-- Infinite Scroll Trigger -->
     <div id="scrollTrigger" style="height: 20px; width: 100%;"></div>
