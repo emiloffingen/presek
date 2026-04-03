@@ -56,7 +56,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script type="module">
 const initialClusters = {{ clusters | tojson | safe }};
 const sourceName      = {{ source_name | tojson | safe }};
 
@@ -89,17 +89,17 @@ function renderSourcePage() {
 
 function updateFollowBtn() {
     const btn = document.getElementById('followBtn');
-    if (!btn || typeof isFollowing !== 'function') return;
-    const following = isFollowing('sources', sourceName);
+    if (!btn || typeof window.isFollowing !== 'function') return;
+    const following = window.isFollowing('sources', sourceName);
     btn.textContent = following ? 'Следено ✓' : 'Следи';
     btn.classList.toggle('following', following);
 }
 
-function toggleSourceFollow() {
-    if (typeof toggleFollow !== 'function') return;
-    toggleFollow('sources', sourceName);
+window.toggleSourceFollow = function() {
+    if (typeof window.toggleFollow !== 'function') return;
+    window.toggleFollow('sources', sourceName);
     updateFollowBtn();
-}
+};
 
 renderSourcePage();
 updateFollowBtn();

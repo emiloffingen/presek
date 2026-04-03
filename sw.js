@@ -1,11 +1,17 @@
 // Пресек — Service Worker v13
 // Enhanced navigation support - prioritize fresh content for HTML pages
 
-const CACHE_NAME = 'presek-v13';
+const CACHE_NAME = 'presek-v14';
 const STATIC_ASSETS = [
   '/static/modern.css?v=2026.nyt.5',
-  '/static/js/ui.js?v=2026.nyt.5',
-  '/static/js/app.js?v=2026.nyt.5',
+  '/static/js/main.js?v=2026.nyt.5',
+  '/static/js/modules/state.js',
+  '/static/js/modules/utils.js',
+  '/static/js/modules/theme.js',
+  '/static/js/modules/api.js',
+  '/static/js/modules/ui-render.js',
+  '/static/js/modules/navigation.js',
+  '/static/js/modules/personalization.js',
   '/static/logo.svg',
   '/static/img/presek_emblem.svg'
 ];

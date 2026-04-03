@@ -1961,3 +1961,45 @@ html:not(.light) #mainLogo { filter: invert(1); }
     .about-feature { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border); padding-bottom: var(--space-lg); }
     .about-feature:last-child { border-bottom: none; }
 }
+
+/* =========================================
+   VIEW TRANSITIONS & ACCESSIBILITY ENHANCEMENTS
+   ========================================= */
+
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile Drawer Smoothness & Gesture */
+.mobile-drawer {
+    will-change: transform;
+    touch-action: none;
+}
+
+.mobile-drawer.dragging {
+    transition: none !important;
+}
+
+/* Accessibility: Keyboard Navigation Styles */
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+    border-radius: 2px;
+}
+
+/* High Contrast mode adjustments */
+@media (forced-colors: active) {
+    .cat-btn.active, .bookmark-btn.active {
+        outline: 2px solid WindowText;
+    }
+}

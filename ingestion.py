@@ -4,13 +4,13 @@ import feedparser
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 
 import clustering
 from ai_engine import translate_to_macedonian
 from categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
-from database import get_db
-from config import RSS_FEEDS, DIASPORA_FEEDS, FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, SOURCE_LIMITS, JUNK_KEYWORDS
-from collections import defaultdict
+from database import db_manager as db, get_db
+from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
 
 log = logging.getLogger("presek")
@@ -20,128 +20,170 @@ def is_junk(title: str, desc: str) -> bool:
     text = f"{title} {desc}".lower()
     return any(word in text for word in JUNK_KEYWORDS)
 
-# ... (keep other helpers) ...
-
 def clean_rss_footer(text: str) -> str:
     """Removes common RSS footers like 'The post ... appeared first on ...'"""
     if not text: return ""
-    # Common patterns
     text = re.sub(r'The post .* appeared first on .*', '', text)
     text = re.sub(r'Прочитајте повеќе на .*', '', text)
     text = re.sub(r'This article was originally published on .*', '', text)
     text = re.sub(r'Source: https?://.*', '', text)
     return text.strip()
 
-def _get_last_seen_links(conn, source, limit=50):
-    """Get recently seen links for a source to skip duplicates early."""
-    rows = conn.execute(
-        "SELECT link FROM articles WHERE source = %s ORDER BY created_at DESC LIMIT %s",
-        (source, limit)
-    ).fetchall()
-    return {r["link"] for r in rows}
-
-def fetch_feed(source, url):
+def fetch_feed(source_name, url, limit=10):
     """Fetch a single RSS feed and return entries."""
     try:
-        limit = SOURCE_LIMITS.get(source, FEED_LIMIT)
         feed = feedparser.parse(url)
         entries = feed.entries[:limit]
-        log.debug(f"Fetched {len(entries)} articles from {source}")
-        return source, entries, None
+        log.debug(f"Fetched {len(entries)} articles from {source_name}")
+        return source_name, entries, None
     except Exception as e:
-        log.error(f"Failed to fetch feed from {source} ({url}): {e}")
-        return source, [], str(e)
+        log.error(f"Failed to fetch feed from {source_name} ({url}): {e}")
+        return source_name, [], str(e)
 
-def ingest_feeds():
-    """Fetch all RSS feeds in parallel, then write to DB sequentially."""
+def extract_image_url(entry):
+    """Extracts the best representative image URL from an RSS entry."""
+    image_url = None
+    if "media_content" in entry and entry.media_content:
+        image_url = entry.media_content[0].get("url")
+    elif "links" in entry:
+        for l in entry.links:
+            if "image" in l.get("type", ""):
+                image_url = l.get("href")
+                break
+    if not image_url and "enclosures" in entry and entry.enclosures:
+        image_url = entry.enclosures[0].get("url")
+    return image_url
+
+def get_active_sources():
+    """Fetches all active sources from the database."""
+    rows = db.execute("SELECT name, url, country, category, credibility, source_limit FROM sources WHERE is_active = TRUE")
+    return [dict(r) for r in rows]
+
+def cosine_dist(a, b):
+    """Calculates cosine distance between two vectors (lists of floats)."""
+    dot = sum(x*y for x, y in zip(a, b))
+    norm_a = sum(x*x for x in a)**0.5
+    norm_b = sum(x*x for x in b)**0.5
+    return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
+
+def ingest_all_sources():
+    """
+    Unified ingestion pipeline for all sources (local and international).
+    Fetches, filters, embeds, clusters, and writes to DB.
+    """
     conn = get_db()
     try:
-        # 1. Gather all potential candidates in parallel
+        sources = get_active_sources()
+        if not sources:
+            log.warning("No active sources found in database.")
+            return 0, []
+
+        # 1. Gather recently seen data to avoid duplicates
         known_links = set()
         recent_by_source = defaultdict(list)
         
+        # Look back 12h for duplicate detection
+        lookback_time = datetime.datetime.now() - datetime.timedelta(hours=12)
         rows = conn.execute(
             "SELECT link, source, title FROM articles WHERE created_at >= %s",
-            (datetime.datetime.now() - datetime.timedelta(hours=12),)
+            (lookback_time,)
         ).fetchall()
         for r in rows:
             known_links.add(r["link"])
             recent_by_source[r["source"]].append(r["title"].lower())
 
+        # 2. Parallel Fetching
         candidates = []
         errors = []
-        max_workers = min(len(RSS_FEEDS), 20)
+        max_workers = min(len(sources), 30)
+        
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_feed = {executor.submit(fetch_feed, s, u): s for s, u in RSS_FEEDS}
-            for future in as_completed(future_to_feed):
-                source, entries, err = future.result()
+            future_to_source = {
+                executor.submit(fetch_feed, s['name'], s['url'], s['source_limit']): s 
+                for s in sources
+            }
+            for future in as_completed(future_to_source):
+                source_name, entries, err = future.result()
+                source_meta = next(s for s in sources if s['name'] == source_name)
+                
                 if err:
-                    errors.append((source, err))
+                    errors.append((source_name, err))
                 else:
                     for e in entries:
                         title = e.get("title", "").strip()
                         link  = e.get("link", "")
+                        
                         if not title or not link or link in known_links:
                             continue
                         
                         desc  = e.get("summary", "") or e.get("description", "")
-                        
-                        # Filter junk early
                         if is_junk(title, desc):
                             continue
                             
                         # Same-Source duplicate detection
                         t_lower = title.lower()
-                        if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) for rt in recent_by_source[source]):
+                        if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) 
+                               for rt in recent_by_source[source_name]):
                             continue
 
-                        image_url = None
-                        if "media_content" in e and e.media_content:
-                            image_url = e.media_content[0].get("url")
-                        elif "links" in e:
-                            for l in e.links:
-                                if "image" in l.get("type", ""):
-                                    image_url = l.get("href")
-                                    break
-                        if not image_url and "enclosures" in e and e.enclosures:
-                            image_url = e.enclosures[0].get("url")
-
-                        candidates.append((source, title, link, desc, image_url))
+                        image_url = extract_image_url(e)
+                        
+                        candidates.append({
+                            "source": source_name,
+                            "title": title,
+                            "link": link,
+                            "desc": desc,
+                            "image_url": image_url,
+                            "country": source_meta['country'],
+                            "category": source_meta['category']
+                        })
 
         if not candidates:
             return 0, errors
 
-        # 2. Generate embeddings ONLY for filtered candidates
+        # 3. Batch Embedding
         log.info(f"[ingestion] Generating embeddings for {len(candidates)} new articles...")
-        texts_to_embed = [f"{t} {d[:200]}" for s, t, l, d, i in candidates]
+        texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
         embeddings = generate_embeddings_batch(texts_to_embed)
 
-        # 3. Clustering & Preparation
+        # 4. Clustering & Preparation
         recent_rows = conn.execute(
             "SELECT title, cluster_id, created_at, category FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         ).fetchall()
-        recent_articles = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in recent_rows]
+        recent_articles = [
+            {"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} 
+            for r in recent_rows
+        ]
 
         from clustering import VECTOR_THRESHOLD
-        def cosine_dist(a, b):
-            dot = sum(x*y for x, y in zip(a, b))
-            norm_a = sum(x*x for x in a)**0.5
-            norm_b = sum(x*x for x in b)**0.5
-            return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
-
+        
         prepared_rows = []
-        batch_clusters = [] # Tracks clusters formed WITHIN this batch
+        batch_clusters = [] 
+        international_inserted_ids = []
 
-        for i, (source, title, link, desc, image_url) in enumerate(candidates):
+        for i, c in enumerate(candidates):
             try:
                 emb = embeddings[i]
-                forced     = HARDCODED_FEED_CATEGORIES.get(source)
-                category   = detect_category(title, description=desc, source=source, forced_category=forced)
+                title = c['title']
+                desc = c['desc']
+                source = c['source']
+                
+                # Metadata detection
+                forced = HARDCODED_FEED_CATEGORIES.get(source)
+                category = detect_category(title, description=desc, source=source, forced_category=forced)
+                if not category:
+                    category = c['category'] # Fallback to source category
+                
                 subcategory = detect_subcategory(title, description=desc) or ""
-                topic      = detect_topic(title, description=desc)
+                topic = detect_topic(title, description=desc)
+                
+                # Normalization for international sources
+                is_international = c['country'] != '🇲🇰'
+                display_title = normalize_headline(title) if is_international else title
+                original_title = title if is_international else ""
 
-                # Check batch clusters first
+                # Clustering logic
                 cluster_id = None
                 if emb:
                     for bc in batch_clusters:
@@ -149,178 +191,86 @@ def ingest_feeds():
                             cluster_id = bc['cid']
                             break
                 
-                # Fallback to DB-backed clustering
                 if not cluster_id:
-                    cluster_id = clustering.find_or_create_cluster(title, recent_articles, embedding=emb, category=category)
+                    cluster_id = clustering.find_or_create_cluster(display_title, recent_articles, embedding=emb, category=category)
                 
                 now = datetime.datetime.now()
                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
-
-                prepared_rows.append((title, link, source, category, subcategory, cluster_id, now, image_url, clean_desc, str(emb) if emb else None, topic))
                 
-                # Update local state for subsequent items in same batch
+                # Prepare row for DB
+                # Schema: (title, original_title, link, source, category, subcategory, cluster_id, created_at, image_url, description, original_description, country, is_translated, embedding, topic)
+                prepared_rows.append((
+                    display_title, 
+                    original_title,
+                    c['link'], 
+                    source, 
+                    category, 
+                    subcategory, 
+                    cluster_id, 
+                    now, 
+                    c['image_url'], 
+                    clean_desc,
+                    clean_desc if is_international else "",
+                    c['country'],
+                    0, # is_translated
+                    str(emb) if emb else None, 
+                    topic
+                ))
+                
+                # Update local state for next items in same batch
                 if emb:
                     batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
-                recent_articles.insert(0, {"title": title, "cluster_id": cluster_id, "created_at": now, "category": category})
+                recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": now, "category": category})
                 if len(recent_articles) > CLUSTER_LOOKBACK:
                     recent_articles.pop()
                     
             except Exception as e:
-                log.error(f"Processing error — {source} | {title[:40]}: {e}")
+                log.error(f"Processing error — {c['source']} | {c['title'][:40]}: {e}")
 
-        # 4. Final Batch Write
+        # 5. Batch Write
         new_count = 0
         if prepared_rows:
-            from psycopg2.extras import execute_values
             cur = conn.cursor()
             try:
-                execute_values(
-                    cur,
-                    """INSERT INTO articles (title, link, source, category, subcategory, cluster_id, created_at, image_url, description, embedding, topic)
-                       VALUES %s
-                       ON CONFLICT (link) DO NOTHING""",
-                    prepared_rows
-                )
-                new_count = cur.rowcount
+                # Use psycopg2.extras.execute_values for performance
+                from psycopg2.extras import execute_values
+                
+                sql = """
+                    INSERT INTO articles (
+                        title, original_title, link, source, category, subcategory, 
+                        cluster_id, created_at, image_url, description, original_description, 
+                        country, is_translated, embedding, topic
+                    )
+                    VALUES %s
+                    ON CONFLICT (link) DO NOTHING
+                    RETURNING id, country
+                """
+                execute_values(cur, sql, prepared_rows)
+                results = cur.fetchall()
+                new_count = len(results)
+                
+                # Collect IDs for translation
+                for r_id, r_country in results:
+                    if r_country != '🇲🇰':
+                        international_inserted_ids.append(r_id)
+                        
             except Exception as e:
                 log.error(f"Batch insert error: {e}")
             finally:
                 cur.close()
 
         conn.commit()
+        
+        # 6. Post-processing (Events & Translations)
         if new_count > 0:
             from utils import publish_event
             publish_event("updates", {"type": "new_articles", "count": new_count, "time": datetime.datetime.now()})
-        return new_count, errors
-    finally:
-        conn.close()
-
-
-def ingest_diaspora_feeds():
-    """Fetch diaspora RSS feeds with optimized filtering and clustering."""
-    conn = get_db()
-    try:
-        known_links = set()
-        recent_by_source = defaultdict(list)
-        
-        rows = conn.execute(
-            "SELECT link, source, title FROM articles WHERE country != '🇲🇰' AND created_at >= %s",
-            (datetime.datetime.now() - datetime.timedelta(hours=12),)
-        ).fetchall()
-        for r in rows:
-            known_links.add(r["link"])
-            recent_by_source[r["source"]].append(r["title"].lower())
-
-        feed_meta = {s: (cat, detect_country(s)) for s, u, cat in DIASPORA_FEEDS}
-        candidates = []
-        errors = []
-        max_workers = min(len(DIASPORA_FEEDS), 20)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_feed = {executor.submit(fetch_feed, s, u): s for s, u, c in DIASPORA_FEEDS}
-            for future in as_completed(future_to_feed):
-                source, entries, err = future.result()
-                if err:
-                    errors.append((source, err))
-                else:
-                    cat, country = feed_meta[source]
-                    for e in entries:
-                        title = e.get("title", "").strip()
-                        link  = e.get("link", "")
-                        if not title or not link or link in known_links:
-                            continue
-                        
-                        desc  = e.get("summary", "") or e.get("description", "")
-                        if is_junk(title, desc):
-                            continue
-                            
-                        t_lower = title.lower()
-                        if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) for rt in recent_by_source[source]):
-                            continue
-
-                        image_url = None
-                        if "media_content" in e and e.media_content:
-                            image_url = e.media_content[0].get("url")
-                        if not image_url and "enclosures" in e and e.enclosures:
-                            image_url = e.enclosures[0].get("url")
-
-                        candidates.append((source, title, link, desc, image_url, cat, country))
-
-        if not candidates:
-            return 0, errors
-
-        log.info(f"[diaspora] Generating embeddings for {len(candidates)} candidates...")
-        texts_to_embed = [f"{t} {d[:200]}" for s, t, l, d, i, c, cy in candidates]
-        embeddings = generate_embeddings_batch(texts_to_embed)
-
-        diaspora_recent_rows = conn.execute(
-            "SELECT title, cluster_id, created_at, category FROM articles WHERE country != '🇲🇰' ORDER BY created_at DESC LIMIT %s",
-            (CLUSTER_LOOKBACK,)
-        ).fetchall()
-        diaspora_recent = [{"title": r["title"], "cluster_id": r["cluster_id"], "created_at": r["created_at"], "category": r["category"]} for r in diaspora_recent_rows]
-
-        from clustering import VECTOR_THRESHOLD
-        def cosine_dist(a, b):
-            dot = sum(x*y for x, y in zip(a, b))
-            norm_a = sum(x*x for x in a)**0.5
-            norm_b = sum(x*x for x in b)**0.5
-            return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
-
-        prepared_rows = []
-        batch_clusters = []
-        inserted_ids = []
-
-        for i, (source, title, link, desc, image_url, category, country) in enumerate(candidates):
-            try:
-                emb = embeddings[i]
-                display_title = normalize_headline(title)
-                clean_desc = re.sub(r'<[^>]+>', '', desc).strip() if desc else ""
-                clean_desc = clean_rss_footer(clean_desc)[:500]
-
-                cluster_id = None
-                if emb:
-                    for bc in batch_clusters:
-                        if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
-                            cluster_id = bc['cid']
-                            break
-                
-                if not cluster_id:
-                    cluster_id = clustering.find_or_create_cluster(display_title, diaspora_recent, embedding=emb, category=category)
-                
-                now = datetime.datetime.now()
-                topic = detect_topic(display_title, description=clean_desc)
-
-                prepared_rows.append((display_title, title, link, source, category, "", cluster_id,
-                                     now, image_url, clean_desc, clean_desc, country, 0, str(emb) if emb else None, topic))
-                
-                if emb:
-                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
-                diaspora_recent.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": now, "category": category})
-            except Exception as e:
-                log.error(f"[diaspora] Processing error: {e}")
-
-        new_count = 0
-        if prepared_rows:
-            from psycopg2.extras import execute_values
-            cur = conn.cursor()
-            try:
-                cur.execute("PREPARE diaspora_ins AS INSERT INTO articles (title, original_title, link, source, category, subcategory, cluster_id, created_at, image_url, description, original_description, country, is_translated, embedding, topic) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT (link) DO NOTHING RETURNING id")
-                for row in prepared_rows:
-                    cur.execute("EXECUTE diaspora_ins (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", row)
-                    res = cur.fetchone()
-                    if res:
-                        inserted_ids.append(res[0])
-                new_count = len(inserted_ids)
-            except Exception as e:
-                log.error(f"[diaspora] Insert error: {e}")
-            finally:
-                cur.close()
-
-        conn.commit()
-        if inserted_ids:
+            
+        if international_inserted_ids:
             from tasks import translate_article_task
-            for article_id in inserted_ids:
-                art = conn.execute("SELECT title, description FROM articles WHERE id = %s", (article_id,)).fetchone()
+            for article_id in international_inserted_ids:
+                art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (article_id,))
                 if art:
                     translate_article_task.delay(article_id, art["title"], art["description"])
 
@@ -328,4 +278,11 @@ def ingest_diaspora_feeds():
     finally:
         conn.close()
 
+# Legacy wrappers to maintain compatibility with existing tasks.py calls
+def ingest_feeds():
+    """Wrapper for backward compatibility."""
+    return ingest_all_sources()
 
+def ingest_diaspora_feeds():
+    """Wrapper for backward compatibility. Now does nothing as ingest_all_sources handles it."""
+    return 0, []

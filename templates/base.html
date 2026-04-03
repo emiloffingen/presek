@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="view-transition" content="same-origin">
     <meta name="theme-color" id="themeMeta" content="#FFFFFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,6 +14,7 @@
     <!-- Google Fonts: Lora (Headlines) + Inter (Reading & UI) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
     <title>{% block title %}Пресек{% endblock %}</title>
@@ -220,8 +222,7 @@
         <span id="toastMsg">НОВИ ВЕСТИ СЕ ПРИСТИГНАТИ</span>
     </div>
 
-    <script src="/static/js/ui.js?v=2026.nyt.5"></script>
-    <script src="/static/js/app.js?v=2026.nyt.5"></script>
+    <script type="module" src="/static/js/main.js?v=2026.nyt.5"></script>
     {% block scripts %}{% endblock %}
     <script>
       // Global error handler for debugging

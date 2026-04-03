@@ -287,6 +287,20 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS sources (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    url TEXT NOT NULL,
+                    country TEXT DEFAULT '🇲🇰',
+                    category TEXT DEFAULT 'Локални',
+                    credibility FLOAT DEFAULT 1.0,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_fetched TIMESTAMP,
+                    fetch_interval INTEGER DEFAULT 300,
+                    source_limit INTEGER DEFAULT 10,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+
                 # Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
