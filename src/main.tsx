@@ -56,43 +56,36 @@ const hydrateStore = () => {
 };
 
 const init = () => {
-  // Legacy UI initialization
-  initTheme();
-  setupThemeEvents();
-  initNavigation();
-  _updateMacedonianDate();
-  setupLinkInterception();
-
-  const container = document.getElementById('pageWrap');
-  if (container) {
-    hydrateStore();
-    ReactDOM.hydrateRoot(
-      container,
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
-    );
+  try {
+    // Legacy UI initialization
+    initTheme();
+    setupThemeEvents();
+    initNavigation();
+    _updateMacedonianDate();
+    setupLinkInterception();
+  } catch (e) {
+    console.error('Legacy init failed:', e);
   }
 
-  const trendingContainer = document.getElementById('sidebarTrending');
-  if (trendingContainer) {
-    const tRoot = ReactDOM.createRoot(trendingContainer);
-    tRoot.render(
-      <React.StrictMode>
-        <TrendingSidebar />
-      </React.StrictMode>
-    );
-  }
+  const mountRoot = (id: string, Component: React.ReactElement, useHydrate = false) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    try {
+      if (useHydrate) {
+        // We use createRoot instead of hydrateRoot for now to avoid mismatch crashes
+        ReactDOM.createRoot(el).render(<React.StrictMode>{Component}</React.StrictMode>);
+      } else {
+        ReactDOM.createRoot(el).render(<React.StrictMode>{Component}</React.StrictMode>);
+      }
+    } catch (e) {
+      console.error(`Mounting ${id} failed:`, e);
+    }
+  };
 
-  const pulseContainer = document.getElementById('entityPulse');
-  if (pulseContainer) {
-    const pRoot = ReactDOM.createRoot(pulseContainer);
-    pRoot.render(
-      <React.StrictMode>
-        <PulseTicker />
-      </React.StrictMode>
-    );
-  }
+  hydrateStore();
+  mountRoot('pageWrap', <App />, true);
+  mountRoot('sidebarTrending', <TrendingSidebar />);
+  mountRoot('entityPulse', <PulseTicker />);
 };
 
 // Start the app

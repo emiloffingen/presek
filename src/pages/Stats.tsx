@@ -71,9 +71,9 @@ export const Stats: React.FC = () => {
   }
 
   const velocityData = {
-    labels: data.velocity.map(v => new Date(v.t).getHours() + ':00'),
+    labels: (data.velocity || []).map(v => new Date(v.t).getHours() + ':00'),
     datasets: [{
-      data: data.velocity.map(v => v.n),
+      data: (data.velocity || []).map(v => v.n),
       borderColor: themeColors.text,
       borderWidth: 1.5,
       pointRadius: 0,
@@ -83,9 +83,9 @@ export const Stats: React.FC = () => {
   };
 
   const categoryData = {
-    labels: data.by_category.map(c => c.cat),
+    labels: (data.by_category || []).map(c => c.cat),
     datasets: [{
-      data: data.by_category.map(c => c.n),
+      data: (data.by_category || []).map(c => c.n),
       backgroundColor: [themeColors.text, '#444', '#666', '#888', '#AAA', '#BBB', '#CCC', '#DDD'],
       borderWidth: 0
     }]
