@@ -88,14 +88,22 @@
 
 {% block scripts %}
 <script>
-const _cs = getComputedStyle(document.documentElement);
-const TEXT_COLOR   = _cs.getPropertyValue('--text-primary').trim() || '#121212';
-const BORDER_COLOR = _cs.getPropertyValue('--border').trim()       || '#E2E2E2';
+let velocityChartInst = null;
+let categoryChartInst = null;
+
+function getThemeColors() {
+    const _cs = getComputedStyle(document.documentElement);
+    return {
+        text:   _cs.getPropertyValue('--text-primary').trim() || '#121212',
+        border: _cs.getPropertyValue('--border').trim()       || '#E2E2E2'
+    };
+}
 
 async function loadStats() {
     try {
         const res  = await fetch('/api/stats/full');
         const data = await res.json();
+        const colors = getThemeColors();
 
         document.getElementById('totalArticles').textContent = (data.total_articles || 0).toLocaleString();
         document.getElementById('last24h').textContent       = (data.last_24h || 0).toLocaleString();
@@ -124,13 +132,14 @@ async function loadStats() {
         renderBars('speedStats', data.speed_leaderboard || [], 'first_count', 'source');
 
         // Velocity Chart
-        new Chart(document.getElementById('velocityChart'), {
+        if (velocityChartInst) velocityChartInst.destroy();
+        velocityChartInst = new Chart(document.getElementById('velocityChart'), {
             type: 'line',
             data: {
                 labels: (data.velocity || []).map(v => new Date(v.t).getHours() + ':00'),
                 datasets: [{
                     data: (data.velocity || []).map(v => v.n),
-                    borderColor: TEXT_COLOR,
+                    borderColor: colors.text,
                     borderWidth: 1.5,
                     pointRadius: 0,
                     fill: false,
@@ -142,20 +151,21 @@ async function loadStats() {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { grid: { color: BORDER_COLOR }, ticks: { color: TEXT_COLOR, font: { size: 10 } } },
-                    x: { grid: { display: false }, ticks: { color: TEXT_COLOR, font: { size: 10 }, maxRotation: 0 } }
+                    y: { grid: { color: colors.border }, ticks: { color: colors.text, font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { color: colors.text, font: { size: 10 }, maxRotation: 0 } }
                 }
             }
         });
 
         // Category Donut
-        new Chart(document.getElementById('categoryChart'), {
+        if (categoryChartInst) categoryChartInst.destroy();
+        categoryChartInst = new Chart(document.getElementById('categoryChart'), {
             type: 'doughnut',
             data: {
                 labels: (data.by_category || []).map(c => c.cat),
                 datasets: [{
                     data: (data.by_category || []).map(c => c.n),
-                    backgroundColor: [TEXT_COLOR,'#444','#666','#888','#AAA','#BBB','#CCC','#DDD'],
+                    backgroundColor: [colors.text,'#444','#666','#888','#AAA','#BBB','#CCC','#DDD'],
                     borderWidth: 0
                 }]
             },
@@ -169,6 +179,22 @@ async function loadStats() {
 
     } catch (e) { console.error('[stats]', e); }
 }
+
+window.addEventListener('themeChanged', () => {
+    const colors = getThemeColors();
+    if (velocityChartInst) {
+        velocityChartInst.data.datasets[0].borderColor = colors.text;
+        velocityChartInst.options.scales.y.grid.color = colors.border;
+        velocityChartInst.options.scales.y.ticks.color = colors.text;
+        velocityChartInst.options.scales.x.ticks.color = colors.text;
+        velocityChartInst.update();
+    }
+    if (categoryChartInst) {
+        categoryChartInst.data.datasets[0].backgroundColor[0] = colors.text;
+        categoryChartInst.update();
+    }
+});
+
 loadStats();
 </script>
 {% endblock %}

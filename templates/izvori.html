@@ -7,6 +7,9 @@
     <header class="page-header">
         <h1 class="nyt-title">Медиумски Именик</h1>
         <p class="page-subtitle">Целосна листа на индексирани извори во мрежата на Пресек</p>
+        <div style="max-width: 400px; margin: var(--space-md) auto 0;">
+            <input type="text" id="sourceFilter" class="archive-date-input" style="width: 100%; border-radius: 20px; padding: 10px 16px;" placeholder="Пребарај извори...">
+        </div>
     </header>
 
     <div class="sources-directory">
@@ -53,15 +56,40 @@ const diaspora = [
     "Index.hr","Jutarnji","Klix.ba","Vijesti.me"
 ];
 
-function makeList(list) {
-    return list.sort().map(name => `
+let hotSources = new Set();
+
+function renderLists(filter = '') {
+    const term = filter.toLowerCase();
+    
+    const mkFiltered = mk.filter(s => s.toLowerCase().includes(term)).sort();
+    const intFiltered = diaspora.filter(s => s.toLowerCase().includes(term)).sort();
+
+    document.getElementById('mkIzvori').innerHTML = mkFiltered.length ? mkFiltered.map(name => `
+        <a href="/izvor/${encodeURIComponent(name)}" class="source-link">
+            <span>${name} ${hotSources.has(name) ? '<span class="src-badge pulse" style="margin-left:4px;">HOT</span>' : ''}</span>
+        </a>`).join('') : '<span style="color:var(--text-muted);font-size:0.8rem;">Нема резултати</span>';
+
+    document.getElementById('intIzvori').innerHTML = intFiltered.length ? intFiltered.map(name => `
         <a href="/izvor/${encodeURIComponent(name)}" class="source-link">
             <span>${name}</span>
-        </a>`
-    ).join('');
+        </a>`).join('') : '<span style="color:var(--text-muted);font-size:0.8rem;">Нема резултати</span>';
 }
 
-document.getElementById('mkIzvori').innerHTML  = makeList(mk);
-document.getElementById('intIzvori').innerHTML = makeList(diaspora);
+document.getElementById('sourceFilter').addEventListener('input', (e) => {
+    renderLists(e.target.value);
+});
+
+async function loadPulse() {
+    try {
+        const res = await fetch('/api/sources/pulse');
+        const data = await res.json();
+        // Mark top 5 sources as HOT
+        (data || []).slice(0, 5).forEach(r => hotSources.add(r.source));
+    } catch (e) {}
+    renderLists();
+}
+
+renderLists();
+loadPulse();
 </script>
 {% endblock %}

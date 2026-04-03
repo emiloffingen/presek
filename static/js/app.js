@@ -149,6 +149,9 @@ const app = {
 
                 document.body.classList.toggle('light', isLight);
 
+                // Dispatch event for other components (like charts)
+                window.dispatchEvent(new Event('themeChanged'));
+
                 // Add a small rotation effect to the button
                 themeToggle.style.transform = 'rotate(15deg)';
                 setTimeout(() => themeToggle.style.transform = '', 200);
