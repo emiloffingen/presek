@@ -55,7 +55,12 @@ def index():
         top_clusters = []
 
     # Fetch trending for SSR
-    trending = db.get_trending_keywords(limit=10)
+    try:
+        from trending import get_trending
+        trending = get_trending(hours=6, limit=10)
+    except Exception as e:
+        current_app.logger.warning(f"Trending SSR Error: {e}")
+        trending = []
 
     return render_template("index.html", 
                            initial_clusters=top_clusters,
@@ -64,7 +69,7 @@ def index():
 
 @views_bp.route("/saved")
 def saved_page():
-    return render_template("index.html", initial_clusters=[], year=datetime.datetime.now().year)
+    return render_template("index.html", initial_clusters=[], initial_trending=[], year=datetime.datetime.now().year)
 
 @views_bp.route("/izvori")
 def izvori_page():

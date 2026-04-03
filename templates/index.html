@@ -50,7 +50,7 @@
                     {% endif %}
 
                     <div class="cluster-meta">
-                        <span>{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                        <span>{{ main.created_at | format_time }}</span>
                         <span>·</span>
                         <span>{{ cluster.articles|length }} извори</span>
                     </div>

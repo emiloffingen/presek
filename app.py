@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 import time
 import logging
+import datetime
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 
@@ -64,6 +65,20 @@ class CustomJSONProvider(DefaultJSONProvider):
 
 app = Flask(__name__)
 app.json = CustomJSONProvider(app)
+
+@app.template_filter('format_time')
+def format_time_filter(dt):
+    if not dt: return ""
+    if isinstance(dt, str):
+        try:
+            # Handle ISO format string from cache
+            dt = datetime.datetime.fromisoformat(dt.replace('Z', '+00:00'))
+        except: return dt
+    
+    try:
+        return dt.strftime('%H:%M')
+    except:
+        return str(dt)
 
 _secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key:

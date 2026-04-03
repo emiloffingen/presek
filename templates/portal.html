@@ -49,7 +49,7 @@
                         <div class="bento-meta">
                             <span class="source">{{ main.source }}</span>
                             <span>·</span>
-                            <span>{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
+                            <span>{{ main.created_at | format_time }}</span>
                             {% if cluster.is_breaking %}
                                 <span class="src-badge pulse">БРЕЈКИНГ</span>
                             {% endif %}
