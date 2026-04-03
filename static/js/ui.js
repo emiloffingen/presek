@@ -182,6 +182,25 @@ const UI = {
         } catch (e) { return false; }
     },
 
+    async shareCluster(title) {
+        const shareData = {
+            title: title || 'Пресек',
+            text: title,
+            url: window.location.href
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                alert('Линкот е ископиран во таблата.');
+            }
+        } catch (err) {
+            console.error('Share error:', err);
+        }
+    },
+
     toggleBookmark(event, clusterId) {
         if (event) {
             event.preventDefault();

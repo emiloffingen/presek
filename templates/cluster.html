@@ -33,7 +33,10 @@
           <span>{{ articles | length }} Извори</span>
           {% if total_reading_time %}<span>{{ total_reading_time }} мин читање</span>{% endif %}
         </div>
-        <div class="meta-info-right">
+        <div class="meta-info-right" style="display: flex; gap: 12px; align-items: center;">
+          <button class="icon-btn" onclick="UI.shareCluster('{{ articles[0].title | e }}')" title="Сподели">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </button>
           <div class="reading-toolkit" style="margin: 0; background: none; border: none;">
               <div class="tk-btn" id="tkDec">A-</div>
               <div class="tk-btn inc" id="tkInc">A+</div>
@@ -41,6 +44,14 @@
         </div>
       </div>
     </header>
+
+    {% if source_distribution %}
+    <div class="plurality-gauge" title="Дистрибуција на извори според категорија">
+      {% for item in source_distribution %}
+      <div class="gauge-segment" style="width: {{ item.pct }}%;" data-label="{{ item.label }} ({{ item.pct }}%)"></div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     {% if hero_image.url %}
     <div class="cluster-hero fade-in">
@@ -70,6 +81,11 @@
         <div class="ai-ask-row" style="max-width: 100%;">
           <input type="text" id="aiInput" class="ai-ask-input" placeholder="Имате прашање за овој настан?">
           <button class="page-btn" onclick="AI.ask()">Прашај</button>
+        </div>
+        <div class="suggested-questions">
+            <button class="sq-btn" onclick="AI.ask('Кои се главните спротивставени ставови?')">Главни ставови?</button>
+            <button class="sq-btn" onclick="AI.ask('Што се очекува да се случи следно?')">Што следно?</button>
+            <button class="sq-btn" onclick="AI.ask('Направи кратко резиме во 3 точки.')">Резиме во 3 точки</button>
         </div>
       </section>
 
@@ -133,10 +149,12 @@ const AI = {
         if (sheet) sheet.classList.toggle('active', show !== false);
     },
 
-    async ask() {
+    async ask(predefinedQuery) {
         const input = document.getElementById('aiInput');
-        const query = input?.value?.trim();
+        const query = predefinedQuery || input?.value?.trim();
         if (!query) return;
+
+        if (input && predefinedQuery) input.value = predefinedQuery;
 
         this.toggleSheet(true);
         const responseEl = document.getElementById('aiResponse');

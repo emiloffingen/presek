@@ -34,6 +34,18 @@
                     {% if (is_lead or idx < 3) and main.description %}
                     <p class="cluster-excerpt">{{ main.description | truncate(is_lead and 220 or 120) }}</p>
                     {% endif %}
+                    
+                    {% if is_lead and cluster.articles|length > 1 %}
+                    <div class="lead-sub-headlines">
+                        {% for sub in cluster.articles[1:4] %}
+                        <div class="sub-h-item">
+                            <span class="sub-h-source">{{ sub.source }}:</span>
+                            <a href="/cluster/{{ cluster.cluster_id }}" class="sub-h-link">{{ sub.title | truncate(60) }}</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
                     <div class="cluster-meta">
                         <span>{{ main.created_at.strftime('%H:%M') if main.created_at is defined and main.created_at.strftime is defined else '' }}</span>
                         <span>·</span>
@@ -50,7 +62,24 @@
             </article>
         {% endfor %}
     {% else %}
-        <div class="loading-state span-12">Вчитување вести...</div>
+        <div id="initialSkeletons" class="span-12 bento-grid" style="grid-template-columns: repeat(3, 1fr); gap: 30px;">
+            <!-- Skeletons will be injected by JS or shown as static HTML -->
+            <div class="news-cluster skeleton-card">
+                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
+            </div>
+            <div class="news-cluster skeleton-card">
+                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
+            </div>
+            <div class="news-cluster skeleton-card">
+                <div class="skeleton-box" style="width: 100%; aspect-ratio: 16/9; margin-bottom: 1rem;"></div>
+                <div class="skeleton-box" style="width: 80%; height: 1.5rem; margin-bottom: 0.5rem;"></div>
+                <div class="skeleton-box" style="width: 60%; height: 1rem;"></div>
+            </div>
+        </div>
     {% endif %}
 
 <!-- Infinite Scroll Trigger -->
