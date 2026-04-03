@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, Sparkles, Clock, Layers } from 'lucide-react';
+import { Flame, Sparkles, Clock, Layers, Bookmark, BookmarkCheck } from 'lucide-react';
 import { NewsCluster } from '../types';
 import { apiClient } from '../api/client';
+import { useSavedStore } from '../store/useNewsStore';
 
 interface ClusterCardProps {
   cluster: NewsCluster;
@@ -101,6 +102,21 @@ function HeroCard({ cluster }: { cluster: NewsCluster }) {
   );
 }
 
+/* ── Save Button ─────────────────────────────────────────────── */
+function SaveButton({ clusterId }: { clusterId: string }) {
+  const { toggle, isSaved } = useSavedStore();
+  const saved = isSaved(clusterId);
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); toggle(clusterId); }}
+      className={`p-1 rounded transition-colors ${saved ? 'text-brand-500' : 'text-ink-faint dark:text-slate-600 hover:text-brand-500'}`}
+      title={saved ? 'Отстрани од зачувани' : 'Зачувај'}
+    >
+      {saved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+    </button>
+  );
+}
+
 /* ── Featured Card (medium, used in 2-col grid) ─────────────── */
 function FeaturedCard({ cluster }: { cluster: NewsCluster }) {
   const navigate = useNavigate();
@@ -152,15 +168,16 @@ function FeaturedCard({ cluster }: { cluster: NewsCluster }) {
         )}
         <div className="flex items-center justify-between text-xs text-ink-faint dark:text-slate-500 mt-auto">
           <span>{article?.source}</span>
-          <span className="flex items-center gap-1">
-            <Clock size={11} />
-            {timeAgo(article?.created_at || '')}
-            {cluster.articles.length > 1 && (
-              <span className="ml-1 text-ink-faint dark:text-slate-500">
-                · {cluster.articles.length} izvori
-              </span>
-            )}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              {timeAgo(article?.created_at || '')}
+              {cluster.articles.length > 1 && (
+                <span className="ml-1">· {cluster.articles.length} izvori</span>
+              )}
+            </span>
+            <SaveButton clusterId={cluster.cluster_id} />
+          </div>
         </div>
       </div>
     </article>
@@ -199,6 +216,7 @@ function CompactCard({ cluster }: { cluster: NewsCluster }) {
           <span>{timeAgo(article?.created_at || '')}</span>
         </div>
       </div>
+      <SaveButton clusterId={cluster.cluster_id} />
     </article>
   );
 }

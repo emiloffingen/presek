@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { ClusterDetailPage } from './pages/ClusterDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { BriefingPage } from './pages/BriefingPage';
+import { SavedPage } from './pages/SavedPage';
 
 function App() {
   // Apply saved theme on mount
@@ -22,6 +23,7 @@ function App() {
         <Route path="/cluster/:clusterId" element={<ClusterDetailPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/briefing" element={<BriefingPage />} />
+        <Route path="/saved" element={<SavedPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

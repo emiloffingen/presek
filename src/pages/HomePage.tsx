@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { SlidersHorizontal, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { SlidersHorizontal, RefreshCw, X } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterCard } from '../components/ClusterCard';
 import { TrendingSidebar } from '../components/TrendingSidebar';
 import { Header } from '../components/Header';
 import { useNewsStore, useUIStore } from '../store/useNewsStore';
+import { useSSE } from '../hooks/useSSE';
 
 const TOPICS = ['Политика', 'Економија', 'Технологија', 'Спорт', 'Забава', 'Здравје'];
 
@@ -18,6 +19,8 @@ export const HomePage: React.FC = () => {
   const { selectedCategory, selectedTopic, searchQuery, setSearchQuery } = useUIStore();
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [showTopicBar, setShowTopicBar] = useState(false);
+  const [newArticlesBanner, setNewArticlesBanner] = useState(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const fetchNews = useCallback(async (pg = 0, append = false) => {
     setLoading(true);
@@ -48,9 +51,27 @@ export const HomePage: React.FC = () => {
     fetchNews(0, false);
   }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!isLoading && hasMore) fetchNews(page + 1, true);
-  };
+  }, [isLoading, hasMore, fetchNews, page]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  // SSE live updates
+  const handleSSEUpdate = useCallback((data: { cluster_id: string; new_articles: number }) => {
+    setNewArticlesBanner((prev) => prev + (data.new_articles || 1));
+  }, []);
+  useSSE('/api/live', handleSSEUpdate);
 
   const isSearching = !!searchQuery;
   const heroCluster = clusters[0];
@@ -62,6 +83,17 @@ export const HomePage: React.FC = () => {
       <Header />
 
       <main className="page-container py-6">
+        {/* Live update banner */}
+        {newArticlesBanner > 0 && (
+          <div
+            onClick={() => { setNewArticlesBanner(0); fetchNews(0, false); }}
+            className="mb-4 cursor-pointer rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2.5 flex items-center justify-between transition-colors"
+          >
+            <span>⚡ {newArticlesBanner} нови вести — Притиснете за освежување</span>
+            <X size={16} />
+          </div>
+        )}
+
         {/* Search result header */}
         {isSearching && (
           <div className="mb-4 flex items-center justify-between">
@@ -194,21 +226,12 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Load more */}
-              {hasMore && (
-                <div className="text-center pt-2">
-                  <button
-                    onClick={loadMore}
-                    disabled={isLoading}
-                    className="btn-outline px-8 py-2.5 text-sm"
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <RefreshCw size={14} className="animate-spin" />
-                        Вчитување...
-                      </span>
-                    ) : 'Вчитај повеќе'}
-                  </button>
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-8 w-full" />
+              {isLoading && clusters.length > 0 && (
+                <div className="text-center py-4 text-sm text-ink-muted dark:text-slate-500 flex items-center justify-center gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  Вчитување...
                 </div>
               )}
             </div>

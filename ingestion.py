@@ -30,9 +30,13 @@ def clean_rss_footer(text: str) -> str:
     return text.strip()
 
 def fetch_feed(source_name, url, limit=10):
-    """Fetch a single RSS feed and return entries."""
+    """Fetch a single RSS feed and return entries. Enforces a 12s timeout."""
     try:
-        feed = feedparser.parse(url)
+        import requests as _req
+        headers = {'User-Agent': 'Presek/1.0 RSS Reader (+https://presek.mk)'}
+        resp = _req.get(url, timeout=12, headers=headers)
+        resp.raise_for_status()
+        feed = feedparser.parse(resp.content)
         entries = feed.entries[:limit]
         log.debug(f"Fetched {len(entries)} articles from {source_name}")
         return source_name, entries, None

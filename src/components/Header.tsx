@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Moon, Sun, X, BarChart3, BookOpen, Menu } from 'lucide-react';
-import { useUIStore, useNewsStore } from '../store/useNewsStore';
+import { Search, Moon, Sun, X, BarChart3, BookOpen, Menu, Bookmark } from 'lucide-react';
+import { useUIStore, useNewsStore, useSavedStore } from '../store/useNewsStore';
 import { apiClient } from '../api/client';
 import { Weather } from '../types';
 
@@ -19,6 +19,7 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const { selectedCategory, searchQuery, setSelectedCategory, setSearchQuery } = useUIStore();
   const { reset } = useNewsStore();
+  const savedCount = useSavedStore((s) => s.savedIds.size);
   const [dark, setDark] = useState(
     () => document.documentElement.classList.contains('dark')
   );
@@ -27,6 +28,7 @@ export const Header: React.FC = () => {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isHome = location.pathname === '/';
 
@@ -52,10 +54,24 @@ export const Header: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchQuery(searchInput.trim());
     setSearchOpen(false);
     if (location.pathname !== '/') navigate('/');
   };
+
+  const handleSearchInput = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length >= 3) {
+      debounceRef.current = setTimeout(() => {
+        setSearchQuery(value.trim());
+        if (location.pathname !== '/') navigate('/');
+      }, 500);
+    } else if (value.trim() === '') {
+      setSearchQuery('');
+    }
+  }, [location.pathname, navigate, setSearchQuery]);
 
   const clearSearch = () => {
     setSearchInput('');
@@ -120,7 +136,7 @@ export const Header: React.FC = () => {
                   ref={searchRef}
                   type="text"
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  onChange={(e) => handleSearchInput(e.target.value)}
                   placeholder="Пребарај вести..."
                   className="bg-dark-2 border border-dark-3 text-white placeholder-slate-500 rounded-lg px-3 py-1.5 text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
@@ -152,6 +168,18 @@ export const Header: React.FC = () => {
             </button>
 
             {/* Nav links */}
+            <button
+              onClick={() => navigate('/saved')}
+              className="hidden md:flex items-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition relative"
+              title="Зачувани вести"
+            >
+              <Bookmark size={18} />
+              {savedCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-brand-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
+                  {savedCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => navigate('/briefing')}
               className="hidden md:flex p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
