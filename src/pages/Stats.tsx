@@ -120,7 +120,7 @@ export const Stats: React.FC = () => {
         </div>
         <div className="kpi-item">
           <span className="kpi-value">{(data.summarized_pct || 0)}%</span>
-          <span className="rail-label">AI Резимирани</span>
+          <span className="rail-label">Системски Резимирани</span>
         </div>
         <div className="kpi-item">
           <span className="kpi-value">{data.uptime || '—'}</span>

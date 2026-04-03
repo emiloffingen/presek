@@ -1,7 +1,7 @@
 {
   "name": "Пресек — Македонски Вести",
   "short_name": "Пресек",
-  "description": "Најнапреден македонски агрегатор на вести со AI анализа.",
+  "description": "Најнапреден македонски агрегатор на вести со автоматска анализа.",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#0A0C0E",

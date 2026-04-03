@@ -478,7 +478,7 @@ def chat_cluster():
         # Build context
         context_lines = []
         if synthesis_row and synthesis_row.get("summary"):
-            context_lines.append(f"AI Резиме: {synthesis_row['summary']}\n")
+            context_lines.append(f"Системско Резиме: {synthesis_row['summary']}\n")
         context_lines.append("Статии:")
         for r in rows:
             context_lines.append(f"- [{r['source']}] {r['title']}")
@@ -493,7 +493,7 @@ def chat_cluster():
 
         response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=500)
         if not response_text:
-            return error_response("AI не можеше да одговори", 503)
+            return error_response("Системот не можеше да одговори", 503)
 
         return jsonify({"status": "success", "response": response_text})
 

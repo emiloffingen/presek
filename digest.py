@@ -192,7 +192,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
         <tr>
           <td style="background:#ece5d8;padding:16px 32px;border-bottom:2px solid #0d0d0d">
             <p style="margin:0;font-size:13px;color:#555;line-height:1.6">
-              Најважните приказни од македонските медиуми оваа недела, групирани и резимирани со вештачка интелигенција.
+              Најважните приказни од македонските медиуми оваа недела, групирани и резимирани автоматски.
             </p>
           </td>
         </tr>
@@ -210,7 +210,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
         <tr>
           <td style="padding:20px 32px;text-align:center">
             <p style="margin:0;font-family:monospace;font-size:10px;color:#999;letter-spacing:1px">
-              Пресек · Македонски вести со AI · Агрегатор
+              Пресек · Македонски вести · Паметен агрегатор
             </p>
             <p style="margin:6px 0 0;font-family:monospace;font-size:10px;color:#bbb">
               Генерирано автоматски · {datetime.now().strftime('%d.%m.%Y %H:%M')}

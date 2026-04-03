@@ -64,7 +64,7 @@ export const ClusterDetail: React.FC = () => {
       const resp = await askAI(id, query);
       setChatResponse(resp);
     } catch (e) {
-      setChatResponse('Грешка при поврзување со AI.');
+      setChatResponse('Грешка при поврзување со системот.');
     } finally {
       setIsChatLoading(false);
     }
@@ -111,7 +111,7 @@ export const ClusterDetail: React.FC = () => {
 
         <div className="article-meta-block">
           <div className="meta-info-left">
-            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Пресек Анализа</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Системска Анализа</span>
             <span>{new Date(main.created_at).toLocaleDateString('mk-MK', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             <span>{data.articles.length} Извори</span>
             {data.total_reading_time > 0 && <span>{data.total_reading_time} мин читање</span>}
@@ -228,7 +228,7 @@ export const ClusterDetail: React.FC = () => {
 
       <div className={`ai-sheet ${isChatOpen ? 'active' : ''}`} id="aiSheet">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', letterSpacing: 'var(--tracking-tight)' }}>Пресек Дијалог</h2>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.15rem', letterSpacing: 'var(--tracking-tight)' }}>Интерактивен Дијалог</h2>
           <button className="icon-btn" onClick={() => setIsChatOpen(false)} aria-label="Затвори">
             <X size={18} />
           </button>
