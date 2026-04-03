@@ -5,7 +5,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_compress import Compress
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -105,6 +105,14 @@ def add_security_headers(response):
     return response
 
 health.register_health_routes(app)
+
+@app.route("/sw.js")
+def serve_sw():
+    return send_from_directory(".", "sw.js")
+
+@app.route("/manifest.json")
+def serve_manifest():
+    return send_from_directory("static", "manifest.json")
 
 if __name__ == "__main__":
     try:

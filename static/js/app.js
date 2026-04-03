@@ -19,6 +19,7 @@ const app = {
             this._bindEvents();
             this._restoreFromURL();
             this._initPersonalization();
+            this._initLiveUpdates();
             
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
@@ -312,13 +313,52 @@ const app = {
         const inp = document.getElementById('searchInput');
         if (inp) inp.value = '';
         this._pushState();
-        this.fetchNews();
+        
+        const container = document.getElementById('pageWrap');
+        if (container) {
+            container.classList.add('transitioning');
+            setTimeout(() => {
+                this.fetchNews().then(() => {
+                    setTimeout(() => container.classList.remove('transitioning'), 50);
+                });
+            }, 150);
+        } else {
+            this.fetchNews();
+        }
     },
 
     setSearch(q) {
         this.state.query = q;
         this._pushState();
         this.fetchNews();
+    },
+
+    _initLiveUpdates() {
+        if (!window.EventSource) return;
+        const source = new EventSource('/api/live');
+        
+        source.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                if (data.type === 'new_clusters' || data.type === 'ingestion_complete') {
+                    this.showToast(data.message || 'Нови вести се пристигнати');
+                }
+            } catch (err) {}
+        };
+        
+        source.onerror = () => source.close();
+    },
+
+    showToast(msg) {
+        const toast = document.getElementById('newsToast');
+        const toastMsg = document.getElementById('toastMsg');
+        if (!toast) return;
+        
+        if (toastMsg) toastMsg.textContent = msg.toUpperCase();
+        toast.classList.add('active');
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => toast.classList.remove('active'), 10000);
     },
 
     _setupInfiniteScroll() {

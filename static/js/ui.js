@@ -140,7 +140,11 @@ const UI = {
         const imgHtml = thumbUrl ? `
             <div class="cluster-thumb-wrap">
                 <a href="/cluster/${cluster.cluster_id}" style="display:block;width:100%;height:100%;">
-                    <img src="${thumbUrl}" alt="${this._esc(main.title)}" class="cluster-thumb" loading="${idx < 3 ? 'eager' : 'lazy'}">
+                    <img src="${thumbUrl}" alt="${this._esc(main.title)}" 
+                         class="cluster-thumb loading" 
+                         loading="${idx < 3 ? 'eager' : 'lazy'}"
+                         onload="this.classList.remove('loading')"
+                         onerror="this.classList.remove('loading'); this.classList.add('error'); this.src='/static/img/placeholder.svg';">
                 </a>
             </div>` : '';
 
