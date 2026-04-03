@@ -4,19 +4,16 @@ import { HomePage } from './pages/HomePage';
 import { ClusterDetailPage } from './pages/ClusterDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { BriefingPage } from './pages/BriefingPage';
-import { useTheme } from './hooks/useTheme';
 
 function App() {
-  const { theme } = useTheme();
-
+  // Apply saved theme on mount
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      document.documentElement.classList.add('dark');
     }
-  }, [theme]);
+  }, []);
 
   return (
     <Router>

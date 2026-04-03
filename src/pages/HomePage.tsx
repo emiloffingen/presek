@@ -1,275 +1,227 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterCard } from '../components/ClusterCard';
 import { TrendingSidebar } from '../components/TrendingSidebar';
+import { Header } from '../components/Header';
 import { useNewsStore, useUIStore } from '../store/useNewsStore';
 
-const CATEGORIES = ['Македонија', 'Балкан', 'Европа', 'Германија', 'Америка', 'Свет'];
 const TOPICS = ['Политика', 'Економија', 'Технологија', 'Спорт', 'Забава', 'Здравје'];
 
 export const HomePage: React.FC = () => {
-  const navigate = useNavigate();
   const {
-    clusters,
-    isLoading,
-    error,
-    page,
-    pageSize,
-    hasMore,
-    setClusters,
-    addClusters,
-    setLoading,
-    setError,
-    setPage,
-    setHasMore,
-    setTotalClusters,
-    reset,
+    clusters, isLoading, error, page, pageSize, hasMore,
+    setClusters, addClusters, setLoading, setError,
+    setPage, setHasMore, setTotalClusters, reset,
   } = useNewsStore();
 
-  const { selectedCategory, selectedTopic, searchQuery, setSelectedCategory, setSearchQuery } =
-    useUIStore();
+  const { selectedCategory, selectedTopic, searchQuery, setSearchQuery } = useUIStore();
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
+  const [showTopicBar, setShowTopicBar] = useState(false);
 
-  // Fetch news on category/topic/search change
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.getNews({
-          country: selectedCategory === 'Свет' ? undefined : selectedCategory,
-          category: selectedCategory,
-          topic: selectedTopic || undefined,
-          q: searchQuery || undefined,
-          sort: sortBy,
-          page: 0,
-          page_size: pageSize,
-        });
-
-        setClusters(response.clusters);
-        setPage(0);
-        setHasMore(response.has_more);
-        setTotalClusters(response.total_clusters);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch news');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
-  }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
-
-  const loadMore = async () => {
-    if (isLoading || !hasMore) return;
-
+  const fetchNews = useCallback(async (pg = 0, append = false) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const nextPage = page + 1;
       const response = await apiClient.getNews({
-        country: selectedCategory === 'Свет' ? undefined : selectedCategory,
-        category: selectedCategory,
+        country: selectedCategory,
         topic: selectedTopic || undefined,
         q: searchQuery || undefined,
         sort: sortBy,
-        page: nextPage,
+        page: pg,
         page_size: pageSize,
       });
-
-      addClusters(response.clusters);
-      setPage(nextPage);
+      if (append) addClusters(response.clusters);
+      else setClusters(response.clusters);
+      setPage(pg);
       setHasMore(response.has_more);
+      setTotalClusters(response.total_clusters);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load more');
+      setError(err instanceof Error ? err.message : 'Грешка при вчитување');
     } finally {
       setLoading(false);
     }
+  }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
+
+  useEffect(() => {
+    reset();
+    fetchNews(0, false);
+  }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
+
+  const loadMore = () => {
+    if (!isLoading && hasMore) fetchNews(page + 1, true);
   };
 
-  const handleArticleClick = (link: string) => {
-    window.open(link, '_blank');
-  };
+  const isSearching = !!searchQuery;
+  const heroCluster = clusters[0];
+  const featuredClusters = clusters.slice(1, 7);
+  const listClusters = clusters.slice(7);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">Presek</h1>
+    <div className="min-h-screen bg-surface-1 dark:bg-dark-0">
+      <Header />
+
+      <main className="page-container py-6">
+        {/* Search result header */}
+        {isSearching && (
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-ink-muted dark:text-slate-400">
+                Резултати за:{' '}
+                <span className="font-bold text-ink dark:text-slate-100">&ldquo;{searchQuery}&rdquo;</span>
+                {' '}— {clusters.length} кластери
+              </p>
+            </div>
             <button
-              onClick={() => {
-                const root = document.documentElement;
-                root.classList.toggle('dark');
-                const isDark = root.classList.contains('dark');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-              }}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-              title="Toggle dark mode"
+              onClick={() => { setSearchQuery(''); reset(); }}
+              className="btn-outline text-xs"
             >
-              {document.documentElement.classList.contains('dark') ? '☀️' : '🌙'}
+              Исчисти
             </button>
           </div>
+        )}
 
-          {/* Search bar */}
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Пребарај вести..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white px-6 py-2 rounded-lg transition">
-              🔍 Барај
+        {/* Toolbar row */}
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowTopicBar(!showTopicBar)}
+              className={`btn text-sm gap-1.5 ${showTopicBar ? 'btn-primary' : 'btn-outline'}`}
+            >
+              <SlidersHorizontal size={14} />
+              Теми
             </button>
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular')}
+              className="input w-auto text-sm py-1.5"
+            >
+              <option value="recent">Најнови</option>
+              <option value="popular">Популарни</option>
+            </select>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {CATEGORIES.map((cat) => (
+          <button
+            onClick={() => fetchNews(0, false)}
+            disabled={isLoading}
+            className="btn-ghost text-sm"
+            title="Освежи"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        {/* Topic filter bar */}
+        {showTopicBar && (
+          <div className="flex flex-wrap gap-2 mb-5 animate-fade-in">
+            <button
+              onClick={() => useUIStore.setState({ selectedTopic: '' })}
+              className={!selectedTopic ? 'pill-active' : 'pill-inactive'}
+            >
+              Сите
+            </button>
+            {TOPICS.map((t) => (
               <button
-                key={cat}
-                onClick={() => {
-                  setSelectedCategory(cat);
-                  reset();
-                }}
-                className={`px-4 py-2 rounded-full whitespace-nowrap transition font-semibold ${
-                  selectedCategory === cat
-                    ? 'bg-primary-600 text-white dark:bg-primary-700'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
+                key={t}
+                onClick={() => useUIStore.setState({ selectedTopic: t })}
+                className={selectedTopic === t ? 'pill-active' : 'pill-inactive'}
               >
-                {cat}
+                {t}
               </button>
             ))}
           </div>
-        </div>
-      </header>
+        )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content */}
-          <div className="lg:col-span-2">
-            {/* Topic filters */}
-            {selectedCategory !== 'Свет' && (
-              <div className="mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-                <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Филтрирај по тема:</p>
-                <div className="flex gap-2 overflow-x-auto">
-                  <button
-                    onClick={() => useUIStore.setState({ selectedTopic: '' })}
-                    className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${
-                      !selectedTopic
-                        ? 'bg-primary-600 text-white dark:bg-primary-700'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    Сите
-                  </button>
-                  {TOPICS.map((topic) => (
-                    <button
-                      key={topic}
-                      onClick={() => useUIStore.setState({ selectedTopic: topic })}
-                      className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${
-                        selectedTopic === topic
-                          ? 'bg-primary-600 text-white dark:bg-primary-700'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {topic}
-                    </button>
+        {/* Error */}
+        {error && (
+          <div className="mb-5 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 p-4 text-sm text-brand-700 dark:text-brand-300">
+            {error}
+          </div>
+        )}
+
+        {/* Main layout */}
+        {isLoading && clusters.length === 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 space-y-5">
+              <div className="skeleton rounded-2xl" style={{ height: 480 }} />
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton rounded-xl" style={{ height: 280 }} />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="skeleton rounded-xl" style={{ height: 300 }} />
+              <div className="skeleton rounded-xl" style={{ height: 140 }} />
+            </div>
+          </div>
+        ) : clusters.length === 0 ? (
+          <div className="card p-12 text-center">
+            <p className="text-2xl mb-2">📭</p>
+            <p className="font-semibold text-ink dark:text-slate-200 mb-1">Нема вести</p>
+            <p className="text-sm text-ink-muted dark:text-slate-500">Нема резултати за оваа комбинација</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Left: main feed */}
+            <div className="lg:col-span-2 space-y-5">
+              {/* Hero */}
+              {heroCluster && (
+                <ClusterCard cluster={heroCluster} variant="hero" />
+              )}
+
+              {/* Featured 2-col grid */}
+              {featuredClusters.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {featuredClusters.map((c) => (
+                    <ClusterCard key={c.cluster_id} cluster={c} variant="featured" />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Sort options */}
-            <div className="mb-4 flex justify-between items-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Вкупно: <span className="font-bold">{clusters.length}</span> кластери
-              </p>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular')}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="recent">🕐 Најскорешни</option>
-                <option value="popular">👍 Популарни</option>
-              </select>
-            </div>
-
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
-                ⚠️ {error}
-              </div>
-            )}
-
-            {/* News clusters */}
-            {isLoading && clusters.length === 0 ? (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            ) : clusters.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-500 dark:text-gray-400 text-lg">Нема вести за оваа категорија</p>
-              </div>
-            ) : (
-              <>
-                {clusters.map((cluster) => (
-                  <ClusterCard
-                    key={cluster.cluster_id}
-                    cluster={cluster}
-                    onArticleClick={handleArticleClick}
-                    onDetailClick={(clusterId) => navigate(`/cluster/${clusterId}`)}
-                  />
-                ))}
-
-                {/* Load more button */}
-                {hasMore && (
-                  <div className="text-center mt-6">
-                    <button
-                      onClick={loadMore}
-                      disabled={isLoading}
-                      className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white px-6 py-3 rounded-lg transition disabled:bg-gray-400 disabled:dark:bg-gray-600 font-semibold"
-                    >
-                      {isLoading ? '⏳ Вчитување...' : '📥 Вчитај повеќе'}
-                    </button>
+              {/* Compact list for remaining */}
+              {listClusters.length > 0 && (
+                <div className="card divide-y divide-surface-3 dark:divide-dark-3">
+                  <div className="px-4 py-3">
+                    <p className="section-heading">Повеќе вести</p>
                   </div>
-                )}
-              </>
-            )}
-          </div>
+                  {listClusters.map((c) => (
+                    <div key={c.cluster_id} className="px-2 py-1">
+                      <ClusterCard cluster={c} variant="compact" />
+                    </div>
+                  ))}
+                </div>
+              )}
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <TrendingSidebar />
+              {/* Load more */}
+              {hasMore && (
+                <div className="text-center pt-2">
+                  <button
+                    onClick={loadMore}
+                    disabled={isLoading}
+                    className="btn-outline px-8 py-2.5 text-sm"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw size={14} className="animate-spin" />
+                        Вчитување...
+                      </span>
+                    ) : 'Вчитај повеќе'}
+                  </button>
+                </div>
+              )}
+            </div>
 
-            {/* Quick links */}
-            <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sticky top-24">
-              <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">⚡ Брзи врски</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => navigate('/stats')}
-                  className="w-full text-left px-4 py-2 bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400 rounded hover:bg-primary-100 dark:hover:bg-primary-800 transition"
-                >
-                  📊 Статистика
-                </button>
-                <button
-                  onClick={() => navigate('/briefing')}
-                  className="w-full text-left px-4 py-2 bg-secondary-50 dark:bg-secondary-900 text-secondary-600 dark:text-secondary-400 rounded hover:bg-secondary-100 dark:hover:bg-secondary-800 transition"
-                >
-                  📋 Дневен преглед
-                </button>
+            {/* Right: sidebar */}
+            <div className="lg:col-span-1">
+              <div className="lg:sticky lg:top-20">
+                <TrendingSidebar />
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
+      </main>
     </div>
   );
 };

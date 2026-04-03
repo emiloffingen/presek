@@ -1,69 +1,113 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, BookOpen, BarChart3, Zap } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { TrendingWord } from '../types';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useUIStore, useNewsStore } from '../store/useNewsStore';
 
 export const TrendingSidebar: React.FC = () => {
   const [trending, setTrending] = useState<TrendingWord[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { setSearchQuery } = useUIStore();
+  const { reset } = useNewsStore();
 
   useEffect(() => {
-    const fetchTrending = async () => {
+    const load = async () => {
       try {
-        setLoading(true);
         const data = await apiClient.getTrending();
-        setTrending(data);
-      } catch (error) {
-        console.error('Failed to fetch trending:', error);
+        setTrending(data.slice(0, 15));
+      } catch {
+        // silently fail
       } finally {
         setLoading(false);
       }
     };
-
-    fetchTrending();
-    const interval = setInterval(fetchTrending, 30000);
-    return () => clearInterval(interval);
+    load();
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
   }, []);
 
-  const getTrendIcon = (trend: string) => {
-    if (trend.includes('📈') || trend.includes('↗')) return <TrendingUp size={16} className="text-secondary-600" />;
-    if (trend.includes('📉') || trend.includes('↘')) return <TrendingDown size={16} className="text-red-600" />;
-    return null;
+  const handleWordClick = (word: string) => {
+    setSearchQuery(word);
+    reset();
+    navigate('/');
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">🔥 Тренд</h3>
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          ))}
+  return (
+    <aside className="space-y-4">
+      {/* Trending */}
+      <div className="card p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp size={16} className="text-brand-600" />
+          <h3 className="section-heading">Во тренд</h3>
+        </div>
+
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton h-7 w-full" />
+            ))}
+          </div>
+        ) : trending.length === 0 ? (
+          <p className="text-sm text-ink-muted dark:text-slate-500">Нема трендови</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {trending.map((item, idx) => {
+              const isRising = item.trend?.includes('↗') || item.trend?.includes('📈');
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleWordClick(item.word)}
+                  className={`pill text-xs transition ${
+                    isRising
+                      ? 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-900/50'
+                      : 'pill-inactive text-xs'
+                  }`}
+                  title={`${item.count} споменувања`}
+                >
+                  {item.word}
+                  {isRising && <span className="ml-0.5 text-brand-500">↑</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Quick links */}
+      <div className="card p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={16} className="text-amber-500" />
+          <h3 className="section-heading">Брзи врски</h3>
+        </div>
+        <div className="space-y-1">
+          <button
+            onClick={() => navigate('/briefing')}
+            className="w-full flex items-center gap-3 p-2.5 rounded-lg text-left hover:bg-surface-2 dark:hover:bg-dark-3 transition-colors group"
+          >
+            <BookOpen size={16} className="text-blue-500 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-ink dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                Дневен преглед
+              </p>
+              <p className="text-xs text-ink-muted dark:text-slate-500">АИ резиме на денот</p>
+            </div>
+          </button>
+          <button
+            onClick={() => navigate('/stats')}
+            className="w-full flex items-center gap-3 p-2.5 rounded-lg text-left hover:bg-surface-2 dark:hover:bg-dark-3 transition-colors group"
+          >
+            <BarChart3 size={16} className="text-emerald-500 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-ink dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                Статистика
+              </p>
+              <p className="text-xs text-ink-muted dark:text-slate-500">Активност на медиуми</p>
+            </div>
+          </button>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sticky top-4">
-      <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">🔥 Тренд</h3>
-      <div className="space-y-3">
-        {trending.slice(0, 10).map((word, idx) => (
-          <div
-            key={idx}
-            className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition"
-          >
-            <div className="flex-1">
-              <p className="font-semibold text-sm text-gray-900 dark:text-white">{word.word}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{word.count} споменувања</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {getTrendIcon(word.trend)}
-              <span className="text-lg">{word.trend.replace(/[📈↗📉↘]/g, '').trim()}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    </aside>
   );
 };

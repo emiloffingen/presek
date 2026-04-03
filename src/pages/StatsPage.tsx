@@ -1,171 +1,209 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { FullStats } from '../types';
-import { useUIStore } from '../store/useNewsStore';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { BarChart3, TrendingUp, Database, Zap, Trophy, Cog, Clock, Rss } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend,
+} from 'recharts';
+import {
+  ArrowLeft, BarChart3, Zap, Database, Trophy,
+  Rss, Clock, TrendingUp, Loader2,
+} from 'lucide-react';
+import { Header } from '../components/Header';
+
+const COLORS = ['#e82323', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4', '#f97316', '#6366f1'];
+
+const MetricCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: string;
+}> = ({ icon, label, value, sub, accent = 'text-brand-600 dark:text-brand-400' }) => (
+  <div className="card p-5">
+    <div className="flex items-center gap-2 mb-2 text-ink-muted dark:text-slate-400">
+      {icon}
+      <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
+    </div>
+    <p className={`text-3xl font-bold ${accent}`}>{value}</p>
+    {sub && <p className="text-xs text-ink-faint dark:text-slate-500 mt-1">{sub}</p>}
+  </div>
+);
 
 export const StatsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<FullStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const { setStats: setStoreStats } = useUIStore();
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const load = async () => {
       try {
-        setLoading(true);
-        const data = await apiClient.getFullStats();
-        setStats(data);
-        setStoreStats(data);
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        setStats(await apiClient.getFullStats());
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchStats();
-    const interval = setInterval(fetchStats, 60000);
-    return () => clearInterval(interval);
-  }, [setStoreStats]);
+    load();
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   if (loading || !stats) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">⏳ Вчитување статистика...</p>
-          <div className="w-12 h-12 border-4 border-primary-300 dark:border-primary-700 border-t-primary-600 dark:border-t-primary-400 rounded-full animate-spin mx-auto" />
+      <div className="min-h-screen bg-surface-1 dark:bg-dark-0">
+        <Header />
+        <div className="page-container py-16 flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
+          <p className="text-ink-muted dark:text-slate-400">Вчитување статистика...</p>
         </div>
       </div>
     );
   }
 
-  const sourceChartData = stats.by_source.slice(0, 8).map(s => ({ name: s.source, count: s.n }));
-  const categoryChartData = stats.by_category.map(c => ({ name: c.category, count: c.n }));
-  const velocityChartData = stats.velocity.slice(0, 24).map(v => ({
-    time: new Date(v.t).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
-    count: v.n,
+  const sourceData = stats.by_source.slice(0, 8).map((s) => ({ name: s.source, n: s.n }));
+  const categoryData = stats.by_category.map((c) => ({ name: c.category || 'Друго', n: c.n }));
+  const velocityData = stats.velocity.slice(-24).map((v) => ({
+    t: new Date(v.t).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
+    n: v.n,
   }));
 
-  const COLORS = ['#0284d5', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#ea580c', '#6366f1'];
+  const tooltipStyle = {
+    backgroundColor: '#1a1d27',
+    border: '1px solid #2a2d3a',
+    color: '#e2e8f0',
+    borderRadius: 8,
+    fontSize: 12,
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="text-primary-600 dark:text-primary-400" size={32} />
-            <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">Статистика</h1>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Последно ажурирано: {new Date(stats.new_article).toLocaleString('mk-MK')}
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-surface-1 dark:bg-dark-0">
+      <Header />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="page-container py-6">
+        {/* Page header */}
+        <div className="mb-6">
+          <button onClick={() => navigate(-1)} className="btn-ghost text-sm mb-4">
+            <ArrowLeft size={16} />
+            Назад
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+              <BarChart3 size={20} className="text-brand-600 dark:text-brand-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-ink dark:text-white">Статистика</h1>
+              <p className="text-xs text-ink-muted dark:text-slate-500">
+                Ажурирано: {new Date(stats.new_article).toLocaleString('mk-MK')}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Key metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <BarChart3 className="text-primary-600 dark:text-primary-400" size={20} />
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold">Вкупно статии</p>
-            </div>
-            <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{stats.total_articles.toLocaleString()}</p>
-            <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">Во базата на податоци</p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Zap className="text-secondary-600 dark:text-secondary-400" size={20} />
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold">Последних 24ч</p>
-            </div>
-            <p className="text-3xl font-bold text-secondary-600 dark:text-secondary-400">{stats.last_24h}</p>
-            <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">Нови статии</p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="text-accent-600 dark:text-accent-400" size={20} />
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold">Синтезирани</p>
-            </div>
-            <p className="text-3xl font-bold text-accent-600 dark:text-accent-400">{stats.summarized_pct.toFixed(1)}%</p>
-            <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">Со ЈИ синтеза</p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Database className="text-purple-600 dark:text-purple-400" size={20} />
-              <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold">БД волумен</p>
-            </div>
-            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.db_size_mb.toFixed(1)} MB</p>
-            <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">Големина на база</p>
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <MetricCard
+            icon={<BarChart3 size={16} />}
+            label="Вкупно статии"
+            value={stats.total_articles.toLocaleString()}
+            sub="Во базата на податоци"
+            accent="text-brand-600 dark:text-brand-400"
+          />
+          <MetricCard
+            icon={<Zap size={16} />}
+            label="Последни 24ч"
+            value={stats.last_24h}
+            sub="Нови статии"
+            accent="text-blue-600 dark:text-blue-400"
+          />
+          <MetricCard
+            icon={<TrendingUp size={16} />}
+            label="Синтезирани"
+            value={`${stats.summarized_pct.toFixed(1)}%`}
+            sub="Со АИ синтеза"
+            accent="text-amber-600 dark:text-amber-400"
+          />
+          <MetricCard
+            icon={<Database size={16} />}
+            label="БД волумен"
+            value={`${stats.db_size_mb.toFixed(1)} MB`}
+            sub="Големина на база"
+            accent="text-emerald-600 dark:text-emerald-400"
+          />
         </div>
 
-        {/* Charts section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Top sources bar chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-              <Trophy size={20} className="text-primary-600 dark:text-primary-400" />
-              Топ изводи (24ч)
-            </h2>
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          {/* Top sources */}
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy size={16} className="text-amber-500" />
+              <h2 className="font-bold text-base text-ink dark:text-white">Топ извори (24ч)</h2>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sourceChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', color: '#fff' }} />
-                  <Bar dataKey="count" fill="#0284d5" />
+                <BarChart data={sourceData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3a" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#6b7185' }} />
+                  <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11, fill: '#6b7185' }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="n" fill="#e82323" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Category breakdown pie chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">По категорија</h2>
+          {/* Category pie */}
+          <div className="card p-5">
+            <h2 className="font-bold text-base text-ink dark:text-white mb-4">По категорија</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryChartData}
+                    data={categoryData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={(entry) => `${entry.name}`}
                     outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
+                    dataKey="n"
+                    labelLine={false}
+                    label={({ name, percent }: { name?: string; percent?: number }) =>
+                      (percent ?? 0) > 0.05 ? `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%` : ''
+                    }
                   >
-                    {categoryChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {categoryData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', color: '#fff' }} />
+                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Velocity line chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 lg:col-span-2">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-              <Zap size={20} className="text-orange-500" />
-              Брзина на прилив (последних 24ч)
-            </h2>
-            <div className="h-64">
+          {/* Velocity line */}
+          <div className="card p-5 lg:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap size={16} className="text-amber-500" />
+              <h2 className="font-bold text-base text-ink dark:text-white">Брзина на прилив (24ч)</h2>
+            </div>
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={velocityChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', color: '#fff' }} />
+                <LineChart data={velocityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3a" />
+                  <XAxis dataKey="t" tick={{ fontSize: 11, fill: '#6b7185' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7185' }} />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
-                  <Line type="monotone" dataKey="count" stroke="#f59e0b" dot={false} name="Статии/час" />
+                  <Line
+                    type="monotone"
+                    dataKey="n"
+                    stroke="#f59e0b"
+                    dot={false}
+                    strokeWidth={2}
+                    name="Статии/час"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -173,57 +211,58 @@ export const StatsPage: React.FC = () => {
         </div>
 
         {/* Speed leaderboard */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-            <Trophy size={20} className="text-primary-600 dark:text-primary-400" />
-            Брзина на објавување
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="card p-5 mb-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy size={16} className="text-amber-500" />
+            <h2 className="font-bold text-base text-ink dark:text-white">
+              Брзина на објавување (7 дена)
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stats.speed_leaderboard.slice(0, 9).map((src, idx) => (
-              <div key={idx} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300 font-semibold">
-                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`} {src.source}
-                  </span>
-                  <span className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-3 py-1 rounded-full text-sm font-bold">
-                    {src.first_count}
-                  </span>
-                </div>
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-xl bg-surface-2 dark:bg-dark-2 px-4 py-3"
+              >
+                <span className="text-sm font-semibold text-ink dark:text-slate-200">
+                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}{' '}
+                  {src.source}
+                </span>
+                <span className="badge bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-bold">
+                  {src.first_count}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
         {/* System info */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-            <Cog size={20} className="text-gray-600 dark:text-gray-400" />
-            Системски информации
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3">
-              <Clock className="text-green-600 dark:text-green-400" size={20} />
+        <div className="card p-5">
+          <h2 className="section-heading mb-4">Системски информации</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-emerald-500 shrink-0" />
               <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Статус</p>
-                <p className="text-lg font-bold text-green-600 dark:text-green-400">✓ {stats.uptime}</p>
+                <p className="text-xs text-ink-muted dark:text-slate-500">Статус</p>
+                <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">✓ {stats.uptime}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Rss className="text-primary-600 dark:text-primary-400" size={20} />
+            <div className="flex items-center gap-2">
+              <Rss size={16} className="text-blue-500 shrink-0" />
               <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">RSS канали</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.total_feeds}</p>
+                <p className="text-xs text-ink-muted dark:text-slate-500">RSS канали</p>
+                <p className="font-bold text-sm text-ink dark:text-slate-100">{stats.total_feeds}</p>
               </div>
             </div>
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Најстара статија</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-xs text-ink-muted dark:text-slate-500">Најстара статија</p>
+              <p className="font-semibold text-sm text-ink dark:text-slate-200">
                 {new Date(stats.oldest_article).toLocaleDateString('mk-MK')}
               </p>
             </div>
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Синтезирани</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.summarized}</p>
+              <p className="text-xs text-ink-muted dark:text-slate-500">Синтезирани</p>
+              <p className="font-bold text-sm text-ink dark:text-slate-100">{stats.summarized}</p>
             </div>
           </div>
         </div>
