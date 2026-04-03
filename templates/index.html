@@ -3,6 +3,8 @@
 {% block title %}Пресек | Главни Вести{% endblock %}
 
 {% block content %}
+    <h1 class="visually-hidden">Најнови вести од Пресек</h1>
+    <div id="newsFeed" aria-live="polite">
     {% if initial_clusters %}
         {% for cluster in initial_clusters %}
             {% set main = cluster.articles[0] %}
@@ -81,6 +83,7 @@
             </div>
         </div>
     {% endif %}
+    </div>
 
 <!-- Infinite Scroll Trigger -->
 <div id="scrollTrigger" style="height: 20px; width: 100%;"></div>

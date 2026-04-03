@@ -463,11 +463,28 @@ const UI = {
     toggleDrawer(show) {
         const drawer = document.getElementById('mobileDrawer');
         const overlay = document.getElementById('drawerOverlay');
+        const trigger = document.getElementById('menuTrigger');
         if (!drawer || !overlay) return;
         
-        drawer.classList.toggle('active', show !== false);
-        overlay.classList.toggle('active', show !== false);
-        document.body.style.overflow = (show !== false) ? 'hidden' : '';
+        const isOpening = show !== false;
+        drawer.classList.toggle('active', isOpening);
+        overlay.classList.toggle('active', isOpening);
+        document.body.style.overflow = isOpening ? 'hidden' : '';
+
+        if (trigger) {
+            trigger.setAttribute('aria-expanded', isOpening);
+        }
+
+        if (isOpening) {
+            // Focus the close button or first link in drawer
+            setTimeout(() => {
+                const closeBtn = document.getElementById('drawerClose');
+                if (closeBtn) closeBtn.focus();
+            }, 100);
+        } else {
+            // Restore focus to trigger
+            if (trigger) trigger.focus();
+        }
     },
 
     _initMobileDrawer() {

@@ -20,6 +20,7 @@ const app = {
             this._restoreFromURL();
             this._initPersonalization();
             this._initLiveUpdates();
+            this._updateMacedonianDate();
             
             // SSR (Instant Paint) Optimization
             const container = document.getElementById('pageWrap');
@@ -41,6 +42,19 @@ const app = {
         } catch (e) {
             console.error("Critical error during app.init:", e);
         }
+    },
+
+    _updateMacedonianDate() {
+        const el = document.getElementById('currentDate');
+        if (!el) return;
+        const now = new Date();
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        try {
+            let dateStr = now.toLocaleDateString('mk-MK', options);
+            // Capitalize first letter
+            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            el.textContent = dateStr;
+        } catch (e) { console.error("Date formatting error", e); }
     },
 
     _initPersonalization() {
@@ -198,13 +212,28 @@ const app = {
         this.state.query = params.get('query') || params.get('q') || '';
         this.state.isSaved = location.pathname === '/saved';
         
-        document.querySelectorAll('.cat-btn').forEach(btn => {
-            btn.classList.toggle('active', (btn.dataset.topic || '') === this.state.topic);
-        });
+        this._updateActiveLinks();
         
         if (this.state.query && document.getElementById('searchInput')) {
             document.getElementById('searchInput').value = this.state.query;
         }
+    },
+
+    _updateActiveLinks() {
+        // Update category buttons
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.classList.toggle('active', (btn.dataset.topic || '') === this.state.topic);
+        });
+
+        // Update sidebar and drawer links
+        document.querySelectorAll('.drawer-nav a, .widget-nav a, .footer-links a').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href) {
+                const isActive = (location.pathname === href && !this.state.topic) || 
+                                 (href === '/saved' && this.state.isSaved);
+                link.classList.toggle('active', isActive);
+            }
+        });
     },
 
     _pushState() {
@@ -214,6 +243,7 @@ const app = {
         let url = params.toString() ? `/?${params}` : '/';
         if (this.state.isSaved) url = '/saved';
         history.pushState(null, '', url);
+        this._updateActiveLinks();
     },
 
     async fetchNews(append = false) {
