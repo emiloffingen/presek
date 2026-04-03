@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Loader2, Calendar } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { BriefingResponse } from '../types';
 
@@ -26,10 +27,10 @@ export const BriefingPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">⏳ Вчитување преглед...</p>
-          <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">Вчитување преглед...</p>
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary-600 dark:text-primary-400" />
         </div>
       </div>
     );
@@ -37,22 +38,25 @@ export const BriefingPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 text-lg mb-4">❌ {error}</p>
+          <p className="text-red-600 dark:text-red-400 text-lg mb-4">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-40">
+      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40 border-b dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold text-blue-600">📋 Дневен преглед</h1>
+          <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400 inline-flex items-center gap-2">
+            <Calendar className="w-8 h-8" />
+            Дневен преглед
+          </h1>
           {briefing && (
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {new Date(briefing.date).toLocaleDateString('mk-MK', {
                 weekday: 'long',
                 year: 'numeric',
@@ -66,19 +70,19 @@ export const BriefingPage: React.FC = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {briefing ? (
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <div className="prose prose-lg max-w-none">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 border dark:border-gray-700">
+            <div className="prose prose-lg max-w-none dark:prose-invert">
               {briefing.content.split('\n').map((line, idx) => {
                 if (line.startsWith('Ден ')) {
                   return (
                     <div key={idx} className="mt-6 mb-4">
-                      <h2 className="text-xl font-bold text-blue-600">{line}</h2>
+                      <h2 className="text-xl font-bold text-primary-600 dark:text-primary-400">{line}</h2>
                     </div>
                   );
                 }
                 if (line.startsWith('- ')) {
                   return (
-                    <li key={idx} className="ml-4 text-gray-700 mb-2">
+                    <li key={idx} className="ml-4 text-gray-700 dark:text-gray-300 mb-2">
                       {line.substring(2)}
                     </li>
                   );
@@ -87,7 +91,7 @@ export const BriefingPage: React.FC = () => {
                   return <div key={idx} className="my-2" />;
                 }
                 return (
-                  <p key={idx} className="text-gray-700 mb-2">
+                  <p key={idx} className="text-gray-700 dark:text-gray-300 mb-2">
                     {line}
                   </p>
                 );
@@ -95,8 +99,8 @@ export const BriefingPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500 text-lg">Дневниот преглед не е достапен</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border dark:border-gray-700">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">Дневниот преглед не е достапен</p>
           </div>
         )}
       </div>

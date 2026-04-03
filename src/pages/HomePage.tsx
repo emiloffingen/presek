@@ -93,11 +93,25 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-40">
+      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold text-blue-600 mb-4">📰 Presek</h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">Presek</h1>
+            <button
+              onClick={() => {
+                const root = document.documentElement;
+                root.classList.toggle('dark');
+                const isDark = root.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              title="Toggle dark mode"
+            >
+              {document.documentElement.classList.contains('dark') ? '☀️' : '🌙'}
+            </button>
+          </div>
 
           {/* Search bar */}
           <div className="flex gap-2 mb-4">
@@ -106,9 +120,9 @@ export const HomePage: React.FC = () => {
               placeholder="Пребарај вести..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+            <button className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white px-6 py-2 rounded-lg transition">
               🔍 Барај
             </button>
           </div>
@@ -124,8 +138,8 @@ export const HomePage: React.FC = () => {
                 }}
                 className={`px-4 py-2 rounded-full whitespace-nowrap transition font-semibold ${
                   selectedCategory === cat
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    ? 'bg-primary-600 text-white dark:bg-primary-700'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 {cat}
@@ -141,15 +155,15 @@ export const HomePage: React.FC = () => {
           <div className="lg:col-span-2">
             {/* Topic filters */}
             {selectedCategory !== 'Свет' && (
-              <div className="mb-4 bg-white p-4 rounded-lg shadow-md">
-                <p className="text-sm font-semibold text-gray-600 mb-2">Филтрирај по тема:</p>
+              <div className="mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+                <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Филтрирај по тема:</p>
                 <div className="flex gap-2 overflow-x-auto">
                   <button
                     onClick={() => useUIStore.setState({ selectedTopic: '' })}
                     className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${
                       !selectedTopic
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                        ? 'bg-primary-600 text-white dark:bg-primary-700'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
                     Сите
@@ -160,8 +174,8 @@ export const HomePage: React.FC = () => {
                       onClick={() => useUIStore.setState({ selectedTopic: topic })}
                       className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${
                         selectedTopic === topic
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                          ? 'bg-primary-600 text-white dark:bg-primary-700'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
                       {topic}
@@ -173,13 +187,13 @@ export const HomePage: React.FC = () => {
 
             {/* Sort options */}
             <div className="mb-4 flex justify-between items-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Вкупно: <span className="font-bold">{clusters.length}</span> кластери
               </p>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular')}
-                className="px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="recent">🕐 Најскорешни</option>
                 <option value="popular">👍 Популарни</option>
@@ -188,7 +202,7 @@ export const HomePage: React.FC = () => {
 
             {/* Error message */}
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+              <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
                 ⚠️ {error}
               </div>
             )}
@@ -197,12 +211,12 @@ export const HomePage: React.FC = () => {
             {isLoading && clusters.length === 0 ? (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-96 bg-gray-200 rounded-lg animate-pulse" />
+                  <div key={i} className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : clusters.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-500 text-lg">Нема вести за оваа категорија</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 text-lg">Нема вести за оваа категорија</p>
               </div>
             ) : (
               <>
@@ -221,7 +235,7 @@ export const HomePage: React.FC = () => {
                     <button
                       onClick={loadMore}
                       disabled={isLoading}
-                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 font-semibold"
+                      className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white px-6 py-3 rounded-lg transition disabled:bg-gray-400 disabled:dark:bg-gray-600 font-semibold"
                     >
                       {isLoading ? '⏳ Вчитување...' : '📥 Вчитај повеќе'}
                     </button>
@@ -236,18 +250,18 @@ export const HomePage: React.FC = () => {
             <TrendingSidebar />
 
             {/* Quick links */}
-            <div className="mt-6 bg-white rounded-lg shadow-md p-4 sticky top-24">
-              <h3 className="font-bold text-lg mb-3">⚡ Брзи врски</h3>
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sticky top-24">
+              <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">⚡ Брзи врски</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => navigate('/stats')}
-                  className="w-full text-left px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
+                  className="w-full text-left px-4 py-2 bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400 rounded hover:bg-primary-100 dark:hover:bg-primary-800 transition"
                 >
                   📊 Статистика
                 </button>
                 <button
                   onClick={() => navigate('/briefing')}
-                  className="w-full text-left px-4 py-2 bg-green-50 text-green-600 rounded hover:bg-green-100 transition"
+                  className="w-full text-left px-4 py-2 bg-secondary-50 dark:bg-secondary-900 text-secondary-600 dark:text-secondary-400 rounded hover:bg-secondary-100 dark:hover:bg-secondary-800 transition"
                 >
                   📋 Дневен преглед
                 </button>

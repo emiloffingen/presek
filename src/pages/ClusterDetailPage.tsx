@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Flame, Sparkles, Newspaper, Link2, MessageCircle, Loader2 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterDetail, ChatResponse } from '../types';
 import { ArticleCard } from '../components/ArticleCard';
@@ -49,10 +50,10 @@ export const ClusterDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">⏳ Вчитување...</p>
-          <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">Вчитување...</p>
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary-600 dark:text-primary-400" />
         </div>
       </div>
     );
@@ -60,14 +61,15 @@ export const ClusterDetailPage: React.FC = () => {
 
   if (error || !cluster) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 text-lg mb-4">❌ {error || 'Кластерот не е пронајден'}</p>
+          <p className="text-red-600 dark:text-red-400 text-lg mb-4">{error || 'Кластерот не е пронајден'}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            className="bg-primary-600 dark:bg-primary-700 text-white px-6 py-2 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition inline-flex items-center gap-2"
           >
-            ← Назад на почеток
+            <ArrowLeft className="w-4 h-4" />
+            Назад на почеток
           </button>
         </div>
       </div>
@@ -77,17 +79,18 @@ export const ClusterDetailPage: React.FC = () => {
   const imageUrl = apiClient.getImageUrl(cluster.representative_image, 800);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-40">
+      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40 border-b dark:border-gray-700">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <button
             onClick={() => navigate(-1)}
-            className="text-blue-600 hover:text-blue-800 font-semibold mb-2"
+            className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-semibold mb-2 inline-flex items-center gap-1"
           >
-            ← Назад
+            <ArrowLeft className="w-4 h-4" />
+            Назад
           </button>
-          <h1 className="text-2xl font-bold">{cluster.articles[0]?.title || 'Детал'}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{cluster.articles[0]?.title || 'Детал'}</h1>
         </div>
       </header>
 
@@ -100,22 +103,24 @@ export const ClusterDetailPage: React.FC = () => {
         )}
 
         {/* Cluster info */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 border dark:border-gray-700">
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="flex gap-2 mb-2">
                 {cluster.is_breaking && (
-                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    🔥 BREAKING
+                  <span className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded-full text-sm font-bold inline-flex items-center gap-1">
+                    <Flame className="w-4 h-4" />
+                    BREAKING
                   </span>
                 )}
                 {cluster.has_synthesis && (
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                    ✨ Има синтеза
+                  <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-full text-sm font-semibold inline-flex items-center gap-1">
+                    <Sparkles className="w-4 h-4" />
+                    Има синтеза
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Скор: <span className="font-bold">{cluster.score.toFixed(2)}</span> · Статии:{' '}
                 <span className="font-bold">{cluster.articles.length}</span> · Време за читање:{' '}
                 <span className="font-bold">{cluster.total_reading_time} мин</span>
@@ -126,12 +131,12 @@ export const ClusterDetailPage: React.FC = () => {
           {/* Tags */}
           {cluster.tags.length > 0 && (
             <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-600 mb-2">Етикети:</p>
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Етикети:</p>
               <div className="flex gap-2 flex-wrap">
                 {cluster.tags.map((tag, idx) => (
                   <span
                     key={idx}
-                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs"
+                    className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-200 px-3 py-1 rounded-full text-xs"
                   >
                     #{tag}
                   </span>
@@ -143,22 +148,25 @@ export const ClusterDetailPage: React.FC = () => {
 
         {/* Synthesis */}
         {cluster.has_synthesis && (
-          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">✨ АИ Синтеза</h2>
-            <p className="text-gray-700 mb-4 leading-relaxed">{cluster.synthesis}</p>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-700 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white inline-flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              АИ Синтеза
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">{cluster.synthesis}</p>
 
             {/* Perspectives */}
             {cluster.perspectives.length > 0 && (
               <div className="mt-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Различни пикови:</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Различни пикови:</h3>
                 <div className="space-y-3">
                   {cluster.perspectives.map((perspective, idx) => (
                     <div
                       key={idx}
-                      className="bg-white border-l-4 border-yellow-500 p-4 rounded"
+                      className="bg-white dark:bg-gray-800 border-l-4 border-yellow-500 dark:border-yellow-600 p-4 rounded"
                     >
-                      <p className="font-semibold text-gray-800">{perspective.angle}</p>
-                      <p className="text-gray-600 text-sm mt-2">{perspective.content}</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-100">{perspective.angle}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{perspective.content}</p>
                     </div>
                   ))}
                 </div>
@@ -168,35 +176,42 @@ export const ClusterDetailPage: React.FC = () => {
         )}
 
         {/* Chat section */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">🤖 Прашај ЈИ за овој кластер</h2>
+        <div className="bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-200 dark:border-primary-700 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white inline-flex items-center gap-2">
+            <MessageCircle className="w-5 h-5" />
+            Прашај ЈИ за овој кластер
+          </h2>
           <form onSubmit={handleChat} className="flex gap-2 mb-4">
             <input
               type="text"
               value={chatQuery}
               onChange={(e) => setChatQuery(e.target.value)}
               placeholder="Прашај нешто за овие вести..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               disabled={chatLoading}
             />
             <button
               type="submit"
               disabled={chatLoading || !chatQuery.trim()}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+              className="bg-primary-600 dark:bg-primary-700 text-white px-6 py-2 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition disabled:bg-gray-400 dark:disabled:bg-gray-600 inline-flex items-center gap-2"
             >
-              {chatLoading ? '⏳' : 'Прашај'}
+              {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Прашај
             </button>
           </form>
           {chatResponse && (
-            <div className="bg-white border-l-4 border-blue-500 p-4 rounded">
-              <p className="text-gray-700">{chatResponse}</p>
+            <div className="bg-white dark:bg-gray-800 border-l-4 border-primary-500 dark:border-primary-600 p-4 rounded">
+              <p className="text-gray-700 dark:text-gray-300">{chatResponse}</p>
             </div>
           )}
         </div>
 
         {/* Articles */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold mb-4">📰 Сите статии в кластерот</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white inline-flex items-center gap-2">
+            <Newspaper className="w-5 h-5" />
+            Сите статии в кластерот
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {cluster.articles.map((article) => (
               <ArticleCard
@@ -211,13 +226,16 @@ export const ClusterDetailPage: React.FC = () => {
         {/* Related clusters */}
         {cluster.related.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xl font-bold mb-4">🔗 Поврзани кластери</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white inline-flex items-center gap-2">
+              <Link2 className="w-5 h-5" />
+              Поврзани кластери
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cluster.related.map((related) => (
                 <div
                   key={related.cluster_id}
                   onClick={() => navigate(`/cluster/${related.cluster_id}`)}
-                  className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition border dark:border-gray-700"
                 >
                   {related.image_url && (
                     <img
@@ -226,7 +244,7 @@ export const ClusterDetailPage: React.FC = () => {
                       className="w-full h-32 object-cover rounded mb-2"
                     />
                   )}
-                  <p className="font-semibold">{related.title}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{related.title}</p>
                 </div>
               ))}
             </div>

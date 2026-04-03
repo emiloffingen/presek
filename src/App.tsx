@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { ClusterDetailPage } from './pages/ClusterDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { BriefingPage } from './pages/BriefingPage';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
     <Router>
       <Routes>
