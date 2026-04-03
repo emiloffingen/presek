@@ -15,7 +15,7 @@ from config import (
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
-    POLLINATIONS_API_KEY, CF_AI_GATEWAY_URL,
+    POLLINATIONS_API_KEY, CF_AI_GATEWAY_URL, CF_AI_GATEWAY_TOKEN,
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
@@ -95,7 +95,11 @@ class GeminiProvider(AIProvider):
             payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY})
+            headers = {"Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY}
+            if CF_AI_GATEWAY_URL and CF_AI_GATEWAY_TOKEN:
+                headers["cf-aig-authorization"] = f"Bearer {CF_AI_GATEWAY_TOKEN}"
+
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 
@@ -151,7 +155,9 @@ class OpenAICompatibleProvider(AIProvider):
         
         try:
             headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}", "User-Agent": "Presek/4.0"}
-            
+            if CF_AI_GATEWAY_URL and CF_AI_GATEWAY_TOKEN:
+                headers["cf-aig-authorization"] = f"Bearer {CF_AI_GATEWAY_TOKEN}"
+
             # Route through Cloudflare AI Gateway if configured
             url = self.url
             if CF_AI_GATEWAY_URL:
