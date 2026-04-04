@@ -15,7 +15,7 @@ const { title, description = "Presek - Македонска агрегација
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-		<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+		<link rel="icon" type="image/svg+xml" href="/logo.svg?v=2" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		<title>{title} | Пресек</title>
@@ -38,7 +38,6 @@ const { title, description = "Presek - Македонска агрегација
 		</script>
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
-		<ThemeIsland client:load fixed={true} />
 		<slot />
 	</body>
 </html>
