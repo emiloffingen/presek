@@ -154,9 +154,11 @@ async def chat_stream(cluster_id: str, query: str):
     async def generate():
         try:
             full_prompt = f"Context:\n{context}\n\nUser Question: {query}"
-            async for chunk in _call_ai(SYNTHESIS_SYSTEM_PROMPT, full_prompt, stream=True):
-                if chunk:
-                    yield f"data: {json.dumps({'token': chunk})}\n\n"
+            generator = await _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
+            if generator:
+                async for chunk in generator:
+                    if chunk:
+                        yield f"data: {json.dumps({'token': chunk})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
