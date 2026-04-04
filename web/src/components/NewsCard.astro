@@ -68,7 +68,7 @@ function getTimeStr(dateStr: string) {
 				<img 
 					src={thumbSrc} 
 					alt={main.title} 
-					class="article-image" 
+					class="article-image max-h-64 md:max-h-none object-cover" 
 					loading={isLead ? "eager" : "lazy"}
                     onerror="this.onerror=null; this.src='/img/placeholder.svg';"
 				/>

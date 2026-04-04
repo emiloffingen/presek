@@ -92,15 +92,6 @@ class ApiClient {
     }
   }
 
-  async getSources(): Promise<any[]> {
-    try {
-      const response = await this.client.get<any[]>('/sources');
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
   async getArchive(params: { date: string; page: number; page_size: number }): Promise<any> {
     try {
       const response = await this.client.get('/archive', { params });
@@ -119,23 +110,32 @@ class ApiClient {
     }
   }
 
-  async getFullStats(): Promise<FullStats> {
+  async getSources(): Promise<any[]> {
     try {
-      const response = await this.client.get<FullStats>('/stats/full');
+      console.log(`[apiClient] Fetching sources from: ${this.baseURL}/sources`);
+      const response = await this.client.get<any[]>('/sources', {
+        params: { _t: Date.now() } // Cache busting
+      });
+      console.log(`[apiClient] Sources received: ${Array.isArray(response.data) ? response.data.length : 'not an array'}`);
       return response.data;
     } catch (error) {
+      console.error(`[apiClient] Get sources failed:`, error);
       throw this.handleError(error);
     }
   }
 
   async getPulse(): Promise<Array<{ source: string; count: number }>> {
     try {
-      const response = await this.client.get('/sources/pulse');
+      const response = await this.client.get('/sources/pulse', {
+        params: { _t: Date.now() } // Cache busting
+      });
       return response.data;
     } catch (error) {
+      console.error(`[apiClient] Get pulse failed:`, error);
       throw this.handleError(error);
     }
   }
+
 
   async getWeather(): Promise<Weather> {
     try {
@@ -185,10 +185,16 @@ class ApiClient {
   private handleError(error: unknown): Error {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<any>;
+      const method = axiosError.config?.method?.toUpperCase();
+      const url = axiosError.config?.url;
+      const status = axiosError.response?.status;
+      
+      console.error(`[apiClient] API Error: ${method} ${url} | Status: ${status}`);
+      
       if (axiosError.response?.data?.message) {
         return new Error(axiosError.response.data.message);
       }
-      return new Error(axiosError.message || 'API request failed');
+      return new Error(`API request failed with status ${status}: ${axiosError.message}`);
     }
     return error instanceof Error ? error : new Error('Unknown error');
   }

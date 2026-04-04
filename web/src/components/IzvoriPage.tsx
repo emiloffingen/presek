@@ -3,7 +3,7 @@ import { apiClient } from '../api/client';
 import { Search, Loader2, Info } from 'lucide-react';
 
 interface Source {
-  name: string;
+  source: string;
   country: string;
   category: string;
 }
@@ -12,6 +12,7 @@ export const IzvoriPage: React.FC = () => {
   const [sources, setSources] = useState<Source[]>([]);
   const [hotSources, setHotSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -21,10 +22,29 @@ export const IzvoriPage: React.FC = () => {
           apiClient.getSources(),
           apiClient.getPulse()
         ]);
-        setSources(allRes);
-        setHotSources(pulseRes.map((r: any) => r.source));
-      } catch (e) {
-        console.error(e);
+        
+        if (!Array.isArray(allRes)) {
+          console.error("API returned non-array for sources:", allRes);
+          setError("Грешка при вчитување на податоците.");
+          return;
+        }
+
+        // Deduplicate sources by name
+        const unique = allRes.reduce((acc: Source[], curr: any) => {
+          if (curr && curr.source && !acc.find(s => s.source === curr.source)) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        
+        setSources(unique);
+        
+        if (Array.isArray(pulseRes)) {
+          setHotSources(pulseRes.map((r: any) => r.source));
+        }
+      } catch (e: any) {
+        console.error("Failed to load sources:", e);
+        setError("Неуспешно поврзување со серверот.");
       } finally {
         setLoading(false);
       }
@@ -33,7 +53,7 @@ export const IzvoriPage: React.FC = () => {
   }, []);
 
   const filtered = sources.filter(s => 
-    s.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    s.source?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const mkSources = filtered.filter(s => s.country === '🇲🇰' || !s.country || s.country === 'Македонија');
@@ -66,6 +86,16 @@ export const IzvoriPage: React.FC = () => {
                 <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
                 <p className="nyt-section-label text-muted-foreground">Вчитувам именик...</p>
               </div>
+            ) : error ? (
+              <div className="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
+                <p className="text-nyt-red font-serif italic mb-4">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="nyt-section-label text-nyt-accent underline"
+                >
+                  Обидете се повторно
+                </button>
+              </div>
             ) : (
               <div className="space-y-12">
                 <section>
@@ -73,12 +103,12 @@ export const IzvoriPage: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
                         {mkSources.map(s => (
                           <a 
-                            key={s.name}
-                            href={`/?q=${encodeURIComponent(s.name)}`}
+                            key={s.source}
+                            href={`/?q=${encodeURIComponent(s.source)}`}
                             className="font-serif font-bold text-sm text-foreground no-underline hover:text-nyt-accent flex items-center gap-2 py-1 border-b border-nyt-gray-200 text-left"
                           >
-                              {s.name}
-                              {hotSources.includes(s.name) && (
+                              {s.source}
+                              {hotSources.includes(s.source) && (
                                   <span className="text-[8px] bg-nyt-accent text-white px-1 rounded-sm animate-pulse">HOT</span>
                               )}
                           </a>
@@ -92,11 +122,11 @@ export const IzvoriPage: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
                         {intSources.map(s => (
                           <a 
-                            key={s.name}
-                            href={`/?q=${encodeURIComponent(s.name)}`}
+                            key={s.source}
+                            href={`/?q=${encodeURIComponent(s.source)}`}
                             className="font-serif font-bold text-sm text-foreground no-underline hover:text-nyt-accent flex items-center gap-2 py-1 border-b border-nyt-gray-200 text-left"
                           >
-                              {s.name}
+                              {s.source}
                               <span className="nyt-section-label opacity-50 grayscale text-[10px]">{s.country}</span>
                           </a>
                         ))}

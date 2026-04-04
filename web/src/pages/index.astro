@@ -88,7 +88,7 @@ try {
 					</h3>
 					<div class="divide-y border-nyt-gray-200">
 						{trending.slice(0, 10).map((item, idx) => (
-							<a href={`/?q=${item.word}`} class="flex items-center gap-4 py-3 group no-underline">
+							<a href={`/?q=${item.word}`} class="flex items-center gap-4 py-2 group no-underline">
 								<span class="font-serif text-3xl font-black text-nyt-gray-500 group-hover:text-nyt-black transition-colors min-w-[1.5rem] text-center">{idx + 1}</span>
 								<div>
 									<p class="font-serif font-black text-sm text-nyt-black group-hover:text-nyt-gray-600 leading-tight">{item.word}</p>
