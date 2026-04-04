@@ -29,19 +29,53 @@ app.add_middleware(
 async def health():
     return {"status": "ok", "version": "6.0.0-async"}
 
+@app.get("/api/intelligence/entity/{name}")
+async def get_entity_profile(name: str):
+    """Returns detailed profile and relationships for an entity."""
+    entity = db.execute_one(\"\"\"
+        SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score
+        FROM knowledge_entities WHERE name = %s
+    \"\"\", (name,))
+    
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    
+    # Get top relationships
+    relationships = db.execute(\"\"\"
+        SELECT 
+            CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
+            weight
+        FROM knowledge_relationships
+        WHERE entity_a = %s OR entity_b = %s
+        ORDER BY weight DESC LIMIT 10
+    \"\"\", (name, name, name))
+    
+    return {
+        "profile": entity,
+        "related": relationships
+    }
+
 @app.get("/api/news")
 async def get_news(
     q: Optional[str] = None,
     category: Optional[str] = None,
     topic: Optional[str] = None,
+    entity: Optional[str] = None,
     sort: str = "recent",
     page: int = 0,
     page_size: int = 24
 ):
     try:
         if q:
-            # Simple keyword search for now, could be upgraded to semantic
             rows = db.search_articles(q, limit=100)
+        elif entity:
+            # Filter clusters containing this entity
+            rows = db.execute(\"\"\"
+                SELECT a.* FROM articles a
+                JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
+                WHERE ce.entity_name = %s
+                ORDER BY a.created_at DESC LIMIT 100
+            \"\"\", (entity,))
         elif category:
             rows = db.get_articles_by_country(None, category=category, limit=100)
         else:

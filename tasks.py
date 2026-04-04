@@ -136,14 +136,9 @@ def extract_entities_task():
             # Rule-based (Free)
             entities = extract_entities(text)
             
-            # AI Fallback (Commented out to save money)
-            """
-            if not entities:
-                res, _ = _call_ai(text, ENTITY_EXTRACTION_PROMPT, json_mode=True, task_type="entity")
-                if res:
-                    data = clean_json_response(res)
-                    entities = data.get('entities', []) if isinstance(data, dict) else []
-            """
+            if entities:
+                from entities import update_knowledge_graph
+                update_knowledge_graph(entities)
 
             for ent in entities:
                 db.execute(

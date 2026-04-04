@@ -311,8 +311,29 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
                 
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_metadata_tags ON cluster_metadata USING GIN (tags)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_metadata_topics ON cluster_metadata USING GIN (topics)")
+                # Knowledge Graph Tables
+                cur.execute(\"\"\"
+                    CREATE TABLE IF NOT EXISTS knowledge_entities (
+                        name TEXT PRIMARY KEY,
+                        type TEXT,
+                        total_mentions INTEGER DEFAULT 1,
+                        first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        sentiment_score REAL DEFAULT 0,
+                        metadata JSONB DEFAULT '{}'
+                    )
+                \"\"\")
+                cur.execute(\"\"\"
+                    CREATE TABLE IF NOT EXISTS knowledge_relationships (
+                        entity_a TEXT REFERENCES knowledge_entities(name),
+                        entity_b TEXT REFERENCES knowledge_entities(name),
+                        weight INTEGER DEFAULT 1,
+                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (entity_a, entity_b)
+                    )
+                \"\"\")
+                cur.execute(\"CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)\")
+
                 
                 # FTS Trigger
                 cur.execute("""
