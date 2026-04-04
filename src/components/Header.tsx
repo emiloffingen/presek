@@ -1,82 +1,62 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Moon, Sun, X, BarChart3, BookOpen, Menu, Bookmark } from 'lucide-react';
-import { useUIStore, useNewsStore, useSavedStore } from '../store/useNewsStore';
+import { Search, Moon, Sun, X, Menu } from 'lucide-react';
+import { useUIStore, useNewsStore } from '../store/useNewsStore';
 import { apiClient } from '../api/client';
 import { Weather } from '../types';
 
 const CATEGORIES = [
-  { label: 'МК', value: '🇲🇰' },
+  { label: 'Сите', value: '' },
+  { label: 'Македонија', value: 'Македонија' },
   { label: 'Балкан', value: 'Балкан' },
   { label: 'Европа', value: 'Европа' },
-  { label: 'Германија', value: 'Германија' },
-  { label: 'Америка', value: 'Америка' },
   { label: 'Свет', value: 'Свет' },
+  { label: 'Економија', value: 'Економија' },
+  { label: 'Спорт', value: 'Спорт' },
+  { label: 'Технологија', value: 'Технологија' },
 ];
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedCategory, searchQuery, setSelectedCategory, setSearchQuery } = useUIStore();
+  const { selectedCategory, setSelectedCategory, setSearchQuery } = useUIStore();
   const { reset } = useNewsStore();
-  const savedCount = useSavedStore((s) => s.savedIds.size);
-  const [dark, setDark] = useState(
-    () => document.documentElement.classList.contains('dark')
-  );
+  
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [weather, setWeather] = useState<Weather | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const isHome = location.pathname === '/';
+  const [currentDate, setCurrentDate] = useState('');
 
   useEffect(() => {
     apiClient.getWeather().then(setWeather).catch(() => {});
+    
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    setCurrentDate(now.toLocaleDateString('mk-MK', options));
   }, []);
 
-  useEffect(() => {
-    if (searchOpen && searchRef.current) searchRef.current.focus();
-  }, [searchOpen]);
-
   const toggleDark = () => {
-    const html = document.documentElement;
-    if (dark) {
-      html.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      html.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-    setDark(!dark);
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.cookie = `theme=${isDark ? 'dark' : 'light'}; path=/; max-age=31536000; SameSite=Lax`;
+    setDark(isDark);
+    
+    const meta = document.getElementById('themeMeta');
+    if (meta) meta.setAttribute('content', isDark ? '#0f1117' : '#FFFFFF');
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchQuery(searchInput.trim());
     setSearchOpen(false);
     if (location.pathname !== '/') navigate('/');
-  };
-
-  const handleSearchInput = useCallback((value: string) => {
-    setSearchInput(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => {
-        setSearchQuery(value.trim());
-        if (location.pathname !== '/') navigate('/');
-      }, 500);
-    } else if (value.trim() === '') {
-      setSearchQuery('');
-    }
-  }, [location.pathname, navigate, setSearchQuery]);
-
-  const clearSearch = () => {
-    setSearchInput('');
-    setSearchQuery('');
-    setSearchOpen(false);
   };
 
   const handleCategoryChange = (value: string) => {
@@ -84,158 +64,129 @@ export const Header: React.FC = () => {
     reset();
     setMobileMenuOpen(false);
     if (location.pathname !== '/') navigate('/');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-dark-0 dark:bg-dark-0 text-white shadow-lg">
-      {/* Top bar */}
-      <div className="page-container">
-        <div className="flex items-center justify-between h-14 gap-3">
-          {/* Logo */}
-          <button
-            onClick={() => { navigate('/'); clearSearch(); reset(); }}
-            className="flex items-center gap-1.5 text-white hover:opacity-80 transition shrink-0"
-          >
-            <span className="text-2xl font-black tracking-tight leading-none select-none">
-              ПРЕСЕК
+    <>
+      {/* Unified NYT Masthead Bar */}
+      <div className="utility-bar">
+        <div className="utility-inner">
+          <div className="flex flex-col gap-[2px]">
+            <span className="font-extrabold text-[0.65rem] uppercase tracking-wider text-primary">
+              {currentDate || '...'}
             </span>
-            <span className="text-brand-500 text-2xl font-black leading-none">.</span>
-          </button>
+            <span className="text-[0.6rem] text-muted uppercase tracking-wider">Скопје, Македонија</span>
+          </div>
 
-          {/* Desktop category nav */}
-          <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar flex-1 max-w-lg">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => handleCategoryChange(cat.value)}
-                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                  selectedCategory === cat.value
-                    ? 'bg-brand-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-dark-3'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </nav>
+          <div className="ml-10 hidden sm:flex gap-5 text-[0.65rem] font-bold uppercase text-muted min-w-[130px]">
+            <span className="inline-block min-w-[45px]">{weather ? `${weather.temp}°C` : ''}</span>
+            <span className="inline-block min-w-[45px]">AQI: 24</span>
+          </div>
 
-          {/* Right controls */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Weather */}
-            {weather && (
-              <span className="hidden lg:flex items-center gap-1 text-sm text-slate-400 mr-1">
-                <span>{weather.icon}</span>
-                <span>{weather.temp}°C</span>
-              </span>
-            )}
-
-            {/* Search toggle */}
-            {searchOpen ? (
-              <form onSubmit={handleSearch} className="flex items-center gap-2">
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => handleSearchInput(e.target.value)}
-                  placeholder="Пребарај вести..."
-                  className="bg-dark-2 border border-dark-3 text-white placeholder-slate-500 rounded-lg px-3 py-1.5 text-sm w-48 md:w-64 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-                >
-                  <X size={18} />
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-                title="Пребарај"
-              >
-                <Search size={18} />
-              </button>
-            )}
-
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleDark}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-              title={dark ? 'Светол режим' : 'Темен режим'}
-            >
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
-            {/* Nav links */}
-            <button
-              onClick={() => navigate('/saved')}
-              className="hidden md:flex items-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition relative"
-              title="Зачувани вести"
-            >
-              <Bookmark size={18} />
-              {savedCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-brand-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
-                  {savedCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => navigate('/briefing')}
-              className="hidden md:flex p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-              title="Дневен преглед"
-            >
-              <BookOpen size={18} />
-            </button>
-            <button
-              onClick={() => navigate('/stats')}
-              className="hidden md:flex p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-              title="Статистика"
-            >
-              <BarChart3 size={18} />
-            </button>
-
-            {/* Mobile menu */}
-            <button
-              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-dark-3 transition"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <Menu size={18} />
-            </button>
+          <div className="ml-auto flex gap-6 items-center">
+            <button onClick={() => navigate('/briefing')} className="font-extrabold text-[0.65rem] uppercase tracking-wider text-primary hover:opacity-70 transition">Дневен Брифинг</button>
+            <button onClick={() => navigate('/stats')} className="font-extrabold text-[0.65rem] uppercase tracking-wider text-primary hover:opacity-70 transition">Статистика</button>
           </div>
         </div>
       </div>
 
-      {/* Mobile nav */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-dark-3 bg-dark-1 px-4 py-3 flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => handleCategoryChange(cat.value)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                selectedCategory === cat.value
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-dark-3 text-slate-400 hover:text-white'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-          <button
-            onClick={() => { navigate('/briefing'); setMobileMenuOpen(false); }}
-            className="px-3 py-1 rounded-full text-sm bg-dark-3 text-slate-400 hover:text-white"
+      <header className="site-header">
+        <div className="text-center py-8 relative">
+          <button 
+            className="icon-btn absolute left-0 top-1/2 -translate-y-1/2 lg:hidden"
+            onClick={() => setMobileMenuOpen(true)}
           >
-            Преглед
+            <Menu size={20} />
           </button>
-          <button
-            onClick={() => { navigate('/stats'); setMobileMenuOpen(false); }}
-            className="px-3 py-1 rounded-full text-sm bg-dark-3 text-slate-400 hover:text-white"
-          >
-            Статистика
+          
+          <button onClick={() => { navigate('/'); setSelectedCategory(''); reset(); }} className="inline-block hover:opacity-90 transition">
+            <img src="/static/logo.svg" alt="Presek" className="h-16" />
           </button>
         </div>
-      )}
-    </header>
+
+        <nav className="hidden lg:block">
+          <div className="nav-inner-broadsheet">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => handleCategoryChange(cat.value)}
+                className={`cat-btn ${selectedCategory === cat.value ? 'active' : ''}`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex justify-center mt-2 gap-4">
+            <button className="icon-btn" onClick={() => setSearchOpen(true)}>
+              <Search size={18} />
+            </button>
+            <button className="icon-btn" onClick={toggleDark}>
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      {/* Mobile Drawer */}
+      <div className={`mobile-drawer-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)} />
+      <div className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="drawer-header">
+          <span className="drawer-logo">Пресек</span>
+          <button className="icon-btn" onClick={() => setMobileMenuOpen(false)}>
+            <X size={22} />
+          </button>
+        </div>
+        <nav className="drawer-nav">
+          <div className="mb-8 border-b border-color pb-6">
+            <h3 className="rail-label ml-4 mb-2">ТЕМУ</h3>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => handleCategoryChange(cat.value)}
+                className={`cat-btn block w-full text-left px-6 py-3 ${selectedCategory === cat.value ? 'active' : ''}`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          <h3 className="rail-label ml-4 mb-2">ИЗБОР</h3>
+          <button onClick={() => { navigate('/briefing'); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-6 py-3 text-primary font-bold"><span className="text-lg">☕</span> Дневен Брифинг</button>
+          <button onClick={() => { navigate('/saved'); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-6 py-3 text-primary font-bold"><span className="text-lg">🔖</span> Зачувани</button>
+          <button onClick={() => { navigate('/stats'); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-6 py-3 text-primary font-bold"><span className="text-lg">📊</span> Медиумски Пулс</button>
+          <button onClick={() => { navigate('/arhiva'); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-6 py-3 text-primary font-bold"><span className="text-lg">📅</span> Архива</button>
+          <button onClick={() => { navigate('/izvori'); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-6 py-3 text-primary font-bold"><span className="text-lg">🔗</span> Извори</button>
+          
+          <div className="mt-4 px-6">
+            <button className="btn-outline w-full justify-start gap-3" onClick={toggleDark}>
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+              {dark ? 'Светол режим' : 'Темен режим'}
+            </button>
+          </div>
+        </nav>
+      </div>
+
+      {/* Search Overlay */}
+      <div className={`search-overlay ${searchOpen ? 'active' : ''}`}>
+        <div className="w-full max-w-2xl px-4">
+          <form onSubmit={handleSearch} className="flex items-center gap-4 border-b-2 border-primary pb-2">
+            <Search size={24} className="text-muted" />
+            <input
+              autoFocus
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Пребарајте вести..."
+              className="bg-transparent border-none text-2xl w-full focus:outline-none text-primary"
+            />
+            <button type="button" onClick={() => setSearchOpen(false)} className="icon-btn">
+              <X size={24} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </>
   );
 };

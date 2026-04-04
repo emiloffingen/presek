@@ -7,15 +7,6 @@ import { BriefingPage } from './pages/BriefingPage';
 import { SavedPage } from './pages/SavedPage';
 
 function App() {
-  // Apply saved theme on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (saved === 'dark' || (!saved && prefersDark)) {
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
   return (
     <Router>
       <Routes>
