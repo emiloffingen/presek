@@ -104,6 +104,9 @@ async def get_news(
                 ORDER BY a.created_at DESC LIMIT 100
             """
             params = [entity]
+        elif topic:
+            sql += "SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT 100"
+            params = [topic]
         elif category:
             sql += "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100"
             params = [category]
