@@ -77,7 +77,7 @@ class GeminiProvider(AIProvider):
         
         # Use httpx for async streaming
         import httpx
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key={GOOGLE_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={GOOGLE_API_KEY}"
         combined = f"{system}\n\nInput:\n{prompt}"
         payload = {
             "contents": [{"parts": [{"text": combined}]}],
@@ -98,30 +98,22 @@ class GeminiProvider(AIProvider):
             log.warning(f"[gemini-stream] Error: {e}")
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
-        if not GOOGLE_API_KEY or not GEMINI_URL: return None
+        if not GOOGLE_API_KEY: return None
         
-        url = GEMINI_URL
-        combined = f"{system}\n\nInput:\n{prompt}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GOOGLE_API_KEY}"
         payload = {
-            "contents": [{"parts": [{"text": combined}]}],
+            "system_instruction": {"parts": [{"text": system}]},
+            "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "maxOutputTokens": max_tokens,
                 "temperature": 0.1
-            },
-            "safetySettings": [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_CIVIC_INTEGRITY", "threshold": "BLOCK_NONE"}
-            ]
+            }
         }
         if json_mode: 
             payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
-            headers = {"Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY}
-
+            headers = {"Content-Type": "application/json"}
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -134,6 +126,10 @@ class GeminiProvider(AIProvider):
                     return None
                     
                 return candidate["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()
+            log.warning(f"[gemini] API Error {e.code}: {body}")
+            return None
         except Exception as e:
             log.warning(f"[gemini] API Error: {e}")
             return None
@@ -158,7 +154,7 @@ class OpenAICompatibleProvider(AIProvider):
             "temperature": 0.2,
             "stream": True
         }
-        headers = {"Authorization": f"Bearer {self.key}"}
+        headers = {"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
         try:
             async with httpx.AsyncClient() as client:
                 async with client.stream("POST", self.url, json=payload, headers=headers, timeout=60.0) as resp:
@@ -230,21 +226,16 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["local"],
-    "summarize":    ["local", "groq", "mistral", "gemini"],
-    "synthesis":    ["local", "groq", "mistral", "gemini"],
-    "default":      ["local", "groq", "gemini"],
+    "translation":  ["mistral", "groq", "gemini"],
+    "summarize":    ["mistral", "local", "groq", "gemini"],
+    "synthesis":    ["mistral", "local", "groq", "gemini"],
+    "daily_brief":  ["mistral", "groq", "gemini"],
+    "default":      ["mistral", "local", "groq", "gemini"],
 }
 
 # --- Service Methods ---
 
 async def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False):
-    if task_type == "translation":
-        if stream:
-            async def gen(): yield prompt
-            return gen()
-        return prompt, "local"
-
     from config import AI_DAILY_LIMIT
     from utils import redis_client
     
@@ -322,6 +313,11 @@ def translate_to_macedonian(text: str) -> str | None:
     if not text or not text.strip(): return text
     try:
         res, _ = sync_call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
+        if res:
+            cleaned = clean_json_response(res)
+            if isinstance(cleaned, dict) and 'summary' in cleaned:
+                return cleaned['summary']
+            return str(cleaned)
     except:
         res = text # Fallback
     return res

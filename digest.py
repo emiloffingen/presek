@@ -51,7 +51,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
             f"https://ntfy.sh/{topic}",
             data=body.encode("utf-8"),
             headers={
-                "Title": "Presek - Dneven pregled",
+                "Title": "Пресек — Дневен преглед",
                 "Priority": "default",
                 "Tags": "newspaper,macedonia",
                 "Content-Type": "text/plain; charset=utf-8",
