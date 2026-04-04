@@ -133,6 +133,10 @@ VITE_DEV_SERVER = os.environ.get("VITE_DEV_SERVER", "http://localhost:5173")
 VITE_MANIFEST_PATH = "static/dist/.vite/manifest.json"
 
 @app.context_processor
+def inject_now():
+    return {'now': datetime.datetime.now}
+
+@app.context_processor
 def vite_assets():
     def vite_asset(entry_name):
         # In development, point to the Vite dev server
