@@ -333,7 +333,7 @@ class DatabaseManager:
                     )
                 """)
 
-                cur.execute(\"CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)\")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)")
 
                 
                 # FTS Trigger
