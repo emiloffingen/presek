@@ -41,6 +41,7 @@ export interface ClusterDetail extends NewsCluster {
     cluster_id: string;
     title: string;
     image_url: string | null;
+    tags?: string[];
   }>;
   total_reading_time: number;
 }

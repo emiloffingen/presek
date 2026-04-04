@@ -16,34 +16,34 @@ export const SavedPage: React.FC = () => {
   const savedCount = savedIds.size;
 
   return (
-    <div className="min-h-screen bg-surface-1 dark:bg-dark-0">
+    <div className="min-h-screen bg-primary">
       <Header />
-      <main className="page-container py-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Bookmark size={20} className="text-brand-500" />
-          <h1 className="text-xl font-bold text-ink dark:text-slate-100">
+      <main className="site-layout py-8">
+        <div className="flex items-center gap-3 mb-8 border-b-2 border-primary pb-6">
+          <Bookmark size={24} className="text-accent" />
+          <h1 className="font-serif text-3xl font-bold text-primary">
             Зачувани вести
           </h1>
-          <span className="badge bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300">
-            {savedCount}
+          <span className="text-xs font-black uppercase text-muted ml-auto">
+            {savedCount} вести
           </span>
         </div>
 
         {savedCount === 0 ? (
-          <div className="card p-12 text-center">
-            <Bookmark size={32} className="mx-auto mb-3 text-ink-faint dark:text-slate-600" />
-            <p className="font-semibold text-ink dark:text-slate-200 mb-1">Нема зачувани вести</p>
-            <p className="text-sm text-ink-muted dark:text-slate-500 mb-4">
+          <div className="bg-secondary p-12 text-center border-t-2 border-accent">
+            <Bookmark size={32} className="mx-auto mb-3 text-muted" />
+            <p className="font-bold text-primary mb-1">Нема зачувани вести</p>
+            <p className="text-sm text-muted mb-6 italic">
               Притиснете го иконата за зачувување на некоја вест за да ја додадете овде.
             </p>
-            <button onClick={() => navigate('/')} className="btn-outline text-sm">
+            <button onClick={() => navigate('/')} className="text-[10px] font-black uppercase text-primary hover:underline">
               Кон насловната
             </button>
           </div>
         ) : savedClusters.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="news-feed-grid">
             {savedClusters.map((c) => (
-              <ClusterCard key={c.cluster_id} cluster={c} variant="featured" />
+              <ClusterCard key={c.cluster_id} cluster={c} />
             ))}
           </div>
         ) : (

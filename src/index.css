@@ -11,15 +11,8 @@
   --border-color: #e4e4e8;
   --accent-color: #cc1a1a;
   --accent-hover: #a81414;
-  
-  /* NYT Specific */
   --nyt-font-serif: 'Lora', serif;
   --nyt-font-sans: 'Inter', sans-serif;
-  
-  scroll-behavior: smooth;
-  color-scheme: light;
-  font-size: 16px;
-  -webkit-text-size-adjust: 100%;
 }
 
 .dark {
@@ -31,7 +24,12 @@
   --border-color: #2a2d3a;
   --accent-color: #ff4d4d;
   --accent-hover: #e82323;
-  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 @layer base {
@@ -161,7 +159,7 @@
   }
   
   .search-overlay {
-    @apply fixed inset-0 z-[100] bg-primary/95 backdrop-blur-sm flex flex-col items-center pt-20 transition-all duration-300;
+    @apply fixed inset-0 z-[100] bg-white dark:bg-dark-0 backdrop-blur-sm flex flex-col items-center pt-20 transition-all duration-300;
     visibility: hidden; opacity: 0;
   }
   .search-overlay.active { visibility: visible; opacity: 1; }

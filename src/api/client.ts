@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import {
   NewsResponse,
   TrendingWord,
@@ -26,7 +26,7 @@ class ApiClient {
     });
 
     this.client.interceptors.response.use(
-      (response) => response,
+      (response: AxiosResponse) => response,
       (error: AxiosError) => {
         if (error.response?.status === 429) {
           console.warn('Rate limited. Please wait before making more requests.');
@@ -46,7 +46,7 @@ class ApiClient {
     sort?: 'recent' | 'popular';
     follow_sources?: string;
     follow_topics?: string;
-  }, config?: import('axios').AxiosRequestConfig): Promise<NewsResponse> {
+  }, config?: any): Promise<NewsResponse> {
     try {
       const response = await this.client.get<NewsResponse>('/api/news', { 
         ...config,
@@ -168,10 +168,11 @@ class ApiClient {
 
   private handleError(error: unknown): Error {
     if (axios.isAxiosError(error)) {
-      if (error.response?.data?.message) {
-        return new Error(error.response.data.message);
+      const axiosError = error as AxiosError<any>;
+      if (axiosError.response?.data?.message) {
+        return new Error(axiosError.response.data.message);
       }
-      return new Error(error.message || 'API request failed');
+      return new Error(axiosError.message || 'API request failed');
     }
     return error instanceof Error ? error : new Error('Unknown error');
   }

@@ -12,8 +12,9 @@ export const ClusterDetailPage: React.FC = () => {
   const { clusterId } = useParams<{ clusterId: string }>();
   const navigate = useNavigate();
   const [cluster, setCluster] = useState<ClusterDetail | null>(() => {
-    if (window.__INITIAL_CLUSTER_DATA__?.cluster?.cluster_id === clusterId) {
-      return window.__INITIAL_CLUSTER_DATA__.cluster;
+    const initial = window.__INITIAL_CLUSTER_DATA__;
+    if (initial && initial.cluster?.cluster_id === clusterId) {
+      return initial.cluster;
     }
     return null;
   });
