@@ -2,23 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f7f8;
+  --text-primary: #0f1117;
+  --text-secondary: #3d4151;
+  --text-muted: #6b7185;
+  --border-color: #e4e4e8;
+  --accent-color: #cc1a1a;
+  --accent-hover: #a81414;
+  
+  /* NYT Specific */
+  --nyt-font-serif: 'Lora', serif;
+  --nyt-font-sans: 'Inter', sans-serif;
+  
+  scroll-behavior: smooth;
+  color-scheme: light;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+.dark {
+  --bg-primary: #0f1117;
+  --bg-secondary: #1a1d27;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #2a2d3a;
+  --accent-color: #ff4d4d;
+  --accent-hover: #e82323;
+  color-scheme: dark;
+}
+
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    color-scheme: light;
-    font-size: 16px;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  html.dark {
-    color-scheme: dark;
-  }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
@@ -49,6 +65,107 @@
 }
 
 @layer components {
+  /* ── Broadsheet Core Layout ── */
+  .utility-bar {
+    @apply border-b py-2 bg-primary;
+    border-color: var(--border-color);
+  }
+  .utility-inner {
+    @apply max-w-[1400px] mx-auto px-4 flex items-center;
+  }
+  
+  .site-header {
+    @apply max-w-[1400px] mx-auto px-4 py-6;
+  }
+  
+  .site-layout {
+    @apply max-w-[1400px] mx-auto px-4;
+  }
+  
+  .portal-layout {
+    @apply flex flex-col lg:flex-row gap-8;
+  }
+  
+  .portal-main {
+    @apply flex-1 min-w-0;
+  }
+  
+  .sidebar-left, .sidebar-right {
+    @apply lg:w-[260px] shrink-0;
+  }
+  
+  /* ── Typography & Navigation ── */
+  .nav-inner-broadsheet {
+    @apply flex flex-wrap justify-center border-y py-3 mb-6;
+    border-color: var(--border-color);
+  }
+  
+  .cat-btn {
+    @apply px-4 py-1 text-sm font-bold uppercase tracking-wider transition-colors;
+    font-family: var(--nyt-font-sans);
+    color: var(--text-muted);
+  }
+  .cat-btn:hover { color: var(--text-primary); }
+  .cat-btn.active { color: var(--accent-color); }
+  
+  /* ── News Feed ── */
+  .news-feed-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+  
+  .news-cluster {
+    @apply flex flex-col gap-4 pb-8 border-b last:border-0;
+    border-color: var(--border-color);
+  }
+  
+  .news-cluster.lead-story {
+    @apply md:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-12 lg:gap-8 pb-10 border-b-2;
+  }
+  
+  .lead-story .cluster-thumb-wrap { @apply lg:col-span-8; }
+  .lead-story .cluster-main { @apply lg:col-span-4; }
+  
+  .cluster-headline {
+    @apply text-xl lg:text-3xl font-bold leading-tight hover:text-accent transition-colors block mb-2;
+    font-family: var(--nyt-font-serif);
+    color: var(--text-primary);
+  }
+  
+  .cluster-excerpt {
+    @apply text-sm lg:text-base leading-relaxed mb-4;
+    color: var(--text-secondary);
+  }
+  
+  .cluster-meta {
+    @apply flex items-center gap-2 text-[11px] font-bold uppercase tracking-tighter;
+    color: var(--text-muted);
+  }
+  
+  .cluster-thumb {
+    @apply w-full aspect-[16/9] object-cover rounded-sm grayscale-[30%] hover:grayscale-0 transition-all duration-500;
+  }
+
+  /* ── Sidebars ── */
+  .rail-widget {
+    @apply pt-4 mb-8;
+  }
+  .rail-label {
+    @apply text-xs font-black uppercase tracking-widest mb-4;
+    color: var(--text-primary);
+  }
+  
+  /* ── UI Elements ── */
+  .icon-btn {
+    @apply p-2 rounded-full hover:bg-surface-2 dark:hover:bg-dark-3 transition-colors;
+    color: var(--text-secondary);
+  }
+  
+  .search-overlay {
+    @apply fixed inset-0 z-[100] bg-primary/95 backdrop-blur-sm flex flex-col items-center pt-20 transition-all duration-300;
+    visibility: hidden; opacity: 0;
+  }
+  .search-overlay.active { visibility: visible; opacity: 1; }
+  
   /* ── Layout ── */
   .page-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6;

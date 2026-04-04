@@ -11,13 +11,16 @@ export default {
         sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Inter', 'Roboto', 'sans-serif'],
       },
       colors: {
+        primary: 'var(--bg-primary)',
+        secondary: 'var(--bg-secondary)',
+        accent: 'var(--accent-color)',
         surface: {
           0: '#ffffff',
           1: '#f7f7f8',
           2: '#f0f0f2',
           3: '#e4e4e8',
         },
-        dark: {
+...        dark: {
           0: '#0f1117',
           1: '#1a1d27',
           2: '#21242f',
