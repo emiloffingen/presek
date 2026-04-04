@@ -7,7 +7,7 @@ import { Search, Menu, Moon, Sun, Zap, TrendingUp, BarChart3 } from 'lucide-reac
 
 // Fetch data from existing Flask API (SSR)
 // In production, this would be an internal network call or use a shared DAL
-const API_URL = "http://localhost:5001/api";
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
 
 let clusters = [];
 let trending = [];
