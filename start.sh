@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# start.sh — Presek launcher
+# start.sh — Presek local/manual fallback launcher
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 SESSION="${SCREEN_SESSION_NAME:-presek}"
@@ -217,6 +217,7 @@ print_summary() {
   echo -e "  ${CYAN}Logs:${RESET}            $LOG_DIR"
   echo -e "  ${CYAN}Reattach:${RESET}        screen -r $SESSION"
   echo -e "  ${CYAN}Stop:${RESET}            ./start.sh --stop"
+  echo -e "  ${CYAN}Production:${RESET}      systemd + nginx (see deploy/)"
   divider
 }
 
@@ -228,6 +229,8 @@ mkdir -p "$LOG_DIR"
 touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 
 load_env
+
+warn "start.sh is a local/manual fallback launcher. Supported production runtime is systemd + nginx."
 
 case "${1:-}" in
   --stop)

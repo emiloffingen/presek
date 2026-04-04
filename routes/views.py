@@ -7,19 +7,21 @@ import datetime
 import math
 import logging
 import re
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 views_bp = Blueprint('views', __name__)
 
-LEGACY_TEMPLATE_ROUTES = {
-    "/",
-    "/about",
-    "/arhiva",
-    "/briefing",
-    "/cluster",
-    "/izvori",
-    "/saved",
-    "/stats",
+LEGACY_ROUTE_REDIRECTS = {
+    "/": "/",
+    "/about": "/about",
+    "/arhiva": "/archive",
+    "/briefing": "/briefing",
+    "/contact": "/about",
+    "/izvori": "/izvori",
+    "/privacy": "/privacy",
+    "/saved": "/",
+    "/stats": "/stats",
+    "/vesti": "/",
 }
 
 
@@ -67,6 +69,19 @@ def _request_is_local() -> bool:
     return host in {"127.0.0.1", "localhost"}
 
 
+def _public_site_path_for_request(path: str) -> str | None:
+    if path.startswith("/cluster/"):
+        return path
+
+    if path.startswith("/izvor/"):
+        source_name = path.rsplit("/", 1)[-1].strip()
+        if not source_name:
+            return "/izvori"
+        return f"/izvori?source={quote(source_name)}"
+
+    return LEGACY_ROUTE_REDIRECTS.get(path)
+
+
 def legacy_frontend_redirect(path: str):
     if _request_is_local():
         return None
@@ -75,22 +90,23 @@ def legacy_frontend_redirect(path: str):
     if not enabled:
         return None
 
-    target = urljoin(current_app.config.get("PUBLIC_SITE_URL", "https://presek.live"), path)
+    public_path = _public_site_path_for_request(path)
+    if not public_path:
+        return None
+
+    target = urljoin(current_app.config.get("PUBLIC_SITE_URL", "https://presek.live"), public_path)
     return redirect(target, code=302)
 
 
 @views_bp.before_request
 def redirect_legacy_frontend_routes():
-    route_path = request.path
-    if route_path.startswith("/cluster/"):
-        route_key = "/cluster"
-    else:
-        route_key = route_path
-
-    if route_key not in LEGACY_TEMPLATE_ROUTES:
+    if request.method not in {"GET", "HEAD"}:
         return None
 
-    return legacy_frontend_redirect(request.full_path.rstrip("?"))
+    if not _public_site_path_for_request(request.path):
+        return None
+
+    return legacy_frontend_redirect(request.path)
 
 @views_bp.route("/")
 def index():

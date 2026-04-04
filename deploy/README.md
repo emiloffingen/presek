@@ -1,5 +1,13 @@
 # Presek deploy
 
+The supported production path is:
+
+- `systemd` for app processes
+- `nginx` for the public reverse proxy
+- Cloudflare in front of nginx
+
+`start.sh` is not the intended production runtime. Keep it for local/manual fallback only.
+
 If you do not want to install the nginx and systemd files manually, use:
 
 ```sh

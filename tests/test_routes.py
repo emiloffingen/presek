@@ -91,6 +91,16 @@ class TestViewRoutes:
         assert resp.status_code == 302
         assert resp.headers["Location"] == "https://presek.live/cluster/abc123def456abc1"
 
+    def test_public_privacy_redirects_to_primary_site(self, client):
+        resp = client.get("/privacy", headers={"Host": "presek.live"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/privacy"
+
+    def test_public_source_redirects_to_public_sources_page(self, client):
+        resp = client.get("/izvor/MIA", headers={"Host": "presek.live"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/izvori?source=MIA"
+
     def test_localhost_keeps_legacy_template_access(self, client):
         resp = client.get("/stats", headers={"Host": "localhost"})
         assert resp.status_code == 200

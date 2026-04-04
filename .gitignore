@@ -16,3 +16,5 @@ node_modules/
 static/generated/
 package-lock.json
 screenshots/
+static/dist/
+web/dist/

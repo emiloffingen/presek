@@ -2,6 +2,8 @@
 
 This nginx config is intended for `presek.live` behind Cloudflare.
 
+Together with the files in `deploy/systemd/`, this is the supported production deployment model for the app.
+
 ## Routing model
 
 - `https://presek.live/` goes to Astro on `127.0.0.1:3000`
