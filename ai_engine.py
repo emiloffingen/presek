@@ -208,8 +208,16 @@ from local_nlp import summarize_locally
 
 class LocalProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
-        # The prompt for summarization tasks usually contains the text to summarize
-        # or the titles. We'll strip the system instructions if they are prepended.
+        # 1. Synthesis Logic (Summarizing multiple lines)
+        if "Synthesis" in system or "synthesis" in system:
+            lines = prompt.split("\n")
+            titles = [l.replace("- [", "").split("]:")[0] for l in lines if "]:" in l]
+            main_text = "\n".join(lines)
+            summary = summarize_locally(main_text, sentence_count=4)
+            return f"Збирен извештај од {len(titles)} извори: {summary}"
+
+        # 2. Standard Summarization
+        # Strip system instructions if they are prepended.
         text = prompt.replace("Summarize the following:", "").strip()
         return summarize_locally(text)
 
@@ -223,22 +231,35 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["groq", "mistral", "gemini"],
-    "summarize":    ["groq", "mistral", "cerebras", "gemini", "openrouter", "local"],
-    "synthesis":    ["groq", "mistral", "cerebras", "gemini", "openrouter", "local"],
-    "default":      ["groq", "cerebras", "gemini", "local"],
+    "translation":  ["local"], # Local means no translation (keep original) or very simple logic
+    "summarize":    ["local", "groq", "mistral", "gemini"],
+    "synthesis":    ["local", "groq", "mistral", "gemini"],
+    "default":      ["local", "groq", "gemini"],
 }
 
 # --- Service Methods ---
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False) -> tuple[str | None, str | None]:
+    # If task is translation and we want to avoid AI, return the prompt itself
+    if task_type == "translation":
+        return prompt, "local"
+
     from config import AI_DAILY_LIMIT
     from utils import redis_client
     try:
+        # Check if local is first in chain and try it immediately without hitting Redis
+        chain = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
+        if chain and chain[0] == "local":
+            res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+            if res: return res, "local"
+
         count = redis_client.incr("ai:daily_calls")
         redis_client.expire("ai:daily_calls", 86400)
         if count > AI_DAILY_LIMIT:
             log.warning(f"[ai] Daily limit reached ({count}/{AI_DAILY_LIMIT})")
+            # If limit reached, still try local as last resort if not tried
+            if "local" in chain:
+                return PROVIDERS["local"].call(prompt, system, max_tokens, json_mode), "local"
             return None, "limit_reached"
     except Exception as e:
         log.warning(f"[ai] Redis limit check failed: {e}")
@@ -246,6 +267,11 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
     chain = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
 
     for name in chain:
+        if name == "local":
+            res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+            if res: return res, "local"
+            continue
+
         if _is_circuit_open(name): continue
         
         provider = PROVIDERS.get(name)
