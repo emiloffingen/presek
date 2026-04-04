@@ -70,6 +70,16 @@ const leadCluster = clusters[0] ?? null;
 const supportingClusters = clusters.slice(1, 5);
 const feedClusters = clusters.slice(5);
 
+function getLeadSignal(cluster: any) {
+	const count = cluster?.articles?.length || 0;
+	if (cluster?.is_breaking) return 'Најбрз развој во денот';
+	if (count >= 6) return 'Приказна што ја движи домашната агенда';
+	if (count >= 4) return 'Тема што брзо се шири низ редакциите';
+	return 'Развој што вреди да се следи';
+}
+
+const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
+
 function getTimeStr(dateStr: string) {
     try {
         return new Date(dateStr).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
@@ -116,6 +126,7 @@ function getThumb(cluster: any) {
 							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
 								<h1 class="lead-headline">{leadCluster.articles[0].title}</h1>
 							</a>
+							<p class="lead-signal">{leadSignal}</p>
 							{leadCluster.articles[0].description && (
 								<p class="lead-summary">{leadCluster.articles[0].description}</p>
 							)}
@@ -180,6 +191,7 @@ function getThumb(cluster: any) {
 							<strong>{stats ? stats.total_feeds.toLocaleString('mk-MK') : '...'}</strong>
 						</div>
 					</div>
+					<p class="rail-note">Каде има најмногу уредничко внимание, а не само најново движење.</p>
 				</section>
 
 				<section class="rail-module">
@@ -191,6 +203,7 @@ function getThumb(cluster: any) {
 							</a>
 						))}
 					</div>
+					<p class="rail-note">Личности и теми што најчесто се повторуваат низ денешното покривање.</p>
 				</section>
 			</aside>
 		</div>
@@ -302,6 +315,17 @@ function getThumb(cluster: any) {
 		color: var(--secondary-foreground);
 		max-width: 58ch;
 		text-wrap: pretty;
+	}
+
+	.lead-signal,
+	.rail-note {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
 	}
 
 	.lead-meta {

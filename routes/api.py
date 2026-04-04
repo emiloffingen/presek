@@ -15,7 +15,15 @@ from ai_engine import sync_call_ai as _call_ai, clean_json_response
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
 from embeddings import generate_query_embedding
-from local_nlp import answer_cluster_question_locally, generate_daily_brief_fallback
+from local_nlp import (
+    answer_cluster_question_locally,
+    generate_daily_brief_fallback,
+    normalize_tag_name,
+    filter_cluster_tags,
+    is_valid_focus_entity,
+    build_citation_snippet,
+    build_structured_answer_sections,
+)
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
@@ -64,46 +72,6 @@ def normalize_perspectives(raw_perspectives):
     return normalized
 
 
-TAG_NOISE_WORDS = {
-    "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
-    "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
-    "слушаме", "гласот", "добронамерните", "овде", "таму",
-}
-
-
-def normalize_tag_name(name):
-    clean = re.sub(r"\s+", " ", str(name or "").strip(" -–—,.;:!?()[]{}\"'"))
-    if not clean:
-        return ""
-    if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
-        return " ".join(part.capitalize() for part in clean.split(" "))
-    return clean
-
-
-def filter_cluster_tags(tags):
-    filtered = []
-    seen = set()
-    for raw in tags or []:
-        clean = normalize_tag_name(raw)
-        lowered = clean.lower()
-        if not clean or len(clean) < 3:
-            continue
-        if lowered in TAG_NOISE_WORDS:
-            continue
-        if clean.count(" ") > 3:
-            continue
-        if re.fullmatch(r"\d+", clean):
-            continue
-        if re.search(r"\b\d{1,2}:\d{2}\b", clean):
-            continue
-        dedupe_key = clean.casefold()
-        if dedupe_key in seen:
-            continue
-        seen.add(dedupe_key)
-        filtered.append(clean)
-    return filtered[:10]
-
-
 def _default_related_questions(question, category=None):
     fallback = [
         "Што е главниот развој во оваа приказна?",
@@ -119,7 +87,7 @@ def _text_terms(text):
     terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
     return {
         term for term in terms
-        if term not in TAG_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
+        if term not in {"вести", "вест", "извор", "извори", "кластер"}
     }
 
 
@@ -156,6 +124,7 @@ def _rank_cluster_citations(question, answer, rows, preferred_numbers):
                 "title": row.get("title"),
                 "link": row.get("link"),
                 "created_at": row.get("created_at"),
+                "snippet": build_citation_snippet(row),
             },
         ))
 
@@ -169,6 +138,7 @@ def _rank_cluster_citations(question, answer, rows, preferred_numbers):
             "title": row.get("title"),
             "link": row.get("link"),
             "created_at": row.get("created_at"),
+            "snippet": build_citation_snippet(row),
         }
         for row in rows[:2]
     ]
@@ -186,9 +156,7 @@ def _get_top_entities_payload(limit=10):
     seen = set()
     for row in rows:
         normalized_name = normalize_tag_name(row["name"])
-        if not normalized_name or len(normalized_name) < 3:
-            continue
-        if normalized_name.lower() in TAG_NOISE_WORDS:
+        if not is_valid_focus_entity(normalized_name, row.get("type")):
             continue
         dedupe_key = normalized_name.casefold()
         if dedupe_key in seen:
@@ -229,7 +197,21 @@ def _build_cluster_answer(cluster_id, query):
 
     local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
     if local_answer:
-        return local_answer, None
+        sections = build_structured_answer_sections(
+            local_answer["answer"],
+            rows,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+        payload = {
+            **local_answer,
+            "citations": _rank_cluster_citations(query, local_answer["answer"], rows, []),
+            "confirmed_points": sections["confirmed_points"],
+            "unclear_points": sections["unclear_points"],
+            "source_differences": sections["source_differences"],
+            "generated_locally": True,
+        }
+        return payload, None
 
     context_lines = []
     if synthesis:
@@ -252,7 +234,7 @@ def _build_cluster_answer(cluster_id, query):
         + f"\nПрашање од корисник: {query}\n\n"
         + "Одговори само врз основа на дадениот контекст. Ако нешто недостига или не е потврдено, кажи го тоа јасно. "
         + "Врати JSON со полиња "
-        + "{\"answer\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+        + "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
         + "Одговорот мора да биде на македонски."
     )
     system = (
@@ -267,20 +249,42 @@ def _build_cluster_answer(cluster_id, query):
     parsed = clean_json_response(response_text)
     if isinstance(parsed, dict):
         answer = str(parsed.get("answer") or "").strip()
+        confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
+        unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
+        source_differences = str(parsed.get("source_differences") or "").strip()
         citation_numbers = parsed.get("citation_numbers") or []
         related_questions = parsed.get("related_questions") or []
         confidence = str(parsed.get("confidence") or "medium").strip().lower()
     else:
         answer = str(parsed).strip()
+        confirmed_points = []
+        unclear_points = []
+        source_differences = ""
         citation_numbers = []
         related_questions = []
         confidence = "medium"
+
+    sections = build_structured_answer_sections(
+        answer,
+        rows,
+        synthesis=synthesis,
+        perspectives=perspectives,
+    )
+    if not confirmed_points:
+        confirmed_points = sections["confirmed_points"]
+    if not unclear_points:
+        unclear_points = sections["unclear_points"]
+    if not source_differences:
+        source_differences = sections["source_differences"]
 
     payload = {
         "answer": answer,
         "citations": _rank_cluster_citations(query, answer, rows, citation_numbers),
         "related_questions": [str(item).strip() for item in related_questions if str(item).strip()][:3],
         "confidence": confidence if confidence in {"high", "medium", "low"} else "medium",
+        "confirmed_points": confirmed_points[:3],
+        "unclear_points": unclear_points[:2],
+        "source_differences": source_differences,
     }
     if not payload["related_questions"]:
         payload["related_questions"] = _default_related_questions(query, rows[0].get("category"))
@@ -900,6 +904,9 @@ def chat_cluster():
             "citations": payload["citations"],
             "related_questions": payload["related_questions"],
             "confidence": payload["confidence"],
+            "confirmed_points": payload.get("confirmed_points", []),
+            "unclear_points": payload.get("unclear_points", []),
+            "source_differences": payload.get("source_differences", ""),
         })
 
     except Exception as e:
@@ -932,6 +939,9 @@ def ask_cluster(cluster_id):
             "citations": payload["citations"],
             "related_questions": payload["related_questions"],
             "confidence": payload["confidence"],
+            "confirmed_points": payload.get("confirmed_points", []),
+            "unclear_points": payload.get("unclear_points", []),
+            "source_differences": payload.get("source_differences", ""),
         })
     except Exception as e:
         log.error(f"[api/cluster/<cluster_id>/ask] Error: {e}", exc_info=True)

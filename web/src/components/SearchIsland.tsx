@@ -6,6 +6,9 @@ type Suggestion = {
   title: string;
   source?: string;
   category?: string;
+  description?: string;
+  sourceCount?: number;
+  matchLabel?: string;
 };
 
 type TrendingItem = {
@@ -119,6 +122,14 @@ export default function SearchIsland() {
               title: cluster.articles?.[0]?.title || 'Наслов',
               source: cluster.articles?.[0]?.source || '',
               category: cluster.articles?.[0]?.category || '',
+              description: cluster.articles?.[0]?.description || '',
+              sourceCount: Array.isArray(cluster.articles) ? cluster.articles.length : 0,
+              matchLabel:
+                (cluster.articles?.[0]?.title || '').toLowerCase() === trimmed.toLowerCase()
+                  ? 'Точен наслов'
+                  : (cluster.articles?.[0]?.title || '').toLowerCase().includes(trimmed.toLowerCase())
+                  ? 'Совпаѓање во наслов'
+                  : 'Поврзана тема',
             }))
           : [];
 
@@ -240,6 +251,22 @@ export default function SearchIsland() {
     });
   };
 
+  const buildSnippet = (item: Suggestion, searchQuery: string) => {
+    const description = item.description?.trim();
+    if (!description) return '';
+
+    const cleanQuery = searchQuery.trim().toLowerCase();
+    if (!cleanQuery) return description.slice(0, 140);
+
+    const matchIndex = description.toLowerCase().indexOf(cleanQuery);
+    if (matchIndex === -1) return description.slice(0, 140);
+
+    const start = Math.max(0, matchIndex - 42);
+    const end = Math.min(description.length, matchIndex + cleanQuery.length + 84);
+    const snippet = description.slice(start, end).trim();
+    return `${start > 0 ? '…' : ''}${snippet}${end < description.length ? '…' : ''}`;
+  };
+
   return (
     <>
       <button
@@ -355,13 +382,30 @@ export default function SearchIsland() {
                                 {String(index + 1).padStart(2, '0')}
                               </span>
                               <div className="min-w-0">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                  {item.matchLabel && (
+                                    <span className="border border-border px-2 py-0.5 font-sans text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground">
+                                      {item.matchLabel}
+                                    </span>
+                                  )}
+                                  {item.category && (
+                                    <span className="font-sans text-[9px] font-black uppercase tracking-[0.12em] text-nyt-accent">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="font-serif font-black text-xl leading-tight mb-2 text-balance">
                                   {renderHighlightedText(item.title, query)}
                                 </p>
+                                {item.description && (
+                                  <p className="mb-3 font-nyt-body text-sm leading-6 text-secondary-foreground">
+                                    {renderHighlightedText(buildSnippet(item, query), query)}
+                                  </p>
+                                )}
                                 <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
                                   Кластер
-                                  {item.source || item.category ? ' · ' : ''}
-                                  {[item.source, item.category].filter(Boolean).join(' · ')}
+                                  {item.source || item.sourceCount ? ' · ' : ''}
+                                  {[item.source, item.sourceCount ? `${item.sourceCount} извори` : ''].filter(Boolean).join(' · ')}
                                 </p>
                               </div>
                             </div>

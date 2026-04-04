@@ -224,6 +224,35 @@ class TestChatCluster:
         data = json.loads(resp.data)
         assert data["response"] == "AI одговор"
 
+    def test_cluster_ask_returns_structured_evidence(self, client):
+        mock_db = MagicMock()
+        mock_db.execute.return_value = [
+            {"title": "T1", "description": "D1", "source": "MIA", "link": "https://example.com/1", "created_at": None, "category": "Свет"},
+            {"title": "T2", "description": "D2", "source": "Reuters", "link": "https://example.com/2", "created_at": None, "category": "Свет"},
+        ]
+        mock_db.execute_one.return_value = None
+        ai_json = json.dumps({
+            "answer": "Главниот развој е потврден. Некои детали остануваат нејасни.",
+            "confirmed_points": ["Главниот развој е потврден."],
+            "unclear_points": ["Некои детали остануваат нејасни."],
+            "source_differences": "МИА го нагласува настанот, а Reuters поширокиот контекст.",
+            "citation_numbers": [1, 2],
+            "related_questions": ["Што сè уште не е потврдено?"],
+            "confidence": "medium",
+        })
+        with patch('routes.api.db', mock_db), \
+             patch('routes.api.answer_cluster_question_locally', return_value=None), \
+             patch('routes.api._call_ai', return_value=(ai_json, "gemini")):
+            resp = client.post("/api/cluster/abc123def456/ask",
+                               data=json.dumps({"question": "Што е ново?"}),
+                               content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["confirmed_points"] == ["Главниот развој е потврден."]
+        assert data["unclear_points"] == ["Некои детали остануваат нејасни."]
+        assert data["source_differences"].startswith("МИА")
+        assert "snippet" in data["citations"][0]
+
 
 # ── /proxy ────────────────────────────────────────────────────────
 

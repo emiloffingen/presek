@@ -6,6 +6,7 @@ type Citation = {
   title: string;
   link?: string;
   created_at?: string;
+  snippet?: string;
 };
 
 type AskResponse = {
@@ -13,6 +14,9 @@ type AskResponse = {
   citations: Citation[];
   related_questions: string[];
   confidence: 'high' | 'medium' | 'low';
+  confirmed_points: string[];
+  unclear_points: string[];
+  source_differences?: string;
 };
 
 type HistoryItem = {
@@ -85,6 +89,9 @@ export default function AskPresekIsland({
         citations: Array.isArray(data.citations) ? data.citations : [],
         related_questions: Array.isArray(data.related_questions) ? data.related_questions : [],
         confidence: data.confidence || 'medium',
+        confirmed_points: Array.isArray(data.confirmed_points) ? data.confirmed_points : [],
+        unclear_points: Array.isArray(data.unclear_points) ? data.unclear_points : [],
+        source_differences: data.source_differences || '',
       } as AskResponse;
 
       setQuestion(finalQuestion);
@@ -154,6 +161,35 @@ export default function AskPresekIsland({
           </div>
           <p className="ask-answer">{result.answer}</p>
 
+          {result.confirmed_points.length > 0 && (
+            <div className="ask-evidence-block">
+              <p className="nyt-section-label text-muted-foreground">Потврдено од изворите</p>
+              <ul className="ask-evidence-list">
+                {result.confirmed_points.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.unclear_points.length > 0 && (
+            <div className="ask-evidence-block">
+              <p className="nyt-section-label text-muted-foreground">Што останува нејасно</p>
+              <ul className="ask-evidence-list ask-evidence-list-muted">
+                {result.unclear_points.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.source_differences && (
+            <div className="ask-source-differences">
+              <p className="nyt-section-label text-muted-foreground">Разлики меѓу изворите</p>
+              <p>{result.source_differences}</p>
+            </div>
+          )}
+
           {result.citations.length > 0 && (
             <div className="ask-citations">
               <p className="nyt-section-label text-muted-foreground">Поткрепено со</p>
@@ -170,6 +206,7 @@ export default function AskPresekIsland({
                     <div>
                       <strong>{citation.source}</strong>
                       <span>{citation.title}</span>
+                      {citation.snippet && <small>{citation.snippet}</small>}
                     </div>
                     {citation.link && <ArrowUpRight size={12} />}
                   </a>

@@ -33,6 +33,70 @@ function getTimeStr(dateStr: string) {
     }
 }
 
+function getRelativeTimeStr(dateStr: string) {
+	try {
+		const date = new Date(dateStr);
+		const diffMs = Date.now() - date.getTime();
+		const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+		if (diffMinutes < 60) return `пред ${diffMinutes} мин`;
+		const diffHours = Math.round(diffMinutes / 60);
+		if (diffHours < 24) return `пред ${diffHours} ч`;
+		const diffDays = Math.round(diffHours / 24);
+		return `пред ${diffDays} д`;
+	} catch {
+		return '';
+	}
+}
+
+function titleTerms(text: string) {
+	return Array.from(
+		new Set(
+			(text || '')
+				.toLowerCase()
+				.match(/[a-zа-ш0-9]{3,}/g)?.filter(
+					(token) => !['вест', 'вести', 'извор', 'извори', 'денес', 'утре', 'вчера'].includes(token)
+				) || []
+		)
+	);
+}
+
+function getRelationshipMeta(title: string, leadTitle: string, index: number) {
+	if (index === 0) {
+		return {
+			label: 'Водечки извор',
+			tone: 'lead',
+			description: 'Најдиректна и најцелосна верзија на главниот развој.',
+		};
+	}
+
+	const leadTerms = titleTerms(leadTitle);
+	const currentTerms = titleTerms(title);
+	const overlapCount = currentTerms.filter((token) => leadTerms.includes(token)).length;
+	const overlap = overlapCount / Math.max(Math.min(leadTerms.length, currentTerms.length), 1);
+
+	if (overlap >= 0.5) {
+		return {
+			label: 'Го потврдува главниот развој',
+			tone: 'confirm',
+			description: 'Носи слична главна линија како водечкиот извор.',
+		};
+	}
+
+	if (overlap >= 0.24) {
+		return {
+			label: 'Додава контекст',
+			tone: 'context',
+			description: 'Ја проширува приказната со дополнителни детали или реакција.',
+		};
+	}
+
+	return {
+		label: 'Различен агол',
+		tone: 'contrast',
+		description: 'Го осветлува настанот од друг аспект или со поинаков акцент.',
+	};
+}
+
 function parseSynthesis(text: string) {
     if (!text) return [];
     // Split by lines starting with - [ or just -
@@ -74,6 +138,23 @@ function normalizePerspectives(items: any[]) {
 
 const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
 const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
+const leadArticle = cluster?.articles?.[0];
+const articleRows = cluster
+	? cluster.articles.map((article: any, index: number) => ({
+			...article,
+			relationship: getRelationshipMeta(article.title, leadArticle?.title || article.title, index),
+			exactTime: getTimeStr(article.created_at),
+			relativeTime: getRelativeTimeStr(article.created_at),
+	  }))
+	: [];
+const coverageSummary = articleRows.reduce(
+	(acc: any, article: any) => {
+		acc.total += 1;
+		acc[article.relationship.tone] += 1;
+		return acc;
+	},
+	{ total: 0, lead: 0, confirm: 0, context: 0, contrast: 0 }
+);
 const suggestedQuestions = [
 	'Што е најважното ново во оваа вест?',
 	'Како се разликуваат изворите во известувањето?',
@@ -164,17 +245,24 @@ const suggestedQuestions = [
 						<section class="cluster-module">
 							<h2 class="cluster-section-title">Сите Извори</h2>
 							<div class="article-list">
-								{cluster.articles.map((a: any) => (
-									<div class="article-row group">
+								{articleRows.map((a: any) => (
+									<div class={`article-row article-row-${a.relationship.tone} group`}>
 										<div class="article-row-top">
-											<span class="nyt-section-label text-nyt-red">{a.source}</span>
-											<span class="nyt-section-label text-muted-foreground">{getTimeStr(a.created_at)}</span>
+											<div class="article-row-source">
+												<span class="nyt-section-label text-nyt-red">{a.source}</span>
+												<span class={`article-row-badge article-row-badge-${a.relationship.tone}`}>{a.relationship.label}</span>
+											</div>
+											<div class="article-row-time">
+												<span class="nyt-section-label text-muted-foreground">{a.relativeTime}</span>
+												<span class="article-row-time-exact">{a.exactTime}</span>
+											</div>
 										</div>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="block group">
 											<h3 class="article-row-title">
 												{a.title}
 											</h3>
 										</a>
+										<p class="article-row-note">{a.relationship.description}</p>
 										<p class="article-row-summary">{a.description}</p>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
 											<Link2 size={12} /> Прочитај ја целата вест
@@ -200,6 +288,24 @@ const suggestedQuestions = [
 								</div>
 							</div>
 						)}
+
+						<div class="rail-card">
+							<h3 class="rail-card-title">Слика На Покриеност</h3>
+							<div class="coverage-metrics">
+								<div>
+									<strong>{coverageSummary.confirm}</strong>
+									<span>го потврдуваат главниот развој</span>
+								</div>
+								<div>
+									<strong>{coverageSummary.context}</strong>
+									<span>додаваат поширок контекст</span>
+								</div>
+								<div>
+									<strong>{coverageSummary.contrast}</strong>
+									<span>носат различен агол</span>
+								</div>
+							</div>
+						</div>
 
 						{/* AI Chat Island (Coming Soon Style) */}
 						<div class="rail-card rail-card-accent">
@@ -389,6 +495,71 @@ const suggestedQuestions = [
 		margin-bottom: 0.4rem;
 	}
 
+	.article-row-source,
+	.article-row-time {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.article-row-time {
+		justify-content: flex-end;
+	}
+
+	.article-row-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.2rem 0.45rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+	}
+
+	.article-row-badge-lead {
+		border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border) 60%);
+		color: var(--nyt-accent);
+	}
+
+	.article-row-badge-confirm {
+		border-color: color-mix(in srgb, #2f855a 32%, var(--border) 68%);
+		color: #2f855a;
+	}
+
+	.article-row-badge-context {
+		border-color: color-mix(in srgb, #9a6700 32%, var(--border) 68%);
+		color: #9a6700;
+	}
+
+	.article-row-badge-contrast {
+		border-color: color-mix(in srgb, #3b5ccc 32%, var(--border) 68%);
+		color: #3b5ccc;
+	}
+
+	:root.dark .article-row-badge-confirm {
+		color: #7bd6a3;
+	}
+
+	:root.dark .article-row-badge-context {
+		color: #f0c674;
+	}
+
+	:root.dark .article-row-badge-contrast {
+		color: #9bb2ff;
+	}
+
+	.article-row-time-exact {
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 800;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
 	.article-row-title {
 		margin: 0 0 0.7rem;
 		font-size: 1.28rem;
@@ -406,6 +577,50 @@ const suggestedQuestions = [
 
 	.article-row-summary {
 		margin-bottom: 0.85rem;
+	}
+
+	.article-row-note {
+		margin: 0 0 0.45rem;
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.coverage-metrics {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.coverage-metrics div {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.7rem;
+		align-items: baseline;
+		padding-top: 0.8rem;
+		border-top: 1px solid var(--border);
+	}
+
+	.coverage-metrics div:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	.coverage-metrics strong {
+		font-family: var(--font-headline);
+		font-size: 1.45rem;
+		line-height: 1;
+		color: var(--foreground);
+	}
+
+	.coverage-metrics span {
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.55;
+		color: var(--secondary-foreground);
 	}
 
 	.rail-tags {
@@ -561,10 +776,36 @@ const suggestedQuestions = [
 	}
 
 	:global(.ask-citations),
-	:global(.ask-followups) {
+	:global(.ask-followups),
+	:global(.ask-evidence-block),
+	:global(.ask-source-differences) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.7rem;
+	}
+
+	:global(.ask-evidence-list) {
+		margin: 0;
+		padding-left: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.6;
+		color: var(--secondary-foreground);
+	}
+
+	:global(.ask-evidence-list-muted) {
+		color: var(--muted-foreground);
+	}
+
+	:global(.ask-source-differences p:last-child) {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.94rem;
+		line-height: 1.62;
+		color: var(--secondary-foreground);
 	}
 
 	:global(.ask-citation-list) {
@@ -605,6 +846,15 @@ const suggestedQuestions = [
 		font-size: 0.95rem;
 		line-height: 1.5;
 		color: var(--secondary-foreground);
+	}
+
+	:global(.ask-citation small) {
+		display: block;
+		margin-top: 0.3rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--muted-foreground);
 	}
 
 	:global(.ask-history) {
@@ -696,6 +946,16 @@ const suggestedQuestions = [
 
 		.perspective-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 40rem) {
+		.article-row-top {
+			flex-direction: column;
+		}
+
+		.article-row-time {
+			justify-content: flex-start;
 		}
 	}
 </style>

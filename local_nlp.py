@@ -23,6 +23,148 @@ SENTIMENT_LEXICON = {
     "смртност": -2.0, "болест": -1.5, "штета": -1.5, "закана": -1.5, "бомба": -2.0,
 }
 
+TAG_NOISE_WORDS = {
+    "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
+    "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
+    "јануари", "февруари", "март", "април", "мај", "јуни", "јули",
+    "август", "септември", "октомври", "ноември", "декември",
+    "слушаме", "гласот", "добронамерните", "овде", "таму",
+    "вести", "вест", "извор", "извори", "кластер", "најново", "подготвува",
+    "напади", "објави", "изјави", "порача", "соопшти",
+}
+
+TAG_GENERIC_STARTERS = {
+    "ново", "нова", "нови", "нов", "главно", "главниот", "водечки",
+    "утрински", "вечерни", "последни", "последно", "последната",
+}
+
+
+def normalize_tag_name(name):
+    clean = re.sub(r"\s+", " ", str(name or "").strip(" -–—,.;:!?()[]{}\"'"))
+    if not clean:
+        return ""
+    if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
+        clean = " ".join(part.capitalize() for part in clean.split(" "))
+    return clean
+
+
+def is_valid_focus_entity(name, entity_type=None):
+    clean = normalize_tag_name(name)
+    lowered = clean.lower()
+    words = [word for word in re.split(r"\s+", lowered) if word]
+
+    if not clean or len(clean) < 3:
+        return False
+    if lowered in TAG_NOISE_WORDS:
+        return False
+    if any(word in TAG_NOISE_WORDS for word in words):
+        return False
+    if words and words[0] in TAG_GENERIC_STARTERS:
+        return False
+    if entity_type and str(entity_type).lower() in {"time", "date", "duration"}:
+        return False
+    if re.fullmatch(r"\d+", clean):
+        return False
+    if re.search(r"\b\d{1,2}:\d{2}\b", clean):
+        return False
+    if clean.count(" ") > 3:
+        return False
+    if len(words) > 1 and any(len(word) < 3 for word in words):
+        return False
+    return True
+
+
+def filter_cluster_tags(tags, limit=10):
+    filtered = []
+    seen = set()
+    for raw in tags or []:
+        if isinstance(raw, dict):
+            clean = normalize_tag_name(raw.get("name") or raw.get("entity_name") or raw.get("tag"))
+            entity_type = raw.get("type") or raw.get("entity_type")
+        else:
+            clean = normalize_tag_name(raw)
+            entity_type = None
+
+        if not is_valid_focus_entity(clean, entity_type):
+            continue
+
+        key = clean.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        filtered.append(clean)
+    return filtered[:limit]
+
+
+def _tokenize_title_terms(text):
+    return [
+        token for token in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+        if token not in STOPWORDS and token not in TAG_NOISE_WORDS
+    ]
+
+
+def _extract_capitalized_phrases(text):
+    if not text:
+        return []
+    pattern = re.compile(r"(?:\b[А-ЯA-ZЀ-ӿ][а-яa-zЀ-ӿ0-9]+\b(?:[\s-]+\b[А-ЯA-ZЀ-ӿ][а-яa-zЀ-ӿ0-9]+\b){0,2})")
+    return [match.group(0).strip() for match in pattern.finditer(text)]
+
+
+def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
+    candidates = []
+
+    for entity in entity_names or []:
+        candidates.append(entity)
+
+    normalized_titles = [str(title or "").strip() for title in titles or [] if str(title or "").strip()]
+    title_tokens = Counter()
+    title_bigrams = Counter()
+    capitalized = Counter()
+
+    for title in normalized_titles:
+        for phrase in _extract_capitalized_phrases(title):
+            capitalized[phrase] += 1
+
+        tokens = _tokenize_title_terms(title)
+        title_tokens.update(tokens)
+        for left, right in zip(tokens, tokens[1:]):
+            if left in TAG_GENERIC_STARTERS or right in TAG_GENERIC_STARTERS:
+                continue
+            title_bigrams[f"{left} {right}"] += 1
+
+    for phrase, count in capitalized.most_common(12):
+        if count >= 1:
+            candidates.append(phrase)
+
+    for phrase, count in title_bigrams.most_common(12):
+        if count >= 2:
+            candidates.append(phrase)
+
+    for token, count in title_tokens.most_common(12):
+        if count >= 2 or len(token) >= 7:
+            candidates.append(token)
+
+    filtered = filter_cluster_tags(candidates, limit=top_n * 2)
+    compact = []
+    for candidate in filtered:
+        lowered = candidate.casefold()
+        candidate_words = lowered.split()
+        if any(lowered != other.casefold() and lowered in other.casefold() for other in compact):
+            continue
+        if any(
+            other.casefold() in lowered and len(other.split()) <= len(candidate_words)
+            for other in compact
+        ):
+            continue
+        compact.append(candidate)
+        if len(compact) >= top_n:
+            break
+
+    if compact:
+        return compact[:top_n]
+
+    return filter_cluster_tags(sources or [], limit=min(top_n, 4))
+
 def analyze_sentiment_locally(text):
     """
     Returns a score between -2.0 and 2.0 based on keyword frequency.
@@ -293,6 +435,74 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
             }
 
     return None
+
+
+def build_citation_snippet(article):
+    title = str((article or {}).get("title") or "").strip()
+    description = str((article or {}).get("description") or "").strip()
+    if description:
+        snippet = summarize_locally(description, sentence_count=1).strip()
+        if snippet:
+            return snippet[:220]
+    return title[:220]
+
+
+def build_structured_answer_sections(answer, articles=None, synthesis="", perspectives=None):
+    answer = str(answer or "").strip()
+    articles = _normalize_articles_for_local_use(articles)
+    perspectives = perspectives or []
+
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r'(?<=[.!?])\s+', answer)
+        if sentence.strip()
+    ]
+    uncertainty_markers = (
+        "не е потврдено", "не е јасно", "нејасно", "непотврдено",
+        "не се знае", "отворено", "се развива", "засега",
+    )
+
+    confirmed_points = []
+    unclear_points = []
+
+    for sentence in sentences:
+        lowered = sentence.lower()
+        if any(marker in lowered for marker in uncertainty_markers):
+            unclear_points.append(sentence)
+        else:
+            confirmed_points.append(sentence)
+
+    if not confirmed_points and sentences:
+        confirmed_points = sentences[:2]
+
+    if not unclear_points:
+        if perspectives:
+            unclear_points.append("Изворите нудат различни акценти, но не даваат целосна слика за сите следни чекори.")
+        elif synthesis:
+            unclear_points.append("Достапниот контекст ја објаснува главната линија, но не ги затвора сите отворени детали.")
+
+    source_differences = ""
+    if perspectives:
+        top = []
+        for item in perspectives[:2]:
+            angle = str(item.get("angle") or "").strip()
+            content = str(item.get("content") or "").strip()
+            text = f"{angle}: {content}".strip(": ").strip()
+            if text:
+                top.append(text)
+        if top:
+            source_differences = " ".join(top)[:320]
+    elif len(articles) >= 2:
+        source_differences = (
+            f"{articles[0]['source']} најмногу го истакнува водечкиот развој, "
+            f"додека {articles[1]['source']} додава поширок контекст или реакција."
+        )
+
+    return {
+        "confirmed_points": confirmed_points[:3],
+        "unclear_points": unclear_points[:2],
+        "source_differences": source_differences,
+    }
 
 def generate_local_placeholder(cluster_id, title, category="Вести"):
     """

@@ -6,6 +6,12 @@ interface Props {
 
 const { cluster, isLead = false } = Astro.props;
 const main = cluster.articles[0];
+const sourceCount = cluster.articles.length;
+const significanceLabel =
+	sourceCount >= 6 ? 'Широко покриено' :
+	sourceCount >= 4 ? 'Следена тема' :
+	cluster.is_breaking ? 'Итен развој' :
+	'Во тек';
 
 // Handle image proxy
 const thumb = cluster.representative_image || cluster.articles.find((a: any) => a.image_url)?.image_url;
@@ -27,6 +33,7 @@ function getTimeStr(dateStr: string) {
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
 			{cluster.is_breaking && <span class="breaking-label">LIVE</span>}
+			<span class="significance-label">{significanceLabel}</span>
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
@@ -34,6 +41,14 @@ function getTimeStr(dateStr: string) {
 				{main.title}
 			</h2>
 		</a>
+
+		<p class="why-it-matters">
+			{sourceCount >= 6
+				? `Темата се развива низ ${sourceCount} извори со пошироко медиумско покривање.`
+				: sourceCount >= 4
+				? `Повеќе редакции ја следат приказната и додаваат нови детали.`
+				: `Клучен развој што вреди да се следи додека приказната се развива.`}
+		</p>
 
 		{main.description && (
 			<p class="summary">
@@ -126,9 +141,20 @@ function getTimeStr(dateStr: string) {
         text-wrap: pretty;
 	}
 
+	.why-it-matters {
+		margin: 0 0 0.8rem;
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
 	.article-meta {
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 		margin-bottom: 0.5rem;
 	}
@@ -150,6 +176,15 @@ function getTimeStr(dateStr: string) {
         border: 1px solid var(--nyt-red);
         padding: 0 4px;
     }
+
+	.significance-label {
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
 
 	.footer-meta {
 		font-family: var(--font-sans);

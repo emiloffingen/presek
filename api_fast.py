@@ -17,7 +17,15 @@ from utils import (
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
-from local_nlp import answer_cluster_question_locally, generate_daily_brief_fallback
+from local_nlp import (
+    answer_cluster_question_locally,
+    generate_daily_brief_fallback,
+    normalize_tag_name,
+    filter_cluster_tags,
+    is_valid_focus_entity,
+    build_citation_snippet,
+    build_structured_answer_sections,
+)
 
 log = logging.getLogger("presek")
 
@@ -32,65 +40,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ENTITY_NOISE_WORDS = {
-    "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
-    "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
-    "јануари", "февруари", "март", "април", "мај", "јуни", "јули",
-    "август", "септември", "октомври", "ноември", "декември",
-    "слушаме", "гласот", "добронамерните",
-}
-
-
-def _normalize_entity_name(name: str) -> str:
-    clean = re.sub(r"\s+", " ", (name or "").strip(" -–—,.;:!?()[]{}\"'"))
-    if not clean:
-        return ""
-    if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
-        return " ".join(part.capitalize() for part in clean.split(" "))
-    return clean
-
-
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
-    clean = _normalize_entity_name(name)
-    lowered = clean.lower()
-
-    if not clean or len(clean) < 3:
-        return False
-    if lowered in ENTITY_NOISE_WORDS:
-        return False
-    if re.fullmatch(r"\d+", clean):
-        return False
-    if re.search(r"\b\d{1,2}:\d{2}\b", clean):
-        return False
-    if clean.count(" ") > 4:
-        return False
-    if entity_type and entity_type.lower() in {"time", "date", "duration"}:
-        return False
-    return True
-
-
-def _filter_cluster_tags(tags: list[str]) -> list[str]:
-    filtered = []
-    seen = set()
-    for raw in tags or []:
-        clean = _normalize_entity_name(raw)
-        lowered = clean.lower()
-        if not clean or len(clean) < 3:
-            continue
-        if lowered in ENTITY_NOISE_WORDS:
-            continue
-        if clean.count(" ") > 3:
-            continue
-        if re.fullmatch(r"\d+", clean):
-            continue
-        if re.search(r"\b\d{1,2}:\d{2}\b", clean):
-            continue
-        dedupe_key = clean.casefold()
-        if dedupe_key in seen:
-            continue
-        seen.add(dedupe_key)
-        filtered.append(clean)
-    return filtered[:10]
+    return is_valid_focus_entity(name, entity_type)
 
 
 def _parse_perspectives_blob(raw_perspectives) -> list[dict]:
@@ -172,6 +123,7 @@ def _rank_cluster_citations(question: str, answer: str, articles: list[dict], pr
                 "title": article.get("title"),
                 "link": article.get("link"),
                 "created_at": article.get("created_at"),
+                "snippet": build_citation_snippet(article),
             },
         ))
 
@@ -185,6 +137,7 @@ def _rank_cluster_citations(question: str, answer: str, articles: list[dict], pr
             "title": article.get("title"),
             "link": article.get("link"),
             "created_at": article.get("created_at"),
+            "snippet": build_citation_snippet(article),
         }
         for article in articles[:2]
     ]
@@ -232,7 +185,7 @@ async def get_top_entities(limit: int = 10):
     filtered = []
     seen = set()
     for row in rows:
-        normalized_name = _normalize_entity_name(row["name"])
+        normalized_name = normalize_tag_name(row["name"])
         if not _is_valid_focus_entity(normalized_name, row.get("type")):
             continue
         dedupe_key = normalized_name.casefold()
@@ -383,7 +336,7 @@ async def get_cluster_detail(cluster_id: str):
             "SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", 
             (cluster_id,)
         )
-        tags = _filter_cluster_tags(m_row["tags"] if m_row else [])
+        tags = filter_cluster_tags(m_row["tags"] if m_row else [])
         topics = m_row["topics"] if m_row else []
 
         # 4. Related clusters
@@ -462,12 +415,21 @@ async def ask_cluster(cluster_id: str, request: Request):
 
     local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
     if local_answer:
+        sections = build_structured_answer_sections(
+            local_answer["answer"],
+            articles,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
         return {
             "status": "success",
             "answer": local_answer["answer"],
-            "citations": local_answer["citations"][:3],
+            "citations": _rank_cluster_citations(question, local_answer["answer"], articles, []),
             "related_questions": local_answer["related_questions"][:3],
             "confidence": local_answer["confidence"],
+            "confirmed_points": sections["confirmed_points"],
+            "unclear_points": sections["unclear_points"],
+            "source_differences": sections["source_differences"],
             "generated_locally": True,
         }
 
@@ -500,7 +462,7 @@ async def ask_cluster(cluster_id: str, request: Request):
         f"Прашање од корисник: {question}\n\n"
         "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
         "Врати JSON со полиња: "
-        "{\"answer\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+        "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
         "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
         "Одговорот мора да биде на македонски."
     )
@@ -524,16 +486,34 @@ async def ask_cluster(cluster_id: str, request: Request):
     parsed = clean_json_response(response_text)
     if isinstance(parsed, dict):
         answer = str(parsed.get("answer") or "").strip()
+        confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
+        unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
+        source_differences = str(parsed.get("source_differences") or "").strip()
         citation_numbers = parsed.get("citation_numbers") or []
         related_questions = parsed.get("related_questions") or []
         confidence = str(parsed.get("confidence") or "medium").strip().lower()
     else:
         answer = str(parsed).strip()
+        confirmed_points = []
+        unclear_points = []
+        source_differences = ""
         citation_numbers = [1, 2]
         related_questions = []
         confidence = "medium"
 
     citations = _rank_cluster_citations(question, answer, articles, citation_numbers)
+    sections = build_structured_answer_sections(
+        answer,
+        articles,
+        synthesis=synthesis,
+        perspectives=perspectives,
+    )
+    if not confirmed_points:
+        confirmed_points = sections["confirmed_points"]
+    if not unclear_points:
+        unclear_points = sections["unclear_points"]
+    if not source_differences:
+        source_differences = sections["source_differences"]
 
     clean_related = []
     for item in related_questions:
@@ -553,6 +533,9 @@ async def ask_cluster(cluster_id: str, request: Request):
         "citations": citations[:3],
         "related_questions": clean_related[:3],
         "confidence": confidence,
+        "confirmed_points": confirmed_points[:3],
+        "unclear_points": unclear_points[:2],
+        "source_differences": source_differences,
     }
 
 @app.get("/api/briefing")

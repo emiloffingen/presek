@@ -24,6 +24,8 @@ from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
     generate_daily_brief_fallback,
+    extract_cluster_tags_locally,
+    filter_cluster_tags,
 )
 
 log = logging.getLogger("presek_celery")
@@ -284,30 +286,6 @@ def run_prune_db():
 def generate_cluster_metadata_task():
     """Tag recent clusters with metadata (entities, source count, and representative image)."""
     try:
-        from local_nlp import extract_keyphrases_locally
-
-        noise_words = {
-            "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
-            "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
-            "слушаме", "гласот", "добронамерните",
-        }
-
-        def clean_tag(value):
-            clean = re.sub(r"\s+", " ", str(value or "").strip(" -–—,.;:!?()[]{}\"'"))
-            if not clean or len(clean) < 3:
-                return ""
-            if clean.lower() in noise_words:
-                return ""
-            if clean.count(" ") > 3:
-                return ""
-            if re.fullmatch(r"\d+", clean):
-                return ""
-            if re.search(r"\b\d{1,2}:\d{2}\b", clean):
-                return ""
-            if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
-                clean = " ".join(part.capitalize() for part in clean.split(" "))
-            return clean
-
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles
@@ -315,27 +293,19 @@ def generate_cluster_metadata_task():
             GROUP BY cluster_id HAVING COUNT(*) >= 2
         """, (cutoff,))
         for r in rows:
-            # 1. Fetch entities for this cluster to use as high-quality tags
-            entities = db.execute("SELECT entity_name FROM cluster_entities WHERE cluster_id = %s", (r['cluster_id'],))
-            tags = [e['entity_name'] for e in entities]
-            
-            # 2. Local Keyphrase Extraction (Free AI alternative for SEO tags)
-            combined_text = " ".join(r['titles'])
-            keyphrases = extract_keyphrases_locally(combined_text, top_n=3)
-            
-            final_tags = []
-            seen = set()
-            for candidate in tags + keyphrases:
-                clean = clean_tag(candidate)
-                if not clean:
-                    continue
-                key = clean.casefold()
-                if key in seen:
-                    continue
-                seen.add(key)
-                final_tags.append(clean)
+            entities = db.execute(
+                "SELECT entity_name, entity_type FROM cluster_entities WHERE cluster_id = %s",
+                (r['cluster_id'],)
+            )
+            entity_candidates = [dict(e) for e in entities]
+            final_tags = extract_cluster_tags_locally(
+                titles=r['titles'],
+                entity_names=entity_candidates,
+                sources=r['sources'],
+                top_n=8,
+            )
             if not final_tags:
-                final_tags = r['sources']
+                final_tags = filter_cluster_tags(r['sources'], limit=4)
             
             # 3. Representative Image Selection
             # We ONLY use images that belong to this specific cluster.

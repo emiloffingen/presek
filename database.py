@@ -175,10 +175,25 @@ class DatabaseManager:
             limit = 100
             
         sql = """
-            SELECT *, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
-            FROM articles
-            WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-            ORDER BY rank DESC, created_at DESC
+            WITH query AS (
+                SELECT
+                    websearch_to_tsquery('simple', %s) AS ts_query,
+                    lower(%s) AS query_text
+            )
+            SELECT
+                a.*,
+                ts_rank_cd(a.search_vector, query.ts_query) AS rank,
+                CASE
+                    WHEN lower(a.title) = query.query_text THEN 4
+                    WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+                    WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+                    WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+                    ELSE 0
+                END AS match_score
+            FROM articles a
+            CROSS JOIN query
+            WHERE a.search_vector @@ query.ts_query
+            ORDER BY match_score DESC, rank DESC, created_at DESC
             LIMIT %s
         """
         return self.execute(sql, (q, q, limit))
@@ -403,4 +418,3 @@ def prune_db():
         DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
         DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
     """, fetch=False)
-
