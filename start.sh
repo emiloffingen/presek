@@ -136,6 +136,13 @@ screen -S "$SESSION" -X screen -t "fastapi" bash -c "
   exec bash"
 sleep 1
 
+# Window 6: Astro Frontend (Port 3000)
+screen -S "$SESSION" -X screen -t "astro" bash -c "
+  cd $APP_DIR/web
+  PORT=3000 HOST=0.0.0.0 node ./dist/server/entry.mjs 2>&1 | tee -a $LOG_FILE
+  exec bash"
+sleep 1
+
 # Window 3: Celery Beat (scheduler)
 screen -S "$SESSION" -X screen -t "beat" bash -c "
   cd $APP_DIR
@@ -173,12 +180,13 @@ if [ "$HEALTHY" = "0" ]; then
 fi
 
 divider
-echo -e "  ${CYAN}App:${RESET}       http://localhost:5000"
-echo -e "  ${CYAN}FastAPI:${RESET}   http://localhost:5001"
-echo -e "  ${CYAN}Health:${RESET}    http://localhost:5000/api/health"
-echo -e "  ${CYAN}Log:${RESET}       tail -f $LOG_FILE"
-echo -e "  ${CYAN}Reattach:${RESET}  screen -r $SESSION"
-echo -e "  ${CYAN}Windows:${RESET}   Ctrl+A then \" — web / worker / fastapi / beat / backfill"
-echo -e "  ${CYAN}Stop:${RESET}      ./start.sh --stop"
+echo -e "  ${CYAN}App (Flask):${RESET}   http://localhost:5000"
+echo -e "  ${CYAN}Astro (New):${RESET}   http://localhost:3000"
+echo -e "  ${CYAN}FastAPI:${RESET}      http://localhost:5001"
+echo -e "  ${CYAN}Health:${RESET}       http://localhost:5000/api/health"
+echo -e "  ${CYAN}Log:${RESET}          tail -f $LOG_FILE"
+echo -e "  ${CYAN}Reattach:${RESET}     screen -r $SESSION"
+echo -e "  ${CYAN}Windows:${RESET}      Ctrl+A then \" — web / worker / fastapi / astro / beat / backfill"
+echo -e "  ${CYAN}Stop:${RESET}         ./start.sh --stop"
 divider
 echo ""

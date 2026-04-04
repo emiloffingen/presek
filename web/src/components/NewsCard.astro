@@ -102,7 +102,7 @@ function getTimeStr(dateStr: string) {
 	.cluster-thumb {
 		width: 100%;
 		aspect-ratio: 16 / 9;
-		object-cover: cover;
+		object-fit: cover;
 		border-radius: 2px;
 		filter: grayscale(20%);
 		transition: filter 0.3s ease;
@@ -202,7 +202,7 @@ function getTimeStr(dateStr: string) {
 	}
 
 	.entity-tag {
-		font-[var(--nyt-font-sans)];
+		font-family: var(--nyt-font-sans);
 		font-size: 0.6rem;
 		font-weight: 900;
 		text-transform: uppercase;
