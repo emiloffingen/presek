@@ -53,21 +53,12 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <script>
-        // Inline script to handle theme toggle before content renders
-        function updateThemeMeta(isDark) {
-            const meta = document.getElementById('themeMeta');
-            if (meta) meta.content = isDark ? '#0f1117' : '#FFFFFF';
-        }
+    <div id="root">
+        <a href="#pageWrap" class="visually-hidden">Прескокни до содржина</a>
+        <div id="readingProgress"></div>
         
-        const isDark = document.documentElement.classList.contains('dark');
-        updateThemeMeta(isDark);
-    </script>
-    <a href="#pageWrap" class="visually-hidden">Прескокни до содржина</a>
-    <div id="readingProgress"></div>
-    
-    <!-- Unified NYT Masthead Bar -->
-    <div class="utility-bar">
+        <!-- Unified NYT Masthead Bar -->
+        <div class="utility-bar">
         <div class="utility-inner">
             <div style="display: flex; flex-direction: column; gap: 2px;">
                 <span id="currentDate" style="font-weight: 800; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">&nbsp;</span>
@@ -262,6 +253,30 @@
         <span class="toast-icon">✨</span>
         <span id="toastMsg">НОВИ ВЕСТИ СЕ ПРИСТИГНАТИ</span>
     </div>
+    </div> <!-- End #root -->
+
+    <script id="initial-data" type="application/json">
+        {
+            "clusters": {{ initial_clusters | tojson | safe if initial_clusters else '[]' }},
+            "trending": {{ initial_trending | tojson | safe if initial_trending else '[]' }},
+            "theme": "{{ request.cookies.get('theme', 'dark') }}"
+        }
+    </script>
+    <script>
+        // Make initial data globally available
+        try {
+            window.__INITIAL_DATA__ = JSON.parse(document.getElementById('initial-data').textContent);
+        } catch (e) {
+            window.__INITIAL_DATA__ = { clusters: [], trending: [], theme: 'dark' };
+        }
+        
+        // Immediate theme sync from initial data
+        if (window.__INITIAL_DATA__.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 
     {{ vite_asset('main.js') }}
     {% block scripts %}{% endblock %}

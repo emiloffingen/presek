@@ -1,0 +1,62 @@
+{# templates/partials/cluster_card.html #}
+{% set main = cluster.articles[0] %}
+{# Find best thumbnail #}
+{% set thumb = cluster.representative_image %}
+{% if not thumb %}
+    {% for a in cluster.articles %}
+        {% if a.image_url and not thumb %}{% set thumb = a.image_url %}{% endif %}
+    {% endfor %}
+{% endif %}
+{% set thumb_src = ('/proxy?url=' ~ (thumb|urlencode)) if (thumb and not thumb.startswith('/')) else (thumb or '') %}
+
+<article class="news-cluster {{ card_class }} fade-in">
+    {% if thumb_src and not thumb_right %}
+    <div class="cluster-thumb-wrap">
+        <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+            <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="{{ 'eager' if is_lead else 'lazy' }}">
+        </a>
+    </div>
+    {% endif %}
+    
+    <div class="cluster-main">
+        <div class="cluster-meta">
+            <span class="text-accent">{{ main.source }}</span>
+            <span>·</span>
+            <span>{{ main.created_at | format_time }}</span>
+            {% if cluster.is_breaking %}
+                <span class="breaking-dot" style="color:var(--accent-color); font-weight:900; margin-left: 4px;">● LIVE</span>
+            {% endif %}
+        </div>
+
+        <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline" style="{{ headline_style }}">
+            {{ main.title }}
+        </a>
+        
+        {% if show_excerpt and main.description %}
+        <p class="cluster-excerpt">{{ main.description | truncate(excerpt_len or 120) }}</p>
+        {% endif %}
+        
+        {% if is_lead and cluster.articles|length > 1 %}
+        <div class="lead-sub-headlines" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); pt-4;">
+            {% for sub in cluster.articles[1:4] %}
+            <div class="sub-h-item" style="margin-bottom: 0.75rem;">
+                <span style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">{{ sub.source }}:</span>
+                <a href="/cluster/{{ cluster.cluster_id }}" style="font-family: var(--nyt-font-serif); font-size: 0.95rem; font-weight: 700; color: var(--text-primary); text-decoration: none; line-height: 1.3;">{{ sub.title | truncate(75) }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="cluster-meta" style="margin-top: auto; padding-top: 10px;">
+            <span>{{ cluster.articles|length }} извори анализирани</span>
+        </div>
+    </div>
+
+    {% if thumb_src and thumb_right %}
+    <div class="cluster-thumb-wrap">
+        <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
+            <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="lazy">
+        </a>
+    </div>
+    {% endif %}
+</article>

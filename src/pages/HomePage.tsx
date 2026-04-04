@@ -21,11 +21,13 @@ export const HomePage: React.FC = () => {
   const [showTopicBar, setShowTopicBar] = useState(false);
   const [newArticlesBanner, setNewArticlesBanner] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const hydrated = useRef(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchNews = useCallback(async (pg = 0, append = false) => {
-    // Abort previous request
+    // ... rest of fetchNews (unchanged)
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -61,8 +63,18 @@ export const HomePage: React.FC = () => {
   }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
 
   useEffect(() => {
+    if (!hydrated.current && window.__INITIAL_DATA__ && window.__INITIAL_DATA__.clusters?.length > 0) {
+      // Use SSR data
+      if (!selectedTopic && !searchQuery && page === 0 && selectedCategory === 'Македонија') {
+        setClusters(window.__INITIAL_DATA__.clusters);
+        hydrated.current = true;
+        return;
+      }
+    }
+
     reset();
     fetchNews(0, false);
+    hydrated.current = true;
   }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
 
   const loadMore = useCallback(() => {

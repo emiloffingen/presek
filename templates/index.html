@@ -8,61 +8,12 @@
     {% if initial_clusters %}
         {# Initial SSR Fold #}
         {% for cluster in initial_clusters %}
-            {% set main = cluster.articles[0] %}
             {% set idx = loop.index0 %}
             {% set is_lead = idx == 0 %}
             {% set is_thumb_right = (not is_lead and idx % 5 == 0) %}
+            {% set card_class = 'lead-story' if is_lead else ('thumb-right' if is_thumb_right else '') %}
 
-            {# Find best thumbnail #}
-            {% set thumb = cluster.representative_image %}
-            {% if not thumb %}
-                {% for a in cluster.articles %}
-                    {% if a.image_url and not thumb %}{% set thumb = a.image_url %}{% endif %}
-                {% endfor %}
-            {% endif %}
-            {% set thumb_src = ('/proxy?url=' ~ (thumb|urlencode)) if (thumb and not thumb.startswith('/')) else (thumb or '') %}
-
-            <article class="news-cluster {{ 'lead-story' if is_lead else ('thumb-right' if is_thumb_right else '') }} fade-in">
-                {% if thumb_src and not is_thumb_right %}
-                <div class="cluster-thumb-wrap">
-                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
-                        <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="{{ 'eager' if idx < 3 else 'lazy' }}">
-                    </a>
-                </div>
-                {% endif %}
-                <div class="cluster-main">
-                    <a href="/cluster/{{ cluster.cluster_id }}" class="cluster-headline">
-                        {{ main.title }}
-                    </a>
-                    {% if (is_lead or idx < 3) and main.description %}
-                    <p class="cluster-excerpt">{{ main.description | truncate(is_lead and 220 or 120) }}</p>
-                    {% endif %}
-                    
-                    {% if is_lead and cluster.articles|length > 1 %}
-                    <div class="lead-sub-headlines">
-                        {% for sub in cluster.articles[1:4] %}
-                        <div class="sub-h-item">
-                            <span class="sub-h-source">{{ sub.source }}:</span>
-                            <a href="/cluster/{{ cluster.cluster_id }}" class="sub-h-link">{{ sub.title | truncate(60) }}</a>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <div class="cluster-meta">
-                        <span>{{ main.created_at | format_time }}</span>
-                        <span>·</span>
-                        <span>{{ cluster.articles|length }} извори</span>
-                    </div>
-                </div>
-                {% if thumb_src and is_thumb_right %}
-                <div class="cluster-thumb-wrap">
-                    <a href="/cluster/{{ cluster.cluster_id }}" style="display:block;width:100%;height:100%;">
-                        <img src="{{ thumb_src }}" alt="{{ main.title }}" class="cluster-thumb" loading="lazy">
-                    </a>
-                </div>
-                {% endif %}
-            </article>
+            {% include "partials/cluster_card.html" with context %}
         {% endfor %}
     {% else %}
         <!-- Skeletons will be injected by JS or shown as static HTML -->
