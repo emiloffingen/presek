@@ -74,9 +74,9 @@ function getTimeStr(dateStr: string) {
 		)}
 
 		{/* Entity Tags for Intelligence */}
-		{cluster.articles[0].entity_names && cluster.articles[0].entity_names.length > 0 && (
+		{cluster.entities && cluster.entities.length > 0 && (
 			<div class="entity-tags">
-				{cluster.articles[0].entity_names.slice(0, 3).map((name: string) => (
+				{cluster.entities.slice(0, 3).map((name: string) => (
 					<a href={`/entity/${encodeURIComponent(name)}`} class="entity-tag">
 						{name}
 					</a>
