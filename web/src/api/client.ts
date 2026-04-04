@@ -17,10 +17,12 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || (window.location.origin + '/api');
+    // PUBLIC_API_URL is typically something like "http://localhost:5001/api"
+    this.baseURL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin + '/api' : 'http://localhost:5001/api');
+    
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 10000,
+      timeout: 15000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -49,7 +51,7 @@ class ApiClient {
     follow_topics?: string;
   }, config?: any): Promise<NewsResponse> {
     try {
-      const response = await this.client.get<NewsResponse>('/api/news', { 
+      const response = await this.client.get<NewsResponse>('/news', { 
         ...config,
         params 
       });
@@ -61,7 +63,7 @@ class ApiClient {
 
   async getClusterDetail(clusterId: string): Promise<{ status: string; data: ClusterDetail }> {
     try {
-      const response = await this.client.get(`/api/cluster/${clusterId}`);
+      const response = await this.client.get(`/cluster/${clusterId}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -70,7 +72,7 @@ class ApiClient {
 
   async getTrending(): Promise<TrendingWord[]> {
     try {
-      const response = await this.client.get<TrendingWord[]>('/api/trending');
+      const response = await this.client.get<TrendingWord[]>('/trending');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -79,7 +81,7 @@ class ApiClient {
 
   async getSources(): Promise<any[]> {
     try {
-      const response = await this.client.get<any[]>('/api/sources');
+      const response = await this.client.get<any[]>('/sources');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -88,7 +90,7 @@ class ApiClient {
 
   async getArchive(params: { date: string; page: number; page_size: number }): Promise<any> {
     try {
-      const response = await this.client.get('/api/archive', { params });
+      const response = await this.client.get('/archive', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -97,7 +99,7 @@ class ApiClient {
 
   async getStats(): Promise<{ status: string; data: Stats }> {
     try {
-      const response = await this.client.get('/api/stats');
+      const response = await this.client.get('/stats');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -106,7 +108,7 @@ class ApiClient {
 
   async getFullStats(): Promise<FullStats> {
     try {
-      const response = await this.client.get<FullStats>('/api/stats/full');
+      const response = await this.client.get<FullStats>('/stats/full');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -115,7 +117,7 @@ class ApiClient {
 
   async getPulse(): Promise<Array<{ source: string; count: number }>> {
     try {
-      const response = await this.client.get('/api/sources/pulse');
+      const response = await this.client.get('/sources/pulse');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -124,7 +126,7 @@ class ApiClient {
 
   async getWeather(): Promise<Weather> {
     try {
-      const response = await this.client.get<Weather>('/api/weather');
+      const response = await this.client.get<Weather>('/weather');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -133,7 +135,7 @@ class ApiClient {
 
   async getBriefing(): Promise<BriefingResponse> {
     try {
-      const response = await this.client.get<BriefingResponse>('/api/briefing');
+      const response = await this.client.get<BriefingResponse>('/briefing');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -142,7 +144,7 @@ class ApiClient {
 
   async getHealth(): Promise<HealthResponse> {
     try {
-      const response = await this.client.get<HealthResponse>('/api/health');
+      const response = await this.client.get<HealthResponse>('/health');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -151,7 +153,7 @@ class ApiClient {
 
   async chatCluster(clusterId: string, query: string): Promise<ChatResponse> {
     try {
-      const response = await this.client.post<ChatResponse>('/api/chat_cluster', {
+      const response = await this.client.post<ChatResponse>('/chat_cluster', {
         cluster_id: clusterId,
         query,
       });
