@@ -32,23 +32,23 @@ async def health():
 @app.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
     """Returns detailed profile and relationships for an entity."""
-    entity = db.execute_one(\"\"\"
+    entity = db.execute_one("""
         SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score
         FROM knowledge_entities WHERE name = %s
-    \"\"\", (name,))
+    """, (name,))
     
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
     
     # Get top relationships
-    relationships = db.execute(\"\"\"
+    relationships = db.execute("""
         SELECT 
             CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
             weight
         FROM knowledge_relationships
         WHERE entity_a = %s OR entity_b = %s
         ORDER BY weight DESC LIMIT 10
-    \"\"\", (name, name, name))
+    """, (name, name, name))
     
     return {
         "profile": entity,
@@ -58,11 +58,11 @@ async def get_entity_profile(name: str):
 @app.get("/api/intelligence/top-entities")
 async def get_top_entities(limit: int = 10):
     """Returns the most mentioned entities."""
-    rows = db.execute(\"\"\"
+    rows = db.execute("""
         SELECT name, type, total_mentions 
         FROM knowledge_entities 
         ORDER BY total_mentions DESC LIMIT %s
-    \"\"\", (limit,))
+    """, (limit,))
     return [dict(r) for r in rows]
 
 @app.get("/api/news")
@@ -75,33 +75,34 @@ async def get_news(
     page: int = 0,
     page_size: int = 24
 ):
-    # Fetch clusters with aggregated entity names
-    sql = \"\"\"
-        WITH cluster_ents AS (
-            SELECT cluster_id, array_agg(entity_name) as entity_names
-            FROM cluster_entities
-            GROUP BY cluster_id
-        )
-        SELECT a.*, COALESCE(ce.entity_names, '{}') as entity_names
-        FROM (
-    \"\"\"
-    if q:
-        sql += \"SELECT * FROM articles WHERE 1=1 AND (title ILIKE %s OR description ILIKE %s) LIMIT 100\"
-        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (f'%{q}%', f'%{q}%'))
-    elif entity:
-        sql += \"\"\"
-            SELECT a.* FROM articles a
-            JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
-            WHERE ce.entity_name = %s
-            ORDER BY a.created_at DESC LIMIT 100
-        \"\"\"
-        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (entity,))
-    elif category:
-        sql += \"SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100\"
-        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (category,))
-    else:
-        sql += \"SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 100\"
-        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\")
+    try:
+        # Fetch clusters with aggregated entity names
+        sql = """
+            WITH cluster_ents AS (
+                SELECT cluster_id, array_agg(entity_name) as entity_names
+                FROM cluster_entities
+                GROUP BY cluster_id
+            )
+            SELECT a.*, COALESCE(ce.entity_names, '{}') as entity_names
+            FROM (
+        """
+        if q:
+            sql += "SELECT * FROM articles WHERE 1=1 AND (title ILIKE %s OR description ILIKE %s) LIMIT 100"
+            rows = db.execute(sql + ") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id", (f'%{q}%', f'%{q}%'))
+        elif entity:
+            sql += """
+                SELECT a.* FROM articles a
+                JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
+                WHERE ce.entity_name = %s
+                ORDER BY a.created_at DESC LIMIT 100
+            """
+            rows = db.execute(sql + ") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id", (entity,))
+        elif category:
+            sql += "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100"
+            rows = db.execute(sql + ") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id", (category,))
+        else:
+            sql += "SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 100"
+            rows = db.execute(sql + ") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id")
 
         clusters = defaultdict(list)
         for r in rows:
@@ -125,7 +126,8 @@ async def get_news(
                 "cluster_id": main["cluster_id"],
                 "articles": arts,
                 "is_breaking": any(a.get("is_breaking") for a in arts), # Simplified
-                "score": score_cluster(arts)
+                "score": score_cluster(arts),
+                "entities": main.get("entity_names", [])
             })
 
         return {
@@ -148,22 +150,21 @@ async def chat_stream(cluster_id: str, query: str):
         raise HTTPException(status_code=404, detail="Cluster not found")
     
     context = "\n".join([f"- [{a['source']}]: {a['title']}" for a in articles])
-    prompt = f"Во контекст на овие вести:\n{context}\n\nКорисникот прашува: {query}"
-    system = "Ти си асистент на Пресек. Одговарај на македонски јазик кратко и јасно врз основа на дадените вести."
 
     async def generate():
-        provider = PROVIDERS.get("gemini")
-        if not provider:
-            yield "data: " + json.dumps({"error": "No AI provider available"}) + "\n\n"
-            return
-
-        async for chunk in provider.stream_call(prompt, system, 1000):
-            yield f"data: {json.dumps({'text': chunk})}\n\n"
-        
-        yield "data: [DONE]\n\n"
+        try:
+            full_prompt = f"Context:\n{context}\n\nUser Question: {query}"
+            async for chunk in _call_ai(SYNTHESIS_SYSTEM_PROMPT, full_prompt, stream=True):
+                if chunk:
+                    yield f"data: {json.dumps({'token': chunk})}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+@app.get("/api/trending")
+async def get_trending():
+    from trending import get_trending_words
+    words = get_trending_words(limit=20)
+    return words

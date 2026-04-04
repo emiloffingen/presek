@@ -106,9 +106,9 @@ IGNORE_WORDS = {
 }
 
 def update_knowledge_graph(entities: list[dict]):
-    \"\"\"
+    """
     Updates the global knowledge graph with seen entities and their relationships.
-    \"\"\"
+    """
     from database import db_manager as db
     import json
 
@@ -116,13 +116,13 @@ def update_knowledge_graph(entities: list[dict]):
 
     # 1. Upsert Entities
     for ent in entities:
-        sql = \"\"\"
+        sql = """
             INSERT INTO knowledge_entities (name, type, total_mentions, last_seen)
             VALUES (%s, %s, 1, CURRENT_TIMESTAMP)
             ON CONFLICT (name) DO UPDATE SET
                 total_mentions = knowledge_entities.total_mentions + 1,
                 last_seen = EXCLUDED.last_seen
-        \"\"\"
+        """
         db.execute(sql, (ent['name'], ent['type']), fetch=False)
 
     # 2. Build Relationships (Co-occurrence)
@@ -132,13 +132,13 @@ def update_knowledge_graph(entities: list[dict]):
         for i in range(len(sorted_names)):
             for j in range(i + 1, len(sorted_names)):
                 a, b = sorted_names[i], sorted_names[j]
-                sql = \"\"\"
+                sql = """
                     INSERT INTO knowledge_relationships (entity_a, entity_b, weight, last_seen)
                     VALUES (%s, %s, 1, CURRENT_TIMESTAMP)
                     ON CONFLICT (entity_a, entity_b) DO UPDATE SET
                         weight = knowledge_relationships.weight + 1,
                         last_seen = EXCLUDED.last_seen
-                \"\"\"
+                """
                 db.execute(sql, (a, b), fetch=False)
 
 def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
