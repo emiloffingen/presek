@@ -73,6 +73,17 @@ function getTimeStr(dateStr: string) {
 			</div>
 		)}
 
+		{/* Entity Tags for Intelligence */}
+		{cluster.articles[0].entity_names && cluster.articles[0].entity_names.length > 0 && (
+			<div class="entity-tags">
+				{cluster.articles[0].entity_names.slice(0, 3).map((name: string) => (
+					<a href={`/entity/${encodeURIComponent(name)}`} class="entity-tag">
+						{name}
+					</a>
+				))}
+			</div>
+		)}
+
 		<div class="cluster-meta footer-meta">
 			<span>{cluster.articles.length} извори анализирани</span>
 		</div>
@@ -181,6 +192,33 @@ function getTimeStr(dateStr: string) {
 	.footer-meta {
 		margin-top: auto;
 		padding-top: 0.5rem;
+	}
+
+	.entity-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+	}
+
+	.entity-tag {
+		font-[var(--nyt-font-sans)];
+		font-size: 0.6rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+		background: var(--bg-secondary);
+		padding: 0.2rem 0.5rem;
+		border-radius: 2px;
+		text-decoration: none;
+		transition: all 0.2s ease;
+	}
+
+	.entity-tag:hover {
+		color: var(--accent-color);
+		background: var(--bg-primary);
+		box-shadow: 0 0 0 1px var(--accent-color);
 	}
 
 	@media (max-width: 768px) {

@@ -7,22 +7,25 @@ import { Search, Menu, Moon, Sun, Zap, TrendingUp, BarChart3 } from 'lucide-reac
 
 // Fetch data from existing Flask API (SSR)
 // In production, this would be an internal network call or use a shared DAL
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://localhost:5001/api";
 
 let clusters = [];
 let trending = [];
+let topEntities = [];
 let error = null;
 
 try {
-    const [newsRes, trendRes] = await Promise.all([
+    const [newsRes, trendRes, entityRes] = await Promise.all([
         fetch(`${API_URL}/news?page_size=25`),
-        fetch(`${API_URL}/trending`)
+        fetch(`${API_URL}/trending`),
+        fetch(`${API_URL}/intelligence/top-entities?limit=10`) // We'll add this endpoint
     ]);
     
     const newsData = await newsRes.json();
     clusters = newsData.clusters || [];
     
     trending = await trendRes.json();
+    topEntities = await entityRes.json();
 } catch (e) {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на вестите.";
@@ -78,6 +81,16 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
 				))}
 			</div>
 		</nav>
+
+		<!-- Entities in Focus -->
+		<div class="mt-6 flex flex-wrap justify-center items-center gap-4">
+			<span class="text-[9px] font-black uppercase tracking-tighter text-muted">Личности во фокус:</span>
+			{topEntities.map((ent: any) => (
+				<a href={`/entity/${encodeURIComponent(ent.name)}`} class="text-[10px] font-bold text-primary hover:text-accent no-underline border-b border-color transition-colors">
+					{ent.name}
+				</a>
+			))}
+		</div>
 	</header>
 
 	<main class="site-layout">

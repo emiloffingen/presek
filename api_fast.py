@@ -55,6 +55,16 @@ async def get_entity_profile(name: str):
         "related": relationships
     }
 
+@app.get("/api/intelligence/top-entities")
+async def get_top_entities(limit: int = 10):
+    """Returns the most mentioned entities."""
+    rows = db.execute(\"\"\"
+        SELECT name, type, total_mentions 
+        FROM knowledge_entities 
+        ORDER BY total_mentions DESC LIMIT %s
+    \"\"\", (limit,))
+    return [dict(r) for r in rows]
+
 @app.get("/api/news")
 async def get_news(
     q: Optional[str] = None,
@@ -65,21 +75,33 @@ async def get_news(
     page: int = 0,
     page_size: int = 24
 ):
-    try:
-        if q:
-            rows = db.search_articles(q, limit=100)
-        elif entity:
-            # Filter clusters containing this entity
-            rows = db.execute(\"\"\"
-                SELECT a.* FROM articles a
-                JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
-                WHERE ce.entity_name = %s
-                ORDER BY a.created_at DESC LIMIT 100
-            \"\"\", (entity,))
-        elif category:
-            rows = db.get_articles_by_country(None, category=category, limit=100)
-        else:
-            rows = db.get_articles_by_country("🇲🇰", limit=100)
+    # Fetch clusters with aggregated entity names
+    sql = \"\"\"
+        WITH cluster_ents AS (
+            SELECT cluster_id, array_agg(entity_name) as entity_names
+            FROM cluster_entities
+            GROUP BY cluster_id
+        )
+        SELECT a.*, COALESCE(ce.entity_names, '{}') as entity_names
+        FROM (
+    \"\"\"
+    if q:
+        sql += \"SELECT * FROM articles WHERE 1=1 AND (title ILIKE %s OR description ILIKE %s) LIMIT 100\"
+        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (f'%{q}%', f'%{q}%'))
+    elif entity:
+        sql += \"\"\"
+            SELECT a.* FROM articles a
+            JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
+            WHERE ce.entity_name = %s
+            ORDER BY a.created_at DESC LIMIT 100
+        \"\"\"
+        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (entity,))
+    elif category:
+        sql += \"SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100\"
+        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\", (category,))
+    else:
+        sql += \"SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 100\"
+        rows = db.execute(sql + \") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id\")
 
         clusters = defaultdict(list)
         for r in rows:
