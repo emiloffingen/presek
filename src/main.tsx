@@ -10,6 +10,9 @@ declare global {
       trending: any[];
       theme: string;
     };
+    __INITIAL_CLUSTER_DATA__?: {
+      cluster: any;
+    };
   }
 }
 

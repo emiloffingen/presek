@@ -16,20 +16,135 @@
 {% endblock %}
 
 {% block content %}
-<article class="article-wrap fade-in" style="padding-top: var(--space-xl);">
-    <header class="article-header">
-      <h1 class="nyt-title">{% if articles %}{{ articles[0].title }}{% else %}Вчитувам...{% endif %}</h1>
-      {% if articles %}
-      <p class="cluster-excerpt" style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: var(--space-lg);">
-          {{ articles[0].description | truncate(150) if articles[0].description else 'Преглед на најважните вести од повеќе извори.' }}
-      </p>
-      {% endif %}
+<div class="article-wrap fade-in" style="padding-top: 2rem;">
+    <header class="mb-10 border-b-2 border-primary pb-8">
+        <div class="flex flex-wrap gap-2 mb-4">
+            {% if articles[0].is_breaking or (articles|length > 5) %}
+                <span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5">BREAKING</span>
+            {% endif %}
+            {% if synthesis %}
+                <span class="text-[10px] font-black uppercase tracking-widest text-white bg-accent px-2 py-0.5">СИНТЕЗА</span>
+            {% endif %}
+        </div>
+        <h1 class="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
+            {{ articles[0].title }}
+        </h1>
+        <div class="flex items-center gap-4 text-xs font-bold uppercase text-muted">
+            <span>{{ articles[0].created_at | format_time }}</span>
+            <span>·</span>
+            <span>{{ total_reading_time }} мин читање</span>
+            <span>·</span>
+            <span>{{ articles|length }} извори</span>
+        </div>
     </header>
 
-    <div class="reading-column">
-      <div class="skeleton-box" style="height: 300px; width: 100%; margin-bottom: 2rem;"></div>
-      <div class="skeleton-box" style="height: 20px; width: 100%; margin-bottom: 1rem;"></div>
-      <div class="skeleton-box" style="height: 20px; width: 95%; margin-bottom: 1rem;"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            {% if synthesis %}
+            <section class="mb-12">
+                <h2 class="rail-label mb-6">АИ РЕЗИМЕ</h2>
+                <div class="article-prose text-lg leading-relaxed italic border-l-4 border-accent pl-6 py-2">
+                    {{ synthesis | replace('\n', '<br>') | safe }}
+                </div>
+                
+                {% if perspectives %}
+                <div class="mt-10 grid gap-6">
+                    <p class="section-heading">РАЗЛИЧНИ ПЕРСПЕКТИВИ</p>
+                    {% for p in perspectives %}
+                    <div class="bg-secondary p-5 border-t border-color">
+                        <p class="font-bold text-sm mb-2 uppercase tracking-tight">{{ p.angle }}</p>
+                        <p class="text-sm text-secondary leading-relaxed">{{ p.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
+
+            <section>
+                <h2 class="rail-label mb-6">СИТЕ ИЗВОРИ</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for article in articles %}
+                    <div class="border-b border-color pb-4">
+                        <div class="flex justify-between items-start gap-3 mb-2">
+                            <span class="text-[10px] font-black uppercase text-accent">{{ article.source }}</span>
+                            <span class="text-[10px] text-muted">{{ article.created_at | format_time }}</span>
+                        </div>
+                        <a href="{{ article.link }}" target="_blank" class="font-serif font-bold text-base text-primary no-underline hover:text-accent transition-colors block leading-snug">
+                            {{ article.title }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <aside class="lg:col-span-4 space-y-10">
+            {% if source_distribution %}
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ДИСТРИБУЦИЈА НА ИЗВОРИ</h3>
+                <div class="space-y-4">
+                    {% for dist in source_distribution %}
+                    <div>
+                        <div class="flex justify-between text-[10px] font-bold mb-1 uppercase">
+                            <span>{{ dist.label }}</span>
+                            <span>{{ dist.pct }}%</span>
+                        </div>
+                        <div class="h-1.5 bg-secondary w-full">
+                            <div class="h-full bg-accent" style="width: {{ dist.pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ПРАШАЈ АИ</h3>
+                <div id="ai-chat-root">
+                    <div class="bg-secondary p-4 text-[11px] text-muted leading-relaxed">
+                        Вчитајте го Пресек за да разговарате со АИ за оваа вест.
+                    </div>
+                </div>
+            </div>
+
+            {% if related_clusters %}
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ПОВРЗАНИ ТЕМИ</h3>
+                <div class="space-y-6">
+                    {% for rel in related_clusters %}
+                    <a href="/cluster/{{ rel.cluster_id }}" class="group block no-underline">
+                        <p class="font-serif font-bold text-sm text-primary group-hover:text-accent transition-colors leading-snug mb-2">
+                            {{ rel.title }}
+                        </p>
+                        <div class="flex flex-wrap gap-1">
+                            {% for tag in rel.tags[:3] %}
+                                <span class="text-[9px] font-bold uppercase text-muted">#{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </aside>
     </div>
-</article>
+</div>
+
+<script id="cluster-initial-data" type="application/json">
+    {
+        "cluster": {
+            "cluster_id": "{{ cluster_id }}",
+            "articles": {{ articles | tojson | safe }},
+            "synthesis": {{ synthesis | tojson | safe }},
+            "perspectives": {{ perspectives | tojson | safe }},
+            "tags": {{ tags | tojson | safe }},
+            "total_reading_time": {{ total_reading_time }},
+            "related": {{ related_clusters | tojson | safe }}
+        }
+    }
+</script>
+<script>
+    window.__INITIAL_CLUSTER_DATA__ = JSON.parse(document.getElementById('cluster-initial-data').textContent);
+</script>
 {% endblock %}
