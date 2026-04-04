@@ -17,6 +17,7 @@ let clusters = [];
 let trending = [];
 let topEntities = [];
 let stats = null;
+let health = null;
 let error = null;
 
 // Build the fetch URL with params
@@ -27,11 +28,12 @@ if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
 
 try {
-    const [newsRes, trendRes, entityRes, statsRes] = await Promise.all([
+    const [newsRes, trendRes, entityRes, statsRes, healthRes] = await Promise.all([
         fetch(newsUrl.toString()),
         fetch(`${API_URL}/trending`),
         fetch(`${API_URL}/intelligence/top-entities?limit=12`),
-        fetch(`${API_URL}/stats/full`)
+        fetch(`${API_URL}/stats/full`),
+        fetch(`${API_URL}/health`)
     ]);
     
     if (newsRes.ok) {
@@ -44,6 +46,7 @@ try {
     trending = trendRes.ok ? await trendRes.json() : [];
     topEntities = entityRes.ok ? await entityRes.json() : [];
     stats = statsRes.ok ? await statsRes.json() : null;
+    health = healthRes.ok ? await healthRes.json() : null;
 } catch (e) {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на вестите.";
@@ -79,6 +82,7 @@ function getLeadSignal(cluster: any) {
 }
 
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
+const freshness = health?.freshness || null;
 
 function getTimeStr(dateStr: string) {
     try {
@@ -191,6 +195,12 @@ function getThumb(cluster: any) {
 							<strong>{stats ? stats.total_feeds.toLocaleString('mk-MK') : '...'}</strong>
 						</div>
 					</div>
+					{freshness && (
+						<div class={`freshness-chip freshness-${freshness.status}`}>
+							<span>{freshness.label}</span>
+							{typeof freshness.age_minutes === 'number' && <strong>{freshness.age_minutes} мин</strong>}
+						</div>
+					)}
 					<p class="rail-note">Каде има најмногу уредничко внимание, а не само најново движење.</p>
 				</section>
 
@@ -326,6 +336,40 @@ function getThumb(cluster: any) {
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
+	}
+
+	.freshness-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 1rem;
+		padding: 0.35rem 0.55rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.freshness-chip strong {
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+	}
+
+	.freshness-fresh {
+		color: #2f855a;
+		border-color: color-mix(in srgb, #2f855a 36%, var(--border) 64%);
+	}
+
+	.freshness-aging {
+		color: #9a6700;
+		border-color: color-mix(in srgb, #9a6700 36%, var(--border) 64%);
+	}
+
+	.freshness-stale {
+		color: var(--nyt-red);
+		border-color: color-mix(in srgb, var(--nyt-red) 36%, var(--border) 64%);
 	}
 
 	.lead-meta {

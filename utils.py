@@ -35,6 +35,25 @@ def set_cache(key: str, val, ttl: int = 60):
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 
+def delete_cache(key: str):
+    try:
+        redis_client.delete(key)
+    except Exception as e:
+        log.warning(f"[cache] delete error on {key}: {e}")
+
+def delete_cache_prefix(prefix: str):
+    try:
+        cursor = 0
+        pattern = f"{prefix}*"
+        while True:
+            cursor, keys = redis_client.scan(cursor=cursor, match=pattern, count=200)
+            if keys:
+                redis_client.delete(*keys)
+            if cursor == 0:
+                break
+    except Exception as e:
+        log.warning(f"[cache] prefix delete error on {prefix}: {e}")
+
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window
 
@@ -154,4 +173,3 @@ def event_stream(channel: str):
     finally:
         pubsub.unsubscribe(channel)
         pubsub.close()
-

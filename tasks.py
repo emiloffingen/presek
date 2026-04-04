@@ -18,8 +18,8 @@ from prompts import (
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
-from health import record_refresh
-from utils import rank_articles_in_cluster, score_cluster, redis_client
+from health import record_refresh, record_task_event
+from utils import rank_articles_in_cluster, score_cluster, redis_client, delete_cache, delete_cache_prefix
 from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
@@ -29,6 +29,19 @@ from local_nlp import (
 )
 
 log = logging.getLogger("presek_celery")
+
+
+def invalidate_public_data_caches():
+    delete_cache_prefix("v4:news:")
+    delete_cache("ssr:index:top_clusters")
+    delete_cache("trending")
+    delete_cache("stats:full")
+
+
+def invalidate_cluster_caches(cluster_id=None):
+    if cluster_id:
+        delete_cache(f"cluster:detail:{cluster_id}")
+    invalidate_public_data_caches()
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
@@ -55,12 +68,16 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             clean = clean_json_response(summary)
             final = clean.get('summary', str(clean)) if isinstance(clean, dict) else clean
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final, article_id), fetch=False)
+            invalidate_public_data_caches()
+            record_task_event("summarize_article", "ok", f"article:{article_id}")
             log.info(f"Successfully summarized article {article_id}")
         else:
             desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
             fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
             if fallback:
                 db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+                invalidate_public_data_caches()
+                record_task_event("summarize_article", "fallback", f"article:{article_id}")
                 log.info(f"Stored local fallback summary for article {article_id}")
                 if retry_attempt < 2:
                     summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
@@ -71,10 +88,13 @@ def summarize_article_task(article_id, title, retry_attempt=0):
         fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+            invalidate_public_data_caches()
+            record_task_event("summarize_article", "fallback", f"article:{article_id}")
             log.warning(f"[tasks] Summarize failed for {article_id}; stored local fallback")
             if retry_attempt < 2:
                 summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
         else:
+            record_task_event("summarize_article", "error", f"article:{article_id}")
             log.error(f"[tasks] Summarize failed for {article_id}: {e}")
 
 @celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
@@ -112,8 +132,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 img_url = generate_cover_art(cluster_id, summary)
                 if img_url:
                     db.execute("UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s LIMIT 1)", (img_url, cluster_id), fetch=False)
+            invalidate_cluster_caches(cluster_id)
+            record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
             log.info(f"Successfully synthesized cluster {cluster_id}")
         else:
+            record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         article_rows = db.execute(
@@ -130,10 +153,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 (cluster_id, fallback.get("summary", ""), json.dumps(fallback.get("perspectives", [])), datetime.datetime.now()),
                 fetch=False
             )
+            invalidate_cluster_caches(cluster_id)
+            record_task_event("synthesize_cluster", "fallback", f"cluster:{cluster_id}")
             log.warning(f"[tasks] Synthesis failed for {cluster_id}; stored local fallback")
             if retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
         else:
+            record_task_event("synthesize_cluster", "error", f"cluster:{cluster_id}")
             log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
 @celery_app.task
@@ -147,6 +173,9 @@ def run_ingestion():
     
     # Record health metrics
     record_refresh(new_count, errors)
+    record_task_event("run_ingestion", "ok" if not errors else "warning", f"new_articles:{new_count}")
+    if new_count > 0:
+        invalidate_public_data_caches()
     
     if new_count > 0:
         # Chain dependent tasks to prevent resource spikes
@@ -198,7 +227,10 @@ def extract_entities_task():
                     "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                     (r['cluster_id'], ent.get('name'), ent.get('type')), fetch=False
                 )
+        invalidate_public_data_caches()
+        record_task_event("extract_entities", "ok", "clusters:recent")
     except Exception as e:
+        record_task_event("extract_entities", "error", "clusters:recent")
         log.error(f"[tasks] Entity extraction failed: {e}")
 
 @celery_app.task
@@ -222,7 +254,11 @@ def classify_topics_task():
                     db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, r['cluster_id']), fetch=False)
             """
     except Exception as e:
+        record_task_event("classify_topics", "error", "clusters:recent")
         log.error(f"[tasks] Topic classification failed: {e}")
+    else:
+        invalidate_public_data_caches()
+        record_task_event("classify_topics", "ok", "clusters:recent")
 
 @celery_app.task
 def recategorize_clusters_task():
@@ -243,7 +279,11 @@ def recategorize_clusters_task():
                 db.execute("UPDATE articles SET category = %s WHERE cluster_id = %s", (res, r['cluster_id']), fetch=False)
             """
     except Exception as e:
+        record_task_event("recategorize_clusters", "error", "clusters:recent")
         log.error(f"[tasks] Recategorization failed: {e}")
+    else:
+        invalidate_public_data_caches()
+        record_task_event("recategorize_clusters", "ok", "clusters:recent")
 
 @celery_app.task
 def generate_daily_brief_task(retry_attempt=0):
@@ -258,6 +298,8 @@ def generate_daily_brief_task(retry_attempt=0):
         final_brief = brief or generate_daily_brief_fallback(rows)
         if final_brief:
             db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (final_brief,), fetch=False)
+            delete_cache("daily_brief:latest")
+            record_task_event("daily_brief", "ok" if brief else "fallback", "date:current")
             if not brief and retry_attempt < 2:
                 generate_daily_brief_task.apply_async(args=(retry_attempt + 1,), countdown=1800)
     except Exception as e:
@@ -268,10 +310,13 @@ def generate_daily_brief_task(retry_attempt=0):
         fallback = generate_daily_brief_fallback(rows)
         if fallback:
             db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (fallback,), fetch=False)
+            delete_cache("daily_brief:latest")
+            record_task_event("daily_brief", "fallback", "date:current")
             log.warning("[tasks] Daily brief failed; stored local fallback briefing")
             if retry_attempt < 2:
                 generate_daily_brief_task.apply_async(args=(retry_attempt + 1,), countdown=1800)
         else:
+            record_task_event("daily_brief", "error", "date:current")
             log.error(f"[tasks] Daily brief failed: {e}")
 
 @celery_app.task
@@ -325,7 +370,10 @@ def generate_cluster_metadata_task():
                    updated_at = NOW()""",
                 (r['cluster_id'], final_tags, rep_image), fetch=False
             )
+        invalidate_public_data_caches()
+        record_task_event("cluster_metadata", "ok", "clusters:recent")
     except Exception as e:
+        record_task_event("cluster_metadata", "error", "clusters:recent")
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
 
 

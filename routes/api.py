@@ -440,7 +440,7 @@ def api_news():
             **response_data
         }
 
-        set_cache(cache_key, final_json, ttl=60)
+        set_cache(cache_key, final_json, ttl=30)
         return jsonify(final_json)
 
     except Exception as e:
@@ -486,6 +486,11 @@ def api_cluster_detail(cluster_id):
         return error_response("Invalid cluster ID", 400)
         
     try:
+        cache_key = f"cluster:detail:{cluster_id}"
+        cached = cached_response(cache_key, ttl=45)
+        if cached:
+            return success_response(cached)
+
         # 1. Fetch articles
         rows = db.execute(
             "SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", 
@@ -531,7 +536,7 @@ def api_cluster_detail(cluster_id):
             """, (cluster_id, tags))
             related = related_rows
 
-        return success_response({
+        payload = {
             "cluster_id": cluster_id,
             "articles": articles,
             "synthesis": synthesis,
@@ -540,7 +545,9 @@ def api_cluster_detail(cluster_id):
             "topics": topics,
             "related": related,
             "total_reading_time": sum(a['reading_time'] for a in articles)
-        })
+        }
+        set_cache(cache_key, payload, ttl=45)
+        return success_response(payload)
     except Exception as e:
         log.error(f"[api/cluster] {e}", exc_info=True)
         return error_response("Failed to fetch cluster detail")
@@ -556,7 +563,7 @@ def api_stats():
 @api_bp.route("/api/stats/full")
 def api_stats_full():
     try:
-        cached = cached_response("stats:full", ttl=120)
+        cached = cached_response("stats:full", ttl=60)
         if cached:
             return jsonify(cached)
 
@@ -629,7 +636,7 @@ def api_stats_full():
             "sentiment_index": []
         }
 
-        set_cache("stats:full", result, ttl=120)
+        set_cache("stats:full", result, ttl=60)
         return jsonify(result)
 
     except Exception as e:
@@ -723,14 +730,14 @@ def api_weather():
 def api_trending():
     """Return cached trending keywords."""
     try:
-        cached = cached_response("trending", ttl=900)
+        cached = cached_response("trending", ttl=300)
         if cached:
             return jsonify(cached[:30])
         # Fallback: compute now and cache
         from trending import get_trending
         words = get_trending(hours=6, limit=30)
         if words:
-            set_cache("trending", words, ttl=900)
+            set_cache("trending", words, ttl=300)
         return jsonify(words)
     except Exception as e:
         log.warning(f"[api/trending] {e}")

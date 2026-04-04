@@ -1,0 +1,376 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { Activity, Database, RefreshCw, ServerCog, AlertTriangle } from 'lucide-react';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
+
+let health = null;
+let error = null;
+
+try {
+	const res = await fetch(`${API_URL}/health`);
+	if (res.ok) {
+		health = await res.json();
+	} else {
+		error = "Страницата за статус не е достапна во моментов.";
+	}
+} catch (e) {
+	console.error(e);
+	error = "Грешка при вчитување на статусот.";
+}
+
+const taskEntries = health?.tasks ? Object.values(health.tasks) : [];
+const orderedTasks = taskEntries.sort((a: any, b: any) => String(b.time || '').localeCompare(String(a.time || '')));
+
+function formatTime(value: string) {
+	try {
+		return new Date(value).toLocaleString('mk-MK', {
+			day: '2-digit',
+			month: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	} catch {
+		return value || '';
+	}
+}
+
+function statusLabel(status: string) {
+	switch (status) {
+		case 'ok':
+		case 'fresh':
+			return 'Стабилно';
+		case 'aging':
+		case 'warning':
+			return 'Има доцнење';
+		case 'stale':
+		case 'fallback':
+			return 'Работи со ограничувања';
+		case 'error':
+			return 'Потребна проверка';
+		default:
+			return status || 'Непознато';
+	}
+}
+---
+
+<Layout title="Системски статус">
+	<NYTHeader />
+
+	<main class="site-layout py-12">
+		<div class="status-shell">
+			<header class="status-header">
+				<span class="page-kicker">Систем</span>
+				<h1 class="status-headline">Состојба На Пресек</h1>
+				<p class="status-subtitle">
+					Краток оперативен преглед: свежина на податоците, здравје на сервисите и последни pipeline задачи.
+				</p>
+			</header>
+
+			{error && (
+				<div class="status-alert status-alert-error">
+					<AlertTriangle size={16} />
+					<p>{error}</p>
+				</div>
+			)}
+
+			{health && (
+				<div class="status-flow">
+					<div class="status-metrics">
+						<div class={`metric-card freshness-${health.freshness?.status || 'stale'}`}>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><RefreshCw size={10}/> Свежина</p>
+							<p class="metric-value">{statusLabel(health.freshness?.status)}</p>
+							<p class="metric-note">
+								{health.freshness?.label}
+								{typeof health.freshness?.age_minutes === 'number' ? ` · ${health.freshness.age_minutes} мин` : ''}
+							</p>
+						</div>
+						<div class="metric-card">
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Последно освежување</p>
+							<p class="metric-value metric-value-compact">{formatTime(health.last_refresh?.time)}</p>
+							<p class="metric-note">{health.last_refresh?.new_articles || 0} нови статии</p>
+						</div>
+						<div class="metric-card">
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Database size={10}/> База / Redis</p>
+							<p class="metric-value metric-value-compact">
+								{health.database?.ok ? 'DB OK' : 'DB Down'} · {health.redis?.ok ? 'Redis OK' : 'Redis Down'}
+							</p>
+							<p class="metric-note">{health.database?.article_count?.toLocaleString?.('mk-MK') || 0} статии</p>
+						</div>
+						<div class="metric-card">
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><ServerCog size={10}/> Uptime</p>
+							<p class="metric-value metric-value-compact">{health.uptime}</p>
+							<p class="metric-note">{health.status === 'ok' ? 'Сервисите одговараат нормално' : 'Има деградација'}</p>
+						</div>
+					</div>
+
+					<div class="status-grid">
+						<div class="status-main">
+							<section class="status-module">
+								<h2 class="status-section-title">Pipeline задачи</h2>
+								<div class="task-list">
+									{orderedTasks.length > 0 ? (
+										orderedTasks.map((task: any) => (
+											<div class="task-row">
+												<div>
+													<p class="task-name">{task.task}</p>
+													<p class="task-detail">{task.detail || 'Нема дополнителни детали'}</p>
+												</div>
+												<div class="task-meta">
+													<span class={`task-badge task-${task.status}`}>{statusLabel(task.status)}</span>
+													<span class="task-time">{formatTime(task.time)}</span>
+												</div>
+											</div>
+										))
+									) : (
+										<p class="status-copy">Сè уште нема забележани task настани.</p>
+									)}
+								</div>
+							</section>
+						</div>
+
+						<aside class="status-rail">
+							<div class="rail-card">
+								<h3 class="rail-card-title">Последен ingestion циклус</h3>
+								<div class="system-list">
+									<div class="system-row">
+										<span>Време:</span>
+										<span>{formatTime(health.last_refresh?.time)}</span>
+									</div>
+									<div class="system-row">
+										<span>Нови статии:</span>
+										<span>{health.last_refresh?.new_articles || 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Грешки:</span>
+										<span>{health.last_refresh?.errors?.length || 0}</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="rail-card">
+								<h3 class="rail-card-title">Ако нешто доцни</h3>
+								<p class="status-copy">
+									Проверете ги последните task статуси подолу. Ако свежината е означена како „Работи со ограничувања“
+									или „Потребна проверка“, најчесто ingestion или synthesis работи во fallback режим.
+								</p>
+							</div>
+						</aside>
+					</div>
+				</div>
+			)}
+		</div>
+	</main>
+
+	<Footer />
+</Layout>
+
+<style>
+	.status-shell {
+		max-width: 76rem;
+		margin: 0 auto;
+	}
+
+	.status-header {
+		padding-bottom: 2rem;
+		margin-bottom: 2.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.status-headline {
+		font-size: clamp(2.4rem, 1.8rem + 2vw, 4.5rem);
+		line-height: 0.96;
+		margin: 0 0 1rem;
+	}
+
+	.status-subtitle,
+	.status-copy,
+	.metric-note,
+	.task-detail {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 1rem;
+		line-height: 1.65;
+		color: var(--secondary-foreground);
+	}
+
+	.status-alert {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		padding: 1rem 1.1rem;
+		margin-bottom: 1.5rem;
+		border: 1px solid var(--border);
+	}
+
+	.status-alert-error {
+		color: var(--nyt-red);
+		border-color: color-mix(in srgb, var(--nyt-red) 36%, var(--border) 64%);
+	}
+
+	.status-flow,
+	.status-main,
+	.status-rail {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.status-metrics {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.metric-card,
+	.status-module,
+	.rail-card {
+		padding: 1.35rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+	}
+
+	.metric-value {
+		font-family: var(--font-serif);
+		font-size: clamp(1.8rem, 1.35rem + 1vw, 2.8rem);
+		line-height: 1;
+		margin: 0 0 0.55rem;
+	}
+
+	.metric-value-compact {
+		font-size: clamp(1.15rem, 1rem + 0.65vw, 1.75rem);
+		line-height: 1.2;
+	}
+
+	.freshness-fresh .metric-value {
+		color: #2f855a;
+	}
+
+	.freshness-aging .metric-value {
+		color: #9a6700;
+	}
+
+	.freshness-stale .metric-value {
+		color: var(--nyt-red);
+	}
+
+	.status-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.status-section-title,
+	.rail-card-title {
+		margin: 0 0 1rem;
+		padding-bottom: 0.8rem;
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.task-list,
+	.system-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.task-row,
+	.system-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.9rem 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.task-row:first-child,
+	.system-row:first-child {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	.task-name,
+	.system-row span:first-child {
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		margin: 0 0 0.3rem;
+	}
+
+	.task-meta {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.35rem;
+		flex: 0 0 auto;
+	}
+
+	.task-badge {
+		display: inline-flex;
+		padding: 0.18rem 0.45rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.task-ok,
+	.task-fresh {
+		color: #2f855a;
+		border-color: color-mix(in srgb, #2f855a 36%, var(--border) 64%);
+	}
+
+	.task-warning,
+	.task-aging {
+		color: #9a6700;
+		border-color: color-mix(in srgb, #9a6700 36%, var(--border) 64%);
+	}
+
+	.task-fallback,
+	.task-stale,
+	.task-error {
+		color: var(--nyt-red);
+		border-color: color-mix(in srgb, var(--nyt-red) 36%, var(--border) 64%);
+	}
+
+	.task-time,
+	.system-row span:last-child {
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 800;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	@media (min-width: 960px) {
+		.status-grid {
+			grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.85fr);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.status-metrics {
+			grid-template-columns: 1fr;
+		}
+
+		.task-row,
+		.system-row {
+			flex-direction: column;
+		}
+
+		.task-meta {
+			align-items: flex-start;
+		}
+	}
+</style>

@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from health import record_refresh, _REDIS_KEY
+from health import record_refresh, record_task_event, _REDIS_KEY, _TASK_REDIS_KEY, _freshness_payload
 
 
 class TestRecordRefresh:
@@ -10,6 +10,11 @@ class TestRecordRefresh:
         r = MagicMock()
         r.set.side_effect = lambda k, v, **kw: store.update({k: v})
         r.get.side_effect = lambda k: store.get(k)
+        hash_store = {}
+        r.hset.side_effect = lambda k, field, value: hash_store.setdefault(k, {}).update({field: value})
+        r.hgetall.side_effect = lambda k: hash_store.get(k, {})
+        r.expire.side_effect = lambda *args, **kwargs: True
+        r._hash_store = hash_store
         return r, store
 
     def test_record_refresh_stores_data(self):
@@ -36,3 +41,35 @@ class TestRecordRefresh:
             record_refresh(15, ["e"])
         data = json.loads(store[_REDIS_KEY])
         assert data["count"] == 15
+
+
+class TestTaskEvents:
+    def test_record_task_event_stores_payload(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with patch('health._get_redis', return_value=r):
+            record_task_event("daily_brief", "fallback", "date:current")
+        raw = r._hash_store[_TASK_REDIS_KEY]["daily_brief"]
+        data = json.loads(raw)
+        assert data["task"] == "daily_brief"
+        assert data["status"] == "fallback"
+        assert data["detail"] == "date:current"
+
+
+class TestFreshnessPayload:
+    def test_freshness_payload_recent(self):
+        recent = "2026-04-04T22:00:00+00:00"
+        with patch('health.datetime') as mock_datetime:
+            from datetime import datetime, timezone
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=timezone.utc)
+            mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
+            result = _freshness_payload(recent)
+        assert result["status"] == "fresh"
+
+    def test_freshness_payload_stale(self):
+        stale = "2026-04-04T20:00:00+00:00"
+        with patch('health.datetime') as mock_datetime:
+            from datetime import datetime, timezone
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=timezone.utc)
+            mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
+            result = _freshness_payload(stale)
+        assert result["status"] == "stale"

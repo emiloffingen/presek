@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 _start_time = time.time()
 _REDIS_KEY = "presek:last_refresh"
+_TASK_REDIS_KEY = "presek:task_statuses"
 
 
 def _get_redis():
@@ -28,6 +29,41 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
         _get_redis().set(_REDIS_KEY, json.dumps(payload), ex=3600)
     except Exception:
         pass  # Non-critical; health endpoint falls back gracefully
+
+
+def record_task_event(task_name: str, status: str, detail: str | None = None):
+    """Persist a lightweight task-status event for operational visibility."""
+    if not task_name or not status:
+        return
+
+    payload = {
+        "task": task_name,
+        "status": status,
+        "detail": detail or "",
+        "time": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
+        _get_redis().expire(_TASK_REDIS_KEY, 3600 * 12)
+    except Exception:
+        pass
+
+
+def _freshness_payload(last_refresh_time: str | None):
+    if not last_refresh_time:
+        return {"status": "stale", "age_minutes": None, "label": "Нема скоро освежување"}
+
+    try:
+        refresh_dt = datetime.fromisoformat(last_refresh_time.replace("Z", "+00:00"))
+        age_minutes = max(0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60))
+    except Exception:
+        return {"status": "stale", "age_minutes": None, "label": "Непознато освежување"}
+
+    if age_minutes <= 15:
+        return {"status": "fresh", "age_minutes": age_minutes, "label": "Освежено скоро"}
+    if age_minutes <= 45:
+        return {"status": "aging", "age_minutes": age_minutes, "label": "Мало доцнење"}
+    return {"status": "stale", "age_minutes": age_minutes, "label": "Освежувањето доцни"}
 
 
 def register_health_routes(app):
@@ -73,7 +109,23 @@ def register_health_routes(app):
         except Exception:
             pass
 
+        task_statuses = {}
+        try:
+            raw_tasks = _get_redis().hgetall(_TASK_REDIS_KEY) or {}
+            task_statuses = {
+                (key.decode() if isinstance(key, bytes) else key): json.loads(
+                    value.decode() if isinstance(value, bytes) else value
+                )
+                for key, value in raw_tasks.items()
+            }
+        except Exception:
+            task_statuses = {}
+
+        freshness = _freshness_payload(last.get("time"))
+
         overall = "ok" if (db_ok and redis_ok) else "degraded"
+        if overall == "ok" and freshness["status"] == "stale":
+            overall = "degraded"
         return jsonify({
             "status": overall,
             "uptime": f"{hours}h {mins}m {secs}s",
@@ -89,6 +141,7 @@ def register_health_routes(app):
                 "new_articles": last["count"],
                 "errors": last["errors"],
             },
+            "freshness": freshness,
+            "tasks": task_statuses,
             "server_time": datetime.now(timezone.utc).isoformat(),
         })
-
