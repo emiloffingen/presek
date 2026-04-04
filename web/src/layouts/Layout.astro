@@ -33,9 +33,20 @@ const { title, description = "Presek - Македонска агрегација
 			} else {
 				document.documentElement.classList.remove('dark');
 			}
+			window.localStorage.setItem('theme', theme);
 		</script>
 	</head>
-	<body class="antialiased min-h-screen">
+	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
 		<slot />
 	</body>
 </html>
+
+<style is:global>
+	/* Logo inversion in dark mode */
+	.dark .site-logo {
+		filter: invert(1) brightness(2);
+	}
+	.dark .site-emblem {
+		filter: brightness(1.2);
+	}
+</style>
