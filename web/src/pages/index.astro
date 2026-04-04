@@ -88,11 +88,13 @@ try {
 					</h3>
 					<div class="divide-y border-nyt-gray-200">
 						{trending.slice(0, 10).map((item, idx) => (
-							<a href={`/?q=${item.word}`} class="flex items-start gap-4 py-4 group no-underline">
-								<span class="font-serif text-3xl font-black text-nyt-gray-500 group-hover:text-nyt-black transition-colors">{idx + 1}</span>
+							<a href={`/?q=${item.word}`} class="flex items-center gap-4 py-3 group no-underline">
+								<span class="font-serif text-3xl font-black text-nyt-gray-500 group-hover:text-nyt-black transition-colors min-w-[1.5rem] text-center">{idx + 1}</span>
 								<div>
-									<p class="font-serif font-black text-sm text-nyt-black group-hover:text-nyt-gray-600 leading-snug">{item.word}</p>
-									<span class="text-[10px] text-nyt-red font-black uppercase">{item.trend === '↑' ? 'Расте' : 'Стабилно'}</span>
+									<p class="font-serif font-black text-sm text-nyt-black group-hover:text-nyt-gray-600 leading-tight">{item.word}</p>
+									<span class={`text-[10px] font-black uppercase ${item.trend === '↑' ? 'text-nyt-accent' : 'text-nyt-gray-500'}`}>
+                                        {item.trend === '↑' ? 'Расте' : 'Стабилно'}
+                                    </span>
 								</div>
 							</a>
 						))}
