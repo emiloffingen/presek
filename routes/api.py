@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
 from database import db_manager as db
-from ai_engine import _call_ai
+from ai_engine import sync_call_ai as _call_ai
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
 from embeddings import generate_query_embedding

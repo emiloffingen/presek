@@ -8,7 +8,7 @@ from database import db_manager as db, prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
     translate_to_macedonian,
-    _call_ai, clean_json_response, generate_cover_art
+    sync_call_ai as _call_ai, clean_json_response, generate_cover_art
 )
 from prompts import (
     TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, 
