@@ -312,7 +312,7 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
                 
                 # Knowledge Graph Tables
-                cur.execute(\"\"\"
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS knowledge_entities (
                         name TEXT PRIMARY KEY,
                         type TEXT,
@@ -322,8 +322,8 @@ class DatabaseManager:
                         sentiment_score REAL DEFAULT 0,
                         metadata JSONB DEFAULT '{}'
                     )
-                \"\"\")
-                cur.execute(\"\"\"
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS knowledge_relationships (
                         entity_a TEXT REFERENCES knowledge_entities(name),
                         entity_b TEXT REFERENCES knowledge_entities(name),
@@ -331,7 +331,8 @@ class DatabaseManager:
                         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         PRIMARY KEY (entity_a, entity_b)
                     )
-                \"\"\")
+                """)
+
                 cur.execute(\"CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)\")
 
                 
