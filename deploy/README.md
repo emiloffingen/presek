@@ -14,6 +14,12 @@ If you do not want to install the nginx and systemd files manually, use:
 sudo bash deploy/install_server.sh
 ```
 
+The installer now refuses to continue if the Python venv, Astro server build, or TLS files are missing, verifies the systemd units, reloads nginx/systemd, and runs local smoke checks against:
+
+- `http://127.0.0.1:5000/api/health`
+- `http://127.0.0.1:5001/api/health`
+- `http://127.0.0.1:3000`
+
 You can override defaults with environment variables:
 
 ```sh
@@ -31,3 +37,19 @@ Before running it on the server, make sure:
 - the Python virtualenv exists at the app root
 - `web/dist/server/entry.mjs` exists
 - your Cloudflare origin certificate files are already on disk
+
+## Operational helpers
+
+Local post-deploy smoke check:
+
+```sh
+bash deploy/smoke_check.sh
+```
+
+Database backup:
+
+```sh
+bash deploy/backup_postgres.sh
+```
+
+This loads `.env`, uses `DATABASE_URL`, writes compressed dumps into `backups/`, and prunes older backups automatically.

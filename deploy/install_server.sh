@@ -4,6 +4,7 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SYSTEMD_DIR="$APP_DIR/deploy/systemd"
 NGINX_DIR="$APP_DIR/deploy/nginx"
+SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
 
 DOMAIN="${DOMAIN:-presek.live}"
 SERVER_USER="${SERVER_USER:-emiloffingen}"
@@ -44,7 +45,13 @@ main() {
   need_cmd systemctl
   need_cmd nginx
   need_cmd sed
+  need_cmd curl
   require_root
+
+  [ -d "$APP_ROOT/venv" ] || { echo "Missing Python virtualenv at $APP_ROOT/venv" >&2; exit 1; }
+  [ -f "$APP_ROOT/web/dist/server/entry.mjs" ] || { echo "Missing Astro server build at $APP_ROOT/web/dist/server/entry.mjs" >&2; exit 1; }
+  [ -f "$CERT_FULLCHAIN" ] || { echo "Missing TLS certificate at $CERT_FULLCHAIN" >&2; exit 1; }
+  [ -f "$CERT_PRIVKEY" ] || { echo "Missing TLS private key at $CERT_PRIVKEY" >&2; exit 1; }
 
   install -d /etc/systemd/system
   install -d /etc/nginx/sites-available
@@ -54,6 +61,8 @@ main() {
   for unit in presek.target presek-web.service presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
+
+  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-web.service /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
   replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
   cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
@@ -67,11 +76,14 @@ main() {
   systemctl restart nginx
   systemctl restart presek.target
 
+  ENABLE_PUBLIC_CHECK=0 "$SMOKE_SCRIPT"
+
   echo ""
   echo "Deployment files installed."
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
   echo "  sudo journalctl -u presek-web.service -f"
+  echo "  sudo bash deploy/backup_postgres.sh"
 }
 
 main "$@"

@@ -45,6 +45,8 @@ sudo journalctl -u presek-web.service -f
 sudo journalctl -u presek-worker.service -f
 sudo systemctl restart presek-astro.service
 sudo systemctl stop presek.target
+bash deploy/smoke_check.sh
+bash deploy/backup_postgres.sh
 ```
 
 ## Notes
@@ -52,3 +54,5 @@ sudo systemctl stop presek.target
 - `presek-web.service` runs the DB schema init in `ExecStartPre`.
 - `presek-astro.service` refuses to start if the Astro server build is missing.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.
+- After install or restart, run `deploy/smoke_check.sh` to verify Flask, FastAPI, and Astro locally before trusting the release.
+- Keep a regular backup cadence with `deploy/backup_postgres.sh` or a system cron/timer wrapper around it.
