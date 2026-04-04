@@ -3,16 +3,73 @@
 {% block title %}Статистики | Пресек{% endblock %}
 
 {% block content %}
-<div class="page-content fade-in">
-    <header class="page-header">
-        <h1 class="nyt-title">Медиумски Пулс</h1>
-        <p class="page-subtitle">Вчитување податоци...</p>
+<div class="article-wrap fade-in" style="padding-top: 2rem;">
+    <header class="mb-10 border-b-2 border-primary pb-8">
+        <span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">АНАЛИТИКА</span>
+        <h1 class="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
+            Медиумски Пулс
+        </h1>
+        <p class="text-sm text-muted font-bold uppercase tracking-tighter">
+            Активност на медиумската сцена во реално време
+        </p>
     </header>
-    <div class="kpi-grid">
-        <div class="kpi-item"><div class="skeleton-box" style="height: 40px; width: 100px;"></div></div>
-        <div class="kpi-item"><div class="skeleton-box" style="height: 40px; width: 100px;"></div></div>
-        <div class="kpi-item"><div class="skeleton-box" style="height: 40px; width: 100px;"></div></div>
-        <div class="kpi-item"><div class="skeleton-box" style="height: 40px; width: 100px;"></div></div>
+
+    {% if initial_stats %}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="border-t-2 border-primary pt-4">
+            <p class="text-[10px] font-black text-muted uppercase mb-1">Вкупно статии</p>
+            <p class="text-3xl font-serif font-bold text-primary">{{ initial_stats.total_articles }}</p>
+        </div>
+        <div class="border-t-2 border-primary pt-4">
+            <p class="text-[10px] font-black text-muted uppercase mb-1">Последни 24ч</p>
+            <p class="text-3xl font-serif font-bold text-accent">{{ initial_stats.last_24h }}</p>
+        </div>
+        <div class="border-t-2 border-primary pt-4">
+            <p class="text-[10px] font-black text-muted uppercase mb-1">АИ Синтеза</p>
+            <p class="text-3xl font-serif font-bold text-primary">{{ initial_stats.summarized_pct }}%</p>
+        </div>
+        <div class="border-t-2 border-primary pt-4">
+            <p class="text-[10px] font-black text-muted uppercase mb-1">Извори</p>
+            <p class="text-3xl font-serif font-bold text-primary">{{ initial_stats.total_feeds }}</p>
+        </div>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            <h2 class="rail-label mb-6">НАЈАКТИВНИ МЕДИУМИ (24Ч)</h2>
+            <div class="space-y-4 mb-12">
+                {% for src in initial_stats.by_source[:10] %}
+                <div>
+                    <div class="flex justify-between text-[11px] font-bold mb-1 uppercase text-primary">
+                        <span>{{ src.source }}</span>
+                        <span>{{ src.n }}</span>
+                    </div>
+                    <div class="h-2 bg-secondary w-full">
+                        <div class="h-full bg-accent" style="width: {{ (src.n / initial_stats.last_24h * 100 * 5) | min(100) }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <aside class="lg:col-span-4">
+            {% include "partials/sidebar_right.html" %}
+        </aside>
+    </div>
+    {% else %}
+    <div class="py-20 text-center">
+        <div class="animate-pulse flex flex-col items-center">
+            <div class="h-10 w-64 bg-secondary mb-4"></div>
+            <p class="text-muted text-sm font-bold">ВЧИТУВАМ ПОДАТОЦИ...</p>
+        </div>
+    </div>
+    {% endif %}
 </div>
+
+<script id="stats-initial-data" type="application/json">
+    {{ initial_stats | tojson | safe if initial_stats else 'null' }}
+</script>
+<script>
+    window.__INITIAL_STATS_DATA__ = JSON.parse(document.getElementById('stats-initial-data').textContent);
+</script>
 {% endblock %}

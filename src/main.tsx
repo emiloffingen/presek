@@ -13,6 +13,8 @@ declare global {
     __INITIAL_CLUSTER_DATA__?: {
       cluster: any;
     };
+    __INITIAL_BRIEFING_DATA__?: any;
+    __INITIAL_STATS_DATA__?: any;
   }
 }
 

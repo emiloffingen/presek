@@ -3,17 +3,59 @@
 {% block title %}Дневен Брифинг | Пресек{% endblock %}
 
 {% block content %}
-<div class="article-wrap fade-in" style="padding-top: var(--space-xl);">
-    <header class="article-header">
-        <span class="rail-label">Вчитувам…</span>
-        <h1 class="nyt-title" style="margin-top: var(--space-sm); margin-bottom: var(--space-xl);">Дневен Брифинг</h1>
-    </header>
-    <div class="reading-column">
-        <div class="briefing-content">
-            <div class="skeleton-box" style="height:20px;width:100%;margin-bottom:15px"></div>
-            <div class="skeleton-box" style="height:20px;width:95%;margin-bottom:15px"></div>
-            <div class="skeleton-box" style="height:20px;width:98%;margin-bottom:15px"></div>
+<div class="article-wrap fade-in" style="padding-top: 2rem;">
+    <header class="mb-10 border-b-2 border-primary pb-8">
+        <span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">ДНЕВЕН ПРЕГЛЕД</span>
+        <h1 class="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
+            Дневен Брифинг
+        </h1>
+        <div class="flex items-center gap-4 text-xs font-bold uppercase text-muted">
+            <span>
+                {% if briefing %}
+                    {{ briefing.date }}
+                {% else %}
+                    {{ now().strftime('%Y-%m-%d') }}
+                {% endif %}
+            </span>
+            <span>·</span>
+            <span>АИ СИНТЕЗА</span>
         </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            <article class="reading-column">
+                {% if briefing %}
+                    <div class="article-prose text-lg leading-relaxed text-secondary">
+                        {{ briefing.content | briefing_format }}
+                    </div>
+                {% else %}
+                    <div class="card p-10 text-center bg-secondary">
+                        <p class="text-4xl mb-3">📋</p>
+                        <p class="font-bold text-primary mb-1">Брифингот сè уште не е подготвен</p>
+                        <p class="text-sm text-muted">Обидете се подоцна за денешниот АИ преглед на вестите.</p>
+                    </div>
+                {% endif %}
+            </article>
+        </div>
+
+        <aside class="lg:col-span-4">
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ЗОШТО БРИФИНГ?</h3>
+                <p class="text-[11px] leading-relaxed text-muted italic">
+                    Секое утро, нашиот АИ систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
+                </p>
+            </div>
+            
+            {% include "partials/sidebar_right.html" %}
+        </aside>
     </div>
 </div>
+
+<script id="briefing-initial-data" type="application/json">
+    {{ briefing | tojson | safe if briefing else 'null' }}
+</script>
+<script>
+    window.__INITIAL_BRIEFING_DATA__ = JSON.parse(document.getElementById('briefing-initial-data').textContent);
+</script>
 {% endblock %}

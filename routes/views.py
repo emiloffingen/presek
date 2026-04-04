@@ -77,7 +77,34 @@ def izvori_page():
 
 @views_bp.route("/stats")
 def stats_page():
-    return render_template("stats.html", year=datetime.datetime.now().year)
+    # Fetch stats data (reusing logic from api_stats_full for consistency)
+    stats = None
+    try:
+        from routes.api import api_stats_full
+        # We can't call the route function directly easily because of response wrapping,
+        # but we can call it and get the JSON. However, let's just use the cached stats if available.
+        from utils import cached_response
+        stats = cached_response("stats:full", ttl=120)
+        if not stats:
+            # If not cached, the page will load it via React anyway, 
+            # but for a better SSR experience we could trigger a fetch here.
+            # For now, let's assume we want to provide at least basic stats if possible.
+            pass
+    except Exception as e:
+        current_app.logger.warning(f"Stats SSR Error: {e}")
+
+    # Fetch trending for sidebar
+    trending = []
+    try:
+        from trending import get_trending
+        trending = get_trending(hours=6, limit=10)
+    except Exception as e:
+        current_app.logger.warning(f"Trending SSR Error: {e}")
+
+    return render_template("stats.html", 
+                           initial_stats=stats, 
+                           initial_trending=trending,
+                           year=datetime.datetime.now().year)
 
 @views_bp.route("/arhiva")
 def archive_page():
@@ -85,7 +112,36 @@ def archive_page():
 
 @views_bp.route("/briefing")
 def briefing_page():
-    return render_template("briefing.html", year=datetime.datetime.now().year)
+    # Fetch briefing data
+    briefing = None
+    try:
+        row = db.execute_one(
+            "SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE"
+        )
+        if not row:
+            row = db.execute_one(
+                "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1"
+            )
+        if row:
+            briefing = {
+                "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]),
+                "content": row["content"] or ""
+            }
+    except Exception as e:
+        current_app.logger.warning(f"Briefing SSR Error: {e}")
+
+    # Fetch trending for sidebar
+    trending = []
+    try:
+        from trending import get_trending
+        trending = get_trending(hours=6, limit=10)
+    except Exception as e:
+        current_app.logger.warning(f"Trending SSR Error: {e}")
+
+    return render_template("briefing.html", 
+                           briefing=briefing, 
+                           initial_trending=trending,
+                           year=datetime.datetime.now().year)
 
 @views_bp.route("/vesti")
 def vesti_portal():
