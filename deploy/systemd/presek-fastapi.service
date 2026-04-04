@@ -1,0 +1,21 @@
+[Unit]
+Description=Presek FastAPI service
+After=network-online.target
+Wants=network-online.target
+PartOf=presek.target
+
+[Service]
+Type=simple
+User=emiloffingen
+WorkingDirectory=/home/emiloffingen/presek
+ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek && test -f api_fast.py'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek && set -a && source ./.env && set +a && exec /home/emiloffingen/presek/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 2'
+Restart=always
+RestartSec=5
+TimeoutStartSec=90
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=presek-fastapi
+
+[Install]
+WantedBy=presek.target

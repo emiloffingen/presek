@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, current_app, request, Response
+from flask import Blueprint, render_template, current_app, request, Response, redirect
 from database import db_manager as db, get_db
 from utils import score_cluster, is_balanced, cached_response, set_cache, rank_articles_in_cluster, calculate_reading_time
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CATEGORIES, DEFAULT_SOURCE_CATEGORY
@@ -7,8 +7,90 @@ import datetime
 import math
 import logging
 import re
+from urllib.parse import urljoin
 
 views_bp = Blueprint('views', __name__)
+
+LEGACY_TEMPLATE_ROUTES = {
+    "/",
+    "/about",
+    "/arhiva",
+    "/briefing",
+    "/cluster",
+    "/izvori",
+    "/saved",
+    "/stats",
+}
+
+
+def normalize_perspectives(raw_perspectives):
+    if not isinstance(raw_perspectives, list):
+        return []
+
+    normalized = []
+    for item in raw_perspectives:
+        if isinstance(item, dict):
+            angle = (
+                item.get("angle")
+                or item.get("label")
+                or item.get("title")
+                or item.get("name")
+                or ""
+            )
+            content = (
+                item.get("content")
+                or item.get("text")
+                or item.get("description")
+                or ""
+            )
+        elif isinstance(item, str):
+            angle = ""
+            content = item
+        else:
+            continue
+
+        angle = str(angle).strip()
+        content = str(content).strip()
+        if not angle and not content:
+            continue
+
+        normalized.append({
+            "angle": angle or "Перспектива",
+            "content": content,
+        })
+
+    return normalized
+
+
+def _request_is_local() -> bool:
+    host = (request.host or "").split(":", 1)[0].lower()
+    return host in {"127.0.0.1", "localhost"}
+
+
+def legacy_frontend_redirect(path: str):
+    if _request_is_local():
+        return None
+
+    enabled = current_app.config.get("REDIRECT_LEGACY_FRONTEND", True)
+    if not enabled:
+        return None
+
+    target = urljoin(current_app.config.get("PUBLIC_SITE_URL", "https://presek.live"), path)
+    return redirect(target, code=302)
+
+
+@views_bp.before_request
+def redirect_legacy_frontend_routes():
+    route_path = request.path
+    if route_path.startswith("/cluster/"):
+        route_key = "/cluster"
+    else:
+        route_key = route_path
+
+    if route_key not in LEGACY_TEMPLATE_ROUTES:
+        return None
+
+    return legacy_frontend_redirect(request.full_path.rstrip("?"))
 
 @views_bp.route("/")
 def index():
@@ -356,7 +438,7 @@ def cluster_page(cluster_id: str):
     s_row = conn.execute("SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)).fetchone()
     if s_row:
         synthesis = s_row["summary"]
-        perspectives = s_row["perspectives"] if s_row["perspectives"] else []
+        perspectives = normalize_perspectives(s_row["perspectives"] if s_row["perspectives"] else [])
         
     m_row = conn.execute("SELECT tags FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,)).fetchone()
     if m_row:

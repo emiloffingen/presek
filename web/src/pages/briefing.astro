@@ -4,7 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { Clock, Sparkles, BookOpen } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let briefing = null;
 let error = null;
@@ -61,26 +61,26 @@ function formatBriefing(content: string) {
     <NYTHeader />
 
 	<main class="site-layout py-12">
-		<div class="max-w-4xl mx-auto">
-			<header class="mb-12 border-b-2 border-primary pb-10">
-				<span class="nyt-section-label text-nyt-red border border-nyt-red px-2 py-0.5 mb-4 inline-block tracking-[0.2em]">ДНЕВЕН ПРЕГЛЕД</span>
-				<h1 class="text-4xl md:text-6xl font-serif font-black leading-tight text-foreground mb-6">
+		<div class="briefing-shell">
+			<header class="briefing-header">
+					<span class="page-kicker">Дневен Преглед</span>
+				<h1 class="briefing-headline">
 					Дневен Брифинг
 				</h1>
 
-				<div class="flex items-center gap-4 nyt-section-label text-muted-foreground">
+				<div class="briefing-meta">
 					<span class="flex items-center gap-1"><Clock size={12}/> {currentDate}</span>
 					<span>·</span>
 					<span class="flex items-center gap-1"><Sparkles size={12}/> ПРЕСЕК СУБЛИМАТ</span>
 				</div>
 			</header>
 
-			<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-				<div class="lg:col-span-8">
+			<div class="briefing-grid">
+				<div class="briefing-main">
 					{briefing ? (
-						<article class="briefing-content prose-nyt" set:html={formatBriefing(briefing.content)} />
+						<article class="briefing-content prose-nyt briefing-card" set:html={formatBriefing(briefing.content)} />
 					) : (
-						<div class="bg-secondary p-12 text-center border-t-2 border-primary">
+						<div class="briefing-empty">
 							<p class="text-4xl mb-4">📋</p>
 							<h3 class="font-black text-foreground mb-2 uppercase tracking-widest text-sm">Брифингот сè уште не е подготвен</h3>
 							<p class="text-muted-foreground text-xs leading-relaxed font-serif italic">
@@ -91,17 +91,17 @@ function formatBriefing(content: string) {
 					)}
 				</div>
 
-				<aside class="lg:col-span-4 space-y-10">
-					<div class="border-t-2 border-primary pt-4">
-						<h3 class="nyt-section-label flex items-center gap-2"><BookOpen size={14}/> ЗОШТО БРИФИНГ?</h3>
-						<p class="text-xs leading-relaxed text-muted-foreground italic font-serif mt-2">
+				<aside class="briefing-rail">
+					<div class="rail-card">
+						<h3 class="rail-card-title flex items-center gap-2"><BookOpen size={14}/> Зошто Брифинг?</h3>
+						<p class="rail-copy">
 							Секое утро, нашиот систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
 						</p>
 					</div>
 
-					<div class="bg-secondary p-6 rounded-sm border-l-4 border-primary">
-						<h4 class="nyt-section-label text-xs mb-2">КАКО СЕ ГЕНЕРИРА?</h4>
-						<p class="text-[11px] text-muted-foreground leading-relaxed font-serif">
+					<div class="rail-card rail-card-accent">
+						<h4 class="rail-card-title">Како Се Генерира?</h4>
+						<p class="rail-copy">
 							Системот ги групира вестите во кластери, ги споредува фактите од различни медиуми и генерира неутрално резиме без уредувачка пристрасност.
 						</p>
 					</div>
@@ -114,6 +114,86 @@ function formatBriefing(content: string) {
 </Layout>
 
 <style>
+	.briefing-shell {
+		max-width: 76rem;
+		margin: 0 auto;
+	}
+
+	.briefing-header {
+		padding-bottom: 2rem;
+		margin-bottom: 2.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+	.briefing-headline {
+		font-size: clamp(2.4rem, 1.8rem + 1.8vw, 4.6rem);
+		line-height: 0.96;
+		margin: 0 0 1rem;
+	}
+
+	.briefing-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.7rem;
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.briefing-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.briefing-card,
+	.briefing-empty,
+	.rail-card {
+		padding: 1.4rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+	}
+
+	.briefing-empty {
+		text-align: center;
+	}
+
+	.briefing-main,
+	.briefing-rail {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.rail-card-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0 0 0.9rem;
+		padding-bottom: 0.8rem;
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.rail-copy {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 1rem;
+		line-height: 1.6;
+		color: var(--secondary-foreground);
+	}
+
+	.rail-card-accent {
+		background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
+	}
+
 	.briefing-content :global(li) {
 		list-style-type: disc;
         margin-bottom: 1.5rem; /* Rule 4: Paragraph spacing */
@@ -124,5 +204,12 @@ function formatBriefing(content: string) {
 	.prose-nyt {
 		font-family: var(--font-nyt-body);
         max-width: 65ch; /* Rule 5: Limit line length */
+	}
+
+	@media (min-width: 960px) {
+		.briefing-grid {
+			grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
+			gap: 2rem;
+		}
 	}
 </style>

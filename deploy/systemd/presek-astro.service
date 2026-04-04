@@ -1,0 +1,23 @@
+[Unit]
+Description=Presek Astro frontend
+After=network-online.target
+Wants=network-online.target
+PartOf=presek.target
+
+[Service]
+Type=simple
+User=emiloffingen
+WorkingDirectory=/home/emiloffingen/presek/web
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek/web && test -f dist/server/entry.mjs'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/web && exec node ./dist/server/entry.mjs'
+Restart=always
+RestartSec=5
+TimeoutStartSec=90
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=presek-astro
+
+[Install]
+WantedBy=presek.target

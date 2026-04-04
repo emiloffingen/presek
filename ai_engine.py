@@ -235,7 +235,7 @@ TASK_ROUTING = {
 
 # --- Service Methods ---
 
-async def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False):
+async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False):
     from config import AI_DAILY_LIMIT
     from utils import redis_client
     
@@ -251,7 +251,9 @@ async def _call_ai(prompt: str, system: str, task_type: str = "default", max_tok
             redis_client.expire("ai:daily_calls", 86400)
             if count > AI_DAILY_LIMIT:
                 if "local" in chain:
-                    return PROVIDERS["local"].call(prompt, system, max_tokens, json_mode), "local"
+                    res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+                    if res:
+                        return res, "local"
                 return None, "limit_reached"
         except Exception as e:
             log.warning(f"[ai] Redis limit check failed: {e}")
@@ -282,14 +284,19 @@ async def _call_ai(prompt: str, system: str, task_type: str = "default", max_tok
             return provider.stream_call(prompt, system, max_tokens)
         return None
 
-def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False):
-    """Synchronous wrapper for _call_ai to support Celery/Flask."""
+def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False):
+    """Synchronous AI entrypoint used by the app and tests."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        return loop.run_until_complete(_call_ai(prompt, system, task_type, max_tokens, json_mode))
+        return loop.run_until_complete(_call_ai_async(prompt, system, task_type, max_tokens, json_mode))
     finally:
         loop.close()
+
+
+def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False):
+    """Backwards-compatible alias for synchronous callers."""
+    return _call_ai(prompt, system, task_type, max_tokens, json_mode)
 
 def clean_json_response(text: str) -> dict | str:
     if not text: return ""

@@ -1,46 +1,27 @@
-# Astro Starter Kit: Basics
+# Presek Web
+
+This directory contains the Astro frontend for Presek.
+
+## Commands
+
+Run these from `/home/emiloffingen/presek/web`:
 
 ```sh
-npm create astro@latest -- --template basics
+npm install
+npm run dev
+npm run build
+npm run preview
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Environment
 
-## 🚀 Project Structure
+The frontend reads `PUBLIC_API_URL`.
 
-Inside of your Astro project, you'll see the following folders and files:
+- In local development, point it at the Flask API, for example `http://127.0.0.1:5001/api`.
+- In production, keep it on the same origin when possible and use `/api`.
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+## Notes
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- `src/pages/index.astro` is the editorial homepage.
+- `src/pages/stats.astro` renders the analytics view from `/api/stats/full`.
+- `../web-legacy` is an older build output/codepath and should not be treated as the active frontend.

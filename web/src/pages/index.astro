@@ -5,7 +5,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 // Get search params for SSR filtering
 const { searchParams } = Astro.url;
@@ -16,20 +16,22 @@ const q = searchParams.get('q');
 let clusters = [];
 let trending = [];
 let topEntities = [];
+let stats = null;
 let error = null;
 
 // Build the fetch URL with params
 const newsUrl = new URL(`${API_URL}/news`);
 newsUrl.searchParams.set('page_size', '40');
-if (category) newsUrl.searchParams.set('category', category);
+if (category) newsUrl.searchParams.set('topic', category);
 if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
 
 try {
-    const [newsRes, trendRes, entityRes] = await Promise.all([
+    const [newsRes, trendRes, entityRes, statsRes] = await Promise.all([
         fetch(newsUrl.toString()),
         fetch(`${API_URL}/trending`),
-        fetch(`${API_URL}/intelligence/top-entities?limit=12`)
+        fetch(`${API_URL}/intelligence/top-entities?limit=12`),
+        fetch(`${API_URL}/stats/full`)
     ]);
     
     if (newsRes.ok) {
@@ -39,11 +41,46 @@ try {
         throw new Error("News fetch failed");
     }
     
-    trending = await trendRes.json();
-    topEntities = await entityRes.json();
+    trending = trendRes.ok ? await trendRes.json() : [];
+    topEntities = entityRes.ok ? await entityRes.json() : [];
+    stats = statsRes.ok ? await statsRes.json() : null;
 } catch (e) {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на вестите.";
+}
+
+function normalizeFocusName(name: string) {
+    const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
+    if (!clean) return '';
+    if (/^[A-Za-zА-Яа-яЀ-ӿ\s-]+$/.test(clean) && clean === clean.toLowerCase()) {
+        return clean
+            .split(' ')
+            .map((part) => part ? part[0].toUpperCase() + part.slice(1) : part)
+            .join(' ');
+    }
+    return clean;
+}
+
+const focusEntities = topEntities
+    .map((ent: any) => ({ ...ent, name: normalizeFocusName(ent?.name || '') }))
+    .filter((ent: any) => ent.name && ent.name.length >= 3)
+    .slice(0, 10);
+
+const leadCluster = clusters[0] ?? null;
+const supportingClusters = clusters.slice(1, 5);
+const feedClusters = clusters.slice(5);
+
+function getTimeStr(dateStr: string) {
+    try {
+        return new Date(dateStr).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return '';
+    }
+}
+
+function getThumb(cluster: any) {
+    const thumb = cluster?.representative_image || cluster?.articles?.find((a: any) => a.image_url)?.image_url;
+    return thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : '/img/placeholder.svg';
 }
 ---
 
@@ -51,9 +88,9 @@ try {
     <NYTHeader q={q} category={category} topic={topic} />
 
 	<main class="site-layout">
-        {/* Filtering Status */}
+		{/* Filtering Status */}
 		{(q || category || topic) && (
-			<div class="mb-10 py-4 border-y border-nyt-gray-300 flex items-center justify-between">
+			<div class="mb-10 py-4 border-y border-nyt-gray-300 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<h2 class="font-serif text-2xl font-black italic">
 					{q ? `Резултати за: "${q}"` : `${category || topic}`}
 				</h2>
@@ -61,72 +98,100 @@ try {
 			</div>
 		)}
 
-		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:divide-x border-nyt-gray-300">
-			<!-- Main Column (Col 1-9) -->
-			<div class="lg:col-span-9">
-				{error && (
-					<div class="p-12 text-center bg-nyt-gray-100 border border-nyt-gray-300">
-						<p class="font-serif italic text-nyt-red font-black uppercase tracking-widest">{error}</p>
-					</div>
+		<div class="front-page-grid">
+			<div class="front-main">
+					{error && (
+						<div class="p-12 text-center bg-nyt-gray-100 border border-nyt-gray-300">
+							<p class="font-serif italic text-nyt-red font-black uppercase tracking-widest">{error}</p>
+						</div>
+					)}
+
+				{leadCluster && (
+					<section class="lead-hero">
+						<div class="lead-copy">
+							<div class="lead-kicker">
+								<span class="source-label">{leadCluster.articles[0].source}</span>
+								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
+							</div>
+							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
+								<h1 class="lead-headline">{leadCluster.articles[0].title}</h1>
+							</a>
+							{leadCluster.articles[0].description && (
+								<p class="lead-summary">{leadCluster.articles[0].description}</p>
+							)}
+							<div class="lead-meta">
+								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
+								<span>·</span>
+								<span>{leadCluster.articles.length} извори</span>
+							</div>
+
+							{leadCluster.articles.length > 1 && (
+								<ul class="lead-related">
+									{leadCluster.articles.slice(1, 4).map((article: any) => (
+										<li>
+											<a href={`/cluster/${leadCluster.cluster_id}`}>{article.title}</a>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+
+						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media">
+							<img src={getThumb(leadCluster)} alt={leadCluster.articles[0].title} loading="eager" />
+						</a>
+					</section>
 				)}
 
-				<div class="news-feed-grid">
-					{clusters.map((cluster, idx) => (
-						<NewsCard 
-							cluster={cluster} 
-							isLead={idx === 0 && !q && !category && !topic}
-						/>
-					))}
-				</div>
+				{supportingClusters.length > 0 && (
+					<section class="supporting-grid">
+						{supportingClusters.map((cluster) => (
+							<NewsCard cluster={cluster} />
+						))}
+					</section>
+				)}
+
+				{feedClusters.length > 0 && (
+					<section class="feed-section">
+						<div class="section-heading-row">
+							<h2 class="section-title">Понатаму Во Денот</h2>
+							<p class="section-note">Помирен проток на развојни и придружни приказни.</p>
+						</div>
+						<div class="news-feed-grid">
+							{feedClusters.map((cluster) => (
+								<NewsCard cluster={cluster} />
+							))}
+						</div>
+					</section>
+				)}
 			</div>
 
-			<!-- NYT Sidebar (Col 10-12) -->
-			<aside class="lg:col-span-3 lg:pl-8 space-y-12">
-				<section>
-					<h3 class="nyt-section-label mb-6 flex items-center gap-2 border-b border-nyt-black pb-2">
-						<TrendingUp size={14} /> ПОПУЛАРНО СЕГА
+			<aside class="front-rail">
+				<section class="rail-module rail-pulse">
+					<h3 class="rail-title">
+						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
 					</h3>
-					<div class="divide-y border-nyt-gray-200">
-						{trending.slice(0, 10).map((item, idx) => (
-							<a href={`/?q=${item.word}`} class="flex items-center gap-4 py-2 group no-underline">
-								<span class="font-serif text-3xl font-black text-nyt-gray-500 group-hover:text-nyt-black transition-colors min-w-[1.5rem] text-center">{idx + 1}</span>
-								<div>
-									<p class="font-serif font-black text-sm text-nyt-black group-hover:text-nyt-gray-600 leading-tight">{item.word}</p>
-									<span class={`text-[10px] font-black uppercase ${item.trend === '↑' ? 'text-nyt-accent' : 'text-nyt-gray-500'}`}>
-                                        {item.trend === '↑' ? 'Расте' : 'Стабилно'}
-                                    </span>
-								</div>
+					<div class="pulse-grid">
+						<div>
+							<span class="micro-label">Статии денес</span>
+							<strong>{stats ? stats.last_24h.toLocaleString('mk-MK') : '...'}</strong>
+						</div>
+						<div>
+							<span class="micro-label">Извори</span>
+							<strong>{stats ? stats.total_feeds.toLocaleString('mk-MK') : '...'}</strong>
+						</div>
+					</div>
+				</section>
+
+				<section class="rail-module">
+					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
+					<div class="focus-cloud">
+						{focusEntities.map((ent: any) => (
+							<a href={`/?q=${encodeURIComponent(ent.name)}`} class="focus-chip">
+								{ent.name}
 							</a>
 						))}
 					</div>
 				</section>
-
-				<section class="bg-nyt-gray-100 p-6 border border-nyt-gray-300">
-					<h3 class="nyt-section-label mb-4 flex items-center gap-2">
-						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
-					</h3>
-					<div class="space-y-4">
-						<div class="flex justify-between border-b pb-2">
-							<span class="text-[10px] font-black uppercase text-nyt-gray-600">Статии (24ч)</span>
-							<span class="font-serif font-black text-lg">180+</span>
-						</div>
-						<div class="flex justify-between border-b pb-2">
-							<span class="text-[10px] font-black uppercase text-nyt-gray-600">Активни Извори</span>
-							<span class="font-serif font-black text-lg">42</span>
-						</div>
-					</div>
-				</section>
-
-                <section>
-                    <h3 class="nyt-section-label mb-6 border-b border-nyt-black pb-2">ФОКУС</h3>
-                    <div class="flex flex-wrap gap-2">
-                        {topEntities.slice(0, 10).map((ent: any) => (
-                            <a href={`/?q=${encodeURIComponent(ent.name)}`} class="nyt-section-label text-[9px] border border-nyt-gray-300 px-2 py-1 hover:bg-nyt-black hover:text-white transition">
-                                {ent.name}
-                            </a>
-                        ))}
-                    </div>
-                </section>
 			</aside>
 		</div>
 	</main>
@@ -135,7 +200,338 @@ try {
 </Layout>
 
 <style>
-	.divide-y > * + * {
-		border-top-width: 1px;
+	.front-page-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 3rem;
+		padding-bottom: 4rem;
+	}
+
+	.front-main {
+		min-width: 0;
+	}
+
+	.editor-note {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		padding: 1.5rem 0 2rem;
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 2.5rem;
+	}
+
+	.editor-note h2 {
+		font-size: clamp(1.6rem, 1.2rem + 1vw, 2.25rem);
+		line-height: 1.02;
+		max-width: 16ch;
+		margin: 0.35rem 0 0;
+	}
+
+	.editor-note-meta {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		max-width: 24rem;
+	}
+
+	.editor-note-meta strong {
+		display: block;
+		font-family: var(--font-serif);
+		font-size: 1.5rem;
+		line-height: 1;
+		margin-top: 0.35rem;
+	}
+
+	.micro-label {
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.lead-hero {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.lead-kicker,
+	.lead-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		flex-wrap: wrap;
+	}
+
+	.source-label {
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.live-pill {
+		border: 1px solid var(--nyt-red);
+		color: var(--nyt-red);
+		padding: 0.1rem 0.4rem;
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.lead-headline {
+		font-size: clamp(2.55rem, 1.95rem + 1.9vw, 4.75rem);
+		line-height: 0.96;
+		letter-spacing: -0.028em;
+		margin: 0.7rem 0 1rem;
+		max-width: 11ch;
+		text-wrap: balance;
+	}
+
+	.lead-summary {
+		font-family: var(--font-nyt-body);
+		font-size: 1.08rem;
+		line-height: 1.7;
+		color: var(--secondary-foreground);
+		max-width: 58ch;
+		text-wrap: pretty;
+	}
+
+	.lead-meta {
+		margin-top: 1.5rem;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.lead-related {
+		list-style: none;
+		padding: 0;
+		margin: 1.75rem 0 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.lead-related li {
+		border-bottom: 1px solid var(--border);
+	}
+
+	.lead-related a {
+		display: block;
+		padding: 0.9rem 0;
+		font-family: var(--font-serif);
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.2;
+		color: var(--foreground);
+		text-decoration: none;
+	}
+
+	.lead-related a:hover {
+		color: var(--nyt-accent);
+	}
+
+	.lead-media img {
+		display: block;
+		width: 100%;
+		aspect-ratio: 6 / 5;
+		object-fit: cover;
+		border: 1px solid var(--border);
+	}
+
+	.supporting-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		padding: 2rem 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.feed-section {
+		padding-top: 2rem;
+	}
+
+	.section-heading-row {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.section-title {
+		font-size: clamp(1.32rem, 1.08rem + 0.72vw, 1.82rem);
+		line-height: 1.04;
+		letter-spacing: -0.02em;
+		margin: 0;
+	}
+
+	.section-note {
+		font-family: var(--font-sans);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+		margin: 0;
+	}
+
+	.front-rail {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		align-content: start;
+	}
+
+	.rail-module {
+		padding: 1.25rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
+	}
+
+	.rail-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		padding-bottom: 0.8rem;
+		margin: 0 0 0.9rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.rail-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.rail-item {
+		display: grid;
+		grid-template-columns: 2rem 1fr;
+		gap: 0.75rem;
+		padding: 0.8rem 0;
+		text-decoration: none;
+		border-top: 1px solid var(--border);
+	}
+
+	.rail-item:first-child {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	.rail-item p {
+		font-family: var(--font-serif);
+		font-size: 1.05rem;
+		font-weight: 800;
+		line-height: 1.1;
+		color: var(--foreground);
+		margin: 0 0 0.3rem;
+	}
+
+	.rail-rank {
+		font-family: var(--font-serif);
+		font-size: 2rem;
+		line-height: 1;
+		font-weight: 900;
+		color: var(--nyt-gray-500);
+		text-align: center;
+	}
+
+	.rail-state {
+		font-family: var(--font-sans);
+		font-size: 0.64rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--nyt-gray-500);
+	}
+
+	.rail-state.is-up {
+		color: var(--nyt-accent);
+	}
+
+	.pulse-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.pulse-grid strong {
+		display: block;
+		font-family: var(--font-serif);
+		font-size: 1.85rem;
+		line-height: 1;
+		margin-top: 0.45rem;
+	}
+
+	.focus-cloud {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+	}
+
+	.focus-chip {
+		padding: 0.45rem 0.65rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--foreground);
+		text-decoration: none;
+	}
+
+	.focus-chip:hover {
+		background: var(--foreground);
+		color: var(--background);
+	}
+
+	@media (min-width: 720px) {
+		.editor-note {
+			grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
+			align-items: end;
+		}
+
+		.supporting-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (min-width: 960px) {
+		.lead-hero {
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr);
+			align-items: start;
+			gap: 2rem;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.front-page-grid {
+			grid-template-columns: minmax(0, 1.85fr) minmax(18rem, 0.8fr);
+			gap: 3.5rem;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.editor-note-meta,
+		.pulse-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.lead-headline {
+			max-width: none;
+		}
 	}
 </style>

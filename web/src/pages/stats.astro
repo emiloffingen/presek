@@ -4,7 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let stats = null;
 let error = null;
@@ -24,54 +24,52 @@ try {
     <NYTHeader />
 
 	<main class="site-layout py-12">
-		<div class="max-w-5xl mx-auto">
-			<header class="mb-12 border-b-2 border-primary pb-10">
-				<span class="nyt-section-label text-nyt-red border border-nyt-red px-2 py-0.5 mb-4 inline-block tracking-widest">АНАЛИТИКА</span>
-				<h1 class="text-4xl md:text-6xl font-serif font-black leading-tight text-foreground mb-6">
+		<div class="stats-shell">
+			<header class="stats-header">
+				<span class="page-kicker">Аналитика</span>
+				<h1 class="stats-headline">
 					Медиумски Пулс
 				</h1>
-				<p class="nyt-section-label text-muted-foreground tracking-tight">
-					Активност на медиумската сцена во реално време
+				<p class="stats-subtitle">
+					Дневната слика на медиумската сцена: обем, ритам и доминантни извори.
 				</p>
 			</header>
 
 			{stats ? (
-				<div class="space-y-16">
-					<!-- Top Metrics Grid -->
-					<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
-						<div class="border-t-2 border-primary pt-6">
+				<div class="stats-flow">
+					<div class="stats-metrics">
+						<div class="metric-card">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
-							<p class="text-4xl font-serif font-black text-foreground">{stats.total_articles.toLocaleString()}</p>
+							<p class="metric-value">{stats.total_articles.toLocaleString()}</p>
 						</div>
-						<div class="border-t-2 border-primary pt-6">
+						<div class="metric-card">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Последни 24ч</p>
-							<p class="text-4xl font-serif font-black text-nyt-red">{stats.last_24h.toLocaleString()}</p>
+							<p class="metric-value text-nyt-red">{stats.last_24h.toLocaleString()}</p>
 						</div>
-						<div class="border-t-2 border-primary pt-6">
+						<div class="metric-card">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек Сублимат</p>
-							<p class="text-4xl font-serif font-black text-foreground">{stats.summarized_pct}%</p>
+							<p class="metric-value">{stats.summarized_pct}%</p>
 						</div>
-						<div class="border-t-2 border-primary pt-6">
+						<div class="metric-card">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
-							<p class="text-4xl font-serif font-black text-foreground">{stats.total_feeds}</p>
+							<p class="metric-value">{stats.total_feeds}</p>
 						</div>
 					</div>
 
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
-						<!-- Main Column -->
-						<div class="lg:col-span-8 space-y-16">
-							<section>
-								<h2 class="nyt-section-label border-b border-foreground pb-2 mb-8">НАЈАКТИВНИ МЕДИУМИ (ПОСЛЕДНИ 24Ч)</h2>
-								<div class="space-y-6">
+					<div class="stats-grid">
+						<div class="stats-main">
+							<section class="stats-module">
+								<h2 class="stats-section-title">Најактивни Медиуми</h2>
+								<div class="source-bars">
 									{stats.by_source.slice(0, 10).map((src: any) => (
-										<div>
-											<div class="flex justify-between nyt-section-label mb-2 text-foreground">
+										<div class="source-row">
+											<div class="source-row-top">
 												<span>{src.source}</span>
 												<span>{src.n} статии</span>
 											</div>
-											<div class="h-1 bg-nyt-gray-200 w-full overflow-hidden">
+											<div class="source-bar-track">
 												<div 
-													class="h-full bg-foreground transition-all duration-1000" 
+													class="source-bar-fill" 
 													style={`width: ${Math.min(100, (src.n / stats.last_24h) * 100 * 5)}%`}
 												></div>
 											</div>
@@ -80,56 +78,55 @@ try {
 								</div>
 							</section>
 
-							<section>
-								<h2 class="nyt-section-label border-b border-foreground pb-2 mb-8">РАСПРЕДЕЛБА ПО КАТЕГОРИИ</h2>
-								<div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+							<section class="stats-module">
+								<h2 class="stats-section-title">Распределба По Категории</h2>
+								<div class="category-grid">
 									{stats.by_category.map((cat: any) => (
-										<div class="bg-nyt-gray-100 dark:bg-secondary p-6 border border-nyt-gray-200 dark:border-nyt-gray-300/20 hover:border-nyt-red transition-colors">
+										<div class="category-card">
 											<p class="nyt-section-label text-muted-foreground mb-1">{cat.cat}</p>
-											<p class="text-2xl font-serif font-black text-foreground">{cat.n}</p>
+											<p class="category-value">{cat.n}</p>
 										</div>
 									))}
 								</div>
 							</section>
 						</div>
 
-						<!-- Sidebar Column -->
-						<aside class="lg:col-span-4 space-y-12">
-							<div class="border-t-2 border-primary pt-4">
-								<h3 class="nyt-section-label mb-4">ИНФОРМАЦИИ ЗА СИСТЕМОТ</h3>
-								<div class="space-y-4 nyt-section-label text-muted-foreground">
-									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+						<aside class="stats-rail">
+							<div class="rail-card">
+								<h3 class="rail-card-title">Информации За Системот</h3>
+								<div class="system-list">
+									<div class="system-row">
 										<span>Статус:</span>
 										<span class="text-green-600 font-black">Online</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+									<div class="system-row">
 										<span>База на податоци:</span>
 										<span class="text-foreground font-black">{stats.db_size_mb} MB</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+									<div class="system-row">
 										<span>Најстара објава:</span>
 										<span class="text-foreground font-black">{new Date(stats.oldest_article).toLocaleDateString('mk-MK')}</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+									<div class="system-row">
 										<span>Најнова објава:</span>
 										<span class="text-foreground font-black">{new Date(stats.new_article).toLocaleTimeString('mk-MK')}</span>
 									</div>
 								</div>
 							</div>
 
-							<div class="bg-foreground p-6 text-background">
-								<h4 class="nyt-section-label mb-4 tracking-widest border-b border-background/20 pb-2 text-background">Speed Leaderboard</h4>
-								<p class="font-serif italic text-[10px] opacity-70 mb-6 leading-relaxed">
+							<div class="rail-card rail-card-dark">
+								<h4 class="rail-card-title speed-title">Speed Leaderboard</h4>
+								<p class="speed-copy">
 									Кој прв ги објавува вестите? Анализа на првичните извори за нови настани во последните 7 дена.
 								</p>
-								<div class="space-y-4">
+								<div class="speed-list">
 									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
-										<div class="flex justify-between items-center nyt-section-label text-[10px]">
-											<span class="flex items-center gap-2">
-												<span class="opacity-30">{idx + 1}.</span>
+										<div class="speed-row">
+											<span class="speed-source">
+												<span class="speed-rank">{idx + 1}.</span>
 												{src.source}
 											</span>
-											<span class="font-black">{src.first_count}</span>
+											<span class="speed-count">{src.first_count}</span>
 										</div>
 									))}
 								</div>
@@ -139,16 +136,16 @@ try {
 				</div>
 			) : (
 				<div class="space-y-16 animate-pulse">
-					<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+					<div class="stats-metrics">
 						{[1,2,3,4].map(() => (
-							<div class="border-t-2 border-nyt-gray-200 pt-6">
+							<div class="metric-card">
 								<div class="h-3 w-24 bg-nyt-gray-100 mb-4"></div>
 								<div class="h-10 w-32 bg-nyt-gray-200"></div>
 							</div>
 						))}
 					</div>
-					<div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
-						<div class="lg:col-span-8 space-y-16">
+					<div class="stats-grid">
+						<div class="stats-main space-y-16">
 							<section>
 								<div class="h-6 w-48 bg-nyt-gray-200 mb-8"></div>
 								<div class="space-y-6">
@@ -174,3 +171,200 @@ try {
 
 	<Footer />
 </Layout>
+
+<style>
+	.stats-shell {
+		max-width: 76rem;
+		margin: 0 auto;
+	}
+
+	.stats-header {
+		padding-bottom: 2rem;
+		margin-bottom: 2.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+	.stats-headline {
+		font-size: clamp(2.5rem, 1.8rem + 2vw, 4.6rem);
+		line-height: 0.96;
+		margin: 0 0 1rem;
+	}
+
+	.stats-subtitle {
+		margin: 0;
+		max-width: 44rem;
+		font-family: var(--font-nyt-body);
+		font-size: 1.08rem;
+		line-height: 1.6;
+		color: var(--secondary-foreground);
+	}
+
+	.stats-flow,
+	.stats-main,
+	.stats-rail {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.stats-metrics {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.metric-card,
+	.stats-module,
+	.rail-card {
+		padding: 1.35rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+	}
+
+	.metric-value {
+		font-family: var(--font-serif);
+		font-size: clamp(2rem, 1.45rem + 1vw, 3rem);
+		line-height: 1;
+		margin: 0;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.stats-section-title,
+	.rail-card-title {
+		margin: 0 0 1rem;
+		padding-bottom: 0.8rem;
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.source-bars,
+	.speed-list,
+	.system-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.source-row,
+	.system-row,
+	.speed-row {
+		padding: 0.85rem 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.source-row:first-child,
+	.system-row:first-child,
+	.speed-row:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	.source-row-top,
+	.system-row,
+	.speed-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.source-bar-track {
+		height: 0.3rem;
+		margin-top: 0.55rem;
+		background: var(--nyt-gray-200);
+		overflow: hidden;
+	}
+
+	.source-bar-fill {
+		height: 100%;
+		background: var(--foreground);
+		transition: width 400ms ease;
+	}
+
+	.category-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.category-card {
+		padding: 1rem;
+		border: 1px solid var(--border);
+		background: var(--background);
+	}
+
+	.category-value {
+		margin: 0;
+		font-family: var(--font-serif);
+		font-size: 1.9rem;
+		line-height: 1;
+	}
+
+	.rail-card-dark {
+		background: #172033;
+		color: #f8fafc;
+		border-color: #25324a;
+	}
+
+	.rail-card-dark .rail-card-title,
+	.speed-title {
+		color: #f8fafc;
+		border-bottom-color: rgba(248, 250, 252, 0.16);
+	}
+
+	.speed-copy {
+		margin: 0 0 1rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.96rem;
+		line-height: 1.55;
+		color: rgba(248, 250, 252, 0.76);
+	}
+
+	.speed-row {
+		color: #f8fafc;
+		border-top-color: rgba(248, 250, 252, 0.12);
+	}
+
+	.speed-source {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		color: rgba(248, 250, 252, 0.9);
+	}
+
+	.speed-rank {
+		color: rgba(248, 250, 252, 0.42);
+	}
+
+	.speed-count {
+		font-weight: 900;
+		color: #f5c26b;
+	}
+
+	@media (min-width: 960px) {
+		.stats-metrics {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+
+		.stats-grid {
+			grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
+			gap: 2rem;
+		}
+
+		.category-grid {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+</style>

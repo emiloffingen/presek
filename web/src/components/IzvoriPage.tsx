@@ -62,11 +62,14 @@ export const IzvoriPage: React.FC = () => {
   return (
     <div className="bg-background text-foreground">
       <div className="site-layout py-8">
-        <header className="mb-10 border-b-2 border-primary pb-8">
-            <span className="nyt-section-label text-nyt-accent border border-nyt-accent px-2 py-0.5 mb-4 inline-block">ИМЕНИК</span>
-            <h1 className="font-serif text-3xl md:text-5xl font-black leading-tight text-foreground mb-4">
+        <header className="sources-header">
+            <span className="sources-kicker">Именик</span>
+            <h1 className="sources-headline">
                 Медиумски Извори
             </h1>
+            <p className="sources-intro">
+              Преглед на изворите што Пресек ги следи, со нагласок на активноста и медиумската покриеност.
+            </p>
             <div className="max-w-md mt-6 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
               <input
@@ -79,8 +82,8 @@ export const IzvoriPage: React.FC = () => {
             </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8">
+        <div className="sources-grid">
+          <div className="sources-main">
             {loading ? (
               <div className="flex flex-col items-center py-20">
                 <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
@@ -98,18 +101,18 @@ export const IzvoriPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-12">
-                <section>
-                    <h2 className="nyt-section-label border-b border-foreground pb-2 mb-6">МАКЕДОНСКИ МЕДИУМИ</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                <section className="sources-section">
+                    <h2 className="sources-section-title">Македонски Медиуми</h2>
+                    <div className="sources-list-grid">
                         {mkSources.map(s => (
                           <a 
                             key={s.source}
                             href={`/?q=${encodeURIComponent(s.source)}`}
-                            className="font-serif font-bold text-sm text-foreground no-underline hover:text-nyt-accent flex items-center gap-2 py-1 border-b border-nyt-gray-200 text-left"
+                            className="source-link"
                           >
                               {s.source}
                               {hotSources.includes(s.source) && (
-                                  <span className="text-[8px] bg-nyt-accent text-white px-1 rounded-sm animate-pulse">HOT</span>
+                                  <span className="source-hot">HOT</span>
                               )}
                           </a>
                         ))}
@@ -117,17 +120,17 @@ export const IzvoriPage: React.FC = () => {
                     </div>
                 </section>
 
-                <section>
-                    <h2 className="nyt-section-label border-b border-foreground pb-2 mb-6">МЕЃУНАРОДНИ МЕДИУМИ</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                <section className="sources-section">
+                    <h2 className="sources-section-title">Меѓународни Медиуми</h2>
+                    <div className="sources-list-grid">
                         {intSources.map(s => (
                           <a 
                             key={s.source}
                             href={`/?q=${encodeURIComponent(s.source)}`}
-                            className="font-serif font-bold text-sm text-foreground no-underline hover:text-nyt-accent flex items-center gap-2 py-1 border-b border-nyt-gray-200 text-left"
+                            className="source-link"
                           >
                               {s.source}
-                              <span className="nyt-section-label opacity-50 grayscale text-[10px]">{s.country}</span>
+                              <span className="source-country">{s.country}</span>
                           </a>
                         ))}
                         {intSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
@@ -137,10 +140,10 @@ export const IzvoriPage: React.FC = () => {
             )}
           </div>
 
-          <aside className="lg:col-span-4 space-y-10">
-            <div className="border-t-2 border-primary pt-4">
-                <h3 className="nyt-section-label flex items-center gap-2 mb-4"><Info size={14}/> ИНФОРМАЦИЈА</h3>
-                <p className="font-serif text-sm italic leading-relaxed text-muted-foreground">
+          <aside className="sources-rail">
+            <div className="rail-card">
+                <h3 className="rail-card-title flex items-center gap-2 mb-4"><Info size={14}/> Информација</h3>
+                <p className="rail-copy">
                     Пресек ги индексира само најрелевантните и најкредибилните извори. Листата постојано се ажурира врз основа на активноста на медиумите.
                 </p>
             </div>

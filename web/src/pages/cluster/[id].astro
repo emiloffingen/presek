@@ -2,10 +2,11 @@
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
+import AskPresekIsland from '../../components/AskPresekIsland.tsx';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
 
 const { id } = Astro.params;
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let cluster = null;
 let error = null;
@@ -45,6 +46,39 @@ function parseSynthesis(text: string) {
         return { source: null, content: clean.trim() };
     });
 }
+
+function normalizePerspectives(items: any[]) {
+    if (!Array.isArray(items)) return [];
+
+    return items
+        .map((item) => {
+            if (typeof item === 'string') {
+                const content = item.trim();
+                return content ? { angle: 'Перспектива', content } : null;
+            }
+
+            if (!item || typeof item !== 'object') return null;
+
+            const angle = String(
+                item.angle ?? item.label ?? item.title ?? item.name ?? 'Перспектива'
+            ).trim();
+            const content = String(
+                item.content ?? item.text ?? item.description ?? ''
+            ).trim();
+
+            if (!content) return null;
+            return { angle: angle || 'Перспектива', content };
+        })
+        .filter(Boolean);
+}
+
+const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
+const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
+const suggestedQuestions = [
+	'Што е најважното ново во оваа вест?',
+	'Како се разликуваат изворите во известувањето?',
+	'Што останува нејасно или непотврдено?',
+];
 ---
 
 <Layout title={cluster ? cluster.articles[0].title : "Детали за вест"}>
@@ -59,9 +93,9 @@ function parseSynthesis(text: string) {
 		)}
 
 		{cluster && (
-			<article class="max-w-5xl mx-auto">
-				<header class="mb-12 border-b border-nyt-gray-300 pb-8">
-					<div class="flex items-center gap-4 mb-6">
+			<article class="cluster-shell">
+				<header class="cluster-header">
+					<div class="cluster-header-top">
 						<a href="/" class="nyt-section-label flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
 							<ArrowLeft size={12} /> Назад
 						</a>
@@ -70,11 +104,11 @@ function parseSynthesis(text: string) {
 						</span>
 					</div>
 
-					<h1 class="text-4xl md:text-6xl font-serif font-black leading-none mb-8 text-foreground">
+					<h1 class="cluster-headline">
 						{cluster.articles[0].title}
 					</h1>
 
-					<div class="flex flex-wrap items-center gap-6 nyt-section-label text-muted-foreground border-y border-nyt-gray-200 py-4">
+					<div class="cluster-header-meta">
 						<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
 						<span>·</span>
 						<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извори</span>
@@ -83,18 +117,18 @@ function parseSynthesis(text: string) {
 					</div>
 				</header>
 
-				<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-					<div class="lg:col-span-8 space-y-12">
+				<div class="cluster-grid">
+					<div class="cluster-main">
 						{/* AI Synthesis Section */}
-						{cluster.synthesis && (
-							<section class="bg-nyt-gray-100 dark:bg-secondary p-8 border border-nyt-gray-200 dark:border-nyt-gray-300/20">
-								<div class="flex items-center gap-2 mb-6">
+						{cluster.synthesis && synthesisItems.length > 0 && (
+							<section class="cluster-synthesis">
+								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
 									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ПРЕСЕК СУБЛИМАТ</h2>
 								</div>
 								<div class="prose-nyt text-lg leading-relaxed text-foreground font-serif">
 									<ul class="list-none p-0 m-0 space-y-4">
-                                        {parseSynthesis(cluster.synthesis).map(item => (
+                                        {synthesisItems.map(item => (
                                             <li class="flex gap-3 items-start">
                                                 <span class="text-nyt-accent font-black mt-1">●</span>
                                                 <span>
@@ -109,14 +143,17 @@ function parseSynthesis(text: string) {
 						)}
 
 						{/* Perspectives */}
-						{cluster.perspectives && cluster.perspectives.length > 0 && (
-							<section class="space-y-10">
-								<h2 class="nyt-section-label border-b border-nyt-black dark:border-nyt-gray-300 pb-2 mb-8">РАЗЛИЧНИ ПЕРСПЕКТИВИ</h2>
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-									{cluster.perspectives.map((p: any) => (
-										<div class="space-y-3">
-											<h3 class="font-serif font-black text-lg text-foreground">{p.angle}</h3>
-											<p class="text-sm text-muted-foreground leading-relaxed font-serif">{p.content}</p>
+						{perspectives.length > 0 && (
+							<section class="cluster-synthesis cluster-perspectives">
+								<div class="cluster-module-head">
+									<Sparkles size={18} className="text-nyt-accent" />
+									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">РАЗЛИЧНИ ПЕРСПЕКТИВИ</h2>
+								</div>
+								<div class="perspective-grid">
+									{perspectives.map((p: any) => (
+										<div class="perspective-card">
+											<h3>{p.angle}</h3>
+											<p>{p.content}</p>
 										</div>
 									))}
 								</div>
@@ -124,21 +161,21 @@ function parseSynthesis(text: string) {
 						)}
 
 						{/* Articles List */}
-						<section>
-							<h2 class="nyt-section-label border-b border-nyt-black dark:border-nyt-gray-300 pb-2 mb-8">СИТЕ ИЗВОРИ</h2>
-							<div class="divide-y border-nyt-gray-200">
+						<section class="cluster-module">
+							<h2 class="cluster-section-title">Сите Извори</h2>
+							<div class="article-list">
 								{cluster.articles.map((a: any) => (
-									<div class="py-6 group">
-										<div class="flex justify-between items-start mb-2">
+									<div class="article-row group">
+										<div class="article-row-top">
 											<span class="nyt-section-label text-nyt-red">{a.source}</span>
 											<span class="nyt-section-label text-muted-foreground">{getTimeStr(a.created_at)}</span>
 										</div>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="block group">
-											<h3 class="font-serif font-black text-xl mb-3 text-foreground group-hover:text-nyt-accent transition-colors leading-tight">
+											<h3 class="article-row-title">
 												{a.title}
 											</h3>
 										</a>
-										<p class="text-sm text-muted-foreground line-clamp-2 font-serif mb-4">{a.description}</p>
+										<p class="article-row-summary">{a.description}</p>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
 											<Link2 size={12} /> Прочитај ја целата вест
 										</a>
@@ -149,14 +186,14 @@ function parseSynthesis(text: string) {
 					</div>
 
 					{/* Sidebar */}
-					<aside class="lg:col-span-4 space-y-12">
+					<aside class="cluster-rail">
 						{/* Tags */}
 						{cluster.tags && cluster.tags.length > 0 && (
-							<div class="border-t-2 border-primary dark:border-nyt-gray-300 pt-4">
-								<h3 class="nyt-section-label mb-6">ТЕМИ ВО ФОКУС</h3>
-								<div class="flex flex-wrap gap-3">
+							<div class="rail-card">
+								<h3 class="rail-card-title">Теми Во Фокус</h3>
+								<div class="rail-tags">
 									{cluster.tags.map((tag: string) => (
-										<a href={`/?q=${encodeURIComponent(tag)}`} class="nyt-section-label text-[9px] border border-nyt-gray-300 px-2 py-1 hover:bg-nyt-black hover:text-white transition">
+										<a href={`/?q=${encodeURIComponent(tag)}`} class="rail-chip">
 											{tag}
 										</a>
 									))}
@@ -165,29 +202,26 @@ function parseSynthesis(text: string) {
 						)}
 
 						{/* AI Chat Island (Coming Soon Style) */}
-						<div class="bg-nyt-gray-100 dark:bg-secondary p-6 border border-nyt-gray-200 dark:border-nyt-gray-300/20">
-							<h3 class="nyt-section-label flex items-center gap-2 mb-4 text-foreground">
+						<div class="rail-card rail-card-accent">
+							<h3 class="rail-card-title flex items-center gap-2 text-foreground">
 								<MessageCircle size={14} /> ПРАШАЈ ГО ПРЕСЕК
 							</h3>
-							<p class="font-serif italic text-xs text-muted-foreground leading-relaxed mb-6">
-								Имате прашање за оваа вест? Нашиот систем ги спореди сите извори и може да ви одговори на дополнителни прашања.
-							</p>
-							<div class="bg-background border border-nyt-gray-300 p-4 text-center">
-								<span class="nyt-section-label text-muted-foreground text-[10px]">НАСКОРО</span>
-							</div>
+							<AskPresekIsland client:load clusterId={cluster.cluster_id} suggestedQuestions={suggestedQuestions} />
 						</div>
 
 						{/* Related */}
 						{cluster.related && cluster.related.length > 0 && (
-							<div class="space-y-8">
-								<h3 class="nyt-section-label border-b border-nyt-black pb-2">ПОВРЗАНИ ВЕСТИ</h3>
+							<div class="rail-card">
+								<h3 class="rail-card-title">Поврзани Вести</h3>
+								<div class="related-list">
 								{cluster.related.map((rel: any) => (
-									<a href={`/cluster/${rel.cluster_id}`} class="block group no-underline">
-										<h4 class="font-serif font-black text-sm text-foreground group-hover:text-nyt-accent transition-colors leading-tight">
+									<a href={`/cluster/${rel.cluster_id}`} class="related-link group no-underline">
+										<h4>
 											{rel.title}
 										</h4>
 									</a>
 								))}
+								</div>
 							</div>
 						)}
 					</aside>
@@ -200,6 +234,447 @@ function parseSynthesis(text: string) {
 </Layout>
 
 <style>
+	.cluster-shell {
+		max-width: 76rem;
+		margin: 0 auto;
+	}
+
+	.cluster-header {
+		padding-bottom: 2rem;
+		margin-bottom: 2.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.cluster-header-top {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+		margin-bottom: 1.2rem;
+	}
+
+	.cluster-headline {
+		font-size: clamp(2.35rem, 1.8rem + 1.75vw, 4.35rem);
+		line-height: 0.98;
+		letter-spacing: -0.028em;
+		margin: 0 0 1.4rem;
+		max-width: 14ch;
+		text-wrap: balance;
+	}
+
+	.cluster-header-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.7rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.cluster-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+
+	.cluster-main,
+	.cluster-rail {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.cluster-module,
+	.cluster-synthesis,
+	.rail-card {
+		padding: 1.4rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+	}
+
+	.cluster-synthesis {
+		background: color-mix(in srgb, var(--background) 84%, var(--secondary) 16%);
+	}
+
+	.cluster-perspectives {
+		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
+	}
+
+	.cluster-module-head,
+	.rail-card-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-bottom: 0.85rem;
+		margin: 0 0 1rem;
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.cluster-section-title {
+		margin: 0 0 1rem;
+		font-size: clamp(1.22rem, 1.02rem + 0.7vw, 1.72rem);
+		line-height: 1.08;
+		letter-spacing: -0.018em;
+	}
+
+	.perspective-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.perspective-card {
+		padding: 1rem 0 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.perspective-card:first-child {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	.perspective-card h3 {
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		line-height: 1.25;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+		margin: 0 0 0.55rem;
+	}
+
+	.perspective-card p,
+	.rail-copy,
+	.article-row-summary {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.96rem;
+		line-height: 1.62;
+		color: var(--secondary-foreground);
+		text-wrap: pretty;
+	}
+
+	.article-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.article-row {
+		padding: 1.15rem 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.article-row:first-child {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	.article-row-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.article-row-title {
+		margin: 0 0 0.7rem;
+		font-size: 1.28rem;
+		line-height: 1.12;
+		letter-spacing: -0.02em;
+		color: var(--foreground);
+		transition: color 160ms ease;
+		text-wrap: balance;
+	}
+
+	.article-row:hover .article-row-title,
+	.related-link:hover h4 {
+		color: var(--nyt-accent);
+	}
+
+	.article-row-summary {
+		margin-bottom: 0.85rem;
+	}
+
+	.rail-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+	}
+
+	.rail-chip {
+		padding: 0.45rem 0.65rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--foreground);
+		text-decoration: none;
+	}
+
+	.rail-chip:hover {
+		background: var(--foreground);
+		color: var(--background);
+	}
+
+	.rail-card-accent {
+		background: color-mix(in srgb, var(--background) 76%, var(--secondary) 24%);
+	}
+
+	:global(.ask-presek) {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	:global(.ask-intro) {
+		margin-bottom: 0.1rem;
+	}
+
+	:global(.ask-suggestions) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	:global(.ask-suggestion) {
+		padding: 0.55rem 0.7rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 800;
+		line-height: 1.4;
+		color: var(--foreground);
+		text-align: left;
+		transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+	}
+
+	:global(.ask-suggestion:hover) {
+		border-color: var(--nyt-accent);
+		color: var(--nyt-accent);
+	}
+
+	:global(.ask-form) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	:global(.ask-input) {
+		width: 100%;
+		min-height: 7rem;
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--border);
+		background: var(--background);
+		font-family: var(--font-nyt-body);
+		font-size: 0.98rem;
+		line-height: 1.6;
+		color: var(--foreground);
+		resize: vertical;
+		outline: none;
+	}
+
+	:global(.ask-input:focus) {
+		border-color: var(--nyt-accent);
+	}
+
+	:global(.ask-submit) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--foreground);
+		background: var(--foreground);
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--background);
+		transition: opacity 160ms ease;
+	}
+
+	:global(.ask-submit:hover:not(:disabled)) {
+		opacity: 0.86;
+	}
+
+	:global(.ask-submit:disabled) {
+		opacity: 0.6;
+		cursor: wait;
+	}
+
+	:global(.ask-error) {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.04em;
+		color: var(--nyt-red);
+	}
+
+	:global(.ask-result) {
+		padding-top: 1rem;
+		border-top: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+	}
+
+	:global(.ask-result-head) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	:global(.ask-confidence) {
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	:global(.ask-answer) {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 1rem;
+		line-height: 1.72;
+		color: var(--secondary-foreground);
+	}
+
+	:global(.ask-citations),
+	:global(.ask-followups) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+	}
+
+	:global(.ask-citation-list) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	:global(.ask-citation) {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: start;
+		gap: 0.6rem;
+		padding: 0.7rem 0;
+		border-top: 1px solid var(--border);
+		color: var(--foreground);
+		text-decoration: none;
+	}
+
+	:global(.ask-citation:first-child) {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	:global(.ask-citation strong) {
+		display: block;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	:global(.ask-citation span) {
+		display: block;
+		margin-top: 0.15rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
+	}
+
+	:global(.ask-history) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border);
+	}
+
+	:global(.ask-history-list) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	:global(.ask-history-item) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.75rem 0.85rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+		text-align: left;
+		transition: border-color 160ms ease, background 160ms ease;
+	}
+
+	:global(.ask-history-item:hover) {
+		border-color: var(--nyt-accent);
+	}
+
+	:global(.ask-history-item strong) {
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 900;
+		line-height: 1.4;
+		color: var(--foreground);
+	}
+
+	:global(.ask-history-item span) {
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
+	}
+
+	.related-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.related-link {
+		display: block;
+		padding: 0.85rem 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.related-link:first-child {
+		border-top: 0;
+		padding-top: 0;
+	}
+
+	.related-link h4 {
+		margin: 0;
+		font-size: 1rem;
+		line-height: 1.15;
+		color: var(--foreground);
+		transition: color 160ms ease;
+	}
+
 	.prose-nyt {
 		font-family: var(--font-nyt-body);
         max-width: 65ch; /* Rule 5: Limit line length */
@@ -211,5 +686,16 @@ function parseSynthesis(text: string) {
     }
     .divide-y > * + * {
 		border-top-width: 1px;
+	}
+
+	@media (min-width: 960px) {
+		.cluster-grid {
+			grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
+			gap: 2.5rem;
+		}
+
+		.perspective-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 </style>

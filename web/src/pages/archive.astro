@@ -2,22 +2,508 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import NewsCard from '../components/NewsCard.astro';
+import { CalendarDays, Info } from 'lucide-react';
+
+const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+const source = Astro.url.searchParams.get('source') || '';
+const topic = Astro.url.searchParams.get('topic') || '';
+const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+
+let archive = {
+  clusters: [],
+  total: 0,
+  sources: 0,
+  date,
+  page,
+  page_size: 50,
+  has_more: false,
+  total_clusters: 0,
+  top_sources: [],
+  top_topics: [],
+};
+let error = null;
+
+function normalizeArchivePayload(data: any) {
+  return {
+    clusters: Array.isArray(data?.clusters) ? data.clusters : [],
+    total: Number(data?.total ?? 0),
+    sources: Number(data?.sources ?? 0),
+    date: data?.date || date,
+    source: data?.source || source,
+    topic: data?.topic || topic,
+    page: Number(data?.page ?? page),
+    page_size: Number(data?.page_size ?? 50),
+    has_more: Boolean(data?.has_more),
+    total_clusters: Number(data?.total_clusters ?? 0),
+    top_sources: Array.isArray(data?.top_sources) ? data.top_sources : [],
+    top_topics: Array.isArray(data?.top_topics) ? data.top_topics : [],
+  };
+}
+
+try {
+  const archiveUrl = new URL(`${API_URL}/archive`);
+  archiveUrl.searchParams.set('date', date);
+  archiveUrl.searchParams.set('page', String(page));
+  archiveUrl.searchParams.set('page_size', '50');
+  if (source) archiveUrl.searchParams.set('source', source);
+  if (topic) archiveUrl.searchParams.set('topic', topic);
+
+  const res = await fetch(archiveUrl);
+  if (res.ok) {
+    archive = normalizeArchivePayload(await res.json());
+  } else {
+    error = 'Архивата моментално не е достапна.';
+  }
+} catch (err) {
+  console.error(err);
+  error = 'Грешка при вчитување на архивата.';
+}
+
+const prevParams = new URLSearchParams({ date, page: String(Math.max(0, page - 1)) });
+const nextParams = new URLSearchParams({ date, page: String(page + 1) });
+if (source) {
+  prevParams.set('source', source);
+  nextParams.set('source', source);
+}
+if (topic) {
+  prevParams.set('topic', topic);
+  nextParams.set('topic', topic);
+}
+
+function buildFilterHref(kind: 'source' | 'topic', value: string) {
+  const params = new URLSearchParams({ date });
+  if (kind === 'source') {
+    if (value && value !== source) params.set('source', value);
+    if (topic) params.set('topic', topic);
+  } else {
+    if (source) params.set('source', source);
+    if (value && value !== topic) params.set('topic', value);
+  }
+  return `/archive?${params.toString()}`;
+}
+
+function buildClearHref() {
+  return `/archive?${new URLSearchParams({ date }).toString()}`;
+}
+
 ---
 
 <Layout title="Архива">
-    <NYTHeader />
-    <main class="site-layout py-32 text-center">
-        <div class="max-w-2xl mx-auto">
-            <span class="nyt-section-label text-nyt-red border border-nyt-red px-3 py-1 mb-6 inline-block tracking-[0.3em]">ФУНКЦИЈА ВО РАЗВОЈ</span>
-            <h1 class="font-serif text-6xl md:text-8xl font-black mb-6 text-foreground">Наскоро</h1>
-            <p class="font-serif text-xl md:text-2xl text-nyt-gray-600 dark:text-nyt-gray-400 italic mb-12 leading-relaxed">
-                Работиме на имплементација на историско пребарување низ десетици илјади архивирани вести. Наскоро ќе можете да го истражите дигиталниот минат на Македонија.
-            </p>
-            <a href="/" class="nyt-section-label text-nyt-black dark:text-white border-b-2 border-nyt-black dark:border-white pb-1 hover:text-nyt-accent dark:hover:text-nyt-accent transition-colors">
-                Врати се на почетна
-            </a>
-        </div>
-    </main>
+  <NYTHeader />
+  <main class="site-layout archive-page">
+    <header class="archive-header">
+      <div>
+        <span class="archive-kicker">Архива</span>
+        <h1 class="archive-headline">Преглед на вестите по ден</h1>
+        <p class="archive-intro">
+          Истражувајте што било објавено на одреден датум, со брз преглед на сите активни извори и насловите што го обликувале денот.
+        </p>
+      </div>
 
-	<Footer />
+      <form method="get" class="archive-controls">
+        <label class="archive-control">
+          <span class="nyt-section-label text-muted-foreground">Избери датум</span>
+          <div class="archive-date-wrap">
+            <CalendarDays size={14} />
+            <input type="date" name="date" value={date} class="archive-date-input" />
+          </div>
+        </label>
+        {source && <input type="hidden" name="source" value={source} />}
+        {topic && <input type="hidden" name="topic" value={topic} />}
+        <button type="submit" class="archive-submit">Прикажи</button>
+      </form>
+    </header>
+
+    <div class="archive-grid">
+      <section class="archive-main">
+        {!error && (
+          <div class="archive-summary">
+            <div>
+              <span class="micro-label">Вести</span>
+              <strong>{archive.total.toLocaleString('mk-MK')}</strong>
+            </div>
+            <div>
+              <span class="micro-label">Извори</span>
+              <strong>{archive.sources.toLocaleString('mk-MK')}</strong>
+            </div>
+            <div>
+              <span class="micro-label">Кластери</span>
+              <strong>{archive.total_clusters.toLocaleString('mk-MK')}</strong>
+            </div>
+            <div>
+              <span class="micro-label">Датум</span>
+              <strong>{archive.date}</strong>
+            </div>
+          </div>
+        )}
+
+        {!error && (source || topic) && (
+          <div class="archive-active-filters">
+            <span class="micro-label">Активни филтри</span>
+            {source && <span class="archive-filter-pill">Извор: {source}</span>}
+            {topic && <span class="archive-filter-pill">Тема: {topic}</span>}
+            <a href={buildClearHref()} class="archive-clear-link">Исчисти</a>
+          </div>
+        )}
+
+        {error ? (
+          <div class="archive-empty">
+            <p>{error}</p>
+          </div>
+        ) : archive.clusters.length > 0 ? (
+          <>
+            <div class="archive-clusters">
+              {archive.clusters.map((cluster: any, index: number) => (
+                <div class="archive-cluster-card">
+                  <div class="archive-cluster-index">
+                    <span class="micro-label">Кластер</span>
+                    <strong>{String(page * archive.page_size + index + 1).padStart(2, '0')}</strong>
+                  </div>
+                  <NewsCard cluster={cluster} />
+                </div>
+              ))}
+            </div>
+
+            <div class="archive-pagination">
+              {page > 0 ? (
+                <a href={`/archive?${prevParams.toString()}`} class="archive-page-link">← Претходна</a>
+              ) : (
+                <span class="archive-page-link is-disabled">← Претходна</span>
+              )}
+              <span class="archive-page-indicator">Страна {page + 1}</span>
+              {archive.has_more ? (
+                <a href={`/archive?${nextParams.toString()}`} class="archive-page-link">Следна →</a>
+              ) : (
+                <span class="archive-page-link is-disabled">Следна →</span>
+              )}
+            </div>
+          </>
+        ) : (
+          <div class="archive-empty">
+            <p>Нема пронајдени вести за овој датум.</p>
+          </div>
+        )}
+      </section>
+
+      <aside class="archive-rail">
+        <div class="rail-card">
+          <h2 class="rail-card-title flex items-center gap-2"><Info size={14} /> Како Да Ја Користите</h2>
+          <p class="rail-copy">
+            Изберете датум за да ги видите сите индексирани наслови по хронолошки ред. Архивата е наменета за брзо ретроспективно пребарување, не само за читање на најновото.
+          </p>
+        </div>
+
+        {!error && archive.top_topics?.length > 0 && (
+          <div class="rail-card">
+            <h2 class="rail-card-title">Теми</h2>
+            <div class="archive-filter-list">
+              {archive.top_topics.map((item: any) => (
+                <a href={buildFilterHref('topic', item.topic)} class={`archive-filter-link ${topic === item.topic ? 'is-active' : ''}`}>
+                  <span>{item.topic}</span>
+                  <strong>{item.n}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!error && archive.top_sources?.length > 0 && (
+          <div class="rail-card">
+            <h2 class="rail-card-title">Извори</h2>
+            <div class="archive-filter-list">
+              {archive.top_sources.map((item: any) => (
+                <a href={buildFilterHref('source', item.source)} class={`archive-filter-link ${source === item.source ? 'is-active' : ''}`}>
+                  <span>{item.source}</span>
+                  <strong>{item.n}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+    </div>
+  </main>
+  <Footer />
 </Layout>
+
+<style>
+  .archive-page {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .archive-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .archive-kicker {
+    display: inline-block;
+    margin-bottom: 0.9rem;
+    color: var(--nyt-accent);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .archive-headline {
+    margin: 0 0 0.9rem;
+    font-size: clamp(2.2rem, 1.7rem + 1.7vw, 4rem);
+    line-height: 0.98;
+    max-width: 11ch;
+  }
+
+  .archive-intro {
+    margin: 0;
+    max-width: 52ch;
+    font-family: var(--font-nyt-body);
+    font-size: 1.02rem;
+    line-height: 1.72;
+    color: var(--secondary-foreground);
+  }
+
+  .archive-controls {
+    display: flex;
+    align-items: end;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .archive-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .archive-date-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+  }
+
+  .archive-date-input {
+    border: 0;
+    background: transparent;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--foreground);
+    outline: none;
+  }
+
+  .archive-submit {
+    padding: 0.82rem 1rem;
+    border: 1px solid var(--foreground);
+    background: var(--foreground);
+    color: var(--background);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .archive-submit:hover {
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  .archive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .archive-main,
+  .archive-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .archive-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .archive-summary strong {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+    line-height: 1.05;
+  }
+
+  .archive-clusters {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .archive-cluster-card {
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 1rem;
+    align-items: start;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .archive-cluster-card:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .archive-cluster-index strong {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .archive-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    padding-bottom: 1rem;
+  }
+
+  .archive-filter-pill,
+  .archive-clear-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--foreground);
+  }
+
+  .archive-clear-link:hover {
+    color: var(--nyt-accent);
+    border-color: var(--nyt-accent);
+  }
+
+  .archive-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .archive-filter-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .archive-filter-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .archive-filter-link:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .archive-filter-link strong {
+    font-size: 0.72rem;
+    color: var(--muted-foreground);
+  }
+
+  .archive-filter-link.is-active,
+  .archive-filter-link:hover {
+    color: var(--nyt-accent);
+  }
+
+  .archive-page-link,
+  .archive-page-indicator {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .archive-page-link {
+    color: var(--foreground);
+    text-decoration: none;
+  }
+
+  .archive-page-link:hover {
+    color: var(--nyt-accent);
+  }
+
+  .archive-page-link.is-disabled {
+    color: var(--muted-foreground);
+    opacity: 0.5;
+  }
+
+  .archive-page-indicator {
+    color: var(--muted-foreground);
+  }
+
+  .archive-empty {
+    padding: 4rem 1.2rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+    text-align: center;
+    font-family: var(--font-nyt-body);
+    font-size: 1rem;
+    color: var(--secondary-foreground);
+  }
+
+  @media (min-width: 960px) {
+    .archive-header,
+    .archive-grid {
+      grid-template-columns: minmax(0, 1fr) 18rem;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .archive-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .archive-cluster-card {
+      grid-template-columns: 1fr;
+      gap: 0.65rem;
+    }
+
+    .archive-pagination {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

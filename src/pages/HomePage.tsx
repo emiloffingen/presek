@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { SlidersHorizontal, RefreshCw, X, Sparkles, Zap } from 'lucide-react';
+import { RefreshCw, Sparkles, Zap } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterCard } from '../components/ClusterCard';
 import { TrendingSidebar } from '../components/TrendingSidebar';
@@ -28,6 +28,13 @@ export const HomePage: React.FC = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const hydrated = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sectionTitle = searchQuery
+    ? `РЕЗУЛТАТИ ЗА: ${searchQuery}`
+    : selectedTopic
+      ? selectedTopic
+      : !selectedCategory || selectedCategory === 'Македонија' || selectedCategory === 'Сите'
+        ? 'ГЛАВНИ ВЕСТИ'
+        : selectedCategory;
 
   // SSE for live updates
   useSSE('/api/live', (data: any) => {
@@ -158,9 +165,7 @@ export const HomePage: React.FC = () => {
 
             <div className="flex justify-between items-center mb-8 border-b border-color pb-4">
               <h1 className="rail-label m-0">
-                {searchQuery ? `РЕЗУЛТАТИ ЗА: ${searchQuery}` : 
-                 selectedTopic ? selectedTopic : 
-                 selectedCategory === 'Македонија' ? 'ГЛАВНИ ВЕСТИ' : selectedCategory}
+                {sectionTitle}
               </h1>
               
               <div className="flex items-center gap-4">

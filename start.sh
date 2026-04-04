@@ -1,192 +1,370 @@
 #!/bin/bash
-# ─────────────────────────────────────────────────────────────────
-# start.sh — Пресек  |  PostgreSQL + Redis + Celery + Gunicorn
-# ─────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+# start.sh — Presek launcher
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
-SESSION="presek"
-LOG_FILE="$APP_DIR/presek.log"
+SESSION="${SCREEN_SESSION_NAME:-presek}"
 VENV="$APP_DIR/venv"
 PYTHON="$VENV/bin/python3"
 GUNICORN="$VENV/bin/gunicorn"
 CELERY="$VENV/bin/celery"
+UVICORN="$VENV/bin/uvicorn"
+LOG_DIR="$APP_DIR/logs"
+WEB_DIR="$APP_DIR/web"
+ROOT_PYTHON="${ROOT_PYTHON:-python3}"
+BOOTSTRAP="${BOOTSTRAP:-1}"
+FORCE_PY_DEPS="${FORCE_PY_DEPS:-0}"
+FORCE_WEB_BUILD="${FORCE_WEB_BUILD:-0}"
 
-# ── Colours ──────────────────────────────────────────────────────
+WEB_LOG="$LOG_DIR/web.log"
+WORKER_LOG="$LOG_DIR/worker.log"
+BEAT_LOG="$LOG_DIR/beat.log"
+FASTAPI_LOG="$LOG_DIR/fastapi.log"
+ASTRO_LOG="$LOG_DIR/astro.log"
+BACKFILL_LOG="$LOG_DIR/backfill.log"
+
+ENABLE_FASTAPI="${ENABLE_FASTAPI:-1}"
+ENABLE_ASTRO="${ENABLE_ASTRO:-1}"
+ENABLE_BACKFILL="${ENABLE_BACKFILL:-0}"
+PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
+FLASK_BIND_HOST="${FLASK_BIND_HOST:-127.0.0.1}"
+FASTAPI_BIND_HOST="${FASTAPI_BIND_HOST:-127.0.0.1}"
+ASTRO_BIND_HOST="${ASTRO_BIND_HOST:-127.0.0.1}"
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
 ok()      { echo -e "${GREEN}✓${RESET}  $*"; }
-warn()    { echo -e "${YELLOW}⚠${RESET}  $*"; }
-info()    { echo -e "${BLUE}→${RESET}  $*"; }
-fail()    { echo -e "${RED}✗  $*${RESET}"; exit 1; }
+warn()    { echo -e "${YELLOW}!${RESET}  $*"; }
+info()    { echo -e "${BLUE}>${RESET}  $*"; }
+fail()    { echo -e "${RED}x${RESET}  $*"; exit 1; }
 divider() { echo -e "${BOLD}────────────────────────────────────${RESET}"; }
 
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
+
+stop_matching_processes() {
+  local pattern="$1"
+  if pkill -f "$pattern" >/dev/null 2>&1; then
+    ok "Stopped processes matching: $pattern"
+  else
+    warn "No running processes matched: $pattern"
+  fi
+}
+
+maybe_npm_install() {
+  if [ -f "$WEB_DIR/package-lock.json" ]; then
+    (cd "$WEB_DIR" && npm ci)
+  else
+    (cd "$WEB_DIR" && npm install)
+  fi
+}
+
+bootstrap_runtime() {
+  if [ "$BOOTSTRAP" != "1" ]; then
+    return
+  fi
+
+  info "Bootstrapping runtime dependencies..."
+
+  require_cmd "$ROOT_PYTHON"
+
+  if [ ! -d "$VENV" ]; then
+    info "Creating Python virtualenv at $VENV"
+    "$ROOT_PYTHON" -m venv "$VENV"
+  fi
+
+  if [ ! -x "$PYTHON" ]; then
+    fail "Python virtualenv exists but $PYTHON is missing"
+  fi
+
+  if [ "$FORCE_PY_DEPS" = "1" ] || [ ! -x "$GUNICORN" ] || [ ! -x "$CELERY" ] || [ ! -x "$UVICORN" ]; then
+    info "Installing Python dependencies"
+    "$PYTHON" -m pip install --upgrade pip
+    "$PYTHON" -m pip install -r "$APP_DIR/requirements.txt"
+  fi
+
+  if [ "$ENABLE_ASTRO" = "1" ]; then
+    require_cmd node
+    require_cmd npm
+    [ -f "$WEB_DIR/package.json" ] || fail "Missing Astro package.json in $WEB_DIR"
+
+    if [ ! -d "$WEB_DIR/node_modules" ]; then
+      info "Installing frontend dependencies"
+      maybe_npm_install
+    fi
+
+    if [ "$FORCE_WEB_BUILD" = "1" ] || [ ! -f "$WEB_DIR/dist/server/entry.mjs" ]; then
+      info "Building Astro frontend"
+      (cd "$WEB_DIR" && npm run build)
+    fi
+  fi
+
+  ok "Bootstrap complete"
+}
+
+screen_session_exists() {
+  screen -list | grep -q "[[:space:]]${SESSION}[[:space:]]"
+}
+
+list_screen_sessions() {
+  screen -list | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
+}
+
+load_env() {
+  if [ -f "$APP_DIR/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$APP_DIR/.env"
+    set +a
+    ok "Loaded .env"
+  else
+    warn ".env not found, relying on environment variables"
+  fi
+}
+
+show_port_usage() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -lptn "sport = :$port" 2>/dev/null || true
+  fi
+}
+
+ensure_port_free() {
+  local port="$1"
+  if ! command -v ss >/dev/null 2>&1; then
+    warn "ss not available; skipping port ownership check for $port"
+    return
+  fi
+
+  if ss -lptn "sport = :$port" 2>/dev/null | tail -n +2 | grep -q .; then
+    warn "Port $port is already in use:"
+    show_port_usage "$port"
+    fail "Refusing to start while port $port belongs to another process"
+  fi
+}
+
+wait_for_http() {
+  local name="$1"
+  local url="$2"
+  local expected="${3:-200}"
+  local attempts="${4:-15}"
+  local delay="${5:-2}"
+  local code=""
+
+  info "Waiting for $name at $url"
+  for _ in $(seq 1 "$attempts"); do
+    code="$(curl -sS -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || true)"
+    if [ "$code" = "$expected" ]; then
+      ok "$name is UP (HTTP $code)"
+      return 0
+    fi
+    sleep "$delay"
+  done
+
+  warn "$name did not become healthy (last HTTP code: ${code:-none})"
+  return 1
+}
+
+start_window() {
+  local title="$1"
+  local command="$2"
+
+  if ! screen_session_exists; then
+    screen -dmS "$SESSION" -t "$title" bash -lc "$command"
+  else
+    screen -S "$SESSION" -X screen -t "$title" bash -lc "$command"
+  fi
+}
+
+stop_session() {
+  local sessions
+  sessions="$(list_screen_sessions)"
+
+  if [ -n "$sessions" ]; then
+    info "Stopping screen sessions for '$SESSION'..."
+    while IFS= read -r session_id; do
+      [ -n "$session_id" ] || continue
+      screen -S "$session_id" -X quit || true
+    done <<< "$sessions"
+    sleep 2
+    ok "Stopped screen sessions for '$SESSION'"
+  else
+    warn "No screen session named '$SESSION' was found"
+  fi
+}
+
+cleanup_stale_processes() {
+  info "Cleaning up stale app processes..."
+  stop_matching_processes "gunicorn.*app:app"
+  stop_matching_processes "uvicorn.*api_fast:app"
+  stop_matching_processes "entry.mjs"
+  sleep 2
+}
+
+print_summary() {
+  divider
+  echo -e "  ${CYAN}Public URL:${RESET}      $PUBLIC_URL"
+  echo -e "  ${CYAN}Flask API:${RESET}       http://127.0.0.1:5000"
+  if [ "$ENABLE_FASTAPI" = "1" ]; then
+    echo -e "  ${CYAN}FastAPI:${RESET}         http://127.0.0.1:5001"
+  fi
+  if [ "$ENABLE_ASTRO" = "1" ]; then
+    echo -e "  ${CYAN}Astro Frontend:${RESET}  http://127.0.0.1:3000"
+  fi
+  echo -e "  ${CYAN}Logs:${RESET}            $LOG_DIR"
+  echo -e "  ${CYAN}Reattach:${RESET}        screen -r $SESSION"
+  echo -e "  ${CYAN}Stop:${RESET}            ./start.sh --stop"
+  divider
+}
+
 echo ""
-echo -e "${BOLD}  ПРЕСЕК — Македонски Вести${RESET}"
+echo -e "${BOLD}  PRESEK${RESET}"
 divider
 
-# ── Load .env ────────────────────────────────────────────────────
-if [ -f "$APP_DIR/.env" ]; then
-  set -a
-  # shellcheck source=/dev/null
-  source "$APP_DIR/.env"
-  set +a
-  ok "Loaded .env"
-else
-  warn ".env not found — relying on environment variables"
-fi
+mkdir -p "$LOG_DIR"
+touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 
-# ── --stop mode ──────────────────────────────────────────────────
-if [ "$1" = "--stop" ]; then
-  info "Stopping all Пресек components..."
-  screen -S "$SESSION" -X quit 2>/dev/null && ok "Stopped screen session '$SESSION'" || warn "No screen session found"
-  echo ""
-  exit 0
-fi
+load_env
 
-# ── Preflight checks ─────────────────────────────────────────────
+case "${1:-}" in
+  --stop)
+    stop_session
+    exit 0
+    ;;
+  --restart)
+    stop_session
+    cleanup_stale_processes
+    ;;
+  --status)
+    if screen_session_exists; then
+      ok "Screen session '$SESSION' is running"
+      screen -S "$SESSION" -Q windows || true
+    else
+      warn "Screen session '$SESSION' is not running"
+    fi
+    exit 0
+    ;;
+  --build)
+    load_env
+    bootstrap_runtime
+    exit 0
+    ;;
+esac
+
+bootstrap_runtime
+
 info "Running preflight checks..."
 
-[ -d "$VENV" ]      || fail "Virtualenv not found at $VENV. Run: python3 -m venv venv && venv/bin/pip install -r requirements.txt"
-[ -x "$GUNICORN" ]  || fail "Gunicorn not found at $GUNICORN."
-[ -x "$CELERY" ]    || fail "Celery not found at $CELERY."
+require_cmd screen
+require_cmd curl
+require_cmd ss
+[ -x "$PYTHON" ] || fail "Python not found at $PYTHON"
+[ -x "$GUNICORN" ] || fail "Gunicorn not found at $GUNICORN"
+[ -x "$CELERY" ] || fail "Celery not found at $CELERY"
+[ -f "$APP_DIR/app.py" ] || fail "Missing Flask entrypoint: $APP_DIR/app.py"
+[ -f "$APP_DIR/celery_app.py" ] || fail "Missing Celery entrypoint: $APP_DIR/celery_app.py"
 
-[ -n "$SECRET_KEY" ]   || fail "SECRET_KEY is not set. Add it to .env before starting."
-[ -n "$DATABASE_URL" ] || fail "DATABASE_URL is not set. Add it to .env before starting."
-[ -n "$REDIS_URL" ]    || { REDIS_URL="redis://localhost:6379/0"; warn "REDIS_URL not set, defaulting to $REDIS_URL"; }
+[ -n "${SECRET_KEY:-}" ] || fail "SECRET_KEY is not set"
+[ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
+[ -n "${REDIS_URL:-}" ] || { export REDIS_URL="redis://localhost:6379/0"; warn "REDIS_URL not set, defaulting to $REDIS_URL"; }
 
-if pg_isready -q 2>/dev/null; then
-  ok "PostgreSQL is ready"
+if command -v pg_isready >/dev/null 2>&1; then
+  if pg_isready -q; then
+    ok "PostgreSQL is ready"
+  else
+    warn "pg_isready reported that PostgreSQL is not ready"
+  fi
 else
-  warn "PostgreSQL may not be running (pg_isready failed)"
+  warn "pg_isready not found; skipping PostgreSQL readiness probe"
 fi
 
-if redis-cli -u "$REDIS_URL" ping >/dev/null 2>&1; then
-  ok "Redis is ready"
+if command -v redis-cli >/dev/null 2>&1; then
+  if redis-cli -u "$REDIS_URL" ping >/dev/null 2>&1; then
+    ok "Redis is ready"
+  else
+    warn "Redis ping failed for $REDIS_URL"
+  fi
 else
-  warn "Redis may not be running"
+  warn "redis-cli not found; skipping Redis readiness probe"
+fi
+
+if [ "$ENABLE_FASTAPI" = "1" ]; then
+  [ -x "$UVICORN" ] || fail "Uvicorn not found at $UVICORN"
+  [ -f "$APP_DIR/api_fast.py" ] || fail "Missing FastAPI entrypoint: $APP_DIR/api_fast.py"
+  touch "$FASTAPI_LOG"
+fi
+
+if [ "$ENABLE_ASTRO" = "1" ]; then
+  require_cmd node
+  require_cmd npm
+  [ -f "$WEB_DIR/package.json" ] || fail "Missing Astro package.json in $WEB_DIR"
+  [ -f "$WEB_DIR/dist/server/entry.mjs" ] || fail "Missing Astro server build. Run: ./start.sh --build"
+  touch "$ASTRO_LOG"
+fi
+
+if [ "$ENABLE_BACKFILL" = "1" ]; then
+  [ -f "$APP_DIR/trending_backfill.py" ] || fail "ENABLE_BACKFILL=1 but trending_backfill.py is missing"
+  touch "$BACKFILL_LOG"
 fi
 
 ok "Preflight complete"
 
-# ── Kill existing ────────────────────────────────────────────────
-info "Cleaning up old processes..."
-screen -S "$SESSION" -X quit 2>/dev/null
-# Also kill any stray gunicorn processes holding the port
-pkill -f "gunicorn.*app:app" 2>/dev/null || true
-
-# Wait for port 5000 to be free (up to 10 seconds)
-info "Ensuring port 5000 is free..."
-for i in {1..10}; do
-  if ! (ss -lptn 'sport = :5000' | grep -q '5000'); then
-    ok "Port 5000 is free"
-    break
-  fi
-  warn "Port 5000 still in use, waiting..."
-  sleep 1
-done
-
-# If still in use, try more aggressive kill
-if (ss -lptn 'sport = :5000' | grep -q '5000'); then
-    warn "Port 5000 still in use, trying aggressive kill..."
-    fuser -k 5000/tcp 2>/dev/null || true
-    sleep 2
+if screen_session_exists; then
+  info "Existing session detected; stopping it first"
+  stop_session
 fi
 
-# Ensure 5001 is free for FastAPI
-fuser -k 5001/tcp 2>/dev/null || true
+ensure_port_free 5000
+[ "$ENABLE_FASTAPI" = "1" ] && ensure_port_free 5001
+[ "$ENABLE_ASTRO" = "1" ] && ensure_port_free 3000
 
-# ── Init DB schema ───────────────────────────────────────────────
 info "Verifying database schema..."
-cd "$APP_DIR" && $PYTHON -c "from database import init_db; init_db()" && ok "Schema OK" || warn "Schema init had errors (check logs)"
-
-# ── Start components in screen ───────────────────────────────────
-info "Starting components in screen session '$SESSION'..."
-
-# Window 1: Gunicorn (Flask app)
-screen -dmS "$SESSION" -t "web" bash -c "
-  cd $APP_DIR
-  $GUNICORN app:app \
-    --bind 0.0.0.0:5000 \
-    --workers 2 \
-    --threads 4 \
-    --worker-class gthread \
-    --timeout 60 \
-    --keep-alive 5 \
-    --access-logfile $LOG_FILE \
-    --error-logfile $LOG_FILE \
-    --log-level info
-  exec bash"
-sleep 1
-
-# Window 2: Celery Worker
-screen -S "$SESSION" -X screen -t "worker" bash -c "
-  cd $APP_DIR
-  $CELERY -A celery_app worker \
-    --loglevel=info \
-    --concurrency=4 \
-    --logfile=$LOG_FILE 2>&1
-  exec bash"
-sleep 1
-
-# Window 5: FastAPI (Next-Gen API)
-screen -S "$SESSION" -X screen -t "fastapi" bash -c "
-  cd $APP_DIR
-  ./venv/bin/uvicorn api_fast:app --host 0.0.0.0 --port 5001 --workers 2 2>&1 | tee -a $LOG_FILE
-  exec bash"
-sleep 1
-
-# Window 6: Astro Frontend (Port 3000)
-screen -S "$SESSION" -X screen -t "astro" bash -c "
-  cd $APP_DIR/web
-  PORT=3000 HOST=0.0.0.0 node ./dist/server/entry.mjs 2>&1 | tee -a $LOG_FILE
-  exec bash"
-sleep 1
-
-# Window 3: Celery Beat (scheduler)
-screen -S "$SESSION" -X screen -t "beat" bash -c "
-  cd $APP_DIR
-  $CELERY -A celery_app beat \
-    --loglevel=info \
-    --logfile=$LOG_FILE 2>&1
-  exec bash"
-sleep 1
-
-# Window 4: Trending Backfill
-screen -S "$SESSION" -X screen -t "backfill" bash -c "
-  cd $APP_DIR
-  $PYTHON trending_backfill.py
-  exec bash"
-
-ok "All components launched"
-
-# ── Health check ─────────────────────────────────────────────────
-info "Waiting for API to respond..."
-HEALTHY=0
-for i in {1..15}; do
-  sleep 2
-  HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/health 2>/dev/null || echo "000")
-  if [ "$HTTP" = "200" ]; then
-    ok "API is UP (HTTP 200)"
-    HEALTHY=1
-    break
-  fi
-  echo -n "."
-done
-echo ""
-
-if [ "$HEALTHY" = "0" ]; then
-  warn "API did not respond after 30s — check: tail -f $LOG_FILE"
+if (cd "$APP_DIR" && "$PYTHON" -c "from database import init_db; init_db()"); then
+  ok "Schema OK"
+else
+  fail "Database schema verification failed"
 fi
 
-divider
-echo -e "  ${CYAN}App (Flask):${RESET}   http://localhost:5000"
-echo -e "  ${CYAN}Astro (New):${RESET}   http://localhost:3000"
-echo -e "  ${CYAN}FastAPI:${RESET}      http://localhost:5001"
-echo -e "  ${CYAN}Health:${RESET}       http://localhost:5000/api/health"
-echo -e "  ${CYAN}Log:${RESET}          tail -f $LOG_FILE"
-echo -e "  ${CYAN}Reattach:${RESET}     screen -r $SESSION"
-echo -e "  ${CYAN}Windows:${RESET}      Ctrl+A then \" — web / worker / fastapi / astro / beat / backfill"
-echo -e "  ${CYAN}Stop:${RESET}         ./start.sh --stop"
-divider
+info "Starting services in screen session '$SESSION'..."
+
+start_window "web" "cd '$APP_DIR' && exec '$GUNICORN' app:app --bind '$FLASK_BIND_HOST:5000' --workers 2 --threads 4 --worker-class gthread --timeout 60 --keep-alive 5 --access-logfile '$WEB_LOG' --error-logfile '$WEB_LOG' --log-level info"
+sleep 1
+
+start_window "worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
+sleep 1
+
+start_window "beat" "cd '$APP_DIR' && exec '$CELERY' -A celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
+sleep 1
+
+if [ "$ENABLE_FASTAPI" = "1" ]; then
+  start_window "fastapi" "cd '$APP_DIR' && exec '$UVICORN' api_fast:app --host '$FASTAPI_BIND_HOST' --port 5001 --workers 2 >> '$FASTAPI_LOG' 2>&1"
+  sleep 1
+fi
+
+if [ "$ENABLE_ASTRO" = "1" ]; then
+  start_window "astro" "cd '$WEB_DIR' && PORT=3000 HOST='$ASTRO_BIND_HOST' exec node ./dist/server/entry.mjs >> '$ASTRO_LOG' 2>&1"
+  sleep 1
+fi
+
+if [ "$ENABLE_BACKFILL" = "1" ]; then
+  start_window "backfill" "cd '$APP_DIR' && exec '$PYTHON' trending_backfill.py >> '$BACKFILL_LOG' 2>&1"
+  sleep 1
+fi
+
+ok "Launch commands submitted"
+
+wait_for_http "Flask API" "http://127.0.0.1:5000/api/health"
+
+if [ "$ENABLE_FASTAPI" = "1" ]; then
+  wait_for_http "FastAPI" "http://127.0.0.1:5001/api/health"
+fi
+
+if [ "$ENABLE_ASTRO" = "1" ]; then
+  wait_for_http "Astro frontend" "http://127.0.0.1:3000"
+fi
+
+print_summary
 echo ""

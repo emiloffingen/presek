@@ -5,41 +5,183 @@ import Footer from '../components/Footer.astro';
 ---
 
 <Layout title="Политика за приватност">
-    <NYTHeader />
-    <main class="site-layout py-20">
-        <article class="max-w-3xl mx-auto">
-            <h1 class="font-serif text-5xl font-black mb-8 border-b-4 border-nyt-black dark:border-nyt-gray-300 pb-4">Политика за приватност</h1>
-            
-            <div class="space-y-8 font-serif text-lg leading-relaxed text-nyt-gray-600 dark:text-nyt-gray-300">
-                <p class="italic">Последна промена: 4 април 2026</p>
+  <NYTHeader />
+  <main class="site-layout py-16">
+    <article class="privacy-shell">
+      <header class="privacy-header">
+        <span class="page-kicker">Политика</span>
+        <h1 class="privacy-headline">Политика за приватност</h1>
+        <p class="privacy-intro">
+          Пресек е сервис за агрегирање и контекстуализирање вести. Оваа страница објаснува
+          кои технички податоци ги користиме, што останува локално на вашиот уред и како ги
+          третираме врските кон надворешни извори.
+        </p>
+        <p class="privacy-meta">Последна промена: 4 април 2026</p>
+      </header>
 
-                <section>
-                    <h2 class="font-black text-2xl text-foreground mb-4">1. Собирање на информации</h2>
-                    <p>Пресек е платформа за агрегација на вести која во најголем дел не бара лични податоци за користење. Ние не собираме ваши имиња, адреси или телефонски броеви при обично прелистување на содржините.</p>
-                </section>
-
-                <section>
-                    <h2 class="font-black text-2xl text-foreground mb-4">2. Колачиња и локално складирање</h2>
-                    <p>Користиме локално складирање (LocalStorage) исклучиво за да ги зачуваме вашите технички преференции, како што се изборот на тема (темна или светла верзија) и вашите последни пребарувања за полесен пристап. Овие податоци се зачувани локално на вашиот уред и не се пренесуваат на нашите сервери.</p>
-                </section>
-
-                <section>
-                    <h2 class="font-black text-2xl text-foreground mb-4">3. Аналитика</h2>
-                    <p>Можеме да користиме анонимни статистички податоци за посетеноста со цел да го подобриме техничкото искуство на корисниците. Овие податоци не можат да ве идентификуваат лично и се користат само за оптимизација на перформансите на платформата.</p>
-                </section>
-
-                <section>
-                    <h2 class="font-black text-2xl text-foreground mb-4">4. Надворешни врски</h2>
-                    <p>Нашата платформа содржи директни врски до оригинални извори на вести (медиумски портали). Ве молиме имајте предвид дека Пресек не е одговорен за политиките за приватност или содржината на тие надворешни веб-локации.</p>
-                </section>
-
-                <section>
-                    <h2 class="font-black text-2xl text-foreground mb-4">5. Промени во политиката</h2>
-                    <p>Го задржуваме правото да ја ажурираме оваа политика за приватност во согласност со новите функционалности на платформата. Сите промени ќе бидат објавени на оваа страница.</p>
-                </section>
+      <div class="privacy-grid">
+        <div class="privacy-main">
+          <section class="privacy-module">
+            <h2 class="privacy-section-title">1. Собирање на информации</h2>
+            <div class="prose-nyt">
+              <p>
+                Пресек во најголем дел не бара лични податоци за читање и пребарување. Не
+                собираме имиња, адреси или телефонски броеви при обично користење на платформата.
+              </p>
             </div>
-        </article>
-    </main>
+          </section>
 
-	<Footer />
+          <section class="privacy-module">
+            <h2 class="privacy-section-title">2. Колачиња и локално складирање</h2>
+            <div class="prose-nyt">
+              <p>
+                Користиме локално складирање на вашиот уред за технички преференции како избор
+                на тема и последни пребарувања. Овие податоци остануваат локално и не се
+                пренесуваат до нашите сервери.
+              </p>
+            </div>
+          </section>
+
+          <section class="privacy-module">
+            <h2 class="privacy-section-title">3. Аналитика</h2>
+            <div class="prose-nyt">
+              <p>
+                Може да користиме анонимни агрегирани податоци за посетеност со цел подобрување
+                на перформансите, стабилноста и читливоста на платформата. Тие податоци не се
+                користат за лична идентификација.
+              </p>
+            </div>
+          </section>
+
+          <section class="privacy-module">
+            <h2 class="privacy-section-title">4. Надворешни врски</h2>
+            <div class="prose-nyt">
+              <p>
+                Пресек упатува кон оригиналните медиумски извори за секоја сторија. Политиките
+                за приватност и содржината на тие веб-страници се одговорност на самите издавачи.
+              </p>
+            </div>
+          </section>
+
+          <section class="privacy-module">
+            <h2 class="privacy-section-title">5. Промени во политиката</h2>
+            <div class="prose-nyt">
+              <p>
+                Оваа политика може да се ажурира кога ќе воведеме нови функции или промени во
+                техничката архитектура. Најновата верзија секогаш ќе биде објавена на оваа страница.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <aside class="privacy-rail">
+          <div class="rail-card">
+            <h2 class="rail-card-title">Што Не Чуваме</h2>
+            <p class="rail-copy">
+              Не бараме регистрација за основно користење и не чуваме лични профили на читатели.
+            </p>
+          </div>
+          <div class="rail-card rail-card-accent">
+            <h2 class="rail-card-title">Локални Податоци</h2>
+            <p class="rail-copy">
+              Темата на интерфејсот и последните пребарувања може да бидат зачувани во вашиот
+              прелистувач за побрз и поконзистентен пристап.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
 </Layout>
+
+<style>
+  .privacy-shell {
+    max-width: 76rem;
+    margin: 0 auto;
+  }
+
+  .privacy-header {
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .privacy-headline {
+    font-size: clamp(2.4rem, 1.9rem + 1.8vw, 4.6rem);
+    line-height: 0.96;
+    margin: 0 0 1rem;
+    max-width: 12ch;
+  }
+
+  .privacy-intro {
+    margin: 0 0 1rem;
+    max-width: 48rem;
+    font-family: var(--font-nyt-body);
+    font-size: 1.06rem;
+    line-height: 1.7;
+    color: var(--secondary-foreground);
+  }
+
+  .privacy-meta {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .privacy-main,
+  .privacy-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .privacy-module,
+  .rail-card {
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+  }
+
+  .privacy-section-title,
+  .rail-card-title {
+    margin: 0 0 0.9rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rail-copy {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 1rem;
+    line-height: 1.68;
+    color: var(--secondary-foreground);
+  }
+
+  .rail-card-accent {
+    background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
+  }
+
+  @media (min-width: 960px) {
+    .privacy-grid {
+      grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
+      gap: 2rem;
+    }
+  }
+</style>

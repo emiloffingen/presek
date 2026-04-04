@@ -30,8 +30,8 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
   if (theme === null) return <div className="p-2 w-9 h-9" />;
 
   const baseClasses = "flex items-center justify-center transition-all duration-300 group";
-  const fixedClasses = "fixed top-4 right-4 z-[200] w-10 h-10 bg-secondary border border-nyt-gray-300 shadow-sm rounded-full hover:scale-110";
-  const inlineClasses = "p-2 hover:bg-secondary rounded-full";
+  const fixedClasses = "fixed top-4 right-4 z-[200] h-10 w-10 rounded-full border border-border bg-secondary shadow-sm hover:scale-110";
+  const inlineClasses = "rounded-full p-2 hover:bg-secondary";
 
   return (
     <button 
@@ -40,9 +40,9 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
       aria-label="Промени тема"
     >
       {theme === 'light' ? (
-        <Moon size={fixed ? 20 : 18} className="text-nyt-gray-600 group-hover:text-nyt-black" />
+        <Moon size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground" />
       ) : (
-        <Sun size={fixed ? 20 : 18} className="text-nyt-gray-600 group-hover:text-nyt-black" />
+        <Sun size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground" />
       )}
     </button>
   );

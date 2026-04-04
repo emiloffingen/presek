@@ -1,23 +1,99 @@
 ---
 ---
-<footer class="site-layout mt-20 py-16 border-t-4 border-double border-nyt-black dark:border-nyt-gray-300 text-center">
-    <div class="flex flex-col items-center gap-8">
-        <div class="flex items-end gap-3 grayscale opacity-50">
+<footer class="site-layout footer-shell">
+    <div class="footer-brand">
+        <div class="footer-mark">
             <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="h-8 site-logo" />
             <img src="/logo.svg?v=3" alt="Presek" class="h-12 site-logo" />
         </div>
-        
-        <div class="w-full max-w-lg border-t border-nyt-gray-200 dark:border-nyt-gray-600/30"></div>
-
-        <nav class="flex flex-wrap justify-center gap-x-8 gap-y-4">
-            <a href="/archive" class="nyt-section-label text-nyt-gray-600 hover:text-nyt-black dark:text-nyt-gray-400 dark:hover:text-white">Архива</a>
-            <a href="/izvori" class="nyt-section-label text-nyt-gray-600 hover:text-nyt-black dark:text-nyt-gray-400 dark:hover:text-white">Извори</a>
-            <a href="/about" class="nyt-section-label text-nyt-gray-600 hover:text-nyt-black dark:text-nyt-gray-400 dark:hover:text-white">За Проектот</a>
-            <a href="/privacy" class="nyt-section-label text-nyt-gray-600 hover:text-nyt-black dark:text-nyt-gray-400 dark:hover:text-white">Приватност</a>
-        </nav>
-
-        <p class="text-[9px] font-black text-nyt-gray-500 uppercase tracking-[0.2em] text-center max-w-md leading-relaxed">
-            © 2026 ПРЕСЕК - ИНТЕЛИГЕНТНА АГРЕГАЦИЈА НА ВЕСТИ. СИТЕ ПРАВА СЕ ЗАДРЖАНИ. ПАМЕТНА АГРЕГАЦИЈА И ТЕХНОЛОГИЈА.
-        </p>
+        <p>Пресек ја организира дневната бучава во појасна слика за денот.</p>
     </div>
+
+    <nav class="footer-nav">
+        <a href="/archive">Архива</a>
+        <a href="/izvori">Извори</a>
+        <a href="/about">За проектот</a>
+        <a href="/privacy">Приватност</a>
+    </nav>
+
+    <p class="footer-meta">
+        © 2026 Пресек. Македонска агрегација на вести со појасен ред, контекст и изворна дисциплина.
+    </p>
 </footer>
+
+<style>
+    .footer-shell {
+        margin-top: 2.75rem;
+        padding: 2rem 0 3rem;
+        border-top: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    .footer-brand {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .footer-mark {
+        display: flex;
+        align-items: end;
+        gap: 0.6rem;
+        opacity: 0.75;
+    }
+
+    .footer-brand p,
+    .footer-meta {
+        margin: 0;
+        max-width: 40rem;
+        font-family: var(--font-sans);
+        font-size: 0.74rem;
+        line-height: 1.6;
+        letter-spacing: 0.03em;
+        color: var(--muted-foreground);
+    }
+
+    .footer-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .footer-nav a {
+        text-decoration: none;
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        padding: 0.45rem 0.65rem;
+        border: 1px solid var(--border);
+    }
+
+    .footer-nav a:hover {
+        background: var(--foreground);
+        color: var(--background);
+    }
+
+    @media (min-width: 960px) {
+        .footer-shell {
+            grid-template-columns: minmax(0, 1.2fr) auto;
+        }
+
+        .footer-meta {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @media (max-width: 639px) {
+        .footer-shell {
+            margin-top: 2rem;
+            padding: 1.6rem 0 2.6rem;
+            gap: 1.2rem;
+        }
+    }
+</style>

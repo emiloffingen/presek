@@ -14,9 +14,10 @@ from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time, 
     cached_response, set_cache, is_balanced
 )
-from ai_engine import PROVIDERS, _call_ai
+from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
+from local_nlp import answer_cluster_question_locally, generate_daily_brief_fallback
 
 log = logging.getLogger("presek")
 
@@ -30,6 +31,163 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+ENTITY_NOISE_WORDS = {
+    "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
+    "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
+    "јануари", "февруари", "март", "април", "мај", "јуни", "јули",
+    "август", "септември", "октомври", "ноември", "декември",
+    "слушаме", "гласот", "добронамерните",
+}
+
+
+def _normalize_entity_name(name: str) -> str:
+    clean = re.sub(r"\s+", " ", (name or "").strip(" -–—,.;:!?()[]{}\"'"))
+    if not clean:
+        return ""
+    if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
+        return " ".join(part.capitalize() for part in clean.split(" "))
+    return clean
+
+
+def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
+    clean = _normalize_entity_name(name)
+    lowered = clean.lower()
+
+    if not clean or len(clean) < 3:
+        return False
+    if lowered in ENTITY_NOISE_WORDS:
+        return False
+    if re.fullmatch(r"\d+", clean):
+        return False
+    if re.search(r"\b\d{1,2}:\d{2}\b", clean):
+        return False
+    if clean.count(" ") > 4:
+        return False
+    if entity_type and entity_type.lower() in {"time", "date", "duration"}:
+        return False
+    return True
+
+
+def _filter_cluster_tags(tags: list[str]) -> list[str]:
+    filtered = []
+    seen = set()
+    for raw in tags or []:
+        clean = _normalize_entity_name(raw)
+        lowered = clean.lower()
+        if not clean or len(clean) < 3:
+            continue
+        if lowered in ENTITY_NOISE_WORDS:
+            continue
+        if clean.count(" ") > 3:
+            continue
+        if re.fullmatch(r"\d+", clean):
+            continue
+        if re.search(r"\b\d{1,2}:\d{2}\b", clean):
+            continue
+        dedupe_key = clean.casefold()
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        filtered.append(clean)
+    return filtered[:10]
+
+
+def _parse_perspectives_blob(raw_perspectives) -> list[dict]:
+    if not raw_perspectives:
+        return []
+    if isinstance(raw_perspectives, str):
+        try:
+            raw_perspectives = json.loads(raw_perspectives)
+        except Exception:
+            return []
+    if not isinstance(raw_perspectives, list):
+        return []
+
+    parsed = []
+    for item in raw_perspectives:
+        if isinstance(item, str):
+            content = item.strip()
+            if content:
+                parsed.append({"angle": "Перспектива", "content": content})
+            continue
+        if not isinstance(item, dict):
+            continue
+        angle = str(item.get("angle") or item.get("label") or "Перспектива").strip()
+        content = str(item.get("content") or item.get("text") or "").strip()
+        if content:
+            parsed.append({"angle": angle or "Перспектива", "content": content})
+    return parsed
+
+
+def _default_related_questions(question: str, category: Optional[str]) -> list[str]:
+    fallback = [
+        "Што е главниот развој во оваа приказна?",
+        "Како се разликуваат изворите во известувањето?",
+        "Што сè уште не е потврдено?",
+    ]
+    if category:
+        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
+    return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
+
+
+def _text_terms(text: str) -> set[str]:
+    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+    return {
+        term for term in terms
+        if term not in ENTITY_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
+    }
+
+
+def _rank_cluster_citations(question: str, answer: str, articles: list[dict], preferred_numbers: list) -> list[dict]:
+    question_terms = _text_terms(question)
+    answer_terms = _text_terms(answer)
+    combined_terms = question_terms | answer_terms
+
+    preferred_order = []
+    for raw in preferred_numbers:
+        try:
+            idx = int(raw)
+        except Exception:
+            continue
+        if idx not in preferred_order:
+            preferred_order.append(idx)
+
+    ranked = []
+    for idx, article in enumerate(articles, start=1):
+        article_text = " ".join([
+            str(article.get("title") or ""),
+            str(article.get("description") or ""),
+            str(article.get("source") or ""),
+        ])
+        article_terms = _text_terms(article_text)
+        overlap = len(combined_terms & article_terms)
+        preferred_bonus = 5 if idx in preferred_order else 0
+        title_bonus = 1 if question_terms & _text_terms(str(article.get("title") or "")) else 0
+        ranked.append((
+            preferred_bonus + overlap + title_bonus,
+            -idx,
+            {
+                "source": article.get("source"),
+                "title": article.get("title"),
+                "link": article.get("link"),
+                "created_at": article.get("created_at"),
+            },
+        ))
+
+    ranked.sort(reverse=True)
+    top = [item[2] for item in ranked if item[0] > 0]
+    if top:
+        return top[:3]
+    return [
+        {
+            "source": article.get("source"),
+            "title": article.get("title"),
+            "link": article.get("link"),
+            "created_at": article.get("created_at"),
+        }
+        for article in articles[:2]
+    ]
 
 @app.get("/api/health")
 async def health():
@@ -64,12 +222,32 @@ async def get_entity_profile(name: str):
 @app.get("/api/intelligence/top-entities")
 async def get_top_entities(limit: int = 10):
     """Returns the most mentioned entities."""
+    fetch_limit = max(limit * 4, 24)
     rows = db.execute("""
         SELECT name, type, total_mentions 
         FROM knowledge_entities 
         ORDER BY total_mentions DESC LIMIT %s
-    """, (limit,))
-    return [dict(r) for r in rows]
+    """, (fetch_limit,))
+
+    filtered = []
+    seen = set()
+    for row in rows:
+        normalized_name = _normalize_entity_name(row["name"])
+        if not _is_valid_focus_entity(normalized_name, row.get("type")):
+            continue
+        dedupe_key = normalized_name.casefold()
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        filtered.append({
+            "name": normalized_name,
+            "type": row.get("type"),
+            "total_mentions": row.get("total_mentions"),
+        })
+        if len(filtered) >= limit:
+            break
+
+    return filtered
 
 @app.get("/api/news")
 async def get_news(
@@ -205,7 +383,7 @@ async def get_cluster_detail(cluster_id: str):
             "SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", 
             (cluster_id,)
         )
-        tags = m_row["tags"] if m_row else []
+        tags = _filter_cluster_tags(m_row["tags"] if m_row else [])
         topics = m_row["topics"] if m_row else []
 
         # 4. Related clusters
@@ -244,6 +422,139 @@ async def get_cluster_detail(cluster_id: str):
         log.error(f"FastAPI Cluster Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch cluster detail")
 
+
+@app.post("/api/cluster/{cluster_id}/ask")
+async def ask_cluster(cluster_id: str, request: Request):
+    """Answers a question using only the current cluster's context."""
+    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+        raise HTTPException(status_code=400, detail="Invalid cluster ID")
+
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    question = str((payload or {}).get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+    if len(question) > API_MAX_Q_LEN:
+        raise HTTPException(status_code=400, detail="Question is too long")
+
+    articles = db.execute(
+        """
+        SELECT title, description, source, link, created_at, category
+        FROM articles
+        WHERE cluster_id = %s
+        ORDER BY created_at DESC
+        LIMIT 8
+        """,
+        (cluster_id,)
+    )
+    if not articles:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    summary_row = db.execute_one(
+        "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+        (cluster_id,)
+    )
+    synthesis = (summary_row or {}).get("summary") or ""
+    perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
+
+    local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
+    if local_answer:
+        return {
+            "status": "success",
+            "answer": local_answer["answer"],
+            "citations": local_answer["citations"][:3],
+            "related_questions": local_answer["related_questions"][:3],
+            "confidence": local_answer["confidence"],
+            "generated_locally": True,
+        }
+
+    article_context = []
+    citation_index = {}
+    for idx, article in enumerate(articles, start=1):
+        article_context.append(
+            f"[{idx}] Извор: {article['source']}\n"
+            f"Наслов: {article['title']}\n"
+            f"Опис: {(article.get('description') or '').strip()}\n"
+        )
+        citation_index[idx] = {
+            "source": article["source"],
+            "title": article["title"],
+            "link": article.get("link"),
+            "created_at": article.get("created_at"),
+        }
+
+    perspective_context = "\n".join(
+        f"- {item['angle']}: {item['content']}" for item in perspectives[:4]
+    )
+
+    prompt = (
+        "Контекст за еден новински кластер:\n\n"
+        f"Системско резиме:\n{synthesis or 'Нема достапно резиме.'}\n\n"
+        f"Перспективи:\n{perspective_context or 'Нема издвоени перспективи.'}\n\n"
+        "Извори:\n"
+        + "\n".join(article_context)
+        + "\n"
+        f"Прашање од корисник: {question}\n\n"
+        "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
+        "Врати JSON со полиња: "
+        "{\"answer\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+        "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
+        "Одговорот мора да биде на македонски."
+    )
+
+    system = (
+        "Ти си новинарски асистент за Пресек. Не измислувај факти. "
+        "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
+    )
+
+    response_text, _provider = await _call_ai_async(
+        prompt,
+        system,
+        task_type="chat",
+        max_tokens=700,
+        json_mode=True,
+    )
+
+    if not response_text:
+        raise HTTPException(status_code=503, detail="Системот не можеше да одговори во моментот")
+
+    parsed = clean_json_response(response_text)
+    if isinstance(parsed, dict):
+        answer = str(parsed.get("answer") or "").strip()
+        citation_numbers = parsed.get("citation_numbers") or []
+        related_questions = parsed.get("related_questions") or []
+        confidence = str(parsed.get("confidence") or "medium").strip().lower()
+    else:
+        answer = str(parsed).strip()
+        citation_numbers = [1, 2]
+        related_questions = []
+        confidence = "medium"
+
+    citations = _rank_cluster_citations(question, answer, articles, citation_numbers)
+
+    clean_related = []
+    for item in related_questions:
+        text = str(item).strip()
+        if text and text not in clean_related and text != question:
+            clean_related.append(text)
+
+    if not clean_related:
+        clean_related = _default_related_questions(question, articles[0].get("category"))
+
+    if confidence not in {"high", "medium", "low"}:
+        confidence = "medium"
+
+    return {
+        "status": "success",
+        "answer": answer,
+        "citations": citations[:3],
+        "related_questions": clean_related[:3],
+        "confidence": confidence,
+    }
+
 @app.get("/api/briefing")
 async def get_briefing():
     try:
@@ -255,7 +566,15 @@ async def get_briefing():
                 "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1"
             )
         if not row:
-            return {"error": "Брифингот сè уште не е подготвен. Обидете се подоцна."}
+            fallback_rows = db.execute(
+                "SELECT cluster_id, title, description, source, category, topic, created_at "
+                "FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
+            )
+            return {
+                "date": datetime.date.today().isoformat(),
+                "content": generate_daily_brief_fallback(fallback_rows),
+                "generated_locally": True,
+            }
 
         return {
             "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]),
@@ -268,38 +587,100 @@ async def get_briefing():
 @app.get("/api/archive")
 async def get_archive(
     date: str = Query(...),
+    source: str = "",
+    topic: str = "",
     page: int = 0,
     page_size: int = 50
 ):
-    """Return a flat list of articles for a specific date."""
+    """Return clustered archive data for a specific date."""
     try:
-        # Validate date format
         datetime.datetime.strptime(date, '%Y-%m-%d')
-        
+
         offset = page * page_size
-        sql = """
-            SELECT id, cluster_id, title, link, source, category, summary, created_at
-            FROM articles 
-            WHERE created_at::date = %s
-            ORDER BY created_at DESC
-            LIMIT %s OFFSET %s
-        """
-        rows = db.execute(sql, (date, page_size + 1, offset))
-        
-        has_more = len(rows) > page_size
-        articles = [dict(r) for r in rows[:page_size]]
-        
-        total = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at::date = %s", (date,))["count"]
-        sources = db.execute_one("SELECT COUNT(DISTINCT source) FROM articles WHERE created_at::date = %s", (date,))["count"]
+        where_clauses = ["created_at::date = %s"]
+        params = [date]
+
+        if source:
+            where_clauses.append("source = %s")
+            params.append(source)
+
+        if topic:
+            where_clauses.append("topic = %s")
+            params.append(topic)
+
+        where_sql = " AND ".join(where_clauses)
+
+        rows = db.execute(
+            "SELECT * FROM articles "
+            f"WHERE {where_sql} "
+            "ORDER BY created_at DESC LIMIT 1500",
+            tuple(params)
+        )
+
+        clusters = defaultdict(list)
+        for row in rows:
+            row["reading_time"] = calculate_reading_time(row.get("description", ""))
+            clusters[row["cluster_id"]].append(row)
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters.sort(key=score_cluster, reverse=True)
+
+        paged_clusters = ranked_clusters[offset: offset + page_size]
+        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
+        synthesis_ids = set(db.get_synthesis_ids(cluster_ids)) if cluster_ids else set()
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cluster_ids or [""],)
+        ) if cluster_ids else []
+        rep_images = {r["cluster_id"]: r["representative_image"] for r in metadata_rows}
+
+        cluster_payload = []
+        for arts in paged_clusters:
+            cid = arts[0]["cluster_id"]
+            s = score_cluster(arts)
+            cluster_payload.append({
+                "cluster_id": cid,
+                "articles": arts,
+                "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get("reading_time", 1),
+                "score": round(s, 3),
+                "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": cid in synthesis_ids,
+                "has_balanced": is_balanced(arts),
+            })
+
+        total = db.execute_one(
+            f"SELECT COUNT(*) FROM articles WHERE {where_sql}",
+            tuple(params)
+        )["count"]
+        sources = db.execute_one(
+            f"SELECT COUNT(DISTINCT source) FROM articles WHERE {where_sql}",
+            tuple(params)
+        )["count"]
+        top_sources = db.execute(
+            f"SELECT source, COUNT(*) AS n FROM articles WHERE {where_sql} "
+            "GROUP BY source ORDER BY n DESC LIMIT 8",
+            tuple(params)
+        )
+        top_topics = db.execute(
+            f"SELECT topic, COUNT(*) AS n FROM articles WHERE {where_sql} "
+            "GROUP BY topic ORDER BY n DESC LIMIT 8",
+            tuple(params)
+        )
 
         return {
-            "status": "success",
-            "date": date,
-            "articles": articles,
+            "clusters": cluster_payload,
             "total": total,
             "sources": sources,
+            "date": date,
+            "source": source,
+            "topic": topic,
             "page": page,
-            "has_more": has_more
+            "page_size": page_size,
+            "has_more": offset + page_size < len(ranked_clusters),
+            "total_clusters": len(ranked_clusters),
+            "top_sources": [dict(r) for r in top_sources],
+            "top_topics": [dict(r) for r in top_topics],
         }
     except Exception as e:
         log.error(f"FastAPI Archive Error: {e}")
@@ -437,7 +818,7 @@ async def chat_stream(cluster_id: str, query: str):
     async def generate():
         try:
             full_prompt = f"Context:\n{context}\n\nUser Question: {query}"
-            generator = await _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
+            generator = await _call_ai_async(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
             if generator:
                 async for chunk in generator:
                     if chunk:

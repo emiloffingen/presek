@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Moon, Sun, X, Menu } from 'lucide-react';
 import { useUIStore, useNewsStore } from '../store/useNewsStore';
@@ -81,7 +81,7 @@ export const Header: React.FC = () => {
 
           <div className="ml-10 hidden sm:flex gap-5 text-[0.65rem] font-bold uppercase text-muted min-w-[130px]">
             <span className="inline-block min-w-[45px]">{weather ? `${weather.temp}°C` : ''}</span>
-            <span className="inline-block min-w-[45px]">AQI: 24</span>
+            <span className="inline-block min-w-[60px]">{weather?.aqi != null ? `AQI: ${weather.aqi}` : ''}</span>
           </div>
 
           <div className="ml-auto flex gap-6 items-center">

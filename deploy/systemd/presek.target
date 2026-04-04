@@ -1,0 +1,7 @@
+[Unit]
+Description=Presek application stack
+Wants=presek-web.service presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target

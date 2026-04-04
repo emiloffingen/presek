@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import re
 import time
 import logging
 import datetime
@@ -44,7 +45,7 @@ import digest as digest_module
 
 # Import modularized components
 from config import (
-    NTFY_TOPIC, REFRESH_INTERVAL
+    NTFY_TOPIC, REFRESH_INTERVAL, validate_required_env
 )
 from database import get_db, init_db, prune_db
 from ingestion import ingest_feeds, ingest_diaspora_feeds
@@ -65,6 +66,8 @@ class CustomJSONProvider(DefaultJSONProvider):
 
 app = Flask(__name__)
 app.json = CustomJSONProvider(app)
+app.config["PUBLIC_SITE_URL"] = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
+app.config["REDIRECT_LEGACY_FRONTEND"] = os.environ.get("REDIRECT_LEGACY_FRONTEND", "1") == "1"
 
 @app.template_filter('format_time')
 def format_time_filter(dt):
@@ -185,10 +188,15 @@ def vite_assets():
 
 @app.before_request
 def rate_limit_check():
-    # Only rate-limit API endpoints — HTML pages must never return JSON 429
+    # Only rate-limit expensive AI endpoints — browsing endpoints must stay available.
     if not request.path.startswith('/api/'):
         return None
-    if request.path in ('/api/health',):
+    expensive_paths = {
+        '/api/chat_cluster',
+        '/api/chat/stream',
+    }
+    is_cluster_ask = re.match(r'^/api/cluster/[a-f0-9]{6,64}/ask$', request.path or '')
+    if request.path not in expensive_paths and not is_cluster_ask:
         return None
     # ProxyFix sets request.remote_addr correctly from X-Forwarded-For
     ip = request.remote_addr or '0.0.0.0'
@@ -226,6 +234,7 @@ def serve_manifest():
 
 if __name__ == "__main__":
     try:
+        validate_required_env()
         log.info("Initializing database...")
         init_db()
         log.info("Database initialization complete")
@@ -235,4 +244,9 @@ if __name__ == "__main__":
         import sys
         sys.exit(1)
     
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+    app.run(
+        host=os.environ.get("FLASK_BIND_HOST", "127.0.0.1"),
+        port=int(os.environ.get("FLASK_PORT", "5000")),
+        debug=False,
+        use_reloader=False,
+    )

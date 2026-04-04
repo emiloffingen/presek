@@ -2,6 +2,7 @@ import logging
 import datetime
 import time
 import json
+import re
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import db_manager as db, prune_db
@@ -19,6 +20,11 @@ from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMAT
 from entities import extract_entities
 from health import record_refresh
 from utils import rank_articles_in_cluster, score_cluster, redis_client
+from local_nlp import (
+    summarize_article_fallback,
+    synthesize_cluster_fallback,
+    generate_daily_brief_fallback,
+)
 
 log = logging.getLogger("presek_celery")
 
@@ -39,7 +45,7 @@ def translate_article_task(article_id, title, description):
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def summarize_article_task(article_id, title):
+def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
     try:
         summary, _ = _call_ai(title, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
@@ -49,12 +55,28 @@ def summarize_article_task(article_id, title):
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final, article_id), fetch=False)
             log.info(f"Successfully summarized article {article_id}")
         else:
-            log.warning(f"No summary generated for article {article_id}")
+            desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
+            fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
+            if fallback:
+                db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+                log.info(f"Stored local fallback summary for article {article_id}")
+                if retry_attempt < 2:
+                    summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
+            else:
+                log.warning(f"No summary generated for article {article_id}")
     except Exception as e:
-        log.error(f"[tasks] Summarize failed for {article_id}: {e}")
+        desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
+        fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
+        if fallback:
+            db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+            log.warning(f"[tasks] Summarize failed for {article_id}; stored local fallback")
+            if retry_attempt < 2:
+                summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
+        else:
+            log.error(f"[tasks] Summarize failed for {article_id}: {e}")
 
 @celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def synthesize_cluster_task(cluster_id, content):
+def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
     """Generates a multi-perspective synthesis for a cluster."""
     try:
         raw, _ = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
@@ -62,7 +84,18 @@ def synthesize_cluster_task(cluster_id, content):
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
-            
+        else:
+            article_rows = db.execute(
+                "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+                (cluster_id,)
+            )
+            fallback = synthesize_cluster_fallback(article_rows)
+            summary = fallback.get("summary", "")
+            perspectives = fallback.get("perspectives", [])
+            if (summary or perspectives) and retry_attempt < 2:
+                synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
+
+        if summary or perspectives:
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
                    VALUES (%s, %s, %s, %s)
@@ -72,7 +105,6 @@ def synthesize_cluster_task(cluster_id, content):
                 fetch=False
             )
 
-            # Cover art generation
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
             if not any_img:
                 img_url = generate_cover_art(cluster_id, summary)
@@ -82,7 +114,25 @@ def synthesize_cluster_task(cluster_id, content):
         else:
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
-        log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
+        article_rows = db.execute(
+            "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+            (cluster_id,)
+        )
+        fallback = synthesize_cluster_fallback(article_rows)
+        if fallback.get("summary") or fallback.get("perspectives"):
+            db.execute(
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (cluster_id) DO UPDATE
+                   SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
+                (cluster_id, fallback.get("summary", ""), json.dumps(fallback.get("perspectives", [])), datetime.datetime.now()),
+                fetch=False
+            )
+            log.warning(f"[tasks] Synthesis failed for {cluster_id}; stored local fallback")
+            if retry_attempt < 2:
+                synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
+        else:
+            log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
 @celery_app.task
 def run_ingestion():
@@ -194,17 +244,33 @@ def recategorize_clusters_task():
         log.error(f"[tasks] Recategorization failed: {e}")
 
 @celery_app.task
-def generate_daily_brief_task():
+def generate_daily_brief_task(retry_attempt=0):
     """Generate the flagship morning briefing."""
     try:
-        # Simplified for refactor: Fetch top 5 scored clusters
-        rows = db.execute("SELECT cluster_id, title FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' LIMIT 10")
+        rows = db.execute(
+            "SELECT cluster_id, title, description, source, category, topic, created_at FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
+        )
         context = "\n".join([f"- {r['title']}" for r in rows])
         brief, _ = _call_ai(context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
-        if brief:
-            db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (brief,), fetch=False)
+        final_brief = brief or generate_daily_brief_fallback(rows)
+        if final_brief:
+            db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (final_brief,), fetch=False)
+            if not brief and retry_attempt < 2:
+                generate_daily_brief_task.apply_async(args=(retry_attempt + 1,), countdown=1800)
     except Exception as e:
-        log.error(f"[tasks] Daily brief failed: {e}")
+        rows = db.execute(
+            "SELECT cluster_id, title, description, source, category, topic, created_at FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
+        )
+        fallback = generate_daily_brief_fallback(rows)
+        if fallback:
+            db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (fallback,), fetch=False)
+            log.warning("[tasks] Daily brief failed; stored local fallback briefing")
+            if retry_attempt < 2:
+                generate_daily_brief_task.apply_async(args=(retry_attempt + 1,), countdown=1800)
+        else:
+            log.error(f"[tasks] Daily brief failed: {e}")
 
 @celery_app.task
 def run_prune_db():
@@ -219,6 +285,29 @@ def generate_cluster_metadata_task():
     """Tag recent clusters with metadata (entities, source count, and representative image)."""
     try:
         from local_nlp import extract_keyphrases_locally
+
+        noise_words = {
+            "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
+            "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
+            "слушаме", "гласот", "добронамерните",
+        }
+
+        def clean_tag(value):
+            clean = re.sub(r"\s+", " ", str(value or "").strip(" -–—,.;:!?()[]{}\"'"))
+            if not clean or len(clean) < 3:
+                return ""
+            if clean.lower() in noise_words:
+                return ""
+            if clean.count(" ") > 3:
+                return ""
+            if re.fullmatch(r"\d+", clean):
+                return ""
+            if re.search(r"\b\d{1,2}:\d{2}\b", clean):
+                return ""
+            if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
+                clean = " ".join(part.capitalize() for part in clean.split(" "))
+            return clean
+
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles
@@ -234,7 +323,17 @@ def generate_cluster_metadata_task():
             combined_text = " ".join(r['titles'])
             keyphrases = extract_keyphrases_locally(combined_text, top_n=3)
             
-            final_tags = list(set(tags + keyphrases))
+            final_tags = []
+            seen = set()
+            for candidate in tags + keyphrases:
+                clean = clean_tag(candidate)
+                if not clean:
+                    continue
+                key = clean.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                final_tags.append(clean)
             if not final_tags:
                 final_tags = r['sources']
             

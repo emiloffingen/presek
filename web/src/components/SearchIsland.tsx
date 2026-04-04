@@ -1,139 +1,445 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Command, Zap, TrendingUp, History } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Search, X, Zap, ArrowUpRight, LoaderCircle } from 'lucide-react';
+
+type Suggestion = {
+  cluster_id: string;
+  title: string;
+  source?: string;
+  category?: string;
+};
+
+type TrendingItem = {
+  word: string;
+};
+
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function SearchIsland() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('presek_recent_searches');
-    if (saved) setRecentSearches(JSON.parse(saved));
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch {
+        setRecentSearches([]);
+      }
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsOpen(true);
       }
       if (e.key === 'Escape') setIsOpen(false);
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
+    if (!isOpen) {
       document.body.style.overflow = 'unset';
+      setActiveIndex(-1);
+      setSuggestions([]);
+      if (lastFocusedRef.current) {
+        lastFocusedRef.current.focus();
+      }
+      return;
     }
+
+    lastFocusedRef.current = document.activeElement as HTMLElement;
+    document.body.style.overflow = 'hidden';
+    inputRef.current?.focus();
   }, [isOpen]);
 
-  const handleSearch = (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
-    
-    // Save to recent
-    const newRecent = [searchQuery.trim(), ...recentSearches.filter(s => s !== searchQuery.trim())].slice(0, 5);
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    const loadTrending = async () => {
+      try {
+        const res = await fetch('/api/trending');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data)) {
+          setTrendingItems(data.slice(0, 6));
+        }
+      } catch {
+        if (!cancelled) {
+          setTrendingItems([]);
+        }
+      }
+    };
+
+    loadTrending();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setIsLoading(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`);
+        if (!res.ok) {
+          throw new Error('search failed');
+        }
+        const data = await res.json();
+        const nextSuggestions = Array.isArray(data?.clusters)
+          ? data.clusters.slice(0, 6).map((cluster: any) => ({
+              cluster_id: cluster.cluster_id,
+              title: cluster.articles?.[0]?.title || 'Наслов',
+              source: cluster.articles?.[0]?.source || '',
+              category: cluster.articles?.[0]?.category || '',
+            }))
+          : [];
+
+        if (!cancelled) {
+          setSuggestions(nextSuggestions);
+          setActiveIndex(nextSuggestions.length > 0 ? 0 : -1);
+        }
+      } catch {
+        if (!cancelled) {
+          setSuggestions([]);
+          setActiveIndex(-1);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, isOpen]);
+
+  const closeSearch = () => {
+    setIsOpen(false);
+  };
+
+  const persistRecentSearch = (searchQuery: string) => {
+    const cleanQuery = searchQuery.trim();
+    if (!cleanQuery) return;
+
+    const newRecent = [cleanQuery, ...recentSearches.filter((s) => s !== cleanQuery)].slice(0, 5);
     setRecentSearches(newRecent);
     localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
-    
-    window.location.href = `/?q=${encodeURIComponent(searchQuery.trim())}`;
+  };
+
+  const navigateToQuery = (searchQuery: string) => {
+    const cleanQuery = searchQuery.trim();
+    if (!cleanQuery) return;
+    persistRecentSearch(cleanQuery);
+    window.location.href = `/?q=${encodeURIComponent(cleanQuery)}`;
+  };
+
+  const navigateToCluster = (clusterId: string) => {
+    if (!clusterId) return;
+    window.location.href = `/cluster/${clusterId}`;
   };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleSearch(query);
+    if (activeIndex >= 0 && suggestions[activeIndex]) {
+      navigateToCluster(suggestions[activeIndex].cluster_id);
+      return;
+    }
+    navigateToQuery(query);
+  };
+
+  const onDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowDown') {
+      if (suggestions.length === 0) return;
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % suggestions.length);
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      if (suggestions.length === 0) return;
+      e.preventDefault();
+      setActiveIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+      return;
+    }
+
+    if (e.key === 'Tab' && dialogRef.current) {
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((node) => !node.hasAttribute('disabled'));
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+
+  const showRecent = query.trim().length < 2 && recentSearches.length > 0;
+  const showTrending = query.trim().length < 2;
+  const showSuggestions = query.trim().length >= 2;
+
+  const renderHighlightedText = (text: string, searchQuery: string) => {
+    const cleanQuery = searchQuery.trim();
+    if (!cleanQuery) return text;
+
+    const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'ig');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === cleanQuery.toLowerCase()) {
+        return (
+          <mark
+            key={`${part}-${index}`}
+            className="bg-transparent text-nyt-red underline decoration-nyt-red/70 underline-offset-4"
+          >
+            {part}
+          </mark>
+        );
+      }
+      return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+    });
   };
 
   return (
     <>
-      <button 
+      <button
+        ref={triggerRef}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 text-nyt-black hover:text-nyt-gray-600 transition-colors"
+        className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors"
         aria-label="Пребарај"
       >
         <Search size={18} />
         <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Пребарај</span>
       </button>
 
-      {/* NYT Style Search Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center pt-12 px-4 transition-all animate-in fade-in duration-200">
-          <div className="w-full max-w-4xl relative">
-            <div className="flex justify-between items-center mb-12">
-                <div className="flex items-center gap-2">
-                    <img src="/img/presek_emblem.svg" alt="Logo" className="h-6 site-logo" />
-                    <span className="font-serif font-black text-lg">ПРЕСЕК ПРЕБАРУВАЊЕ</span>
+        <div
+          className="fixed inset-0 z-[100] bg-[color:color-mix(in_srgb,var(--background)_84%,black_16%)]/96 backdrop-blur-md flex flex-col items-center pt-8 md:pt-12 px-4 transition-all animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="presek-search-title"
+          onKeyDown={onDialogKeyDown}
+        >
+          <div
+            ref={dialogRef}
+            className="w-full max-w-5xl relative border border-[color:color-mix(in_srgb,var(--border)_88%,transparent)] bg-background shadow-[0_20px_80px_rgba(0,0,0,0.16)]"
+          >
+            <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
+              <div className="flex items-center gap-3">
+                <img src="/img/presek_emblem.svg" alt="" className="h-6 site-logo" />
+                <div>
+                  <span id="presek-search-title" className="font-serif font-black text-lg block">
+                    Пресек Пребарување
+                  </span>
+                  <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+                    Вести, теми, личности и контекст
+                  </span>
                 </div>
-                <button 
-                onClick={() => setIsOpen(false)}
-                className="p-2 text-nyt-black hover:bg-nyt-gray-100 transition-colors"
-                >
+              </div>
+              <button
+                onClick={closeSearch}
+                className="p-2 text-foreground hover:bg-secondary transition-colors"
+                aria-label="Затвори пребарување"
+              >
                 <X size={24} />
-                </button>
+              </button>
             </div>
 
-            <form onSubmit={onSubmit} className="mb-12">
-              <div className="border-b-2 border-nyt-black flex items-center gap-4">
+            <form onSubmit={onSubmit} className="mb-8 px-5 md:px-8">
+              <div className="border-y border-foreground/70 flex items-center gap-4 py-2">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Внесете клучни зборови..."
-                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-nyt-black outline-none placeholder:text-nyt-gray-300"
+                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
+                  aria-label="Пребарај вести"
+                  aria-controls="presek-search-results"
+                  aria-expanded={showSuggestions}
+                  aria-activedescendant={
+                    activeIndex >= 0 && suggestions[activeIndex]
+                      ? `search-suggestion-${suggestions[activeIndex].cluster_id}`
+                      : undefined
+                  }
                 />
-                <button 
+                <button
                   type="submit"
-                  className="bg-nyt-black text-primary-foreground px-8 py-3 font-black text-xs uppercase tracking-widest hover:bg-nyt-gray-600 transition-all"
+                  className="bg-foreground text-background px-6 md:px-8 py-3 font-black text-[11px] uppercase tracking-[0.18em] hover:opacity-85 transition-all"
                 >
                   Барај
                 </button>
               </div>
-              
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase text-nyt-accent">
-                <Zap size={10} /> Semantic search enabled — indexing 100,000+ Macedonian news articles
+
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">
+                <Zap size={10} /> Пребарување низ најновите групирани вести и теми
               </div>
             </form>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-              {recentSearches.length > 0 && (
-                <div>
-                  <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-gray-500 mb-6 pb-2 border-b border-nyt-gray-200">
-                    ПОСЛЕДНИ ПРЕБАРАУВАЊА
-                  </h3>
+            <div id="presek-search-results" className="grid grid-cols-1 md:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.8fr)] gap-0">
+              <div className="px-5 md:px-8 pb-6 md:pb-8 md:border-r border-border">
+                <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
+                  {showSuggestions ? 'РЕЗУЛТАТИ' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
+                </h3>
+
+                {showSuggestions && (
+                  <div className="space-y-2">
+                    {isLoading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                        <LoaderCircle size={16} className="animate-spin" />
+                        <span>Пребарувам релевантни вести...</span>
+                      </div>
+                    )}
+
+                    {!isLoading && suggestions.length === 0 && (
+                      <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
+                        Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
+                      </p>
+                    )}
+
+                    {!isLoading &&
+                      suggestions.map((item, index) => (
+                        <button
+                          key={item.cluster_id}
+                          id={`search-suggestion-${item.cluster_id}`}
+                          onClick={() => navigateToCluster(item.cluster_id)}
+                        className={`w-full text-left border-b border-border py-4 transition-colors ${
+                          activeIndex === index
+                              ? 'text-nyt-accent bg-secondary'
+                              : 'text-foreground hover:text-nyt-accent'
+                        }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4 min-w-0">
+                              <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground pt-1 shrink-0">
+                                {String(index + 1).padStart(2, '0')}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-serif font-black text-xl leading-tight mb-2 text-balance">
+                                  {renderHighlightedText(item.title, query)}
+                                </p>
+                                <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+                                  Кластер
+                                  {item.source || item.category ? ' · ' : ''}
+                                  {[item.source, item.category].filter(Boolean).join(' · ')}
+                                </p>
+                              </div>
+                            </div>
+                            <ArrowUpRight size={16} className="mt-1 shrink-0" />
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+
+                {showRecent && (
                   <div className="space-y-4">
-                    {recentSearches.map(s => (
-                      <button 
-                        key={s}
-                        onClick={() => handleSearch(s)}
-                        className="w-full text-left font-serif font-black text-xl text-nyt-black hover:text-nyt-accent transition-colors"
+                    {recentSearches.map((item) => (
+                      <button
+                        key={item}
+                        onClick={() => navigateToQuery(item)}
+                        className="w-full text-left font-serif font-black text-xl text-foreground hover:text-nyt-accent transition-colors"
                       >
-                        {s}
+                        {item}
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              <div>
-                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-gray-500 mb-6 pb-2 border-b border-nyt-gray-200">
+                {!showSuggestions && !showRecent && (
+                  <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed max-w-[42ch]">
+                    Почнете со име на личност, институција, град или тема за да добиете релевантни групирани вести.
+                  </p>
+                )}
+              </div>
+
+              <div className="px-5 md:px-8 py-6 md:py-0 md:pt-0 bg-[color:color-mix(in_srgb,var(--background)_90%,var(--secondary)_10%)]">
+                <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
                   АКТУЕЛНО
                 </h3>
-                <div className="flex flex-wrap gap-x-6 gap-y-4">
-                  {['Влада', 'Економија', 'Избори', 'ЕУ Интеграции', 'Скопје', 'Технологија'].map(tag => (
-                    <button 
-                      key={tag}
-                      onClick={() => handleSearch(tag)}
-                      className="font-serif font-bold text-lg text-nyt-black hover:underline underline-offset-4 decoration-nyt-red"
+                <div className="space-y-3">
+                  {(trendingItems.length > 0
+                    ? trendingItems
+                    : [
+                        { word: 'Влада' },
+                        { word: 'Економија' },
+                        { word: 'Избори' },
+                        { word: 'ЕУ' },
+                        { word: 'Скопје' },
+                        { word: 'Технологија' },
+                      ]
+                  ).map((item, index) => (
+                    <button
+                      key={item.word}
+                      onClick={() => navigateToQuery(item.word)}
+                      className="w-full flex items-center justify-between gap-3 border-b border-border py-3 text-left text-foreground hover:text-nyt-accent transition-colors"
                     >
-                      {tag}
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground shrink-0">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span className="font-serif font-bold text-lg text-balance">{item.word}</span>
+                      </span>
+                      <ArrowUpRight size={15} className="shrink-0" />
                     </button>
                   ))}
+                </div>
+
+                <div className="mt-8 pt-5 border-t border-border">
+                  <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-3">
+                    Кратенки
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+                      Ctrl/Cmd + K
+                    </span>
+                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+                      ↑ ↓ избор
+                    </span>
+                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+                      Enter отвори
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

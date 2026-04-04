@@ -105,10 +105,12 @@ function getTimeStr(dateStr: string) {
 
 	.headline {
 		font-family: var(--font-serif);
-		line-height: 1.1;
-		margin-bottom: 0.5rem;
+		line-height: 1.04;
+		letter-spacing: -0.022em;
+		margin-bottom: 0.55rem;
 		color: var(--foreground);
         font-weight: 800;
+        text-wrap: balance;
 	}
 
     .headline-link:hover .headline {
@@ -117,10 +119,11 @@ function getTimeStr(dateStr: string) {
 
 	.summary {
 		font-family: var(--font-nyt-body);
-		font-size: 0.95rem;
-		line-height: 1.4;
+		font-size: 0.98rem;
+		line-height: 1.62;
 		color: var(--secondary-foreground);
 		margin-bottom: 1rem;
+        text-wrap: pretty;
 	}
 
 	.article-meta {
@@ -132,10 +135,10 @@ function getTimeStr(dateStr: string) {
 
 	.source-label {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 900;
+		font-size: 0.62rem;
+		font-weight: 800;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
         color: var(--foreground);
 	}
 

@@ -1,14 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
 import NewsCard from '../../components/NewsCard.astro';
-import SearchIsland from '../../components/SearchIsland';
-import ThemeIsland from '../../components/ThemeIsland';
 import EntityIsland from '../../components/EntityIsland';
-import { ArrowLeft } from 'lucide-react';
+import Footer from '../../components/Footer.astro';
 
 const { name } = Astro.params;
 const decodedName = decodeURIComponent(name || "");
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let clusters = [];
 let error = null;
@@ -23,37 +22,73 @@ try {
 ---
 
 <Layout title={decodedName} description={`Најнови вести и анализи за ${decodedName} на Пресек.`}>
-	<header class="site-layout py-6 border-b border-nyt flex items-center justify-between">
-		<a href="/" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-accent transition">
-			<ArrowLeft size={14} /> Назад
-		</a>
-		
-		<a href="/" class="absolute left-1/2 -translate-x-1/2">
-			<img src="/logo.svg" alt="Presek" class="site-logo h-10" />
-		</a>
-
-		<div class="flex items-center gap-2">
-			<SearchIsland client:load />
-			<ThemeIsland client:load />
-		</div>
-	</header>
+	<NYTHeader />
 
 	<main class="site-layout py-12">
-        <EntityIsland client:load name={decodedName} />
+        <div class="entity-shell">
+            <EntityIsland client:load name={decodedName} />
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-[-30rem] lg:mt-[-25rem]">
-            <div class="lg:col-span-8">
-                <div class="news-feed-grid mt-12">
+            <section class="entity-news">
+                <div class="entity-news-head">
+                    <h2>Најнови Кластери</h2>
+                    <p>Сите неодамнешни стории каде се појавува овој ентитет.</p>
+                </div>
+                <div class="news-feed-grid">
                     {clusters.map((cluster: any) => (
                         <NewsCard cluster={cluster} />
                     ))}
                 </div>
                 {clusters.length === 0 && (
-                    <div class="bg-secondary p-12 text-center border-t-2 border-nyt">
+                    <div class="entity-empty">
                         <p class="text-muted font-bold uppercase tracking-widest text-sm">Нема пронајдени вести за овој ентитет.</p>
                     </div>
                 )}
-            </div>
+            </section>
         </div>
 	</main>
+
+    <Footer />
 </Layout>
+
+<style>
+    .entity-shell {
+        max-width: 76rem;
+        margin: 0 auto;
+    }
+
+    .entity-news {
+        margin-top: 2rem;
+    }
+
+    .entity-news-head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .entity-news-head h2 {
+        margin: 0;
+        font-size: clamp(1.4rem, 1.05rem + 0.8vw, 2rem);
+        line-height: 1;
+    }
+
+    .entity-news-head p {
+        margin: 0;
+        font-family: var(--font-sans);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .entity-empty {
+        padding: 2rem;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+        text-align: center;
+    }
+</style>

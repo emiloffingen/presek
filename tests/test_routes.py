@@ -81,6 +81,20 @@ class TestViewRoutes:
         assert resp.status_code == 200
         assert "svg" in resp.content_type or "image" in resp.content_type
 
+    def test_public_root_redirects_to_primary_site(self, client):
+        resp = client.get("/", headers={"Host": "presek.live"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/"
+
+    def test_public_cluster_redirects_to_primary_site(self, client):
+        resp = client.get("/cluster/abc123def456abc1", headers={"Host": "presek.live"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/cluster/abc123def456abc1"
+
+    def test_localhost_keeps_legacy_template_access(self, client):
+        resp = client.get("/stats", headers={"Host": "localhost"})
+        assert resp.status_code == 200
+
 
 # ── /api/news ─────────────────────────────────────────────────────
 
@@ -287,14 +301,66 @@ class TestViewRoutesWithDB:
         assert resp.status_code == 200
         assert "svg" in resp.content_type
 
+    def test_api_cluster_normalizes_label_text_perspectives(self, client):
+        article = {
+            "id": 1,
+            "cluster_id": "abc123def456abc1",
+            "title": "Test cluster title",
+            "description": "Test cluster description",
+            "source": "MIA",
+            "link": "https://example.com/story",
+            "country": "🇲🇰",
+            "category": "Македонија",
+            "topic": "Вести",
+            "created_at": datetime.datetime.now(),
+            "image_url": None,
+            "clicks": 0,
+            "original_title": "",
+            "original_description": "",
+            "is_translated": 0,
+        }
+
+        mock_db = MagicMock()
+        mock_db.execute.return_value = [article]
+        mock_db.execute_one.side_effect = [
+            {
+                "summary": "• Главен факт\n• Контекст\n• Последица",
+                "perspectives": [
+                    {"label": "Официјален став", "text": "Институциите го потврдуваат случајот."}
+                ],
+            },
+            {"tags": ["Влада"], "topics": ["Политика"]},
+        ]
+
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/cluster/abc123def456abc1")
+
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["data"]["perspectives"] == [
+            {
+                "angle": "Официјален став",
+                "content": "Институциите го потврдуваат случајот.",
+            }
+        ]
+
 
 # ── Rate limiting ─────────────────────────────────────────────────
 
 class TestRateLimiting:
     @patch('app.check_rate_limit', return_value=False)
-    def test_rate_limited_returns_429(self, mock_rl, client):
-        resp = client.get("/api/stats")
+    def test_expensive_ai_routes_are_rate_limited(self, mock_rl, client):
+        resp = client.post(
+            "/api/chat_cluster",
+            data=json.dumps({"cluster_id": "abc123def456", "query": "тест?"}),
+            content_type="application/json",
+        )
         assert resp.status_code == 429
+
+    @patch('app.check_rate_limit', return_value=False)
+    def test_read_only_api_routes_skip_rate_limit(self, mock_rl, client):
+        resp = client.get("/api/stats")
+        assert resp.status_code != 429
 
     def test_static_routes_skip_rate_limit(self, client):
         """Root path bypasses rate limiting."""

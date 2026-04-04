@@ -20,7 +20,7 @@ export default function EntityIsland({ name }: { name: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+    const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
     fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(name)}`)
       .then(res => res.json())
       .then(setData)
@@ -39,57 +39,56 @@ export default function EntityIsland({ name }: { name: string }) {
   const { profile, related } = data;
 
   return (
-    <div className="space-y-10">
-      <header className="border-b-4 border-double border-nyt pb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 bg-secondary rounded-full">
+    <div className="entity-flow">
+      <header className="entity-hero">
+        <div className="entity-hero-main">
+          <div className="entity-badge">
             {profile.type === 'PERSON' ? <User size={32} className="text-accent" /> : <Building2 size={32} className="text-accent" />}
           </div>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted">{profile.type}</span>
-            <h1 className="text-4xl md:text-6xl font-serif font-bold text-primary">{profile.name}</h1>
+          <div className="entity-copy">
+            <span className="entity-type">{profile.type}</span>
+            <h1 className="entity-name">{profile.name}</h1>
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-8 mt-6">
-          <div className="border-t border-nyt pt-3">
-            <p className="text-[10px] font-black uppercase text-muted mb-1">Споменувања</p>
-            <p className="text-2xl font-serif font-bold text-primary">{profile.total_mentions}</p>
+        <div className="entity-metrics">
+          <div className="entity-metric">
+            <p>Споменувања</p>
+            <strong>{profile.total_mentions}</strong>
           </div>
-          <div className="border-t border-nyt pt-3">
-            <p className="text-[10px] font-black uppercase text-muted mb-1">Прв пат виден</p>
-            <p className="text-2xl font-serif font-bold text-primary">{new Date(profile.first_seen).toLocaleDateString('mk-MK')}</p>
+          <div className="entity-metric">
+            <p>Прв пат виден</p>
+            <strong>{new Date(profile.first_seen).toLocaleDateString('mk-MK')}</strong>
           </div>
-          <div className="border-t border-nyt pt-3">
-            <p className="text-[10px] font-black uppercase text-muted mb-1">Сентимент</p>
-            <p className="text-2xl font-serif font-bold text-accent">{profile.sentiment_score > 0 ? '+' : ''}{profile.sentiment_score.toFixed(1)}</p>
+          <div className="entity-metric">
+            <p>Сентимент</p>
+            <strong className="text-accent">{profile.sentiment_score > 0 ? '+' : ''}{profile.sentiment_score.toFixed(1)}</strong>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8">
-          <h2 className="rail-label flex items-center gap-2"><TrendingUp size={14} /> НАЈНОВИ ВЕСТИ</h2>
-          <p className="text-sm text-muted italic mb-8">Сите кластери каде се појавува {profile.name}...</p>
-          {/* News feed will be handled by the parent Astro page */}
+      <div className="entity-grid">
+        <div className="entity-summary">
+          <h2 className="entity-section-title flex items-center gap-2"><TrendingUp size={14} /> Контекст</h2>
+          <p className="entity-summary-copy">Профилот подолу ги собира присуствата, временската траекторија и поврзаните имиња што најчесто се појавуваат со {profile.name}.</p>
         </div>
 
-        <aside className="lg:col-span-4">
-          <div className="rail-widget border-t-2 border-primary pt-4">
-            <h3 className="rail-label flex items-center gap-2"><Link2 size={14} /> ПОВРЗАНИ ЕНТИТЕТИ</h3>
+        <aside className="entity-related">
+          <div className="rail-card">
+            <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Поврзани Ентитети</h3>
             <div className="space-y-4">
               {related.map(rel => (
                 <a 
                   key={rel.related_entity}
                   href={`/entity/${encodeURIComponent(rel.related_entity)}`}
-                  className="flex justify-between items-center py-2 border-b border-nyt hover:text-accent transition-colors no-underline group"
+                  className="entity-related-link"
                 >
-                  <span className="text-sm font-bold uppercase tracking-tight">{rel.related_entity}</span>
+                  <span className="entity-related-name">{rel.related_entity}</span>
                   <div className="flex items-center gap-2">
-                    <div className="h-1 w-12 bg-secondary overflow-hidden">
+                    <div className="entity-related-track">
                       <div className="h-full bg-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
                     </div>
-                    <span className="text-[10px] font-black text-muted">{rel.weight}</span>
+                    <span className="entity-related-weight">{rel.weight}</span>
                   </div>
                 </a>
               ))}

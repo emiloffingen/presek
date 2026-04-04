@@ -11,10 +11,11 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify, request, Response
 from database import db_manager as db
-from ai_engine import sync_call_ai as _call_ai
+from ai_engine import sync_call_ai as _call_ai, clean_json_response
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
 from embeddings import generate_query_embedding
+from local_nlp import answer_cluster_question_locally, generate_daily_brief_fallback
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
@@ -22,6 +23,269 @@ log = logging.getLogger("presek")
 # Allowed image content types for proxy
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def normalize_perspectives(raw_perspectives):
+    if not isinstance(raw_perspectives, list):
+        return []
+
+    normalized = []
+    for item in raw_perspectives:
+        if isinstance(item, dict):
+            angle = (
+                item.get("angle")
+                or item.get("label")
+                or item.get("title")
+                or item.get("name")
+                or ""
+            )
+            content = (
+                item.get("content")
+                or item.get("text")
+                or item.get("description")
+                or ""
+            )
+        elif isinstance(item, str):
+            angle = ""
+            content = item
+        else:
+            continue
+
+        angle = str(angle).strip()
+        content = str(content).strip()
+        if not angle and not content:
+            continue
+
+        normalized.append({
+            "angle": angle or "Перспектива",
+            "content": content,
+        })
+
+    return normalized
+
+
+TAG_NOISE_WORDS = {
+    "час", "часа", "часот", "минута", "минути", "секунда", "секунди",
+    "денес", "вчера", "утре", "сега", "вечерва", "утрово", "пладне",
+    "слушаме", "гласот", "добронамерните", "овде", "таму",
+}
+
+
+def normalize_tag_name(name):
+    clean = re.sub(r"\s+", " ", str(name or "").strip(" -–—,.;:!?()[]{}\"'"))
+    if not clean:
+        return ""
+    if clean.islower() and re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean):
+        return " ".join(part.capitalize() for part in clean.split(" "))
+    return clean
+
+
+def filter_cluster_tags(tags):
+    filtered = []
+    seen = set()
+    for raw in tags or []:
+        clean = normalize_tag_name(raw)
+        lowered = clean.lower()
+        if not clean or len(clean) < 3:
+            continue
+        if lowered in TAG_NOISE_WORDS:
+            continue
+        if clean.count(" ") > 3:
+            continue
+        if re.fullmatch(r"\d+", clean):
+            continue
+        if re.search(r"\b\d{1,2}:\d{2}\b", clean):
+            continue
+        dedupe_key = clean.casefold()
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        filtered.append(clean)
+    return filtered[:10]
+
+
+def _default_related_questions(question, category=None):
+    fallback = [
+        "Што е главниот развој во оваа приказна?",
+        "Како се разликуваат изворите во известувањето?",
+        "Што сè уште не е потврдено?",
+    ]
+    if category:
+        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
+    return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
+
+
+def _text_terms(text):
+    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+    return {
+        term for term in terms
+        if term not in TAG_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
+    }
+
+
+def _rank_cluster_citations(question, answer, rows, preferred_numbers):
+    question_terms = _text_terms(question)
+    answer_terms = _text_terms(answer)
+    combined_terms = question_terms | answer_terms
+
+    preferred_order = []
+    for raw in preferred_numbers or []:
+        try:
+            idx = int(raw)
+        except Exception:
+            continue
+        if idx not in preferred_order:
+            preferred_order.append(idx)
+
+    ranked = []
+    for idx, row in enumerate(rows, start=1):
+        article_text = " ".join([
+            str(row.get("title") or ""),
+            str(row.get("description") or ""),
+            str(row.get("source") or ""),
+        ])
+        article_terms = _text_terms(article_text)
+        overlap = len(combined_terms & article_terms)
+        preferred_bonus = 5 if idx in preferred_order else 0
+        title_bonus = 1 if question_terms & _text_terms(str(row.get("title") or "")) else 0
+        ranked.append((
+            preferred_bonus + overlap + title_bonus,
+            -idx,
+            {
+                "source": row.get("source"),
+                "title": row.get("title"),
+                "link": row.get("link"),
+                "created_at": row.get("created_at"),
+            },
+        ))
+
+    ranked.sort(reverse=True)
+    top = [item[2] for item in ranked if item[0] > 0]
+    if top:
+        return top[:3]
+    return [
+        {
+            "source": row.get("source"),
+            "title": row.get("title"),
+            "link": row.get("link"),
+            "created_at": row.get("created_at"),
+        }
+        for row in rows[:2]
+    ]
+
+
+def _get_top_entities_payload(limit=10):
+    fetch_limit = max(limit * 4, 24)
+    rows = db.execute("""
+        SELECT name, type, total_mentions
+        FROM knowledge_entities
+        ORDER BY total_mentions DESC LIMIT %s
+    """, (fetch_limit,))
+
+    filtered = []
+    seen = set()
+    for row in rows:
+        normalized_name = normalize_tag_name(row["name"])
+        if not normalized_name or len(normalized_name) < 3:
+            continue
+        if normalized_name.lower() in TAG_NOISE_WORDS:
+            continue
+        dedupe_key = normalized_name.casefold()
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        filtered.append({
+            "name": normalized_name,
+            "type": row.get("type"),
+            "total_mentions": row.get("total_mentions"),
+        })
+        if len(filtered) >= limit:
+            break
+    return filtered
+
+
+def _build_cluster_answer(cluster_id, query):
+    rows = db.execute(
+        """
+        SELECT title, description, source, link, created_at, category
+        FROM articles
+        WHERE cluster_id = %s
+        ORDER BY created_at DESC
+        LIMIT 8
+        """,
+        (cluster_id,)
+    )
+    if not rows:
+        return None, ("Cluster not found", 404)
+
+    synthesis_row = db.execute_one(
+        "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+        (cluster_id,)
+    )
+    synthesis = synthesis_row["summary"] if synthesis_row and synthesis_row.get("summary") else ""
+    perspectives = normalize_perspectives(
+        synthesis_row["perspectives"] if synthesis_row and synthesis_row.get("perspectives") else []
+    )
+
+    local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    if local_answer:
+        return local_answer, None
+
+    context_lines = []
+    if synthesis:
+        context_lines.append(f"Системско резиме:\n{synthesis}\n")
+    if perspectives:
+        context_lines.append("Перспективи:")
+        for item in perspectives[:4]:
+            context_lines.append(f"- {item['angle']}: {item['content']}")
+        context_lines.append("")
+    context_lines.append("Извори:")
+    for idx, row in enumerate(rows, start=1):
+        context_lines.append(f"[{idx}] Извор: {row['source']}")
+        context_lines.append(f"Наслов: {row['title']}")
+        if row.get("description"):
+            context_lines.append(f"Опис: {row['description'][:280]}")
+        context_lines.append("")
+
+    prompt = (
+        "\n".join(context_lines)
+        + f"\nПрашање од корисник: {query}\n\n"
+        + "Одговори само врз основа на дадениот контекст. Ако нешто недостига или не е потврдено, кажи го тоа јасно. "
+        + "Врати JSON со полиња "
+        + "{\"answer\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+        + "Одговорот мора да биде на македонски."
+    )
+    system = (
+        "Ти си новинарски асистент за Пресек. Не измислувај факти. "
+        "Биди прецизен, краток и јасно посочи кога нешто не е потврдено."
+    )
+
+    response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+    if not response_text:
+        return None, ("Системот не можеше да одговори", 503)
+
+    parsed = clean_json_response(response_text)
+    if isinstance(parsed, dict):
+        answer = str(parsed.get("answer") or "").strip()
+        citation_numbers = parsed.get("citation_numbers") or []
+        related_questions = parsed.get("related_questions") or []
+        confidence = str(parsed.get("confidence") or "medium").strip().lower()
+    else:
+        answer = str(parsed).strip()
+        citation_numbers = []
+        related_questions = []
+        confidence = "medium"
+
+    payload = {
+        "answer": answer,
+        "citations": _rank_cluster_citations(query, answer, rows, citation_numbers),
+        "related_questions": [str(item).strip() for item in related_questions if str(item).strip()][:3],
+        "confidence": confidence if confidence in {"high", "medium", "low"} else "medium",
+    }
+    if not payload["related_questions"]:
+        payload["related_questions"] = _default_related_questions(query, rows[0].get("category"))
+
+    return payload, None
 
 def success_response(data, meta=None):
     return jsonify({
@@ -179,6 +443,39 @@ def api_news():
         log.error(f"[api/news] Error: {e}", exc_info=True)
         return error_response("Failed to fetch news")
 
+
+@api_bp.route("/api/intelligence/entity/<name>")
+def api_entity_profile(name):
+    entity = db.execute_one("""
+        SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score
+        FROM knowledge_entities WHERE name = %s
+    """, (name,))
+    if not entity:
+        return error_response("Entity not found", 404)
+
+    relationships = db.execute("""
+        SELECT
+            CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
+            weight
+        FROM knowledge_relationships
+        WHERE entity_a = %s OR entity_b = %s
+        ORDER BY weight DESC LIMIT 10
+    """, (name, name, name))
+
+    return jsonify({
+        "profile": entity,
+        "related": relationships,
+    })
+
+
+@api_bp.route("/api/intelligence/top-entities")
+def api_top_entities():
+    try:
+        limit = max(1, min(30, int(request.args.get("limit", 10))))
+    except ValueError:
+        return error_response("Invalid limit", 400)
+    return jsonify(_get_top_entities_payload(limit))
+
 @api_bp.route("/api/cluster/<cluster_id>")
 def api_cluster_detail(cluster_id):
     if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
@@ -203,14 +500,14 @@ def api_cluster_detail(cluster_id):
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
-        perspectives = s_row["perspectives"] if s_row and s_row["perspectives"] else []
+        perspectives = normalize_perspectives(s_row["perspectives"] if s_row and s_row["perspectives"] else [])
 
         # 3. Fetch metadata (tags, etc)
         m_row = db.execute_one(
             "SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", 
             (cluster_id,)
         )
-        tags = m_row["tags"] if m_row else []
+        tags = filter_cluster_tags(m_row["tags"] if m_row else [])
         topics = m_row["topics"] if m_row else []
 
         # 4. Related clusters
@@ -347,7 +644,15 @@ def api_briefing():
                 "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1"
             )
         if not row:
-            return jsonify({"error": "Брифингот сè уште не е подготвен. Обидете се подоцна."}), 200
+            fallback_rows = db.execute(
+                "SELECT cluster_id, title, description, source, category, topic, created_at "
+                "FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
+            )
+            return jsonify({
+                "date": datetime.date.today().isoformat(),
+                "content": generate_daily_brief_fallback(fallback_rows),
+                "generated_locally": True,
+            })
 
         return jsonify({
             "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]),
@@ -427,6 +732,117 @@ def api_trending():
         log.warning(f"[api/trending] {e}")
         return jsonify([])
 
+
+@api_bp.route("/api/archive")
+def api_archive():
+    try:
+        date_str = (request.args.get("date") or "").strip()
+        source = (request.args.get("source") or "").strip()
+        topic = (request.args.get("topic") or "").strip()
+        page = max(0, int(request.args.get("page", 0)))
+        page_size = min(100, max(1, int(request.args.get("page_size", 50))))
+    except ValueError:
+        return error_response("Invalid archive parameters", 400)
+
+    if not date_str:
+        date_str = datetime.date.today().isoformat()
+
+    try:
+        target_date = datetime.date.fromisoformat(date_str)
+    except ValueError:
+        return error_response("Invalid date format", 400)
+
+    offset = page * page_size
+
+    try:
+        where_clauses = ["created_at::date = %s"]
+        params = [target_date.isoformat()]
+
+        if source:
+            where_clauses.append("source = %s")
+            params.append(source)
+
+        if topic:
+            where_clauses.append("topic = %s")
+            params.append(topic)
+
+        where_sql = " AND ".join(where_clauses)
+
+        rows = db.execute(
+            "SELECT * FROM articles "
+            f"WHERE {where_sql} "
+            "ORDER BY created_at DESC LIMIT 1500",
+            tuple(params)
+        )
+        clusters = defaultdict(list)
+        for row in rows:
+            row["reading_time"] = calculate_reading_time(row.get("description", ""))
+            clusters[row["cluster_id"]].append(row)
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters.sort(key=score_cluster, reverse=True)
+
+        paged_clusters = ranked_clusters[offset: offset + page_size]
+        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
+        synthesis_ids = db.get_synthesis_ids(cluster_ids) if cluster_ids else []
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cluster_ids or [""],)
+        ) if cluster_ids else []
+        rep_images = {r["cluster_id"]: r["representative_image"] for r in metadata_rows}
+
+        cluster_payload = []
+        for arts in paged_clusters:
+            cid = arts[0]["cluster_id"]
+            s = score_cluster(arts)
+            cluster_payload.append({
+                "cluster_id": cid,
+                "articles": arts,
+                "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get("reading_time", 1),
+                "score": round(s, 3),
+                "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": cid in synthesis_ids,
+                "has_balanced": is_balanced(arts),
+            })
+
+        total = db.execute_one(
+            f"SELECT COUNT(*) FROM articles WHERE {where_sql}",
+            tuple(params)
+        )["count"]
+        sources_count = db.execute_one(
+            f"SELECT COUNT(DISTINCT source) FROM articles WHERE {where_sql}",
+            tuple(params)
+        )["count"]
+        top_sources = db.execute(
+            f"SELECT source, COUNT(*) AS n FROM articles WHERE {where_sql} "
+            "GROUP BY source ORDER BY n DESC LIMIT 8",
+            tuple(params)
+        )
+        top_topics = db.execute(
+            f"SELECT topic, COUNT(*) AS n FROM articles WHERE {where_sql} "
+            "GROUP BY topic ORDER BY n DESC LIMIT 8",
+            tuple(params)
+        )
+
+        return jsonify({
+            "clusters": cluster_payload,
+            "total": total,
+            "sources": sources_count,
+            "date": target_date.isoformat(),
+            "source": source,
+            "topic": topic,
+            "page": page,
+            "page_size": page_size,
+            "has_more": offset + page_size < len(ranked_clusters),
+            "total_clusters": len(ranked_clusters),
+            "top_sources": [dict(r) for r in top_sources],
+            "top_topics": [dict(r) for r in top_topics],
+        })
+    except Exception as e:
+        log.error(f"[api/archive] {e}", exc_info=True)
+        return error_response("Failed to fetch archive")
+
 @api_bp.route("/api/sources")
 def api_sources():
     """Return all active sources with metadata."""
@@ -473,42 +889,52 @@ def chat_cluster():
         if len(query) > API_MAX_Q_LEN:
             return error_response("Query too long", 400)
 
-        # Fetch cluster articles and synthesis for context
-        rows = db.execute(
-            "SELECT title, description, source FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 10",
-            (cluster_id,)
-        )
-        if not rows:
-            return error_response("Cluster not found", 404)
+        payload, err = _build_cluster_answer(cluster_id, query)
+        if err:
+            return error_response(err[0], err[1])
 
-        synthesis_row = db.execute_one(
-            "SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,)
-        )
-
-        # Build context
-        context_lines = []
-        if synthesis_row and synthesis_row.get("summary"):
-            context_lines.append(f"Системско Резиме: {synthesis_row['summary']}\n")
-        context_lines.append("Статии:")
-        for r in rows:
-            context_lines.append(f"- [{r['source']}] {r['title']}")
-            if r.get('description'):
-                context_lines.append(f"  {r['description'][:200]}")
-
-        context = "\n".join(context_lines)
-        prompt = f"{context}\n\nПрашање: {query}"
-
-        from prompts import SYNTHESIS_SYSTEM_PROMPT
-        system = "Ти си новинарски асистент. Одговори на прашањето на корисникот врз основа само на дадените статии. Биди краток и точен. Одговори на македонски јазик."
-
-        response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=500)
-        if not response_text:
-            return error_response("Системот не можеше да одговори", 503)
-
-        return jsonify({"status": "success", "response": response_text})
+        return jsonify({
+            "status": "success",
+            "response": payload["answer"],
+            "answer": payload["answer"],
+            "citations": payload["citations"],
+            "related_questions": payload["related_questions"],
+            "confidence": payload["confidence"],
+        })
 
     except Exception as e:
         log.error(f"[api/chat_cluster] Error: {e}", exc_info=True)
+        return error_response("Failed to process query")
+
+
+@api_bp.route("/api/cluster/<cluster_id>/ask", methods=["POST"])
+def ask_cluster(cluster_id):
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
+    if not question:
+        return error_response("Question is required", 400)
+    if len(question) > API_MAX_Q_LEN:
+        return error_response("Question too long", 400)
+    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+        return error_response("Invalid cluster ID", 400)
+
+    try:
+        payload, err = _build_cluster_answer(cluster_id, question)
+        if err:
+            return error_response(err[0], err[1])
+
+        return jsonify({
+            "status": "success",
+            "answer": payload["answer"],
+            "citations": payload["citations"],
+            "related_questions": payload["related_questions"],
+            "confidence": payload["confidence"],
+        })
+    except Exception as e:
+        log.error(f"[api/cluster/<cluster_id>/ask] Error: {e}", exc_info=True)
         return error_response("Failed to process query")
 
 @api_bp.route("/proxy")
