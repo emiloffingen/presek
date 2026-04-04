@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 _start_time = time.time()
 _REDIS_KEY = "presek:last_refresh"
 _TASK_REDIS_KEY = "presek:task_statuses"
+_SOURCE_REDIS_KEY = "presek:source_statuses"
 
 
 def _get_redis():
@@ -45,6 +46,26 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
     try:
         _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
         _get_redis().expire(_TASK_REDIS_KEY, 3600 * 12)
+    except Exception:
+        pass
+
+
+def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepted: int = 0, error: str | None = None):
+    """Persist per-source fetch results for operational visibility."""
+    if not source_name or not status:
+        return
+
+    payload = {
+        "source": source_name,
+        "status": status,
+        "fetched": int(fetched or 0),
+        "accepted": int(accepted or 0),
+        "error": (error or "")[:300],
+        "time": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _get_redis().hset(_SOURCE_REDIS_KEY, source_name, json.dumps(payload))
+        _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)
     except Exception:
         pass
 
@@ -121,6 +142,18 @@ def register_health_routes(app):
         except Exception:
             task_statuses = {}
 
+        source_statuses = {}
+        try:
+            raw_sources = _get_redis().hgetall(_SOURCE_REDIS_KEY) or {}
+            source_statuses = {
+                (key.decode() if isinstance(key, bytes) else key): json.loads(
+                    value.decode() if isinstance(value, bytes) else value
+                )
+                for key, value in raw_sources.items()
+            }
+        except Exception:
+            source_statuses = {}
+
         freshness = _freshness_payload(last.get("time"))
 
         overall = "ok" if (db_ok and redis_ok) else "degraded"
@@ -143,5 +176,6 @@ def register_health_routes(app):
             },
             "freshness": freshness,
             "tasks": task_statuses,
+            "sources": source_statuses,
             "server_time": datetime.now(timezone.utc).isoformat(),
         })

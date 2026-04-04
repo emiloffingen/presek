@@ -1,7 +1,15 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from health import record_refresh, record_task_event, _REDIS_KEY, _TASK_REDIS_KEY, _freshness_payload
+from health import (
+    record_refresh,
+    record_task_event,
+    record_source_fetch,
+    _REDIS_KEY,
+    _TASK_REDIS_KEY,
+    _SOURCE_REDIS_KEY,
+    _freshness_payload,
+)
 
 
 class TestRecordRefresh:
@@ -53,6 +61,19 @@ class TestTaskEvents:
         assert data["task"] == "daily_brief"
         assert data["status"] == "fallback"
         assert data["detail"] == "date:current"
+
+
+class TestSourceEvents:
+    def test_record_source_fetch_stores_payload(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with patch('health._get_redis', return_value=r):
+            record_source_fetch("MIA", "ok", fetched=10, accepted=4)
+        raw = r._hash_store[_SOURCE_REDIS_KEY]["MIA"]
+        data = json.loads(raw)
+        assert data["source"] == "MIA"
+        assert data["status"] == "ok"
+        assert data["fetched"] == 10
+        assert data["accepted"] == 4
 
 
 class TestFreshnessPayload:

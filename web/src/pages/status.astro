@@ -23,6 +23,8 @@ try {
 
 const taskEntries = health?.tasks ? Object.values(health.tasks) : [];
 const orderedTasks = taskEntries.sort((a: any, b: any) => String(b.time || '').localeCompare(String(a.time || '')));
+const sourceEntries = health?.sources ? Object.values(health.sources) : [];
+const orderedSources = sourceEntries.sort((a: any, b: any) => String(b.time || '').localeCompare(String(a.time || '')));
 
 function formatTime(value: string) {
 	try {
@@ -132,6 +134,31 @@ function statusLabel(status: string) {
 						</div>
 
 						<aside class="status-rail">
+							<div class="rail-card">
+								<h3 class="rail-card-title">Состојба по извор</h3>
+								<div class="source-list">
+									{orderedSources.length > 0 ? (
+										orderedSources.slice(0, 8).map((source: any) => (
+											<div class="source-row">
+												<div>
+													<p class="task-name">{source.source}</p>
+													<p class="task-detail">
+														Преземени: {source.fetched || 0} · Прифатени: {source.accepted || 0}
+													</p>
+													{source.error && <p class="task-detail">{source.error}</p>}
+												</div>
+												<div class="task-meta">
+													<span class={`task-badge task-${source.status}`}>{statusLabel(source.status)}</span>
+													<span class="task-time">{formatTime(source.time)}</span>
+												</div>
+											</div>
+										))
+									) : (
+										<p class="status-copy">Сè уште нема per-source ingestion статуси.</p>
+									)}
+								</div>
+							</div>
+
 							<div class="rail-card">
 								<h3 class="rail-card-title">Последен ingestion циклус</h3>
 								<div class="system-list">
@@ -275,12 +302,14 @@ function statusLabel(status: string) {
 	}
 
 	.task-list,
+	.source-list,
 	.system-list {
 		display: flex;
 		flex-direction: column;
 	}
 
 	.task-row,
+	.source-row,
 	.system-row {
 		display: flex;
 		justify-content: space-between;
@@ -290,6 +319,7 @@ function statusLabel(status: string) {
 	}
 
 	.task-row:first-child,
+	.source-row:first-child,
 	.system-row:first-child {
 		border-top: 0;
 		padding-top: 0;

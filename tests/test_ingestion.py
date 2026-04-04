@@ -1,5 +1,13 @@
 import pytest
-from ingestion import normalize_headline, clean_rss_footer
+import datetime
+import time
+from ingestion import (
+    normalize_headline,
+    clean_rss_footer,
+    normalize_feed_link,
+    normalize_candidate_title,
+    parse_entry_timestamp,
+)
 
 def test_normalize_headline():
     assert normalize_headline("ВИДЕО: Ова е наслов") == "Ова е наслов"
@@ -51,3 +59,24 @@ def test_normalize_headline_html_tags():
     from ingestion import normalize_headline
     assert normalize_headline("<p>Текст</p>") == "Текст"
     assert normalize_headline("<b>Важно</b> <i>резиме</i>") == "Важно резиме"
+
+
+def test_normalize_feed_link_strips_tracking_params():
+    link = "https://Example.com/story/?utm_source=x&fbclid=y&id=42#section"
+    assert normalize_feed_link(link) == "https://example.com/story?id=42"
+
+
+def test_normalize_candidate_title_removes_prefix_noise():
+    assert normalize_candidate_title("ВИДЕО: <b>Ова е</b> наслов") == "ова е наслов"
+
+
+def test_parse_entry_timestamp_uses_published_parsed():
+    fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
+    entry = {"published_parsed": time.struct_time((2026, 4, 4, 20, 30, 0, 0, 0, 0))}
+    assert parse_entry_timestamp(entry, fallback) == datetime.datetime(2026, 4, 4, 20, 30, 0)
+
+
+def test_parse_entry_timestamp_rejects_future_dates():
+    fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
+    entry = {"published_parsed": time.struct_time((2026, 4, 5, 20, 30, 0, 0, 0, 0))}
+    assert parse_entry_timestamp(entry, fallback) == fallback

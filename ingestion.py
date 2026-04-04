@@ -5,6 +5,7 @@ import feedparser
 import logging
 from collections import defaultdict
 from typing import List, Dict, Any, Tuple, TYPE_CHECKING
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 if TYPE_CHECKING:
     import httpx
@@ -15,8 +16,14 @@ from categories import detect_category, detect_subcategory, detect_country, norm
 from database import db_manager as db, get_db
 from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
+from health import record_source_fetch
 
 log = logging.getLogger("presek")
+
+_TRACKING_PARAMS = {
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+    "fbclid", "gclid", "mc_cid", "mc_eid", "mkt_tok", "ref", "ref_src",
+}
 
 def is_junk(title: str, desc: str) -> bool:
     """True if text contains blacklisted low-quality keywords."""
@@ -31,6 +38,56 @@ def clean_rss_footer(text: str) -> str:
     text = re.sub(r'This article was originally published on .*', '', text)
     text = re.sub(r'Source: https?://.*', '', text)
     return text.strip()
+
+
+def normalize_feed_link(link: str) -> str:
+    """Canonicalize feed links by removing fragments and known tracking params."""
+    if not link:
+        return ""
+    try:
+        parts = urlsplit(link.strip())
+        query_items = [
+            (k, v)
+            for k, v in parse_qsl(parts.query, keep_blank_values=True)
+            if k.lower() not in _TRACKING_PARAMS
+        ]
+        normalized_path = parts.path.rstrip("/") or "/"
+        return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), normalized_path, urlencode(query_items), ""))
+    except Exception:
+        return link.strip()
+
+
+def normalize_candidate_title(title: str) -> str:
+    """Create a stable title fingerprint for same-source duplicate checks."""
+    if not title:
+        return ""
+    text = normalize_headline(re.sub(r"<[^>]+>", " ", title))
+    text = re.sub(r"\s+", " ", text).strip().lower()
+    text = re.sub(r"[\"'“”‘’`]+", "", text)
+    return text
+
+
+def parse_entry_timestamp(entry, fallback_now: datetime.datetime) -> datetime.datetime:
+    """
+    Extract a sane publication timestamp from an RSS entry.
+    Falls back to the current cycle time when the feed timestamp is missing or implausible.
+    """
+    parsed_value = (
+        entry.get("published_parsed")
+        or entry.get("updated_parsed")
+        or entry.get("created_parsed")
+    )
+    if parsed_value:
+        try:
+            published_at = datetime.datetime(*parsed_value[:6])
+            if published_at > fallback_now + datetime.timedelta(minutes=30):
+                return fallback_now
+            if published_at < fallback_now - datetime.timedelta(days=14):
+                return fallback_now
+            return published_at
+        except Exception:
+            pass
+    return fallback_now
 
 def extract_image_url(entry):
     """Extracts the best representative image URL from an RSS entry."""
@@ -91,7 +148,7 @@ async def ingest_all_sources_async():
 
     # 1. Duplicate detection setup
     known_links = set()
-    recent_by_source = defaultdict(list)
+    recent_by_source = defaultdict(set)
     lookback_time = datetime.datetime.now() - datetime.timedelta(hours=12)
     
     with get_db() as conn:
@@ -100,12 +157,19 @@ async def ingest_all_sources_async():
             (lookback_time,)
         ).fetchall()
         for r in rows:
-            known_links.add(r["link"])
-            recent_by_source[r["source"]].append(r["title"].lower())
+            known_links.add(normalize_feed_link(r["link"]))
+            recent_by_source[r["source"]].add(normalize_candidate_title(r["title"]))
 
     # 2. Parallel Fetching with httpx
     candidates = []
     errors = []
+    source_stats = {
+        source["name"]: {"status": "ok", "fetched": 0, "accepted": 0, "error": ""}
+        for source in sources
+    }
+    seen_links = set()
+    seen_titles_by_source = defaultdict(set)
+    cycle_now = datetime.datetime.now()
     
     headers = {'User-Agent': 'Presek/6.0 Async Reader (+https://presek.mk)'}
     import httpx
@@ -115,26 +179,33 @@ async def ingest_all_sources_async():
         results = await asyncio.gather(*tasks)
         
         for source_name, entries, err in results:
+            source_stats[source_name]["fetched"] = len(entries)
             if err:
+                source_stats[source_name]["status"] = "error"
+                source_stats[source_name]["error"] = str(err)
                 errors.append((source_name, err))
                 continue
             
             source_meta = next(s for s in sources if s['name'] == source_name)
             for e in entries:
                 title = e.get("title", "").strip()
-                link = e.get("link", "")
-                
-                if not title or not link or link in known_links:
+                link = normalize_feed_link(e.get("link", ""))
+                title_key = normalize_candidate_title(title)
+
+                if not title or not link or link in known_links or link in seen_links:
                     continue
                 
                 desc = e.get("summary", "") or e.get("description", "")
                 if is_junk(title, desc):
                     continue
-                
-                t_lower = title.lower()
-                if any(t_lower == rt or (len(t_lower) > 30 and rt.startswith(t_lower[:30])) 
-                       for rt in recent_by_source[source_name]):
+
+                if not title_key:
                     continue
+
+                if title_key in recent_by_source[source_name] or title_key in seen_titles_by_source[source_name]:
+                    continue
+
+                published_at = parse_entry_timestamp(e, fallback_now=cycle_now)
 
                 candidates.append({
                     "source": source_name,
@@ -143,10 +214,25 @@ async def ingest_all_sources_async():
                     "desc": desc,
                     "image_url": extract_image_url(e),
                     "country": source_meta['country'],
-                    "category": source_meta['category']
+                    "category": source_meta['category'],
+                    "created_at": published_at,
                 })
+                seen_links.add(link)
+                seen_titles_by_source[source_name].add(title_key)
+                source_stats[source_name]["accepted"] += 1
+
+            if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
+                source_stats[source_name]["status"] = "warning"
 
     if not candidates:
+        for source_name, stats in source_stats.items():
+            record_source_fetch(
+                source_name,
+                stats["status"],
+                fetched=stats["fetched"],
+                accepted=stats["accepted"],
+                error=stats["error"],
+            )
         return 0, errors
 
     # 3. Batch Processing (CPU/API intensive parts)
@@ -196,19 +282,19 @@ async def ingest_all_sources_async():
                 
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
-                now = datetime.datetime.now()
+                created_at = c.get("created_at") or cycle_now
 
                 prepared_rows.append((
                     display_title, c['title'] if is_intl else "",
                     c['link'], c['source'], category, subcategory, 
-                    cluster_id, now, c['image_url'], clean_desc,
+                    cluster_id, created_at, c['image_url'], clean_desc,
                     clean_desc if is_intl else "", c['country'], 0,
                     str(emb) if emb else None, topic
                 ))
 
                 if emb:
                     batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
-                recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": now, "category": category})
+                recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": created_at, "category": category})
                 if len(recent_articles) > CLUSTER_LOOKBACK: recent_articles.pop()
 
             except Exception as e:
@@ -229,11 +315,19 @@ async def ingest_all_sources_async():
             results = cur.fetchall()
             new_count = len(results)
             conn.commit()
+
+            successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
+            if successful_sources:
+                conn.execute(
+                    "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
+                    (successful_sources,),
+                )
+                conn.commit()
             
             # Post-ingestion tasks
             if new_count > 0:
                 from utils import publish_event
-                publish_event("updates", {"type": "new_articles", "count": new_count, "time": now})
+                publish_event("updates", {"type": "new_articles", "count": new_count, "time": cycle_now})
                 
                 # Translation triggers (async via Celery as before)
                 from tasks import translate_article_task
@@ -242,6 +336,15 @@ async def ingest_all_sources_async():
                         art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (r_id,))
                         if art:
                             translate_article_task.delay(r_id, art["title"], art["description"])
+
+    for source_name, stats in source_stats.items():
+        record_source_fetch(
+            source_name,
+            stats["status"],
+            fetched=stats["fetched"],
+            accepted=stats["accepted"],
+            error=stats["error"],
+        )
 
     return new_count, errors
 
