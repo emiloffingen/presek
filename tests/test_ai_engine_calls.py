@@ -91,7 +91,7 @@ class TestOpenAICompatibleProvider:
 
 
 class TestCallAI:
-    def _mock_providers(self, gemini=None, groq=None, cerebras=None, mistral=None, openrouter=None):
+    def _mock_providers(self, gemini=None, groq=None, cerebras=None, mistral=None, openrouter=None, local=None):
         """Return a PROVIDERS dict with mocked .call() results."""
         def make_provider(return_value):
             p = MagicMock()
@@ -104,6 +104,7 @@ class TestCallAI:
             "cerebras":   make_provider(cerebras),
             "mistral":    make_provider(mistral),
             "openrouter": make_provider(openrouter),
+            "local":      make_provider(local),
         }
 
     @patch('utils.redis_client')
