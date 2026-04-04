@@ -1,0 +1,7 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="24" fill="#121212"/>
+  <!-- Authoritative "П" from main wordmark -->
+  <path d="M34 30H94V42H82V90H94V102H34V90H46V42H34V30Z" fill="white" />
+  <!-- Red accent point -->
+  <circle cx="94" cy="102" r="10" fill="#CC0000" />
+</svg>

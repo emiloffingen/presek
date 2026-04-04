@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: 'Lora', serif;
+    --font-serif: 'Lora', serif;
+    --font-sans: 'Inter', sans-serif;
+    
+    /* Shadcn Mappings */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* Legacy Presek Mappings */
+    --color-presek-bg-primary: var(--background);
+    --color-presek-bg-secondary: var(--secondary);
+    --color-presek-text-primary: var(--foreground);
+    --color-presek-text-secondary: var(--secondary-foreground);
+    --color-presek-text-muted: var(--muted-foreground);
+    --color-presek-border: var(--border);
+    --color-presek-accent: var(--primary);
+
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+}
+
+@layer base {
+    :root {
+        --background: #ffffff;
+        --foreground: #0f1117;
+        --card: #ffffff;
+        --card-foreground: #0f1117;
+        --popover: #ffffff;
+        --popover-foreground: #0f1117;
+        --primary: #cc1a1a;
+        --primary-foreground: #ffffff;
+        --secondary: #f7f7f8;
+        --secondary-foreground: #3d4151;
+        --muted: #f7f7f8;
+        --muted-foreground: #6b7185;
+        --accent: #f7f7f8;
+        --accent-foreground: #0f1117;
+        --destructive: #ef4444;
+        --destructive-foreground: #ffffff;
+        --border: #e4e4e8;
+        --input: #e4e4e8;
+        --ring: #cc1a1a;
+        --radius: 0.25rem;
+    }
+
+    .dark {
+        --background: #0f1117;
+        --foreground: #f1f5f9;
+        --card: #1a1d27;
+        --card-foreground: #f1f5f9;
+        --popover: #1a1d27;
+        --popover-foreground: #f1f5f9;
+        --primary: #ff4d4d;
+        --primary-foreground: #ffffff;
+        --secondary: #1a1d27;
+        --secondary-foreground: #cbd5e1;
+        --muted: #1a1d27;
+        --muted-foreground: #94a3b8;
+        --accent: #1a1d27;
+        --accent-foreground: #f1f5f9;
+        --destructive: #ef4444;
+        --destructive-foreground: #ffffff;
+        --border: #2a2d3a;
+        --input: #2a2d3a;
+        --ring: #ff4d4d;
+    }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans scroll-smooth;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+/* Legacy Utility Classes */
+.site-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    width: 100%;
+}
+.rail-label {
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    color: var(--foreground);
+}
+.news-feed-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 2rem;
+}
+@media (min-width: 768px) {
+    .news-feed-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1024px) {
+    .news-feed-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

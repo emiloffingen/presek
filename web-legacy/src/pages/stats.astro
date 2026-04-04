@@ -1,0 +1,170 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SearchIsland from '../components/SearchIsland';
+import ThemeIsland from '../components/ThemeIsland';
+import { ArrowLeft, BarChart3, Activity, Zap, Layers } from 'lucide-react';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
+
+let stats = null;
+let error = null;
+
+try {
+    const res = await fetch(`${API_URL}/stats/full`);
+    if (res.ok) {
+        stats = await res.json();
+    }
+} catch (e) {
+    console.error("Fetch error:", e);
+    error = "Грешка при вчитување на статистиките.";
+}
+---
+
+<Layout title="Статистика">
+	<header class="site-layout py-6 border-b border-nyt flex items-center justify-between">
+		<a href="/" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-accent transition">
+			<ArrowLeft size={14} /> Назад
+		</a>
+		
+		<a href="/" class="absolute left-1/2 -translate-x-1/2">
+			<img src="/logo.svg" alt="Presek" class="h-10 grayscale opacity-50" />
+		</a>
+
+		<div class="flex items-center gap-2">
+			<SearchIsland client:load />
+			<ThemeIsland client:load />
+		</div>
+	</header>
+
+	<main class="site-layout py-12">
+		<div class="max-w-5xl mx-auto">
+			<header class="mb-12 border-b-2 border-primary pb-10">
+				<span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">АНАЛИТИКА</span>
+				<h1 class="text-4xl md:text-6xl font-serif font-bold leading-tight text-primary mb-6">
+					Медиумски Пулс
+				</h1>
+				<p class="text-sm text-muted font-bold uppercase tracking-tighter">
+					Активност на медиумската сцена во реално време
+				</p>
+			</header>
+
+			{stats ? (
+				<div class="space-y-16">
+					<!-- Top Metrics Grid -->
+					<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+						<div class="border-t-2 border-primary pt-6">
+							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
+							<p class="text-4xl font-serif font-bold text-primary">{stats.total_articles.toLocaleString()}</p>
+						</div>
+						<div class="border-t-2 border-primary pt-6">
+							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Activity size={10}/> Последни 24ч</p>
+							<p class="text-4xl font-serif font-bold text-accent">{stats.last_24h.toLocaleString()}</p>
+						</div>
+						<div class="border-t-2 border-primary pt-6">
+							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Zap size={10}/> АИ Синтеза</p>
+							<p class="text-4xl font-serif font-bold text-primary">{stats.summarized_pct}%</p>
+						</div>
+						<div class="border-t-2 border-primary pt-6">
+							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
+							<p class="text-4xl font-serif font-bold text-primary">{stats.total_feeds}</p>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+						<!-- Main Column -->
+						<div class="lg:col-span-8 space-y-16">
+							<section>
+								<h2 class="rail-label mb-8">НАЈАКТИВНИ МЕДИУМИ (ПОСЛЕДНИ 24Ч)</h2>
+								<div class="space-y-6">
+									{stats.by_source.slice(0, 10).map((src: any) => (
+										<div>
+											<div class="flex justify-between text-[11px] font-bold mb-2 uppercase text-primary">
+												<span>{src.source}</span>
+												<span>{src.n} статии</span>
+											</div>
+											<div class="h-3 bg-secondary w-full rounded-full overflow-hidden">
+												<div 
+													class="h-full bg-accent transition-all duration-1000" 
+													style={`width: ${Math.min(100, (src.n / stats.last_24h) * 100 * 5)}%`}
+												></div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+
+							<section>
+								<h2 class="rail-label mb-8">РАСПРЕДЕЛБА ПО КАТЕГОРИИ</h2>
+								<div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+									{stats.by_category.map((cat: any) => (
+										<div class="bg-secondary p-6 rounded-sm border-b-2 border-nyt hover:border-accent transition-colors">
+											<p class="text-[10px] font-black text-muted uppercase mb-1">{cat.cat}</p>
+											<p class="text-2xl font-serif font-bold text-primary">{cat.n}</p>
+										</div>
+									))}
+								</div>
+							</section>
+						</div>
+
+						<!-- Sidebar Column -->
+						<aside class="lg:col-span-4 space-y-12">
+							<div class="border-t-2 border-primary pt-4">
+								<h3 class="rail-label mb-4">ИНФОРМАЦИИ ЗА СИСТЕМОТ</h3>
+								<div class="space-y-4 text-xs font-bold uppercase tracking-tight">
+									<div class="flex justify-between border-b border-nyt pb-2">
+										<span class="text-muted">Статус:</span>
+										<span class="text-green-600">Online</span>
+									</div>
+									<div class="flex justify-between border-b border-nyt pb-2">
+										<span class="text-muted">База на податоци:</span>
+										<span class="text-primary">{stats.db_size_mb} MB</span>
+									</div>
+									<div class="flex justify-between border-b border-nyt pb-2">
+										<span class="text-muted">Најстара објава:</span>
+										<span class="text-primary text-[10px]">{new Date(stats.oldest_article).toLocaleDateString('mk-MK')}</span>
+									</div>
+									<div class="flex justify-between border-b border-nyt pb-2">
+										<span class="text-muted">Најнова објава:</span>
+										<span class="text-primary text-[10px]">{new Date(stats.new_article).toLocaleTimeString('mk-MK')}</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="bg-primary p-6 text-white rounded-sm">
+								<h4 class="text-xs font-black uppercase mb-4 tracking-widest border-b border-white/20 pb-2">Speed Leaderboard</h4>
+								<p class="text-[10px] opacity-70 mb-6 italic leading-relaxed">
+									Кој прв ги објавува вестите? Анализа на првичните извори за нови настани во последните 7 дена.
+								</p>
+								<div class="space-y-4">
+									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
+										<div class="flex justify-between items-center text-[11px] font-bold uppercase">
+											<span class="flex items-center gap-2">
+												<span class="opacity-30">{idx + 1}.</span>
+												{src.source}
+											</span>
+											<span>{src.first_count}</span>
+										</div>
+									))}
+								</div>
+							</div>
+						</aside>
+					</div>
+				</div>
+			) : (
+				<div class="py-24 text-center">
+					<div class="animate-pulse flex flex-col items-center">
+						<div class="h-10 w-64 bg-secondary mb-6"></div>
+						<p class="text-muted text-xs font-black uppercase tracking-widest">Вчитувам податоци...</p>
+					</div>
+				</div>
+			)}
+		</div>
+	</main>
+
+	<footer class="site-layout mt-20 py-10 border-t border-nyt text-center">
+		<img src="/logo.svg" alt="Presek" class="h-10 opacity-30 mx-auto mb-4 grayscale" />
+		<p class="text-[10px] font-bold text-muted uppercase tracking-widest">
+			© 2026 ПРЕСЕК - ИНТЕЛИГЕНТНА АГРЕГАЦИЈА НА ВЕСТИ
+		</p>
+	</footer>
+</Layout>
