@@ -102,12 +102,12 @@ def run_ingestion():
         # 2. Extract metadata & entities
         # 3. Categorize & summarize
         (
-            generate_embeddings_task.s() |
-            generate_cluster_metadata_task.s() |
-            classify_topics_task.s() |
-            extract_entities_task.s() |
-            recategorize_clusters_task.s() |
-            auto_summarize_task.s()
+            generate_embeddings_task.si() |
+            generate_cluster_metadata_task.si() |
+            classify_topics_task.si() |
+            extract_entities_task.si() |
+            recategorize_clusters_task.si() |
+            auto_summarize_task.si()
         ).apply_async()
         
     log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")

@@ -1,0 +1,141 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SearchIsland from '../components/SearchIsland';
+import ThemeIsland from '../components/ThemeIsland';
+import { ArrowLeft, Clock, Sparkles, BookOpen } from 'lucide-react';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
+
+let briefing = null;
+let error = null;
+
+try {
+    const res = await fetch(`${API_URL}/briefing`);
+    if (res.ok) {
+        briefing = await res.json();
+        if (briefing.error) {
+            briefing = null;
+        }
+    }
+} catch (e) {
+    console.error("Fetch error:", e);
+    error = "Грешка при вчитување на брифингот.";
+}
+
+const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString('mk-MK', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+}) : new Date().toLocaleDateString('mk-MK', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+});
+
+function formatBriefing(content: string) {
+    if (!content) return "";
+    
+    // Simple markdown-ish to HTML conversion
+    return content.split('\n').map(line => {
+        const stripped = line.trim();
+        if (!stripped) return '<div class="my-4"></div>';
+        
+        if (line.startsWith('### ')) {
+            return `<h3 class="font-serif font-bold text-2xl mt-8 mb-4 text-primary border-b border-nyt pb-2">${line.substring(4)}</h3>`;
+        } else if (line.startsWith('## ')) {
+            return `<h2 class="font-serif font-bold text-3xl mt-10 mb-6 text-primary border-b-2 border-primary pb-2">${line.substring(3)}</h2>`;
+        } else if (line.startsWith('**') && line.endsWith('**')) {
+            return `<p class="font-bold mt-6 mb-2 text-primary">${line.substring(2, line.length - 2)}</p>`;
+        } else if (line.startsWith('- ') || line.startsWith('• ')) {
+            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-secondary">${line.substring(2)}</li>`;
+        } else {
+            return `<p class="mb-4 text-lg leading-relaxed text-secondary">${line}</p>`;
+        }
+    }).join('\n');
+}
+---
+
+<Layout title="Дневен Брифинг">
+	<header class="site-layout py-6 border-b border-nyt flex items-center justify-between">
+		<a href="/" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-accent transition">
+			<ArrowLeft size={14} /> Назад
+		</a>
+		
+		<a href="/" class="absolute left-1/2 -translate-x-1/2">
+			<img src="/logo.svg" alt="Presek" class="h-10 grayscale opacity-50" />
+		</a>
+
+		<div class="flex items-center gap-2">
+			<SearchIsland client:load />
+			<ThemeIsland client:load />
+		</div>
+	</header>
+
+	<main class="site-layout py-12">
+		<div class="max-w-4xl mx-auto">
+			<header class="mb-12 border-b-2 border-primary pb-10">
+				<span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">ДНЕВЕН ПРЕГЛЕД</span>
+				<h1 class="text-4xl md:text-6xl font-serif font-bold leading-tight text-primary mb-6">
+					Дневен Брифинг
+				</h1>
+
+				<div class="flex items-center gap-4 text-xs font-bold uppercase text-muted">
+					<span class="flex items-center gap-1"><Clock size={12}/> {currentDate}</span>
+					<span>·</span>
+					<span class="flex items-center gap-1"><Sparkles size={12}/> АИ СИНТЕЗА</span>
+				</div>
+			</header>
+
+			<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+				<div class="lg:col-span-8">
+					{briefing ? (
+						<article class="briefing-content prose-nyt" set:html={formatBriefing(briefing.content)} />
+					) : (
+						<div class="bg-secondary p-12 text-center border-t-2 border-accent">
+							<p class="text-4xl mb-4">📋</p>
+							<h3 class="font-bold text-primary mb-2 uppercase tracking-widest">Брифингот сè уште не е подготвен</h3>
+							<p class="text-muted text-sm leading-relaxed">
+								Обидете се подоцна за денешниот АИ преглед на вестите. <br/>
+								Нашиот систем ја финализира анализата на утринските објави.
+							</p>
+						</div>
+					)}
+				</div>
+
+				<aside class="lg:col-span-4 space-y-10">
+					<div class="border-t-2 border-primary pt-4">
+						<h3 class="rail-label flex items-center gap-2"><BookOpen size={14}/> ЗОШТО БРИФИНГ?</h3>
+						<p class="text-xs leading-relaxed text-muted italic">
+							Секое утро, нашиот АИ систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
+						</p>
+					</div>
+
+					<div class="bg-secondary p-6 rounded-sm border-l-4 border-accent">
+						<h4 class="text-[10px] font-black uppercase text-accent mb-2">КАКО СЕ ГЕНЕРИРА?</h4>
+						<p class="text-[11px] text-secondary leading-relaxed">
+							Системот ги групира вестите во кластери, ги споредува фактите од различни медиуми и генерира неутрално резиме без уредувачка пристрасност.
+						</p>
+					</div>
+				</aside>
+			</div>
+		</div>
+	</main>
+
+	<footer class="site-layout mt-20 py-10 border-t border-nyt text-center">
+		<img src="/logo.svg" alt="Presek" class="h-10 opacity-30 mx-auto mb-4 grayscale" />
+		<p class="text-[10px] font-bold text-muted uppercase tracking-widest">
+			© 2026 ПРЕСЕК - ИНТЕЛИГЕНТНА АГРЕГАЦИЈА НА ВЕСТИ
+		</p>
+	</footer>
+</Layout>
+
+<style>
+	.briefing-content :global(li) {
+		list-style-type: disc;
+	}
+	.prose-nyt {
+		font-family: var(--nyt-font-serif);
+	}
+</style>
