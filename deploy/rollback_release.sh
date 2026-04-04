@@ -1,0 +1,47 @@
+#!/bin/bash
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
+SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
+RELEASE_STATE_DIR="$APP_DIR/.deploy"
+PREV_COMMIT_FILE="$RELEASE_STATE_DIR/previous_commit"
+
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
+ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
+info() { echo -e "${BLUE}>${RESET}  $*"; }
+fail() { echo -e "${RED}x${RESET}  $*"; exit 1; }
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
+
+main() {
+  need_cmd git
+  need_cmd systemctl
+  need_cmd bash
+
+  cd "$APP_DIR"
+  [ -f "$PREV_COMMIT_FILE" ] || fail "No previous release commit recorded in $PREV_COMMIT_FILE"
+
+  local rollback_commit
+  rollback_commit="$(cat "$PREV_COMMIT_FILE")"
+  [ -n "$rollback_commit" ] || fail "Rollback commit file is empty"
+
+  info "Rolling back to $rollback_commit"
+  git reset --hard "$rollback_commit"
+
+  info "Building Astro frontend"
+  (cd web && npm run build)
+
+  info "Restarting $SYSTEMD_TARGET"
+  sudo systemctl restart "$SYSTEMD_TARGET"
+
+  info "Running smoke checks"
+  ENABLE_PUBLIC_CHECK=0 bash "$SMOKE_SCRIPT"
+
+  ok "Rollback completed"
+  ok "Current commit: $(git rev-parse --short HEAD)"
+}
+
+main "$@"

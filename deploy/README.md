@@ -53,3 +53,21 @@ bash deploy/backup_postgres.sh
 ```
 
 This loads `.env`, uses `DATABASE_URL`, writes compressed dumps into `backups/`, and prunes older backups automatically.
+
+Release deploy:
+
+```sh
+bash deploy/deploy_release.sh
+```
+
+Rollback to the previously recorded release commit:
+
+```sh
+bash deploy/rollback_release.sh
+```
+
+Step-by-step operator flow:
+
+```sh
+cat deploy/RELEASE_CHECKLIST.md
+```
