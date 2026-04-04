@@ -46,9 +46,12 @@ class ApiClient {
     sort?: 'recent' | 'popular';
     follow_sources?: string;
     follow_topics?: string;
-  }): Promise<NewsResponse> {
+  }, config?: import('axios').AxiosRequestConfig): Promise<NewsResponse> {
     try {
-      const response = await this.client.get<NewsResponse>('/api/news', { params });
+      const response = await this.client.get<NewsResponse>('/api/news', { 
+        ...config,
+        params 
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

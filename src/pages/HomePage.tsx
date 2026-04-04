@@ -22,7 +22,16 @@ export const HomePage: React.FC = () => {
   const [newArticlesBanner, setNewArticlesBanner] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchNews = useCallback(async (pg = 0, append = false) => {
+    // Abort previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const response = await apiClient.getNews({
@@ -32,17 +41,22 @@ export const HomePage: React.FC = () => {
         sort: sortBy,
         page: pg,
         page_size: pageSize,
-      });
+      }, { signal: controller.signal });
+
       if (append) addClusters(response.clusters);
       else setClusters(response.clusters);
+      
       setPage(pg);
       setHasMore(response.has_more);
       setTotalClusters(response.total_clusters);
       setError(null);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Грешка при вчитување');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [selectedCategory, selectedTopic, searchQuery, sortBy]);
 

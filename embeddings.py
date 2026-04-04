@@ -72,9 +72,10 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
     payload = json.dumps({"requests": requests_list}).encode("utf-8")
     url = f"{EMBEDDING_URL}?key={GOOGLE_API_KEY}"
 
-    delays = [2, 5]
+    delays = [5, 15, 45, 90]
     for attempt, delay in enumerate([0] + delays):
         if delay:
+            log.info(f"[embeddings] Waiting {delay}s before retry (attempt {attempt + 1})...")
             time.sleep(delay)
 
         try:
@@ -84,7 +85,7 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
                 data=payload,
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=45) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             elapsed = round(time.time() - t0, 2)
 
@@ -97,17 +98,27 @@ def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
             return [e.get("values") for e in embeddings]
 
         except urllib.error.HTTPError as e:
-            err_body = e.read().decode("utf-8") if e else ""
+            try:
+                err_body = e.read().decode("utf-8")
+            except:
+                err_body = str(e)
+
             if e.code == 400 and "API key expired" in err_body:
                 log.error("[embeddings] Google API Key has EXPIRED. Please renew it. Falling back to keyword clustering.")
                 return [None] * len(texts)
             if e.code == 429:
-                log.info(f"[embeddings] 429 rate-limited (attempt {attempt + 1}), retrying...")
-                continue
+                log.warning(f"[embeddings] 429 rate-limited (attempt {attempt + 1})")
+                if attempt < len(delays):
+                    continue
+                else:
+                    log.error("[embeddings] Max retries reached for 429 rate-limit.")
+                    return [None] * len(texts)
             log.warning(f"[embeddings] HTTP {e.code}: {err_body[:200]}")
             return [None] * len(texts)
         except Exception as e:
-            log.warning(f"[embeddings] Error: {e}")
+            log.warning(f"[embeddings] Error (attempt {attempt + 1}): {e}")
+            if attempt < len(delays):
+                continue
             return [None] * len(texts)
 
     return [None] * len(texts)

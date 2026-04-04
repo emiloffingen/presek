@@ -57,9 +57,9 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.60  # Optimized from 0.65
-MAX_CLUSTER_SIZE     = 25
-VECTOR_THRESHOLD     = 0.12  # Optimized from 0.10 (slightly more permissive)
+SIMILARITY_THRESHOLD = 0.55  # Slightly more permissive TF-IDF fallback
+MAX_CLUSTER_SIZE     = 30
+VECTOR_THRESHOLD     = 0.28  # More permissive semantic matching (0.12 was too strict)
 
 def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
     """

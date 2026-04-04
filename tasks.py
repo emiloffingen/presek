@@ -86,23 +86,31 @@ def synthesize_cluster_task(cluster_id, content):
 
 @celery_app.task
 def run_ingestion():
-    """Main ingestion orchestrator."""
-    log.info("Presek 4.0: Starting ingestion cycle...")
+    """
+    Main ingestion orchestrator. 
+    Serialized for efficiency and to prevent DB/API bottlenecks.
+    """
+    log.info("Presek 4.0: Starting unified ingestion cycle...")
     new_count, errors = ingest_feeds()
     
-    # Diaspora is paused per user request
-    d_count, d_errors = 0, []
+    # Record health metrics
+    record_refresh(new_count, errors)
     
-    record_refresh(new_count + d_count, errors + d_errors)
-    
-    # Chain downstream tasks
-    recategorize_clusters_task.delay()
-    generate_cluster_metadata_task.delay()
-    classify_topics_task.delay()
-    extract_entities_task.delay()
-    
-    auto_summarize_task.delay()
-    log.info(f"Ingestion cycle complete. Added {new_count} articles.")
+    if new_count > 0:
+        # Chain dependent tasks to prevent resource spikes
+        # 1. Embed new articles first (crucial for clustering/search)
+        # 2. Extract metadata & entities
+        # 3. Categorize & summarize
+        (
+            generate_embeddings_task.s() |
+            generate_cluster_metadata_task.s() |
+            classify_topics_task.s() |
+            extract_entities_task.s() |
+            recategorize_clusters_task.s() |
+            auto_summarize_task.s()
+        ).apply_async()
+        
+    log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
 
 @celery_app.task
 def auto_summarize_task():

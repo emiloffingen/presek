@@ -31,39 +31,27 @@ celery_app.conf.update(
     beat_schedule={
         'ingest-regular-feeds': {
             'task': 'tasks.run_ingestion',
-            'schedule': 300.0, # Run every 5 minutes
+            'schedule': 300.0, # Every 5 minutes: Entry point for unified pipeline
         },
         'prune-database': {
             'task': 'tasks.run_prune_db',
-            'schedule': crontab(hour=3, minute=0), # Run daily at 3 AM
-        },
-        'send-daily-digest': {
-            'task': 'tasks.send_daily_digest_task',
-            'schedule': crontab(hour=7, minute=0), # Run daily at 7 AM UTC (8 AM local)
+            'schedule': crontab(hour=3, minute=0), # Daily maintenance
         },
         'generate-daily-briefing': {
             'task': 'tasks.generate_daily_brief_task',
-            'schedule': crontab(hour=6, minute=0), # Run daily at 6 AM UTC (7 AM local)
+            'schedule': crontab(hour=6, minute=0), # 6 AM UTC / 7 AM local
         },
-        'backfill-cover-art': {
-            'task': 'tasks.backfill_cover_art_task',
-            'schedule': 600.0,  # Every 10 minutes — generate covers for imageless clusters
-        },
-        'classify-topics': {
-            'task': 'tasks.classify_topics_task',
-            'schedule': 300.0,  # Every 5 minutes — tag new clusters
-        },
-        'recategorize-geography': {
-            'task': 'tasks.recategorize_clusters_task',
-            'schedule': 600.0,  # Every 10 minutes — fix miscategorized clusters
+        'send-daily-digest': {
+            'task': 'tasks.send_daily_digest_task',
+            'schedule': crontab(hour=7, minute=0), # 7 AM UTC / 8 AM local
         },
         'send-telegram-briefing': {
             'task': 'tasks.send_telegram_briefing_task',
-            'schedule': crontab(hour=7, minute=5), # Run daily at 7:05 AM UTC (8:05 AM local)
+            'schedule': crontab(hour=7, minute=5), # 7:05 AM UTC / 8:05 AM local
         },
-        'generate-embeddings': {
-            'task': 'tasks.generate_embeddings_task',
-            'schedule': 300.0,  # Every 5 minutes — embed new articles for semantic search
+        'backfill-cover-art': {
+            'task': 'tasks.backfill_cover_art_task',
+            'schedule': 600.0,  # Every 10 minutes: cover art generator
         },
     }
 )
