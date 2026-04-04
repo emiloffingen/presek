@@ -5,9 +5,12 @@ from health import (
     record_refresh,
     record_task_event,
     record_source_fetch,
+    update_source_policy,
+    reset_source_policy,
     _REDIS_KEY,
     _TASK_REDIS_KEY,
     _SOURCE_REDIS_KEY,
+    _SOURCE_POLICY_REDIS_KEY,
     _freshness_payload,
     _source_quality_payload,
 )
@@ -22,6 +25,8 @@ class TestRecordRefresh:
         hash_store = {}
         r.hset.side_effect = lambda k, field, value: hash_store.setdefault(k, {}).update({field: value})
         r.hgetall.side_effect = lambda k: hash_store.get(k, {})
+        r.hget.side_effect = lambda k, field: hash_store.get(k, {}).get(field)
+        r.hdel.side_effect = lambda k, field: hash_store.get(k, {}).pop(field, None)
         r.expire.side_effect = lambda *args, **kwargs: True
         r._hash_store = hash_store
         return r, store
@@ -76,6 +81,7 @@ class TestSourceEvents:
         assert data["fetched"] == 10
         assert data["accepted"] == 4
         assert "quality_score" in data
+        assert "auto_flagged" in data
 
 
 class TestSourceQuality:
@@ -88,6 +94,33 @@ class TestSourceQuality:
         data = _source_quality_payload("error", 10, 0, error="timeout")
         assert data["quality_score"] < 0.6
         assert data["degraded"] is True
+
+
+class TestSourcePolicy:
+    def test_source_policy_flags_low_acceptance(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with patch('health._get_redis', return_value=r):
+            state = None
+            for _ in range(3):
+                state = update_source_policy("Feed", "warning", fetched=10, accepted=1)
+        assert state["auto_flagged"] is True
+        assert state["should_auto_pause"] is False
+
+    def test_source_policy_auto_pauses_after_repeated_errors(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with patch('health._get_redis', return_value=r):
+            state = None
+            for _ in range(3):
+                state = update_source_policy("Feed", "error", fetched=0, accepted=0)
+        assert state["should_auto_pause"] is True
+
+    def test_reset_source_policy_clears_state(self):
+        r, _store = TestRecordRefresh()._make_redis()
+        with patch('health._get_redis', return_value=r):
+            update_source_policy("Feed", "error", fetched=0, accepted=0)
+            assert "Feed" in r._hash_store[_SOURCE_POLICY_REDIS_KEY]
+            reset_source_policy("Feed")
+        assert "Feed" not in r._hash_store[_SOURCE_POLICY_REDIS_KEY]
 
 
 class TestFreshnessPayload:

@@ -12,6 +12,11 @@ _start_time = time.time()
 _REDIS_KEY = "presek:last_refresh"
 _TASK_REDIS_KEY = "presek:task_statuses"
 _SOURCE_REDIS_KEY = "presek:source_statuses"
+_SOURCE_POLICY_REDIS_KEY = "presek:source_policies"
+AUTO_PAUSE_ERROR_STREAK = 3
+AUTO_FLAG_LOW_ACCEPT_STREAK = 3
+LOW_ACCEPTANCE_THRESHOLD = 0.2
+LOW_ACCEPTANCE_MIN_FETCHED = 4
 
 
 def _get_redis():
@@ -48,6 +53,59 @@ def _source_quality_payload(status: str, fetched: int, accepted: int, error: str
         "acceptance_ratio": round(acceptance_ratio, 2) if fetched else 0.0,
         "degraded": score < 0.6 or status == "error" or bool(error),
     }
+
+
+def update_source_policy(source_name: str, status: str, fetched: int = 0, accepted: int = 0):
+    fetched = max(0, int(fetched or 0))
+    accepted = max(0, int(accepted or 0))
+    acceptance_ratio = (accepted / fetched) if fetched else 0.0
+    now = datetime.now(timezone.utc).isoformat()
+
+    state = {
+        "source": source_name,
+        "consecutive_errors": 0,
+        "low_accept_streak": 0,
+        "auto_flagged": False,
+        "should_auto_pause": False,
+        "last_status": status,
+        "updated_at": now,
+    }
+    try:
+        raw = _get_redis().hget(_SOURCE_POLICY_REDIS_KEY, source_name)
+        if raw:
+            state.update(json.loads(raw.decode() if isinstance(raw, bytes) else raw))
+    except Exception:
+        pass
+
+    if status == "error":
+        state["consecutive_errors"] = int(state.get("consecutive_errors", 0)) + 1
+    else:
+        state["consecutive_errors"] = 0
+
+    low_accept = fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
+    if low_accept:
+        state["low_accept_streak"] = int(state.get("low_accept_streak", 0)) + 1
+    elif fetched > 0:
+        state["low_accept_streak"] = 0
+
+    state["auto_flagged"] = state["low_accept_streak"] >= AUTO_FLAG_LOW_ACCEPT_STREAK
+    state["should_auto_pause"] = state["consecutive_errors"] >= AUTO_PAUSE_ERROR_STREAK
+    state["last_status"] = status
+    state["updated_at"] = now
+
+    try:
+        _get_redis().hset(_SOURCE_POLICY_REDIS_KEY, source_name, json.dumps(state))
+        _get_redis().expire(_SOURCE_POLICY_REDIS_KEY, 3600 * 24 * 7)
+    except Exception:
+        pass
+    return state
+
+
+def reset_source_policy(source_name: str):
+    try:
+        _get_redis().hdel(_SOURCE_POLICY_REDIS_KEY, source_name)
+    except Exception:
+        pass
 
 
 def record_refresh(article_count: int, errors: list[str] | None = None):
@@ -95,6 +153,7 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         "time": datetime.now(timezone.utc).isoformat(),
     }
     payload.update(_source_quality_payload(status, fetched, accepted, error=error))
+    payload.update(update_source_policy(source_name, status, fetched, accepted))
     try:
         _get_redis().hset(_SOURCE_REDIS_KEY, source_name, json.dumps(payload))
         _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)

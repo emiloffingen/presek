@@ -303,8 +303,8 @@ class TestSourceControls:
     def test_sources_include_inactive(self, client):
         mock_db = MagicMock()
         mock_db.execute.return_value = [
-            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None},
-            {"name": "BadFeed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": False, "last_fetched": None},
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None, "pause_mode": None, "pause_reason": None, "paused_at": None},
+            {"name": "BadFeed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": False, "last_fetched": None, "pause_mode": "auto", "pause_reason": "Repeated ingestion failures", "paused_at": None},
         ]
         with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
             resp = client.get("/api/sources?include_inactive=1")
@@ -325,8 +325,8 @@ class TestSourceControls:
     def test_source_control_pause_with_token(self, client):
         mock_db = MagicMock()
         mock_db.execute_one.side_effect = [
-            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None},
-            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": False, "last_fetched": None},
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None, "pause_mode": None, "pause_reason": None, "paused_at": None},
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": False, "last_fetched": None, "pause_mode": "manual", "pause_reason": "Manual pause", "paused_at": None},
         ]
         with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
             resp = client.post(
@@ -337,16 +337,18 @@ class TestSourceControls:
             )
         assert resp.status_code == 200
         mock_db.execute.assert_called_with(
-            "UPDATE sources SET is_active = FALSE WHERE name = %s", ("MIA",), fetch=False
+            "UPDATE sources SET is_active = FALSE, pause_mode = 'manual', pause_reason = %s, paused_at = NOW() WHERE name = %s",
+            ("Manual pause", "MIA"),
+            fetch=False
         )
 
     def test_source_control_reset_uses_default_credibility(self, client):
         mock_db = MagicMock()
         mock_db.execute_one.side_effect = [
-            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 1.7, "is_active": True, "last_fetched": None},
-            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": True, "last_fetched": None},
+            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 1.7, "is_active": True, "last_fetched": None, "pause_mode": None, "pause_reason": None, "paused_at": None},
+            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": True, "last_fetched": None, "pause_mode": None, "pause_reason": None, "paused_at": None},
         ]
-        with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
+        with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}), patch("routes.api.reset_source_policy"):
             resp = client.post(
                 "/api/sources/Unknown%20Feed/control",
                 data=json.dumps({"action": "reset"}),
@@ -355,7 +357,9 @@ class TestSourceControls:
             )
         assert resp.status_code == 200
         mock_db.execute.assert_called_with(
-            "UPDATE sources SET credibility = %s WHERE name = %s", (0.8, "Unknown Feed"), fetch=False
+            "UPDATE sources SET credibility = %s, pause_mode = NULL, pause_reason = NULL, paused_at = NULL WHERE name = %s",
+            (0.8, "Unknown Feed"),
+            fetch=False
         )
 
 

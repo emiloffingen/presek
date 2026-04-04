@@ -25,7 +25,7 @@ from local_nlp import (
     build_citation_snippet,
     build_structured_answer_sections,
 )
-from health import get_source_statuses
+from health import get_source_statuses, reset_source_policy
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
@@ -876,7 +876,7 @@ def api_sources():
         include_inactive = (request.args.get("include_inactive") or "").strip() in {"1", "true", "yes"}
         where_sql = "" if include_inactive else "WHERE is_active = TRUE"
         rows = db.execute(
-            f"SELECT name, country, category, credibility, is_active, last_fetched FROM sources {where_sql} ORDER BY name ASC"
+            f"SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources {where_sql} ORDER BY name ASC"
         )
         source_statuses = get_source_statuses()
         payload = []
@@ -908,7 +908,7 @@ def api_source_control(name):
         return error_response("Invalid action", 400)
 
     source = db.execute_one(
-        "SELECT name, country, category, credibility, is_active, last_fetched FROM sources WHERE name = %s",
+        "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE name = %s",
         (source_name,),
     )
     if not source:
@@ -916,9 +916,18 @@ def api_source_control(name):
 
     current_cred = float(source.get("credibility") or DEFAULT_CREDIBILITY)
     if action == "pause":
-        db.execute("UPDATE sources SET is_active = FALSE WHERE name = %s", (source_name,), fetch=False)
+        db.execute(
+            "UPDATE sources SET is_active = FALSE, pause_mode = 'manual', pause_reason = %s, paused_at = NOW() WHERE name = %s",
+            ("Manual pause", source_name),
+            fetch=False,
+        )
     elif action == "resume":
-        db.execute("UPDATE sources SET is_active = TRUE WHERE name = %s", (source_name,), fetch=False)
+        db.execute(
+            "UPDATE sources SET is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL WHERE name = %s",
+            (source_name,),
+            fetch=False,
+        )
+        reset_source_policy(source_name)
     elif action == "downrank":
         db.execute(
             "UPDATE sources SET credibility = %s WHERE name = %s",
@@ -933,13 +942,14 @@ def api_source_control(name):
         )
     elif action == "reset":
         db.execute(
-            "UPDATE sources SET credibility = %s WHERE name = %s",
+            "UPDATE sources SET credibility = %s, pause_mode = NULL, pause_reason = NULL, paused_at = NULL WHERE name = %s",
             (SOURCE_CREDIBILITY.get(source_name, DEFAULT_CREDIBILITY), source_name),
             fetch=False,
         )
+        reset_source_policy(source_name)
 
     updated = db.execute_one(
-        "SELECT name, country, category, credibility, is_active, last_fetched FROM sources WHERE name = %s",
+        "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE name = %s",
         (source_name,),
     )
     if updated:

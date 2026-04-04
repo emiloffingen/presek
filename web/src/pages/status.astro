@@ -75,6 +75,12 @@ function qualityLabel(score: number) {
 	if (score >= 0.6) return 'Намален';
 	return 'Ризичен';
 }
+
+function pauseLabel(source: any) {
+	if (source.is_active) return 'Активен';
+	if (source.pause_mode === 'auto') return 'Авто-пауза';
+	return 'Рачна пауза';
+}
 ---
 
 <Layout title="Системски статус">
@@ -168,8 +174,10 @@ function qualityLabel(score: number) {
 														Квалитет: {qualityLabel(source.quality_score || 0)} · {Math.round((source.acceptance_ratio || 0) * 100)}%
 													</p>
 													<p class="task-detail">
-														Статус: {source.is_active ? 'Активен' : 'Паузиран'} · Cred {Number(source.credibility || 0).toFixed(1)}
+														Статус: {pauseLabel(source)} · Cred {Number(source.credibility || 0).toFixed(1)}
 													</p>
+													{source.auto_flagged && <p class="task-detail">Авто-означен поради слаб принос.</p>}
+													{source.pause_reason && <p class="task-detail">{source.pause_reason}</p>}
 													{source.error && <p class="task-detail">{source.error}</p>}
 												</div>
 												<div class="task-meta">

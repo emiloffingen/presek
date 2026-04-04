@@ -16,7 +16,7 @@ from categories import detect_category, detect_subcategory, detect_country, norm
 from database import db_manager as db, get_db
 from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
-from health import record_source_fetch
+from health import record_source_fetch, get_source_statuses
 
 log = logging.getLogger("presek")
 
@@ -126,7 +126,9 @@ async def fetch_feed_async(client: "httpx.AsyncClient", source: Dict[str, Any]) 
 
 def get_active_sources():
     """Fetches all active sources from the database."""
-    rows = db.execute("SELECT name, url, country, category, credibility, source_limit FROM sources WHERE is_active = TRUE")
+    rows = db.execute(
+        "SELECT name, url, country, category, credibility, source_limit, pause_mode, pause_reason FROM sources WHERE is_active = TRUE"
+    )
     return [dict(r) for r in rows]
 
 def cosine_dist(a, b):
@@ -337,6 +339,7 @@ async def ingest_all_sources_async():
                         if art:
                             translate_article_task.delay(r_id, art["title"], art["description"])
 
+    current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():
         record_source_fetch(
             source_name,
@@ -345,6 +348,18 @@ async def ingest_all_sources_async():
             accepted=stats["accepted"],
             error=stats["error"],
         )
+        updated_status = get_source_statuses().get(source_name) or current_statuses.get(source_name) or {}
+        if updated_status.get("should_auto_pause"):
+            db.execute(
+                """UPDATE sources
+                   SET is_active = FALSE,
+                       pause_mode = 'auto',
+                       pause_reason = %s,
+                       paused_at = NOW()
+                   WHERE name = %s AND is_active = TRUE""",
+                ("Repeated ingestion failures", source_name),
+                fetch=False,
+            )
 
     return new_count, errors
 

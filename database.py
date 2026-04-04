@@ -316,6 +316,9 @@ class DatabaseManager:
                     source_limit INTEGER DEFAULT 10,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
+                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS pause_mode TEXT")
+                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS pause_reason TEXT")
+                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP")
 
                 # Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
