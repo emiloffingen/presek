@@ -93,6 +93,9 @@ if (ss -lptn 'sport = :5000' | grep -q '5000'); then
     sleep 2
 fi
 
+# Ensure 5001 is free for FastAPI
+fuser -k 5001/tcp 2>/dev/null || true
+
 # ── Init DB schema ───────────────────────────────────────────────
 info "Verifying database schema..."
 cd "$APP_DIR" && $PYTHON -c "from database import init_db; init_db()" && ok "Schema OK" || warn "Schema init had errors (check logs)"
@@ -123,6 +126,13 @@ screen -S "$SESSION" -X screen -t "worker" bash -c "
     --loglevel=info \
     --concurrency=4 \
     --logfile=$LOG_FILE 2>&1
+  exec bash"
+sleep 1
+
+# Window 5: FastAPI (Next-Gen API)
+screen -S "$SESSION" -X screen -t "fastapi" bash -c "
+  cd $APP_DIR
+  ./venv/bin/uvicorn api_fast:app --host 0.0.0.0 --port 5001 --workers 2 2>&1 | tee -a $LOG_FILE
   exec bash"
 sleep 1
 
@@ -164,10 +174,11 @@ fi
 
 divider
 echo -e "  ${CYAN}App:${RESET}       http://localhost:5000"
+echo -e "  ${CYAN}FastAPI:${RESET}   http://localhost:5001"
 echo -e "  ${CYAN}Health:${RESET}    http://localhost:5000/api/health"
 echo -e "  ${CYAN}Log:${RESET}       tail -f $LOG_FILE"
 echo -e "  ${CYAN}Reattach:${RESET}  screen -r $SESSION"
-echo -e "  ${CYAN}Windows:${RESET}   Ctrl+A then \" — web / worker / beat / backfill"
+echo -e "  ${CYAN}Windows:${RESET}   Ctrl+A then \" — web / worker / fastapi / beat / backfill"
 echo -e "  ${CYAN}Stop:${RESET}      ./start.sh --stop"
 divider
 echo ""

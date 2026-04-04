@@ -65,7 +65,52 @@ class AIProvider(ABC):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         pass
 
+    async def stream_call(self, prompt: str, system: str, max_tokens: int):
+        """Async generator for streaming responses."""
+        # Default implementation for non-streaming providers
+        res = self.call(prompt, system, max_tokens, False)
+        if res:
+            for word in res.split(' '):
+                yield word + ' '
+                await asyncio.sleep(0.01)
+
 class GeminiProvider(AIProvider):
+    async def stream_call(self, prompt: str, system: str, max_tokens: int):
+        if not GOOGLE_API_KEY: return
+        
+        # Use httpx for async streaming
+        import httpx
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key={GOOGLE_API_KEY}"
+        combined = f"{system}\n\nInput:\n{prompt}"
+        payload = {
+            "contents": [{"parts": [{"text": combined}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2}
+        }
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                async with client.stream("POST", url, json=payload, timeout=60.0) as response:
+                    buffer = ""
+                    async for line in response.aiter_lines():
+                        if not line: continue
+                        # Gemini streaming returns a JSON array of candidates in chunks
+                        buffer += line
+                        try:
+                            # Try to parse the chunk as it might be a complete JSON object
+                            # Actually Gemini sends "parts" in a streaming way.
+                            # It's usually a list of objects like [{"candidates": [...]}, ...]
+                            # or just multiple JSON objects separated by commas in a list.
+                            # A simple approach for this demo:
+                            if '"text": "' in line:
+                                match = re.search(r'"text":\s*"(.*?)"', line)
+                                if match:
+                                    text = match.group(1).encode().decode('unicode_escape')
+                                    yield text
+                        except:
+                            pass
+        except Exception as e:
+            log.warning(f"[gemini-stream] Error: {e}")
+
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         if not GOOGLE_API_KEY or not GEMINI_URL: return None
         
