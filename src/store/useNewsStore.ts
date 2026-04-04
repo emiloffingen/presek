@@ -54,12 +54,15 @@ interface UIStore {
   selectedTopic: string;
   searchQuery: string;
   stats: FullStats | null;
+  userInterests: Record<string, number>;
 
   setSidebarOpen: (open: boolean) => void;
   setSelectedCategory: (category: string) => void;
   setSelectedTopic: (topic: string) => void;
   setSearchQuery: (query: string) => void;
   setStats: (stats: FullStats | null) => void;
+  trackInterest: (key: string) => void;
+  getTopInterests: () => string[];
 }
 
 // ── Saved Articles ─────────────────────────────────────────────
@@ -97,16 +100,41 @@ export const useSavedStore = create<SavedStore>((set, get) => ({
   isSaved: (id) => get().savedIds.has(id),
 }));
 
-export const useUIStore = create<UIStore>((set) => ({
+const _loadInterests = (): Record<string, number> => {
+  try {
+    const raw = localStorage.getItem('presek:interests');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const useUIStore = create<UIStore>((set, get) => ({
   sidebarOpen: true,
   selectedCategory: 'Македонија',
   selectedTopic: '',
   searchQuery: '',
   stats: null,
+  userInterests: _loadInterests(),
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   setSelectedTopic: (topic) => set({ selectedTopic: topic }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setStats: (stats) => set({ stats }),
+  trackInterest: (key) => {
+    if (!key || key === 'Македонија' || key === 'Сите') return;
+    set((state) => {
+      const next = { ...state.userInterests, [key]: (state.userInterests[key] || 0) + 1 };
+      localStorage.setItem('presek:interests', JSON.stringify(next));
+      return { userInterests: next };
+    });
+  },
+  getTopInterests: () => {
+    const interests = get().userInterests;
+    return Object.entries(interests)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([key]) => key);
+  }
 }));

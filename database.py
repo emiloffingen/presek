@@ -98,14 +98,15 @@ class DatabaseManager:
         Returns articles from clusters that are semantically close to the query.
         """
         sql = """
-            SELECT *, embedding <=> %s::vector as distance
+            SELECT *, (1 - (embedding <=> %s::vector)) as similarity
             FROM articles
             WHERE embedding IS NOT NULL
               AND created_at >= NOW() - INTERVAL '7 days'
             ORDER BY embedding <=> %s::vector
             LIMIT %s
         """
-        vec_str = str(query_embedding)
+        # Ensure embedding is passed as a string representation of the list for pgvector
+        vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return self.execute(sql, (vec_str, vec_str, limit))
 
     def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
@@ -307,7 +308,11 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
+                
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_metadata_tags ON cluster_metadata USING GIN (tags)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_metadata_topics ON cluster_metadata USING GIN (topics)")
                 
                 # FTS Trigger
                 cur.execute("""
