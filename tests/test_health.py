@@ -9,6 +9,7 @@ from health import (
     _TASK_REDIS_KEY,
     _SOURCE_REDIS_KEY,
     _freshness_payload,
+    _source_quality_payload,
 )
 
 
@@ -74,6 +75,19 @@ class TestSourceEvents:
         assert data["status"] == "ok"
         assert data["fetched"] == 10
         assert data["accepted"] == 4
+        assert "quality_score" in data
+
+
+class TestSourceQuality:
+    def test_source_quality_payload_for_healthy_source(self):
+        data = _source_quality_payload("ok", 10, 8)
+        assert data["quality_score"] >= 0.85
+        assert data["degraded"] is False
+
+    def test_source_quality_payload_for_broken_source(self):
+        data = _source_quality_payload("error", 10, 0, error="timeout")
+        assert data["quality_score"] < 0.6
+        assert data["degraded"] is True
 
 
 class TestFreshnessPayload:

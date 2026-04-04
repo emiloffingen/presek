@@ -56,6 +56,12 @@ function statusLabel(status: string) {
 			return status || 'Непознато';
 	}
 }
+
+function qualityLabel(score: number) {
+	if (score >= 0.85) return 'Силен';
+	if (score >= 0.6) return 'Намален';
+	return 'Ризичен';
+}
 ---
 
 <Layout title="Системски статус">
@@ -144,6 +150,9 @@ function statusLabel(status: string) {
 													<p class="task-name">{source.source}</p>
 													<p class="task-detail">
 														Преземени: {source.fetched || 0} · Прифатени: {source.accepted || 0}
+													</p>
+													<p class="task-detail">
+														Квалитет: {qualityLabel(source.quality_score || 0)} · {Math.round((source.acceptance_ratio || 0) * 100)}%
 													</p>
 													{source.error && <p class="task-detail">{source.error}</p>}
 												</div>

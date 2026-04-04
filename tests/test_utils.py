@@ -2,7 +2,7 @@ import pytest
 import datetime
 import math
 from unittest.mock import patch, MagicMock
-from utils import score_cluster, rank_articles_in_cluster
+from utils import score_cluster, rank_articles_in_cluster, get_source_effective_weight
 
 
 def _make_article(source="MIA", created_at=None, clicks=0):
@@ -75,6 +75,14 @@ class TestScoreCluster:
         s = score_cluster([])
         assert s == 0 or s == 0.0
 
+    @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.3}})
+    def test_source_health_penalizes_cluster_score(self, _mock_health):
+        weak = [_make_article("MIA")]
+        with patch("utils.get_source_health_map", return_value={}):
+            strong_score = score_cluster(weak)
+        weak_score = score_cluster(weak)
+        assert weak_score < strong_score
+
 
 # ── rank_articles_in_cluster ──────────────────────────────────────
 
@@ -100,3 +108,15 @@ class TestRankArticles:
         arts = [_make_article("Unknown"), _make_article("MIA")]
         ranked = rank_articles_in_cluster(arts)
         assert ranked[0]["source"] == "MIA"  # 2.0 > 0.8 default
+
+    @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.25}})
+    def test_source_health_can_reorder_articles(self, _mock_health):
+        arts = [_make_article("MIA"), _make_article("Sitel")]
+        ranked = rank_articles_in_cluster(arts)
+        assert ranked[0]["source"] == "Sitel"
+
+
+class TestSourceEffectiveWeight:
+    @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.2}})
+    def test_effective_weight_uses_health_multiplier(self, _mock_health):
+        assert get_source_effective_weight("MIA") < 2.0

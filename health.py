@@ -19,6 +19,37 @@ def _get_redis():
     return _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
 
 
+def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
+    fetched = max(0, int(fetched or 0))
+    accepted = max(0, int(accepted or 0))
+    acceptance_ratio = (accepted / fetched) if fetched else 0.0
+    base_score = 1.0
+
+    if status == "error":
+        base_score = 0.35
+    elif status == "warning":
+        base_score = 0.7
+
+    score = base_score
+    if fetched > 0:
+        score *= max(0.45, min(1.0, 0.55 + acceptance_ratio))
+    score = round(max(0.2, min(1.0, score)), 2)
+
+    if score >= 0.85:
+        label = "Стабилен извор"
+    elif score >= 0.6:
+        label = "Намален квалитет"
+    else:
+        label = "Проблематичен извор"
+
+    return {
+        "quality_score": score,
+        "quality_label": label,
+        "acceptance_ratio": round(acceptance_ratio, 2) if fetched else 0.0,
+        "degraded": score < 0.6 or status == "error" or bool(error),
+    }
+
+
 def record_refresh(article_count: int, errors: list[str] | None = None):
     """Call this after each RSS refresh cycle. Writes to Redis so all workers see it."""
     payload = {
@@ -63,11 +94,25 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         "error": (error or "")[:300],
         "time": datetime.now(timezone.utc).isoformat(),
     }
+    payload.update(_source_quality_payload(status, fetched, accepted, error=error))
     try:
         _get_redis().hset(_SOURCE_REDIS_KEY, source_name, json.dumps(payload))
         _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)
     except Exception:
         pass
+
+
+def get_source_statuses():
+    try:
+        raw_sources = _get_redis().hgetall(_SOURCE_REDIS_KEY) or {}
+        return {
+            (key.decode() if isinstance(key, bytes) else key): json.loads(
+                value.decode() if isinstance(value, bytes) else value
+            )
+            for key, value in raw_sources.items()
+        }
+    except Exception:
+        return {}
 
 
 def _freshness_payload(last_refresh_time: str | None):
@@ -142,17 +187,7 @@ def register_health_routes(app):
         except Exception:
             task_statuses = {}
 
-        source_statuses = {}
-        try:
-            raw_sources = _get_redis().hgetall(_SOURCE_REDIS_KEY) or {}
-            source_statuses = {
-                (key.decode() if isinstance(key, bytes) else key): json.loads(
-                    value.decode() if isinstance(value, bytes) else value
-                )
-                for key, value in raw_sources.items()
-            }
-        except Exception:
-            source_statuses = {}
+        source_statuses = get_source_statuses()
 
         freshness = _freshness_payload(last.get("time"))
 

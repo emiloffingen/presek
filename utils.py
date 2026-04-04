@@ -9,6 +9,7 @@ from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 
 log = logging.getLogger("presek")
 redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+_SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
 
 class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder to handle datetime objects."""
@@ -91,6 +92,38 @@ def calculate_reading_time(text: str) -> int:
     words = len(text.split())
     return max(1, math.ceil(words / 200))
 
+
+def get_source_health_map(ttl_seconds: int = 60):
+    now = time.time()
+    if _SOURCE_STATUS_CACHE["data"] and now - _SOURCE_STATUS_CACHE["time"] < ttl_seconds:
+        return _SOURCE_STATUS_CACHE["data"]
+    try:
+        raw = redis_client.hgetall("presek:source_statuses") or {}
+        parsed = {key: json.loads(value) for key, value in raw.items()}
+        _SOURCE_STATUS_CACHE["time"] = now
+        _SOURCE_STATUS_CACHE["data"] = parsed
+        return parsed
+    except Exception as e:
+        log.warning(f"[source_health] Redis unavailable, using static credibility only: {e}")
+        return _SOURCE_STATUS_CACHE["data"] or {}
+
+
+def get_source_quality_multiplier(source: str) -> float:
+    status = get_source_health_map().get(source) or {}
+    quality_score = status.get("quality_score")
+    if quality_score is None:
+        return 1.0
+    try:
+        quality_score = float(quality_score)
+    except Exception:
+        return 1.0
+    return max(0.45, min(1.05, 0.55 + quality_score * 0.5))
+
+
+def get_source_effective_weight(source: str) -> float:
+    base = SOURCE_CREDIBILITY.get(source, DEFAULT_CREDIBILITY)
+    return base * get_source_quality_multiplier(source)
+
 def score_cluster(arts):
     """
     PageRank-style cluster importance score.
@@ -104,7 +137,7 @@ def score_cluster(arts):
     # Credibility score — sum of weights of unique sources
     unique_sources = {a["source"] for a in arts}
     cred_score = sum(
-        SOURCE_CREDIBILITY.get(s, DEFAULT_CREDIBILITY)
+        get_source_effective_weight(s)
         for s in unique_sources
     )
 
@@ -134,7 +167,7 @@ def rank_articles_in_cluster(arts):
     """Within a cluster, put the most credible source first."""
     return sorted(
         arts,
-        key=lambda a: SOURCE_CREDIBILITY.get(a["source"], DEFAULT_CREDIBILITY),
+        key=lambda a: get_source_effective_weight(a["source"]),
         reverse=True
     )
 

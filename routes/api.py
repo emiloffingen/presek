@@ -24,6 +24,7 @@ from local_nlp import (
     build_citation_snippet,
     build_structured_answer_sections,
 )
+from health import get_source_statuses
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
@@ -858,8 +859,16 @@ def api_archive():
 def api_sources():
     """Return all active sources with metadata."""
     try:
-        rows = db.execute("SELECT name, country, category, credibility FROM sources WHERE is_active = TRUE ORDER BY name ASC")
-        return jsonify([dict(r) for r in rows])
+        rows = db.execute(
+            "SELECT name, country, category, credibility, last_fetched FROM sources WHERE is_active = TRUE ORDER BY name ASC"
+        )
+        source_statuses = get_source_statuses()
+        payload = []
+        for row in rows:
+            item = dict(row)
+            item["source_status"] = source_statuses.get(item["name"])
+            payload.append(item)
+        return jsonify(payload)
     except Exception as e:
         log.error(f"[api/sources] {e}")
         return error_response("Failed to fetch sources")
