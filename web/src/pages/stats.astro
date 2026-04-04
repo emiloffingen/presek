@@ -4,7 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
 
 let stats = null;
 let error = null;

@@ -5,7 +5,7 @@ import Footer from '../../components/Footer.astro';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
 
 const { id } = Astro.params;
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
+const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
 
 let cluster = null;
 let error = null;

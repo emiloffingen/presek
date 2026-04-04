@@ -17,8 +17,21 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    // PUBLIC_API_URL is typically something like "http://localhost:5001/api"
-    this.baseURL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin + '/api' : 'http://localhost:5001/api');
+    // Determine the API base URL
+    if (typeof window !== 'undefined') {
+      // Client-side
+      let url = import.meta.env.PUBLIC_API_URL || '/api';
+      
+      // Safeguard: If the build environment leaked a localhost URL to a production site
+      if (url.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        url = '/api';
+      }
+      
+      this.baseURL = url;
+    } else {
+      // Server-side (SSR)
+      this.baseURL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+    }
     
     this.client = axios.create({
       baseURL: this.baseURL,
