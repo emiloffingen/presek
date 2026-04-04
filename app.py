@@ -143,42 +143,36 @@ def vite_assets():
         if os.environ.get("FLASK_ENV") == "development":
             if entry_name.endswith('.css'):
                 return Markup(f'<link rel="stylesheet" href="{VITE_DEV_SERVER}/src/index.css">')
-            return Markup(f'<script type="module" src="{VITE_DEV_SERVER}/src/{entry_name}"></script>')
+            # In dev, the entry is usually src/main.tsx
+            return Markup(f'<script type="module" src="{VITE_DEV_SERVER}/src/main.tsx"></script>')
         
         # In production, read from the manifest
         try:
             with open(VITE_MANIFEST_PATH, "r") as f:
                 manifest = json.load(f)
             
-            # Robust lookup: check for exact key, then common variations
-            # Vite often uses 'index.html' for the main entry point or 'src/main.tsx'
-            asset_entry = None
-            if entry_name in manifest:
-                asset_entry = manifest[entry_name]
-            else:
-                # Try common prefixes/extensions if not found
-                for key in manifest:
-                    if entry_name in key or key.endswith(entry_name):
-                        asset_entry = manifest[key]
+            # Find the main entry (usually index.html or src/main.tsx)
+            main_entry = manifest.get('index.html') or manifest.get('src/main.tsx')
+            
+            if not main_entry:
+                # Fallback: search for any entry that is an entry point
+                for k, v in manifest.items():
+                    if v.get('isEntry'):
+                        main_entry = v
                         break
             
-            if not asset_entry:
-                # If still not found and it's a known fallback, use it
-                if entry_name == 'main.js': asset_entry = manifest.get('index.html')
-            
-            if not asset_entry: return ""
+            if not main_entry: return ""
 
-            if entry_name.endswith('.js') or entry_name.endswith('.ts') or entry_name.endswith('.tsx'):
-                return Markup(f'<script type="module" src="/static/dist/{asset_entry["file"]}"></script>')
-            
+            # If they want CSS
             if entry_name.endswith('.css'):
-                css_files = asset_entry.get('css', [])
-                if not css_files:
-                    # If this entry doesn't have CSS, it might be the CSS entry itself
-                    if asset_entry.get('file', '').endswith('.css'):
-                        return Markup(f'<link rel="stylesheet" href="/static/dist/{asset_entry["file"]}">')
-                    return ""
-                return Markup(f'<link rel="stylesheet" href="/static/dist/{css_files[0]}">')
+                css_files = main_entry.get('css', [])
+                if css_files:
+                    return Markup(f'<link rel="stylesheet" href="/static/dist/{css_files[0]}">')
+                return ""
+            
+            # If they want JS (the module)
+            return Markup(f'<script type="module" src="/static/dist/{main_entry["file"]}"></script>')
+            
         except (FileNotFoundError, json.JSONDecodeError):
             # Fallback to legacy static if manifest is missing
             if entry_name == 'main.js':
