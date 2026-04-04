@@ -78,7 +78,6 @@ def extract_keyphrases_locally(text, top_n=5):
     return [p[0] for p in sorted_phrases[:top_n]]
 
 def summarize_locally(text, sentence_count=3):
-...
     """
     Non-AI Summarizer: Scores sentences based on word frequency.
     Works entirely locally and is very fast.
