@@ -297,6 +297,68 @@ class TestProxy:
         assert resp.status_code in (200, 502)
 
 
+# ── /api/sources controls ────────────────────────────────────────
+
+class TestSourceControls:
+    def test_sources_include_inactive(self, client):
+        mock_db = MagicMock()
+        mock_db.execute.return_value = [
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None},
+            {"name": "BadFeed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": False, "last_fetched": None},
+        ]
+        with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
+            resp = client.get("/api/sources?include_inactive=1")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert len(data) == 2
+        assert data[1]["is_active"] is False
+
+    def test_source_control_rejects_unauthorized(self, client):
+        resp = client.post(
+            "/api/sources/MIA/control",
+            data=json.dumps({"action": "pause"}),
+            headers={"X-Forwarded-For": "1.2.3.4"},
+            content_type="application/json",
+        )
+        assert resp.status_code == 403
+
+    def test_source_control_pause_with_token(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.side_effect = [
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True, "last_fetched": None},
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": False, "last_fetched": None},
+        ]
+        with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
+            resp = client.post(
+                "/api/sources/MIA/control",
+                data=json.dumps({"action": "pause"}),
+                headers={"X-Admin-Token": "test-secret-key-for-tests", "X-Forwarded-For": "1.2.3.4"},
+                content_type="application/json",
+            )
+        assert resp.status_code == 200
+        mock_db.execute.assert_called_with(
+            "UPDATE sources SET is_active = FALSE WHERE name = %s", ("MIA",), fetch=False
+        )
+
+    def test_source_control_reset_uses_default_credibility(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.side_effect = [
+            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 1.7, "is_active": True, "last_fetched": None},
+            {"name": "Unknown Feed", "country": "🇲🇰", "category": "Локални", "credibility": 0.8, "is_active": True, "last_fetched": None},
+        ]
+        with patch("routes.api.db", mock_db), patch("routes.api.get_source_statuses", return_value={}):
+            resp = client.post(
+                "/api/sources/Unknown%20Feed/control",
+                data=json.dumps({"action": "reset"}),
+                headers={"X-Admin-Token": "test-secret-key-for-tests", "X-Forwarded-For": "1.2.3.4"},
+                content_type="application/json",
+            )
+        assert resp.status_code == 200
+        mock_db.execute.assert_called_with(
+            "UPDATE sources SET credibility = %s WHERE name = %s", (0.8, "Unknown Feed"), fetch=False
+        )
+
+
 # ── View routes with DB ───────────────────────────────────────────
 
 class TestViewRoutesWithDB:

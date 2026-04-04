@@ -14,6 +14,7 @@ from database import db_manager as db
 from ai_engine import sync_call_ai as _call_ai, clean_json_response
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
+from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from embeddings import generate_query_embedding
 from local_nlp import (
     answer_cluster_question_locally,
@@ -32,6 +33,19 @@ log = logging.getLogger("presek")
 # Allowed image content types for proxy
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _source_admin_authorized():
+    token = (request.headers.get("X-Admin-Token") or "").strip()
+    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or os.environ.get("SECRET_KEY") or "").strip()
+    remote_addr = (request.remote_addr or "").strip()
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
+
+    if expected and token and token == expected:
+        return True
+    if remote_addr in {"127.0.0.1", "::1"} and not forwarded_for:
+        return True
+    return False
 
 
 def normalize_perspectives(raw_perspectives):
@@ -859,8 +873,10 @@ def api_archive():
 def api_sources():
     """Return all active sources with metadata."""
     try:
+        include_inactive = (request.args.get("include_inactive") or "").strip() in {"1", "true", "yes"}
+        where_sql = "" if include_inactive else "WHERE is_active = TRUE"
         rows = db.execute(
-            "SELECT name, country, category, credibility, last_fetched FROM sources WHERE is_active = TRUE ORDER BY name ASC"
+            f"SELECT name, country, category, credibility, is_active, last_fetched FROM sources {where_sql} ORDER BY name ASC"
         )
         source_statuses = get_source_statuses()
         payload = []
@@ -872,6 +888,64 @@ def api_sources():
     except Exception as e:
         log.error(f"[api/sources] {e}")
         return error_response("Failed to fetch sources")
+
+
+@api_bp.route("/api/sources/<name>/control", methods=["POST"])
+def api_source_control(name):
+    if not _source_admin_authorized():
+        return error_response("Unauthorized", 403)
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+
+    source_name = (name or "").strip()
+    if not source_name:
+        return error_response("Source name is required", 400)
+
+    payload = request.get_json(silent=True) or {}
+    action = (payload.get("action") or "").strip().lower()
+    valid_actions = {"pause", "resume", "downrank", "uprank", "reset"}
+    if action not in valid_actions:
+        return error_response("Invalid action", 400)
+
+    source = db.execute_one(
+        "SELECT name, country, category, credibility, is_active, last_fetched FROM sources WHERE name = %s",
+        (source_name,),
+    )
+    if not source:
+        return error_response("Source not found", 404)
+
+    current_cred = float(source.get("credibility") or DEFAULT_CREDIBILITY)
+    if action == "pause":
+        db.execute("UPDATE sources SET is_active = FALSE WHERE name = %s", (source_name,), fetch=False)
+    elif action == "resume":
+        db.execute("UPDATE sources SET is_active = TRUE WHERE name = %s", (source_name,), fetch=False)
+    elif action == "downrank":
+        db.execute(
+            "UPDATE sources SET credibility = %s WHERE name = %s",
+            (max(0.4, round(current_cred - 0.2, 2)), source_name),
+            fetch=False,
+        )
+    elif action == "uprank":
+        db.execute(
+            "UPDATE sources SET credibility = %s WHERE name = %s",
+            (min(3.0, round(current_cred + 0.2, 2)), source_name),
+            fetch=False,
+        )
+    elif action == "reset":
+        db.execute(
+            "UPDATE sources SET credibility = %s WHERE name = %s",
+            (SOURCE_CREDIBILITY.get(source_name, DEFAULT_CREDIBILITY), source_name),
+            fetch=False,
+        )
+
+    updated = db.execute_one(
+        "SELECT name, country, category, credibility, is_active, last_fetched FROM sources WHERE name = %s",
+        (source_name,),
+    )
+    if updated:
+        updated = dict(updated)
+        updated["source_status"] = get_source_statuses().get(source_name)
+    return jsonify({"status": "success", "source": updated})
 
 @api_bp.route("/api/sources/pulse")
 def api_sources_pulse():

@@ -7,15 +7,20 @@ import { Activity, Database, RefreshCw, ServerCog, AlertTriangle } from 'lucide-
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let health = null;
+let sourceCatalog = [];
 let error = null;
 
 try {
-	const res = await fetch(`${API_URL}/health`);
-	if (res.ok) {
-		health = await res.json();
+	const [healthRes, sourceRes] = await Promise.all([
+		fetch(`${API_URL}/health`),
+		fetch(`${API_URL}/sources?include_inactive=1`),
+	]);
+	if (healthRes.ok) {
+		health = await healthRes.json();
 	} else {
 		error = "Страницата за статус не е достапна во моментов.";
 	}
+	sourceCatalog = sourceRes.ok ? await sourceRes.json() : [];
 } catch (e) {
 	console.error(e);
 	error = "Грешка при вчитување на статусот.";
@@ -23,8 +28,16 @@ try {
 
 const taskEntries = health?.tasks ? Object.values(health.tasks) : [];
 const orderedTasks = taskEntries.sort((a: any, b: any) => String(b.time || '').localeCompare(String(a.time || '')));
-const sourceEntries = health?.sources ? Object.values(health.sources) : [];
-const orderedSources = sourceEntries.sort((a: any, b: any) => String(b.time || '').localeCompare(String(a.time || '')));
+const sourceEntries = sourceCatalog.map((source: any) => ({
+	...source,
+	...(source.source_status || {}),
+}));
+const orderedSources = sourceEntries.sort((a: any, b: any) => {
+	const degradedA = a.degraded ? 1 : 0;
+	const degradedB = b.degraded ? 1 : 0;
+	if (degradedA !== degradedB) return degradedB - degradedA;
+	return String(b.time || '').localeCompare(String(a.time || ''));
+});
 
 function formatTime(value: string) {
 	try {
@@ -145,7 +158,7 @@ function qualityLabel(score: number) {
 								<div class="source-list">
 									{orderedSources.length > 0 ? (
 										orderedSources.slice(0, 8).map((source: any) => (
-											<div class="source-row">
+											<div class={`source-row ${source.degraded ? 'source-row-degraded' : ''}`} data-source-row={source.name}>
 												<div>
 													<p class="task-name">{source.source}</p>
 													<p class="task-detail">
@@ -154,11 +167,22 @@ function qualityLabel(score: number) {
 													<p class="task-detail">
 														Квалитет: {qualityLabel(source.quality_score || 0)} · {Math.round((source.acceptance_ratio || 0) * 100)}%
 													</p>
+													<p class="task-detail">
+														Статус: {source.is_active ? 'Активен' : 'Паузиран'} · Cred {Number(source.credibility || 0).toFixed(1)}
+													</p>
 													{source.error && <p class="task-detail">{source.error}</p>}
 												</div>
 												<div class="task-meta">
 													<span class={`task-badge task-${source.status}`}>{statusLabel(source.status)}</span>
 													<span class="task-time">{formatTime(source.time)}</span>
+													<div class="source-actions" data-source={source.name}>
+														<button class="source-action-btn" data-action={source.is_active ? 'pause' : 'resume'} type="button">
+															{source.is_active ? 'Пауза' : 'Продолжи'}
+														</button>
+														<button class="source-action-btn" data-action="downrank" type="button">Намали</button>
+														<button class="source-action-btn" data-action="uprank" type="button">Зголеми</button>
+														<button class="source-action-btn" data-action="reset" type="button">Ресет</button>
+													</div>
 												</div>
 											</div>
 										))
@@ -166,6 +190,15 @@ function qualityLabel(score: number) {
 										<p class="status-copy">Сè уште нема per-source ingestion статуси.</p>
 									)}
 								</div>
+							</div>
+
+							<div class="rail-card">
+								<h3 class="rail-card-title">Source controls</h3>
+								<p class="status-copy">
+									Внесете admin token за паузирање, продолжување или менување на тежината на изворите.
+								</p>
+								<input id="source-admin-token" class="source-token-input" type="password" placeholder="Admin token" />
+								<p id="source-control-feedback" class="task-detail"></p>
 							</div>
 
 							<div class="rail-card">
@@ -202,6 +235,54 @@ function qualityLabel(score: number) {
 
 	<Footer />
 </Layout>
+
+<script>
+	const feedbackEl = document.getElementById('source-control-feedback');
+	const tokenEl = document.getElementById('source-admin-token');
+
+	function setFeedback(message, isError = false) {
+		if (!feedbackEl) return;
+		feedbackEl.textContent = message;
+		feedbackEl.style.color = isError ? 'var(--nyt-red)' : 'var(--secondary-foreground)';
+	}
+
+	document.querySelectorAll('.source-actions').forEach((group) => {
+		group.addEventListener('click', async (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLButtonElement)) return;
+			const action = target.dataset.action;
+			const source = group.dataset.source;
+			const token = tokenEl instanceof HTMLInputElement ? tokenEl.value.trim() : '';
+			if (!action || !source) return;
+			if (!token) {
+				setFeedback('Внесете admin token за да продолжите.', true);
+				return;
+			}
+
+			target.disabled = true;
+			setFeedback(`Се извршува: ${action} за ${source}...`);
+			try {
+				const res = await fetch(`/api/sources/${encodeURIComponent(source)}/control`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Admin-Token': token,
+					},
+					body: JSON.stringify({ action }),
+				});
+				const data = await res.json().catch(() => ({}));
+				if (!res.ok) {
+					throw new Error(data.message || 'Контролата не успеа.');
+				}
+				setFeedback(`Успешно: ${source} → ${action}. Освежете ја страницата за новиот преглед.`);
+			} catch (error) {
+				setFeedback(error instanceof Error ? error.message : 'Контролата не успеа.', true);
+			} finally {
+				target.disabled = false;
+			}
+		});
+	});
+</script>
 
 <style>
 	.status-shell {
@@ -390,6 +471,44 @@ function qualityLabel(score: number) {
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
+	}
+
+	.source-row-degraded {
+		background: color-mix(in srgb, var(--nyt-red) 4%, transparent 96%);
+	}
+
+	.source-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.35rem;
+		margin-top: 0.35rem;
+	}
+
+	.source-action-btn,
+	.source-token-input {
+		border: 1px solid var(--border);
+		background: var(--background);
+		font-family: var(--font-sans);
+	}
+
+	.source-action-btn {
+		padding: 0.32rem 0.48rem;
+		font-size: 0.6rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.source-action-btn:disabled {
+		opacity: 0.6;
+	}
+
+	.source-token-input {
+		width: 100%;
+		padding: 0.7rem 0.8rem;
+		margin-top: 0.85rem;
+		font-size: 0.92rem;
 	}
 
 	@media (min-width: 960px) {
