@@ -15,6 +15,11 @@ declare global {
     };
     __INITIAL_BRIEFING_DATA__?: any;
     __INITIAL_STATS_DATA__?: any;
+    __INITIAL_SOURCES_DATA__?: {
+      sources: any[];
+      hot_sources: string[];
+    };
+    __INITIAL_ARCHIVE_DATA__?: any;
   }
 }
 

@@ -5,6 +5,8 @@ import { ClusterDetailPage } from './pages/ClusterDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { BriefingPage } from './pages/BriefingPage';
 import { SavedPage } from './pages/SavedPage';
+import { IzvoriPage } from './pages/IzvoriPage';
+import { ArchivePage } from './pages/ArchivePage';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/briefing" element={<BriefingPage />} />
         <Route path="/saved" element={<SavedPage />} />
+        <Route path="/izvori" element={<IzvoriPage />} />
+        <Route path="/arhiva" element={<ArchivePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

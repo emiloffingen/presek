@@ -3,93 +3,67 @@
 {% block title %}Извори | Пресек{% endblock %}
 
 {% block content %}
-<div class="page-content fade-in">
-    <header class="page-header">
-        <h1 class="nyt-title">Медиумски Именик</h1>
-        <p class="page-subtitle">Целосна листа на индексирани извори во мрежата на Пресек</p>
-        <div style="max-width: 400px; margin: var(--space-md) auto 0;">
-            <input type="text" id="sourceFilter" class="archive-date-input" style="width: 100%; border-radius: 20px; padding: 10px 16px;" placeholder="Пребарај извори...">
-        </div>
+<div class="article-wrap fade-in" style="padding-top: 2rem;">
+    <header class="mb-10 border-b-2 border-primary pb-8">
+        <span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">ИМЕНИК</span>
+        <h1 class="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
+            Медиумски Извори
+        </h1>
+        <p class="text-sm text-muted font-bold uppercase tracking-tighter">
+            Целосна листа на индексирани медиуми во мрежата на Пресек
+        </p>
     </header>
 
-    <div class="sources-directory">
-        <div>
-            <h2 class="rail-label sources-section-title">Македонски Медиуми</h2>
-            <div id="mkIzvori" class="sources-columns"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            <div id="sources-root">
+                <section class="mb-12">
+                    <h2 class="rail-label mb-6">МАКЕДОНСКИ МЕДИУМИ</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                        {% for s in sources if s.country == '🇲🇰' %}
+                        <a href="/?q={{ s.name | urlencode }}" class="text-xs font-bold text-primary no-underline hover:text-accent flex items-center gap-2 py-1 border-b border-color">
+                            {{ s.name }}
+                            {% if s.name in hot_sources %}
+                                <span class="text-[8px] bg-accent text-white px-1 rounded-sm animate-pulse">HOT</span>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="rail-label mb-6">МЕЃУНАРОДНИ МЕДИУМИ</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                        {% for s in sources if s.country != '🇲🇰' %}
+                        <a href="/?q={{ s.name | urlencode }}" class="text-xs font-bold text-primary no-underline hover:text-accent flex items-center gap-2 py-1 border-b border-color">
+                            {{ s.name }}
+                            <span class="opacity-50 grayscale">{{ s.country }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
         </div>
-        <div>
-            <h2 class="rail-label sources-section-title">Меѓународни Медиуми</h2>
-            <div id="intIzvori" class="sources-columns"></div>
-        </div>
+
+        <aside class="lg:col-span-4">
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ИНФОРМАЦИЈА</h3>
+                <p class="text-[11px] leading-relaxed text-muted italic">
+                    Пресек ги индексира само најрелевантните и најкредибилните извори. Листата постојано се ажурира врз основа на активноста на медиумите.
+                </p>
+            </div>
+            {% include "partials/sidebar_right.html" %}
+        </aside>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<script id="sources-initial-data" type="application/json">
+    {
+        "sources": {{ sources | tojson | safe if sources else '[]' }},
+        "hot_sources": {{ hot_sources | tojson | safe if hot_sources else '[]' }}
+    }
+</script>
 <script>
-const mk = [
-    "Sloboden Pecat","Kanal 5","MIA","Sitel","Telma","Kurir",
-    "Republika","Fokus","Nezavisen","Faktor","Vecer","Meta",
-    "360 Stepeni","Makfax","Nova Makedonija","Infomax","Press24",
-    "Skopje1","Plusinfo","Lokalno","4News","Makpress","Vistinomer",
-    "Lider","MKD","NetPress","Akademik","Skopje Info",
-    "Prizma","Expres","Tetovo Info","A1on","SportSport",
-    "Strumica Info","24 Вести","TV21","Слободна Европа",
-    "Deutsche Welle","Civil Media","Радио МОФ",
-    "Сакам да кажам","Бизнис Вести","Ohrid News","Vecer Sport",
-    "Ekonomija","Zdravje","MRT","Time.mk","Kolumna","Okno",
-    "Alfa TV","Tocka","IRL","Nova TV","Libertas","Racin",
-    "Kajgana","Pari.com.mk","Bloomberg Adria","E-Magazin",
-    "IT.mk","Sportmanija","Fakulteti","Magazin"
-];
-
-const diaspora = [
-    "Tagesschau","Der Spiegel","ZDF Heute","Süddeutsche Zeitung","Die Zeit",
-    "SRF News","20 Minuten","CNN","NPR","Reuters","CBC News",
-    "Fox News","BBC News","The Guardian","France24","EuroNews",
-    "Politico Europe","ABC Australia","Al Jazeera","SCMP","NHK World",
-    "Times of India","RFI English","ANSA","RTVSLO","ORF","SVT News",
-    "N1 Info","B92","Kurir.rs","Blic.rs","Novinite","Dnevnik.bg",
-    "Kathimerini","RTS","FAZ","Swissinfo","AP News","The Verge",
-    "Ars Technica","TechCrunch","Axios","ESPN","Exit News",
-    "Balkan Insight","Daily Sabah","TRT World",
-    "Index.hr","Jutarnji","Klix.ba","Vijesti.me"
-];
-
-let hotSources = new Set();
-
-function renderLists(filter = '') {
-    const term = filter.toLowerCase();
-    
-    const mkFiltered = mk.filter(s => s.toLowerCase().includes(term)).sort();
-    const intFiltered = diaspora.filter(s => s.toLowerCase().includes(term)).sort();
-
-    document.getElementById('mkIzvori').innerHTML = mkFiltered.length ? mkFiltered.map(name => `
-        <a href="/izvor/${encodeURIComponent(name)}" class="source-link">
-            <span>${name} ${hotSources.has(name) ? '<span class="src-badge pulse" style="margin-left:4px;">HOT</span>' : ''}</span>
-        </a>`).join('') : '<span style="color:var(--text-muted);font-size:0.8rem;">Нема резултати</span>';
-
-    document.getElementById('intIzvori').innerHTML = intFiltered.length ? intFiltered.map(name => `
-        <a href="/izvor/${encodeURIComponent(name)}" class="source-link">
-            <span>${name}</span>
-        </a>`).join('') : '<span style="color:var(--text-muted);font-size:0.8rem;">Нема резултати</span>';
-}
-
-document.getElementById('sourceFilter').addEventListener('input', (e) => {
-    renderLists(e.target.value);
-});
-
-async function loadPulse() {
-    try {
-        const res = await fetch('/api/sources/pulse');
-        const data = await res.json();
-        // Mark top 5 sources as HOT
-        (data || []).slice(0, 5).forEach(r => hotSources.add(r.source));
-    } catch (e) {}
-    renderLists();
-}
-
-renderLists();
-loadPulse();
+    window.__INITIAL_SOURCES_DATA__ = JSON.parse(document.getElementById('sources-initial-data').textContent);
 </script>
 {% endblock %}

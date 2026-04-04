@@ -3,91 +3,73 @@
 {% block title %}Архива | Пресек{% endblock %}
 
 {% block content %}
-<div class="page-content fade-in">
-    <header class="page-header-left">
-        <h1 class="nyt-title">Архива на вести</h1>
-        <div class="archive-controls">
-            <span class="archive-date-label">Избери датум:</span>
-            <input type="date" id="archiveDate" class="archive-date-input" onchange="fetchArchive(true)">
-            <span id="archiveStats" class="archive-stats-label"></span>
+<div class="article-wrap fade-in" style="padding-top: 2rem;">
+    <header class="mb-10 border-b-2 border-primary pb-8">
+        <span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">АРХИВА</span>
+        <h1 class="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
+            Архива на вести
+        </h1>
+        <div class="flex flex-wrap items-center gap-6 mt-6">
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] font-black uppercase text-muted">Избери датум:</span>
+                <input type="date" id="archive-date-picker" 
+                       value="{{ initial_archive.date if initial_archive else now().strftime('%Y-%m-%d') }}"
+                       class="bg-secondary border border-color px-3 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent">
+            </div>
+            {% if initial_archive %}
+            <div class="flex items-center gap-4 text-[10px] font-black uppercase text-muted">
+                <span>{{ initial_archive.total }} вести</span>
+                <span>·</span>
+                <span>{{ initial_archive.sources }} извори</span>
+            </div>
+            {% endif %}
         </div>
     </header>
 
-    <div id="archiveList" class="archive-list">
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
-    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            <div id="archive-root">
+                {% if initial_archive and initial_archive.articles %}
+                    <div class="space-y-1">
+                        {% for a in initial_archive.articles %}
+                        <a href="{{ a.link }}" target="_blank" rel="noopener" class="flex items-center gap-4 py-3 border-b border-color no-underline group">
+                            <span class="text-[10px] font-bold text-muted tabular-nums w-10 shrink-0">{{ a.created_at | format_time }}</span>
+                            <span class="text-[10px] font-black uppercase text-accent w-24 shrink-0 truncate">{{ a.source }}</span>
+                            <span class="text-sm font-serif font-bold text-primary group-hover:text-accent transition-colors leading-tight">{{ a.title }}</span>
+                            <span class="ml-auto text-muted group-hover:text-accent transition-colors text-xs">↗</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if initial_archive.has_more %}
+                    <div class="mt-10 py-10 border-t border-color text-center">
+                        <p class="text-muted text-xs font-bold uppercase">Вчитајте го Пресек за целосна навигација низ архивата</p>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="py-20 text-center bg-secondary">
+                        <p class="text-muted text-sm font-bold uppercase">НЕМА ПРОНАЈДЕНИ ВЕСТИ ЗА ОВОЈ ДАТУМ</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
 
-    <div class="pagination-row">
-        <button id="prevBtn" class="pag-btn" onclick="changePage(-1)" disabled>← Претходна</button>
-        <span id="pageInfo" class="page-label">СТРАНА 1</span>
-        <button id="nextBtn" class="pag-btn" onclick="changePage(1)" disabled>Следна →</button>
+        <aside class="lg:col-span-4">
+            <div class="rail-widget border-t-2 border-primary">
+                <h3 class="rail-label">ИНФОРМАЦИЈА</h3>
+                <p class="text-[11px] leading-relaxed text-muted italic">
+                    Архивата ги содржи сите индексирани вести во последните 30 дена. Користете го календарот за пребарување по специфичен датум.
+                </p>
+            </div>
+            {% include "partials/sidebar_right.html" %}
+        </aside>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<script id="archive-initial-data" type="application/json">
+    {{ initial_archive | tojson | safe if initial_archive else 'null' }}
+</script>
 <script>
-let currentPage = 0;
-const pageSize  = 50;
-
-document.getElementById('archiveDate').valueAsDate = new Date();
-
-async function fetchArchive(resetPage) {
-    if (resetPage) currentPage = 0;
-    const date  = document.getElementById('archiveDate').value;
-    const list  = document.getElementById('archiveList');
-    const stats = document.getElementById('archiveStats');
-
-    list.innerHTML = `
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>
-        <div class="skeleton-box" style="height:60px;width:100%;margin-bottom:1px"></div>`;
-
-    try {
-        const res  = await fetch(`/api/archive?date=${date}&page=${currentPage}&page_size=${pageSize}`);
-        const data = await res.json();
-
-        if (!data.articles || data.articles.length === 0) {
-            list.innerHTML = '<div class="loading-state" style="padding:80px 0;">Нема пронајдени вести за овој датум.</div>';
-            stats.textContent = '';
-            document.getElementById('prevBtn').disabled = true;
-            document.getElementById('nextBtn').disabled = true;
-            return;
-        }
-
-        stats.textContent = `${data.total.toLocaleString()} вести · ${data.sources} извори`;
-
-        list.innerHTML = data.articles.map(a => {
-            const time = new Date(a.created_at).toLocaleTimeString('mk-MK', {hour:'2-digit', minute:'2-digit'});
-            return `
-                <a href="${a.link}" target="_blank" rel="noopener" class="archive-row-nyt fade-in">
-                    <div class="main-info">
-                        <span class="ar-time">${time}</span>
-                        <span class="ar-source">${a.source}</span>
-                        <span class="ar-title">${a.title}</span>
-                    </div>
-                    <span class="archive-arrow">↗</span>
-                </a>`;
-        }).join('');
-
-        document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = !data.has_more;
-        document.getElementById('pageInfo').textContent = `СТРАНА ${currentPage + 1}`;
-
-    } catch (e) {
-        console.error(e);
-        list.innerHTML = '<div class="loading-state" style="padding:80px 0;color:var(--primary);">Грешка при вчитување.</div>';
-    }
-}
-
-function changePage(delta) {
-    currentPage += delta;
-    fetchArchive();
-    window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-fetchArchive();
+    window.__INITIAL_ARCHIVE_DATA__ = JSON.parse(document.getElementById('archive-initial-data').textContent);
 </script>
 {% endblock %}

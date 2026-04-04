@@ -73,7 +73,39 @@ def saved_page():
 
 @views_bp.route("/izvori")
 def izvori_page():
-    return render_template("izvori.html", year=datetime.datetime.now().year)
+    # Fetch all active sources
+    sources = []
+    try:
+        rows = db.execute("SELECT name, country, category FROM sources WHERE is_active = TRUE ORDER BY name ASC")
+        sources = [dict(r) for r in rows]
+    except Exception as e:
+        current_app.logger.warning(f"Sources SSR Error: {e}")
+
+    # Fetch hot sources (pulse)
+    hot_sources = []
+    try:
+        pulse_rows = db.execute(
+            "SELECT source, COUNT(*) as n FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "GROUP BY source ORDER BY n DESC LIMIT 10"
+        )
+        hot_sources = [r['source'] for r in pulse_rows]
+    except Exception as e:
+        current_app.logger.warning(f"Pulse SSR Error: {e}")
+
+    # Fetch trending for sidebar
+    trending = []
+    try:
+        from trending import get_trending
+        trending = get_trending(hours=6, limit=10)
+    except Exception as e:
+        current_app.logger.warning(f"Trending SSR Error: {e}")
+
+    return render_template("izvori.html", 
+                           sources=sources, 
+                           hot_sources=hot_sources,
+                           initial_trending=trending,
+                           year=datetime.datetime.now().year)
 
 @views_bp.route("/stats")
 def stats_page():
@@ -108,7 +140,50 @@ def stats_page():
 
 @views_bp.route("/arhiva")
 def archive_page():
-    return render_template("archive.html", year=datetime.datetime.now().year)
+    # Fetch today's articles for the initial view
+    today = datetime.date.today().isoformat()
+    archive_data = None
+    try:
+        from routes.api import api_archive
+        # We'll just manually fetch for SSR to avoid complex route calls
+        page_size = 50
+        rows = db.execute(
+            "SELECT id, title, source, link, created_at FROM articles "
+            "WHERE created_at::date = %s "
+            "ORDER BY created_at DESC LIMIT %s",
+            (today, page_size)
+        )
+        total = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE created_at::date = %s",
+            (today,)
+        )["count"]
+        sources_count = db.execute_one(
+            "SELECT COUNT(DISTINCT source) FROM articles WHERE created_at::date = %s",
+            (today,)
+        )["count"]
+        
+        archive_data = {
+            "articles": [dict(r) for r in rows],
+            "total": total,
+            "sources": sources_count,
+            "date": today,
+            "has_more": total > page_size
+        }
+    except Exception as e:
+        current_app.logger.warning(f"Archive SSR Error: {e}")
+
+    # Fetch trending for sidebar
+    trending = []
+    try:
+        from trending import get_trending
+        trending = get_trending(hours=6, limit=10)
+    except Exception as e:
+        current_app.logger.warning(f"Trending SSR Error: {e}")
+
+    return render_template("archive.html", 
+                           initial_archive=archive_data, 
+                           initial_trending=trending,
+                           year=datetime.datetime.now().year)
 
 @views_bp.route("/briefing")
 def briefing_page():

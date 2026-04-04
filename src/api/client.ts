@@ -76,6 +76,24 @@ class ApiClient {
     }
   }
 
+  async getSources(): Promise<any[]> {
+    try {
+      const response = await this.client.get<any[]>('/api/sources');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getArchive(params: { date: string; page: number; page_size: number }): Promise<any> {
+    try {
+      const response = await this.client.get('/api/archive', { params });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getStats(): Promise<{ status: string; data: Stats }> {
     try {
       const response = await this.client.get('/api/stats');

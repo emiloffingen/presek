@@ -427,6 +427,16 @@ def api_trending():
         log.warning(f"[api/trending] {e}")
         return jsonify([])
 
+@api_bp.route("/api/sources")
+def api_sources():
+    """Return all active sources with metadata."""
+    try:
+        rows = db.execute("SELECT name, country, category, credibility FROM sources WHERE is_active = TRUE ORDER BY name ASC")
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        log.error(f"[api/sources] {e}")
+        return error_response("Failed to fetch sources")
+
 @api_bp.route("/api/sources/pulse")
 def api_sources_pulse():
     """Return top MK sources by article count in last 24h."""
