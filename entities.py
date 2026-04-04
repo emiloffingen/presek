@@ -105,25 +105,30 @@ IGNORE_WORDS = {
     "Поради", "Заради", "Иако", "Освен", "Меѓутоа", "Сепак", "Затоа",
 }
 
-def update_knowledge_graph(entities: list[dict]):
+def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
     Updates the global knowledge graph with seen entities and their relationships.
+    Includes local sentiment analysis if context_text is provided.
     """
     from database import db_manager as db
+    from local_nlp import analyze_sentiment_locally
     import json
 
     if not entities: return
 
+    sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
+
     # 1. Upsert Entities
     for ent in entities:
         sql = """
-            INSERT INTO knowledge_entities (name, type, total_mentions, last_seen)
-            VALUES (%s, %s, 1, CURRENT_TIMESTAMP)
+            INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
+            VALUES (%s, %s, 1, CURRENT_TIMESTAMP, %s)
             ON CONFLICT (name) DO UPDATE SET
                 total_mentions = knowledge_entities.total_mentions + 1,
-                last_seen = EXCLUDED.last_seen
+                last_seen = EXCLUDED.last_seen,
+                sentiment_score = (knowledge_entities.sentiment_score * 0.7) + (EXCLUDED.sentiment_score * 0.3)
         """
-        db.execute(sql, (ent['name'], ent['type']), fetch=False)
+        db.execute(sql, (ent['name'], ent['type'], sentiment), fetch=False)
 
     # 2. Build Relationships (Co-occurrence)
     if len(entities) > 1:

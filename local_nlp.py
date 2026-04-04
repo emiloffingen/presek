@@ -5,7 +5,80 @@ from collections import Counter
 # Reuse stopwords from your trending logic
 from trending import STOPWORDS
 
+# Simple Macedonian Lexicon for Sentiment (Positive / Negative)
+# This is a starter list that can be expanded.
+SENTIMENT_LEXICON = {
+    # Positive
+    "добро": 1.0, "одлично": 2.0, "супер": 2.0, "успех": 1.5, "напредок": 1.5,
+    "победа": 2.0, "развој": 1.0, "раст": 1.0, "стабилност": 1.0, "безбедност": 1.0,
+    "хуманост": 1.5, "правда": 1.5, "слобода": 1.5, "демократија": 1.0, "поддршка": 1.0,
+    "помош": 1.0, "решение": 1.5, "просперитет": 2.0, "мир": 2.0, "радост": 1.5,
+    
+    # Negative
+    "лошо": -1.0, "катастрофа": -2.0, "криза": -1.5, "проблем": -1.0, "скандал корупција": -2.0,
+    "напад": -1.5, "војна": -2.0, "смрт": -2.0, "убиство": -2.0, "затвор": -1.5,
+    "кражба": -1.5, "криминал": -2.0, "криминалци": -2.0, "корупција": -2.0, "неуспех": -1.5,
+    "патека": -0.5, "порано": -0.5, "порака": -0.5, "порази": -1.5, "поразот": -1.5,
+    "загуба": -1.5, "критикува": -1.0, "осудува": -1.5, "неправда": -1.5, "хаос": -1.5,
+    "смртност": -2.0, "болест": -1.5, "штета": -1.5, "закана": -1.5, "бомба": -2.0,
+}
+
+def analyze_sentiment_locally(text):
+    """
+    Returns a score between -2.0 and 2.0 based on keyword frequency.
+    """
+    if not text: return 0.0
+    
+    words = re.findall(r'[а-шА-Ш\w]{3,}', text.lower())
+    score = 0
+    matches = 0
+    
+    for w in words:
+        if w in SENTIMENT_LEXICON:
+            score += SENTIMENT_LEXICON[w]
+            matches += 1
+            
+    if matches == 0: return 0.0
+    
+    # Normalize by matches but cap at 2.0
+    final_score = score / matches
+    return max(-2.0, min(2.0, final_score))
+
+def extract_keyphrases_locally(text, top_n=5):
+    """
+    Extracts high-value phrases without AI using word frequency and co-occurrence.
+    """
+    if not text: return []
+    
+    # Simple word counting excluding stopwords
+    words = re.findall(r'[а-шА-Ш\w]{4,}', text.lower())
+    words = [w for w in words if w not in STOPWORDS]
+    
+    # Multi-word candidate search (Bigrams)
+    raw_sentences = re.split(r'[.!?]\s*', text.lower())
+    bigrams = []
+    for sent in raw_sentences:
+        sent_words = re.findall(r'[а-шА-Ш\w]{3,}', sent)
+        sent_words = [w for w in sent_words if w not in STOPWORDS]
+        for i in range(len(sent_words) - 1):
+            bigrams.append(f"{sent_words[i]} {sent_words[i+1]}")
+            
+    word_counts = Counter(words)
+    bigram_counts = Counter(bigrams)
+    
+    # Combine and score (bias towards bigrams)
+    candidates = {}
+    for word, count in word_counts.items():
+        candidates[word] = count
+    for bigram, count in bigram_counts.items():
+        if count > 1: # Only if it appears twice
+            candidates[bigram] = count * 2.5
+            
+    sorted_phrases = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
+    return [p[0] for p in sorted_phrases[:top_n]]
+
 def summarize_locally(text, sentence_count=3):
+...
     """
     Non-AI Summarizer: Scores sentences based on word frequency.
     Works entirely locally and is very fast.

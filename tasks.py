@@ -138,7 +138,8 @@ def extract_entities_task():
             
             if entities:
                 from entities import update_knowledge_graph
-                update_knowledge_graph(entities)
+                # Pass context text for local sentiment calculation
+                update_knowledge_graph(entities, context_text=text)
 
             for ent in entities:
                 db.execute(
@@ -217,9 +218,10 @@ def run_prune_db():
 def generate_cluster_metadata_task():
     """Tag recent clusters with metadata (entities, source count, and representative image)."""
     try:
+        from local_nlp import extract_keyphrases_locally
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
-            SELECT cluster_id, array_agg(DISTINCT source) as sources
+            SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles
             FROM articles WHERE created_at >= %s
             GROUP BY cluster_id HAVING COUNT(*) >= 2
         """, (cutoff,))
@@ -227,10 +229,16 @@ def generate_cluster_metadata_task():
             # 1. Fetch entities for this cluster to use as high-quality tags
             entities = db.execute("SELECT entity_name FROM cluster_entities WHERE cluster_id = %s", (r['cluster_id'],))
             tags = [e['entity_name'] for e in entities]
-            if not tags:
-                tags = r['sources']
             
-            # 2. Representative Image Selection
+            # 2. Local Keyphrase Extraction (Free AI alternative for SEO tags)
+            combined_text = " ".join(r['titles'])
+            keyphrases = extract_keyphrases_locally(combined_text, top_n=3)
+            
+            final_tags = list(set(tags + keyphrases))
+            if not final_tags:
+                final_tags = r['sources']
+            
+            # 3. Representative Image Selection
             # We ONLY use images that belong to this specific cluster.
             # Using fallbacks from "similar clusters" causes massive duplication.
             img_row = db.execute_one(
@@ -246,7 +254,7 @@ def generate_cluster_metadata_task():
                    tags = EXCLUDED.tags, 
                    representative_image = EXCLUDED.representative_image,
                    updated_at = NOW()""",
-                (r['cluster_id'], tags, rep_image), fetch=False
+                (r['cluster_id'], final_tags, rep_image), fetch=False
             )
     except Exception as e:
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
