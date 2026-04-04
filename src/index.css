@@ -190,6 +190,20 @@
   @apply ml-5 mb-2 list-disc;
 }
 
+/* Theme toggle icons */
+.theme-toggle .sun {
+  display: block;
+}
+.theme-toggle .moon {
+  display: none;
+}
+.dark .theme-toggle .sun {
+  display: none;
+}
+.dark .theme-toggle .moon {
+  display: block;
+}
+
 /* Breaking news pulse */
 @keyframes breaking-pulse {
   0%, 100% { opacity: 1; }

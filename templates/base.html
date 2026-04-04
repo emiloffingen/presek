@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="mk">
+<html lang="mk" class="{% if request.cookies.get('theme', 'dark') == 'dark' %}dark{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="view-transition" content="same-origin">
-    <meta name="theme-color" id="themeMeta" content="#FFFFFF">
+    <meta name="theme-color" id="themeMeta" content="#0f1117">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/static/manifest.json">
@@ -20,6 +20,19 @@
     <title>{% block title %}Пресек{% endblock %}</title>
     <meta http-equiv="Cache-Control" content="no-transform">
     {{ vite_asset('style.css') }}
+
+    <script data-cfasync="false">
+        (function() {
+            const saved = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = saved === 'dark' || (!saved && prefersDark);
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
 
     <script data-cfasync="false" type="speculationrules">
     {
@@ -39,7 +52,17 @@
     </script>
     {% block head %}{% endblock %}
 </head>
-<body class="{% if request.cookies.get('theme') == 'light' %}light{% endif %}">
+<body>
+    <script>
+        // Inline script to handle theme toggle before content renders
+        function updateThemeMeta(isDark) {
+            const meta = document.getElementById('themeMeta');
+            if (meta) meta.content = isDark ? '#0f1117' : '#FFFFFF';
+        }
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        updateThemeMeta(isDark);
+    </script>
     <a href="#pageWrap" class="visually-hidden">Прескокни до содржина</a>
     <div id="readingProgress"></div>
     
@@ -243,6 +266,20 @@
     {{ vite_asset('main.js') }}
     {% block scripts %}{% endblock %}
     <script data-cfasync="false">
+      // Theme Toggle Handler
+      document.getElementById('themeToggle')?.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        document.cookie = `theme=${isDark ? 'dark' : 'light'}; path=/; max-age=31536000; SameSite=Lax`;
+        
+        // Update theme color meta
+        const meta = document.getElementById('themeMeta');
+        if (meta) meta.content = isDark ? '#0f1117' : '#FFFFFF';
+        
+        // Dispatch event for React if needed
+        window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: isDark ? 'dark' : 'light' } }));
+      });
+
       // Global error handler for debugging
       window.addEventListener('error', e => {
         console.error('Uncaught error:', e.error);

@@ -118,16 +118,17 @@ def vite_assets():
             with open(VITE_MANIFEST_PATH, "r") as f:
                 manifest = json.load(f)
             
+            # The manifest entry for the root index.html contains all assets
+            entry = manifest.get('index.html')
+            if not entry: return ""
+
             if entry_name == 'main.js':
-                # Check for both .js and .tsx in manifest
-                asset = manifest.get('js/main.js') or manifest.get('main.tsx') or manifest.get('js/main.tsx')
-                if not asset: return ""
-                return Markup(f'<script type="module" src="/static/dist/{asset["file"]}"></script>')
+                return Markup(f'<script type="module" src="/static/dist/{entry["file"]}"></script>')
             
             if entry_name == 'style.css':
-                asset = manifest.get('css/style.css')
-                if not asset: return ""
-                return Markup(f'<link rel="stylesheet" href="/static/dist/{asset["file"]}">')
+                css_files = entry.get('css', [])
+                if not css_files: return ""
+                return Markup(f'<link rel="stylesheet" href="/static/dist/{css_files[0]}">')
         except (FileNotFoundError, json.JSONDecodeError):
             # Fallback to legacy static if manifest is missing
             if entry_name == 'main.js':

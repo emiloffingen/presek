@@ -74,7 +74,24 @@ info "Cleaning up old processes..."
 screen -S "$SESSION" -X quit 2>/dev/null
 # Also kill any stray gunicorn processes holding the port
 pkill -f "gunicorn.*app:app" 2>/dev/null || true
-sleep 3
+
+# Wait for port 5000 to be free (up to 10 seconds)
+info "Ensuring port 5000 is free..."
+for i in {1..10}; do
+  if ! (ss -lptn 'sport = :5000' | grep -q '5000'); then
+    ok "Port 5000 is free"
+    break
+  fi
+  warn "Port 5000 still in use, waiting..."
+  sleep 1
+done
+
+# If still in use, try more aggressive kill
+if (ss -lptn 'sport = :5000' | grep -q '5000'); then
+    warn "Port 5000 still in use, trying aggressive kill..."
+    fuser -k 5000/tcp 2>/dev/null || true
+    sleep 2
+fi
 
 # ── Init DB schema ───────────────────────────────────────────────
 info "Verifying database schema..."
