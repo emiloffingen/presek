@@ -1,0 +1,76 @@
+---
+import SearchIsland from './SearchIsland';
+import ThemeIsland from './ThemeIsland';
+
+interface Props {
+    category?: string | null;
+    topic?: string | null;
+    q?: string | null;
+}
+
+const { category, topic, q } = Astro.props;
+
+const currentDate = new Date().toLocaleDateString('mk-MK', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+});
+
+const navItems = [
+    { label: "Македонија", params: { category: "Македонија" } },
+    { label: "Балкан", params: { category: "Балкан" } },
+    { label: "Европа", params: { category: "Европа" } },
+    { label: "Свет", params: { category: "Свет" } },
+    { label: "Влада", params: { q: "Влада" } },
+    { label: "Економија", params: { topic: "Економија" } },
+    { label: "Спорт", params: { topic: "Спорт" } },
+    { label: "Технологија", params: { topic: "Технологија" } },
+];
+---
+
+<header class="site-layout py-4 border-b border-nyt-gray-300">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <SearchIsland client:load />
+            <span class="nyt-section-label hidden md:inline-block border-l pl-4 border-nyt-gray-300">{currentDate}</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <a href="/briefing" class="nyt-section-label text-nyt-accent hover:underline">Дневен Брифинг</a>
+            <a href="/stats" class="nyt-section-label text-nyt-accent hover:underline">Медиумски Пулс</a>
+            <ThemeIsland client:load />
+        </div>
+    </div>
+</header>
+
+<div class="site-layout py-8 text-center border-b-4 border-double border-nyt-black mb-2">
+    <div class="flex flex-col items-center">
+        <div class="flex items-end gap-2 mb-2">
+            <img src="/img/presek_emblem.svg" alt="Presek Emblem" class="site-emblem h-10 site-logo" />
+            <a href="/" class="block">
+                <img src="/logo.svg" alt="Presek" class="site-logo h-16 md:h-20" />
+            </a>
+        </div>
+        <p class="font-serif italic text-xs tracking-wide text-nyt-gray-600">Интелигентна агрегација на вести во реално време</p>
+    </div>
+</div>
+
+<nav class="site-layout border-b border-nyt-black py-2 mb-8 hidden lg:block overflow-x-auto">
+    <ul class="flex justify-center gap-8 list-none p-0 whitespace-nowrap">
+        {navItems.map(item => {
+            const searchStr = new URLSearchParams(item.params as any).toString();
+            const isActive = (category === item.params.category && item.params.category) || 
+                             (topic === item.params.topic && item.params.topic) ||
+                             (q === item.params.q && item.params.q);
+            
+            return (
+                <li>
+                    <a href={`/?${searchStr}`} class={`nyt-section-label no-underline hover:underline ${isActive ? 'text-nyt-red font-black' : 'text-nyt-black'}`}>
+                        {item.label}
+                    </a>
+                </li>
+            );
+        })}
+    </ul>
+</nav>

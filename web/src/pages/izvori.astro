@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SearchIsland from '../components/SearchIsland';
+import ThemeIsland from '../components/ThemeIsland';
+import IzvoriPage from '../components/IzvoriPage';
+import Footer from '../components/Footer.astro';
+import { ArrowLeft } from 'lucide-react';
+---
+
+<Layout title="Извори">
+	<header class="site-layout py-6 border-b border-nyt flex items-center justify-between">
+		<a href="/" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-accent transition">
+			<ArrowLeft size={14} /> Назад
+		</a>
+		
+		<a href="/" class="absolute left-1/2 -translate-x-1/2">
+			<img src="/logo.svg" alt="Presek" class="site-logo h-10" />
+		</a>
+
+		<div class="flex items-center gap-2">
+			<SearchIsland client:load />
+			<ThemeIsland client:load />
+		</div>
+	</header>
+
+	<main class="site-layout py-12">
+		<IzvoriPage client:load />
+	</main>
+	<Footer />
+</Layout>

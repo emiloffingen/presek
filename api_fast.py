@@ -265,6 +265,46 @@ async def get_briefing():
         log.error(f"FastAPI Briefing Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch briefing")
 
+@app.get("/api/archive")
+async def get_archive(
+    date: str = Query(...),
+    page: int = 0,
+    page_size: int = 50
+):
+    """Return a flat list of articles for a specific date."""
+    try:
+        # Validate date format
+        datetime.datetime.strptime(date, '%Y-%m-%d')
+        
+        offset = page * page_size
+        sql = """
+            SELECT id, cluster_id, title, link, source, category, summary, created_at
+            FROM articles 
+            WHERE created_at::date = %s
+            ORDER BY created_at DESC
+            LIMIT %s OFFSET %s
+        """
+        rows = db.execute(sql, (date, page_size + 1, offset))
+        
+        has_more = len(rows) > page_size
+        articles = [dict(r) for r in rows[:page_size]]
+        
+        total = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at::date = %s", (date,))["count"]
+        sources = db.execute_one("SELECT COUNT(DISTINCT source) FROM articles WHERE created_at::date = %s", (date,))["count"]
+
+        return {
+            "status": "success",
+            "date": date,
+            "articles": articles,
+            "total": total,
+            "sources": sources,
+            "page": page,
+            "has_more": has_more
+        }
+    except Exception as e:
+        log.error(f"FastAPI Archive Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/stats")
 async def get_stats():
     try:
@@ -355,6 +395,18 @@ async def get_stats_full():
     except Exception as e:
         log.error(f"FastAPI Stats Full Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
+
+@app.get("/api/sources")
+async def get_sources():
+    """Return all known sources from articles."""
+    try:
+        rows = db.execute(
+            "SELECT DISTINCT source, country, category FROM articles ORDER BY source ASC"
+        )
+        return [dict(r) for r in rows]
+    except Exception as e:
+        log.warning(f"FastAPI Sources Error: {e}")
+        return []
 
 @app.get("/api/sources/pulse")
 async def get_sources_pulse():

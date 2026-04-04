@@ -11,7 +11,7 @@ const main = cluster.articles[0];
 const thumb = cluster.representative_image || cluster.articles.find((a: any) => a.image_url)?.image_url;
 const thumbSrc = thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : null;
 
-// Simple relative time for SSR
+// Relative time format
 function getTimeStr(dateStr: string) {
     try {
         const date = new Date(dateStr);
@@ -22,208 +22,192 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["news-cluster", { "lead-story": isLead }]}>
-	{thumbSrc && (
-		<div class="cluster-thumb-wrap">
-			<a href={`/cluster/${cluster.cluster_id}`}>
-				<img 
-					src={thumbSrc} 
-					alt={main.title} 
-					class="cluster-thumb" 
-					loading={isLead ? "eager" : "lazy"}
-				/>
-			</a>
-		</div>
-	)}
-
-	<div class="cluster-main">
-		<div class="cluster-meta">
-			<span class="text-accent">{main.source}</span>
-			<span class="dot">·</span>
-			<span>{getTimeStr(main.created_at)}</span>
-			{cluster.is_breaking && (
-				<span class="breaking-dot">● LIVE</span>
-			)}
+<article class:list={["nyt-article", { "lead-story": isLead }]}>
+	<div class="article-body">
+		<div class="article-meta">
+			<span class="source-label">{main.source}</span>
+			{cluster.is_breaking && <span class="breaking-label">LIVE</span>}
 		</div>
 
-		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link">
-			<h2 class:list={["cluster-headline", isLead ? "text-lead" : "text-standard"]}>
+		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
+			<h2 class:list={["headline", isLead ? "text-3xl md:text-4xl" : "text-xl"]}>
 				{main.title}
 			</h2>
 		</a>
 
 		{main.description && (
-			<p class="cluster-excerpt">
-				{main.description.length > (isLead ? 200 : 120) 
-					? main.description.substring(0, isLead ? 200 : 120) + "..." 
+			<p class="summary">
+				{main.description.length > (isLead ? 250 : 140) 
+					? main.description.substring(0, isLead ? 250 : 140) + "..." 
 					: main.description}
 			</p>
 		)}
 
-		{isLead && cluster.articles.length > 1 && (
-			<div class="lead-sub-headlines">
-				{cluster.articles.slice(1, 4).map((sub: any) => (
-					<div class="sub-h-item">
-						<span class="sub-source">{sub.source}:</span>
-						<a href={`/cluster/${cluster.cluster_id}`} class="sub-link">
-							{sub.title}
-						</a>
-					</div>
-				))}
-			</div>
-		)}
+        {isLead && cluster.articles.length > 1 && (
+            <ul class="sub-headlines">
+                {cluster.articles.slice(1, 4).map((sub: any) => (
+                    <li>
+                        <a href={`/cluster/${cluster.cluster_id}`}>
+                            {sub.title}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        )}
 
-		{/* Entity Tags for Intelligence */}
-		{cluster.entities && cluster.entities.length > 0 && (
-			<div class="entity-tags">
-				{cluster.entities.slice(0, 3).map((name: string) => (
-					<a href={`/entity/${encodeURIComponent(name)}`} class="entity-tag">
-						{name}
-					</a>
-				))}
-			</div>
-		)}
-
-		<div class="cluster-meta footer-meta">
-			<span>{cluster.articles.length} извори анализирани</span>
+		<div class="footer-meta">
+			<span>{getTimeStr(main.created_at)}</span>
+			<span class="dot">·</span>
+			<span>{cluster.articles.length} извори</span>
 		</div>
 	</div>
+
+	{thumbSrc && (
+		<div class="image-wrap">
+			<a href={`/cluster/${cluster.cluster_id}`}>
+				<img 
+					src={thumbSrc} 
+					alt={main.title} 
+					class="article-image" 
+					loading={isLead ? "eager" : "lazy"}
+                    onerror="this.onerror=null; this.src='/img/placeholder.svg';"
+				/>
+			</a>
+            {isLead && main.image_caption && (
+                <p class="image-caption">{main.image_caption}</p>
+            )}
+		</div>
+	)}
 </article>
 
 <style>
-	.news-cluster {
+	.nyt-article {
 		display: flex;
-		flex-direction: column;
+		flex-direction: column-reverse;
 		gap: 1rem;
-		padding-bottom: 2rem;
-		border-bottom: 1px solid var(--border-color);
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--border);
 	}
 
-	.cluster-thumb {
-		width: 100%;
-		aspect-ratio: 16 / 9;
-		object-fit: cover;
-		border-radius: 2px;
-		filter: grayscale(20%);
-		transition: filter 0.3s ease;
+    @media (min-width: 768px) {
+        .lead-story {
+            flex-direction: row;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        .lead-story .article-body {
+            flex: 1;
+        }
+        .lead-story .image-wrap {
+            flex: 1.5;
+        }
+    }
+
+	.headline {
+		font-family: var(--font-serif);
+		line-height: 1.1;
+		margin-bottom: 0.5rem;
+		color: var(--foreground);
+        font-weight: 800;
 	}
 
-	.news-cluster:hover .cluster-thumb {
-		filter: grayscale(0%);
+    .headline-link:hover .headline {
+        color: var(--color-nyt-gray-600);
+    }
+
+	.summary {
+		font-family: var(--font-nyt-body);
+		font-size: 0.95rem;
+		line-height: 1.4;
+		color: var(--secondary-foreground);
+		margin-bottom: 1rem;
 	}
 
-	.cluster-meta {
+	.article-meta {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.7rem;
-		font-weight: 800;
-		text-transform: uppercase;
-		color: var(--text-muted);
+		margin-bottom: 0.5rem;
 	}
 
-	.text-accent {
-		color: var(--accent-color);
-	}
-
-	.breaking-dot {
-		color: var(--accent-color);
-		margin-left: 0.25rem;
-	}
-
-	.headline-link {
-		text-decoration: none;
-		color: var(--text-primary);
-	}
-
-	.cluster-headline {
-		margin: 0;
-		line-height: 1.2;
-		font-weight: 800;
-	}
-
-	.text-lead {
-		font-size: 2rem;
-	}
-
-	.text-standard {
-		font-size: 1.25rem;
-	}
-
-	.cluster-excerpt {
-		font-size: 0.95rem;
-		line-height: 1.5;
-		color: var(--text-secondary);
-		margin: 0;
-	}
-
-	.lead-sub-headlines {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--border-color);
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.sub-h-item {
-		display: flex;
-		gap: 0.5rem;
-		align-items: baseline;
-	}
-
-	.sub-source {
+	.source-label {
+		font-family: var(--font-sans);
 		font-size: 0.65rem;
 		font-weight: 900;
 		text-transform: uppercase;
-		color: var(--text-muted);
-		flex-shrink: 0;
+		letter-spacing: 0.05em;
+        color: var(--foreground);
 	}
 
-	.sub-link {
-		font-family: var(--nyt-font-serif);
-		font-size: 0.9rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		text-decoration: none;
-		line-height: 1.3;
-	}
+    .breaking-label {
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 900;
+        color: var(--nyt-red);
+        border: 1px solid var(--nyt-red);
+        padding: 0 4px;
+    }
 
 	.footer-meta {
-		margin-top: auto;
-		padding-top: 0.5rem;
+		font-family: var(--font-sans);
+		font-size: 0.65rem;
+		color: var(--muted-foreground);
+		font-weight: 500;
 	}
 
-	.entity-tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 0.75rem;
+    .image-wrap {
+        width: 100%;
+    }
+
+	.article-image {
+		width: 100%;
+		aspect-ratio: 3 / 2;
+		object-fit: cover;
 	}
 
-	.entity-tag {
-		font-family: var(--nyt-font-sans);
-		font-size: 0.6rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--text-muted);
-		background: var(--bg-secondary);
-		padding: 0.2rem 0.5rem;
-		border-radius: 2px;
-		text-decoration: none;
-		transition: all 0.2s ease;
-	}
+    .image-caption {
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        color: var(--muted-foreground);
+        margin-top: 0.4rem;
+        text-align: right;
+    }
 
-	.entity-tag:hover {
-		color: var(--accent-color);
-		background: var(--bg-primary);
-		box-shadow: 0 0 0 1px var(--accent-color);
-	}
+    .sub-headlines {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+        border-top: 1px solid var(--border);
+        padding-top: 1rem;
+    }
 
-	@media (max-width: 768px) {
-		.text-lead {
-			font-size: 1.5rem;
-		}
-	}
+    .sub-headlines li {
+        margin-bottom: 0.75rem;
+        position: relative;
+        padding-left: 1rem;
+    }
+
+    .sub-headlines li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.5rem;
+        width: 4px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 50%;
+    }
+
+    .sub-headlines a {
+        font-family: var(--font-serif);
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--foreground);
+        text-decoration: none;
+    }
+
+    .sub-headlines a:hover {
+        text-decoration: underline;
+    }
 </style>

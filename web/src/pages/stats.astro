@@ -1,8 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import SearchIsland from '../components/SearchIsland';
-import ThemeIsland from '../components/ThemeIsland';
-import { ArrowLeft, BarChart3, Activity, Zap, Layers } from 'lucide-react';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -21,29 +21,16 @@ try {
 ---
 
 <Layout title="Статистика">
-	<header class="site-layout py-6 border-b border-nyt flex items-center justify-between">
-		<a href="/" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-accent transition">
-			<ArrowLeft size={14} /> Назад
-		</a>
-		
-		<a href="/" class="absolute left-1/2 -translate-x-1/2">
-			<img src="/logo.svg" alt="Presek" class="site-logo h-10 grayscale opacity-50" />
-		</a>
-
-		<div class="flex items-center gap-2">
-			<SearchIsland client:load />
-			<ThemeIsland client:load />
-		</div>
-	</header>
+    <NYTHeader />
 
 	<main class="site-layout py-12">
 		<div class="max-w-5xl mx-auto">
 			<header class="mb-12 border-b-2 border-primary pb-10">
-				<span class="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5 mb-4 inline-block">АНАЛИТИКА</span>
-				<h1 class="text-4xl md:text-6xl font-serif font-bold leading-tight text-primary mb-6">
+				<span class="nyt-section-label text-nyt-red border border-nyt-red px-2 py-0.5 mb-4 inline-block tracking-widest">АНАЛИТИКА</span>
+				<h1 class="text-4xl md:text-6xl font-serif font-black leading-tight text-foreground mb-6">
 					Медиумски Пулс
 				</h1>
-				<p class="text-sm text-muted font-bold uppercase tracking-tighter">
+				<p class="nyt-section-label text-muted-foreground tracking-tight">
 					Активност на медиумската сцена во реално време
 				</p>
 			</header>
@@ -53,20 +40,20 @@ try {
 					<!-- Top Metrics Grid -->
 					<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
 						<div class="border-t-2 border-primary pt-6">
-							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
-							<p class="text-4xl font-serif font-bold text-primary">{stats.total_articles.toLocaleString()}</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
+							<p class="text-4xl font-serif font-black text-foreground">{stats.total_articles.toLocaleString()}</p>
 						</div>
 						<div class="border-t-2 border-primary pt-6">
-							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Activity size={10}/> Последни 24ч</p>
-							<p class="text-4xl font-serif font-bold text-accent">{stats.last_24h.toLocaleString()}</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Последни 24ч</p>
+							<p class="text-4xl font-serif font-black text-nyt-red">{stats.last_24h.toLocaleString()}</p>
 						</div>
 						<div class="border-t-2 border-primary pt-6">
-							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><Zap size={10}/> АИ Синтеза</p>
-							<p class="text-4xl font-serif font-bold text-primary">{stats.summarized_pct}%</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек Сублимат</p>
+							<p class="text-4xl font-serif font-black text-foreground">{stats.summarized_pct}%</p>
 						</div>
 						<div class="border-t-2 border-primary pt-6">
-							<p class="text-[10px] font-black text-muted uppercase mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
-							<p class="text-4xl font-serif font-bold text-primary">{stats.total_feeds}</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
+							<p class="text-4xl font-serif font-black text-foreground">{stats.total_feeds}</p>
 						</div>
 					</div>
 
@@ -74,17 +61,17 @@ try {
 						<!-- Main Column -->
 						<div class="lg:col-span-8 space-y-16">
 							<section>
-								<h2 class="rail-label mb-8">НАЈАКТИВНИ МЕДИУМИ (ПОСЛЕДНИ 24Ч)</h2>
+								<h2 class="nyt-section-label border-b border-foreground pb-2 mb-8">НАЈАКТИВНИ МЕДИУМИ (ПОСЛЕДНИ 24Ч)</h2>
 								<div class="space-y-6">
 									{stats.by_source.slice(0, 10).map((src: any) => (
 										<div>
-											<div class="flex justify-between text-[11px] font-bold mb-2 uppercase text-primary">
+											<div class="flex justify-between nyt-section-label mb-2 text-foreground">
 												<span>{src.source}</span>
 												<span>{src.n} статии</span>
 											</div>
-											<div class="h-3 bg-secondary w-full rounded-full overflow-hidden">
+											<div class="h-1 bg-nyt-gray-200 w-full overflow-hidden">
 												<div 
-													class="h-full bg-accent transition-all duration-1000" 
+													class="h-full bg-foreground transition-all duration-1000" 
 													style={`width: ${Math.min(100, (src.n / stats.last_24h) * 100 * 5)}%`}
 												></div>
 											</div>
@@ -94,12 +81,12 @@ try {
 							</section>
 
 							<section>
-								<h2 class="rail-label mb-8">РАСПРЕДЕЛБА ПО КАТЕГОРИИ</h2>
+								<h2 class="nyt-section-label border-b border-foreground pb-2 mb-8">РАСПРЕДЕЛБА ПО КАТЕГОРИИ</h2>
 								<div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
 									{stats.by_category.map((cat: any) => (
-										<div class="bg-secondary p-6 rounded-sm border-b-2 border-nyt hover:border-accent transition-colors">
-											<p class="text-[10px] font-black text-muted uppercase mb-1">{cat.cat}</p>
-											<p class="text-2xl font-serif font-bold text-primary">{cat.n}</p>
+										<div class="bg-nyt-gray-100 dark:bg-secondary p-6 border border-nyt-gray-200 dark:border-nyt-gray-300/20 hover:border-nyt-red transition-colors">
+											<p class="nyt-section-label text-muted-foreground mb-1">{cat.cat}</p>
+											<p class="text-2xl font-serif font-black text-foreground">{cat.n}</p>
 										</div>
 									))}
 								</div>
@@ -109,40 +96,40 @@ try {
 						<!-- Sidebar Column -->
 						<aside class="lg:col-span-4 space-y-12">
 							<div class="border-t-2 border-primary pt-4">
-								<h3 class="rail-label mb-4">ИНФОРМАЦИИ ЗА СИСТЕМОТ</h3>
-								<div class="space-y-4 text-xs font-bold uppercase tracking-tight">
-									<div class="flex justify-between border-b border-nyt pb-2">
-										<span class="text-muted">Статус:</span>
-										<span class="text-green-600">Online</span>
+								<h3 class="nyt-section-label mb-4">ИНФОРМАЦИИ ЗА СИСТЕМОТ</h3>
+								<div class="space-y-4 nyt-section-label text-muted-foreground">
+									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+										<span>Статус:</span>
+										<span class="text-green-600 font-black">Online</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt pb-2">
-										<span class="text-muted">База на податоци:</span>
-										<span class="text-primary">{stats.db_size_mb} MB</span>
+									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+										<span>База на податоци:</span>
+										<span class="text-foreground font-black">{stats.db_size_mb} MB</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt pb-2">
-										<span class="text-muted">Најстара објава:</span>
-										<span class="text-primary text-[10px]">{new Date(stats.oldest_article).toLocaleDateString('mk-MK')}</span>
+									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+										<span>Најстара објава:</span>
+										<span class="text-foreground font-black">{new Date(stats.oldest_article).toLocaleDateString('mk-MK')}</span>
 									</div>
-									<div class="flex justify-between border-b border-nyt pb-2">
-										<span class="text-muted">Најнова објава:</span>
-										<span class="text-primary text-[10px]">{new Date(stats.new_article).toLocaleTimeString('mk-MK')}</span>
+									<div class="flex justify-between border-b border-nyt-gray-200 pb-2">
+										<span>Најнова објава:</span>
+										<span class="text-foreground font-black">{new Date(stats.new_article).toLocaleTimeString('mk-MK')}</span>
 									</div>
 								</div>
 							</div>
 
-							<div class="bg-primary p-6 text-white rounded-sm">
-								<h4 class="text-xs font-black uppercase mb-4 tracking-widest border-b border-white/20 pb-2">Speed Leaderboard</h4>
-								<p class="text-[10px] opacity-70 mb-6 italic leading-relaxed">
+							<div class="bg-foreground p-6 text-background">
+								<h4 class="nyt-section-label mb-4 tracking-widest border-b border-background/20 pb-2 text-background">Speed Leaderboard</h4>
+								<p class="font-serif italic text-[10px] opacity-70 mb-6 leading-relaxed">
 									Кој прв ги објавува вестите? Анализа на првичните извори за нови настани во последните 7 дена.
 								</p>
 								<div class="space-y-4">
 									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
-										<div class="flex justify-between items-center text-[11px] font-bold uppercase">
+										<div class="flex justify-between items-center nyt-section-label text-[10px]">
 											<span class="flex items-center gap-2">
 												<span class="opacity-30">{idx + 1}.</span>
 												{src.source}
 											</span>
-											<span>{src.first_count}</span>
+											<span class="font-black">{src.first_count}</span>
 										</div>
 									))}
 								</div>
@@ -151,20 +138,39 @@ try {
 					</div>
 				</div>
 			) : (
-				<div class="py-24 text-center">
-					<div class="animate-pulse flex flex-col items-center">
-						<div class="h-10 w-64 bg-secondary mb-6"></div>
-						<p class="text-muted text-xs font-black uppercase tracking-widest">Вчитувам податоци...</p>
+				<div class="space-y-16 animate-pulse">
+					<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+						{[1,2,3,4].map(() => (
+							<div class="border-t-2 border-nyt-gray-200 pt-6">
+								<div class="h-3 w-24 bg-nyt-gray-100 mb-4"></div>
+								<div class="h-10 w-32 bg-nyt-gray-200"></div>
+							</div>
+						))}
+					</div>
+					<div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+						<div class="lg:col-span-8 space-y-16">
+							<section>
+								<div class="h-6 w-48 bg-nyt-gray-200 mb-8"></div>
+								<div class="space-y-6">
+									{[1,2,3,4,5].map(() => (
+										<div class="h-4 w-full bg-nyt-gray-100"></div>
+									))}
+								</div>
+							</section>
+							<section>
+								<div class="h-6 w-48 bg-nyt-gray-200 mb-8"></div>
+								<div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+									{[1,2,3,4,5,6,7,8].map(() => (
+										<div class="h-24 bg-nyt-gray-100 border border-nyt-gray-200"></div>
+									))}
+								</div>
+							</section>
+						</div>
 					</div>
 				</div>
 			)}
 		</div>
 	</main>
 
-	<footer class="site-layout mt-20 py-10 border-t border-nyt text-center">
-		<img src="/logo.svg" alt="Presek" class="h-10 opacity-30 mx-auto mb-4 grayscale" />
-		<p class="text-[10px] font-bold text-muted uppercase tracking-widest">
-			© 2026 ПРЕСЕК - ИНТЕЛИГЕНТНА АГРЕГАЦИЈА НА ВЕСТИ
-		</p>
-	</footer>
+	<Footer />
 </Layout>

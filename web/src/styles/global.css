@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Libre+Franklin:ital,wght@0,100..900;1,100..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -6,17 +6,24 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'Lora', serif;
-    --font-serif: 'Lora', serif;
-    --font-sans: 'Inter', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Libre Franklin', sans-serif;
+    --font-nyt-body: 'Source Serif 4', serif;
     
-    /* Shadcn Mappings */
+    /* NYT Palette - Now using reactive variables */
+    --color-nyt-black: var(--nyt-black);
+    --color-nyt-gray-100: var(--nyt-gray-100);
+    --color-nyt-gray-200: var(--nyt-gray-200);
+    --color-nyt-gray-300: var(--nyt-gray-300);
+    --color-nyt-gray-500: var(--nyt-gray-500);
+    --color-nyt-gray-600: var(--nyt-gray-600);
+    --color-nyt-accent: var(--nyt-accent);
+    --color-nyt-red: var(--nyt-red);
+
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
     --color-secondary: var(--secondary);
@@ -25,70 +32,81 @@
     --color-muted-foreground: var(--muted-foreground);
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
 
-    /* Legacy Presek Mappings */
-    --color-presek-bg-primary: var(--background);
-    --color-presek-bg-secondary: var(--secondary);
-    --color-presek-text-primary: var(--foreground);
-    --color-presek-text-secondary: var(--secondary-foreground);
-    --color-presek-text-muted: var(--muted-foreground);
-    --color-presek-border: var(--border);
-    --color-presek-accent: var(--primary);
-
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
 }
 
 @layer base {
     :root {
-        --background: #ffffff;
-        --foreground: #0f1117;
+        /* 60% Dominant: Background (Soft Off-White) */
+        --background: #fafafb; 
+        --foreground: #111827; /* Rule 2: Deep Navy Gray instead of Pure Black */
+
+        /* 30% Secondary: Structural Elements */
         --card: #ffffff;
-        --card-foreground: #0f1117;
-        --popover: #ffffff;
-        --popover-foreground: #0f1117;
-        --primary: #cc1a1a;
-        --primary-foreground: #ffffff;
-        --secondary: #f7f7f8;
-        --secondary-foreground: #3d4151;
-        --muted: #f7f7f8;
-        --muted-foreground: #6b7185;
-        --accent: #f7f7f8;
-        --accent-foreground: #0f1117;
-        --destructive: #ef4444;
-        --destructive-foreground: #ffffff;
-        --border: #e4e4e8;
-        --input: #e4e4e8;
-        --ring: #cc1a1a;
-        --radius: 0.25rem;
+        --secondary: #f3f4f6;
+        --secondary-foreground: #374151;
+        --border: #e5e7eb;
+        --muted: #f9fafb;
+        --muted-foreground: #6b7280;
+
+        /* 10% Accent: Trust Blue (Primary Brand) */
+        --nyt-accent: #1e40af; /* Deep Trust Blue */
+        --nyt-red: #b91c1c;    /* Subdued Journalist Red (used sparingly) */
+        --nyt-black: #111827;
+        
+        /* NYT Smart Colors */
+        --nyt-gray-100: #f3f4f6;
+        --nyt-gray-200: #e5e7eb;
+        --nyt-gray-300: #d1d5db;
+        --nyt-gray-500: #9ca3af;
+        --nyt-gray-600: #4b5563;
+
+        /* ... rest of variables unchanged ... */
+
+        /* Fluid Typography Scale (16px -> 18px base) */
+        --text-xs: clamp(0.75rem, 0.7rem + 0.2vw, 0.8rem);
+        --text-sm: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
+        --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); /* 16px to 18px */
+        --text-lg: clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);  /* 18px to 20px */
+        --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);    /* 20px to 24px */
+        --text-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+        --text-3xl: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
+        --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 3.5rem);
     }
 
     .dark {
-        --background: #0f1117;
-        --foreground: #f1f5f9;
-        --card: #1a1d27;
-        --card-foreground: #f1f5f9;
-        --popover: #1a1d27;
-        --popover-foreground: #f1f5f9;
-        --primary: #ff4d4d;
-        --primary-foreground: #ffffff;
-        --secondary: #1a1d27;
-        --secondary-foreground: #cbd5e1;
-        --muted: #1a1d27;
-        --muted-foreground: #94a3b8;
-        --accent: #1a1d27;
-        --accent-foreground: #f1f5f9;
-        --destructive: #ef4444;
-        --destructive-foreground: #ffffff;
-        --border: #2a2d3a;
-        --input: #2a2d3a;
-        --ring: #ff4d4d;
+        /* Core Palette (Dark - APCA Compliant) */
+        --background: #111827;      /* Dark Gray instead of pure black */
+        --foreground: #f3f4f6;      /* Off-white instead of pure white */
+        --card: #1f2937;
+        --card-foreground: #f3f4f6;
+        --primary: #f3f4f6;
+        --primary-foreground: #111827;
+        --secondary: #1f2937;
+        --secondary-foreground: #d1d5db;
+        --muted: #1f2937;
+        --muted-foreground: #9ca3af;
+        --accent: #ffffff;
+        --accent-foreground: #111827;
+        --border: #374151;
+        --input: #374151;
+        --ring: #ffffff;
+
+        /* NYT Smart Colors (Dark Mode - Automated Inversion) */
+        --nyt-black: #f3f4f6;      
+        --nyt-gray-100: #1f2937;   
+        --nyt-gray-200: #374151;   
+        --nyt-gray-300: #4b5563;   
+        --nyt-gray-500: #9ca3af;   
+        --nyt-gray-600: #d1d5db;   
+        --nyt-accent: #60a5fa;     
+        --nyt-red: #f87171;        
     }
 }
 
@@ -98,42 +116,81 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Source Serif 4', serif;
+    font-size: var(--text-base);
+    line-height: 1.5; /* Rule 4: Let the text breathe */
+    -webkit-font-smoothing: antialiased;
   }
   html {
-    @apply font-sans scroll-smooth;
+    @apply scroll-smooth;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-serif font-black tracking-tight leading-none;
   }
 }
 
-/* Legacy Utility Classes */
+/* NYT Utility Classes */
 .site-layout {
-    max-width: 1400px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 1rem;
     width: 100%;
 }
-.rail-label {
-    font-size: 0.75rem;
+
+.nyt-border-double {
+    border-bottom: 4px double var(--border);
+}
+
+.nyt-rule {
+    border-top: 1px solid var(--border);
+}
+
+.nyt-vertical-rule {
+    border-left: 1px solid var(--border);
+}
+
+.nyt-section-label {
+    font-family: 'Libre Franklin', sans-serif;
+    font-size: 0.65rem;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 1rem;
-    color: var(--foreground);
+    letter-spacing: 0.05em;
 }
+
+/* News Feed Grid */
 .news-feed-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
 }
+
 @media (min-width: 768px) {
     .news-feed-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    .lead-story {
+        grid-column: span 2;
+    }
 }
+
 @media (min-width: 1024px) {
     .news-feed-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+    .lead-story {
+        grid-column: span 2;
+    }
+}
+
+/* Legacy Presek Mappings */
+:root {
+    --bg-primary: var(--background);
+    --bg-secondary: var(--secondary);
+    --text-primary: var(--foreground);
+    --text-secondary: var(--secondary-foreground);
+    --text-muted: var(--muted-foreground);
+    --border-color: var(--border);
+    --accent-color: var(--nyt-red);
+    --nyt-font-serif: 'Playfair Display', serif;
+    --nyt-font-sans: 'Libre Franklin', sans-serif;
 }

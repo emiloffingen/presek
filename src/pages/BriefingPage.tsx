@@ -84,7 +84,7 @@ export const BriefingPage: React.FC = () => {
                   </span>
                 )}
                 <span>·</span>
-                <span>АИ СИНТЕЗА</span>
+                <span>ПРЕСЕК СУБЛИМАТ</span>
             </div>
         </header>
 
@@ -125,7 +125,7 @@ export const BriefingPage: React.FC = () => {
             <div className="rail-widget border-t-2 border-primary">
                 <h3 className="rail-label">ЗОШТО БРИФИНГ?</h3>
                 <p className="text-[11px] leading-relaxed text-muted italic">
-                    Секое утро, нашиот АИ систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
+                    Секое утро, нашиот систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
                 </p>
             </div>
             

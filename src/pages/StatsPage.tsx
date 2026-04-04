@@ -98,7 +98,7 @@ export const StatsPage: React.FC = () => {
                 <p className="text-3xl font-serif font-bold text-accent">{stats.last_24h}</p>
             </div>
             <div className="border-t-2 border-primary pt-4">
-                <p className="text-[10px] font-black text-muted uppercase mb-1 flex items-center gap-1"><TrendingUp size={10}/> АИ Синтеза</p>
+                <p className="text-[10px] font-black text-muted uppercase mb-1 flex items-center gap-1"><TrendingUp size={10}/> Пресек Сублимат</p>
                 <p className="text-3xl font-serif font-bold text-primary">{stats.summarized_pct.toFixed(1)}%</p>
             </div>
             <div className="border-t-2 border-primary pt-4">

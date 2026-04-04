@@ -1,0 +1,23 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Архива">
+    <NYTHeader />
+    <main class="site-layout py-32 text-center">
+        <div class="max-w-2xl mx-auto">
+            <span class="nyt-section-label text-nyt-red border border-nyt-red px-3 py-1 mb-6 inline-block tracking-[0.3em]">ФУНКЦИЈА ВО РАЗВОЈ</span>
+            <h1 class="font-serif text-6xl md:text-8xl font-black mb-6 text-foreground">Наскоро</h1>
+            <p class="font-serif text-xl md:text-2xl text-nyt-gray-600 dark:text-nyt-gray-400 italic mb-12 leading-relaxed">
+                Работиме на имплементација на историско пребарување низ десетици илјади архивирани вести. Наскоро ќе можете да го истражите дигиталниот минат на Македонија.
+            </p>
+            <a href="/" class="nyt-section-label text-nyt-black dark:text-white border-b-2 border-nyt-black dark:border-white pb-1 hover:text-nyt-accent dark:hover:text-nyt-accent transition-colors">
+                Врати се на почетна
+            </a>
+        </div>
+    </main>
+
+	<Footer />
+</Layout>

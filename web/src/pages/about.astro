@@ -1,0 +1,40 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="За Проектот">
+    <NYTHeader />
+    <main class="site-layout py-20">
+        <article class="max-w-3xl mx-auto">
+            <h1 class="font-serif text-5xl font-black mb-8 border-b-4 border-nyt-black dark:border-nyt-gray-300 pb-4">За Проектот</h1>
+            
+            <p class="text-xl font-serif leading-relaxed mb-6 italic text-foreground">
+                Пресек е интелигентна, во реално време новинска платформа која користи напредна технологија за да го трансформира начинот на кој ги конзумирате вестите во Македонија.
+            </p>
+
+            <div class="space-y-8 font-serif text-lg leading-relaxed text-nyt-gray-600 dark:text-nyt-gray-300">
+                <p>
+                    Во време на информациско преоптоварување, Пресек служи како вашиот дигитален уредник. Нашиот систем автоматски ги следи сите релевантни македонски медиуми, групирајќи ги сличните стории во „кластери“ за да ви овозможи целосен преглед на еден настан од повеќе извори.
+                </p>
+
+                <p>
+                    Користејќи напредни алгоритми за обработка на природен јазик (NLP) и паметни јазични модели, Пресек генерира:
+                </p>
+
+                <ul class="list-disc pl-6 space-y-2">
+                    <li><strong class="text-foreground">Пресек Сублимат:</strong> Кратки, објективни резимеа кои ги извлекуваат само клучните факти.</li>
+                    <li><strong class="text-foreground">Различни Перспективи:</strong> Анализа на тоа како различни медиуми известуваат за истата тема.</li>
+                    <li><strong class="text-foreground">Дневен Брифинг:</strong> Сеопфатен утрински преглед на најважните настани што го обликуваат денот.</li>
+                </ul>
+
+                <p>
+                    Нашата мисија е да обезбедиме транспарентност, да го намалиме влијанието на дезинформациите и да ви заштедиме време преку паметна агрегација и технолошка иновација. Пресек не е само агрегатор; тоа е алатка за критичко размислување во дигиталната ера.
+                </p>
+            </div>
+        </article>
+    </main>
+
+	<Footer />
+</Layout>

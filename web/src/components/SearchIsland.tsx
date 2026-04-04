@@ -53,79 +53,67 @@ export default function SearchIsland() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 px-4 py-2 bg-secondary/50 hover:bg-secondary border border-nyt rounded-full transition-all group"
+        className="flex items-center gap-2 text-nyt-black hover:text-nyt-gray-600 transition-colors"
         aria-label="Пребарај"
       >
-        <Search size={16} className="text-muted group-hover:text-accent transition-colors" />
-        <span className="text-[10px] font-black text-muted uppercase tracking-widest hidden sm:inline">Пребарај...</span>
-        <span className="hidden lg:flex items-center gap-1 text-[9px] font-black text-muted/50 uppercase tracking-tighter ml-2 bg-primary/50 px-1.5 py-0.5 rounded border border-nyt">
-          <Command size={8} /> K
-        </span>
+        <Search size={18} />
+        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Пребарај</span>
       </button>
 
-      {/* Modern Search Overlay */}
+      {/* NYT Style Search Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] bg-primary/80 backdrop-blur-xl flex flex-col items-center pt-24 px-4 transition-all duration-500 animate-in fade-in">
-          <div className="w-full max-w-3xl relative">
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="absolute -top-16 right-0 p-3 text-muted hover:text-accent transition-colors hover:rotate-90 duration-300"
-            >
-              <X size={32} />
-            </button>
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center pt-12 px-4 transition-all animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl relative">
+            <div className="flex justify-between items-center mb-12">
+                <div className="flex items-center gap-2">
+                    <img src="/img/presek_emblem.svg" alt="Logo" className="h-6 site-logo" />
+                    <span className="font-serif font-black text-lg">ПРЕСЕК ПРЕБАРУВАЊЕ</span>
+                </div>
+                <button 
+                onClick={() => setIsOpen(false)}
+                className="p-2 text-nyt-black hover:bg-nyt-gray-100 transition-colors"
+                >
+                <X size={24} />
+                </button>
+            </div>
 
-            <form onSubmit={onSubmit} className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-accent to-primary opacity-20 blur group-focus-within:opacity-40 transition duration-1000 group-focus-within:duration-200 rounded-lg"></div>
-              <div className="relative bg-primary border-2 border-nyt focus-within:border-accent transition-colors rounded-lg flex items-center p-2">
-                <Search className="ml-4 text-muted group-focus-within:text-accent transition-colors" size={28} />
+            <form onSubmit={onSubmit} className="mb-12">
+              <div className="border-b-2 border-nyt-black flex items-center gap-4">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Што ве интересира денес?"
-                  className="w-full bg-transparent py-4 px-6 text-2xl md:text-4xl font-serif font-bold text-primary outline-none placeholder:text-muted/30"
+                  placeholder="Внесете клучни зборови..."
+                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-nyt-black outline-none placeholder:text-nyt-gray-300"
                 />
-                {query && (
-                  <button type="button" onClick={() => setQuery('')} className="p-2 text-muted hover:text-primary">
-                    <X size={20} />
-                  </button>
-                )}
                 <button 
                   type="submit"
-                  className="bg-accent text-white px-6 py-3 rounded-md font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all mr-2 shadow-lg shadow-accent/20"
+                  className="bg-nyt-black text-primary-foreground px-8 py-3 font-black text-xs uppercase tracking-widest hover:bg-nyt-gray-600 transition-all"
                 >
                   Барај
                 </button>
               </div>
               
-              <div className="mt-4 flex items-center justify-between px-2">
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-accent">
-                    <Zap size={10} /> Semantic Search Active
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted italic opacity-50">
-                  Пребарувајте според контекст и значење
-                </span>
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase text-nyt-accent">
+                <Zap size={10} /> Semantic search enabled — indexing 100,000+ Macedonian news articles
               </div>
             </form>
 
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
               {recentSearches.length > 0 && (
                 <div>
-                  <h3 className="rail-label text-muted mb-6 flex items-center gap-2">
-                    <History size={14} /> ПОСЛЕДНИ ПРЕБАРАУВАЊА
+                  <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-gray-500 mb-6 pb-2 border-b border-nyt-gray-200">
+                    ПОСЛЕДНИ ПРЕБАРАУВАЊА
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {recentSearches.map(s => (
                       <button 
                         key={s}
                         onClick={() => handleSearch(s)}
-                        className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary border border-transparent hover:border-nyt transition-all text-sm font-bold text-primary text-left group"
+                        className="w-full text-left font-serif font-black text-xl text-nyt-black hover:text-nyt-accent transition-colors"
                       >
                         {s}
-                        <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                       </button>
                     ))}
                   </div>
@@ -133,15 +121,15 @@ export default function SearchIsland() {
               )}
 
               <div>
-                <h3 className="rail-label text-muted mb-6 flex items-center gap-2">
-                  <TrendingUp size={14} /> ПОПУЛАРНИ ТЕМИ
+                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-gray-500 mb-6 pb-2 border-b border-nyt-gray-200">
+                  АКТУЕЛНО
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {['Избори 2026', 'Економија', 'Технологија', 'Вештачка Интелигенција', 'Влада', 'ЕУ Интеграции'].map(tag => (
+                <div className="flex flex-wrap gap-x-6 gap-y-4">
+                  {['Влада', 'Економија', 'Избори', 'ЕУ Интеграции', 'Скопје', 'Технологија'].map(tag => (
                     <button 
                       key={tag}
                       onClick={() => handleSearch(tag)}
-                      className="px-4 py-2 bg-secondary/50 hover:bg-accent hover:text-white border border-nyt hover:border-accent transition-all rounded-sm text-[10px] font-black uppercase tracking-wider"
+                      className="font-serif font-bold text-lg text-nyt-black hover:underline underline-offset-4 decoration-nyt-red"
                     >
                       {tag}
                     </button>
@@ -153,24 +141,5 @@ export default function SearchIsland() {
         </div>
       )}
     </>
-  );
-}
-
-function ArrowRight({ size, className }: { size: number, className: string }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
   );
 }

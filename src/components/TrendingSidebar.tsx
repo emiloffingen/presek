@@ -91,7 +91,7 @@ export const TrendingSidebar: React.FC = () => {
               <p className="text-sm font-semibold text-ink dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                 Дневен преглед
               </p>
-              <p className="text-xs text-ink-muted dark:text-slate-500">АИ резиме на денот</p>
+              <p className="text-xs text-ink-muted dark:text-slate-500">Сублимат на денот</p>
             </div>
           </button>
           <button

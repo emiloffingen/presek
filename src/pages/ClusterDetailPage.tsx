@@ -93,7 +93,7 @@ export const ClusterDetailPage: React.FC = () => {
                     <span className="text-[10px] font-black uppercase tracking-widest text-accent border border-accent px-2 py-0.5">BREAKING</span>
                 )}
                 {cluster.has_synthesis && (
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white bg-accent px-2 py-0.5">СИНТЕЗА</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white bg-accent px-2 py-0.5">СУБЛИМАТ</span>
                 )}
             </div>
             <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
@@ -112,7 +112,7 @@ export const ClusterDetailPage: React.FC = () => {
             <div className="lg:col-span-8">
                 {cluster.has_synthesis && cluster.synthesis && (
                     <section className="mb-12">
-                        <h2 className="rail-label mb-6 flex items-center gap-2"><Sparkles size={14}/> АИ РЕЗИМЕ</h2>
+                        <h2 className="rail-label mb-6 flex items-center gap-2"><Sparkles size={14}/> ПРЕСЕК СУБЛИМАТ</h2>
                         <div className="article-prose text-lg leading-relaxed italic border-l-4 border-accent pl-6 py-2 text-secondary">
                             {cluster.synthesis}
                         </div>
@@ -154,7 +154,7 @@ export const ClusterDetailPage: React.FC = () => {
             <aside className="lg:col-span-4 space-y-10">
                 {/* AI Chat */}
                 <div className="rail-widget border-t-2 border-primary">
-                    <h3 className="rail-label flex items-center gap-2"><MessageCircle size={14}/> ПРАШАЈ АИ</h3>
+                    <h3 className="rail-label flex items-center gap-2"><MessageCircle size={14}/> ПРАШАЈ ГО ПРЕСЕК</h3>
                     <div className="bg-secondary p-5">
                         <form onSubmit={handleChat} className="space-y-4">
                             <textarea

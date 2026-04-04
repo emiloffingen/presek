@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import ThemeIsland from '../components/ThemeIsland';
 
 interface Props {
 	title: string;
@@ -37,16 +38,32 @@ const { title, description = "Presek - Македонска агрегација
 		</script>
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
+		<ThemeIsland client:load fixed={true} />
 		<slot />
 	</body>
 </html>
 
 <style is:global>
-	/* Logo inversion in dark mode */
+	/* Broadstreet Aesthetic Adjustments */
 	.dark .site-logo {
-		filter: invert(1) brightness(2);
+		filter: invert(1) brightness(1.5);
 	}
 	.dark .site-emblem {
-		filter: brightness(1.2);
+		filter: invert(1) brightness(1.5);
 	}
+    
+    /* Ensure serif fonts are applied to all broadsheet text */
+    .nyt-serif {
+        font-family: var(--font-serif);
+    }
+    
+    .nyt-sans {
+        font-family: var(--font-sans);
+    }
+
+    /* Selection Color */
+    ::selection {
+        background-color: #326891;
+        color: white;
+    }
 </style>

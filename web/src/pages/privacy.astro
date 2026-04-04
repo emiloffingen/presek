@@ -1,0 +1,45 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Политика за приватност">
+    <NYTHeader />
+    <main class="site-layout py-20">
+        <article class="max-w-3xl mx-auto">
+            <h1 class="font-serif text-5xl font-black mb-8 border-b-4 border-nyt-black dark:border-nyt-gray-300 pb-4">Политика за приватност</h1>
+            
+            <div class="space-y-8 font-serif text-lg leading-relaxed text-nyt-gray-600 dark:text-nyt-gray-300">
+                <p class="italic">Последна промена: 4 април 2026</p>
+
+                <section>
+                    <h2 class="font-black text-2xl text-foreground mb-4">1. Собирање на информации</h2>
+                    <p>Пресек е платформа за агрегација на вести која во најголем дел не бара лични податоци за користење. Ние не собираме ваши имиња, адреси или телефонски броеви при обично прелистување на содржините.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-black text-2xl text-foreground mb-4">2. Колачиња и локално складирање</h2>
+                    <p>Користиме локално складирање (LocalStorage) исклучиво за да ги зачуваме вашите технички преференции, како што се изборот на тема (темна или светла верзија) и вашите последни пребарувања за полесен пристап. Овие податоци се зачувани локално на вашиот уред и не се пренесуваат на нашите сервери.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-black text-2xl text-foreground mb-4">3. Аналитика</h2>
+                    <p>Можеме да користиме анонимни статистички податоци за посетеноста со цел да го подобриме техничкото искуство на корисниците. Овие податоци не можат да ве идентификуваат лично и се користат само за оптимизација на перформансите на платформата.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-black text-2xl text-foreground mb-4">4. Надворешни врски</h2>
+                    <p>Нашата платформа содржи директни врски до оригинални извори на вести (медиумски портали). Ве молиме имајте предвид дека Пресек не е одговорен за политиките за приватност или содржината на тие надворешни веб-локации.</p>
+                </section>
+
+                <section>
+                    <h2 class="font-black text-2xl text-foreground mb-4">5. Промени во политиката</h2>
+                    <p>Го задржуваме правото да ја ажурираме оваа политика за приватност во согласност со новите функционалности на платформата. Сите промени ќе бидат објавени на оваа страница.</p>
+                </section>
+            </div>
+        </article>
+    </main>
+
+	<Footer />
+</Layout>

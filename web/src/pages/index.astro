@@ -1,9 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import NewsCard from '../components/NewsCard.astro';
-import SearchIsland from '../components/SearchIsland';
-import ThemeIsland from '../components/ThemeIsland';
-import { Search, Menu, Moon, Sun, Zap, TrendingUp, BarChart3 } from 'lucide-react';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -20,7 +20,7 @@ let error = null;
 
 // Build the fetch URL with params
 const newsUrl = new URL(`${API_URL}/news`);
-newsUrl.searchParams.set('page_size', '30');
+newsUrl.searchParams.set('page_size', '40');
 if (category) newsUrl.searchParams.set('category', category);
 if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
@@ -29,7 +29,7 @@ try {
     const [newsRes, trendRes, entityRes] = await Promise.all([
         fetch(newsUrl.toString()),
         fetch(`${API_URL}/trending`),
-        fetch(`${API_URL}/intelligence/top-entities?limit=10`)
+        fetch(`${API_URL}/intelligence/top-entities?limit=12`)
     ]);
     
     if (newsRes.ok) {
@@ -45,118 +45,28 @@ try {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на вестите.";
 }
-
-const currentDate = new Date().toLocaleDateString('mk-MK', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-});
-
-// Category list as requested: makedonija balkan evropa svet vlada ekonomija
-const navItems = [
-    { label: "Македонија", params: { category: "Македонија" } },
-    { label: "Балкан", params: { category: "Балкан" } },
-    { label: "Европа", params: { category: "Европа" } },
-    { label: "Свет", params: { category: "Свет" } },
-    { label: "Влада", params: { q: "Влада" } },
-    { label: "Економија", params: { topic: "Економија" } },
-    { label: "Спорт", params: { topic: "Спорт" } },
-    { label: "Технологија", params: { topic: "Технологија" } },
-];
 ---
 
 <Layout title={q || category || topic || "Главни Вести"}>
-	<!-- Top Utility Bar (Zero JS) -->
-	<div class="utility-bar border-b border-nyt py-2 bg-primary">
-		<div class="site-layout flex items-center justify-between">
-			<div class="flex flex-col">
-				<span class="font-black text-[0.65rem] uppercase tracking-wider text-primary">{currentDate}</span>
-				<span class="text-[0.6rem] text-muted uppercase tracking-wider">Скопје, Македонија</span>
-			</div>
-			
-			<div class="hidden md:flex gap-6 items-center">
-				<a href="/briefing" class="font-black text-[0.65rem] uppercase tracking-wider text-primary hover:text-accent transition">Дневен Брифинг</a>
-				<a href="/stats" class="font-black text-[0.65rem] uppercase tracking-wider text-primary hover:text-accent transition">Статистика</a>
-			</div>
-		</div>
-	</div>
-
-	<!-- Site Header -->
-	<header class="site-layout py-8 border-b-4 border-double border-nyt mb-8">
-		<div class="text-center relative">
-			<button class="md:hidden absolute left-0 top-1/2 -translate-y-1/2 p-2">
-				<Menu size={20} />
-			</button>
-			
-			<a href="/" class="inline-block group">
-				<div class="flex items-center gap-3">
-					<img src="/img/presek_emblem.svg" alt="Presek Emblem" class="site-emblem h-10 md:h-12 group-hover:rotate-12 transition-transform duration-500" />
-					<img src="/logo.svg" alt="Presek" class="site-logo h-10 md:h-12" />
-				</div>
-			</a>
-
-			<div class="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-				<SearchIsland client:load />
-				<ThemeIsland client:load />
-			</div>
-		</div>
-
-		<nav class="hidden md:block mt-6">
-			<div class="flex justify-center border-y border-nyt py-3 gap-6 flex-wrap">
-				{navItems.map(item => {
-					const searchStr = new URLSearchParams(item.params).toString();
-					const isActive = (category === item.params.category && item.params.category) || 
-					                 (topic === item.params.topic && item.params.topic) ||
-									 (q === item.params.q && item.params.q);
-					
-					return (
-						<a href={`/?${searchStr}`} class={`text-[10px] font-black uppercase tracking-widest hover:text-accent transition no-underline ${isActive ? 'text-accent border-b-2 border-accent' : 'text-muted'}`}>
-							{item.label}
-						</a>
-					);
-				})}
-			</div>
-		</nav>
-
-		<!-- Entities in Focus -->
-		<div class="mt-6 flex flex-wrap justify-center items-center gap-4">
-			<span class="text-[9px] font-black uppercase tracking-tighter text-muted">Личности во фокус:</span>
-			{topEntities.map((ent: any) => (
-				<a href={`/?q=${encodeURIComponent(ent.name)}`} class="text-[10px] font-bold text-primary hover:text-accent no-underline border-b border-color transition-colors">
-					{ent.name}
-				</a>
-			))}
-		</div>
-	</header>
+    <NYTHeader q={q} category={category} topic={topic} />
 
 	<main class="site-layout">
-		{q && (
-			<div class="mb-10 flex items-center gap-4">
-				<h2 class="text-2xl font-serif font-bold text-primary">Пребарување: <span class="italic text-accent">"{q}"</span></h2>
-				<a href="/" class="text-[10px] font-black uppercase tracking-widest text-muted hover:text-primary">Исчисти филтер</a>
-			</div>
-		)}
-		
-		{(category || topic) && (
-			<div class="mb-10 flex items-center gap-4">
-				<h2 class="text-2xl font-serif font-bold text-primary">Категорија: <span class="text-accent">{category || topic}</span></h2>
-				<a href="/" class="text-[10px] font-black uppercase tracking-widest text-muted hover:text-primary">Исчисти филтер</a>
+        {/* Filtering Status */}
+		{(q || category || topic) && (
+			<div class="mb-10 py-4 border-y border-nyt-gray-300 flex items-center justify-between">
+				<h2 class="font-serif text-2xl font-black italic">
+					{q ? `Резултати за: "${q}"` : `${category || topic}`}
+				</h2>
+				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red">Прикажи ги сите вести</a>
 			</div>
 		)}
 
-		<div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-			<!-- Main Feed (9 cols) -->
+		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:divide-x border-nyt-gray-300">
+			<!-- Main Column (Col 1-9) -->
 			<div class="lg:col-span-9">
 				{error && (
-					<div class="bg-secondary p-8 text-center border-t-2 border-accent mb-8">
-						<p class="text-accent font-bold uppercase tracking-widest">{error}</p>
-					</div>
-				)}
-
-				{!error && clusters.length === 0 && (
-					<div class="bg-secondary p-12 text-center border-t-2 border-nyt mb-8">
-						<p class="text-muted font-bold uppercase tracking-widest">Нема пронајдени вести за ова пребарување.</p>
+					<div class="p-12 text-center bg-nyt-gray-100 border border-nyt-gray-300">
+						<p class="font-serif italic text-nyt-red font-black uppercase tracking-widest">{error}</p>
 					</div>
 				)}
 
@@ -170,58 +80,60 @@ const navItems = [
 				</div>
 			</div>
 
-			<!-- Sidebar (3 cols) -->
-			<aside class="lg:col-span-3 space-y-10">
-				<section class="border-t-2 border-primary pt-4">
-					<h3 class="rail-label flex items-center gap-2">
-						<TrendingUp size={14} /> ПОПУЛАРНО
+			<!-- NYT Sidebar (Col 10-12) -->
+			<aside class="lg:col-span-3 lg:pl-8 space-y-12">
+				<section>
+					<h3 class="nyt-section-label mb-6 flex items-center gap-2 border-b border-nyt-black pb-2">
+						<TrendingUp size={14} /> ПОПУЛАРНО СЕГА
 					</h3>
-					<div class="flex flex-wrap gap-2">
-						{trending.slice(0, 15).map(item => (
-							<a href={`/?q=${item.word}`} class="pill-lite">
-								{item.word} {item.trend === '↑' && "↑"}
+					<div class="divide-y border-nyt-gray-200">
+						{trending.slice(0, 10).map((item, idx) => (
+							<a href={`/?q=${item.word}`} class="flex items-start gap-4 py-4 group no-underline">
+								<span class="font-serif text-3xl font-black text-nyt-gray-500 group-hover:text-nyt-black transition-colors">{idx + 1}</span>
+								<div>
+									<p class="font-serif font-black text-sm text-nyt-black group-hover:text-nyt-gray-600 leading-snug">{item.word}</p>
+									<span class="text-[10px] text-nyt-red font-black uppercase">{item.trend === '↑' ? 'Расте' : 'Стабилно'}</span>
+								</div>
 							</a>
 						))}
 					</div>
 				</section>
 
-				<section class="border-t-2 border-primary pt-4">
-					<h3 class="rail-label flex items-center gap-2">
+				<section class="bg-nyt-gray-100 p-6 border border-nyt-gray-300">
+					<h3 class="nyt-section-label mb-4 flex items-center gap-2">
 						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
 					</h3>
-					<div class="bg-secondary p-4 rounded-sm">
-						<p class="text-[10px] font-bold text-muted uppercase mb-1">ПОСЛЕДНИ 24 ЧАСА</p>
-						<p class="text-2xl font-serif font-bold text-primary">{clusters.length > 5 ? '180+' : '--'}</p>
-						<p class="text-[10px] font-bold text-muted uppercase">ОБЈАВЕНИ СТАТИИ</p>
+					<div class="space-y-4">
+						<div class="flex justify-between border-b pb-2">
+							<span class="text-[10px] font-black uppercase text-nyt-gray-600">Статии (24ч)</span>
+							<span class="font-serif font-black text-lg">180+</span>
+						</div>
+						<div class="flex justify-between border-b pb-2">
+							<span class="text-[10px] font-black uppercase text-nyt-gray-600">Активни Извори</span>
+							<span class="font-serif font-black text-lg">42</span>
+						</div>
 					</div>
 				</section>
+
+                <section>
+                    <h3 class="nyt-section-label mb-6 border-b border-nyt-black pb-2">ФОКУС</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {topEntities.slice(0, 10).map((ent: any) => (
+                            <a href={`/?q=${encodeURIComponent(ent.name)}`} class="nyt-section-label text-[9px] border border-nyt-gray-300 px-2 py-1 hover:bg-nyt-black hover:text-white transition">
+                                {ent.name}
+                            </a>
+                        ))}
+                    </div>
+                </section>
 			</aside>
 		</div>
 	</main>
 
-	<footer class="site-layout mt-20 py-10 border-t border-nyt text-center">
-		<img src="/logo.svg" alt="Presek" class="h-10 opacity-30 mx-auto mb-4 grayscale" />
-		<p class="text-[10px] font-bold text-muted uppercase tracking-widest">
-			© 2026 ПРЕСЕК - ИНТЕЛИГЕНТНА АГРЕГАЦИЈА НА ВЕСТИ
-		</p>
-	</footer>
+	<Footer />
 </Layout>
 
 <style>
-	.pill-lite {
-		font-size: 0.65rem;
-		font-weight: 800;
-		text-transform: uppercase;
-		color: var(--text-secondary);
-		background: var(--bg-secondary);
-		padding: 0.25rem 0.6rem;
-		border-radius: 2px;
-		text-decoration: none;
-		transition: all 0.2s ease;
-	}
-
-	.pill-lite:hover {
-		background: var(--accent-color);
-		color: white;
+	.divide-y > * + * {
+		border-top-width: 1px;
 	}
 </style>
