@@ -315,15 +315,20 @@ class DatabaseManager:
                     channel TEXT DEFAULT 'ntfy',
                     target TEXT DEFAULT '',
                     morning_briefing BOOLEAN DEFAULT TRUE,
+                    weekly_digest BOOLEAN DEFAULT FALSE,
                     breaking_topics BOOLEAN DEFAULT FALSE,
                     breaking_sources BOOLEAN DEFAULT FALSE,
                     is_active BOOLEAN DEFAULT FALSE,
                     last_morning_sent_at TIMESTAMP,
+                    last_weekly_sent_at TIMESTAMP,
                     last_breaking_sent_at TIMESTAMP,
                     last_alert_cluster_ids JSONB DEFAULT '[]'::jsonb,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
+                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS last_alert_context JSONB DEFAULT '{}'::jsonb")
+                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE")
+                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS last_weekly_sent_at TIMESTAMP")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,

@@ -222,6 +222,7 @@ def test_fastapi_profile_delivery_get_returns_subscription():
             "channel": "ntfy",
             "target": "reader-feed",
             "morning_briefing": True,
+            "weekly_digest": True,
             "breaking_topics": True,
             "breaking_sources": False,
             "is_active": True,
@@ -234,6 +235,7 @@ def test_fastapi_profile_delivery_get_returns_subscription():
 
     assert data["status"] == "success"
     assert data["subscription"]["target"] == "reader-feed"
+    assert data["subscription"]["weeklyDigest"] is True
     assert data["subscription"]["breakingTopics"] is True
 
 
@@ -246,6 +248,7 @@ def test_fastapi_profile_delivery_save_upserts_subscription():
         "subscription": {
             "target": "reader-feed",
             "morningBriefing": True,
+            "weeklyDigest": True,
             "breakingTopics": True,
             "breakingSources": True,
             "isActive": True,
@@ -257,5 +260,6 @@ def test_fastapi_profile_delivery_save_upserts_subscription():
 
     assert data["status"] == "success"
     assert data["subscription"]["target"] == "reader-feed"
+    assert data["subscription"]["weeklyDigest"] is True
     assert data["subscription"]["breakingSources"] is True
     mock_db.execute.assert_called_once()

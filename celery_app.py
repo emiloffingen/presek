@@ -53,6 +53,10 @@ celery_app.conf.update(
             'task': 'tasks.send_profile_briefings_task',
             'schedule': crontab(hour=7, minute=10),
         },
+        'send-profile-weekly-digests': {
+            'task': 'tasks.send_profile_weekly_digests_task',
+            'schedule': crontab(hour=8, minute=0, day_of_week='sun'),
+        },
         'send-profile-breaking-alerts': {
             'task': 'tasks.send_profile_breaking_alerts_task',
             'schedule': 900.0,

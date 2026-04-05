@@ -21,7 +21,7 @@ from prompts import (
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
 from health import record_refresh, record_task_event
-from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix
+from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness
 from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
@@ -157,9 +157,9 @@ def _normalize_synced_profile_for_delivery(profile):
 
 def _load_active_delivery_rows():
     return db.execute(
-        """SELECT s.sync_token, s.channel, s.target, s.morning_briefing, s.breaking_topics,
-                  s.breaking_sources, s.is_active, s.last_morning_sent_at, s.last_breaking_sent_at,
-                  s.last_alert_cluster_ids, p.profile_data
+        """SELECT s.sync_token, s.channel, s.target, s.morning_briefing, s.weekly_digest, s.breaking_topics,
+                  s.breaking_sources, s.is_active, s.last_morning_sent_at, s.last_weekly_sent_at, s.last_breaking_sent_at,
+                  s.last_alert_cluster_ids, s.last_alert_context, p.profile_data
            FROM synced_delivery_subscriptions s
            JOIN synced_reader_profiles p ON p.sync_token = s.sync_token
            WHERE s.is_active = TRUE"""
@@ -191,7 +191,7 @@ def _cluster_delivery_match(cluster, profile, *, include_topics=True, include_so
     score += min(1.0, max(0, int(cluster.get("source_count") or 0) - 1) * 0.2)
     score += min(0.9, float(cluster.get("score") or 0) * 0.12)
 
-    return score, reasons
+    return score, reasons, topic_hits, [lead_source] if lead_source and lead_source in followed_sources else []
 
 
 def _build_profile_briefing_message(profile, clusters):
@@ -222,11 +222,109 @@ def _build_profile_briefing_message(profile, clusters):
     return "\n".join(line for line in lines if line is not None).strip()
 
 
+def _load_weekly_digest_clusters(limit=32):
+    rows = db.execute(
+        "SELECT cluster_id, title, description, summary, source, category, topic, created_at "
+        "FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' ORDER BY created_at DESC LIMIT 420"
+    )
+    clusters = {}
+    for row in rows:
+        clusters.setdefault(row["cluster_id"], []).append(row)
+
+    ranked_clusters = []
+    for cluster_id, articles in clusters.items():
+        ranked = rank_articles_in_cluster(articles)
+        if not ranked:
+            continue
+        lead = ranked[0]
+        synthesis_row = db.execute_one(
+            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+            (cluster_id,),
+        )
+        normalized_perspectives = normalize_perspectives((synthesis_row or {}).get("perspectives") or [])
+        difference_point = ""
+        open_point = ""
+        for item in normalized_perspectives:
+            angle = str(item.get("angle") or "").lower()
+            content = str(item.get("content") or "").strip()
+            if not content:
+                continue
+            if not difference_point and ("различ" in angle or "акцент" in angle):
+                difference_point = content
+            if not open_point and ("отвор" in angle or "нејас" in angle):
+                open_point = content
+
+        ranked_clusters.append({
+            "cluster_id": cluster_id,
+            "title": lead.get("title"),
+            "description": lead.get("summary") or lead.get("description") or "",
+            "source": lead.get("source"),
+            "category": lead.get("category"),
+            "topic": lead.get("topic"),
+            "created_at": lead.get("created_at"),
+            "source_count": len({a.get("source") for a in ranked if a.get("source")}),
+            "difference_point": difference_point,
+            "open_point": open_point,
+            "cluster_summary": (synthesis_row or {}).get("summary") or "",
+            "score": score_cluster_for_homepage(ranked),
+            "other_titles": [str(item.get("title") or "").strip() for item in ranked[1:5] if str(item.get("title") or "").strip()],
+        })
+
+    ranked_clusters.sort(key=lambda item: item["score"], reverse=True)
+    return ranked_clusters[:limit]
+
+
+def _select_profile_weekly_clusters(profile, limit=5):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    ranked = []
+    for cluster in _load_weekly_digest_clusters(limit=28):
+        match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
+        total_score = match_score + min(1.6, float(cluster.get("score") or 0) * 0.2)
+        ranked.append({
+            **cluster,
+            "match_score": total_score,
+            "match_reason": "; ".join(reasons[:2]) or "неделна важност",
+        })
+
+    personalized = [item for item in ranked if item["match_score"] >= 1.9]
+    personalized.sort(key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True)
+    return (personalized or ranked)[:limit]
+
+
+def _build_profile_weekly_digest_message(profile, clusters):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    followed_topics = profile["followedTopics"][:4]
+    followed_sources = profile["followedSources"][:4]
+
+    lines = ["Пресек неделен преглед"]
+    if followed_topics:
+        lines.append(f"Фокус теми: {', '.join(followed_topics)}")
+    if followed_sources:
+        lines.append(f"Фокус извори: {', '.join(followed_sources)}")
+
+    for cluster in clusters[:5]:
+        lines.append("")
+        lines.append(f"• {cluster.get('title') or 'Клучна приказна неделава'}")
+        lines.append(f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {cluster.get('match_reason') or 'неделен контекст'}")
+        if cluster.get("cluster_summary"):
+            lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
+        elif cluster.get("description"):
+            lines.append(f"  {str(cluster['description'])[:220]}")
+        if cluster.get("difference_point"):
+            lines.append(f"  Главна разлика: {str(cluster['difference_point'])[:180]}")
+        elif cluster.get("open_point"):
+            lines.append(f"  Што остана отворено: {str(cluster['open_point'])[:180]}")
+
+    lines.append("")
+    lines.append("Што да следите понатаму: Проверете ги темите и кластерите што остануваат отворени или влегуваат во нова фаза.")
+    return "\n".join(line for line in lines if line is not None).strip()
+
+
 def _select_profile_brief_clusters(profile, limit=4):
     profile = _normalize_synced_profile_for_delivery(profile)
     ranked = []
     for cluster in _load_daily_brief_clusters(limit=18):
-        match_score, reasons = _cluster_delivery_match(cluster, profile)
+        match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
         total_score = match_score + min(1.4, float(cluster.get("score") or 0) * 0.18)
         ranked.append({
             **cluster,
@@ -298,16 +396,129 @@ def _load_recent_breaking_clusters(hours=4, limit=24):
     return ranked
 
 
-def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, *, include_topics=True, include_sources=True):
+def _normalize_alert_context(context):
+    if isinstance(context, str):
+        try:
+            context = json.loads(context)
+        except Exception:
+            return {}
+    if not isinstance(context, dict):
+        return {}
+    clean = {}
+    for key, value in context.items():
+        key_text = str(key or "").strip()
+        value_text = str(value or "").strip()
+        if key_text and value_text:
+            clean[key_text] = value_text
+    return clean
+
+
+def _load_cluster_alert_material(cluster_id):
+    articles = db.execute(
+        "SELECT title, description, source, link, created_at, category, topic FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+        (cluster_id,),
+    )
+    summary_row = db.execute_one(
+        "SELECT created_at FROM cluster_summaries WHERE cluster_id = %s",
+        (cluster_id,),
+    )
+    return articles, (summary_row or {}).get("created_at")
+
+
+def _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources):
+    reasons = freshness.get("reasons") or []
+    freshness_score = float(freshness.get("freshness_score") or 0.0)
+    base_score = float(cluster.get("score") or 0.0)
+
+    alert_label = "Важно ажурирање"
+    alert_reason = cluster.get("match_reason") or "оваа приказна силно се врзува со вашите следени теми или извори"
+    alert_tags = "newspaper"
+    min_gap_minutes = 90
+    topic_gap_minutes = 240
+    source_gap_minutes = 180
+
+    if "credible_new_reporting" in reasons or "new_sources" in reasons or base_score >= BREAKING_SCORE_THRESHOLD + 1.4:
+        alert_label = "Итно ажурирање"
+        alert_reason = "се појави нов доверлив извор или значаен развој"
+        alert_tags = "rotating_light,newspaper"
+        min_gap_minutes = 30
+        topic_gap_minutes = 120
+        source_gap_minutes = 90
+    elif "new_numbers" in reasons or "new_angle" in reasons or freshness_score >= 1.8:
+        alert_label = "Нова важна промена"
+        alert_reason = "има нов агол, бројки или појасна промена во известувањето"
+        alert_tags = "newspaper,warning"
+        min_gap_minutes = 60
+        topic_gap_minutes = 180
+        source_gap_minutes = 150
+    elif "multiple_new_reports" in reasons:
+        alert_label = "Следен развој"
+        alert_reason = "се натрупуваат повеќе нови извештаи околу истата приказна"
+        alert_tags = "newspaper"
+        min_gap_minutes = 120
+        topic_gap_minutes = 360
+        source_gap_minutes = 240
+
+    throttle_keys = [f"cluster:{str(cluster.get('cluster_id') or '').strip()}"]
+    throttle_keys.extend(f"topic:{topic}" for topic in matched_topics[:2])
+    throttle_keys.extend(f"source:{source}" for source in matched_sources[:2])
+
+    return {
+        "alert_label": alert_label,
+        "alert_reason": alert_reason,
+        "alert_tags": alert_tags,
+        "min_gap_minutes": min_gap_minutes,
+        "topic_gap_minutes": topic_gap_minutes,
+        "source_gap_minutes": source_gap_minutes,
+        "throttle_keys": throttle_keys,
+    }
+
+
+def _alert_throttled(last_breaking_sent_at, alert_context, candidate):
+    last_global = _parse_row_datetime(last_breaking_sent_at)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if last_global:
+        if last_global.tzinfo is None:
+            last_global = last_global.replace(tzinfo=datetime.timezone.utc)
+        age_minutes = (now - last_global.astimezone(datetime.timezone.utc)).total_seconds() / 60.0
+        if age_minutes < candidate["min_gap_minutes"]:
+            return True
+
+    context = _normalize_alert_context(alert_context)
+    for key in candidate["throttle_keys"]:
+        last_value = _parse_row_datetime(context.get(key))
+        if not last_value:
+            continue
+        if last_value.tzinfo is None:
+            last_value = last_value.replace(tzinfo=datetime.timezone.utc)
+        age_minutes = (now - last_value.astimezone(datetime.timezone.utc)).total_seconds() / 60.0
+        if key.startswith("cluster:") and age_minutes < max(180, candidate["min_gap_minutes"] * 2):
+            return True
+        if key.startswith("topic:") and age_minutes < candidate["topic_gap_minutes"]:
+            return True
+        if key.startswith("source:") and age_minutes < candidate["source_gap_minutes"]:
+            return True
+    return False
+
+
+def _next_alert_context(existing_context, candidate):
+    context = _normalize_alert_context(existing_context)
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    for key in candidate["throttle_keys"]:
+        context[key] = now
+    return context
+
+
+def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_context=None, last_breaking_sent_at=None, *, include_topics=True, include_sources=True):
     profile = _normalize_synced_profile_for_delivery(profile)
     seen = {str(item or "").strip() for item in seen_cluster_ids or [] if str(item or "").strip()}
 
     candidates = []
     for cluster in _load_recent_breaking_clusters():
         cluster_id = str(cluster.get("cluster_id") or "").strip()
-        if not cluster_id or cluster_id in seen:
+        if not cluster_id:
             continue
-        match_score, reasons = _cluster_delivery_match(
+        match_score, reasons, matched_topics, matched_sources = _cluster_delivery_match(
             cluster,
             profile,
             include_topics=include_topics,
@@ -315,14 +526,26 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, *, include_t
         )
         if match_score < 2.0:
             continue
+        articles, synthesis_created_at = _load_cluster_alert_material(cluster_id)
+        freshness = assess_cluster_synthesis_freshness(articles, synthesis_created_at)
+        alert_meta = _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources)
+        if cluster_id in seen and not freshness.get("refresh_needed"):
+            continue
         candidates.append({
             **cluster,
-            "match_score": match_score + min(1.5, float(cluster.get("score") or 0) * 0.15),
+            "match_score": match_score + min(1.5, float(cluster.get("score") or 0) * 0.15) + min(1.2, float(freshness.get("freshness_score") or 0.0) * 0.4),
             "match_reason": "; ".join(reasons[:2]),
+            "matched_topics": matched_topics[:2],
+            "matched_sources": matched_sources[:2],
+            "freshness": freshness,
+            **alert_meta,
         })
 
     candidates.sort(key=lambda item: item["match_score"], reverse=True)
-    return candidates[0] if candidates else None
+    for candidate in candidates:
+        if not _alert_throttled(last_breaking_sent_at, alert_context, candidate):
+            return candidate
+    return None
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
@@ -733,6 +956,49 @@ def send_profile_briefings_task():
 
 
 @celery_app.task
+def send_profile_weekly_digests_task():
+    """Send scheduled weekly digests for synced delivery subscriptions."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    sent = 0
+
+    try:
+        rows = _load_active_delivery_rows()
+        for row in rows:
+            if not row.get("weekly_digest"):
+                continue
+
+            last_sent = _parse_row_datetime(row.get("last_weekly_sent_at"))
+            if last_sent:
+                if last_sent.tzinfo is None:
+                    last_sent = last_sent.replace(tzinfo=datetime.timezone.utc)
+                if (now - last_sent.astimezone(datetime.timezone.utc)).total_seconds() < 6.5 * 24 * 3600:
+                    continue
+
+            target = str(row.get("target") or NTFY_TOPIC).strip()
+            profile = _normalize_synced_profile_for_delivery(row.get("profile_data") or {})
+            clusters = _select_profile_weekly_clusters(profile)
+            if not clusters:
+                continue
+
+            message = _build_profile_weekly_digest_message(profile, clusters)
+            if not message:
+                continue
+
+            if _send_ntfy_message(target, "Пресек · Неделен преглед", message, tags="spiral_calendar,newspaper"):
+                db.execute(
+                    "UPDATE synced_delivery_subscriptions SET last_weekly_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
+                    (row["sync_token"],),
+                    fetch=False,
+                )
+                sent += 1
+    except Exception as e:
+        log.warning(f"[tasks] Weekly digests failed: {e}")
+    else:
+        if sent:
+            log.info(f"[tasks] Sent {sent} weekly profile digests.")
+
+
+@celery_app.task
 def send_profile_breaking_alerts_task():
     """Send breaking alerts for followed topics and sources through active synced subscriptions."""
     sent = 0
@@ -749,36 +1015,46 @@ def send_profile_breaking_alerts_task():
             candidate = _select_breaking_cluster_for_profile(
                 profile,
                 existing_ids,
+                alert_context=row.get("last_alert_context"),
+                last_breaking_sent_at=row.get("last_breaking_sent_at"),
                 include_topics=bool(row.get("breaking_topics")),
                 include_sources=bool(row.get("breaking_sources")),
             )
             if not candidate:
                 continue
 
-            title = f"Пресек · Итно: {candidate.get('title') or 'Нова развојна линија'}"
+            title = f"Пресек · {candidate.get('alert_label') or 'Важно ажурирање'}"
             message_lines = [
                 candidate.get("title") or "Нова важна развојна линија",
                 f"{candidate.get('source') or 'Извор'} · {candidate.get('source_count') or 1} извори",
             ]
+            why_now = candidate.get("alert_reason") or candidate.get("match_reason")
+            if why_now:
+                message_lines.append(f"Зошто сега: {why_now}")
             if candidate.get("match_reason"):
                 message_lines.append(f"Зошто го добивате ова: {candidate['match_reason']}")
             if candidate.get("cluster_summary"):
                 message_lines.append(str(candidate["cluster_summary"]).splitlines()[0][:240])
             elif candidate.get("description"):
                 message_lines.append(str(candidate["description"])[:240])
+            if candidate.get("difference_point"):
+                message_lines.append(f"Разлика: {str(candidate['difference_point'])[:180]}")
+            elif candidate.get("open_point"):
+                message_lines.append(f"Отворено: {str(candidate['open_point'])[:180]}")
 
-            if _send_ntfy_message(target, title, "\n".join(message_lines), tags="rotating_light,newspaper"):
+            if _send_ntfy_message(target, title, "\n".join(message_lines), tags=candidate.get("alert_tags") or "newspaper"):
                 next_ids = [str(candidate.get("cluster_id") or "").strip()]
                 next_ids.extend(
                     str(item or "").strip()
                     for item in existing_ids
                     if str(item or "").strip() and str(item or "").strip() != str(candidate.get("cluster_id") or "").strip()
                 )
+                next_context = _next_alert_context(row.get("last_alert_context"), candidate)
                 db.execute(
                     "UPDATE synced_delivery_subscriptions "
-                    "SET last_breaking_sent_at = NOW(), last_alert_cluster_ids = %s::jsonb, updated_at = NOW() "
+                    "SET last_breaking_sent_at = NOW(), last_alert_cluster_ids = %s::jsonb, last_alert_context = %s::jsonb, updated_at = NOW() "
                     "WHERE sync_token = %s",
-                    (json.dumps(next_ids[:24]), row["sync_token"]),
+                    (json.dumps(next_ids[:24]), json.dumps(next_context), row["sync_token"]),
                     fetch=False,
                 )
                 sent += 1

@@ -1,4 +1,5 @@
 import json
+import datetime
 from unittest.mock import MagicMock, patch
 
 
@@ -169,6 +170,30 @@ class TestProfileDeliveryTasks:
         update_sql = mock_db.execute.call_args.args[0]
         assert "last_morning_sent_at" in update_sql
 
+    def test_send_profile_weekly_digests_updates_last_sent(self):
+        import tasks
+
+        rows = [
+            {
+                "sync_token": "sync-token-123",
+                "target": "reader-feed",
+                "weekly_digest": True,
+                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "last_weekly_sent_at": None,
+            }
+        ]
+
+        with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
+             patch.object(tasks, "_select_profile_weekly_clusters", return_value=[{"title": "Week lead", "source": "MIA", "source_count": 4, "match_reason": "следена тема: Политика"}]), \
+             patch.object(tasks, "_build_profile_weekly_digest_message", return_value="Weekly body"), \
+             patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
+             patch.object(tasks, "db") as mock_db:
+            tasks.send_profile_weekly_digests_task()
+
+        mock_send.assert_called_once()
+        update_sql = mock_db.execute.call_args.args[0]
+        assert "last_weekly_sent_at" in update_sql
+
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
         import tasks
 
@@ -180,6 +205,8 @@ class TestProfileDeliveryTasks:
                 "breaking_sources": False,
                 "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
                 "last_alert_cluster_ids": ["old-cluster"],
+                "last_alert_context": {},
+                "last_breaking_sent_at": None,
             }
         ]
         candidate = {
@@ -188,6 +215,10 @@ class TestProfileDeliveryTasks:
             "source": "MIA",
             "source_count": 3,
             "match_reason": "следена тема: Политика",
+            "alert_label": "Итно ажурирање",
+            "alert_reason": "се појави нов доверлив извор или значаен развој",
+            "alert_tags": "rotating_light,newspaper",
+            "throttle_keys": ["cluster:new-cluster", "topic:Политика"],
             "cluster_summary": "Главниот развој.",
         }
 
@@ -200,3 +231,65 @@ class TestProfileDeliveryTasks:
         mock_send.assert_called_once()
         params = mock_db.execute.call_args.args[1]
         assert "new-cluster" in params[0]
+        assert "topic:Политика" in json.loads(params[1])
+
+    def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
+        import tasks
+        now = datetime.datetime.now(datetime.timezone.utc)
+        recent_iso = now.isoformat()
+        cluster = {
+            "cluster_id": "new-cluster",
+            "title": "Breaking story",
+            "source": "MIA",
+            "source_count": 3,
+            "score": 5.2,
+            "category": "Политика",
+            "topic": "Политика",
+            "created_at": recent_iso,
+        }
+        freshness = {"refresh_needed": True, "freshness_score": 2.1, "reasons": ["new_sources"]}
+
+        with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
+             patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": recent_iso}], now)), \
+             patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
+            candidate = tasks._select_breaking_cluster_for_profile(
+                {"followedTopics": ["Политика"], "followedSources": []},
+                [],
+                alert_context={"topic:Политика": recent_iso},
+                last_breaking_sent_at=None,
+                include_topics=True,
+                include_sources=False,
+            )
+
+        assert candidate is None
+
+    def test_select_breaking_cluster_allows_material_refresh_after_seen(self):
+        import tasks
+        older = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)).isoformat()
+        cluster = {
+            "cluster_id": "same-cluster",
+            "title": "Breaking story",
+            "source": "MIA",
+            "source_count": 4,
+            "score": 5.8,
+            "category": "Политика",
+            "topic": "Политика",
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        freshness = {"refresh_needed": True, "freshness_score": 2.6, "reasons": ["new_sources", "new_numbers"]}
+
+        with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
+             patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": cluster["created_at"]}], older)), \
+             patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
+            candidate = tasks._select_breaking_cluster_for_profile(
+                {"followedTopics": ["Политика"], "followedSources": []},
+                ["same-cluster"],
+                alert_context={"cluster:same-cluster": older},
+                last_breaking_sent_at=older,
+                include_topics=True,
+                include_sources=False,
+            )
+
+        assert candidate is not None
+        assert candidate["cluster_id"] == "same-cluster"
+        assert candidate["alert_label"] == "Итно ажурирање"

@@ -199,7 +199,7 @@ export default function BriefingDeliveryIsland({
           <span>Scheduled delivery</span>
         </p>
         <p className="scheduled-delivery-copy">
-          Save an `ntfy` topic against your sync key to receive server-side morning briefings and followed-topic or followed-source alerts.
+          Save an `ntfy` topic against your sync key to receive server-side morning briefings, weekly digests, and followed-topic or followed-source alerts.
         </p>
 
         <label className="scheduled-delivery-label">
@@ -217,6 +217,10 @@ export default function BriefingDeliveryIsland({
           <button type="button" className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
             <span>Morning ntfy briefing</span>
             <strong>{serverDelivery.morningBriefing ? 'On' : 'Off'}</strong>
+          </button>
+          <button type="button" className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
+            <span>Weekly digest</span>
+            <strong>{serverDelivery.weeklyDigest ? 'On' : 'Off'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.breakingTopics ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
             <span>Alerts for followed topics</span>

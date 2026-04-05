@@ -485,6 +485,7 @@ class TestProfileSync:
                 "channel": "ntfy",
                 "target": "reader-feed",
                 "morning_briefing": True,
+                "weekly_digest": True,
                 "breaking_topics": True,
                 "breaking_sources": False,
                 "is_active": True,
@@ -496,6 +497,7 @@ class TestProfileSync:
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["weeklyDigest"] is True
         assert data["subscription"]["breakingTopics"] is True
 
     def test_profile_delivery_save(self, client):
@@ -506,6 +508,7 @@ class TestProfileSync:
             "subscription": {
                 "target": "reader-feed",
                 "morningBriefing": True,
+                "weeklyDigest": True,
                 "breakingTopics": True,
                 "breakingSources": True,
                 "isActive": True,
@@ -516,6 +519,7 @@ class TestProfileSync:
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["weeklyDigest"] is True
         assert data["subscription"]["breakingSources"] is True
 
 

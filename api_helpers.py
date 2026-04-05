@@ -191,6 +191,7 @@ def normalize_server_delivery_subscription(payload) -> dict:
         "channel": channel,
         "target": target,
         "morningBriefing": payload.get("morningBriefing") is not False,
+        "weeklyDigest": bool(payload.get("weeklyDigest")),
         "breakingTopics": bool(payload.get("breakingTopics")),
         "breakingSources": bool(payload.get("breakingSources")),
         "isActive": is_active,

@@ -134,6 +134,7 @@ def _normalize_server_delivery_row(row):
         "channel": row.get("channel"),
         "target": row.get("target"),
         "morningBriefing": row.get("morning_briefing"),
+        "weeklyDigest": row.get("weekly_digest"),
         "breakingTopics": row.get("breaking_topics"),
         "breakingSources": row.get("breaking_sources"),
         "isActive": row.get("is_active"),
@@ -960,7 +961,7 @@ def api_profile_delivery_get():
         return error_response("Synced profile not found", 404)
 
     row = db.execute_one(
-        "SELECT channel, target, morning_briefing, breaking_topics, breaking_sources, is_active, updated_at "
+        "SELECT channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at "
         "FROM synced_delivery_subscriptions WHERE sync_token = %s",
         (token,),
     )
@@ -991,12 +992,13 @@ def api_profile_delivery_save():
     subscription = _normalize_server_delivery_subscription(payload.get("subscription") or {})
     db.execute(
         """INSERT INTO synced_delivery_subscriptions
-           (sync_token, channel, target, morning_briefing, breaking_topics, breaking_sources, is_active, updated_at)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+           (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
            ON CONFLICT (sync_token) DO UPDATE SET
              channel = EXCLUDED.channel,
              target = EXCLUDED.target,
              morning_briefing = EXCLUDED.morning_briefing,
+             weekly_digest = EXCLUDED.weekly_digest,
              breaking_topics = EXCLUDED.breaking_topics,
              breaking_sources = EXCLUDED.breaking_sources,
              is_active = EXCLUDED.is_active,
@@ -1006,6 +1008,7 @@ def api_profile_delivery_save():
             subscription["channel"],
             subscription["target"],
             subscription["morningBriefing"],
+            subscription["weeklyDigest"],
             subscription["breakingTopics"],
             subscription["breakingSources"],
             subscription["isActive"],
