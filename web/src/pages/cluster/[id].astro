@@ -147,14 +147,6 @@ const articleRows = cluster
 			relativeTime: getRelativeTimeStr(article.created_at),
 	  }))
 	: [];
-const coverageSummary = articleRows.reduce(
-	(acc: any, article: any) => {
-		acc.total += 1;
-		acc[article.relationship.tone] += 1;
-		return acc;
-	},
-	{ total: 0, lead: 0, confirm: 0, context: 0, contrast: 0 }
-);
 const suggestedQuestions = [
 	'Што е најважното ново во оваа вест?',
 	'Како се разликуваат изворите во известувањето?',
@@ -288,24 +280,6 @@ const suggestedQuestions = [
 								</div>
 							</div>
 						)}
-
-						<div class="rail-card">
-							<h3 class="rail-card-title">Слика На Покриеност</h3>
-								<div class="coverage-metrics">
-									<div>
-										<strong>{coverageSummary.confirm}</strong>
-										<span>ја потврдуваат главната линија</span>
-									</div>
-									<div>
-										<strong>{coverageSummary.context}</strong>
-										<span>додаваат поширока слика</span>
-									</div>
-									<div>
-										<strong>{coverageSummary.contrast}</strong>
-										<span>влегуваат со различен агол</span>
-									</div>
-								</div>
-							</div>
 
 						{/* AI Chat Island (Coming Soon Style) */}
 						<div class="rail-card rail-card-accent">
