@@ -4,6 +4,7 @@ import NewsCard from '../components/NewsCard.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
+import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
@@ -200,6 +201,8 @@ function getThumb(cluster: any) {
 					{clusters.length > 4 && (
 						<ForYouIsland client:load clusters={clusters.slice(0, 18)} />
 					)}
+
+					<OnboardingIsland client:load compact />
 
 					{showInternationalRail && (
 						<section class="international-section">

@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
+import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import { KeyRound, Radio, Sparkles } from 'lucide-react';
 ---
 
@@ -22,6 +23,9 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
 
       <div class="settings-page-grid">
         <div class="settings-main">
+          <div class="settings-card">
+            <OnboardingIsland client:load />
+          </div>
           <div class="settings-card">
             <SettingsProfileIsland client:load />
           </div>

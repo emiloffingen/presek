@@ -3,6 +3,7 @@ const MAX_RECENT_CLUSTERS = 24;
 const MAX_FOLLOWED = 12;
 const DELIVERY_KEY = 'presek_delivery_prefs_v1';
 const SYNC_TOKEN_KEY = 'presek_sync_token_v1';
+const ONBOARDING_KEY = 'presek_onboarding_v1';
 
 function normalizeValue(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -338,6 +339,89 @@ export function buildDeliveryDigest(content, profile, prefs) {
     ...introBits,
     ...headlineLines.map((line) => `• ${line}`),
   ].join('\n').trim();
+}
+
+export function createDefaultOnboardingState() {
+  return {
+    dismissed: false,
+    completedAt: '',
+  };
+}
+
+export function loadOnboardingState(storage = globalThis?.localStorage) {
+  if (!storage) return createDefaultOnboardingState();
+  const parsed = safeParse(storage.getItem(ONBOARDING_KEY));
+  return {
+    dismissed: Boolean(parsed?.dismissed),
+    completedAt: normalizeValue(parsed?.completedAt),
+  };
+}
+
+export function saveOnboardingState(state, storage = globalThis?.localStorage) {
+  const normalized = {
+    dismissed: Boolean(state?.dismissed),
+    completedAt: normalizeValue(state?.completedAt),
+  };
+  if (storage) {
+    storage.setItem(ONBOARDING_KEY, JSON.stringify(normalized));
+  }
+  return normalized;
+}
+
+export function dismissOnboarding(storage = globalThis?.localStorage) {
+  return saveOnboardingState({ ...loadOnboardingState(storage), dismissed: true }, storage);
+}
+
+export function completeOnboarding(storage = globalThis?.localStorage) {
+  return saveOnboardingState(
+    {
+      dismissed: true,
+      completedAt: new Date().toISOString(),
+    },
+    storage
+  );
+}
+
+export function getOnboardingProgress(storage = globalThis?.localStorage) {
+  const profile = loadReaderProfile(storage);
+  const delivery = loadDeliveryPreferences(storage);
+  const syncToken = loadSyncToken(storage);
+  const onboarding = loadOnboardingState(storage);
+
+  const steps = [
+    {
+      id: 'read',
+      label: 'Отворете неколку кластери',
+      done: (profile.recentClusters || []).length >= 2,
+    },
+    {
+      id: 'topic',
+      label: 'Следете 2 теми',
+      done: (profile.followedTopics || []).length >= 2,
+    },
+    {
+      id: 'source',
+      label: 'Следете 1 извор',
+      done: (profile.followedSources || []).length >= 1,
+    },
+    {
+      id: 'delivery',
+      label: 'Вклучете известувања или достава',
+      done: delivery.browserPermission === 'granted' || Boolean(syncToken),
+    },
+  ];
+
+  const doneCount = steps.filter((step) => step.done).length;
+  const completed = doneCount === steps.length;
+  return {
+    steps,
+    doneCount,
+    total: steps.length,
+    completed,
+    dismissed: onboarding.dismissed,
+    completedAt: onboarding.completedAt,
+    shouldShow: !completed && !onboarding.dismissed,
+  };
 }
 
 export function exportSyncPayload(storage = globalThis?.localStorage) {

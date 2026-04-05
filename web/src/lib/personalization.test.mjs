@@ -4,8 +4,11 @@ import assert from 'node:assert/strict';
 import {
   buildDeliveryDigest,
   buildPersonalizedClusters,
+  createDefaultOnboardingState,
   createEmptyProfile,
+  dismissOnboarding,
   exportSyncPayload,
+  getOnboardingProgress,
   hasPersonalizationSignal,
   loadDeliveryPreferences,
   loadSyncToken,
@@ -196,4 +199,26 @@ test('mergeSyncPayload unions follows and keeps newest recent clusters', () => {
   assert.deepEqual(merged.profile.followedSources, ['Телма']);
   assert.equal(merged.profile.recentClusters[0].cluster_id, 'remote-1');
   assert.equal(exportSyncPayload(storage).deliveryPreferences.morningBriefing, false);
+});
+
+test('getOnboardingProgress reflects setup steps and dismissal', () => {
+  const storage = makeStorage();
+  const initial = getOnboardingProgress(storage);
+  assert.equal(initial.doneCount, 0);
+  assert.equal(initial.shouldShow, true);
+
+  recordClusterView({ cluster_id: 'c1', title: 'A', category: 'Политика', topic: 'Политика', primarySource: 'MIA', sources: ['MIA'], tags: [] }, storage);
+  recordClusterView({ cluster_id: 'c2', title: 'B', category: 'Економија', topic: 'Економија', primarySource: 'Телма', sources: ['Телма'], tags: [] }, storage);
+  toggleFollowedValue('topic', 'Политика', storage);
+  toggleFollowedValue('topic', 'Економија', storage);
+  toggleFollowedValue('source', 'Телма', storage);
+  saveSyncToken('sync-123', storage);
+
+  const progressed = getOnboardingProgress(storage);
+  assert.equal(progressed.doneCount, 4);
+  assert.equal(progressed.completed, true);
+
+  const dismissed = dismissOnboarding(storage);
+  assert.equal(dismissed.dismissed, true);
+  assert.equal(createDefaultOnboardingState().dismissed, false);
 });
