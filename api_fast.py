@@ -25,11 +25,14 @@ from local_nlp import (
     is_valid_focus_entity,
     build_citation_snippet,
     build_structured_answer_sections,
+    TAG_NOISE_WORDS,
 )
+from health import _probe_database, _probe_redis
 
 log = logging.getLogger("presek")
 
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
+_start_time = datetime.datetime.now(datetime.timezone.utc)
 
 # CORS
 app.add_middleware(
@@ -86,7 +89,7 @@ def _text_terms(text: str) -> set[str]:
     terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
     return {
         term for term in terms
-        if term not in ENTITY_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
+        if term not in TAG_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
     }
 
 
@@ -144,7 +147,17 @@ def _rank_cluster_citations(question: str, answer: str, articles: list[dict], pr
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "6.0.0-async"}
+    db_status = _probe_database()
+    redis_status = _probe_redis()
+    uptime_seconds = int((datetime.datetime.now(datetime.timezone.utc) - _start_time).total_seconds())
+    overall = "ok" if (db_status["ok"] and redis_status["ok"]) else "degraded"
+    return {
+        "status": overall,
+        "version": "6.0.0-async",
+        "uptime_seconds": uptime_seconds,
+        "database": db_status,
+        "redis": redis_status,
+    }
 
 @app.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):

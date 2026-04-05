@@ -6,6 +6,7 @@ Add to app.py: from health import register_health_routes; register_health_routes
 import database
 import time
 import json
+import os
 from datetime import datetime, timezone
 
 _start_time = time.time()
@@ -20,8 +21,54 @@ LOW_ACCEPTANCE_MIN_FETCHED = 4
 
 
 def _get_redis():
-    import os, redis as _redis
+    import redis as _redis
     return _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+
+
+def _probe_database():
+    result = {
+        "ok": False,
+        "article_count": 0,
+        "size_mb": 0.0,
+        "error": "",
+    }
+
+    conn = None
+    try:
+        conn = database.get_db()
+        row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
+        result["article_count"] = row[0] if row else 0
+        result["ok"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+        return result
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    try:
+        result["size_mb"] = database.get_db_size()
+    except Exception as exc:
+        result["error"] = f"db_size probe failed: {exc}"
+
+    return result
+
+
+def _probe_redis():
+    result = {
+        "ok": False,
+        "url": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "error": "",
+    }
+    try:
+        _get_redis().ping()
+        result["ok"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
 
 
 def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
@@ -202,29 +249,8 @@ def register_health_routes(app):
         hours, rem = divmod(uptime_s, 3600)
         mins, secs = divmod(rem, 60)
 
-        # Quick DB probe
-        db_ok = False
-        article_count = 0
-        db_size_mb = 0.0
-        try:
-            conn = database.get_db()
-            row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
-            article_count = row[0] if row else 0
-            conn.close()
-            db_size_mb = database.get_db_size()
-            db_ok = True
-        except Exception:
-            pass
-
-        # Redis probe
-        redis_ok = False
-        try:
-            import os, redis as _redis
-            r = _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
-            r.ping()
-            redis_ok = True
-        except Exception:
-            pass
+        db_status = _probe_database()
+        redis_status = _probe_redis()
 
         last = {"time": None, "count": 0, "errors": []}
         try:
@@ -250,19 +276,15 @@ def register_health_routes(app):
 
         freshness = _freshness_payload(last.get("time"))
 
-        overall = "ok" if (db_ok and redis_ok) else "degraded"
+        overall = "ok" if (db_status["ok"] and redis_status["ok"]) else "degraded"
         if overall == "ok" and freshness["status"] == "stale":
             overall = "degraded"
         return jsonify({
             "status": overall,
             "uptime": f"{hours}h {mins}m {secs}s",
             "uptime_seconds": uptime_s,
-            "database": {
-                "ok": db_ok,
-                "article_count": article_count,
-                "size_mb": db_size_mb,
-            },
-            "redis": {"ok": redis_ok},
+            "database": db_status,
+            "redis": redis_status,
             "last_refresh": {
                 "time": last["time"],
                 "new_articles": last["count"],

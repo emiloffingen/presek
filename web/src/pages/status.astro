@@ -40,15 +40,18 @@ const orderedSources = sourceEntries.sort((a: any, b: any) => {
 });
 
 function formatTime(value: string) {
+	if (!value) return 'Нема податок';
 	try {
-		return new Date(value).toLocaleString('mk-MK', {
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return 'Нема податок';
+		return date.toLocaleString('mk-MK', {
 			day: '2-digit',
 			month: '2-digit',
 			hour: '2-digit',
 			minute: '2-digit',
 		});
 	} catch {
-		return value || '';
+		return 'Нема податок';
 	}
 }
 
@@ -70,6 +73,23 @@ function statusLabel(status: string) {
 	}
 }
 
+function statusTone(status: string) {
+	switch (status) {
+		case 'ok':
+		case 'fresh':
+			return 'fresh';
+		case 'aging':
+		case 'warning':
+			return 'aging';
+		case 'stale':
+		case 'fallback':
+		case 'error':
+			return 'stale';
+		default:
+			return 'neutral';
+	}
+}
+
 function qualityLabel(score: number) {
 	if (score >= 0.85) return 'Силен';
 	if (score >= 0.6) return 'Намален';
@@ -80,6 +100,10 @@ function pauseLabel(source: any) {
 	if (source.is_active) return 'Активен';
 	if (source.pause_mode === 'auto') return 'Авто-пауза';
 	return 'Рачна пауза';
+}
+
+function sourceLabel(source: any) {
+	return source.source || source.name || 'Непознат извор';
 }
 ---
 
@@ -166,7 +190,7 @@ function pauseLabel(source: any) {
 										orderedSources.slice(0, 8).map((source: any) => (
 											<div class={`source-row ${source.degraded ? 'source-row-degraded' : ''}`} data-source-row={source.name}>
 												<div>
-													<p class="task-name">{source.source}</p>
+													<p class="task-name">{sourceLabel(source)}</p>
 													<p class="task-detail">
 														Преземени: {source.fetched || 0} · Прифатени: {source.accepted || 0}
 													</p>
@@ -181,7 +205,7 @@ function pauseLabel(source: any) {
 													{source.error && <p class="task-detail">{source.error}</p>}
 												</div>
 												<div class="task-meta">
-													<span class={`task-badge task-${source.status}`}>{statusLabel(source.status)}</span>
+													<span class={`task-badge task-${statusTone(source.status)}`}>{statusLabel(source.status)}</span>
 													<span class="task-time">{formatTime(source.time)}</span>
 													<div class="source-actions" data-source={source.name}>
 														<button class="source-action-btn" data-action={source.is_active ? 'pause' : 'resume'} type="button">

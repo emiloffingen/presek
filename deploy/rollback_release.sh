@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
+ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
 RELEASE_STATE_DIR="$APP_DIR/.deploy"
 PREV_COMMIT_FILE="$RELEASE_STATE_DIR/previous_commit"
@@ -38,7 +39,7 @@ main() {
   sudo systemctl restart "$SYSTEMD_TARGET"
 
   info "Running smoke checks"
-  ENABLE_PUBLIC_CHECK=0 bash "$SMOKE_SCRIPT"
+  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" bash "$SMOKE_SCRIPT"
 
   ok "Rollback completed"
   ok "Current commit: $(git rev-parse --short HEAD)"

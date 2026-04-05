@@ -53,6 +53,29 @@ export default function AskPresekIsland({
     [suggestedQuestions]
   );
 
+  const parseApiResponse = async (res: Response) => {
+    const rawText = await res.text();
+    let data: any = null;
+
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = null;
+      }
+    }
+
+    return {
+      ok: res.ok,
+      status: res.status,
+      data,
+      message:
+        data?.detail ||
+        data?.message ||
+        (rawText && rawText.trim() ? rawText.trim() : 'Неуспешно прашање.'),
+    };
+  };
+
   const submitQuestion = async (nextQuestion?: string) => {
     const finalQuestion = (nextQuestion ?? question).trim();
     if (!finalQuestion || loading) return;
@@ -68,8 +91,9 @@ export default function AskPresekIsland({
         },
         body: JSON.stringify({ cluster_id: clusterId, query: finalQuestion }),
       });
+      let parsed = await parseApiResponse(res);
 
-      if (!res.ok && (res.status === 404 || res.status === 405)) {
+      if (!parsed.ok || !parsed.data) {
         res = await fetch(`${API_URL}/cluster/${clusterId}/ask`, {
           method: 'POST',
           headers: {
@@ -77,15 +101,16 @@ export default function AskPresekIsland({
           },
           body: JSON.stringify({ question: finalQuestion }),
         });
+        parsed = await parseApiResponse(res);
       }
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.detail || data?.message || 'Неуспешно прашање.');
+      if (!parsed.ok || !parsed.data) {
+        throw new Error(parsed.message);
       }
+      const data = parsed.data;
 
       const nextResult = {
-        answer: data.answer || '',
+        answer: data.answer || data.response || '',
         citations: Array.isArray(data.citations) ? data.citations : [],
         related_questions: Array.isArray(data.related_questions) ? data.related_questions : [],
         confidence: data.confidence || 'medium',

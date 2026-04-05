@@ -86,7 +86,7 @@ def format_time_filter(dt):
 @app.template_filter('briefing_format')
 def briefing_format_filter(content):
     if not content: return ""
-    from markupsafe import Markup
+    from markupsafe import Markup, escape
     # Convert simple markdown to HTML
     lines = content.split('\n')
     formatted_lines = []
@@ -98,17 +98,17 @@ def briefing_format_filter(content):
 
         # Headers
         if line.startswith('### '):
-            formatted_lines.append(f'<h3 class="font-bold text-lg mt-6 mb-2">{line[4:]}</h3>')
+            formatted_lines.append(f'<h3 class="font-bold text-lg mt-6 mb-2">{escape(line[4:])}</h3>')
         elif line.startswith('## '):
-            formatted_lines.append(f'<h2 class="text-xl font-bold mt-6 mb-2">{line[3:]}</h2>')
+            formatted_lines.append(f'<h2 class="text-xl font-bold mt-6 mb-2">{escape(line[3:])}</h2>')
         # Bold
         elif line.startswith('**') and line.endswith('**'):
-            formatted_lines.append(f'<p class="font-bold mt-4 mb-1">{line[2:-2]}</p>')
+            formatted_lines.append(f'<p class="font-bold mt-4 mb-1">{escape(line[2:-2])}</p>')
         # Bullets
         elif line.startswith('- ') or line.startswith('• '):
-            formatted_lines.append(f'<li class="ml-4 mb-1.5 text-base leading-relaxed">{line[2:]}</li>')
+            formatted_lines.append(f'<li class="ml-4 mb-1.5 text-base leading-relaxed">{escape(line[2:])}</li>')
         else:
-            formatted_lines.append(f'<p class="mb-3 text-base leading-relaxed">{line}</p>')
+            formatted_lines.append(f'<p class="mb-3 text-base leading-relaxed">{escape(line)}</p>')
 
     return Markup('\n'.join(formatted_lines))
 _secret_key = os.environ.get("SECRET_KEY")

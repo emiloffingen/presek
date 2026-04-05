@@ -37,7 +37,7 @@ _PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
 def _source_admin_authorized():
     token = (request.headers.get("X-Admin-Token") or "").strip()
-    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or os.environ.get("SECRET_KEY") or "").strip()
+    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
     remote_addr = (request.remote_addr or "").strip()
     forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
 
@@ -187,6 +187,72 @@ def _get_top_entities_payload(limit=10):
     return filtered
 
 
+def _build_cluster_answer_fallback(query, rows, synthesis="", perspectives=None):
+    rows = [dict(row) if not isinstance(row, dict) else row for row in (rows or [])]
+    category = rows[0].get("category") if rows else None
+    perspectives = normalize_perspectives(perspectives or [])
+    local_answer = None
+
+    try:
+        local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    except Exception as e:
+        log.warning(f"[cluster_answer] local helper failed, using minimal fallback: {e}")
+
+    if not local_answer and rows:
+        lead = rows[0]
+        answer = f"Најважното во овој момент е: {str(lead.get('title') or 'Оваа приказна')}."
+        source = str(lead.get("source") or "Извор").strip()
+        answer += f" Водечкиот достапен извор во овој кластер е {source}."
+        local_answer = {
+            "answer": answer,
+            "citations": rows[:2],
+            "related_questions": _default_related_questions(query, category),
+            "confidence": "low",
+        }
+
+    sections = {
+        "confirmed_points": [],
+        "unclear_points": [],
+        "source_differences": "",
+    }
+    try:
+        sections = build_structured_answer_sections(
+            local_answer["answer"] if local_answer else "",
+            rows,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[cluster_answer] section builder failed during fallback: {e}")
+
+    citations = []
+    try:
+        citations = _rank_cluster_citations(query, local_answer["answer"] if local_answer else "", rows, [])
+    except Exception as e:
+        log.warning(f"[cluster_answer] citation ranking failed during fallback: {e}")
+        citations = [
+            {
+                "source": row.get("source"),
+                "title": row.get("title"),
+                "link": row.get("link"),
+                "created_at": row.get("created_at"),
+                "snippet": build_citation_snippet(row),
+            }
+            for row in rows[:2]
+        ]
+
+    return {
+        "answer": (local_answer or {}).get("answer", "Во моментов системот не може да даде подетален одговор."),
+        "citations": citations,
+        "related_questions": (local_answer or {}).get("related_questions") or _default_related_questions(query, category),
+        "confidence": (local_answer or {}).get("confidence", "low"),
+        "confirmed_points": sections.get("confirmed_points", [])[:3],
+        "unclear_points": sections.get("unclear_points", [])[:2],
+        "source_differences": sections.get("source_differences", ""),
+        "generated_locally": True,
+    }
+
+
 def _build_cluster_answer(cluster_id, query):
     rows = db.execute(
         """
@@ -200,6 +266,7 @@ def _build_cluster_answer(cluster_id, query):
     )
     if not rows:
         return None, ("Cluster not found", 404)
+    rows = [dict(row) if not isinstance(row, dict) else row for row in rows]
 
     synthesis_row = db.execute_one(
         "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
@@ -210,14 +277,22 @@ def _build_cluster_answer(cluster_id, query):
         synthesis_row["perspectives"] if synthesis_row and synthesis_row.get("perspectives") else []
     )
 
-    local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    try:
+        local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    except Exception as e:
+        log.warning(f"[cluster_answer] local answer generation failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if local_answer:
-        sections = build_structured_answer_sections(
-            local_answer["answer"],
-            rows,
-            synthesis=synthesis,
-            perspectives=perspectives,
-        )
+        try:
+            sections = build_structured_answer_sections(
+                local_answer["answer"],
+                rows,
+                synthesis=synthesis,
+                perspectives=perspectives,
+            )
+        except Exception as e:
+            log.warning(f"[cluster_answer] section building failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
         payload = {
             **local_answer,
             "citations": _rank_cluster_citations(query, local_answer["answer"], rows, []),
@@ -257,11 +332,19 @@ def _build_cluster_answer(cluster_id, query):
         "Биди прецизен, краток и јасно посочи кога нешто не е потврдено."
     )
 
-    response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+    try:
+        response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+    except Exception as e:
+        log.warning(f"[cluster_answer] AI call failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if not response_text:
-        return None, ("Системот не можеше да одговори", 503)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
 
-    parsed = clean_json_response(response_text)
+    try:
+        parsed = clean_json_response(response_text)
+    except Exception as e:
+        log.warning(f"[cluster_answer] AI response cleaning failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if isinstance(parsed, dict):
         answer = str(parsed.get("answer") or "").strip()
         confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
@@ -279,12 +362,16 @@ def _build_cluster_answer(cluster_id, query):
         related_questions = []
         confidence = "medium"
 
-    sections = build_structured_answer_sections(
-        answer,
-        rows,
-        synthesis=synthesis,
-        perspectives=perspectives,
-    )
+    try:
+        sections = build_structured_answer_sections(
+            answer,
+            rows,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[cluster_answer] final section building failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if not confirmed_points:
         confirmed_points = sections["confirmed_points"]
     if not unclear_points:
@@ -1086,16 +1173,6 @@ def proxy_image():
     import socket
     import ipaddress
     import requests
-    from requests.adapters import HTTPAdapter
-    from requests.packages.urllib3.util.ssl_ import create_urllib3_context
-
-    parsed = urllib.parse.urlparse(url)
-    hostname = (parsed.hostname or "").lower()
-    if not hostname:
-        return error_response("Blocked URL", 403)
-
-    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
-        return error_response("Blocked URL", 403)
 
     def _is_private_ip(addr: str) -> bool:
         try:
@@ -1103,23 +1180,40 @@ def proxy_image():
             return (ip.is_private or ip.is_loopback or ip.is_link_local
                     or ip.is_multicast or ip.is_reserved or ip.is_unspecified)
         except ValueError:
-            return True # Treat invalid IPs as private/unsafe
+            return True
 
-    # Resolve and pin IP
-    try:
-        resolved_infos = socket.getaddrinfo(hostname, None)
-        safe_ip = None
+    def _resolve_public_ips(candidate_url: str):
+        parsed = urllib.parse.urlparse(candidate_url)
+        hostname = (parsed.hostname or "").lower()
+        if not hostname:
+            raise ValueError("Blocked URL")
+        if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+            raise ValueError("Blocked URL")
+
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        resolved_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+        safe_ips = []
         for info in resolved_infos:
             ip = info[4][0]
-            if not _is_private_ip(ip):
-                safe_ip = ip
-                break
-        
-        if not safe_ip:
-            return error_response("Blocked URL (Private/Reserved IP)", 403)
-            
-    except socket.gaierror:
-        return error_response("Could not resolve hostname", 404)
+            if not _is_private_ip(ip) and ip not in safe_ips:
+                safe_ips.append(ip)
+        if not safe_ips:
+            raise PermissionError("Blocked URL (Private/Reserved IP)")
+        return safe_ips
+
+    def _peer_ip(response):
+        sock = None
+        raw = getattr(response, "raw", None)
+        if raw is not None:
+            connection = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+            if connection is not None:
+                sock = getattr(connection, "sock", None)
+        if sock is None:
+            return None
+        try:
+            return sock.getpeername()[0]
+        except Exception:
+            return None
 
     try:
         width_arg = request.args.get("w")
@@ -1139,21 +1233,40 @@ def proxy_image():
         )
 
     try:
-        # Simple fetch with basic headers
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        
-        # Use session for better SSL handling
         s = requests.Session()
-        response = s.get(
-            url, 
-            headers=headers, 
-            timeout=10, 
-            stream=True, 
-            verify=True
-        )
-        
+        current_url = url
+        response = None
+
+        for _ in range(4):
+            safe_ips = _resolve_public_ips(current_url)
+            response = s.get(
+                current_url,
+                headers=headers,
+                timeout=10,
+                stream=True,
+                verify=True,
+                allow_redirects=False,
+            )
+            peer_ip = _peer_ip(response)
+            if not peer_ip or peer_ip not in safe_ips:
+                response.close()
+                return error_response("Blocked upstream target", 403)
+            if 300 <= response.status_code < 400:
+                location = response.headers.get("Location")
+                response.close()
+                if not location:
+                    return error_response("Invalid upstream redirect", 502)
+                current_url = urllib.parse.urljoin(current_url, location)
+                if not re.match(r'^https?://', current_url):
+                    return error_response("Invalid upstream redirect", 502)
+                continue
+            break
+        else:
+            return error_response("Too many upstream redirects", 502)
+
         if response.status_code != 200:
             return error_response("Failed to fetch image", response.status_code)
 
@@ -1194,6 +1307,12 @@ def proxy_image():
             headers={"Cache-Control": "public, max-age=86400"}
         )
 
+    except socket.gaierror:
+        return error_response("Could not resolve hostname", 404)
+    except PermissionError as e:
+        return error_response(str(e), 403)
+    except ValueError as e:
+        return error_response(str(e), 403)
     except Exception as e:
         log.warning(f"[proxy] Optimization error for {url}: {e}")
         return error_response("Failed to process image", 502)
