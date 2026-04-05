@@ -2,6 +2,7 @@ from local_nlp import (
     filter_cluster_tags,
     extract_cluster_tags_locally,
     is_valid_focus_entity,
+    summarize_article_fallback,
     build_structured_answer_sections,
 )
 
@@ -64,3 +65,15 @@ class TestStructuredAnswerSections:
         assert "МИА" in sections["source_differences"]
         assert "Reuters" in sections["source_differences"]
         assert "формулира развојот" in sections["source_differences"]
+
+
+class TestArticleSummaryFallback:
+    def test_summarize_article_fallback_returns_clean_compact_text(self):
+        result = summarize_article_fallback(
+            "⚪ Трамп најави нови царини",
+            "Трамп изјави дека во вторник ќе има обраќање. #економија #свет"
+        )
+
+        assert "⚪" not in result
+        assert "#економија" not in result
+        assert "Трамп" in result

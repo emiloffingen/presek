@@ -74,3 +74,21 @@ class TestSynthesizeClusterTaskQuality:
         assert stored_summary.count("Главен развој") == 1
         assert stored_perspectives[0]["angle"] == "Заедничка линија"
         assert stored_perspectives[1]["angle"] == "Различни акценти"
+
+
+class TestSummarizeArticleTaskQuality:
+    def test_uses_title_and_description_in_ai_prompt(self):
+        import tasks
+
+        with patch.object(tasks, "db") as mock_db, \
+             patch.object(tasks, "_call_ai", return_value=({'summary': 'Чисто резиме.'}, "mistral")) as mock_call_ai, \
+             patch.object(tasks, "clean_json_response", side_effect=lambda value: value), \
+             patch.object(tasks, "invalidate_public_data_caches"), \
+             patch.object(tasks, "record_task_event"):
+            mock_db.execute_one.return_value = {"description": "Опис со повеќе детали за настанот."}
+
+            tasks.summarize_article_task("article-1", "Наслов на веста")
+
+        prompt = mock_call_ai.call_args.args[0]
+        assert "Наслов на веста" in prompt
+        assert "Опис со повеќе детали за настанот." in prompt

@@ -271,6 +271,9 @@ def summarize_article_fallback(title, description=None):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
     summary = summarize_locally(text, sentence_count=2).strip()
+    summary = re.sub(r'^[⚪🟢🔴]\s*', '', summary, flags=re.UNICODE)
+    summary = re.sub(r'#[^\s#]+', '', summary)
+    summary = re.sub(r'\s+', ' ', summary).strip()
     if summary:
         return summary[:420]
     return str(title or "").strip()

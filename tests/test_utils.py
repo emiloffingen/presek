@@ -2,7 +2,7 @@ import pytest
 import datetime
 import math
 from unittest.mock import patch, MagicMock
-from utils import score_cluster, rank_articles_in_cluster, get_source_effective_weight
+from utils import score_cluster, score_cluster_for_synthesis, rank_articles_in_cluster, get_source_effective_weight
 
 
 def _make_article(source="MIA", created_at=None, clicks=0):
@@ -91,6 +91,69 @@ class TestScoreCluster:
             strong_score = score_cluster(weak)
         weak_score = score_cluster(weak)
         assert weak_score < strong_score
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_synthesis_priority_prefers_richer_multi_source_cluster(self, _mock_health):
+        shallow = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави говор",
+                "description": "",
+            },
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави говор",
+                "description": "",
+            },
+        ]
+        richer = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави говор за царини",
+                "description": "Опис со повеќе детали за царините.",
+            },
+            {
+                **_make_article("Reuters"),
+                "title": "Трамп ќе објави економски мерки во вторник",
+                "description": "Вториот извор додава контекст и реакција.",
+            },
+            {
+                **_make_article("DW"),
+                "title": "Европските пазари реагираат на најавата на Трамп",
+                "description": "Трет извор со поинаков акцент.",
+            },
+        ]
+
+        assert score_cluster_for_synthesis(richer) > score_cluster_for_synthesis(shallow)
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_synthesis_priority_rewards_title_divergence(self, _mock_health):
+        aligned = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави говор за царини",
+                "description": "Опис еден.",
+            },
+            {
+                **_make_article("Reuters"),
+                "title": "Трамп најави говор за царини",
+                "description": "Опис два.",
+            },
+        ]
+        divergent = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави говор за царини",
+                "description": "Опис еден.",
+            },
+            {
+                **_make_article("Reuters"),
+                "title": "Пазарите реагираат на говорот на Трамп и новите мерки",
+                "description": "Опис два.",
+            },
+        ]
+
+        assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(aligned)
 
 
 # ── rank_articles_in_cluster ──────────────────────────────────────

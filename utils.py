@@ -163,6 +163,54 @@ def score_cluster(arts):
     return cred_score * recency * breadth * click_bonus
 
 
+def score_cluster_for_synthesis(arts):
+    """
+    Prioritization score for deciding which clusters deserve synthesis first.
+    Compared to score_cluster(), this puts more weight on:
+      - multi-source breadth and source diversity
+      - likely disagreement / angle diversity across titles
+      - user attention
+      - the presence of enough context to produce a worthwhile synthesis
+    """
+    if not arts:
+        return 0.0
+
+    ranked = rank_articles_in_cluster(arts)
+    base_score = score_cluster(ranked)
+    unique_sources = {a.get("source") for a in ranked if a.get("source")}
+    source_count = len(unique_sources)
+    source_bonus = 1 + min(0.8, math.log1p(source_count) * 0.28)
+
+    # More description text means the synthesizer has more evidence to work with.
+    described_articles = sum(1 for a in ranked if str(a.get("description") or "").strip())
+    context_bonus = 1 + min(0.35, described_articles * 0.08)
+
+    # If titles diverge lexically, there is more likely angle diversity worth summarizing.
+    title_terms = []
+    for article in ranked[:6]:
+        terms = {
+            token
+            for token in str(article.get("title") or "").lower().split()
+            if len(token) >= 4
+        }
+        if terms:
+            title_terms.append(terms)
+
+    disagreement_bonus = 1.0
+    if len(title_terms) >= 2:
+        overlaps = []
+        for idx in range(len(title_terms) - 1):
+            left = title_terms[idx]
+            right = title_terms[idx + 1]
+            union = len(left | right) or 1
+            overlaps.append(len(left & right) / union)
+        if overlaps:
+            avg_overlap = sum(overlaps) / len(overlaps)
+            disagreement_bonus = 1 + max(0.0, min(0.28, (0.55 - avg_overlap) * 0.7))
+
+    return base_score * source_bonus * context_bonus * disagreement_bonus
+
+
 def rank_articles_in_cluster(arts):
     """Within a cluster, put the most credible source first."""
     return sorted(

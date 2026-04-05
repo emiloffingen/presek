@@ -18,6 +18,26 @@ const thumb = cluster.representative_image || cluster.articles.find((a: any) => 
 const thumbSrc = thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : null;
 const isFallbackArt = !thumb || String(thumb).includes('/static/generated/') || String(thumb).endsWith('.svg');
 
+function cleanCardSummary(text?: string) {
+	if (!text) return '';
+	return String(text)
+		.replace(/^[⚪🟢🔴]\s*/u, '')
+		.replace(/#[^\s#]+/g, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+function getCardSummary(article: any, lead = false) {
+	const preferred = cleanCardSummary(article?.summary);
+	const fallback = cleanCardSummary(article?.description);
+	const text = preferred || fallback;
+	if (!text) return '';
+	const limit = lead ? 250 : 170;
+	return text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+}
+
+const displaySummary = getCardSummary(main, isLead);
+
 // Relative time format
 function getTimeStr(dateStr: string) {
     try {
@@ -51,11 +71,9 @@ function getTimeStr(dateStr: string) {
 				: `Клучен развој што вреди да се следи додека приказната се развива.`}
 		</p>
 
-		{main.description && (
+		{displaySummary && (
 			<p class="summary">
-				{main.description.length > (isLead ? 250 : 140) 
-					? main.description.substring(0, isLead ? 250 : 140) + "..." 
-					: main.description}
+				{displaySummary}
 			</p>
 		)}
 

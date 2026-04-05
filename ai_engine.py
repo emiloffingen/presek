@@ -420,7 +420,7 @@ def _download_safe_external_image(url: str, headers: dict[str, str], timeout: in
 
 def auto_summarize_top_clusters():
     from tasks import summarize_article_task, synthesize_cluster_task
-    from utils import redis_client, score_cluster, rank_articles_in_cluster
+    from utils import redis_client, score_cluster_for_synthesis, rank_articles_in_cluster
     from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
     from database import db_manager as db
     try:
@@ -431,7 +431,7 @@ def auto_summarize_top_clusters():
         ranked = []
         for cid, arts in clusters_map.items():
             sorted_arts = rank_articles_in_cluster(arts)
-            s = score_cluster(sorted_arts)
+            s = score_cluster_for_synthesis(sorted_arts)
             ranked.append((cid, sorted_arts, s))
         ranked.sort(key=lambda x: x[2], reverse=True)
         for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:

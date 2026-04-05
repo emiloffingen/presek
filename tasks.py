@@ -92,8 +92,15 @@ def translate_article_task(article_id, title, description):
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
+    desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
+    description = (desc_row or {}).get("description")
+    prompt_parts = [str(title or "").strip()]
+    if description:
+        prompt_parts.append(f"Опис: {str(description).strip()}")
+    prompt = "\n".join(part for part in prompt_parts if part)
+
     try:
-        summary, _ = _call_ai(title, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
+        summary, _ = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
         if summary:
             clean = clean_json_response(summary)
             final = clean.get('summary', str(clean)) if isinstance(clean, dict) else clean
@@ -102,7 +109,6 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             record_task_event("summarize_article", "ok", f"article:{article_id}")
             log.info(f"Successfully summarized article {article_id}")
         else:
-            desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
             fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
             if fallback:
                 db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
@@ -114,7 +120,6 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             else:
                 log.warning(f"No summary generated for article {article_id}")
     except Exception as e:
-        desc_row = db.execute_one("SELECT description FROM articles WHERE id = %s", (article_id,))
         fallback = summarize_article_fallback(title, (desc_row or {}).get("description"))
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
