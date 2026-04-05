@@ -263,3 +263,52 @@ def test_fastapi_profile_delivery_save_upserts_subscription():
     assert data["subscription"]["weeklyDigest"] is True
     assert data["subscription"]["breakingSources"] is True
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_stats_full_includes_editor_analytics():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"count": 1200},
+        {"count": 180},
+        {"count": 600},
+        {"mb": 256.4},
+        {"n": 18},
+        {
+            "oldest": __import__("datetime").datetime(2026, 4, 1, 8, 0, 0),
+            "newest": __import__("datetime").datetime(2026, 4, 5, 10, 0, 0),
+        },
+        {
+            "synced_profiles": 14,
+            "active_profiles_7d": 9,
+            "profiles_with_recent_reads": 8,
+            "profiles_following_topics": 7,
+            "profiles_following_sources": 6,
+        },
+        {
+            "delivery_active": 5,
+            "delivery_targets": 4,
+            "morning_briefings": 4,
+            "weekly_digests": 2,
+            "breaking_topic_alerts": 3,
+            "breaking_source_alerts": 1,
+        },
+    ]
+    mock_db.execute.side_effect = [
+        [{"source": "MIA", "n": 50}],
+        [{"category": "Политика", "n": 40}],
+        [{"t": __import__("datetime").datetime(2026, 4, 5, 9, 0, 0), "n": 12}],
+        [{"source": "MIA", "first_count": 6}],
+        [{"topic": "Политика", "followers": 5}],
+        [{"source": "MIA", "followers": 4}],
+    ]
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast, "cached_response", return_value=None), \
+         patch.object(api_fast, "set_cache"):
+        data = asyncio.run(api_fast.get_stats_full())
+
+    assert data["editor_analytics"]["synced_profiles"] == 14
+    assert data["editor_analytics"]["delivery_active"] == 5
+    assert data["editor_analytics"]["top_followed_topics"][0]["topic"] == "Политика"
+    assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"

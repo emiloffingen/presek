@@ -22,9 +22,11 @@ function permissionLabel(status: string) {
 export default function BriefingDeliveryIsland({
   content = '',
   dateLabel = '',
+  variant = 'full',
 }: {
   content?: string;
   dateLabel?: string;
+  variant?: 'full' | 'summary';
 }) {
   const [profile, setProfile] = useState(() => loadReaderProfile());
   const [prefs, setPrefs] = useState(() => loadDeliveryPreferences());
@@ -149,6 +151,53 @@ export default function BriefingDeliveryIsland({
       setServerMessage('Could not save scheduled delivery right now.');
     }
   };
+
+  const summaryLabel = syncToken
+    ? serverDelivery.isActive
+      ? 'Synced delivery is active'
+      : 'Sync is connected, but scheduled delivery is still off'
+    : 'Create a sync key to turn this into a real cross-device delivery setup';
+
+  if (variant === 'summary') {
+    return (
+      <div className="delivery-panel delivery-panel-summary">
+        <div className="delivery-status">
+          <p className="delivery-status-kicker">
+            {prefs.browserPermission === 'granted' ? <BellRing size={14} /> : <Bell size={14} />}
+            <span>{permissionLabel(prefs.browserPermission)}</span>
+          </p>
+          <p className="delivery-status-copy">{summaryLabel}</p>
+        </div>
+
+        <div className="delivery-toggle-list">
+          <div className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`}>
+            <span>Morning briefing</span>
+            <strong>{serverDelivery.morningBriefing ? 'On' : 'Off'}</strong>
+          </div>
+          <div className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`}>
+            <span>Weekly digest</span>
+            <strong>{serverDelivery.weeklyDigest ? 'On' : 'Off'}</strong>
+          </div>
+          <div className={`delivery-toggle ${serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'is-active' : ''}`}>
+            <span>Breaking alerts</span>
+            <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'On' : 'Off'}</strong>
+          </div>
+        </div>
+
+        <div className="delivery-actions">
+          <a href="/settings" className="delivery-action">
+            <Radio size={14} /> Open delivery settings
+          </a>
+          <button type="button" className="delivery-action" onClick={copyDigest}>
+            <Copy size={14} /> {copyState === 'done' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy delivery version'}
+          </button>
+          <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="delivery-action">
+            <Send size={14} /> Share to Telegram
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="delivery-panel">

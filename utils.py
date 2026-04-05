@@ -442,6 +442,41 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
     )
     return results
 
+
+def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=None, top_topic_rows=None, top_source_rows=None):
+    profile_stats_row = profile_stats_row or {}
+    delivery_stats_row = delivery_stats_row or {}
+
+    return {
+        "synced_profiles": int(profile_stats_row.get("synced_profiles") or 0),
+        "active_profiles_7d": int(profile_stats_row.get("active_profiles_7d") or 0),
+        "profiles_with_recent_reads": int(profile_stats_row.get("profiles_with_recent_reads") or 0),
+        "profiles_following_topics": int(profile_stats_row.get("profiles_following_topics") or 0),
+        "profiles_following_sources": int(profile_stats_row.get("profiles_following_sources") or 0),
+        "delivery_active": int(delivery_stats_row.get("delivery_active") or 0),
+        "delivery_targets": int(delivery_stats_row.get("delivery_targets") or 0),
+        "morning_briefings": int(delivery_stats_row.get("morning_briefings") or 0),
+        "weekly_digests": int(delivery_stats_row.get("weekly_digests") or 0),
+        "breaking_topic_alerts": int(delivery_stats_row.get("breaking_topic_alerts") or 0),
+        "breaking_source_alerts": int(delivery_stats_row.get("breaking_source_alerts") or 0),
+        "top_followed_topics": [
+            {
+                "topic": str(row.get("topic") or "").strip(),
+                "followers": int(row.get("followers") or row.get("n") or 0),
+            }
+            for row in (top_topic_rows or [])
+            if str(row.get("topic") or "").strip()
+        ],
+        "top_followed_sources": [
+            {
+                "source": str(row.get("source") or "").strip(),
+                "followers": int(row.get("followers") or row.get("n") or 0),
+            }
+            for row in (top_source_rows or [])
+            if str(row.get("source") or "").strip()
+        ],
+    }
+
 def score_cluster(arts):
     """
     PageRank-style cluster importance score.

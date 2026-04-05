@@ -16,7 +16,7 @@ from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time, 
     cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
-    build_source_reputation_rows,
+    build_source_reputation_rows, build_editor_analytics_payload,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
@@ -1056,6 +1056,36 @@ async def get_stats_full():
             ") first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
         )
 
+        profile_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) AS synced_profiles, "
+            "COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources "
+            "FROM synced_reader_profiles"
+        ) or {}
+        delivery_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, "
+            "COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, "
+            "COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, "
+            "COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, "
+            "COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, "
+            "COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts "
+            "FROM synced_delivery_subscriptions"
+        ) or {}
+        top_followed_topics = db.execute(
+            "SELECT value AS topic, COUNT(*) AS followers "
+            "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value "
+            "GROUP BY value ORDER BY followers DESC, topic ASC LIMIT 6"
+        )
+        top_followed_sources = db.execute(
+            "SELECT value AS source, COUNT(*) AS followers "
+            "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value "
+            "GROUP BY value ORDER BY followers DESC, source ASC LIMIT 6"
+        )
+
         result = {
             "total_articles": total,
             "last_24h": last_24h,
@@ -1069,7 +1099,13 @@ async def get_stats_full():
             "by_category": by_category,
             "velocity": velocity_out,
             "speed_leaderboard": [{"source": r["source"], "first_count": r["first_count"]} for r in speed_leaderboard],
-            "sentiment_index": []
+            "sentiment_index": [],
+            "editor_analytics": build_editor_analytics_payload(
+                profile_stats_row,
+                delivery_stats_row,
+                top_followed_topics,
+                top_followed_sources,
+            ),
         }
 
         set_cache("stats:full", result, ttl=120)
