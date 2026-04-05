@@ -4,6 +4,7 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import NewsCard from '../../components/NewsCard.astro';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
+import { buildTopicConnections } from '../../lib/topicDiscovery.js';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 
 const rawTopicParam = Astro.params.topic || '';
@@ -120,11 +121,7 @@ const tagRows = countValues(
 	.filter(([name]) => name.toLowerCase() !== topic.toLowerCase())
 	.slice(0, 8);
 
-const adjacentTopics = countValues(
-	Array.from(detailMap.values()).flatMap((detail: any) => Array.isArray(detail?.topics) ? detail.topics : [])
-)
-	.filter(([name]) => name.toLowerCase() !== topic.toLowerCase())
-	.slice(0, 5);
+const topicConnections = buildTopicConnections(topic, clusters.slice(0, 10), Array.from(detailMap.values()), 5);
 
 const leadSummary =
 	cleanText(leadCluster?.articles?.[0]?.summary) ||
@@ -279,13 +276,18 @@ function topicIntro() {
 							</section>
 						)}
 
-						{adjacentTopics.length > 0 && (
+						{topicConnections.length > 0 && (
 							<section class="rail-card">
-								<h3 class="rail-card-title">Соседни Теми</h3>
-								<div class="topic-chip-list">
-									{adjacentTopics.map(([name, count]) => (
-										<a href={`/tema/${encodeURIComponent(name)}`} class="topic-chip topic-chip-alt">
-											{name} <strong>{count}</strong>
+								<h3 class="rail-card-title">Каде Да Одите Понатаму</h3>
+								<div class="topic-connection-list">
+									{topicConnections.map((item: any) => (
+										<a href={`/tema/${encodeURIComponent(item.topic)}`} class="topic-connection-card">
+											<p class="topic-connection-kicker">{item.relationshipLabel}</p>
+											<h4>{item.topic}</h4>
+											<p class="topic-connection-copy">{item.relationshipNote}</p>
+											{item.sampleTags?.length > 0 && (
+												<p class="topic-connection-meta">{item.sampleTags.join(' · ')}</p>
+											)}
 										</a>
 									))}
 								</div>
@@ -544,6 +546,57 @@ function topicIntro() {
 
 	.topic-chip-alt {
 		background: color-mix(in srgb, var(--foreground) 3%, transparent);
+	}
+
+	.topic-connection-list {
+		display: grid;
+		gap: 0.8rem;
+	}
+
+	.topic-connection-card {
+		display: block;
+		padding-top: 0.8rem;
+		border-top: 1px solid var(--border);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.topic-connection-card:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	.topic-connection-kicker,
+	.topic-connection-meta {
+		margin: 0 0 0.35rem;
+		font-family: var(--font-sans);
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.topic-connection-kicker {
+		color: var(--nyt-accent);
+	}
+
+	.topic-connection-meta {
+		color: var(--muted-foreground);
+	}
+
+	.topic-connection-card h4 {
+		margin: 0 0 0.35rem;
+		font-size: 1rem;
+		line-height: 1.12;
+		color: var(--foreground);
+	}
+
+	.topic-connection-copy {
+		margin: 0 0 0.4rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
 	}
 
 	.topic-source-list,
