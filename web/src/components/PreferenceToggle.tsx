@@ -6,10 +6,12 @@ export default function PreferenceToggle({
   kind,
   value,
   label,
+  onChanged,
 }: {
   kind: 'topic' | 'source';
   value: string;
   label?: string;
+  onChanged?: (isFollowing: boolean) => void;
 }) {
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -20,6 +22,7 @@ export default function PreferenceToggle({
   const onToggle = () => {
     const result = toggleFollowedValue(kind, value);
     setIsFollowing(result.isFollowing);
+    onChanged?.(result.isFollowing);
   };
 
   const noun = label || (kind === 'topic' ? 'тема' : 'извор');
@@ -36,4 +39,3 @@ export default function PreferenceToggle({
     </button>
   );
 }
-

@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import AskPresekIsland from '../../components/AskPresekIsland.tsx';
+import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
@@ -197,6 +198,10 @@ const summaryCardText =
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`;
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
+const adjacentTopic =
+	cluster?.related?.find((item: any) => item?.shared_topics?.length)?.shared_topics?.[0] ||
+	cluster?.related?.find((item: any) => item?.shared_tags?.length)?.shared_tags?.[0] ||
+	'';
 ---
 
 <Layout title={cluster ? cluster.articles[0].title : "Детали за вест"}>
@@ -408,6 +413,15 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 							<AskPresekIsland client:load clusterId={cluster.cluster_id} suggestedQuestions={suggestedQuestions} />
 						</div>
 
+						<div class="rail-card">
+							<ClusterFollowSuggestionsIsland
+								client:load
+								topic={cluster.topics?.[0] || cluster.articles[0].topic || cluster.articles[0].category || ''}
+								source={cluster.articles[0].source || ''}
+								adjacentTopic={adjacentTopic}
+							/>
+						</div>
+
 						{/* Related */}
 						{cluster.related && cluster.related.length > 0 && (
 							<div class="rail-card">
@@ -504,6 +518,61 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 
 	.cluster-preference-actions {
 		margin-top: 0.8rem;
+	}
+
+	.cluster-follow-suggestions {
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	.cluster-follow-suggestions-head {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.cluster-follow-suggestions-copy {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.55;
+		color: var(--secondary-foreground);
+	}
+
+	.cluster-follow-suggestions-grid {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.cluster-follow-suggestion-card {
+		display: grid;
+		gap: 0.7rem;
+		padding: 0.9rem 0.95rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--card) 90%, var(--accent) 10%);
+	}
+
+	.cluster-follow-suggestion-kicker {
+		margin: 0 0 0.25rem;
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.cluster-follow-suggestion-card h4 {
+		margin: 0;
+		font-size: 1rem;
+		line-height: 1.2;
+	}
+
+	.cluster-follow-suggestion-reason {
+		margin: 0.35rem 0 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.45;
+		color: var(--secondary-foreground);
 	}
 
 	.cluster-refresh-badge {

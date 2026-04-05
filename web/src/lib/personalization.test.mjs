@@ -240,3 +240,18 @@ test('buildFollowRecommendations suggests unread topics and sources from reading
   assert.ok(recommendations.sources.some((item) => item.value === 'Телма'));
   assert.ok(recommendations.sources.some((item) => item.value === 'МИА'));
 });
+
+test('buildFollowRecommendations omits already followed repeated topics and sources', () => {
+  const profile = {
+    recentClusters: [
+      { cluster_id: 'c1', topic: 'Политика', category: 'Политика', primarySource: 'МИА', sources: ['МИА'], tags: [] },
+      { cluster_id: 'c2', topic: 'Политика', category: 'Политика', primarySource: 'МИА', sources: ['МИА'], tags: [] },
+    ],
+    followedTopics: ['Политика'],
+    followedSources: ['МИА'],
+  };
+
+  const recommendations = buildFollowRecommendations(profile, 3);
+  assert.deepEqual(recommendations.topics, []);
+  assert.deepEqual(recommendations.sources, []);
+});

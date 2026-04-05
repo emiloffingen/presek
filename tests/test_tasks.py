@@ -198,6 +198,67 @@ class TestProfileDeliveryTasks:
         assert "last_weekly_sent_at" in update_sql
         assert "event_id=22" in mock_send.call_args.kwargs["click_url"]
 
+    def test_select_profile_weekly_clusters_prefers_items_with_real_digest_engagement(self):
+        import tasks
+
+        clusters = [
+            {
+                "cluster_id": "steady-cluster",
+                "title": "Steady story",
+                "source": "MIA",
+                "source_count": 3,
+                "category": "Политика",
+                "topic": "Политика",
+                "score": 4.8,
+            },
+            {
+                "cluster_id": "engaged-cluster",
+                "title": "Engaged story",
+                "source": "Телма",
+                "source_count": 2,
+                "category": "Политика",
+                "topic": "Политика",
+                "score": 4.1,
+            },
+        ]
+
+        with patch.object(tasks, "_load_weekly_digest_clusters", return_value=clusters), \
+             patch.object(
+                 tasks,
+                 "_load_weekly_cluster_engagement",
+                 return_value={
+                     "engaged-cluster": {"sends": 4, "opens": 3, "clicks": 1, "open_rate": 0.75, "click_rate": 0.25, "engagement_score": 0.7},
+                     "steady-cluster": {"sends": 4, "opens": 0, "clicks": 0, "open_rate": 0.0, "click_rate": 0.0, "engagement_score": 0.0},
+                 },
+             ):
+            result = tasks._select_profile_weekly_clusters(
+                {"followedTopics": ["Политика"], "followedSources": []},
+                limit=2,
+            )
+
+        assert result[0]["cluster_id"] == "engaged-cluster"
+        assert "силен одзив" in result[0]["match_reason"]
+
+    def test_load_weekly_cluster_engagement_uses_send_metadata_cluster_ids(self):
+        import tasks
+
+        with patch.object(tasks, "db") as mock_db:
+            mock_db.execute.side_effect = [
+                [
+                    {"id": 10, "cluster_id": "lead-cluster", "metadata": {"cluster_ids": ["lead-cluster", "second-cluster"]}},
+                ],
+                [
+                    {"parent_event_id": 10, "event_type": "open"},
+                    {"parent_event_id": 10, "event_type": "click"},
+                ],
+            ]
+            result = tasks._load_weekly_cluster_engagement(days=30)
+
+        assert result["lead-cluster"]["sends"] == 1
+        assert result["lead-cluster"]["opens"] == 1
+        assert result["lead-cluster"]["clicks"] == 1
+        assert result["second-cluster"]["open_rate"] == 1.0
+
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
         import tasks
 
@@ -258,6 +319,7 @@ class TestProfileDeliveryTasks:
         with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
              patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": recent_iso}], now)), \
              patch.object(tasks, "_load_delivery_kind_performance", return_value={}), \
+             patch.object(tasks, "_load_breaking_target_performance", return_value={"topics": {}, "sources": {}}), \
              patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
@@ -288,6 +350,7 @@ class TestProfileDeliveryTasks:
         with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
              patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": cluster["created_at"]}], older)), \
              patch.object(tasks, "_load_delivery_kind_performance", return_value={}), \
+             patch.object(tasks, "_load_breaking_target_performance", return_value={"topics": {}, "sources": {}}), \
              patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
@@ -331,3 +394,53 @@ class TestProfileDeliveryTasks:
         assert candidate["engagement_label"] == "Силен одзив"
         assert candidate["score_adjustment"] > 0
         assert candidate["min_gap_minutes"] < 60
+
+    def test_classify_alert_candidate_boosts_topic_with_strong_engagement_history(self):
+        import tasks
+
+        candidate = tasks._classify_alert_candidate(
+            {"cluster_id": "topic-strong", "score": 5.1},
+            {"freshness_score": 1.9, "reasons": ["new_angle"]},
+            ["Политика"],
+            [],
+            {},
+            {"topics": {"Политика": {"sends": 3, "open_rate": 0.67, "click_rate": 0.25}}, "sources": {}},
+        )
+
+        assert candidate["engagement_label"] == "Силен одзив за следеното"
+        assert candidate["score_adjustment"] > 0
+        assert "силен одзив" in candidate["alert_reason"]
+
+    def test_classify_alert_candidate_slows_weak_source_with_no_clicks(self):
+        import tasks
+
+        candidate = tasks._classify_alert_candidate(
+            {"cluster_id": "source-weak", "score": 3.2},
+            {"freshness_score": 1.3, "reasons": ["multiple_new_reports"]},
+            [],
+            ["MIA"],
+            {},
+            {"topics": {}, "sources": {"MIA": {"sends": 4, "open_rate": 0.15, "click_rate": 0.0}}},
+        )
+
+        assert candidate["engagement_label"] == "Слаб одзив за следеното"
+        assert candidate["score_adjustment"] < 0
+        assert candidate["source_gap_minutes"] > 240
+
+    def test_load_breaking_target_performance_aggregates_topics_and_sources(self):
+        import tasks
+
+        with patch.object(tasks, "db") as mock_db:
+            mock_db.execute.side_effect = [
+                [
+                    {"id": 7, "metadata": {"matched_topics": ["Политика"], "matched_sources": ["MIA"]}},
+                ],
+                [
+                    {"parent_event_id": 7, "event_type": "open"},
+                    {"parent_event_id": 7, "event_type": "click"},
+                ],
+            ]
+            result = tasks._load_breaking_target_performance(days=30)
+
+        assert result["topics"]["Политика"]["open_rate"] == 1.0
+        assert result["sources"]["MIA"]["click_rate"] == 1.0

@@ -276,16 +276,110 @@ def _load_weekly_digest_clusters(limit=32):
     return ranked_clusters[:limit]
 
 
+def _load_weekly_cluster_engagement(days=45):
+    send_rows = db.execute(
+        "SELECT id, cluster_id, metadata "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type = 'send' "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+    child_rows = db.execute(
+        "SELECT parent_event_id, event_type "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+
+    child_map = {}
+    for row in child_rows or []:
+        parent_id = int(row.get("parent_event_id") or 0)
+        if parent_id <= 0:
+            continue
+        bucket = child_map.setdefault(parent_id, {"opens": 0, "clicks": 0})
+        event_type = str(row.get("event_type") or "").strip()
+        if event_type == "open":
+            bucket["opens"] += 1
+        elif event_type == "click":
+            bucket["clicks"] += 1
+
+    engagement = {}
+    for row in send_rows or []:
+        event_id = int(row.get("id") or 0)
+        metadata = row.get("metadata") or {}
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        cluster_ids = []
+        for cluster_id in (metadata.get("cluster_ids") or []):
+            clean_id = str(cluster_id or "").strip()
+            if clean_id:
+                cluster_ids.append(clean_id)
+        if not cluster_ids:
+            clean_id = str(row.get("cluster_id") or "").strip()
+            if clean_id:
+                cluster_ids.append(clean_id)
+        if not cluster_ids:
+            continue
+
+        child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
+        for cluster_id in cluster_ids:
+            bucket = engagement.setdefault(cluster_id, {"sends": 0, "opens": 0, "clicks": 0})
+            bucket["sends"] += 1
+            bucket["opens"] += child_stats["opens"]
+            bucket["clicks"] += child_stats["clicks"]
+
+    for cluster_id, bucket in engagement.items():
+        sends = int(bucket.get("sends") or 0)
+        opens = int(bucket.get("opens") or 0)
+        clicks = int(bucket.get("clicks") or 0)
+        bucket["open_rate"] = (opens / sends) if sends else 0.0
+        bucket["click_rate"] = (clicks / sends) if sends else 0.0
+        bucket["engagement_score"] = round(
+            min(1.1, bucket["click_rate"] * 1.5 + bucket["open_rate"] * 0.55 + min(0.25, clicks * 0.05)),
+            3,
+        )
+    return engagement
+
+
 def _select_profile_weekly_clusters(profile, limit=5):
     profile = _normalize_synced_profile_for_delivery(profile)
+    engagement_map = _load_weekly_cluster_engagement()
     ranked = []
     for cluster in _load_weekly_digest_clusters(limit=28):
         match_score, reasons, _, _ = _cluster_delivery_match(cluster, profile)
-        total_score = match_score + min(1.6, float(cluster.get("score") or 0) * 0.2)
+        engagement = engagement_map.get(str(cluster.get("cluster_id") or "").strip()) or {}
+        engagement_bonus = 0.0
+        engagement_note = ""
+        sends = int(engagement.get("sends") or 0)
+        open_rate = float(engagement.get("open_rate") or 0.0)
+        click_rate = float(engagement.get("click_rate") or 0.0)
+        if sends >= 2 and click_rate >= 0.22:
+            engagement_bonus = 0.85
+            engagement_note = "силен одзив во неделните прегледи"
+        elif sends >= 2 and open_rate >= 0.55:
+            engagement_bonus = 0.45
+            engagement_note = "добар одзив во неделните прегледи"
+        elif sends >= 3 and open_rate < 0.25 and int(engagement.get("clicks") or 0) == 0:
+            engagement_bonus = -0.35
+            engagement_note = "послаб одзив во неделните прегледи"
+
+        total_score = (
+            match_score
+            + min(1.6, float(cluster.get("score") or 0) * 0.2)
+            + engagement_bonus
+            + min(0.55, float(engagement.get("engagement_score") or 0.0) * 0.35)
+        )
+        match_reason = "; ".join(reasons[:2]) or "неделна важност"
+        if engagement_note:
+            match_reason = f"{match_reason}; {engagement_note}"
         ranked.append({
             **cluster,
             "match_score": total_score,
-            "match_reason": "; ".join(reasons[:2]) or "неделна важност",
+            "match_reason": match_reason,
         })
 
     personalized = [item for item in ranked if item["match_score"] >= 1.9]
@@ -489,11 +583,81 @@ def _load_delivery_kind_performance(days=30):
     return performance
 
 
-def _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources, delivery_performance=None):
+def _load_breaking_target_performance(days=45):
+    send_rows = db.execute(
+        "SELECT id, metadata "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'breaking' AND event_type = 'send' "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+    child_rows = db.execute(
+        "SELECT parent_event_id, event_type "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'breaking' AND event_type IN ('open', 'click') "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+
+    child_map = {}
+    for row in child_rows or []:
+        parent_id = int(row.get("parent_event_id") or 0)
+        if parent_id <= 0:
+            continue
+        bucket = child_map.setdefault(parent_id, {"opens": 0, "clicks": 0})
+        event_type = str(row.get("event_type") or "").strip()
+        if event_type == "open":
+            bucket["opens"] += 1
+        elif event_type == "click":
+            bucket["clicks"] += 1
+
+    topic_map = {}
+    source_map = {}
+    for row in send_rows or []:
+        event_id = int(row.get("id") or 0)
+        metadata = row.get("metadata") or {}
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
+
+        for topic in (metadata.get("matched_topics") or []):
+            clean = str(topic or "").strip()
+            if not clean:
+                continue
+            bucket = topic_map.setdefault(clean, {"sends": 0, "opens": 0, "clicks": 0})
+            bucket["sends"] += 1
+            bucket["opens"] += child_stats["opens"]
+            bucket["clicks"] += child_stats["clicks"]
+
+        for source in (metadata.get("matched_sources") or []):
+            clean = str(source or "").strip()
+            if not clean:
+                continue
+            bucket = source_map.setdefault(clean, {"sends": 0, "opens": 0, "clicks": 0})
+            bucket["sends"] += 1
+            bucket["opens"] += child_stats["opens"]
+            bucket["clicks"] += child_stats["clicks"]
+
+    for mapping in (topic_map, source_map):
+        for _, bucket in mapping.items():
+            sends = int(bucket.get("sends") or 0)
+            opens = int(bucket.get("opens") or 0)
+            clicks = int(bucket.get("clicks") or 0)
+            bucket["open_rate"] = (opens / sends) if sends else 0.0
+            bucket["click_rate"] = (clicks / sends) if sends else 0.0
+
+    return {"topics": topic_map, "sources": source_map}
+
+
+def _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources, delivery_performance=None, target_performance=None):
     reasons = freshness.get("reasons") or []
     freshness_score = float(freshness.get("freshness_score") or 0.0)
     base_score = float(cluster.get("score") or 0.0)
     delivery_performance = delivery_performance or {}
+    target_performance = target_performance or {}
     breaking_perf = delivery_performance.get("breaking") or {}
     breaking_sends = int(breaking_perf.get("sends") or 0)
     breaking_open_rate = float(breaking_perf.get("open_rate") or 0.0)
@@ -549,6 +713,49 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
         if severity_rank >= 2:
             score_adjustment += 0.25
             alert_reason = f"{alert_reason}; вакви ажурирања и претходно добиваа силен одзив"
+
+    topic_performance = target_performance.get("topics") or {}
+    source_performance = target_performance.get("sources") or {}
+
+    topic_rates = [
+        topic_performance.get(topic)
+        for topic in matched_topics or []
+        if topic_performance.get(topic)
+    ]
+    source_rates = [
+        source_performance.get(source)
+        for source in matched_sources or []
+        if source_performance.get(source)
+    ]
+
+    strong_target_signal = any(
+        int(item.get("sends") or 0) >= 2 and (
+            float(item.get("click_rate") or 0.0) >= 0.22 or
+            float(item.get("open_rate") or 0.0) >= 0.65
+        )
+        for item in topic_rates + source_rates
+    )
+    weak_target_signal = any(
+        int(item.get("sends") or 0) >= 3 and
+        float(item.get("open_rate") or 0.0) < 0.2 and
+        float(item.get("click_rate") or 0.0) == 0.0
+        for item in topic_rates + source_rates
+    )
+
+    if strong_target_signal:
+        engagement_label = "Силен одзив за следеното"
+        min_gap_minutes = max(20, min_gap_minutes - 15)
+        topic_gap_minutes = max(75, topic_gap_minutes - 60)
+        source_gap_minutes = max(60, source_gap_minutes - 45)
+        score_adjustment += 0.3
+        alert_reason = f"{alert_reason}; оваа тема или извор претходно добивале силен одзив"
+    elif weak_target_signal and severity_rank < 3:
+        engagement_label = "Слаб одзив за следеното"
+        min_gap_minutes += 60
+        topic_gap_minutes += 120
+        source_gap_minutes += 120
+        score_adjustment -= 0.35
+        alert_reason = f"{alert_reason}; оваа тема или извор претходно имале слаб одзив"
 
     throttle_keys = [f"cluster:{str(cluster.get('cluster_id') or '').strip()}"]
     throttle_keys.extend(f"topic:{topic}" for topic in matched_topics[:2])
@@ -606,6 +813,7 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
     profile = _normalize_synced_profile_for_delivery(profile)
     seen = {str(item or "").strip() for item in seen_cluster_ids or [] if str(item or "").strip()}
     delivery_performance = _load_delivery_kind_performance()
+    target_performance = _load_breaking_target_performance()
 
     candidates = []
     for cluster in _load_recent_breaking_clusters():
@@ -622,7 +830,14 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
             continue
         articles, synthesis_created_at = _load_cluster_alert_material(cluster_id)
         freshness = assess_cluster_synthesis_freshness(articles, synthesis_created_at)
-        alert_meta = _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources, delivery_performance)
+        alert_meta = _classify_alert_candidate(
+            cluster,
+            freshness,
+            matched_topics,
+            matched_sources,
+            delivery_performance,
+            target_performance,
+        )
         if cluster_id in seen and not freshness.get("refresh_needed"):
             continue
         candidates.append({
