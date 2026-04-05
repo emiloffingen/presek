@@ -38,6 +38,12 @@ class _FakeRequest:
         return self._payload
 
 
+class _FakeRedirectResponse:
+    def __init__(self, url, status_code=302):
+        self.url = url
+        self.status_code = status_code
+
+
 def _install_fake_fastapi_modules():
     fastapi_mod = types.ModuleType("fastapi")
     fastapi_mod.FastAPI = _FakeFastAPI
@@ -48,6 +54,7 @@ def _install_fake_fastapi_modules():
     responses_mod = types.ModuleType("fastapi.responses")
     responses_mod.StreamingResponse = type("StreamingResponse", (), {})
     responses_mod.JSONResponse = type("JSONResponse", (), {})
+    responses_mod.RedirectResponse = _FakeRedirectResponse
 
     cors_mod = types.ModuleType("fastapi.middleware.cors")
     cors_mod.CORSMiddleware = type("CORSMiddleware", (), {})
@@ -293,6 +300,11 @@ def test_fastapi_stats_full_includes_editor_analytics():
             "breaking_topic_alerts": 3,
             "breaking_source_alerts": 1,
         },
+        {
+            "sends_7d": 12,
+            "opens_7d": 8,
+            "clicks_7d": 3,
+        },
     ]
     mock_db.execute.side_effect = [
         [{"source": "MIA", "n": 50}],
@@ -310,5 +322,26 @@ def test_fastapi_stats_full_includes_editor_analytics():
 
     assert data["editor_analytics"]["synced_profiles"] == 14
     assert data["editor_analytics"]["delivery_active"] == 5
+    assert data["editor_analytics"]["open_rate_7d"] == 66.7
     assert data["editor_analytics"]["top_followed_topics"][0]["topic"] == "Политика"
     assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"
+
+
+def test_fastapi_delivery_track_records_event_and_redirects():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {
+        "sync_token": "sync-token-123",
+        "delivery_kind": "morning",
+        "channel": "ntfy",
+        "target": "reader-feed",
+        "cluster_id": "abc123",
+        "metadata": {},
+    }
+
+    with patch.object(api_fast, "db", mock_db):
+        response = asyncio.run(api_fast.track_delivery_event("open", 7, "/briefing"))
+
+    assert response.status_code == 302
+    assert response.url.endswith("/briefing")
+    mock_db.execute.assert_called_once()

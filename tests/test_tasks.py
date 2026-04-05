@@ -160,15 +160,17 @@ class TestProfileDeliveryTasks:
         ]
 
         with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
-             patch.object(tasks, "_select_profile_brief_clusters", return_value=[{"title": "Lead story", "source": "MIA", "source_count": 2, "match_reason": "следена тема: Политика"}]), \
+             patch.object(tasks, "_select_profile_brief_clusters", return_value=[{"cluster_id": "lead-cluster", "title": "Lead story", "source": "MIA", "source_count": 2, "match_reason": "следена тема: Политика"}]), \
              patch.object(tasks, "_build_profile_briefing_message", return_value="Digest body"), \
+             patch.object(tasks, "_record_delivery_tracking_event", return_value=11), \
              patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
              patch.object(tasks, "db") as mock_db:
             tasks.send_profile_briefings_task()
 
         mock_send.assert_called_once()
-        update_sql = mock_db.execute.call_args.args[0]
+        update_sql = mock_db.execute.call_args_list[-1].args[0]
         assert "last_morning_sent_at" in update_sql
+        assert "event_id=11" in mock_send.call_args.kwargs["click_url"]
 
     def test_send_profile_weekly_digests_updates_last_sent(self):
         import tasks
@@ -184,15 +186,17 @@ class TestProfileDeliveryTasks:
         ]
 
         with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
-             patch.object(tasks, "_select_profile_weekly_clusters", return_value=[{"title": "Week lead", "source": "MIA", "source_count": 4, "match_reason": "следена тема: Политика"}]), \
+             patch.object(tasks, "_select_profile_weekly_clusters", return_value=[{"cluster_id": "week-cluster", "title": "Week lead", "source": "MIA", "source_count": 4, "match_reason": "следена тема: Политика"}]), \
              patch.object(tasks, "_build_profile_weekly_digest_message", return_value="Weekly body"), \
+             patch.object(tasks, "_record_delivery_tracking_event", return_value=22), \
              patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
              patch.object(tasks, "db") as mock_db:
             tasks.send_profile_weekly_digests_task()
 
         mock_send.assert_called_once()
-        update_sql = mock_db.execute.call_args.args[0]
+        update_sql = mock_db.execute.call_args_list[-1].args[0]
         assert "last_weekly_sent_at" in update_sql
+        assert "event_id=22" in mock_send.call_args.kwargs["click_url"]
 
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
         import tasks
@@ -224,14 +228,16 @@ class TestProfileDeliveryTasks:
 
         with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
              patch.object(tasks, "_select_breaking_cluster_for_profile", return_value=candidate), \
+             patch.object(tasks, "_record_delivery_tracking_event", return_value=33), \
              patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
              patch.object(tasks, "db") as mock_db:
             tasks.send_profile_breaking_alerts_task()
 
         mock_send.assert_called_once()
-        params = mock_db.execute.call_args.args[1]
+        params = mock_db.execute.call_args_list[-1].args[1]
         assert "new-cluster" in params[0]
         assert "topic:Политика" in json.loads(params[1])
+        assert "event_id=33" in mock_send.call_args.kwargs["click_url"]
 
     def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
         import tasks

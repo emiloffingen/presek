@@ -10,7 +10,7 @@ import urllib.request
 import urllib.error
 from collections import defaultdict
 
-from flask import Blueprint, jsonify, request, Response
+from flask import Blueprint, jsonify, request, Response, redirect
 from database import db_manager as db
 from ai_engine import sync_call_ai as _call_ai, clean_json_response
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced, assess_cluster_synthesis_freshness, annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters, build_source_reputation_rows, build_editor_analytics_payload
@@ -139,6 +139,15 @@ def _normalize_server_delivery_row(row):
         "breakingSources": row.get("breaking_sources"),
         "isActive": row.get("is_active"),
     })
+
+
+def _safe_tracking_redirect_path(path):
+    clean = str(path or "").strip()
+    if not clean.startswith("/"):
+        return "/briefing"
+    if clean.startswith("//") or clean.startswith("/api/"):
+        return "/briefing"
+    return clean
 
 
 def _source_admin_authorized():
@@ -858,6 +867,14 @@ def api_stats_full():
             "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value "
             "GROUP BY value ORDER BY followers DESC, source ASC LIMIT 6"
         )
+        tracking_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d "
+            "FROM delivery_tracking_events "
+            "WHERE created_at >= NOW() - INTERVAL '7 days'"
+        ) or {}
 
         result = {
             "total_articles": total,
@@ -878,6 +895,7 @@ def api_stats_full():
                 delivery_stats_row,
                 top_followed_topics,
                 top_followed_sources,
+                tracking_stats_row,
             ),
         }
 
@@ -1056,6 +1074,42 @@ def api_profile_delivery_save():
         "token": token,
         "subscription": subscription,
     })
+
+
+@api_bp.route("/api/delivery/track/<event_type>")
+def api_delivery_track(event_type):
+    clean_type = str(event_type or "").strip().lower()
+    if clean_type not in {"open", "click"}:
+        return error_response("Invalid event type", 400)
+
+    try:
+        event_id = int(request.args.get("event_id", "0"))
+    except ValueError:
+        return error_response("Invalid event id", 400)
+
+    parent = db.execute_one(
+        "SELECT sync_token, delivery_kind, channel, target, cluster_id, metadata FROM delivery_tracking_events WHERE id = %s AND event_type = 'send'",
+        (event_id,),
+    )
+    redirect_path = _safe_tracking_redirect_path(request.args.get("redirect") or "/briefing")
+    if parent:
+        db.execute(
+            """INSERT INTO delivery_tracking_events
+               (sync_token, parent_event_id, event_type, delivery_kind, channel, target, cluster_id, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)""",
+            (
+                parent.get("sync_token"),
+                event_id,
+                clean_type,
+                parent.get("delivery_kind"),
+                parent.get("channel") or "ntfy",
+                parent.get("target") or "",
+                parent.get("cluster_id"),
+                json.dumps({"redirect": redirect_path}),
+            ),
+            fetch=False,
+        )
+    return redirect(f"{os.environ.get('PUBLIC_SITE_URL', 'https://presek.live').rstrip('/')}{redirect_path}", code=302)
 
 @api_bp.route("/api/live")
 def api_live():

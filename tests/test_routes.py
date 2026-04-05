@@ -661,6 +661,11 @@ class TestStatsFull:
                 "breaking_topic_alerts": 3,
                 "breaking_source_alerts": 1,
             },
+            {
+                "sends_7d": 12,
+                "opens_7d": 8,
+                "clicks_7d": 3,
+            },
         ]
         mock_db.execute.side_effect = [
             [{"source": "MIA", "n": 50}],
@@ -680,8 +685,27 @@ class TestStatsFull:
         data = json.loads(resp.data)
         assert data["editor_analytics"]["synced_profiles"] == 14
         assert data["editor_analytics"]["delivery_active"] == 5
+        assert data["editor_analytics"]["open_rate_7d"] == 66.7
         assert data["editor_analytics"]["top_followed_topics"][0]["topic"] == "Политика"
         assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"
+
+    def test_delivery_track_redirects_and_records_event(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "sync_token": "sync-token-123",
+            "delivery_kind": "morning",
+            "channel": "ntfy",
+            "target": "reader-feed",
+            "cluster_id": "abc123",
+            "metadata": {},
+        }
+
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/delivery/track/open?event_id=7&redirect=/briefing")
+
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/briefing"
+        mock_db.execute.assert_called_once()
 
 
 # ── Security headers ──────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import logging
 import datetime
 import json
+import os
 import re
 import urllib.error
 import urllib.parse
@@ -32,6 +33,7 @@ from local_nlp import (
 from api_helpers import normalize_perspectives, normalize_summary_text
 
 log = logging.getLogger("presek_celery")
+_PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 
 
 def invalidate_public_data_caches():
@@ -352,21 +354,54 @@ def _parse_row_datetime(value):
     return None
 
 
-def _send_ntfy_message(topic, title, message, tags="newspaper"):
+def _record_delivery_tracking_event(sync_token, event_type, delivery_kind, *, channel="ntfy", target="", cluster_id=None, parent_event_id=None, metadata=None):
+    row = db.execute_one(
+        """INSERT INTO delivery_tracking_events
+           (sync_token, parent_event_id, event_type, delivery_kind, channel, target, cluster_id, metadata)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+           RETURNING id""",
+        (
+            sync_token,
+            parent_event_id,
+            str(event_type or "").strip(),
+            str(delivery_kind or "").strip(),
+            str(channel or "ntfy").strip() or "ntfy",
+            str(target or "").strip(),
+            str(cluster_id or "").strip() or None,
+            json.dumps(metadata or {}),
+        ),
+    )
+    return int((row or {}).get("id") or 0)
+
+
+def _tracked_delivery_url(event_id, event_type, path):
+    event_id = int(event_id or 0)
+    clean_path = str(path or "").strip()
+    if not clean_path.startswith("/"):
+        clean_path = "/briefing"
+    query = urllib.parse.urlencode({"event_id": event_id, "redirect": clean_path})
+    return f"{_PUBLIC_SITE_URL}/api/delivery/track/{urllib.parse.quote(str(event_type or 'click'), safe='')}?{query}"
+
+
+def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     clean_topic = str(topic or "").strip()
     clean_message = str(message or "").strip()
     if not clean_topic or not clean_message:
         return False
 
+    headers = {
+        "Title": str(title or "Пресек").strip()[:120],
+        "Tags": str(tags or "newspaper"),
+        "Priority": "default",
+    }
+    if click_url:
+        headers["Click"] = str(click_url).strip()[:500]
+
     url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
     req = urllib.request.Request(
         url,
         data=clean_message.encode("utf-8"),
-        headers={
-            "Title": str(title or "Пресек").strip()[:120],
-            "Tags": str(tags or "newspaper"),
-            "Priority": "default",
-        },
+        headers=headers,
         method="POST",
     )
     try:
@@ -941,7 +976,25 @@ def send_profile_briefings_task():
             if not message:
                 continue
 
-            if _send_ntfy_message(target, "Пресек · Утрински брифинг", message, tags="newspaper,sunrise"):
+            primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
+            send_event_id = _record_delivery_tracking_event(
+                row["sync_token"],
+                "send",
+                "morning",
+                target=target,
+                cluster_id=primary_cluster_id,
+                metadata={"cluster_ids": [str(item.get("cluster_id") or "").strip() for item in clusters[:4] if str(item.get("cluster_id") or "").strip()]},
+            )
+            click_url = _tracked_delivery_url(send_event_id, "open", "/briefing") if send_event_id else None
+            click_track_url = _tracked_delivery_url(send_event_id, "click", "/briefing") if send_event_id else None
+            message_with_link = message if not click_track_url else f"{message}\n\nОтвори брифинг: {click_track_url}"
+            if _send_ntfy_message(
+                target,
+                "Пресек · Утрински брифинг",
+                message_with_link,
+                tags="newspaper,sunrise",
+                click_url=click_url,
+            ):
                 db.execute(
                     "UPDATE synced_delivery_subscriptions SET last_morning_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
                     (row["sync_token"],),
@@ -984,7 +1037,25 @@ def send_profile_weekly_digests_task():
             if not message:
                 continue
 
-            if _send_ntfy_message(target, "Пресек · Неделен преглед", message, tags="spiral_calendar,newspaper"):
+            primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
+            send_event_id = _record_delivery_tracking_event(
+                row["sync_token"],
+                "send",
+                "weekly",
+                target=target,
+                cluster_id=primary_cluster_id,
+                metadata={"cluster_ids": [str(item.get("cluster_id") or "").strip() for item in clusters[:5] if str(item.get("cluster_id") or "").strip()]},
+            )
+            click_url = _tracked_delivery_url(send_event_id, "open", "/briefing") if send_event_id else None
+            click_track_url = _tracked_delivery_url(send_event_id, "click", "/briefing") if send_event_id else None
+            message_with_link = message if not click_track_url else f"{message}\n\nОтвори преглед: {click_track_url}"
+            if _send_ntfy_message(
+                target,
+                "Пресек · Неделен преглед",
+                message_with_link,
+                tags="spiral_calendar,newspaper",
+                click_url=click_url,
+            ):
                 db.execute(
                     "UPDATE synced_delivery_subscriptions SET last_weekly_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
                     (row["sync_token"],),
@@ -1042,7 +1113,31 @@ def send_profile_breaking_alerts_task():
             elif candidate.get("open_point"):
                 message_lines.append(f"Отворено: {str(candidate['open_point'])[:180]}")
 
-            if _send_ntfy_message(target, title, "\n".join(message_lines), tags=candidate.get("alert_tags") or "newspaper"):
+            cluster_id = str(candidate.get("cluster_id") or "").strip() or None
+            send_event_id = _record_delivery_tracking_event(
+                row["sync_token"],
+                "send",
+                "breaking",
+                target=target,
+                cluster_id=cluster_id,
+                metadata={
+                    "matched_topics": candidate.get("matched_topics") or [],
+                    "matched_sources": candidate.get("matched_sources") or [],
+                    "label": candidate.get("alert_label") or "",
+                },
+            )
+            open_url = _tracked_delivery_url(send_event_id, "open", f"/cluster/{cluster_id}") if send_event_id and cluster_id else (_tracked_delivery_url(send_event_id, "open", "/briefing") if send_event_id else None)
+            click_track_url = _tracked_delivery_url(send_event_id, "click", f"/cluster/{cluster_id}") if send_event_id and cluster_id else (_tracked_delivery_url(send_event_id, "click", "/briefing") if send_event_id else None)
+            message_text = "\n".join(message_lines)
+            if click_track_url:
+                message_text = f"{message_text}\nОтвори кластер: {click_track_url}"
+            if _send_ntfy_message(
+                target,
+                title,
+                message_text,
+                tags=candidate.get("alert_tags") or "newspaper",
+                click_url=open_url,
+            ):
                 next_ids = [str(candidate.get("cluster_id") or "").strip()]
                 next_ids.extend(
                     str(item or "").strip()

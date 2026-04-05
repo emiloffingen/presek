@@ -330,6 +330,21 @@ class DatabaseManager:
                 cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE")
                 cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS last_weekly_sent_at TIMESTAMP")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS delivery_tracking_events (
+                    id SERIAL PRIMARY KEY,
+                    sync_token TEXT REFERENCES synced_reader_profiles(sync_token) ON DELETE CASCADE,
+                    parent_event_id INTEGER REFERENCES delivery_tracking_events(id) ON DELETE SET NULL,
+                    event_type TEXT NOT NULL,
+                    delivery_kind TEXT NOT NULL,
+                    channel TEXT DEFAULT 'ntfy',
+                    target TEXT DEFAULT '',
+                    cluster_id TEXT,
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_sync_created ON delivery_tracking_events(sync_token, created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_event_kind_created ON delivery_tracking_events(event_type, delivery_kind, created_at DESC)")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,

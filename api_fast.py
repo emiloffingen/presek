@@ -1,7 +1,7 @@
 import os
 import secrets
 from fastapi import FastAPI, Request, Query, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
@@ -166,6 +166,15 @@ def _normalize_server_delivery_row(row):
         "breakingSources": row.get("breaking_sources"),
         "isActive": row.get("is_active"),
     })
+
+
+def _safe_tracking_redirect_path(path: str) -> str:
+    clean = str(path or "").strip()
+    if not clean.startswith("/"):
+        return "/briefing"
+    if clean.startswith("//") or clean.startswith("/api/"):
+        return "/briefing"
+    return clean
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     return is_valid_focus_entity(name, entity_type)
@@ -415,6 +424,37 @@ async def save_profile_delivery(request: Request):
         "token": token,
         "subscription": subscription,
     }
+
+
+@app.get("/api/delivery/track/{event_type}")
+async def track_delivery_event(event_type: str, event_id: int = Query(..., ge=1), redirect: str = Query("/briefing")):
+    clean_type = str(event_type or "").strip().lower()
+    if clean_type not in {"open", "click"}:
+        raise HTTPException(status_code=400, detail="Invalid event type")
+
+    parent = db.execute_one(
+        "SELECT sync_token, delivery_kind, channel, target, cluster_id, metadata FROM delivery_tracking_events WHERE id = %s AND event_type = 'send'",
+        (event_id,),
+    )
+    if parent:
+        db.execute(
+            """INSERT INTO delivery_tracking_events
+               (sync_token, parent_event_id, event_type, delivery_kind, channel, target, cluster_id, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)""",
+            (
+                parent.get("sync_token"),
+                event_id,
+                clean_type,
+                parent.get("delivery_kind"),
+                parent.get("channel") or "ntfy",
+                parent.get("target") or "",
+                parent.get("cluster_id"),
+                json.dumps({"redirect": _safe_tracking_redirect_path(redirect)}),
+            ),
+            fetch=False,
+        )
+
+    return RedirectResponse(url=f"{_public_site_url}{_safe_tracking_redirect_path(redirect)}", status_code=302)
 
 @app.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
@@ -1085,6 +1125,14 @@ async def get_stats_full():
             "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value "
             "GROUP BY value ORDER BY followers DESC, source ASC LIMIT 6"
         )
+        tracking_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d "
+            "FROM delivery_tracking_events "
+            "WHERE created_at >= NOW() - INTERVAL '7 days'"
+        ) or {}
 
         result = {
             "total_articles": total,
@@ -1105,6 +1153,7 @@ async def get_stats_full():
                 delivery_stats_row,
                 top_followed_topics,
                 top_followed_sources,
+                tracking_stats_row,
             ),
         }
 

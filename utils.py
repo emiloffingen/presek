@@ -443,9 +443,14 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
     return results
 
 
-def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=None, top_topic_rows=None, top_source_rows=None):
+def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=None, top_topic_rows=None, top_source_rows=None, tracking_stats_row=None):
     profile_stats_row = profile_stats_row or {}
     delivery_stats_row = delivery_stats_row or {}
+    tracking_stats_row = tracking_stats_row or {}
+
+    sends_7d = int(tracking_stats_row.get("sends_7d") or 0)
+    opens_7d = int(tracking_stats_row.get("opens_7d") or 0)
+    clicks_7d = int(tracking_stats_row.get("clicks_7d") or 0)
 
     return {
         "synced_profiles": int(profile_stats_row.get("synced_profiles") or 0),
@@ -459,6 +464,11 @@ def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=No
         "weekly_digests": int(delivery_stats_row.get("weekly_digests") or 0),
         "breaking_topic_alerts": int(delivery_stats_row.get("breaking_topic_alerts") or 0),
         "breaking_source_alerts": int(delivery_stats_row.get("breaking_source_alerts") or 0),
+        "sends_7d": sends_7d,
+        "opens_7d": opens_7d,
+        "clicks_7d": clicks_7d,
+        "open_rate_7d": round((opens_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
+        "click_rate_7d": round((clicks_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
         "top_followed_topics": [
             {
                 "topic": str(row.get("topic") or "").strip(),

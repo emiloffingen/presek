@@ -81,6 +81,16 @@ try {
 										<p class="editor-value">{stats.editor_analytics?.delivery_targets ?? 0}</p>
 										<p class="editor-copy">Профили со реално внесен канал за испорака.</p>
 									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Отворања во 7 дена</p>
+										<p class="editor-value">{stats.editor_analytics?.opens_7d ?? 0}</p>
+										<p class="editor-copy">Отворања на доставени брифинзи и известувања преку следените врски.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Кликови во 7 дена</p>
+										<p class="editor-value">{stats.editor_analytics?.clicks_7d ?? 0}</p>
+										<p class="editor-copy">Кликови од доставата кон брифинг, кластер или поврзана страница.</p>
+									</div>
 								</div>
 							</section>
 
@@ -210,6 +220,18 @@ try {
 									<div class="system-row">
 										<span>Историја на читање:</span>
 										<span class="text-foreground font-black">{stats.editor_analytics?.profiles_with_recent_reads ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Испраќања / 7 дена:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.sends_7d ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Стапка на отворање:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.open_rate_7d ?? 0}%</span>
+									</div>
+									<div class="system-row">
+										<span>Стапка на клик:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.click_rate_7d ?? 0}%</span>
 									</div>
 								</div>
 							</div>
