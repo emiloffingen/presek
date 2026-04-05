@@ -423,6 +423,61 @@ class TestSourceControls:
         assert resp.status_code == 403
 
 
+class TestProfileSync:
+    def test_profile_sync_init(self, client):
+        mock_db = MagicMock()
+        with patch("routes.api.db", mock_db), patch("routes.api.secrets.token_urlsafe", return_value="sync-token-123"):
+            resp = client.post("/api/profile/sync/init")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["status"] == "success"
+        assert data["token"] == "sync-token-123"
+
+    def test_profile_sync_get(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "profile_data": {
+                "followedTopics": ["Политика"],
+                "followedSources": ["MIA"],
+                "recentClusters": [{"cluster_id": "abc", "viewedAt": "2026-04-05T10:00:00Z"}],
+                "deliveryPreferences": {"morningBriefing": False},
+            },
+            "updated_at": "2026-04-05T10:00:00Z",
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/profile/sync?token=sync-token-123")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["profile"]["followedTopics"] == ["Политика"]
+        assert data["profile"]["deliveryPreferences"]["morningBriefing"] is False
+
+    def test_profile_sync_save_merges(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "profile_data": {
+                "followedTopics": ["Политика"],
+                "followedSources": [],
+                "recentClusters": [],
+                "deliveryPreferences": {"morningBriefing": True, "breakingAlerts": True, "browserPermission": "default"},
+            }
+        }
+        payload = {
+            "token": "sync-token-123",
+            "profile": {
+                "followedTopics": ["Економија"],
+                "followedSources": ["Телма"],
+                "recentClusters": [{"cluster_id": "xyz", "viewedAt": "2026-04-05T11:00:00Z"}],
+                "deliveryPreferences": {"morningBriefing": False, "breakingAlerts": True, "browserPermission": "granted"},
+            },
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.post("/api/profile/sync", data=json.dumps(payload), content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["profile"]["followedTopics"] == ["Политика", "Економија"]
+        assert data["profile"]["followedSources"] == ["Телма"]
+
+
 # ── View routes with DB ───────────────────────────────────────────
 
 class TestViewRoutesWithDB:

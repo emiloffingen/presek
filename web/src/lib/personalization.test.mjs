@@ -5,9 +5,14 @@ import {
   buildDeliveryDigest,
   buildPersonalizedClusters,
   createEmptyProfile,
+  exportSyncPayload,
   hasPersonalizationSignal,
   loadDeliveryPreferences,
+  loadSyncToken,
+  mergeSyncPayload,
   recordClusterView,
+  saveDeliveryPreferences,
+  saveSyncToken,
   toggleDeliveryPreference,
   toggleFollowedValue,
 } from './personalization.js';
@@ -20,6 +25,9 @@ function makeStorage() {
     },
     setItem(key, value) {
       store.set(key, value);
+    },
+    removeItem(key) {
+      store.delete(key);
     },
   };
 }
@@ -135,4 +143,57 @@ test('buildDeliveryDigest reflects follows and briefing headings', () => {
   assert.match(digest, /Следени теми: Политика\./);
   assert.match(digest, /Следени извори: Телма\./);
   assert.match(digest, /• Што го движи денот/);
+});
+
+test('saveSyncToken persists and clears token values', () => {
+  const storage = makeStorage();
+  assert.equal(saveSyncToken('abc-123', storage), 'abc-123');
+  assert.equal(loadSyncToken(storage), 'abc-123');
+  assert.equal(saveSyncToken('', storage), '');
+  assert.equal(loadSyncToken(storage), '');
+});
+
+test('mergeSyncPayload unions follows and keeps newest recent clusters', () => {
+  const storage = makeStorage();
+  toggleFollowedValue('topic', 'Политика', storage);
+  saveDeliveryPreferences({ morningBriefing: false, breakingAlerts: true, browserPermission: 'default' }, storage);
+  recordClusterView(
+    {
+      cluster_id: 'local-1',
+      title: 'Local',
+      category: 'Политика',
+      topic: 'Политика',
+      primarySource: 'MIA',
+      sources: ['MIA'],
+      tags: ['Буџет'],
+      viewedAt: '2026-04-05T10:00:00Z',
+    },
+    storage
+  );
+
+  const merged = mergeSyncPayload(
+    {
+      followedTopics: ['Економија'],
+      followedSources: ['Телма'],
+      recentClusters: [
+        {
+          cluster_id: 'remote-1',
+          title: 'Remote',
+          category: 'Економија',
+          topic: 'Економија',
+          primarySource: 'Телма',
+          sources: ['Телма'],
+          tags: ['Инфлација'],
+          viewedAt: '2026-04-05T12:00:00Z',
+        },
+      ],
+      deliveryPreferences: { morningBriefing: true, breakingAlerts: false, browserPermission: 'granted' },
+    },
+    storage
+  );
+
+  assert.deepEqual(merged.profile.followedTopics, ['Политика', 'Економија']);
+  assert.deepEqual(merged.profile.followedSources, ['Телма']);
+  assert.equal(merged.profile.recentClusters[0].cluster_id, 'remote-1');
+  assert.equal(exportSyncPayload(storage).deliveryPreferences.morningBriefing, false);
 });

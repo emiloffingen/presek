@@ -2,6 +2,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import secrets
 import re
 import time
 import logging
@@ -40,6 +41,85 @@ log = logging.getLogger("presek")
 # Allowed image content types for proxy
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _normalize_sync_list(values, limit=24):
+    cleaned = []
+    seen = set()
+    for value in values or []:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        cleaned.append(text)
+        if len(cleaned) >= limit:
+            break
+    return cleaned
+
+
+def _normalize_recent_clusters(items):
+    rows = []
+    seen = set()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        cluster_id = str(item.get("cluster_id") or "").strip()
+        if not cluster_id or cluster_id in seen:
+            continue
+        seen.add(cluster_id)
+        rows.append({
+            "cluster_id": cluster_id,
+            "title": str(item.get("title") or "").strip(),
+            "category": str(item.get("category") or "").strip(),
+            "topic": str(item.get("topic") or "").strip(),
+            "primarySource": str(item.get("primarySource") or "").strip(),
+            "sources": _normalize_sync_list(item.get("sources") or [], limit=8),
+            "tags": _normalize_sync_list(item.get("tags") or [], limit=10),
+            "viewedAt": str(item.get("viewedAt") or "").strip(),
+        })
+        if len(rows) >= 24:
+            break
+    return rows
+
+
+def _normalize_delivery_preferences(prefs):
+    prefs = prefs or {}
+    return {
+        "morningBriefing": prefs.get("morningBriefing") is not False,
+        "breakingAlerts": prefs.get("breakingAlerts") is not False,
+        "browserPermission": str(prefs.get("browserPermission") or "default").strip() or "default",
+    }
+
+
+def _normalize_synced_profile(payload):
+    payload = payload or {}
+    return {
+        "followedTopics": _normalize_sync_list(payload.get("followedTopics") or [], limit=12),
+        "followedSources": _normalize_sync_list(payload.get("followedSources") or [], limit=12),
+        "recentClusters": _normalize_recent_clusters(payload.get("recentClusters") or []),
+        "deliveryPreferences": _normalize_delivery_preferences(payload.get("deliveryPreferences") or {}),
+    }
+
+
+def _merge_synced_profiles(left, right):
+    left = _normalize_synced_profile(left)
+    right = _normalize_synced_profile(right)
+    merged_recent = _normalize_recent_clusters(
+        sorted(
+            left["recentClusters"] + right["recentClusters"],
+            key=lambda item: str(item.get("viewedAt") or ""),
+            reverse=True,
+        )
+    )
+    return {
+        "followedTopics": _normalize_sync_list(left["followedTopics"] + right["followedTopics"], limit=12),
+        "followedSources": _normalize_sync_list(left["followedSources"] + right["followedSources"], limit=12),
+        "recentClusters": merged_recent,
+        "deliveryPreferences": {
+            **left["deliveryPreferences"],
+            **right["deliveryPreferences"],
+        },
+    }
 
 
 def _source_admin_authorized():
@@ -782,6 +862,70 @@ def api_briefing():
     except Exception as e:
         log.error(f"[api/briefing] Error: {e}", exc_info=True)
         return error_response("Failed to fetch briefing")
+
+
+@api_bp.route("/api/profile/sync/init", methods=["POST"])
+def api_profile_sync_init():
+    token = secrets.token_urlsafe(18)
+    empty_profile = _normalize_synced_profile({})
+    db.execute(
+        "INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)",
+        (token, json.dumps(empty_profile)),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": empty_profile,
+    })
+
+
+@api_bp.route("/api/profile/sync")
+def api_profile_sync_get():
+    token = (request.args.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+    row = db.execute_one(
+        "SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not row:
+        return error_response("Synced profile not found", 404)
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": _normalize_synced_profile(row.get("profile_data") or {}),
+        "updated_at": row.get("updated_at"),
+    })
+
+
+@api_bp.route("/api/profile/sync", methods=["POST"])
+def api_profile_sync_save():
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+    existing = db.execute_one(
+        "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not existing:
+        return error_response("Synced profile not found", 404)
+
+    incoming = _normalize_synced_profile(payload.get("profile") or {})
+    merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
+    db.execute(
+        "UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s",
+        (json.dumps(merged), token),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": merged,
+    })
 
 @api_bp.route("/api/live")
 def api_live():

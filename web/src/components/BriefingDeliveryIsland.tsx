@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, BellRing, Copy, Mail, Send } from 'lucide-react';
+import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
   buildDeliveryDigest,
   loadDeliveryPreferences,
@@ -116,7 +117,8 @@ export default function BriefingDeliveryIsland({
         <p className="delivery-digest-kicker">Delivery preview</p>
         <pre>{digest || 'Your delivery preview will appear here once a briefing is available.'}</pre>
       </div>
+
+      <AccountSyncIsland />
     </div>
   );
 }
-

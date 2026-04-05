@@ -144,3 +144,70 @@ def test_fastapi_cors_origins_follow_env_var():
 
     cors = next(m for m in api_fast.app.user_middleware if m.cls.__name__ == "CORSMiddleware")
     assert cors.options["allow_origins"] == ["https://app.example", "https://admin.example"]
+
+
+def test_fastapi_profile_sync_init_creates_token():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast.secrets, "token_urlsafe", return_value="sync-token-123"):
+        data = asyncio.run(api_fast.init_profile_sync())
+
+    assert data["status"] == "success"
+    assert data["token"] == "sync-token-123"
+    assert data["profile"]["followedTopics"] == []
+    mock_db.execute.assert_called_once()
+
+
+def test_fastapi_profile_sync_get_returns_normalized_profile():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {
+        "profile_data": {
+            "followedTopics": ["Политика"],
+            "followedSources": ["MIA"],
+            "recentClusters": [{"cluster_id": "abc", "viewedAt": "2026-04-05T10:00:00Z"}],
+            "deliveryPreferences": {"morningBriefing": False},
+        },
+        "updated_at": "2026-04-05T10:00:00Z",
+    }
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.get_profile_sync("sync-token-123"))
+
+    assert data["status"] == "success"
+    assert data["profile"]["followedTopics"] == ["Политика"]
+    assert data["profile"]["deliveryPreferences"]["morningBriefing"] is False
+
+
+def test_fastapi_profile_sync_save_merges_remote_and_local():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {
+        "profile_data": {
+            "followedTopics": ["Политика"],
+            "followedSources": [],
+            "recentClusters": [],
+            "deliveryPreferences": {"morningBriefing": True, "breakingAlerts": True, "browserPermission": "default"},
+        }
+    }
+
+    payload = {
+        "token": "sync-token-123",
+        "profile": {
+            "followedTopics": ["Економија"],
+            "followedSources": ["Телма"],
+            "recentClusters": [{"cluster_id": "xyz", "viewedAt": "2026-04-05T11:00:00Z"}],
+            "deliveryPreferences": {"morningBriefing": False, "breakingAlerts": True, "browserPermission": "granted"},
+        },
+    }
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.save_profile_sync(_FakeRequest(payload)))
+
+    assert data["status"] == "success"
+    assert data["profile"]["followedTopics"] == ["Политика", "Економија"]
+    assert data["profile"]["followedSources"] == ["Телма"]
+    assert data["profile"]["recentClusters"][0]["cluster_id"] == "xyz"
+    mock_db.execute.assert_called_once()

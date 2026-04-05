@@ -303,6 +303,13 @@ class DatabaseManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS synced_reader_profiles (
+                    sync_token TEXT PRIMARY KEY,
+                    profile_data JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,

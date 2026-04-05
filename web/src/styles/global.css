@@ -979,3 +979,84 @@
     line-height: 1.5;
     color: var(--secondary-foreground);
 }
+
+.account-sync-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-top: 0.2rem;
+    border-top: 1px solid var(--border);
+}
+
+.account-sync-kicker,
+.account-sync-label span,
+.account-sync-token {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.64rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.account-sync-copy,
+.account-sync-message {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
+.account-sync-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+}
+
+.account-sync-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.account-sync-import {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+}
+
+.account-sync-input {
+    width: 100%;
+    padding: 0.62rem 0.75rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+}
+
+.account-sync-token {
+    color: var(--muted-foreground);
+    text-transform: none;
+    letter-spacing: 0.02em;
+    word-break: break-all;
+}
+
+.account-sync-message.is-done {
+    color: var(--nyt-accent);
+}
+
+.account-sync-message.is-error {
+    color: var(--nyt-red);
+}
+
+@media (min-width: 720px) {
+    .account-sync-import {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}

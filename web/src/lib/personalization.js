@@ -2,6 +2,7 @@ const PROFILE_KEY = 'presek_reader_profile_v1';
 const MAX_RECENT_CLUSTERS = 24;
 const MAX_FOLLOWED = 12;
 const DELIVERY_KEY = 'presek_delivery_prefs_v1';
+const SYNC_TOKEN_KEY = 'presek_sync_token_v1';
 
 function normalizeValue(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -32,6 +33,22 @@ export function createEmptyProfile() {
     followedTopics: [],
     followedSources: [],
   };
+}
+
+export function loadSyncToken(storage = globalThis?.localStorage) {
+  if (!storage) return '';
+  return normalizeValue(storage.getItem(SYNC_TOKEN_KEY));
+}
+
+export function saveSyncToken(token, storage = globalThis?.localStorage) {
+  const clean = normalizeValue(token);
+  if (!storage) return clean;
+  if (!clean) {
+    storage.removeItem(SYNC_TOKEN_KEY);
+    return '';
+  }
+  storage.setItem(SYNC_TOKEN_KEY, clean);
+  return clean;
 }
 
 export function loadReaderProfile(storage = globalThis?.localStorage) {
@@ -295,4 +312,62 @@ export function buildDeliveryDigest(content, profile, prefs) {
     ...introBits,
     ...headlineLines.map((line) => `• ${line}`),
   ].join('\n').trim();
+}
+
+export function exportSyncPayload(storage = globalThis?.localStorage) {
+  return {
+    followedTopics: loadReaderProfile(storage).followedTopics,
+    followedSources: loadReaderProfile(storage).followedSources,
+    recentClusters: loadReaderProfile(storage).recentClusters,
+    deliveryPreferences: loadDeliveryPreferences(storage),
+  };
+}
+
+export function mergeSyncPayload(remoteProfile, storage = globalThis?.localStorage) {
+  const localProfile = loadReaderProfile(storage);
+  const localPrefs = loadDeliveryPreferences(storage);
+  const incomingProfile = remoteProfile || {};
+
+  const mergedRecent = [];
+  const seen = new Set();
+  const combinedRecent = [
+    ...(incomingProfile.recentClusters || []),
+    ...(localProfile.recentClusters || []),
+  ].sort((left, right) => String(right?.viewedAt || '').localeCompare(String(left?.viewedAt || '')));
+
+  for (const item of combinedRecent) {
+    const clusterId = normalizeValue(item?.cluster_id);
+    if (!clusterId || seen.has(clusterId)) continue;
+    seen.add(clusterId);
+    mergedRecent.push({
+      cluster_id: clusterId,
+      title: normalizeValue(item?.title),
+      category: normalizeValue(item?.category),
+      topic: normalizeValue(item?.topic),
+      primarySource: normalizeValue(item?.primarySource),
+      sources: normalizeList(item?.sources || []).slice(0, 8),
+      tags: normalizeList(item?.tags || []).slice(0, 10),
+      viewedAt: normalizeValue(item?.viewedAt),
+    });
+    if (mergedRecent.length >= MAX_RECENT_CLUSTERS) break;
+  }
+
+  const mergedProfile = saveReaderProfile(
+    {
+      recentClusters: mergedRecent,
+      followedTopics: normalizeList([...(localProfile.followedTopics || []), ...(incomingProfile.followedTopics || [])]),
+      followedSources: normalizeList([...(localProfile.followedSources || []), ...(incomingProfile.followedSources || [])]),
+    },
+    storage
+  );
+
+  const mergedPrefs = saveDeliveryPreferences(
+    {
+      ...incomingProfile.deliveryPreferences,
+      ...localPrefs,
+    },
+    storage
+  );
+
+  return { profile: mergedProfile, prefs: mergedPrefs };
 }
