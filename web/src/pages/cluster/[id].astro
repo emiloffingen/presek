@@ -3,6 +3,8 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import AskPresekIsland from '../../components/AskPresekIsland.tsx';
+import PreferenceToggle from '../../components/PreferenceToggle.tsx';
+import ReaderTracker from '../../components/ReaderTracker.tsx';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
 
 const { id } = Astro.params;
@@ -210,6 +212,16 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 
 		{cluster && (
 			<article class="cluster-shell">
+				<ReaderTracker
+					client:load
+					clusterId={cluster.cluster_id}
+					title={cluster.articles[0].title}
+					category={cluster.articles[0].category || ''}
+					topic={cluster.topics?.[0] || cluster.articles[0].topic || ''}
+					primarySource={cluster.articles[0].source || ''}
+					sources={cluster.articles.map((article: any) => article.source).filter(Boolean)}
+					tags={cluster.tags || []}
+				/>
 				<header class="cluster-header">
 					<div class="cluster-header-grid">
 						<div class="cluster-header-copy">
@@ -244,6 +256,9 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 										</span>
 									</>
 								)}
+							</div>
+							<div class="cluster-preference-actions">
+								<PreferenceToggle client:load kind="source" value={cluster.articles[0].source || ''} label="изворот" />
 							</div>
 						</div>
 
@@ -485,6 +500,10 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
+	}
+
+	.cluster-preference-actions {
+		margin-top: 0.8rem;
 	}
 
 	.cluster-refresh-badge {

@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import NewsCard from '../../components/NewsCard.astro';
+import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 
 const rawTopicParam = Astro.params.topic || '';
@@ -168,6 +169,9 @@ function topicIntro() {
 					<div class="topic-hero-copy">
 						<span class="topic-kicker">Тема</span>
 						<h1 class="topic-headline">{topic}</h1>
+						<div class="topic-actions">
+							<PreferenceToggle client:load kind="topic" value={topic} label="темата" />
+						</div>
 						<p class="topic-intro">{topicIntro()}</p>
 						<p class="topic-summary">{leadSummary}</p>
 
@@ -385,6 +389,10 @@ function topicIntro() {
 		text-transform: uppercase;
 		color: var(--muted-foreground);
 		max-width: 68ch;
+	}
+
+	.topic-actions {
+		margin: 0 0 0.85rem;
 	}
 
 	.topic-stats {

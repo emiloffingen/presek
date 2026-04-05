@@ -739,3 +739,116 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+.reader-pref-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--foreground);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.reader-pref-toggle:hover {
+    color: var(--nyt-accent);
+    border-color: color-mix(in srgb, var(--nyt-accent) 36%, var(--border) 64%);
+}
+
+.reader-pref-toggle.is-active {
+    color: var(--nyt-accent);
+    border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border) 60%);
+    background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background) 94%);
+}
+
+.for-you-module {
+    margin-top: 1.35rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--border);
+}
+
+.for-you-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+}
+
+.for-you-kicker,
+.for-you-note,
+.for-you-card-kicker,
+.for-you-card-meta,
+.for-you-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.for-you-kicker,
+.for-you-card-kicker,
+.for-you-card-cta {
+    color: var(--nyt-accent);
+}
+
+.for-you-note,
+.for-you-card-meta {
+    color: var(--muted-foreground);
+}
+
+.for-you-head h2 {
+    margin: 0;
+    font-size: clamp(1.4rem, 1.18rem + 0.65vw, 1.95rem);
+    line-height: 1.03;
+    letter-spacing: -0.02em;
+}
+
+.for-you-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+}
+
+.for-you-card {
+    display: block;
+    padding: 0.95rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+    text-decoration: none;
+    color: inherit;
+}
+
+.for-you-card h3 {
+    margin: 0.45rem 0;
+    font-size: 1.08rem;
+    line-height: 1.14;
+}
+
+.for-you-card-copy {
+    margin: 0 0 0.65rem;
+    font-family: var(--font-nyt-body);
+    font-size: 0.94rem;
+    line-height: 1.55;
+    color: var(--secondary-foreground);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (min-width: 720px) {
+    .for-you-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
