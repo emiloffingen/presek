@@ -9,6 +9,8 @@ digests/
 __pycache__/
 *.pyc
 .env
+.env.local
+.env.*.local
 venv/
 celerybeat-schedule
 *.log
@@ -18,3 +20,6 @@ package-lock.json
 screenshots/
 static/dist/
 web/dist/
+web/.env.local
+web-legacy/.env.local
+web-legacy/dist/

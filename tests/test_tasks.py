@@ -257,6 +257,7 @@ class TestProfileDeliveryTasks:
 
         with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
              patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": recent_iso}], now)), \
+             patch.object(tasks, "_load_delivery_kind_performance", return_value={}), \
              patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
@@ -286,6 +287,7 @@ class TestProfileDeliveryTasks:
 
         with patch.object(tasks, "_load_recent_breaking_clusters", return_value=[cluster]), \
              patch.object(tasks, "_load_cluster_alert_material", return_value=([{"title": "a", "source": "MIA", "created_at": cluster["created_at"]}], older)), \
+             patch.object(tasks, "_load_delivery_kind_performance", return_value={}), \
              patch.object(tasks, "assess_cluster_synthesis_freshness", return_value=freshness):
             candidate = tasks._select_breaking_cluster_for_profile(
                 {"followedTopics": ["Политика"], "followedSources": []},
@@ -299,3 +301,33 @@ class TestProfileDeliveryTasks:
         assert candidate is not None
         assert candidate["cluster_id"] == "same-cluster"
         assert candidate["alert_label"] == "Итно ажурирање"
+
+    def test_classify_alert_candidate_becomes_stricter_when_breaking_engagement_is_weak(self):
+        import tasks
+
+        candidate = tasks._classify_alert_candidate(
+            {"cluster_id": "weak-1", "score": 2.8},
+            {"freshness_score": 1.2, "reasons": ["multiple_new_reports"]},
+            ["Политика"],
+            [],
+            {"breaking": {"sends": 12, "open_rate": 0.25, "click_rate": 0.08}},
+        )
+
+        assert candidate["engagement_label"] == "Слаб одзив"
+        assert candidate["score_adjustment"] < 0
+        assert candidate["topic_gap_minutes"] > 360
+
+    def test_classify_alert_candidate_allows_faster_high_signal_alerts_when_engagement_is_strong(self):
+        import tasks
+
+        candidate = tasks._classify_alert_candidate(
+            {"cluster_id": "strong-1", "score": 5.9},
+            {"freshness_score": 2.2, "reasons": ["new_numbers"]},
+            ["Политика"],
+            ["MIA"],
+            {"breaking": {"sends": 10, "open_rate": 0.61, "click_rate": 0.28}},
+        )
+
+        assert candidate["engagement_label"] == "Силен одзив"
+        assert candidate["score_adjustment"] > 0
+        assert candidate["min_gap_minutes"] < 60

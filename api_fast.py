@@ -1133,6 +1133,15 @@ async def get_stats_full():
             "FROM delivery_tracking_events "
             "WHERE created_at >= NOW() - INTERVAL '7 days'"
         ) or {}
+        tracking_performance_rows = db.execute(
+            "SELECT delivery_kind, "
+            "COUNT(*) FILTER (WHERE event_type = 'send') AS sends, "
+            "COUNT(*) FILTER (WHERE event_type = 'open') AS opens, "
+            "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks "
+            "FROM delivery_tracking_events "
+            "WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "GROUP BY delivery_kind"
+        )
 
         result = {
             "total_articles": total,
@@ -1154,6 +1163,7 @@ async def get_stats_full():
                 top_followed_topics,
                 top_followed_sources,
                 tracking_stats_row,
+                tracking_performance_rows,
             ),
         }
 

@@ -118,7 +118,20 @@ if not _secret_key:
     sys.exit(1)
 app.secret_key = _secret_key
 
-_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()] or ["*"]
+_public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live").rstrip("/")
+_default_cors_origins = [
+    _public_site_url,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4321",
+    "http://127.0.0.1:4321",
+]
+_configured_cors_origins = [
+    origin.rstrip("/")
+    for origin in (o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(","))
+    if origin and origin != "*"
+]
+_cors_origins = _configured_cors_origins or _default_cors_origins
 CORS(app, resources={r"/api/*": {"origins": _cors_origins}}, supports_credentials=True)
 Compress(app)
 # Trust exactly one proxy hop (reverse proxy / load balancer) for correct IP forwarding

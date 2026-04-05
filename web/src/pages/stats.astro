@@ -155,6 +155,39 @@ try {
 									</div>
 								</div>
 							</section>
+
+							<section class="stats-module">
+								<h2 class="stats-section-title">Најуспешни Типови На Достава</h2>
+								<div class="follow-grid">
+									{(stats.editor_analytics?.delivery_kind_performance ?? []).slice(0, 3).map((item: any) => (
+										<div class="follow-card">
+											<h3 class="follow-title">{item.label}</h3>
+											<div class="system-list">
+												<div class="system-row">
+													<span>Испраќања:</span>
+													<span class="text-foreground font-black">{item.sends}</span>
+												</div>
+												<div class="system-row">
+													<span>Отворања:</span>
+													<span class="text-foreground font-black">{item.opens}</span>
+												</div>
+												<div class="system-row">
+													<span>Кликови:</span>
+													<span class="text-foreground font-black">{item.clicks}</span>
+												</div>
+												<div class="system-row">
+													<span>Стапка на отворање:</span>
+													<span class="text-foreground font-black">{item.open_rate}%</span>
+												</div>
+												<div class="system-row">
+													<span>Стапка на клик:</span>
+													<span class="text-foreground font-black">{item.click_rate}%</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
 						</div>
 
 						<aside class="stats-rail">

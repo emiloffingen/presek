@@ -424,6 +424,43 @@ export function getOnboardingProgress(storage = globalThis?.localStorage) {
   };
 }
 
+export function buildFollowRecommendations(profile, limit = 4) {
+  const normalizedProfile = profile || createEmptyProfile();
+  const topicSignals = buildReaderSignals(normalizedProfile).topicCounts;
+  const sourceSignals = buildReaderSignals(normalizedProfile).sourceCounts;
+  const followedTopics = new Set(normalizeList(normalizedProfile.followedTopics));
+  const followedSources = new Set(normalizeList(normalizedProfile.followedSources));
+
+  const topicRecommendations = Array.from(topicSignals.entries())
+    .filter(([topic]) => topic && !followedTopics.has(topic))
+    .sort((left, right) => {
+      if (right[1] !== left[1]) return right[1] - left[1];
+      return left[0].localeCompare(right[0], 'mk');
+    })
+    .slice(0, limit)
+    .map(([topic, count]) => ({
+      value: topic,
+      reason: count >= 2 ? `Често читате теми поврзани со ${topic}` : `Се појавува во вашето неодамнешно читање`,
+    }));
+
+  const sourceRecommendations = Array.from(sourceSignals.entries())
+    .filter(([source]) => source && !followedSources.has(source))
+    .sort((left, right) => {
+      if (right[1] !== left[1]) return right[1] - left[1];
+      return left[0].localeCompare(right[0], 'mk');
+    })
+    .slice(0, limit)
+    .map(([source, count]) => ({
+      value: source,
+      reason: count >= 2 ? `${source} често се појавува во вашето читање` : `Овој извор веќе е дел од кластерите што ги отворате`,
+    }));
+
+  return {
+    topics: topicRecommendations,
+    sources: sourceRecommendations,
+  };
+}
+
 export function exportSyncPayload(storage = globalThis?.localStorage) {
   return {
     followedTopics: loadReaderProfile(storage).followedTopics,

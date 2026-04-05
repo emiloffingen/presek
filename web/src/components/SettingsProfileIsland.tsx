@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X } from 'lucide-react';
-import { loadReaderProfile, toggleFollowedValue } from '../lib/personalization.js';
+import { buildFollowRecommendations, loadReaderProfile, toggleFollowedValue } from '../lib/personalization.js';
 
 function summarizeRecent(profile: any) {
   const recent = Array.isArray(profile?.recentClusters) ? profile.recentClusters : [];
@@ -22,8 +22,14 @@ export default function SettingsProfileIsland() {
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
   const recentItems = useMemo(() => summarizeRecent(profile), [profile]);
+  const recommendations = useMemo(() => buildFollowRecommendations(profile, 4), [profile]);
 
   const removeFollow = (kind: 'topic' | 'source', value: string) => {
+    const result = toggleFollowedValue(kind, value);
+    setProfile(result.profile);
+  };
+
+  const addFollow = (kind: 'topic' | 'source', value: string) => {
     const result = toggleFollowedValue(kind, value);
     setProfile(result.profile);
   };
@@ -107,6 +113,60 @@ export default function SettingsProfileIsland() {
             </div>
           ) : (
             <p className="settings-empty">Сè уште немате следени извори. Следете водечки извор од кластер страница за да добивате извор-специфични ажурирања.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="settings-grid">
+        <div className="settings-module">
+          <div className="settings-module-head">
+            <div>
+              <p className="settings-kicker"><Sparkles size={14} /> Предлози за теми</p>
+              <h3>Што вреди да следите следно</h3>
+            </div>
+          </div>
+          {recommendations.topics.length > 0 ? (
+            <div className="settings-suggestion-list">
+              {recommendations.topics.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className="settings-suggestion"
+                  onClick={() => addFollow('topic', item.value)}
+                >
+                  <span className="settings-suggestion-value">{item.value}</span>
+                  <span className="settings-suggestion-reason">{item.reason}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="settings-empty">Кога ќе прочитате уште неколку кластери, тука ќе се појават теми што има смисла да ги следите.</p>
+          )}
+        </div>
+
+        <div className="settings-module">
+          <div className="settings-module-head">
+            <div>
+              <p className="settings-kicker"><Sparkles size={14} /> Предлози за извори</p>
+              <h3>Извори што веќе се вклопуваат во вашето читање</h3>
+            </div>
+          </div>
+          {recommendations.sources.length > 0 ? (
+            <div className="settings-suggestion-list">
+              {recommendations.sources.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className="settings-suggestion"
+                  onClick={() => addFollow('source', item.value)}
+                >
+                  <span className="settings-suggestion-value">{item.value}</span>
+                  <span className="settings-suggestion-reason">{item.reason}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="settings-empty">Кога ќе се појават повторливи извори во вашето читање, тука ќе добиете брзи предлози за следење.</p>
           )}
         </div>
       </section>

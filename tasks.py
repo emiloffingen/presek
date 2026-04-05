@@ -460,10 +460,44 @@ def _load_cluster_alert_material(cluster_id):
     return articles, (summary_row or {}).get("created_at")
 
 
-def _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources):
+def _load_delivery_kind_performance(days=30):
+    rows = db.execute(
+        "SELECT delivery_kind, "
+        "COUNT(*) FILTER (WHERE event_type = 'send') AS sends, "
+        "COUNT(*) FILTER (WHERE event_type = 'open') AS opens, "
+        "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks "
+        "FROM delivery_tracking_events "
+        "WHERE created_at >= NOW() - (%s * INTERVAL '1 day') "
+        "GROUP BY delivery_kind",
+        (days,),
+    )
+    performance = {}
+    for row in rows or []:
+        kind = str(row.get("delivery_kind") or "").strip()
+        if not kind:
+            continue
+        sends = int(row.get("sends") or 0)
+        opens = int(row.get("opens") or 0)
+        clicks = int(row.get("clicks") or 0)
+        performance[kind] = {
+            "sends": sends,
+            "opens": opens,
+            "clicks": clicks,
+            "open_rate": (opens / sends) if sends else 0.0,
+            "click_rate": (clicks / sends) if sends else 0.0,
+        }
+    return performance
+
+
+def _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources, delivery_performance=None):
     reasons = freshness.get("reasons") or []
     freshness_score = float(freshness.get("freshness_score") or 0.0)
     base_score = float(cluster.get("score") or 0.0)
+    delivery_performance = delivery_performance or {}
+    breaking_perf = delivery_performance.get("breaking") or {}
+    breaking_sends = int(breaking_perf.get("sends") or 0)
+    breaking_open_rate = float(breaking_perf.get("open_rate") or 0.0)
+    breaking_click_rate = float(breaking_perf.get("click_rate") or 0.0)
 
     alert_label = "Важно ажурирање"
     alert_reason = cluster.get("match_reason") or "оваа приказна силно се врзува со вашите следени теми или извори"
@@ -471,6 +505,9 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
     min_gap_minutes = 90
     topic_gap_minutes = 240
     source_gap_minutes = 180
+    severity_rank = 1
+    score_adjustment = 0.0
+    engagement_label = "Нормален одзив"
 
     if "credible_new_reporting" in reasons or "new_sources" in reasons or base_score >= BREAKING_SCORE_THRESHOLD + 1.4:
         alert_label = "Итно ажурирање"
@@ -479,6 +516,7 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
         min_gap_minutes = 30
         topic_gap_minutes = 120
         source_gap_minutes = 90
+        severity_rank = 3
     elif "new_numbers" in reasons or "new_angle" in reasons or freshness_score >= 1.8:
         alert_label = "Нова важна промена"
         alert_reason = "има нов агол, бројки или појасна промена во известувањето"
@@ -486,6 +524,7 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
         min_gap_minutes = 60
         topic_gap_minutes = 180
         source_gap_minutes = 150
+        severity_rank = 2
     elif "multiple_new_reports" in reasons:
         alert_label = "Следен развој"
         alert_reason = "се натрупуваат повеќе нови извештаи околу истата приказна"
@@ -493,6 +532,23 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
         min_gap_minutes = 120
         topic_gap_minutes = 360
         source_gap_minutes = 240
+
+    if breaking_sends >= 8 and breaking_click_rate < 0.12 and breaking_open_rate < 0.35:
+        engagement_label = "Слаб одзив"
+        min_gap_minutes += 75
+        topic_gap_minutes += 180
+        source_gap_minutes += 120
+        if severity_rank < 3:
+            score_adjustment -= 0.45
+            alert_reason = f"{alert_reason}; праќаме само посилни ажурирања додека одзивот е низок"
+    elif breaking_sends >= 6 and (breaking_click_rate >= 0.22 or breaking_open_rate >= 0.58):
+        engagement_label = "Силен одзив"
+        min_gap_minutes = max(20, min_gap_minutes - 15)
+        topic_gap_minutes = max(90, topic_gap_minutes - 45)
+        source_gap_minutes = max(75, source_gap_minutes - 30)
+        if severity_rank >= 2:
+            score_adjustment += 0.25
+            alert_reason = f"{alert_reason}; вакви ажурирања и претходно добиваа силен одзив"
 
     throttle_keys = [f"cluster:{str(cluster.get('cluster_id') or '').strip()}"]
     throttle_keys.extend(f"topic:{topic}" for topic in matched_topics[:2])
@@ -506,6 +562,8 @@ def _classify_alert_candidate(cluster, freshness, matched_topics, matched_source
         "topic_gap_minutes": topic_gap_minutes,
         "source_gap_minutes": source_gap_minutes,
         "throttle_keys": throttle_keys,
+        "engagement_label": engagement_label,
+        "score_adjustment": score_adjustment,
     }
 
 
@@ -547,6 +605,7 @@ def _next_alert_context(existing_context, candidate):
 def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_context=None, last_breaking_sent_at=None, *, include_topics=True, include_sources=True):
     profile = _normalize_synced_profile_for_delivery(profile)
     seen = {str(item or "").strip() for item in seen_cluster_ids or [] if str(item or "").strip()}
+    delivery_performance = _load_delivery_kind_performance()
 
     candidates = []
     for cluster in _load_recent_breaking_clusters():
@@ -563,12 +622,17 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
             continue
         articles, synthesis_created_at = _load_cluster_alert_material(cluster_id)
         freshness = assess_cluster_synthesis_freshness(articles, synthesis_created_at)
-        alert_meta = _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources)
+        alert_meta = _classify_alert_candidate(cluster, freshness, matched_topics, matched_sources, delivery_performance)
         if cluster_id in seen and not freshness.get("refresh_needed"):
             continue
         candidates.append({
             **cluster,
-            "match_score": match_score + min(1.5, float(cluster.get("score") or 0) * 0.15) + min(1.2, float(freshness.get("freshness_score") or 0.0) * 0.4),
+            "match_score": (
+                match_score
+                + min(1.5, float(cluster.get("score") or 0) * 0.15)
+                + min(1.2, float(freshness.get("freshness_score") or 0.0) * 0.4)
+                + float(alert_meta.get("score_adjustment") or 0.0)
+            ),
             "match_reason": "; ".join(reasons[:2]),
             "matched_topics": matched_topics[:2],
             "matched_sources": matched_sources[:2],

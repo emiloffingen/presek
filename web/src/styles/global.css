@@ -1133,6 +1133,39 @@
     text-transform: uppercase;
 }
 
+.settings-suggestion-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+}
+
+.settings-suggestion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    color: var(--foreground);
+    text-align: left;
+}
+
+.settings-suggestion-value {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.settings-suggestion-reason {
+    font-family: var(--font-nyt-body);
+    font-size: 0.93rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
 .settings-recent-list {
     display: grid;
     grid-template-columns: 1fr;

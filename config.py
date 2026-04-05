@@ -116,6 +116,21 @@ RSS_FEEDS = [
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
 
+CURATED_INTERNATIONAL_SOURCES = (
+    "N1 Info",
+    "Klix.ba",
+    "Index.hr",
+    "Jutarnji",
+    "Vijesti.me",
+    "EuroNews",
+    "BBC News",
+    "Deutsche Welle EN",
+    "Deutsche Welle DE",
+    "FAZ",
+    "Reuters",
+    "AP News",
+)
+
 # Specific per-source limits to prevent low-quality aggregators from flooding the system
 SOURCE_LIMITS = {
     "Kurir": 5,
@@ -268,4 +283,3 @@ R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "presek-cache")
 
 # ── Image Generation Configuration ──────────────────────────────
 POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
-

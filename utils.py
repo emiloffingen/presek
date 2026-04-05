@@ -443,7 +443,14 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
     return results
 
 
-def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=None, top_topic_rows=None, top_source_rows=None, tracking_stats_row=None):
+def build_editor_analytics_payload(
+    profile_stats_row=None,
+    delivery_stats_row=None,
+    top_topic_rows=None,
+    top_source_rows=None,
+    tracking_stats_row=None,
+    tracking_performance_rows=None,
+):
     profile_stats_row = profile_stats_row or {}
     delivery_stats_row = delivery_stats_row or {}
     tracking_stats_row = tracking_stats_row or {}
@@ -451,6 +458,36 @@ def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=No
     sends_7d = int(tracking_stats_row.get("sends_7d") or 0)
     opens_7d = int(tracking_stats_row.get("opens_7d") or 0)
     clicks_7d = int(tracking_stats_row.get("clicks_7d") or 0)
+    delivery_kind_performance = []
+    for row in tracking_performance_rows or []:
+        delivery_kind = str(row.get("delivery_kind") or "").strip()
+        if not delivery_kind:
+            continue
+        sends = int(row.get("sends") or 0)
+        opens = int(row.get("opens") or 0)
+        clicks = int(row.get("clicks") or 0)
+        delivery_kind_performance.append({
+            "delivery_kind": delivery_kind,
+            "label": {
+                "morning": "Утрински брифинг",
+                "weekly": "Неделен дигест",
+                "breaking": "Итно известување",
+            }.get(delivery_kind, delivery_kind),
+            "sends": sends,
+            "opens": opens,
+            "clicks": clicks,
+            "open_rate": round((opens / sends) * 100, 1) if sends else 0.0,
+            "click_rate": round((clicks / sends) * 100, 1) if sends else 0.0,
+        })
+    delivery_kind_performance.sort(
+        key=lambda item: (
+            item["click_rate"],
+            item["open_rate"],
+            item["sends"],
+            item["label"],
+        ),
+        reverse=True,
+    )
 
     return {
         "synced_profiles": int(profile_stats_row.get("synced_profiles") or 0),
@@ -469,6 +506,7 @@ def build_editor_analytics_payload(profile_stats_row=None, delivery_stats_row=No
         "clicks_7d": clicks_7d,
         "open_rate_7d": round((opens_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
         "click_rate_7d": round((clicks_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
+        "delivery_kind_performance": delivery_kind_performance,
         "top_followed_topics": [
             {
                 "topic": str(row.get("topic") or "").strip(),

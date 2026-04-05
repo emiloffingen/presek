@@ -674,6 +674,10 @@ class TestStatsFull:
             [{"source": "MIA", "first_count": 6}],
             [{"topic": "Политика", "followers": 5}],
             [{"source": "MIA", "followers": 4}],
+            [
+                {"delivery_kind": "breaking", "sends": 10, "opens": 7, "clicks": 3},
+                {"delivery_kind": "morning", "sends": 20, "opens": 10, "clicks": 2},
+            ],
         ]
 
         with patch("routes.api.db", mock_db), \
@@ -688,6 +692,8 @@ class TestStatsFull:
         assert data["editor_analytics"]["open_rate_7d"] == 66.7
         assert data["editor_analytics"]["top_followed_topics"][0]["topic"] == "Политика"
         assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"
+        assert data["editor_analytics"]["delivery_kind_performance"][0]["delivery_kind"] == "breaking"
+        assert data["editor_analytics"]["delivery_kind_performance"][0]["click_rate"] == 30.0
 
     def test_delivery_track_redirects_and_records_event(self, client):
         mock_db = MagicMock()

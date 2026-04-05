@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildFollowRecommendations,
   buildDeliveryDigest,
   buildPersonalizedClusters,
   createDefaultOnboardingState,
@@ -221,4 +222,21 @@ test('getOnboardingProgress reflects setup steps and dismissal', () => {
   const dismissed = dismissOnboarding(storage);
   assert.equal(dismissed.dismissed, true);
   assert.equal(createDefaultOnboardingState().dismissed, false);
+});
+
+test('buildFollowRecommendations suggests unread topics and sources from reading history', () => {
+  const profile = {
+    recentClusters: [
+      { cluster_id: 'c1', topic: 'Политика', category: 'Политика', primarySource: 'Телма', sources: ['Телма'], tags: [] },
+      { cluster_id: 'c2', topic: 'Економија', category: 'Економија', primarySource: 'Телма', sources: ['Телма', 'МИА'], tags: [] },
+      { cluster_id: 'c3', topic: 'Политика', category: 'Политика', primarySource: 'МИА', sources: ['МИА'], tags: [] },
+    ],
+    followedTopics: ['Спорт'],
+    followedSources: ['24 Вести'],
+  };
+
+  const recommendations = buildFollowRecommendations(profile, 3);
+  assert.equal(recommendations.topics[0].value, 'Политика');
+  assert.ok(recommendations.sources.some((item) => item.value === 'Телма'));
+  assert.ok(recommendations.sources.some((item) => item.value === 'МИА'));
 });
