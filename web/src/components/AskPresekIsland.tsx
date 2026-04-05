@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { LoaderCircle, MessageCircleMore, ArrowUpRight, Quote } from 'lucide-react';
+import { genericAskError, normalizeAskErrorMessage } from '../lib/askPresekErrors.js';
 
 type Citation = {
   source: string;
@@ -69,10 +70,12 @@ export default function AskPresekIsland({
       ok: res.ok,
       status: res.status,
       data,
-      message:
+      message: normalizeAskErrorMessage(
         data?.detail ||
-        data?.message ||
-        (rawText && rawText.trim() ? rawText.trim() : 'Неуспешно прашање.'),
+          data?.message ||
+          (rawText && rawText.trim() ? rawText.trim() : ''),
+        res.status
+      ),
     };
   };
 
@@ -127,7 +130,12 @@ export default function AskPresekIsland({
         return next.slice(0, 4);
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Се појави грешка.');
+      setResult(null);
+      setError(
+        err instanceof Error
+          ? normalizeAskErrorMessage(err.message)
+          : genericAskError
+      );
     } finally {
       setLoading(false);
     }

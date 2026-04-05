@@ -7,6 +7,8 @@ import urllib.parse
 import re
 import logging
 import asyncio
+import socket
+import ipaddress
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import AsyncGenerator
@@ -25,6 +27,7 @@ from prompts import (
 )
 
 log = logging.getLogger("presek")
+GEMINI_MODEL = "gemini-2.0-flash"
 
 from utils import redis_client
 
@@ -77,7 +80,7 @@ class GeminiProvider(AIProvider):
         
         # Use httpx for async streaming
         import httpx
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={GOOGLE_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:streamGenerateContent?key={GOOGLE_API_KEY}"
         combined = f"{system}\n\nInput:\n{prompt}"
         payload = {
             "contents": [{"parts": [{"text": combined}]}],
@@ -100,7 +103,7 @@ class GeminiProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         if not GOOGLE_API_KEY: return None
         
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GOOGLE_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GOOGLE_API_KEY}"
         payload = {
             "system_instruction": {"parts": [{"text": system}]},
             "contents": [{"parts": [{"text": prompt}]}],
@@ -325,9 +328,95 @@ def translate_to_macedonian(text: str) -> str | None:
             if isinstance(cleaned, dict) and 'summary' in cleaned:
                 return cleaned['summary']
             return str(cleaned)
-    except:
-        res = text # Fallback
+    except Exception as e:
+        log.warning(f"[translate] Falling back to original text after translation error: {e}")
+        return text
     return res
+
+
+def _is_private_ip(addr: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(addr)
+        return (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        )
+    except ValueError:
+        return True
+
+
+def _resolve_public_ips(candidate_url: str) -> list[str]:
+    parsed = urllib.parse.urlparse(candidate_url)
+    hostname = (parsed.hostname or "").lower()
+    if not hostname:
+        raise ValueError("Blocked URL")
+    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+        raise ValueError("Blocked URL")
+
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    resolved_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    safe_ips = []
+    for info in resolved_infos:
+        ip = info[4][0]
+        if not _is_private_ip(ip) and ip not in safe_ips:
+            safe_ips.append(ip)
+    if not safe_ips:
+        raise PermissionError("Blocked URL (Private/Reserved IP)")
+    return safe_ips
+
+
+def _peer_ip(response):
+    sock = None
+    raw = getattr(response, "raw", None)
+    if raw is not None:
+        connection = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+        if connection is not None:
+            sock = getattr(connection, "sock", None)
+    if sock is None:
+        return None
+    try:
+        return sock.getpeername()[0]
+    except Exception:
+        return None
+
+
+def _download_safe_external_image(url: str, headers: dict[str, str], timeout: int = 15):
+    import requests
+
+    session = requests.Session()
+    current_url = url
+    response = None
+
+    for _ in range(4):
+        safe_ips = _resolve_public_ips(current_url)
+        response = session.get(
+            current_url,
+            headers=headers,
+            timeout=timeout,
+            stream=True,
+            verify=True,
+            allow_redirects=False,
+        )
+        peer_ip = _peer_ip(response)
+        if not peer_ip or peer_ip not in safe_ips:
+            response.close()
+            raise PermissionError("Blocked upstream target")
+        if 300 <= response.status_code < 400:
+            location = response.headers.get("Location")
+            response.close()
+            if not location:
+                raise ValueError("Invalid upstream redirect")
+            current_url = urllib.parse.urljoin(current_url, location)
+            if not re.match(r"^https?://", current_url):
+                raise ValueError("Invalid upstream redirect")
+            continue
+        return response
+
+    raise ValueError("Too many upstream redirects")
 
 def auto_summarize_top_clusters():
     from tasks import summarize_article_task, synthesize_cluster_task
@@ -378,7 +467,6 @@ def search_google_image(query: str) -> str | None:
 
 def generate_cover_art(cluster_id: str, title: str) -> str | None:
     import os
-    import requests
     from local_nlp import generate_local_placeholder
     from database import db_manager as db
     os.makedirs("static/generated", exist_ok=True)
@@ -387,19 +475,29 @@ def generate_cover_art(cluster_id: str, title: str) -> str | None:
     img_url = search_google_image(title)
     if img_url:
         try:
-            resp = requests.get(img_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15, stream=True)
+            resp = _download_safe_external_image(
+                img_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=15,
+            )
             if resp.status_code == 200:
                 with open(save_path_jpg, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=8192): f.write(chunk)
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                resp.close()
                 return f"/static/generated/{cluster_id}.jpg"
-        except: pass
+            resp.close()
+        except Exception as e:
+            log.warning(f"[cover-art] Remote image fetch failed for {cluster_id}: {e}")
     try:
         cat_row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
         category = cat_row['category'] if cat_row else "Вести"
         svg_content = generate_local_placeholder(cluster_id, title, category)
         with open(save_path_svg, "w", encoding="utf-8") as f: f.write(svg_content)
         return f"/static/generated/{cluster_id}.svg"
-    except: return None
+    except Exception as e:
+        log.warning(f"[cover-art] Local placeholder generation failed for {cluster_id}: {e}")
+        return None
 
 def cleanup_cover_art():
     import os

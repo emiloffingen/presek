@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,7 @@ from local_nlp import (
     normalize_tag_name,
     filter_cluster_tags,
     is_valid_focus_entity,
+    build_citation_snippet,
     build_structured_answer_sections,
 )
 from health import _probe_database, _probe_redis
@@ -37,11 +39,12 @@ log = logging.getLogger("presek")
 
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
 _start_time = datetime.datetime.now(datetime.timezone.utc)
+_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()] or ["*"]
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,6 +52,103 @@ app.add_middleware(
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     return is_valid_focus_entity(name, entity_type)
+
+
+def _build_cluster_answer_fallback(question: str, articles, synthesis: str = "", perspectives=None) -> dict:
+    articles = [dict(article) if not isinstance(article, dict) else article for article in (articles or [])]
+    category = articles[0].get("category") if articles else None
+    perspectives = _parse_perspectives_blob(perspectives or [])
+    local_answer = None
+
+    try:
+        local_answer = answer_cluster_question_locally(
+            question,
+            articles,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[fastapi cluster_answer] local helper failed, using minimal fallback: {e}")
+
+    if not local_answer and articles:
+        lead = articles[0]
+        lead_title = str(lead.get("title") or "Оваа приказна")
+        lead_source = str(lead.get("source") or "Извор").strip()
+        local_answer = {
+            "answer": f"Најважното во овој момент е: {lead_title}. Водечкиот достапен извор во овој кластер е {lead_source}.",
+            "citations": articles[:2],
+            "related_questions": _default_related_questions(question, category),
+            "confidence": "low",
+        }
+
+    sections = {
+        "confirmed_points": [],
+        "unclear_points": [],
+        "source_differences": "",
+    }
+    try:
+        sections = build_structured_answer_sections(
+            local_answer["answer"] if local_answer else "",
+            articles,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[fastapi cluster_answer] section builder failed during fallback: {e}")
+
+    citations = []
+    try:
+        citations = _rank_cluster_citations(
+            question,
+            local_answer["answer"] if local_answer else "",
+            articles,
+            [],
+        )
+    except Exception as e:
+        log.warning(f"[fastapi cluster_answer] citation ranking failed during fallback: {e}")
+        citations = [
+            {
+                "source": article.get("source"),
+                "title": article.get("title"),
+                "link": article.get("link"),
+                "created_at": article.get("created_at"),
+                "snippet": build_citation_snippet(article),
+            }
+            for article in articles[:2]
+        ]
+
+    return {
+        "status": "success",
+        "answer": (local_answer or {}).get("answer", "Во моментов системот не може да даде подетален одговор."),
+        "citations": citations,
+        "related_questions": (local_answer or {}).get("related_questions") or _default_related_questions(question, category),
+        "confidence": (local_answer or {}).get("confidence", "low"),
+        "confirmed_points": sections.get("confirmed_points", [])[:3],
+        "unclear_points": sections.get("unclear_points", [])[:2],
+        "source_differences": sections.get("source_differences", ""),
+        "generated_locally": True,
+    }
+
+
+def _fallback_citations(articles) -> list[dict]:
+    return [
+        {
+            "source": article.get("source"),
+            "title": article.get("title"),
+            "link": article.get("link"),
+            "created_at": article.get("created_at"),
+            "snippet": build_citation_snippet(article),
+        }
+        for article in (articles or [])[:2]
+    ]
+
+
+def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
+    try:
+        return _rank_cluster_citations(question, answer, articles, citation_numbers)
+    except Exception as e:
+        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
+        return _fallback_citations(articles)
 
 @app.get("/api/health")
 async def health():
@@ -297,164 +397,187 @@ async def get_cluster_detail(cluster_id: str):
 @app.post("/api/cluster/{cluster_id}/ask")
 async def ask_cluster(cluster_id: str, request: Request):
     """Answers a question using only the current cluster's context."""
-    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
-        raise HTTPException(status_code=400, detail="Invalid cluster ID")
-
     try:
-        payload = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        try:
+            if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+                raise HTTPException(status_code=400, detail="Invalid cluster ID")
 
-    question = str((payload or {}).get("question") or "").strip()
-    if not question:
-        raise HTTPException(status_code=400, detail="Question is required")
-    if len(question) > API_MAX_Q_LEN:
-        raise HTTPException(status_code=400, detail="Question is too long")
+            try:
+                payload = await request.json()
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-    articles = db.execute(
-        """
-        SELECT title, description, source, link, created_at, category
-        FROM articles
-        WHERE cluster_id = %s
-        ORDER BY created_at DESC
-        LIMIT 8
-        """,
-        (cluster_id,)
-    )
-    if not articles:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+            question = str((payload or {}).get("question") or "").strip()
+            if not question:
+                raise HTTPException(status_code=400, detail="Question is required")
+            if len(question) > API_MAX_Q_LEN:
+                raise HTTPException(status_code=400, detail="Question is too long")
 
-    summary_row = db.execute_one(
-        "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
-        (cluster_id,)
-    )
-    synthesis = (summary_row or {}).get("summary") or ""
-    perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
+            articles = db.execute(
+                """
+                SELECT title, description, source, link, created_at, category
+                FROM articles
+                WHERE cluster_id = %s
+                ORDER BY created_at DESC
+                LIMIT 8
+                """,
+                (cluster_id,)
+            )
+            articles = [dict(article) if not isinstance(article, dict) else article for article in articles]
+            if not articles:
+                raise HTTPException(status_code=404, detail="Cluster not found")
 
-    local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
-    if local_answer:
-        sections = build_structured_answer_sections(
-            local_answer["answer"],
-            articles,
-            synthesis=synthesis,
-            perspectives=perspectives,
-        )
-        return {
-            "status": "success",
-            "answer": local_answer["answer"],
-            "citations": _rank_cluster_citations(question, local_answer["answer"], articles, []),
-            "related_questions": local_answer["related_questions"][:3],
-            "confidence": local_answer["confidence"],
-            "confirmed_points": sections["confirmed_points"],
-            "unclear_points": sections["unclear_points"],
-            "source_differences": sections["source_differences"],
-            "generated_locally": True,
-        }
+            summary_row = db.execute_one(
+                "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+                (cluster_id,)
+            )
+            synthesis = (summary_row or {}).get("summary") or ""
+            perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
 
-    article_context = []
-    citation_index = {}
-    for idx, article in enumerate(articles, start=1):
-        article_context.append(
-            f"[{idx}] Извор: {article['source']}\n"
-            f"Наслов: {article['title']}\n"
-            f"Опис: {(article.get('description') or '').strip()}\n"
-        )
-        citation_index[idx] = {
-            "source": article["source"],
-            "title": article["title"],
-            "link": article.get("link"),
-            "created_at": article.get("created_at"),
-        }
+            try:
+                local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
+            except Exception as e:
+                log.warning(f"[fastapi cluster_answer] local answer generation failed for {cluster_id}: {e}", exc_info=True)
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+            if local_answer:
+                try:
+                    sections = build_structured_answer_sections(
+                        local_answer["answer"],
+                        articles,
+                        synthesis=synthesis,
+                        perspectives=perspectives,
+                    )
+                except Exception as e:
+                    log.warning(f"[fastapi cluster_answer] section building failed for {cluster_id}: {e}", exc_info=True)
+                    return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+                return {
+                    "status": "success",
+                    "answer": local_answer.get("answer", ""),
+                    "citations": _safe_rank_cluster_citations(question, local_answer.get("answer", ""), articles, [])[:3],
+                    "related_questions": list(local_answer.get("related_questions") or [])[:3],
+                    "confidence": local_answer.get("confidence", "medium"),
+                    "confirmed_points": sections["confirmed_points"],
+                    "unclear_points": sections["unclear_points"],
+                    "source_differences": sections["source_differences"],
+                    "generated_locally": True,
+                }
 
-    perspective_context = "\n".join(
-        f"- {item['angle']}: {item['content']}" for item in perspectives[:4]
-    )
+            article_context = []
+            for idx, article in enumerate(articles, start=1):
+                article_context.append(
+                    f"[{idx}] Извор: {article['source']}\n"
+                    f"Наслов: {article['title']}\n"
+                    f"Опис: {(article.get('description') or '').strip()}\n"
+                )
 
-    prompt = (
-        "Контекст за еден новински кластер:\n\n"
-        f"Системско резиме:\n{synthesis or 'Нема достапно резиме.'}\n\n"
-        f"Перспективи:\n{perspective_context or 'Нема издвоени перспективи.'}\n\n"
-        "Извори:\n"
-        + "\n".join(article_context)
-        + "\n"
-        f"Прашање од корисник: {question}\n\n"
-        "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
-        "Врати JSON со полиња: "
-        "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
-        "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
-        "Одговорот мора да биде на македонски."
-    )
+            perspective_context = "\n".join(
+                f"- {item['angle']}: {item['content']}" for item in perspectives[:4]
+            )
 
-    system = (
-        "Ти си новинарски асистент за Пресек. Не измислувај факти. "
-        "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
-    )
+            prompt = (
+                "Контекст за еден новински кластер:\n\n"
+                f"Системско резиме:\n{synthesis or 'Нема достапно резиме.'}\n\n"
+                f"Перспективи:\n{perspective_context or 'Нема издвоени перспективи.'}\n\n"
+                "Извори:\n"
+                + "\n".join(article_context)
+                + "\n"
+                f"Прашање од корисник: {question}\n\n"
+                "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
+                "Врати JSON со полиња: "
+                "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+                "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
+                "Одговорот мора да биде на македонски."
+            )
 
-    response_text, _provider = await _call_ai_async(
-        prompt,
-        system,
-        task_type="chat",
-        max_tokens=700,
-        json_mode=True,
-    )
+            system = (
+                "Ти си новинарски асистент за Пресек. Не измислувај факти. "
+                "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
+            )
 
-    if not response_text:
-        raise HTTPException(status_code=503, detail="Системот не можеше да одговори во моментот")
+            try:
+                response_text, _provider = await _call_ai_async(
+                    prompt,
+                    system,
+                    task_type="chat",
+                    max_tokens=700,
+                    json_mode=True,
+                )
+            except Exception as e:
+                log.warning(f"[fastapi cluster_answer] AI call failed for {cluster_id}: {e}", exc_info=True)
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
 
-    parsed = clean_json_response(response_text)
-    if isinstance(parsed, dict):
-        answer = str(parsed.get("answer") or "").strip()
-        confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
-        unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
-        source_differences = str(parsed.get("source_differences") or "").strip()
-        citation_numbers = parsed.get("citation_numbers") or []
-        related_questions = parsed.get("related_questions") or []
-        confidence = str(parsed.get("confidence") or "medium").strip().lower()
-    else:
-        answer = str(parsed).strip()
-        confirmed_points = []
-        unclear_points = []
-        source_differences = ""
-        citation_numbers = [1, 2]
-        related_questions = []
-        confidence = "medium"
+            if not response_text:
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
 
-    citations = _rank_cluster_citations(question, answer, articles, citation_numbers)
-    sections = build_structured_answer_sections(
-        answer,
-        articles,
-        synthesis=synthesis,
-        perspectives=perspectives,
-    )
-    if not confirmed_points:
-        confirmed_points = sections["confirmed_points"]
-    if not unclear_points:
-        unclear_points = sections["unclear_points"]
-    if not source_differences:
-        source_differences = sections["source_differences"]
+            try:
+                parsed = clean_json_response(response_text)
+            except Exception as e:
+                log.warning(f"[fastapi cluster_answer] AI response cleaning failed for {cluster_id}: {e}", exc_info=True)
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+            if isinstance(parsed, dict):
+                answer = str(parsed.get("answer") or "").strip()
+                confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
+                unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
+                source_differences = str(parsed.get("source_differences") or "").strip()
+                citation_numbers = parsed.get("citation_numbers") or []
+                related_questions = parsed.get("related_questions") or []
+                confidence = str(parsed.get("confidence") or "medium").strip().lower()
+            else:
+                answer = str(parsed).strip()
+                confirmed_points = []
+                unclear_points = []
+                source_differences = ""
+                citation_numbers = [1, 2]
+                related_questions = []
+                confidence = "medium"
 
-    clean_related = []
-    for item in related_questions:
-        text = str(item).strip()
-        if text and text not in clean_related and text != question:
-            clean_related.append(text)
+            citations = _safe_rank_cluster_citations(question, answer, articles, citation_numbers)
+            try:
+                sections = build_structured_answer_sections(
+                    answer,
+                    articles,
+                    synthesis=synthesis,
+                    perspectives=perspectives,
+                )
+            except Exception as e:
+                log.warning(f"[fastapi cluster_answer] final section building failed for {cluster_id}: {e}", exc_info=True)
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+            if not confirmed_points:
+                confirmed_points = sections["confirmed_points"]
+            if not unclear_points:
+                unclear_points = sections["unclear_points"]
+            if not source_differences:
+                source_differences = sections["source_differences"]
 
-    if not clean_related:
-        clean_related = _default_related_questions(question, articles[0].get("category"))
+            clean_related = []
+            for item in related_questions:
+                text = str(item).strip()
+                if text and text not in clean_related and text != question:
+                    clean_related.append(text)
 
-    if confidence not in {"high", "medium", "low"}:
-        confidence = "medium"
+            if not clean_related:
+                clean_related = _default_related_questions(question, articles[0].get("category"))
 
-    return {
-        "status": "success",
-        "answer": answer,
-        "citations": citations[:3],
-        "related_questions": clean_related[:3],
-        "confidence": confidence,
-        "confirmed_points": confirmed_points[:3],
-        "unclear_points": unclear_points[:2],
-        "source_differences": source_differences,
-    }
+            if confidence not in {"high", "medium", "low"}:
+                confidence = "medium"
+
+            return {
+                "status": "success",
+                "answer": answer,
+                "citations": citations[:3],
+                "related_questions": clean_related[:3],
+                "confidence": confidence,
+                "confirmed_points": confirmed_points[:3],
+                "unclear_points": unclear_points[:2],
+                "source_differences": source_differences,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            log.error(f"[fastapi cluster_answer] unexpected error for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(question, articles if 'articles' in locals() else [], synthesis=synthesis if 'synthesis' in locals() else "", perspectives=perspectives if 'perspectives' in locals() else [])
+    except HTTPException:
+        raise
 
 @app.get("/api/briefing")
 async def get_briefing():

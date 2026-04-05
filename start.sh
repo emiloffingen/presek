@@ -106,11 +106,11 @@ bootstrap_runtime() {
 }
 
 screen_session_exists() {
-  screen -list | grep -q "[[:space:]]${SESSION}[[:space:]]"
+  screen -list 2>/dev/null | grep -q "[[:space:]]${SESSION}[[:space:]]"
 }
 
 list_screen_sessions() {
-  screen -list | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
+  screen -list 2>/dev/null | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
 }
 
 load_env() {
@@ -130,6 +130,55 @@ show_port_usage() {
   if command -v ss >/dev/null 2>&1; then
     ss -lptn "sport = :$port" 2>/dev/null || true
   fi
+}
+
+port_pids() {
+  local port="$1"
+  if ! command -v ss >/dev/null 2>&1; then
+    return 0
+  fi
+
+  ss -lptn "sport = :$port" 2>/dev/null \
+    | grep -o 'pid=[0-9]\+' \
+    | cut -d= -f2 \
+    | sort -u
+}
+
+force_free_port() {
+  local port="$1"
+  local pids
+  pids="$(port_pids "$port")"
+
+  if [ -z "$pids" ]; then
+    warn "No listening process found on port $port"
+    return 0
+  fi
+
+  warn "Port $port is busy; stopping owning processes:"
+  show_port_usage "$port"
+
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    kill "$pid" >/dev/null 2>&1 || true
+  done <<< "$pids"
+
+  sleep 2
+
+  pids="$(port_pids "$port")"
+  if [ -n "$pids" ]; then
+    warn "Some processes on port $port ignored SIGTERM; sending SIGKILL"
+    while IFS= read -r pid; do
+      [ -n "$pid" ] || continue
+      kill -9 "$pid" >/dev/null 2>&1 || true
+    done <<< "$pids"
+    sleep 1
+  fi
+
+  if [ -n "$(port_pids "$port")" ]; then
+    fail "Could not free port $port"
+  fi
+
+  ok "Freed port $port"
 }
 
 ensure_port_free() {
@@ -201,6 +250,9 @@ cleanup_stale_processes() {
   stop_matching_processes "gunicorn.*app:app"
   stop_matching_processes "uvicorn.*api_fast:app"
   stop_matching_processes "entry.mjs"
+  force_free_port 5000
+  [ "$ENABLE_FASTAPI" = "1" ] && force_free_port 5001
+  [ "$ENABLE_ASTRO" = "1" ] && force_free_port 3000
   sleep 2
 }
 

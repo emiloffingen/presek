@@ -23,6 +23,8 @@ class TestGeminiProvider:
         provider = GeminiProvider()
         result = provider.call("Test prompt", "System prompt", max_tokens=200, json_mode=False)
         assert result == "Резиме на вестта."
+        request = mock_urlopen.call_args[0][0]
+        assert "gemini-2.0-flash" in request.full_url
 
     @patch('ai_engine.GOOGLE_API_KEY', '')
     def test_no_api_key(self):
@@ -216,3 +218,52 @@ class TestTranslateToMacedonian:
         mock_call_ai.return_value = ('{"summary": "Преведено"}', "gemini")
         result = translate_to_macedonian("Text")
         assert result == "Преведено"
+
+    @patch('ai_engine.log')
+    @patch('ai_engine._call_ai')
+    def test_translation_error_logs_and_falls_back_to_original(self, mock_call_ai, mock_log):
+        from ai_engine import translate_to_macedonian
+        mock_call_ai.side_effect = RuntimeError("provider down")
+        result = translate_to_macedonian("Text")
+        assert result == "Text"
+        mock_log.warning.assert_called()
+
+
+class TestGenerateCoverArt:
+    @patch('ai_engine._download_safe_external_image')
+    @patch('ai_engine.search_google_image')
+    def test_remote_image_fetch_uses_safe_helper(self, mock_search, mock_download):
+        from ai_engine import generate_cover_art
+
+        mock_search.return_value = "https://example.com/image.jpg"
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.iter_content.return_value = [b"jpg"]
+        mock_download.return_value = mock_response
+
+        with patch('builtins.open', MagicMock()), \
+             patch('os.makedirs'):
+            result = generate_cover_art("abc123", "Title")
+
+        assert result == "/static/generated/abc123.jpg"
+        mock_download.assert_called_once()
+        mock_response.close.assert_called()
+
+    @patch('ai_engine.log')
+    @patch('ai_engine._download_safe_external_image', side_effect=PermissionError("Blocked upstream target"))
+    @patch('ai_engine.search_google_image')
+    def test_remote_fetch_failure_falls_back_to_placeholder(self, mock_search, _mock_download, mock_log):
+        from ai_engine import generate_cover_art
+
+        mock_search.return_value = "https://example.com/image.jpg"
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {"category": "Вести"}
+
+        with patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+             patch('os.makedirs'), \
+             patch('database.db_manager', mock_db), \
+             patch('builtins.open', MagicMock()):
+            result = generate_cover_art("abc123", "Title")
+
+        assert result == "/static/generated/abc123.svg"
+        mock_log.warning.assert_called()

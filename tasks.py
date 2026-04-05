@@ -1,6 +1,5 @@
 import logging
 import datetime
-import time
 import json
 import re
 from celery_app import celery_app
@@ -406,9 +405,23 @@ def send_telegram_briefing_task():
         log.warning(f"[tasks] Telegram briefing failed: {e}")
 
 
+@celery_app.task(rate_limit='10/m')
+def backfill_cover_art_single_task(cluster_id, title):
+    """Generate cover art for a single cluster without blocking a worker."""
+    try:
+        img_url = generate_cover_art(cluster_id, title or '')
+        if img_url:
+            db.execute(
+                "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
+                (img_url, cluster_id), fetch=False
+            )
+    except Exception as e:
+        log.warning(f"[tasks] Cover art generation failed for {cluster_id}: {e}")
+
+
 @celery_app.task
 def backfill_cover_art_task():
-    """Generate AI cover art for clusters that have no image."""
+    """Queue cover art generation without blocking a worker between items."""
     try:
         rows = db.execute("""
             SELECT DISTINCT a.cluster_id, 
@@ -418,14 +431,11 @@ def backfill_cover_art_task():
               AND a.created_at >= NOW() - INTERVAL '24 hours'
             LIMIT 5
         """)
-        for r in rows:
-            img_url = generate_cover_art(r['cluster_id'], r['title'] or '')
-            if img_url:
-                db.execute(
-                    "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
-                    (img_url, r['cluster_id']), fetch=False
-                )
-            time.sleep(4)  # Avoid flooding Pollinations AI rate limit
+        for idx, r in enumerate(rows):
+            backfill_cover_art_single_task.apply_async(
+                args=(r['cluster_id'], r['title'] or ''),
+                countdown=idx * 4,
+            )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
 
