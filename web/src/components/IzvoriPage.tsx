@@ -68,7 +68,7 @@ export const IzvoriPage: React.FC = () => {
                 Медиумски Извори
             </h1>
             <p className="sources-intro">
-              Преглед на изворите што Пресек ги следи, со нагласок на активноста и медиумската покриеност.
+              Преглед на изворите што Пресек ги следи и вклучува во дневната слика, со акцент на активноста и присуството во покривањето.
             </p>
             <div className="max-w-md mt-6 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
@@ -112,7 +112,7 @@ export const IzvoriPage: React.FC = () => {
                           >
                               {s.source}
                               {hotSources.includes(s.source) && (
-                                  <span className="source-hot">HOT</span>
+                                  <span className="source-hot">АКТИВЕН</span>
                               )}
                           </a>
                         ))}
@@ -144,7 +144,7 @@ export const IzvoriPage: React.FC = () => {
             <div className="rail-card">
                 <h3 className="rail-card-title flex items-center gap-2 mb-4"><Info size={14}/> Информација</h3>
                 <p className="rail-copy">
-                    Пресек ги индексира само најрелевантните и најкредибилните извори. Листата постојано се ажурира врз основа на активноста на медиумите.
+                    Листата ги прикажува изворите што системот активно ги следи. Таа се ажурира како што се менуваат обемот, ритамот и присуството на медиумите во покривањето.
                 </p>
             </div>
           </aside>

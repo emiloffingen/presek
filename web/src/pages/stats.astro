@@ -92,13 +92,13 @@ try {
 						</div>
 
 						<aside class="stats-rail">
-							<div class="rail-card">
-								<h3 class="rail-card-title">Информации За Системот</h3>
-								<div class="system-list">
-									<div class="system-row">
-										<span>Статус:</span>
-										<span class="text-green-600 font-black">Online</span>
-									</div>
+								<div class="rail-card">
+									<h3 class="rail-card-title">Оперативна Слика</h3>
+									<div class="system-list">
+										<div class="system-row">
+											<span>Статус:</span>
+											<span class="text-green-600 font-black">Активно</span>
+										</div>
 									<div class="system-row">
 										<span>База на податоци:</span>
 										<span class="text-foreground font-black">{stats.db_size_mb} MB</span>
@@ -114,11 +114,11 @@ try {
 								</div>
 							</div>
 
-							<div class="rail-card rail-card-dark">
-								<h4 class="rail-card-title speed-title">Speed Leaderboard</h4>
-								<p class="speed-copy">
-									Кој прв ги објавува вестите? Анализа на првичните извори за нови настани во последните 7 дена.
-								</p>
+								<div class="rail-card rail-card-dark">
+									<h4 class="rail-card-title speed-title">Прв На Приказната</h4>
+									<p class="speed-copy">
+										Кои извори најчесто први влегуваат во нова приказна? Преглед на раните објави во последните 7 дена.
+									</p>
 								<div class="speed-list">
 									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
 										<div class="speed-row">

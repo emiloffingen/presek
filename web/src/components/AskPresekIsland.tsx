@@ -144,7 +144,7 @@ export default function AskPresekIsland({
   return (
     <div className="ask-presek">
       <p className="rail-copy ask-intro">
-        Имате прашање за оваа вест? Пресек одговара врз основа на споредените извори во овој кластер.
+        Имате прашање за оваа приказна? Пресек одговара врз основа на споредените извори во овој кластер и јасно покажува што е поткрепено, а што останува отворено.
       </p>
 
       <div className="ask-suggestions">
@@ -167,7 +167,7 @@ export default function AskPresekIsland({
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Прашајте што е ново, што е спорно или како се разликуваат изворите..."
+          placeholder="Прашајте што е ново, што е потврдено или каде изворите се разликуваат..."
           className="ask-input"
           rows={4}
         />
@@ -225,7 +225,7 @@ export default function AskPresekIsland({
 
           {result.citations.length > 0 && (
             <div className="ask-citations">
-              <p className="nyt-section-label text-muted-foreground">Поткрепено со</p>
+              <p className="nyt-section-label text-muted-foreground">Извори</p>
               <div className="ask-citation-list">
                 {result.citations.map((citation) => (
                   <a

@@ -50,7 +50,7 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
     <div class="topbar-row">
         <div class="topbar-left">
             <SearchIsland client:load />
-            <span class="topbar-edition">Пресек Дневно Издание</span>
+            <span class="topbar-edition">Пресек Денешно Издание</span>
         </div>
 
         <div class="topbar-center">
@@ -81,7 +81,7 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 
 <nav class="site-layout masthead-nav" aria-label="Популарно сега">
     <div class="masthead-nav-shell">
-        <span class="masthead-nav-kicker">Популарно Сега</span>
+        <span class="masthead-nav-kicker">Во Фокус</span>
         <ul class="masthead-nav-list">
             {headerItems.map((item: any) => {
                 const searchStr = new URLSearchParams({ q: item.word }).toString();
