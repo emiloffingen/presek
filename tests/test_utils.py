@@ -492,10 +492,34 @@ class TestSourceReputationRows:
         ]
         pulse_rows = [{"source": "MIA", "count": 9}, {"source": "Press24", "count": 2}]
         speed_rows = [{"source": "MIA", "first_count": 12}, {"source": "Press24", "first_count": 1}]
+        history_rows = [
+            {
+                "source": "MIA",
+                "lead_count_30d": 10,
+                "corroborated_lead_count_30d": 8,
+                "solo_lead_count_30d": 2,
+                "recent_7d_volume": 14,
+                "previous_7d_volume": 8,
+            },
+            {
+                "source": "Press24",
+                "lead_count_30d": 5,
+                "corroborated_lead_count_30d": 1,
+                "solo_lead_count_30d": 4,
+                "recent_7d_volume": 2,
+                "previous_7d_volume": 9,
+            },
+        ]
 
-        result = build_source_reputation_rows(source_rows, pulse_rows, speed_rows)
+        result = build_source_reputation_rows(source_rows, pulse_rows, speed_rows, history_rows)
 
         assert result[0]["source"] == "MIA"
         assert result[0]["trust_tier"] == "Висока доверба"
         assert result[0]["recent_volume"] == 9
         assert result[0]["speed_first_count"] == 12
+        assert result[0]["corroboration_rate"] == 0.8
+        assert result[0]["lone_lead_rate"] == 0.2
+        assert result[0]["trend_label"] == "Расте"
+        assert result[0]["tendency"] == "Често прв на приказната"
+        assert result[1]["trend_label"] == "Слабее"
+        assert result[1]["lone_lead_rate"] == 0.8

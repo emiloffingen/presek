@@ -409,6 +409,43 @@
     color: var(--secondary-foreground);
 }
 
+.source-trend-note,
+.source-history-grid span {
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.source-trend-note {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 0.8rem;
+    padding: 0.5rem 0 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.source-trend-note strong {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.source-trend-up {
+    color: var(--nyt-accent);
+}
+
+.source-trend-down {
+    color: var(--nyt-red);
+}
+
+.source-trend-flat {
+    color: var(--muted-foreground);
+}
+
 .source-reputation-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -418,6 +455,7 @@
 }
 
 .source-reputation-stats strong,
+.source-history-grid strong,
 .source-mini-stats strong,
 .source-fast-row strong {
     display: block;
@@ -426,6 +464,15 @@
     font-size: 1.15rem;
     line-height: 1;
     color: var(--foreground);
+}
+
+.source-history-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
 }
 
 .source-reputation-footer {

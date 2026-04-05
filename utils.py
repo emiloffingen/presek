@@ -326,7 +326,7 @@ def build_read_next_clusters(current_cluster_id, current_articles, current_tags,
     return ranked_candidates[:limit]
 
 
-def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None):
+def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, history_rows=None):
     pulse_map = {
         str(item.get("source") or ""): int(item.get("count") or item.get("n") or 0)
         for item in (pulse_rows or [])
@@ -334,6 +334,16 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None):
     speed_map = {
         str(item.get("source") or ""): int(item.get("first_count") or 0)
         for item in (speed_rows or [])
+    }
+    history_map = {
+        str(item.get("source") or ""): {
+            "lead_count_30d": int(item.get("lead_count_30d") or 0),
+            "corroborated_lead_count_30d": int(item.get("corroborated_lead_count_30d") or 0),
+            "solo_lead_count_30d": int(item.get("solo_lead_count_30d") or 0),
+            "recent_7d_volume": int(item.get("recent_7d_volume") or 0),
+            "previous_7d_volume": int(item.get("previous_7d_volume") or 0),
+        }
+        for item in (history_rows or [])
     }
 
     results = []
@@ -345,9 +355,33 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None):
         effective_weight = get_source_effective_weight(name)
         recent_volume = pulse_map.get(name, 0)
         speed_count = speed_map.get(name, 0)
+        history = history_map.get(name, {})
+        lead_count_30d = int(history.get("lead_count_30d") or 0)
+        corroborated_lead_count_30d = int(history.get("corroborated_lead_count_30d") or 0)
+        solo_lead_count_30d = int(history.get("solo_lead_count_30d") or 0)
+        recent_7d_volume = int(history.get("recent_7d_volume") or 0)
+        previous_7d_volume = int(history.get("previous_7d_volume") or 0)
         status = row.get("source_status") or {}
         quality_score = status.get("quality_score")
         quality_score = float(quality_score) if quality_score is not None else None
+        corroboration_rate = (
+            round(corroborated_lead_count_30d / lead_count_30d, 2)
+            if lead_count_30d > 0
+            else 0.0
+        )
+        lone_lead_rate = (
+            round(solo_lead_count_30d / lead_count_30d, 2)
+            if lead_count_30d > 0
+            else 0.0
+        )
+        trend_delta = recent_7d_volume - previous_7d_volume
+
+        if trend_delta >= 4:
+            trend_label = "Расте"
+        elif trend_delta <= -4:
+            trend_label = "Слабее"
+        else:
+            trend_label = "Стабилен ритам"
 
         if effective_weight >= 1.75:
             tier = "Висока доверба"
@@ -358,6 +392,10 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None):
 
         if speed_count >= 10:
             tendency = "Често прв на приказната"
+        elif corroboration_rate >= 0.7 and lead_count_30d >= 4:
+            tendency = "Често води и подоцна се потврдува"
+        elif lone_lead_rate >= 0.55 and lead_count_30d >= 4:
+            tendency = "Често води сам без брза потврда"
         elif recent_volume >= 8:
             tendency = "Силен дневен ритам"
         elif recent_volume >= 3:
@@ -374,6 +412,15 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None):
             "trust_tier": tier,
             "recent_volume": recent_volume,
             "speed_first_count": speed_count,
+            "lead_count_30d": lead_count_30d,
+            "corroborated_lead_count_30d": corroborated_lead_count_30d,
+            "solo_lead_count_30d": solo_lead_count_30d,
+            "corroboration_rate": corroboration_rate,
+            "lone_lead_rate": lone_lead_rate,
+            "recent_7d_volume": recent_7d_volume,
+            "previous_7d_volume": previous_7d_volume,
+            "trend_delta": trend_delta,
+            "trend_label": trend_label,
             "quality_score": quality_score,
             "tendency": tendency,
             "is_active": bool(row.get("is_active", True)),

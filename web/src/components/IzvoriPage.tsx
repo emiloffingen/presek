@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../api/client';
-import { Search, Loader2, Info, ShieldCheck, Zap, Activity } from 'lucide-react';
+import { Search, Loader2, Info, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
 
 interface SourceRow {
   source: string;
@@ -11,6 +11,15 @@ interface SourceRow {
   trust_tier: string;
   recent_volume: number;
   speed_first_count: number;
+  lead_count_30d: number;
+  corroborated_lead_count_30d: number;
+  solo_lead_count_30d: number;
+  corroboration_rate: number;
+  lone_lead_rate: number;
+  recent_7d_volume: number;
+  previous_7d_volume: number;
+  trend_delta: number;
+  trend_label: string;
   quality_score: number | null;
   tendency: string;
   is_active: boolean;
@@ -33,6 +42,16 @@ function formatLastFetched(value?: string) {
   } catch {
     return 'Нема свеж сигнал';
   }
+}
+
+function formatPercent(value: number) {
+  return `${Math.round((value || 0) * 100)}%`;
+}
+
+function trendClass(label?: string) {
+  if (label === 'Расте') return 'source-trend-up';
+  if (label === 'Слабее') return 'source-trend-down';
+  return 'source-trend-flat';
 }
 
 export const IzvoriPage: React.FC = () => {
@@ -70,6 +89,14 @@ export const IzvoriPage: React.FC = () => {
   const intSources = filtered.filter((s) => s.country && s.country !== '🇲🇰' && s.country !== 'Македонија');
   const highTrust = filtered.filter((s) => s.trust_tier === 'Висока доверба').length;
   const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 5);
+  const bestCorroborated = [...filtered]
+    .filter((s) => s.lead_count_30d >= 3)
+    .sort((a, b) => b.corroboration_rate - a.corroboration_rate)
+    .slice(0, 5);
+  const loneLeaders = [...filtered]
+    .filter((s) => s.lead_count_30d >= 3)
+    .sort((a, b) => b.lone_lead_rate - a.lone_lead_rate)
+    .slice(0, 5);
 
   const renderSourceCard = (source: SourceRow) => (
     <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card">
@@ -82,6 +109,10 @@ export const IzvoriPage: React.FC = () => {
       </div>
 
       <p className="source-reputation-copy">{source.tendency}</p>
+      <p className={`source-trend-note ${trendClass(source.trend_label)}`}>
+        <span>{source.trend_label}</span>
+        <strong>{source.trend_delta >= 0 ? `+${source.trend_delta}` : source.trend_delta} во 7 дена</strong>
+      </p>
 
       <div className="source-reputation-stats">
         <div>
@@ -95,6 +126,25 @@ export const IzvoriPage: React.FC = () => {
         <div>
           <span>Тежина</span>
           <strong>{source.effective_weight.toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div className="source-history-grid">
+        <div>
+          <span>Потврдени водства</span>
+          <strong>{formatPercent(source.corroboration_rate)}</strong>
+        </div>
+        <div>
+          <span>Соло водства</span>
+          <strong>{formatPercent(source.lone_lead_rate)}</strong>
+        </div>
+        <div>
+          <span>Водства 30д</span>
+          <strong>{source.lead_count_30d}</strong>
+        </div>
+        <div>
+          <span>7д тренд</span>
+          <strong>{source.recent_7d_volume}</strong>
         </div>
       </div>
 
@@ -186,9 +236,33 @@ export const IzvoriPage: React.FC = () => {
             </div>
 
             <div className="rail-card">
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><LineChart size={14} /> Најчесто Потврдени</h3>
+              <div className="source-fast-list">
+                {bestCorroborated.map((source) => (
+                  <div key={source.source} className="source-fast-row">
+                    <span>{source.source}</span>
+                    <strong>{formatPercent(source.corroboration_rate)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rail-card">
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldAlert size={14} /> Често Остануваат Сами</h3>
+              <div className="source-fast-list">
+                {loneLeaders.map((source) => (
+                  <div key={source.source} className="source-fast-row">
+                    <span>{source.source}</span>
+                    <strong>{formatPercent(source.lone_lead_rate)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rail-card">
               <h3 className="rail-card-title flex items-center gap-2 mb-4"><Activity size={14} /> Како Да Се Чита</h3>
               <p className="rail-copy">
-                Висока доверба не значи секогаш прв извор. Некои редакции први јавуваат, други подобро потврдуваат, а трети носат follow-up и реакција.
+                Висока доверба не значи секогаш прв извор. Гледајте ги заедно: колку често водат, колку често подоцна се потврдуваат и колку често остануваат сами.
               </p>
             </div>
           </aside>

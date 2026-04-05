@@ -991,7 +991,37 @@ def api_sources():
             "  ORDER BY cluster_id, created_at ASC"
             ") first_articles GROUP BY source ORDER BY first_count DESC"
         )
-        return jsonify(build_source_reputation_rows(payload, pulse_rows, speed_rows))
+        history_rows = db.execute(
+            "WITH cluster_first AS ("
+            "  SELECT DISTINCT ON (cluster_id) cluster_id, source, created_at "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "  ORDER BY cluster_id, created_at ASC"
+            "), cluster_counts AS ("
+            "  SELECT cluster_id, COUNT(DISTINCT source) AS source_count "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "  GROUP BY cluster_id"
+            "), source_weeks AS ("
+            "  SELECT source, "
+            "    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') AS recent_7d_volume, "
+            "    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '14 days' AND created_at < NOW() - INTERVAL '7 days') AS previous_7d_volume "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '14 days' "
+            "  GROUP BY source"
+            ") "
+            "SELECT cf.source, "
+            "  COUNT(*) AS lead_count_30d, "
+            "  COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, "
+            "  COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, "
+            "  COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, "
+            "  COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume "
+            "FROM cluster_first cf "
+            "LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id "
+            "LEFT JOIN source_weeks sw ON sw.source = cf.source "
+            "GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
+        )
+        return jsonify(build_source_reputation_rows(payload, pulse_rows, speed_rows, history_rows))
     except Exception as e:
         log.error(f"[api/sources] {e}")
         return error_response("Failed to fetch sources")
