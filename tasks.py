@@ -2,6 +2,9 @@ import logging
 import datetime
 import json
 import re
+import urllib.error
+import urllib.parse
+import urllib.request
 from celery_app import celery_app
 from ingestion import ingest_feeds, ingest_diaspora_feeds
 from database import db_manager as db, prune_db
@@ -140,6 +143,186 @@ def _build_daily_brief_context(clusters):
             ])
         )
     return "\n\n".join(blocks)
+
+
+def _normalize_synced_profile_for_delivery(profile):
+    profile = profile or {}
+    return {
+        "followedTopics": [str(item or "").strip() for item in profile.get("followedTopics") or [] if str(item or "").strip()],
+        "followedSources": [str(item or "").strip() for item in profile.get("followedSources") or [] if str(item or "").strip()],
+        "recentClusters": profile.get("recentClusters") or [],
+        "deliveryPreferences": profile.get("deliveryPreferences") or {},
+    }
+
+
+def _load_active_delivery_rows():
+    return db.execute(
+        """SELECT s.sync_token, s.channel, s.target, s.morning_briefing, s.breaking_topics,
+                  s.breaking_sources, s.is_active, s.last_morning_sent_at, s.last_breaking_sent_at,
+                  s.last_alert_cluster_ids, p.profile_data
+           FROM synced_delivery_subscriptions s
+           JOIN synced_reader_profiles p ON p.sync_token = s.sync_token
+           WHERE s.is_active = TRUE"""
+    )
+
+
+def _cluster_delivery_match(cluster, profile, *, include_topics=True, include_sources=True):
+    followed_topics = {str(item or "").strip() for item in profile.get("followedTopics") or [] if str(item or "").strip()}
+    followed_sources = {str(item or "").strip() for item in profile.get("followedSources") or [] if str(item or "").strip()}
+
+    cluster_topics = {
+        str(cluster.get("category") or "").strip(),
+        str(cluster.get("topic") or "").strip(),
+    }
+    lead_source = str(cluster.get("source") or "").strip()
+
+    score = 0.0
+    reasons = []
+
+    topic_hits = sorted(topic for topic in cluster_topics if topic and topic in followed_topics)
+    if include_topics and topic_hits:
+        score += 2.8 + (0.4 * len(topic_hits))
+        reasons.append(f"следена тема: {', '.join(topic_hits[:2])}")
+
+    if include_sources and lead_source and lead_source in followed_sources:
+        score += 2.4
+        reasons.append(f"следен извор: {lead_source}")
+
+    score += min(1.0, max(0, int(cluster.get("source_count") or 0) - 1) * 0.2)
+    score += min(0.9, float(cluster.get("score") or 0) * 0.12)
+
+    return score, reasons
+
+
+def _build_profile_briefing_message(profile, clusters):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    followed_topics = profile["followedTopics"][:3]
+    followed_sources = profile["followedSources"][:3]
+    lines = ["Пресек персонализиран брифинг"]
+
+    if followed_topics:
+        lines.append(f"Следени теми: {', '.join(followed_topics)}")
+    if followed_sources:
+        lines.append(f"Следени извори: {', '.join(followed_sources)}")
+
+    for cluster in clusters[:4]:
+        reason_text = cluster.get("match_reason") or "важна развојна линија"
+        lines.append("")
+        lines.append(f"• {cluster.get('title') or 'Важна приказна'}")
+        lines.append(f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {reason_text}")
+        if cluster.get("cluster_summary"):
+            lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
+        elif cluster.get("description"):
+            lines.append(f"  {str(cluster['description'])[:220]}")
+        if cluster.get("difference_point"):
+            lines.append(f"  Разлика: {str(cluster['difference_point'])[:180]}")
+        elif cluster.get("open_point"):
+            lines.append(f"  Отворено: {str(cluster['open_point'])[:180]}")
+
+    return "\n".join(line for line in lines if line is not None).strip()
+
+
+def _select_profile_brief_clusters(profile, limit=4):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    ranked = []
+    for cluster in _load_daily_brief_clusters(limit=18):
+        match_score, reasons = _cluster_delivery_match(cluster, profile)
+        total_score = match_score + min(1.4, float(cluster.get("score") or 0) * 0.18)
+        ranked.append({
+            **cluster,
+            "match_score": total_score,
+            "match_reason": "; ".join(reasons[:2]),
+        })
+
+    personalized = [item for item in ranked if item["match_score"] >= 2.1]
+    personalized.sort(key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True)
+    if personalized:
+        return personalized[:limit]
+
+    ranked.sort(key=lambda item: item.get("score") or 0, reverse=True)
+    return ranked[: min(limit, 3)]
+
+
+def _parse_row_datetime(value):
+    if isinstance(value, datetime.datetime):
+        return value
+    if isinstance(value, str) and value.strip():
+        try:
+            return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except Exception:
+            return None
+    return None
+
+
+def _send_ntfy_message(topic, title, message, tags="newspaper"):
+    clean_topic = str(topic or "").strip()
+    clean_message = str(message or "").strip()
+    if not clean_topic or not clean_message:
+        return False
+
+    url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
+    req = urllib.request.Request(
+        url,
+        data=clean_message.encode("utf-8"),
+        headers={
+            "Title": str(title or "Пресек").strip()[:120],
+            "Tags": str(tags or "newspaper"),
+            "Priority": "default",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            return True
+    except urllib.error.URLError as e:
+        log.warning(f"[tasks] ntfy delivery failed for topic {clean_topic}: {e}")
+        return False
+
+
+def _load_recent_breaking_clusters(hours=4, limit=24):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    ranked = []
+    for cluster in _load_daily_brief_clusters(limit=limit):
+        created_at = _parse_row_datetime(cluster.get("created_at"))
+        if created_at is None:
+            continue
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=datetime.timezone.utc)
+        age_hours = (now - created_at.astimezone(datetime.timezone.utc)).total_seconds() / 3600.0
+        if age_hours > hours:
+            continue
+        if float(cluster.get("score") or 0) < BREAKING_SCORE_THRESHOLD:
+            continue
+        ranked.append(cluster)
+    ranked.sort(key=lambda item: item.get("score") or 0, reverse=True)
+    return ranked
+
+
+def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, *, include_topics=True, include_sources=True):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    seen = {str(item or "").strip() for item in seen_cluster_ids or [] if str(item or "").strip()}
+
+    candidates = []
+    for cluster in _load_recent_breaking_clusters():
+        cluster_id = str(cluster.get("cluster_id") or "").strip()
+        if not cluster_id or cluster_id in seen:
+            continue
+        match_score, reasons = _cluster_delivery_match(
+            cluster,
+            profile,
+            include_topics=include_topics,
+            include_sources=include_sources,
+        )
+        if match_score < 2.0:
+            continue
+        candidates.append({
+            **cluster,
+            "match_score": match_score + min(1.5, float(cluster.get("score") or 0) * 0.15),
+            "match_reason": "; ".join(reasons[:2]),
+        })
+
+    candidates.sort(key=lambda item: item["match_score"], reverse=True)
+    return candidates[0] if candidates else None
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
@@ -507,6 +690,103 @@ def send_telegram_briefing_task():
         log.info("[tasks] Telegram briefing sent.")
     except Exception as e:
         log.warning(f"[tasks] Telegram briefing failed: {e}")
+
+
+@celery_app.task
+def send_profile_briefings_task():
+    """Send scheduled morning briefings for synced delivery subscriptions."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    sent = 0
+
+    try:
+        rows = _load_active_delivery_rows()
+        for row in rows:
+            if not row.get("morning_briefing"):
+                continue
+
+            last_sent = _parse_row_datetime(row.get("last_morning_sent_at"))
+            if last_sent and last_sent.date() == now.date():
+                continue
+
+            target = str(row.get("target") or NTFY_TOPIC).strip()
+            profile = _normalize_synced_profile_for_delivery(row.get("profile_data") or {})
+            clusters = _select_profile_brief_clusters(profile)
+            if not clusters:
+                continue
+
+            message = _build_profile_briefing_message(profile, clusters)
+            if not message:
+                continue
+
+            if _send_ntfy_message(target, "Пресек · Утрински брифинг", message, tags="newspaper,sunrise"):
+                db.execute(
+                    "UPDATE synced_delivery_subscriptions SET last_morning_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
+                    (row["sync_token"],),
+                    fetch=False,
+                )
+                sent += 1
+    except Exception as e:
+        log.warning(f"[tasks] Profile briefings failed: {e}")
+    else:
+        if sent:
+            log.info(f"[tasks] Sent {sent} scheduled profile briefings.")
+
+
+@celery_app.task
+def send_profile_breaking_alerts_task():
+    """Send breaking alerts for followed topics and sources through active synced subscriptions."""
+    sent = 0
+
+    try:
+        rows = _load_active_delivery_rows()
+        for row in rows:
+            if not row.get("breaking_topics") and not row.get("breaking_sources"):
+                continue
+
+            target = str(row.get("target") or NTFY_TOPIC).strip()
+            profile = _normalize_synced_profile_for_delivery(row.get("profile_data") or {})
+            existing_ids = row.get("last_alert_cluster_ids") or []
+            candidate = _select_breaking_cluster_for_profile(
+                profile,
+                existing_ids,
+                include_topics=bool(row.get("breaking_topics")),
+                include_sources=bool(row.get("breaking_sources")),
+            )
+            if not candidate:
+                continue
+
+            title = f"Пресек · Итно: {candidate.get('title') or 'Нова развојна линија'}"
+            message_lines = [
+                candidate.get("title") or "Нова важна развојна линија",
+                f"{candidate.get('source') or 'Извор'} · {candidate.get('source_count') or 1} извори",
+            ]
+            if candidate.get("match_reason"):
+                message_lines.append(f"Зошто го добивате ова: {candidate['match_reason']}")
+            if candidate.get("cluster_summary"):
+                message_lines.append(str(candidate["cluster_summary"]).splitlines()[0][:240])
+            elif candidate.get("description"):
+                message_lines.append(str(candidate["description"])[:240])
+
+            if _send_ntfy_message(target, title, "\n".join(message_lines), tags="rotating_light,newspaper"):
+                next_ids = [str(candidate.get("cluster_id") or "").strip()]
+                next_ids.extend(
+                    str(item or "").strip()
+                    for item in existing_ids
+                    if str(item or "").strip() and str(item or "").strip() != str(candidate.get("cluster_id") or "").strip()
+                )
+                db.execute(
+                    "UPDATE synced_delivery_subscriptions "
+                    "SET last_breaking_sent_at = NOW(), last_alert_cluster_ids = %s::jsonb, updated_at = NOW() "
+                    "WHERE sync_token = %s",
+                    (json.dumps(next_ids[:24]), row["sync_token"]),
+                    fetch=False,
+                )
+                sent += 1
+    except Exception as e:
+        log.warning(f"[tasks] Profile breaking alerts failed: {e}")
+    else:
+        if sent:
+            log.info(f"[tasks] Sent {sent} profile breaking alerts.")
 
 
 @celery_app.task(rate_limit='10/m')

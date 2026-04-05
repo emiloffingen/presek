@@ -142,3 +142,61 @@ class TestDailyBriefTaskQuality:
         assert "Водечки извор: MIA" in context
         assert "Разлики:" in context
         assert "Отворено:" in context
+
+
+class TestProfileDeliveryTasks:
+    def test_send_profile_briefings_updates_last_sent(self):
+        import tasks
+
+        rows = [
+            {
+                "sync_token": "sync-token-123",
+                "target": "reader-feed",
+                "morning_briefing": True,
+                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "last_morning_sent_at": None,
+            }
+        ]
+
+        with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
+             patch.object(tasks, "_select_profile_brief_clusters", return_value=[{"title": "Lead story", "source": "MIA", "source_count": 2, "match_reason": "следена тема: Политика"}]), \
+             patch.object(tasks, "_build_profile_briefing_message", return_value="Digest body"), \
+             patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
+             patch.object(tasks, "db") as mock_db:
+            tasks.send_profile_briefings_task()
+
+        mock_send.assert_called_once()
+        update_sql = mock_db.execute.call_args.args[0]
+        assert "last_morning_sent_at" in update_sql
+
+    def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
+        import tasks
+
+        rows = [
+            {
+                "sync_token": "sync-token-123",
+                "target": "reader-feed",
+                "breaking_topics": True,
+                "breaking_sources": False,
+                "profile_data": {"followedTopics": ["Политика"], "followedSources": []},
+                "last_alert_cluster_ids": ["old-cluster"],
+            }
+        ]
+        candidate = {
+            "cluster_id": "new-cluster",
+            "title": "Breaking story",
+            "source": "MIA",
+            "source_count": 3,
+            "match_reason": "следена тема: Политика",
+            "cluster_summary": "Главниот развој.",
+        }
+
+        with patch.object(tasks, "_load_active_delivery_rows", return_value=rows), \
+             patch.object(tasks, "_select_breaking_cluster_for_profile", return_value=candidate), \
+             patch.object(tasks, "_send_ntfy_message", return_value=True) as mock_send, \
+             patch.object(tasks, "db") as mock_db:
+            tasks.send_profile_breaking_alerts_task()
+
+        mock_send.assert_called_once()
+        params = mock_db.execute.call_args.args[1]
+        assert "new-cluster" in params[0]

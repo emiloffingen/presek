@@ -80,6 +80,30 @@ export function createDefaultDeliveryPreferences() {
   };
 }
 
+export function createDefaultServerDeliverySettings() {
+  return {
+    channel: 'ntfy',
+    target: '',
+    morningBriefing: true,
+    breakingTopics: false,
+    breakingSources: false,
+    isActive: false,
+  };
+}
+
+export function normalizeServerDeliverySettings(settings) {
+  const next = settings || {};
+  const target = normalizeValue(next.target).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-._]+|[-._]+$/g, '').slice(0, 120);
+  return {
+    channel: 'ntfy',
+    target,
+    morningBriefing: next.morningBriefing !== false,
+    breakingTopics: Boolean(next.breakingTopics),
+    breakingSources: Boolean(next.breakingSources),
+    isActive: Boolean(next.isActive) && Boolean(target),
+  };
+}
+
 export function loadDeliveryPreferences(storage = globalThis?.localStorage) {
   if (!storage) return createDefaultDeliveryPreferences();
   const parsed = safeParse(storage.getItem(DELIVERY_KEY));

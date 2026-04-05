@@ -980,6 +980,42 @@
     color: var(--secondary-foreground);
 }
 
+.scheduled-delivery-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-top: 0.2rem;
+    border-top: 1px solid var(--border);
+}
+
+.scheduled-delivery-kicker,
+.scheduled-delivery-label span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.64rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.scheduled-delivery-copy {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
+.scheduled-delivery-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
 .account-sync-panel {
     display: flex;
     flex-direction: column;

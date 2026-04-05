@@ -14,6 +14,7 @@ from utils import get_source_trust_label, build_cluster_source_signals
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
 _GENERIC_ANGLES = {"перспектива", "агол", "точка", "став", "гледиште"}
+_SAFE_TOPIC_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def _clean_text_block(value) -> str:
@@ -173,6 +174,27 @@ def related_questions_from_context(
         add("Кои детали сè уште зависат од следни потврди?")
 
     return suggestions[:3]
+
+
+def normalize_server_delivery_subscription(payload) -> dict:
+    payload = payload or {}
+    channel = str(payload.get("channel") or "ntfy").strip().lower() or "ntfy"
+    if channel != "ntfy":
+        channel = "ntfy"
+
+    raw_target = str(payload.get("target") or "").strip()
+    target = _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
+
+    is_active = bool(payload.get("isActive")) and bool(target)
+
+    return {
+        "channel": channel,
+        "target": target,
+        "morningBriefing": payload.get("morningBriefing") is not False,
+        "breakingTopics": bool(payload.get("breakingTopics")),
+        "breakingSources": bool(payload.get("breakingSources")),
+        "isActive": is_active,
+    }
 
 
 def text_terms(text: str) -> set[str]:

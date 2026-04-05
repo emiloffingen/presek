@@ -9,7 +9,11 @@ import {
 
 type SyncState = 'idle' | 'working' | 'done' | 'error';
 
-export default function AccountSyncIsland() {
+export default function AccountSyncIsland({
+  onTokenChange,
+}: {
+  onTokenChange?: (token: string) => void;
+}) {
   const [token, setToken] = useState(() => loadSyncToken());
   const [inputToken, setInputToken] = useState('');
   const [status, setStatus] = useState<SyncState>('idle');
@@ -27,6 +31,7 @@ export default function AccountSyncIsland() {
       const nextToken = saveSyncToken(data.token);
       setToken(nextToken);
       setInputToken(nextToken);
+      onTokenChange?.(nextToken);
       setStatus('done');
       setMessage('Sync key created. Your local profile is ready to sync across devices.');
     } catch {
@@ -54,6 +59,7 @@ export default function AccountSyncIsland() {
       mergeSyncPayload(data.profile);
       saveSyncToken(nextToken);
       setToken(nextToken);
+      onTokenChange?.(nextToken);
       setStatus('done');
       setMessage('Local profile synced to your account key.');
     } catch {
@@ -75,6 +81,7 @@ export default function AccountSyncIsland() {
       saveSyncToken(nextToken);
       setToken(nextToken);
       setInputToken(nextToken);
+      onTokenChange?.(nextToken);
       setStatus('done');
       setMessage('Synced profile loaded on this device.');
     } catch {
@@ -145,4 +152,3 @@ export default function AccountSyncIsland() {
     </div>
   );
 }
-

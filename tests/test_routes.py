@@ -477,6 +477,47 @@ class TestProfileSync:
         assert data["profile"]["followedTopics"] == ["Политика", "Економија"]
         assert data["profile"]["followedSources"] == ["Телма"]
 
+    def test_profile_delivery_get(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.side_effect = [
+            {"exists": 1},
+            {
+                "channel": "ntfy",
+                "target": "reader-feed",
+                "morning_briefing": True,
+                "breaking_topics": True,
+                "breaking_sources": False,
+                "is_active": True,
+                "updated_at": "2026-04-05T10:00:00Z",
+            },
+        ]
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/profile/delivery?token=sync-token-123")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["breakingTopics"] is True
+
+    def test_profile_delivery_save(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {"exists": 1}
+        payload = {
+            "token": "sync-token-123",
+            "subscription": {
+                "target": "reader-feed",
+                "morningBriefing": True,
+                "breakingTopics": True,
+                "breakingSources": True,
+                "isActive": True,
+            },
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.post("/api/profile/delivery", data=json.dumps(payload), content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["breakingSources"] is True
+
 
 # ── View routes with DB ───────────────────────────────────────────
 

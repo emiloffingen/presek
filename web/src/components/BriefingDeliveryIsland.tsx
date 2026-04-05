@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, BellRing, Copy, Mail, Send } from 'lucide-react';
+import { Bell, BellRing, Copy, Mail, Send, Radio, Save } from 'lucide-react';
 import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
   buildDeliveryDigest,
+  createDefaultServerDeliverySettings,
   loadDeliveryPreferences,
   loadReaderProfile,
+  loadSyncToken,
+  normalizeServerDeliverySettings,
   saveDeliveryPreferences,
   setBrowserPermissionStatus,
   toggleDeliveryPreference,
@@ -25,6 +28,10 @@ export default function BriefingDeliveryIsland({
 }) {
   const [profile, setProfile] = useState(() => loadReaderProfile());
   const [prefs, setPrefs] = useState(() => loadDeliveryPreferences());
+  const [syncToken, setSyncToken] = useState(() => loadSyncToken());
+  const [serverDelivery, setServerDelivery] = useState(() => createDefaultServerDeliverySettings());
+  const [serverStatus, setServerStatus] = useState<'idle' | 'working' | 'done' | 'error'>('idle');
+  const [serverMessage, setServerMessage] = useState('');
   const [copyState, setCopyState] = useState<'idle' | 'done' | 'error'>('idle');
 
   useEffect(() => {
@@ -35,6 +42,39 @@ export default function BriefingDeliveryIsland({
     setPrefs(nextPrefs);
     setProfile(loadReaderProfile());
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRemoteDelivery() {
+      if (!syncToken) {
+        setServerDelivery(createDefaultServerDeliverySettings());
+        return;
+      }
+      setServerStatus('working');
+      setServerMessage('');
+      try {
+        const res = await fetch(`/api/profile/delivery?token=${encodeURIComponent(syncToken)}`);
+        if (!res.ok) throw new Error('load failed');
+        const data = await res.json();
+        if (!cancelled) {
+          setServerDelivery(normalizeServerDeliverySettings(data.subscription || {}));
+          setServerStatus('idle');
+        }
+      } catch {
+        if (!cancelled) {
+          setServerDelivery(createDefaultServerDeliverySettings());
+          setServerStatus('error');
+          setServerMessage('Could not load scheduled delivery settings for this sync key.');
+        }
+      }
+    }
+
+    loadRemoteDelivery();
+    return () => {
+      cancelled = true;
+    };
+  }, [syncToken]);
 
   const digest = useMemo(
     () => buildDeliveryDigest(content, profile, prefs),
@@ -72,6 +112,41 @@ export default function BriefingDeliveryIsland({
     } catch {
       setCopyState('error');
       window.setTimeout(() => setCopyState('idle'), 2200);
+    }
+  };
+
+  const updateServerDelivery = (patch: Record<string, unknown>) => {
+    setServerDelivery((current) => normalizeServerDeliverySettings({ ...current, ...patch }));
+  };
+
+  const saveScheduledDelivery = async () => {
+    if (!syncToken) {
+      setServerStatus('error');
+      setServerMessage('Create or connect a sync key first.');
+      return;
+    }
+
+    setServerStatus('working');
+    setServerMessage('');
+    try {
+      const payload = normalizeServerDeliverySettings(serverDelivery);
+      const res = await fetch('/api/profile/delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: syncToken,
+          subscription: payload,
+        }),
+      });
+      if (!res.ok) throw new Error('save failed');
+      const data = await res.json();
+      const next = normalizeServerDeliverySettings(data.subscription || {});
+      setServerDelivery(next);
+      setServerStatus('done');
+      setServerMessage(next.isActive ? 'Scheduled delivery is saved to your synced profile.' : 'Scheduled delivery is saved but inactive until a topic is set.');
+    } catch {
+      setServerStatus('error');
+      setServerMessage('Could not save scheduled delivery right now.');
     }
   };
 
@@ -118,7 +193,53 @@ export default function BriefingDeliveryIsland({
         <pre>{digest || 'Your delivery preview will appear here once a briefing is available.'}</pre>
       </div>
 
-      <AccountSyncIsland />
+      <div className="scheduled-delivery-panel">
+        <p className="scheduled-delivery-kicker">
+          <Radio size={14} />
+          <span>Scheduled delivery</span>
+        </p>
+        <p className="scheduled-delivery-copy">
+          Save an `ntfy` topic against your sync key to receive server-side morning briefings and followed-topic or followed-source alerts.
+        </p>
+
+        <label className="scheduled-delivery-label">
+          <span>Ntfy topic</span>
+          <input
+            type="text"
+            className="account-sync-input"
+            value={serverDelivery.target}
+            onChange={(e) => updateServerDelivery({ target: e.target.value })}
+            placeholder="your-presek-topic"
+          />
+        </label>
+
+        <div className="delivery-toggle-list">
+          <button type="button" className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
+            <span>Morning ntfy briefing</span>
+            <strong>{serverDelivery.morningBriefing ? 'On' : 'Off'}</strong>
+          </button>
+          <button type="button" className={`delivery-toggle ${serverDelivery.breakingTopics ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
+            <span>Alerts for followed topics</span>
+            <strong>{serverDelivery.breakingTopics ? 'On' : 'Off'}</strong>
+          </button>
+          <button type="button" className={`delivery-toggle ${serverDelivery.breakingSources ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
+            <span>Alerts for followed sources</span>
+            <strong>{serverDelivery.breakingSources ? 'On' : 'Off'}</strong>
+          </button>
+          <button type="button" className={`delivery-toggle ${serverDelivery.isActive ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
+            <span>Scheduled delivery active</span>
+            <strong>{serverDelivery.isActive ? 'On' : 'Off'}</strong>
+          </button>
+        </div>
+
+        <button type="button" className="delivery-action" onClick={saveScheduledDelivery}>
+          <Save size={14} /> Save scheduled delivery
+        </button>
+
+        {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}
+      </div>
+
+      <AccountSyncIsland onTokenChange={setSyncToken} />
     </div>
   );
 }

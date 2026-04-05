@@ -33,6 +33,7 @@ from api_helpers import (
     related_questions_from_context as _related_questions_from_context,
     text_terms as _text_terms,
     rank_cluster_citations as _rank_cluster_citations,
+    normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
 )
 
 api_bp = Blueprint('api', __name__)
@@ -120,6 +121,23 @@ def _merge_synced_profiles(left, right):
             **right["deliveryPreferences"],
         },
     }
+
+
+def _default_server_delivery_subscription():
+    return _normalize_server_delivery_subscription({})
+
+
+def _normalize_server_delivery_row(row):
+    if not row:
+        return _default_server_delivery_subscription()
+    return _normalize_server_delivery_subscription({
+        "channel": row.get("channel"),
+        "target": row.get("target"),
+        "morningBriefing": row.get("morning_briefing"),
+        "breakingTopics": row.get("breaking_topics"),
+        "breakingSources": row.get("breaking_sources"),
+        "isActive": row.get("is_active"),
+    })
 
 
 def _source_admin_authorized():
@@ -925,6 +943,79 @@ def api_profile_sync_save():
         "status": "success",
         "token": token,
         "profile": merged,
+    })
+
+
+@api_bp.route("/api/profile/delivery")
+def api_profile_delivery_get():
+    token = (request.args.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+
+    profile = db.execute_one(
+        "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not profile:
+        return error_response("Synced profile not found", 404)
+
+    row = db.execute_one(
+        "SELECT channel, target, morning_briefing, breaking_topics, breaking_sources, is_active, updated_at "
+        "FROM synced_delivery_subscriptions WHERE sync_token = %s",
+        (token,),
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "subscription": _normalize_server_delivery_row(row),
+        "updated_at": row.get("updated_at") if row else None,
+    })
+
+
+@api_bp.route("/api/profile/delivery", methods=["POST"])
+def api_profile_delivery_save():
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+
+    profile = db.execute_one(
+        "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not profile:
+        return error_response("Synced profile not found", 404)
+
+    subscription = _normalize_server_delivery_subscription(payload.get("subscription") or {})
+    db.execute(
+        """INSERT INTO synced_delivery_subscriptions
+           (sync_token, channel, target, morning_briefing, breaking_topics, breaking_sources, is_active, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+           ON CONFLICT (sync_token) DO UPDATE SET
+             channel = EXCLUDED.channel,
+             target = EXCLUDED.target,
+             morning_briefing = EXCLUDED.morning_briefing,
+             breaking_topics = EXCLUDED.breaking_topics,
+             breaking_sources = EXCLUDED.breaking_sources,
+             is_active = EXCLUDED.is_active,
+             updated_at = NOW()""",
+        (
+            token,
+            subscription["channel"],
+            subscription["target"],
+            subscription["morningBriefing"],
+            subscription["breakingTopics"],
+            subscription["breakingSources"],
+            subscription["isActive"],
+        ),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "subscription": subscription,
     })
 
 @api_bp.route("/api/live")

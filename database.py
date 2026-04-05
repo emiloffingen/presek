@@ -310,6 +310,21 @@ class DatabaseManager:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS synced_delivery_subscriptions (
+                    sync_token TEXT PRIMARY KEY REFERENCES synced_reader_profiles(sync_token) ON DELETE CASCADE,
+                    channel TEXT DEFAULT 'ntfy',
+                    target TEXT DEFAULT '',
+                    morning_briefing BOOLEAN DEFAULT TRUE,
+                    breaking_topics BOOLEAN DEFAULT FALSE,
+                    breaking_sources BOOLEAN DEFAULT FALSE,
+                    is_active BOOLEAN DEFAULT FALSE,
+                    last_morning_sent_at TIMESTAMP,
+                    last_breaking_sent_at TIMESTAMP,
+                    last_alert_cluster_ids JSONB DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,

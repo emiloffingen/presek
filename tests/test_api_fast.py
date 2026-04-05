@@ -211,3 +211,51 @@ def test_fastapi_profile_sync_save_merges_remote_and_local():
     assert data["profile"]["followedSources"] == ["Телма"]
     assert data["profile"]["recentClusters"][0]["cluster_id"] == "xyz"
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_profile_delivery_get_returns_subscription():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"exists": 1},
+        {
+            "channel": "ntfy",
+            "target": "reader-feed",
+            "morning_briefing": True,
+            "breaking_topics": True,
+            "breaking_sources": False,
+            "is_active": True,
+            "updated_at": "2026-04-05T10:00:00Z",
+        },
+    ]
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.get_profile_delivery("sync-token-123"))
+
+    assert data["status"] == "success"
+    assert data["subscription"]["target"] == "reader-feed"
+    assert data["subscription"]["breakingTopics"] is True
+
+
+def test_fastapi_profile_delivery_save_upserts_subscription():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {"exists": 1}
+    payload = {
+        "token": "sync-token-123",
+        "subscription": {
+            "target": "reader-feed",
+            "morningBriefing": True,
+            "breakingTopics": True,
+            "breakingSources": True,
+            "isActive": True,
+        },
+    }
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.save_profile_delivery(_FakeRequest(payload)))
+
+    assert data["status"] == "success"
+    assert data["subscription"]["target"] == "reader-feed"
+    assert data["subscription"]["breakingSources"] is True
+    mock_db.execute.assert_called_once()
