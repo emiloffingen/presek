@@ -132,6 +132,35 @@ show_port_usage() {
   fi
 }
 
+systemd_unit_active() {
+  local unit="$1"
+  command -v systemctl >/dev/null 2>&1 || return 1
+  [ "$(systemctl is-active "$unit" 2>/dev/null || true)" = "active" ]
+}
+
+assert_manual_mode_safe() {
+  local active_units=()
+  local units=(
+    presek.target
+    presek-web.service
+    presek-fastapi.service
+    presek-astro.service
+    presek-worker.service
+    presek-beat.service
+  )
+  local unit
+
+  for unit in "${units[@]}"; do
+    if systemd_unit_active "$unit"; then
+      active_units+=("$unit")
+    fi
+  done
+
+  if [ "${#active_units[@]}" -gt 0 ]; then
+    fail "Refusing to run start.sh while production systemd units are active: ${active_units[*]}. Stop them with systemctl first, or manage the app through systemd + nginx."
+  fi
+}
+
 port_pids() {
   local port="$1"
   if ! command -v ss >/dev/null 2>&1; then
@@ -283,6 +312,7 @@ touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 load_env
 
 warn "start.sh is a local/manual fallback launcher. Supported production runtime is systemd + nginx."
+assert_manual_mode_safe
 
 case "${1:-}" in
   --stop)
