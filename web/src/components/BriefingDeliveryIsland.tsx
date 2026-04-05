@@ -14,9 +14,9 @@ import {
 } from '../lib/personalization.js';
 
 function permissionLabel(status: string) {
-  if (status === 'granted') return 'Browser alerts enabled';
-  if (status === 'denied') return 'Browser alerts blocked';
-  return 'Browser alerts not enabled';
+  if (status === 'granted') return 'Известувањата во прелистувач се вклучени';
+  if (status === 'denied') return 'Известувањата во прелистувач се блокирани';
+  return 'Известувањата во прелистувач не се вклучени';
 }
 
 export default function BriefingDeliveryIsland({
@@ -67,7 +67,7 @@ export default function BriefingDeliveryIsland({
         if (!cancelled) {
           setServerDelivery(createDefaultServerDeliverySettings());
           setServerStatus('error');
-          setServerMessage('Could not load scheduled delivery settings for this sync key.');
+          setServerMessage('Не можев да ги вчитам закажаните поставки за достава за овој клуч за синхронизација.');
         }
       }
     }
@@ -124,7 +124,7 @@ export default function BriefingDeliveryIsland({
   const saveScheduledDelivery = async () => {
     if (!syncToken) {
       setServerStatus('error');
-      setServerMessage('Create or connect a sync key first.');
+      setServerMessage('Прво креирајте или поврзете клуч за синхронизација.');
       return;
     }
 
@@ -145,18 +145,18 @@ export default function BriefingDeliveryIsland({
       const next = normalizeServerDeliverySettings(data.subscription || {});
       setServerDelivery(next);
       setServerStatus('done');
-      setServerMessage(next.isActive ? 'Scheduled delivery is saved to your synced profile.' : 'Scheduled delivery is saved but inactive until a topic is set.');
+      setServerMessage(next.isActive ? 'Закажаната достава е зачувана во вашиот синхронизиран профил.' : 'Закажаната достава е зачувана, но е неактивна додека не поставите тема.');
     } catch {
       setServerStatus('error');
-      setServerMessage('Could not save scheduled delivery right now.');
+      setServerMessage('Не можев да ја зачувам закажаната достава во моментов.');
     }
   };
 
   const summaryLabel = syncToken
     ? serverDelivery.isActive
-      ? 'Synced delivery is active'
-      : 'Sync is connected, but scheduled delivery is still off'
-    : 'Create a sync key to turn this into a real cross-device delivery setup';
+      ? 'Синхронизираната достава е активна'
+      : 'Sync е поврзан, но закажаната достава сè уште е исклучена'
+    : 'Креирајте клуч за синхронизација за ова да стане вистинска достава меѓу уреди';
 
   if (variant === 'summary') {
     return (
@@ -171,28 +171,28 @@ export default function BriefingDeliveryIsland({
 
         <div className="delivery-toggle-list">
           <div className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`}>
-            <span>Morning briefing</span>
-            <strong>{serverDelivery.morningBriefing ? 'On' : 'Off'}</strong>
+            <span>Утрински брифинг</span>
+            <strong>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`}>
-            <span>Weekly digest</span>
-            <strong>{serverDelivery.weeklyDigest ? 'On' : 'Off'}</strong>
+            <span>Неделен дигест</span>
+            <strong>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'is-active' : ''}`}>
-            <span>Breaking alerts</span>
-            <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'On' : 'Off'}</strong>
+            <span>Итни известувања</span>
+            <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
         </div>
 
         <div className="delivery-actions">
           <a href="/settings" className="delivery-action">
-            <Radio size={14} /> Open delivery settings
+            <Radio size={14} /> Отвори поставки за достава
           </a>
           <button type="button" className="delivery-action" onClick={copyDigest}>
-            <Copy size={14} /> {copyState === 'done' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy delivery version'}
+            <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
           </button>
           <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="delivery-action">
-            <Send size={14} /> Share to Telegram
+            <Send size={14} /> Сподели на Telegram
           </a>
         </div>
       </div>
@@ -207,86 +207,86 @@ export default function BriefingDeliveryIsland({
           <span>{permissionLabel(prefs.browserPermission)}</span>
         </p>
         <p className="delivery-status-copy">
-          Delivery is tied to your followed topics and sources on this browser. Start with local alerts and shareable briefing output before adding account-based delivery.
+          Доставата е врзана за темите и изворите што ги следите на овој прелистувач. Почнете со локални известувања и верзија за споделување, па потоа додајте синхронизирана достава меѓу уреди.
         </p>
       </div>
 
       <div className="delivery-toggle-list">
         <button type="button" className={`delivery-toggle ${prefs.morningBriefing ? 'is-active' : ''}`} onClick={() => togglePref('morningBriefing')}>
-          <span>Morning briefing</span>
-          <strong>{prefs.morningBriefing ? 'On' : 'Off'}</strong>
+          <span>Утрински брифинг</span>
+          <strong>{prefs.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
         <button type="button" className={`delivery-toggle ${prefs.breakingAlerts ? 'is-active' : ''}`} onClick={() => togglePref('breakingAlerts')}>
-          <span>Breaking alerts</span>
-          <strong>{prefs.breakingAlerts ? 'On' : 'Off'}</strong>
+            <span>Итни известувања</span>
+          <strong>{prefs.breakingAlerts ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
       </div>
 
       <div className="delivery-actions">
         <button type="button" className="delivery-action" onClick={requestNotifications}>
-          <Bell size={14} /> Enable browser alerts
+          <Bell size={14} /> Вклучи известувања во прелистувач
         </button>
         <button type="button" className="delivery-action" onClick={copyDigest}>
-          <Copy size={14} /> {copyState === 'done' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy delivery version'}
+          <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
         </button>
         <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="delivery-action">
-          <Send size={14} /> Share to Telegram
+          <Send size={14} /> Сподели на Telegram
         </a>
         <a href={mailHref} className="delivery-action">
-          <Mail size={14} /> Share by email
+          <Mail size={14} /> Сподели преку е-пошта
         </a>
       </div>
 
       <div className="delivery-digest">
-        <p className="delivery-digest-kicker">Delivery preview</p>
-        <pre>{digest || 'Your delivery preview will appear here once a briefing is available.'}</pre>
+        <p className="delivery-digest-kicker">Преглед на доставата</p>
+        <pre>{digest || 'Прегледот на доставата ќе се појави тука штом има достапен брифинг.'}</pre>
       </div>
 
       <div className="scheduled-delivery-panel">
         <p className="scheduled-delivery-kicker">
           <Radio size={14} />
-          <span>Scheduled delivery</span>
+          <span>Закажана достава</span>
         </p>
         <p className="scheduled-delivery-copy">
-          Save an `ntfy` topic against your sync key to receive server-side morning briefings, weekly digests, and followed-topic or followed-source alerts.
+          Зачувајте `ntfy` тема со вашиот клуч за синхронизација за да добивате серверски утрински брифинзи, неделни дигести и известувања за следените теми или извори.
         </p>
 
         <label className="scheduled-delivery-label">
-          <span>Ntfy topic</span>
+          <span>Ntfy тема</span>
           <input
             type="text"
             className="account-sync-input"
             value={serverDelivery.target}
             onChange={(e) => updateServerDelivery({ target: e.target.value })}
-            placeholder="your-presek-topic"
+            placeholder="mojata-presek-tema"
           />
         </label>
 
         <div className="delivery-toggle-list">
           <button type="button" className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
-            <span>Morning ntfy briefing</span>
-            <strong>{serverDelivery.morningBriefing ? 'On' : 'Off'}</strong>
+            <span>Утрински ntfy брифинг</span>
+            <strong>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
-            <span>Weekly digest</span>
-            <strong>{serverDelivery.weeklyDigest ? 'On' : 'Off'}</strong>
+            <span>Неделен дигест</span>
+            <strong>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.breakingTopics ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
-            <span>Alerts for followed topics</span>
-            <strong>{serverDelivery.breakingTopics ? 'On' : 'Off'}</strong>
+            <span>Известувања за следени теми</span>
+            <strong>{serverDelivery.breakingTopics ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.breakingSources ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
-            <span>Alerts for followed sources</span>
-            <strong>{serverDelivery.breakingSources ? 'On' : 'Off'}</strong>
+            <span>Известувања за следени извори</span>
+            <strong>{serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.isActive ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
-            <span>Scheduled delivery active</span>
-            <strong>{serverDelivery.isActive ? 'On' : 'Off'}</strong>
+            <span>Закажаната достава е активна</span>
+            <strong>{serverDelivery.isActive ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
         </div>
 
         <button type="button" className="delivery-action" onClick={saveScheduledDelivery}>
-          <Save size={14} /> Save scheduled delivery
+          <Save size={14} /> Зачувај закажана достава
         </button>
 
         {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}

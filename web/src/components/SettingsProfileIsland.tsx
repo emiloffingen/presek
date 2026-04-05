@@ -33,25 +33,25 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Sparkles size={14} /> Your reading profile</p>
-            <h2>What Presek remembers on this device</h2>
+            <p className="settings-kicker"><Sparkles size={14} /> Вашиот профил на читање</p>
+            <h2>Што Пресек памети на овој уред</h2>
           </div>
           <p className="settings-copy">
-            These signals shape your `For You` module, alert matching, and weekly delivery before anything is synced.
+            Овие сигнали го обликуваат вашиот модул `За Вас`, изборот на известувања и неделната достава уште пред нешто да се синхронизира.
           </p>
         </div>
 
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span>Followed topics</span>
+            <span>Следени теми</span>
             <strong>{followedTopics.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Followed sources</span>
+            <span>Следени извори</span>
             <strong>{followedSources.length}</strong>
           </div>
           <div className="settings-stat-card">
-            <span>Recent clusters</span>
+            <span>Неодамнешни кластери</span>
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
@@ -61,8 +61,8 @@ export default function SettingsProfileIsland() {
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Followed topics</p>
-              <h3>Topics you want surfaced faster</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Следени теми</p>
+              <h3>Теми што сакате да излегуваат побрзо</h3>
             </div>
           </div>
           {followedTopics.length > 0 ? (
@@ -80,15 +80,15 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">No followed topics yet. Follow a topic from a topic page to make delivery and ranking more personal.</p>
+            <p className="settings-empty">Сè уште немате следени теми. Следете тема од страницата за теми за доставата и рангирањето да станат полични.</p>
           )}
         </div>
 
         <div className="settings-module">
           <div className="settings-module-head">
             <div>
-              <p className="settings-kicker"><Newspaper size={14} /> Followed sources</p>
-              <h3>Sources you want watched closely</h3>
+              <p className="settings-kicker"><Newspaper size={14} /> Следени извори</p>
+              <h3>Извори што сакате внимателно да се следат</h3>
             </div>
           </div>
           {followedSources.length > 0 ? (
@@ -106,7 +106,7 @@ export default function SettingsProfileIsland() {
               ))}
             </div>
           ) : (
-            <p className="settings-empty">No followed sources yet. Follow a lead source from a cluster page to receive source-specific updates.</p>
+            <p className="settings-empty">Сè уште немате следени извори. Следете водечки извор од кластер страница за да добивате извор-специфични ажурирања.</p>
           )}
         </div>
       </section>
@@ -114,8 +114,8 @@ export default function SettingsProfileIsland() {
       <section className="settings-module">
         <div className="settings-module-head">
           <div>
-            <p className="settings-kicker"><Clock3 size={14} /> Recent reading</p>
-            <h3>Clusters that shaped your current profile</h3>
+            <p className="settings-kicker"><Clock3 size={14} /> Неодамнешно читање</p>
+            <h3>Кластери што го обликуваа вашиот тековен профил</h3>
           </div>
         </div>
         {recentItems.length > 0 ? (
@@ -123,16 +123,16 @@ export default function SettingsProfileIsland() {
             {recentItems.map((item) => (
               <a key={item.clusterId} href={`/cluster/${item.clusterId}`} className="settings-recent-item">
                 <div>
-                  <p className="settings-recent-topic">{item.topic || 'Cluster'}</p>
+                  <p className="settings-recent-topic">{item.topic || 'Кластер'}</p>
                   <h4>{item.title}</h4>
-                  <p className="settings-recent-source">{item.source || 'Source'}</p>
+                  <p className="settings-recent-source">{item.source || 'Извор'}</p>
                 </div>
                 <ArrowUpRight size={14} />
               </a>
             ))}
           </div>
         ) : (
-          <p className="settings-empty">Open a few clusters and this page will start explaining what drives your personalization and delivery.</p>
+          <p className="settings-empty">Отворете неколку кластери и оваа страница ќе почне да објаснува што ги движи вашата персонализација и достава.</p>
         )}
       </section>
     </div>

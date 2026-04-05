@@ -7,16 +7,16 @@ import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
 import { KeyRound, Radio, Sparkles } from 'lucide-react';
 ---
 
-<Layout title="Settings">
+<Layout title="Поставки">
   <NYTHeader />
 
   <main class="site-layout py-12">
     <div class="settings-shell">
       <header class="settings-header">
-        <span class="page-kicker">Synced Profile</span>
-        <h1 class="settings-headline">Settings</h1>
+        <span class="page-kicker">Синхронизиран профил</span>
+        <h1 class="settings-headline">Поставки</h1>
         <p class="settings-lede">
-          Manage your sync key, followed topics and sources, and the delivery channels that turn Presek into a cross-device service.
+          Управувајте со вашиот клуч за синхронизација, следените теми и извори, и каналите за достава што го претвораат Пресек во услуга меѓу уреди.
         </p>
       </header>
 
@@ -29,21 +29,21 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
 
         <aside class="settings-rail">
           <div class="settings-card">
-            <h3 class="settings-rail-title"><Radio size={14} /> Delivery and alerts</h3>
+            <h3 class="settings-rail-title"><Radio size={14} /> Достава и известувања</h3>
             <BriefingDeliveryIsland client:load variant="full" />
           </div>
 
           <div class="settings-card settings-card-accent">
-            <h3 class="settings-rail-title"><KeyRound size={14} /> Why sync matters</h3>
+            <h3 class="settings-rail-title"><KeyRound size={14} /> Зошто синхронизацијата е важна</h3>
             <p class="settings-rail-copy">
-              Sync carries your follows, delivery choices, and reading history across devices. That makes `For You`, breaking alerts, and weekly digests consistent instead of starting over on every browser.
+              Синхронизацијата ги носи вашите следења, изборите за достава и историјата на читање меѓу уреди. Така `За Вас`, итните известувања и неделните дигести остануваат конзистентни наместо да почнуваат одново во секој прелистувач.
             </p>
           </div>
 
           <div class="settings-card">
-            <h3 class="settings-rail-title"><Sparkles size={14} /> What this controls</h3>
+            <h3 class="settings-rail-title"><Sparkles size={14} /> Што контролира ова</h3>
             <p class="settings-rail-copy">
-              This page governs the parts of Presek that should adapt to you: ranking, recommendations, followed-topic delivery, followed-source delivery, and the slower weekly recap.
+              Оваа страница ги управува деловите од Пресек што треба да се приспособат на вас: рангирање, препораки, достава за следени теми, достава за следени извори и поспориот неделен преглед.
             </p>
           </div>
         </aside>

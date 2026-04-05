@@ -33,10 +33,10 @@ export default function AccountSyncIsland({
       setInputToken(nextToken);
       onTokenChange?.(nextToken);
       setStatus('done');
-      setMessage('Sync key created. Your local profile is ready to sync across devices.');
+      setMessage('Клучот за синхронизација е креиран. Вашиот локален профил е подготвен за синхронизација меѓу уреди.');
     } catch {
       setStatus('error');
-      setMessage('Could not create a sync key right now.');
+      setMessage('Не можев да креирам клуч за синхронизација во моментов.');
     }
   };
 
@@ -61,10 +61,10 @@ export default function AccountSyncIsland({
       setToken(nextToken);
       onTokenChange?.(nextToken);
       setStatus('done');
-      setMessage('Local profile synced to your account key.');
+      setMessage('Локалниот профил е синхронизиран со вашиот клуч за профил.');
     } catch {
       setStatus('error');
-      setMessage('Could not push this profile right now.');
+      setMessage('Не можев да го испратам овој профил во моментов.');
     }
   };
 
@@ -83,10 +83,10 @@ export default function AccountSyncIsland({
       setInputToken(nextToken);
       onTokenChange?.(nextToken);
       setStatus('done');
-      setMessage('Synced profile loaded on this device.');
+      setMessage('Синхронизираниот профил е вчитан на овој уред.');
     } catch {
       setStatus('error');
-      setMessage('Could not load that sync key.');
+      setMessage('Не можев да го вчитам тој клуч за синхронизација.');
     }
   };
 
@@ -95,10 +95,10 @@ export default function AccountSyncIsland({
     try {
       await navigator.clipboard.writeText(token);
       setStatus('done');
-      setMessage('Sync key copied.');
+      setMessage('Клучот за синхронизација е копиран.');
     } catch {
       setStatus('error');
-      setMessage('Could not copy the sync key.');
+      setMessage('Не можев да го копирам клучот за синхронизација.');
     }
   };
 
@@ -106,48 +106,48 @@ export default function AccountSyncIsland({
     <div className="account-sync-panel">
       <p className="account-sync-kicker">
         <KeyRound size={14} />
-        <span>Account sync</span>
+        <span>Синхронизација на профил</span>
       </p>
       <p className="account-sync-copy">
-        Use one sync key to carry followed topics, followed sources, delivery preferences, and recent reading across devices.
+        Користете еден клуч за синхронизација за да ги носите следените теми, следените извори, поставките за достава и неодамнешното читање меѓу уреди.
       </p>
 
       <div className="account-sync-controls">
         <button type="button" className="delivery-action" onClick={createSyncKey}>
-          <KeyRound size={14} /> {hasToken ? 'Create new sync key' : 'Create sync key'}
+          <KeyRound size={14} /> {hasToken ? 'Креирај нов клуч за синхронизација' : 'Креирај клуч за синхронизација'}
         </button>
         {hasToken && (
           <>
             <button type="button" className="delivery-action" onClick={() => pushLocalProfile()}>
-              <Upload size={14} /> Sync this device
+              <Upload size={14} /> Синхронизирај го овој уред
             </button>
             <button type="button" className="delivery-action" onClick={() => pullRemoteProfile()}>
-              <Download size={14} /> Load synced profile
+              <Download size={14} /> Вчитај синхронизиран профил
             </button>
             <button type="button" className="delivery-action" onClick={copyToken}>
-              <Copy size={14} /> Copy sync key
+              <Copy size={14} /> Копирај клуч за синхронизација
             </button>
           </>
         )}
       </div>
 
       <label className="account-sync-label">
-        <span>Use an existing sync key</span>
+        <span>Користи постоечки клуч за синхронизација</span>
         <div className="account-sync-import">
           <input
             type="text"
             value={inputToken}
             onChange={(e) => setInputToken(e.target.value)}
-            placeholder="Paste your sync key"
+            placeholder="Вметнете го вашиот клуч за синхронизација"
             className="account-sync-input"
           />
           <button type="button" className="delivery-action account-sync-import-btn" onClick={() => pullRemoteProfile(inputToken)}>
-            <RefreshCw size={14} /> Connect
+            <RefreshCw size={14} /> Поврзи
           </button>
         </div>
       </label>
 
-      {token && <p className="account-sync-token">Current key: {token}</p>}
+      {token && <p className="account-sync-token">Тековен клуч: {token}</p>}
       {message && <p className={`account-sync-message is-${status}`}>{message}</p>}
     </div>
   );
