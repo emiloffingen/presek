@@ -16,6 +16,7 @@ const significanceLabel =
 // Handle image proxy
 const thumb = cluster.representative_image || cluster.articles.find((a: any) => a.image_url)?.image_url;
 const thumbSrc = thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : null;
+const isFallbackArt = !thumb || String(thumb).includes('/static/generated/') || String(thumb).endsWith('.svg');
 
 // Relative time format
 function getTimeStr(dateStr: string) {
@@ -37,7 +38,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-			<h2 class:list={["headline", isLead ? "text-3xl md:text-4xl" : "text-xl"]}>
+			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard"]}>
 				{main.title}
 			</h2>
 		</a>
@@ -78,16 +79,17 @@ function getTimeStr(dateStr: string) {
 	</div>
 
 	{thumbSrc && (
-		<div class="image-wrap">
+		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={`/cluster/${cluster.cluster_id}`}>
 				<img 
 					src={thumbSrc} 
 					alt={main.title} 
-					class="article-image max-h-64 md:max-h-none object-cover" 
+					class:list={["article-image max-h-64 md:max-h-none object-cover", { "article-image-fallback": isFallbackArt }]}
 					loading={isLead ? "eager" : "lazy"}
                     onerror="this.onerror=null; this.src='/img/placeholder.svg';"
 				/>
 			</a>
+            {isFallbackArt && <span class="fallback-badge">Пресек графика</span>}
             {isLead && main.image_caption && (
                 <p class="image-caption">{main.image_caption}</p>
             )}
@@ -102,6 +104,10 @@ function getTimeStr(dateStr: string) {
 		gap: 1rem;
 		padding-bottom: 1.5rem;
 		border-bottom: 1px solid var(--border);
+	}
+
+	.article-body {
+		min-width: 0;
 	}
 
     @media (min-width: 768px) {
@@ -128,6 +134,15 @@ function getTimeStr(dateStr: string) {
         text-wrap: balance;
 	}
 
+	.headline-lead {
+		font-size: clamp(2.15rem, 1.8rem + 1.4vw, 2.7rem);
+		line-height: 1.02;
+	}
+
+	.headline-standard {
+		font-size: 1.25rem;
+	}
+
     .headline-link:hover .headline {
         color: var(--color-nyt-gray-600);
     }
@@ -139,6 +154,10 @@ function getTimeStr(dateStr: string) {
 		color: var(--secondary-foreground);
 		margin-bottom: 1rem;
         text-wrap: pretty;
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.why-it-matters {
@@ -195,12 +214,45 @@ function getTimeStr(dateStr: string) {
 
     .image-wrap {
         width: 100%;
+		position: relative;
     }
 
 	.article-image {
 		width: 100%;
 		aspect-ratio: 3 / 2;
 		object-fit: cover;
+		object-position: center top;
+		border: 1px solid var(--border);
+	}
+
+	.image-wrap-fallback {
+		padding: 0.35rem;
+		border: 1px solid color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
+		background:
+			radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 36%, transparent 64%), transparent 34%),
+			linear-gradient(160deg, color-mix(in srgb, var(--background) 90%, #f6eee5 10%), color-mix(in srgb, var(--background) 80%, var(--secondary) 20%));
+	}
+
+	.article-image-fallback {
+		aspect-ratio: 8 / 5;
+		object-fit: cover;
+		background: color-mix(in srgb, var(--background) 80%, #f4ede3 20%);
+	}
+
+	.fallback-badge {
+		position: absolute;
+		left: 0.7rem;
+		top: 0.7rem;
+		padding: 0.22rem 0.42rem;
+		border: 1px solid color-mix(in srgb, var(--border) 64%, var(--foreground) 36%);
+		background: color-mix(in srgb, var(--background) 95%, transparent 5%);
+		font-family: var(--font-sans);
+		font-size: 0.54rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground) 18%);
+		opacity: 0.88;
 	}
 
     .image-caption {
@@ -248,4 +300,85 @@ function getTimeStr(dateStr: string) {
     .sub-headlines a:hover {
         text-decoration: underline;
     }
+
+	@media (min-width: 768px) {
+		.headline-lead {
+			font-size: 2.25rem;
+			line-height: 0.98;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.nyt-article:not(.lead-story) {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) clamp(6.4rem, 28vw, 7.6rem);
+			align-items: start;
+			gap: 0.95rem;
+			padding-bottom: 1.1rem;
+		}
+
+		.nyt-article:not(.lead-story) .article-body {
+			grid-column: 1;
+			grid-row: 1;
+		}
+
+		.nyt-article:not(.lead-story) .image-wrap {
+			grid-column: 2;
+			grid-row: 1;
+		}
+
+		.nyt-article:not(.lead-story) .article-image,
+		.nyt-article:not(.lead-story) .article-image-fallback {
+			aspect-ratio: 1 / 1;
+			height: auto;
+			max-height: 7.75rem;
+		}
+
+		.nyt-article:not(.lead-story) .headline-standard {
+			font-size: 1.1rem;
+			line-height: 1.1;
+			margin-bottom: 0.4rem;
+		}
+
+		.nyt-article:not(.lead-story) .article-meta {
+			margin-bottom: 0.4rem;
+			gap: 0.35rem 0.45rem;
+		}
+
+		.nyt-article:not(.lead-story) .why-it-matters {
+			display: none;
+		}
+
+		.nyt-article:not(.lead-story) .summary {
+			font-size: 0.92rem;
+			line-height: 1.52;
+			-webkit-line-clamp: 3;
+			margin-bottom: 0.6rem;
+		}
+
+		.nyt-article:not(.lead-story) .footer-meta {
+			font-size: 0.64rem;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+		}
+
+		.nyt-article:not(.lead-story) .fallback-badge {
+			left: 0.45rem;
+			top: 0.45rem;
+			padding: 0.16rem 0.28rem;
+			font-size: 0.46rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.article-image {
+			aspect-ratio: 16 / 10;
+			max-height: 14rem;
+			object-fit: cover;
+		}
+
+		.article-image-fallback {
+			max-height: none;
+		}
+	}
 </style>

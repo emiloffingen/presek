@@ -31,6 +31,7 @@ from health import _probe_database, _probe_redis
 from api_helpers import (
     normalize_perspectives as _parse_perspectives_blob,
     default_related_questions as _default_related_questions,
+    related_questions_from_context as _related_questions_from_context,
     text_terms as _text_terms,
     rank_cluster_citations as _rank_cluster_citations,
 )
@@ -39,7 +40,20 @@ log = logging.getLogger("presek")
 
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
 _start_time = datetime.datetime.now(datetime.timezone.utc)
-_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()] or ["*"]
+_public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live").rstrip("/")
+_default_cors_origins = [
+    _public_site_url,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4321",
+    "http://127.0.0.1:4321",
+]
+_configured_cors_origins = [
+    origin.rstrip("/")
+    for origin in (o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(","))
+    if origin and origin != "*"
+]
+_cors_origins = _configured_cors_origins or _default_cors_origins
 
 # CORS
 app.add_middleware(
@@ -121,7 +135,13 @@ def _build_cluster_answer_fallback(question: str, articles, synthesis: str = "",
         "status": "success",
         "answer": (local_answer or {}).get("answer", "Во моментов системот не може да даде подетален одговор."),
         "citations": citations,
-        "related_questions": (local_answer or {}).get("related_questions") or _default_related_questions(question, category),
+        "related_questions": (local_answer or {}).get("related_questions") or _related_questions_from_context(
+            question,
+            category,
+            has_perspectives=bool(perspectives),
+            has_multiple_sources=len(articles) >= 2,
+            has_unclear_points=bool(sections.get("unclear_points")),
+        ),
         "confidence": (local_answer or {}).get("confidence", "low"),
         "confirmed_points": sections.get("confirmed_points", [])[:3],
         "unclear_points": sections.get("unclear_points", [])[:2],
@@ -556,7 +576,13 @@ async def ask_cluster(cluster_id: str, request: Request):
                     clean_related.append(text)
 
             if not clean_related:
-                clean_related = _default_related_questions(question, articles[0].get("category"))
+                clean_related = _related_questions_from_context(
+                    question,
+                    articles[0].get("category"),
+                    has_perspectives=bool(perspectives),
+                    has_multiple_sources=len(articles) >= 2,
+                    has_unclear_points=bool(unclear_points),
+                )
 
             if confidence not in {"high", "medium", "low"}:
                 confidence = "medium"

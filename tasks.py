@@ -26,6 +26,7 @@ from local_nlp import (
     extract_cluster_tags_locally,
     filter_cluster_tags,
 )
+from api_helpers import normalize_perspectives, normalize_summary_text
 
 log = logging.getLogger("presek_celery")
 
@@ -42,18 +43,48 @@ def invalidate_cluster_caches(cluster_id=None):
         delete_cache(f"cluster:detail:{cluster_id}")
     invalidate_public_data_caches()
 
+
+def _load_cluster_articles_for_synthesis(cluster_id):
+    return db.execute(
+        "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+        (cluster_id,)
+    )
+
+
+def _normalize_cluster_synthesis(summary, perspectives, article_rows):
+    clean_summary = normalize_summary_text(summary)
+    clean_perspectives = normalize_perspectives(perspectives)
+
+    if clean_summary and clean_perspectives:
+        return clean_summary, clean_perspectives
+
+    fallback = synthesize_cluster_fallback(article_rows)
+    fallback_summary = normalize_summary_text(fallback.get("summary", ""))
+    fallback_perspectives = normalize_perspectives(fallback.get("perspectives", []))
+
+    if not clean_summary:
+        clean_summary = fallback_summary
+    if not clean_perspectives:
+        clean_perspectives = fallback_perspectives
+
+    return clean_summary, clean_perspectives
+
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
     """Translates non-Macedonian articles to Macedonian."""
     try:
         translated_title = translate_to_macedonian(title)
         translated_desc = translate_to_macedonian(description) if description else None
-        
+
+        title_changed = bool(translated_title and translated_title.strip() and translated_title != title)
+        desc_changed = bool(description and translated_desc is not None and translated_desc != description)
+
         if translated_title:
             db.execute(
-                "UPDATE articles SET title = %s, description = %s WHERE id = %s",
-                (translated_title, translated_desc, article_id), fetch=False
+                "UPDATE articles SET title = %s, description = %s, is_translated = %s WHERE id = %s",
+                (translated_title, translated_desc, 1 if (title_changed or desc_changed) else 0, article_id), fetch=False
             )
+            invalidate_public_data_caches()
             log.info(f"Translated article {article_id}")
     except Exception as e:
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
@@ -99,20 +130,21 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 @celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
     """Generates a multi-perspective synthesis for a cluster."""
+    article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     try:
         raw, _ = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         if raw:
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
+            summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
         else:
-            article_rows = db.execute(
-                "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
-                (cluster_id,)
-            )
             fallback = synthesize_cluster_fallback(article_rows)
-            summary = fallback.get("summary", "")
-            perspectives = fallback.get("perspectives", [])
+            summary, perspectives = _normalize_cluster_synthesis(
+                fallback.get("summary", ""),
+                fallback.get("perspectives", []),
+                article_rows,
+            )
             if (summary or perspectives) and retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
@@ -138,18 +170,19 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
-        article_rows = db.execute(
-            "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
-            (cluster_id,)
-        )
         fallback = synthesize_cluster_fallback(article_rows)
-        if fallback.get("summary") or fallback.get("perspectives"):
+        summary, perspectives = _normalize_cluster_synthesis(
+            fallback.get("summary", ""),
+            fallback.get("perspectives", []),
+            article_rows,
+        )
+        if summary or perspectives:
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
                    VALUES (%s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
-                (cluster_id, fallback.get("summary", ""), json.dumps(fallback.get("perspectives", [])), datetime.datetime.now()),
+                (cluster_id, summary, json.dumps(perspectives), datetime.datetime.now()),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)

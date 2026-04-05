@@ -13,7 +13,7 @@ from flask import Blueprint, jsonify, request, Response
 from database import db_manager as db
 from ai_engine import sync_call_ai as _call_ai, clean_json_response
 from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
-from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
+from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN, CURATED_INTERNATIONAL_SOURCES
 from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from embeddings import generate_query_embedding
 from local_nlp import (
@@ -29,6 +29,7 @@ from health import get_source_statuses, reset_source_policy
 from api_helpers import (
     normalize_perspectives,
     default_related_questions as _default_related_questions,
+    related_questions_from_context as _related_questions_from_context,
     text_terms as _text_terms,
     rank_cluster_citations as _rank_cluster_citations,
 )
@@ -141,7 +142,13 @@ def _build_cluster_answer_fallback(query, rows, synthesis="", perspectives=None)
     return {
         "answer": (local_answer or {}).get("answer", "Во моментов системот не може да даде подетален одговор."),
         "citations": citations,
-        "related_questions": (local_answer or {}).get("related_questions") or _default_related_questions(query, category),
+        "related_questions": (local_answer or {}).get("related_questions") or _related_questions_from_context(
+            query,
+            category,
+            has_perspectives=bool(perspectives),
+            has_multiple_sources=len(rows) >= 2,
+            has_unclear_points=bool(sections.get("unclear_points")),
+        ),
         "confidence": (local_answer or {}).get("confidence", "low"),
         "confirmed_points": sections.get("confirmed_points", [])[:3],
         "unclear_points": sections.get("unclear_points", [])[:2],
@@ -286,7 +293,13 @@ def _build_cluster_answer(cluster_id, query):
         "source_differences": source_differences,
     }
     if not payload["related_questions"]:
-        payload["related_questions"] = _default_related_questions(query, rows[0].get("category"))
+        payload["related_questions"] = _related_questions_from_context(
+            query,
+            rows[0].get("category"),
+            has_perspectives=bool(perspectives),
+            has_multiple_sources=len(rows) >= 2,
+            has_unclear_points=bool(unclear_points),
+        )
 
     return payload, None
 
@@ -445,6 +458,84 @@ def api_news():
     except Exception as e:
         log.error(f"[api/news] Error: {e}", exc_info=True)
         return error_response("Failed to fetch news")
+
+
+@api_bp.route("/api/intelligence/international-curated")
+def api_international_curated():
+    try:
+        try:
+            limit = int(request.args.get("limit", 6))
+        except ValueError:
+            return error_response("Invalid limit", 400)
+
+        limit = min(12, max(1, limit))
+        cache_key = f"intl:curated:{limit}"
+        cached = cached_response(cache_key, ttl=60)
+        if cached:
+            return jsonify(cached)
+
+        rows = db.execute(
+            """
+            SELECT *
+            FROM articles
+            WHERE country != %s
+              AND source = ANY(%s)
+              AND created_at >= NOW() - INTERVAL '72 hours'
+              AND (
+                    is_translated = 1
+                    OR (
+                        COALESCE(original_title, '') <> ''
+                        AND title <> original_title
+                    )
+                  )
+            ORDER BY created_at DESC
+            LIMIT 400
+            """,
+            ("🇲🇰", list(CURATED_INTERNATIONAL_SOURCES)),
+        )
+
+        clusters = defaultdict(list)
+        for row in rows:
+            row["reading_time"] = calculate_reading_time(row.get("description", ""))
+            clusters[row["cluster_id"]].append(row)
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters.sort(key=score_cluster, reverse=True)
+        paged_clusters = ranked_clusters[:limit]
+
+        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
+        synthesis_ids = db.get_synthesis_ids(cluster_ids) if cluster_ids else []
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        ) if cluster_ids else []
+        rep_images = {row["cluster_id"]: row["representative_image"] for row in metadata_rows}
+
+        result = []
+        for arts in paged_clusters:
+            cluster_score = score_cluster(arts)
+            cid = arts[0]["cluster_id"]
+            result.append({
+                "cluster_id": cid,
+                "articles": arts,
+                "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get("reading_time", 1),
+                "score": round(cluster_score, 3),
+                "is_breaking": cluster_score >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": cid in synthesis_ids,
+                "has_balanced": is_balanced(arts),
+            })
+
+        payload = {
+            "status": "success",
+            "clusters": result,
+            "total_clusters": len(ranked_clusters),
+        }
+        set_cache(cache_key, payload, ttl=60)
+        return jsonify(payload)
+    except Exception as e:
+        log.error(f"[api/intelligence/international-curated] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch curated international stories")
 
 
 @api_bp.route("/api/intelligence/entity/<name>")

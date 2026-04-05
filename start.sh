@@ -110,7 +110,7 @@ screen_session_exists() {
 }
 
 list_screen_sessions() {
-  screen -list 2>/dev/null | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
+  (screen -list 2>/dev/null || true) | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
 }
 
 load_env() {
@@ -167,10 +167,12 @@ port_pids() {
     return 0
   fi
 
-  ss -lptn "sport = :$port" 2>/dev/null \
-    | grep -o 'pid=[0-9]\+' \
-    | cut -d= -f2 \
-    | sort -u
+  (
+    ss -lptn "sport = :$port" 2>/dev/null \
+      | grep -o 'pid=[0-9]\+' \
+      | cut -d= -f2 \
+      | sort -u
+  ) || true
 }
 
 force_free_port() {

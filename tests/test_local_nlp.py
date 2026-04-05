@@ -1,4 +1,9 @@
-from local_nlp import filter_cluster_tags, extract_cluster_tags_locally, is_valid_focus_entity
+from local_nlp import (
+    filter_cluster_tags,
+    extract_cluster_tags_locally,
+    is_valid_focus_entity,
+    build_structured_answer_sections,
+)
 
 
 class TestTagFiltering:
@@ -40,3 +45,22 @@ class TestClusterTagExtraction:
         assert "Иран" in tags
         assert "Трамп" in tags
         assert "Подготвува Напади" not in tags
+
+
+class TestStructuredAnswerSections:
+    def test_source_differences_use_actual_titles_when_available(self):
+        articles = [
+            {"source": "МИА", "title": "Трамп: Вторник, 20:00 часот по источно време", "description": ""},
+            {"source": "Reuters", "title": "Трамп најави говор за царини и економски мерки", "description": ""},
+        ]
+
+        sections = build_structured_answer_sections(
+            "Главниот развој е потврден. Последиците сè уште не се целосно јасни.",
+            articles,
+            synthesis="",
+            perspectives=[],
+        )
+
+        assert "МИА" in sections["source_differences"]
+        assert "Reuters" in sections["source_differences"]
+        assert "формулира развојот" in sections["source_differences"]

@@ -487,16 +487,30 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
         for item in perspectives[:2]:
             angle = str(item.get("angle") or "").strip()
             content = str(item.get("content") or "").strip()
-            text = f"{angle}: {content}".strip(": ").strip()
-            if text:
-                top.append(text)
+            if not content:
+                continue
+            if angle:
+                top.append(f"{angle}: {content}")
+            else:
+                top.append(content)
         if top:
-            source_differences = " ".join(top)[:320]
-    elif len(articles) >= 2:
-        source_differences = (
-            f"{articles[0]['source']} најмногу го истакнува водечкиот развој, "
-            f"додека {articles[1]['source']} додава поширок контекст или реакција."
-        )
+            source_differences = " ".join(top)[:360]
+
+    if not source_differences and len(articles) >= 2:
+        lead = articles[0]
+        second = articles[1]
+        lead_title = str(lead.get("title") or "").strip()
+        second_title = str(second.get("title") or "").strip()
+        if lead_title and second_title and lead_title != second_title:
+            source_differences = (
+                f"{lead['source']} најдиректно го формулира развојот како „{lead_title}“, "
+                f"додека {second['source']} повеќе нагласува „{second_title}“."
+            )[:360]
+        else:
+            source_differences = (
+                f"{lead['source']} повеќе се држи до водечкиот развој, "
+                f"додека {second['source']} додава контекст, реакција или поширока последица."
+            )
 
     return {
         "confirmed_points": confirmed_points[:3],
@@ -511,15 +525,15 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
     """
     # Editorial, category-aware palette
     colors = {
-        "Македонија": "#b23a48",
-        "Балкан":     "#52796f",
-        "Европа":     "#4d908e",
-        "Америка":    "#577590",
-        "Свет":       "#6d597a",
-        "Спорт":      "#c77d36",
-        "Технологија":"#495057",
-        "Економија":  "#588157",
-        "default":    "#6c757d"
+        "Македонија": "#a63d40",
+        "Балкан": "#3d6b63",
+        "Европа": "#3f7d8a",
+        "Америка": "#3e6282",
+        "Свет": "#5f556f",
+        "Спорт": "#b36b24",
+        "Технологија": "#3e4954",
+        "Економија": "#456a4f",
+        "default": "#5f6470",
     }
 
     bg_color = colors.get(category, colors["default"])
@@ -534,7 +548,7 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
             .replace('"', "&quot;")
         )
 
-    def wrap_lines(text, max_chars=24, max_lines=4):
+    def wrap_lines(text, max_chars=22, max_lines=4):
         if not text:
             return ["Преглед на веста"]
         words = text.split()
@@ -560,45 +574,52 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
 
     lines = wrap_lines(title)
     title_svg = []
-    y = 168
+    y = 176
     for line in lines:
         title_svg.append(
-            f'<text x="56" y="{y}" font-family="Georgia, \'Times New Roman\', serif" '
-            f'font-size="52" font-weight="700" letter-spacing="-1.2" fill="#172033">{escape(line)}</text>'
+            f'<text x="58" y="{y}" font-family="Georgia, \'Times New Roman\', serif" '
+            f'font-size="47" font-weight="700" letter-spacing="-1.15" fill="#162132">{escape(line)}</text>'
         )
-        y += 58
+        y += 54
 
     subtitle = f"{category.upper()} / ПРЕСЕК"
-    pattern_seed = len(title) % 3
+    pattern_seed = len(title) % 4
     pattern_svg = [
-        '<circle cx="705" cy="82" r="118" fill="#fffdf7" fill-opacity="0.2" />',
-        '<path d="M560 40 L790 40 L640 220 Z" fill="#fffdf7" fill-opacity="0.18" />',
-        '<rect x="560" y="28" width="200" height="170" rx="24" fill="#fffdf7" fill-opacity="0.16" />',
+        '<circle cx="690" cy="84" r="112" fill="#fffdf7" fill-opacity="0.24" /><circle cx="612" cy="148" r="42" fill="#fffdf7" fill-opacity="0.18" />',
+        '<path d="M558 44 L770 44 L636 214 Z" fill="#fffdf7" fill-opacity="0.18" /><rect x="598" y="108" width="140" height="12" fill="#162132" fill-opacity="0.12" />',
+        '<rect x="564" y="40" width="188" height="166" rx="28" fill="#fffdf7" fill-opacity="0.17" /><circle cx="648" cy="122" r="58" fill="#162132" fill-opacity="0.08" />',
+        '<path d="M566 62 C612 26, 710 26, 752 78 C706 116, 614 122, 566 62 Z" fill="#fffdf7" fill-opacity="0.18" /><rect x="584" y="134" width="160" height="46" fill="#fffdf7" fill-opacity="0.12" />',
     ][pattern_seed]
 
     svg = f"""<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fcfbf7" />
+      <stop offset="0%" stop-color="#f8f2e7" />
+      <stop offset="58%" stop-color="#fdfbf7" />
       <stop offset="100%" stop-color="{bg_color}" />
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#162132" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#314055" stop-opacity="0.72" />
     </linearGradient>
   </defs>
 
   <rect width="100%" height="100%" fill="url(#bg)" />
-  <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.28" />
-  <rect x="28" y="28" width="744" height="394" fill="none" stroke="#1f2937" stroke-opacity="0.12" />
-  <rect x="40" y="40" width="720" height="370" fill="#fffdf9" fill-opacity="0.34" />
-  <rect x="56" y="56" width="66" height="26" fill="#1f2937" fill-opacity="0.9" />
-  <text x="89" y="74" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" fill="#fffdf7">{escape(category.upper())}</text>
-  <text x="56" y="112" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="2.2" fill="#334155" fill-opacity="0.78">{escape(subtitle)}</text>
-  <line x1="56" y1="126" x2="164" y2="126" stroke="#334155" stroke-opacity="0.55" stroke-width="3" />
+  <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.18" />
+  <rect x="26" y="26" width="748" height="398" fill="none" stroke="#162132" stroke-opacity="0.12" />
+  <rect x="42" y="42" width="716" height="366" fill="#fffdf9" fill-opacity="0.42" />
+  <rect x="58" y="58" width="80" height="28" fill="url(#ink)" />
+  <text x="98" y="77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="1.2" fill="#fffdf7">{escape(category.upper())}</text>
+  <text x="58" y="114" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" letter-spacing="2.8" fill="#314055" fill-opacity="0.82">{escape(subtitle)}</text>
+  <line x1="58" y1="130" x2="190" y2="130" stroke="#314055" stroke-opacity="0.5" stroke-width="2.5" />
+  <text x="58" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="{bg_color}" fill-opacity="0.85">ПОДРЕДЕНО ПО ЗНАЧЕЊЕ, ИЗВОРИ И КОНТЕКСТ</text>
 
   {"".join(title_svg)}
 
   <g>
     {pattern_svg}
   </g>
-
-  <text x="744" y="392" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" letter-spacing="2.5" fill="#1f2937" fill-opacity="0.42">GENERATED COVER</text>
+  <line x1="58" y1="372" x2="744" y2="372" stroke="#162132" stroke-opacity="0.12" />
+  <text x="58" y="394" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="2.1" fill="#162132" fill-opacity="0.42">ПРЕСЕК ДИГИТАЛЕН ПРЕГЛЕД</text>
 </svg>"""
     return svg

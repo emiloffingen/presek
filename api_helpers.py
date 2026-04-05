@@ -12,6 +12,62 @@ from typing import Optional
 from local_nlp import build_citation_snippet, TAG_NOISE_WORDS
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
+_GENERIC_ANGLES = {"перспектива", "агол", "точка", "став", "гледиште"}
+
+
+def _clean_text_block(value) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).replace("```", "")
+    text = re.sub(r"^\s*(summary|резиме|сублимат|статии)\s*:\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _infer_perspective_angle(content: str, fallback: str = "Клучен агол") -> str:
+    lowered = content.lower()
+    if any(token in lowered for token in ("разлик", "акцент", "формулац", "наглас")):
+        return "Различни акценти"
+    if any(token in lowered for token in ("заеднич", "повеќето извори", "иста линија", "сите извори")):
+        return "Заедничка линија"
+    if any(token in lowered for token in ("отворено", "нејас", "непотвр", "сè уште не", "останува")):
+        return "Што останува отворено"
+    if any(token in lowered for token in ("реакц", "одговор", "коментар", "осуд")):
+        return "Реакции"
+    if any(token in lowered for token in ("контекст", "позадин", "поширок")):
+        return "Поширок контекст"
+    return fallback
+
+
+def normalize_summary_text(raw_summary) -> str:
+    if not raw_summary:
+        return ""
+
+    text = str(raw_summary).replace("\r", "\n")
+    lines = []
+    seen = set()
+
+    for raw_line in text.split("\n"):
+        clean = _clean_text_block(raw_line)
+        if not clean:
+            continue
+        if clean.lower() == "статии:":
+            continue
+        key = clean.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        lines.append(clean)
+
+    if not lines:
+        return ""
+
+    if len(lines) == 1:
+        return lines[0]
+
+    return "\n".join(f"• {line}" for line in lines[:4])
 
 
 def normalize_perspectives(raw_perspectives) -> list[dict]:
@@ -34,32 +90,43 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
         return []
 
     result = []
+    seen = set()
     for item in raw_perspectives:
         if isinstance(item, str):
-            content = item.strip()
+            content = _clean_text_block(item)
             if content:
-                result.append({"angle": "Перспектива", "content": content})
+                angle = _infer_perspective_angle(content)
+                key = content.casefold()
+                if key not in seen:
+                    seen.add(key)
+                    result.append({"angle": angle, "content": content})
             continue
         if not isinstance(item, dict):
             continue
-        angle = str(
+        angle = _clean_text_block(
             item.get("angle")
             or item.get("label")
             or item.get("title")
             or item.get("name")
             or ""
-        ).strip()
-        content = str(
+        )
+        content = _clean_text_block(
             item.get("content")
             or item.get("text")
             or item.get("description")
             or ""
-        ).strip()
-        if not angle and not content:
+        )
+        if not content:
             continue
-        result.append({"angle": angle or "Перспектива", "content": content})
+        if not angle or angle.casefold() in _GENERIC_ANGLES:
+            angle = _infer_perspective_angle(content)
+        key = content.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append({"angle": angle or "Клучен агол", "content": content})
 
-    return result
+    return result[:4]
 
 
 def default_related_questions(question: str, category: Optional[str] = None) -> list[str]:
@@ -71,6 +138,40 @@ def default_related_questions(question: str, category: Optional[str] = None) -> 
     if category:
         fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
     return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
+
+
+def related_questions_from_context(
+    question: str,
+    category: Optional[str] = None,
+    *,
+    has_perspectives: bool = False,
+    has_multiple_sources: bool = False,
+    has_unclear_points: bool = False,
+) -> list[str]:
+    suggestions = []
+    lowered = (question or "").strip().lower()
+
+    def add(text: str):
+        text = str(text or "").strip()
+        if text and text.casefold() != lowered and text not in suggestions:
+            suggestions.append(text)
+
+    if not any(token in lowered for token in ("разлику", "извор", "перспектив")) and (has_perspectives or has_multiple_sources):
+        add("Како се разликуваат изворите во известувањето?")
+    if not any(token in lowered for token in ("нејас", "непотвр", "отворено")):
+        add("Што останува нејасно или непотврдено?")
+    if not any(token in lowered for token in ("следно", "понатаму", "последиц", "реакц")):
+        add("Што следува понатаму во оваа приказна?")
+    if has_multiple_sources and not any(token in lowered for token in ("најваж", "ново", "главно")):
+        add("Што е најважното ново во оваа вест?")
+
+    for item in default_related_questions(question, category):
+        add(item)
+
+    if has_unclear_points:
+        add("Кои детали сè уште зависат од следни потврди?")
+
+    return suggestions[:3]
 
 
 def text_terms(text: str) -> set[str]:
