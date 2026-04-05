@@ -10,11 +10,20 @@ const decodedName = decodeURIComponent(name || "");
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
 
 let clusters = [];
+let entityData = null;
 let error = null;
 
 try {
-    const res = await fetch(`${API_URL}/news?entity=${encodeURIComponent(decodedName)}&page_size=10`);
-    const data = await res.json();
+    const [entityRes, newsRes] = await Promise.all([
+        fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(decodedName)}`),
+        fetch(`${API_URL}/news?entity=${encodeURIComponent(decodedName)}&page_size=10`)
+    ]);
+
+    if (entityRes.ok) {
+        entityData = await entityRes.json();
+    }
+
+    const data = await newsRes.json();
     clusters = data.clusters || [];
 } catch (e) {
     console.error(e);
@@ -26,12 +35,12 @@ try {
 
 	<main class="site-layout py-12">
         <div class="entity-shell">
-            <EntityIsland client:load name={decodedName} />
+            <EntityIsland name={decodedName} initialClusters={clusters} initialData={entityData} />
 
             <section class="entity-news">
                 <div class="entity-news-head">
-                    <h2>Најнови Кластери</h2>
-                    <p>Сите неодамнешни стории каде се појавува овој ентитет.</p>
+                    <h2>Сите Неодамнешни Кластери</h2>
+                    <p>Подолу се сите свежи стории каде {decodedName} влегува како дел од развојот, контекстот или поврзаната мрежа.</p>
                 </div>
                 <div class="news-feed-grid">
                     {clusters.map((cluster: any) => (
