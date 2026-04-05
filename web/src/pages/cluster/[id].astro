@@ -187,6 +187,8 @@ const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => artic
 const summaryCardText =
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`;
+const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
+const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
 ---
 
 <Layout title={cluster ? cluster.articles[0].title : "Детали за вест"}>
@@ -226,6 +228,16 @@ const summaryCardText =
 								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извори</span>
 								<span>·</span>
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
+								{synthesisUpdatedAt && (
+									<>
+										<span>·</span>
+										<span class:list={["cluster-refresh-badge", synthesisFreshness.is_stale ? "is-stale" : "is-fresh"]}>
+											{synthesisFreshness.is_stale
+												? "Ново известување по синтезата"
+												: `Синтеза ажурирана ${getRelativeTimeStr(synthesisUpdatedAt)}`}
+										</span>
+									</>
+								)}
 							</div>
 						</div>
 
@@ -236,6 +248,13 @@ const summaryCardText =
 								{sourcePreview.length > 0 && (
 									<p class="cluster-summary-sources">
 										<span>Извори:</span> {sourcePreview.join(' · ')}
+									</p>
+								)}
+								{synthesisUpdatedAt && (
+									<p class:list={["cluster-summary-update", synthesisFreshness.is_stale ? "is-stale" : ""]}>
+										{synthesisFreshness.is_stale
+											? `${synthesisFreshness.new_article_count || 1} нови извештаи се појавиле по последната синтеза.`
+											: `Последна синтеза: ${getRelativeTimeStr(synthesisUpdatedAt)}.`}
 									</p>
 								)}
 							</div>
@@ -427,6 +446,28 @@ const summaryCardText =
 		color: var(--muted-foreground);
 	}
 
+	.cluster-refresh-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.2rem 0.45rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.cluster-refresh-badge.is-fresh {
+		color: var(--nyt-accent);
+		border-color: color-mix(in srgb, var(--nyt-accent) 38%, var(--border) 62%);
+	}
+
+	.cluster-refresh-badge.is-stale {
+		color: var(--nyt-red);
+		border-color: color-mix(in srgb, var(--nyt-red) 38%, var(--border) 62%);
+	}
+
 	.cluster-grid {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -490,6 +531,22 @@ const summaryCardText =
 
 	.cluster-summary-sources span {
 		color: var(--foreground);
+	}
+
+	.cluster-summary-update {
+		margin: 0.8rem 0 0;
+		padding-top: 0.8rem;
+		border-top: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.cluster-summary-update.is-stale {
+		color: var(--nyt-red);
 	}
 
 	.cluster-synthesis {

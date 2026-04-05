@@ -211,6 +211,140 @@ def score_cluster_for_synthesis(arts):
     return base_score * source_bonus * context_bonus * disagreement_bonus
 
 
+def _coerce_datetime(value):
+    if isinstance(value, datetime.datetime):
+        return value.replace(tzinfo=None) if value.tzinfo else value
+    if not value:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00").replace("+00:00", ""))
+    except Exception:
+        return None
+
+
+def _number_tokens(text: str) -> set[str]:
+    import re
+    return set(re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", str(text or "")))
+
+
+def _title_overlap(left: str, right: str) -> float:
+    left_terms = {token for token in str(left or "").lower().split() if len(token) >= 4}
+    right_terms = {token for token in str(right or "").lower().split() if len(token) >= 4}
+    union = len(left_terms | right_terms) or 1
+    return len(left_terms & right_terms) / union
+
+
+def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
+    """
+    Decide whether an existing synthesis should be refreshed based on
+    meaningful cluster changes after the last synthesis time.
+    """
+    if not arts:
+        return {
+            "has_synthesis": bool(synthesis_created_at),
+            "refresh_needed": False,
+            "is_stale": False,
+            "freshness_score": 0.0,
+            "reasons": [],
+            "new_article_count": 0,
+            "latest_article_at": None,
+            "synthesis_updated_at": _coerce_datetime(synthesis_created_at),
+        }
+
+    ranked = rank_articles_in_cluster(arts)
+    synthesis_dt = _coerce_datetime(synthesis_created_at)
+    latest_article_at = max((_coerce_datetime(a.get("created_at")) for a in ranked), default=None)
+
+    if not synthesis_dt:
+        return {
+            "has_synthesis": False,
+            "refresh_needed": True,
+            "is_stale": False,
+            "freshness_score": 10.0,
+            "reasons": ["missing_synthesis"],
+            "new_article_count": len(ranked),
+            "latest_article_at": latest_article_at,
+            "synthesis_updated_at": None,
+        }
+
+    newer_articles = []
+    older_articles = []
+    for article in ranked:
+        article_dt = _coerce_datetime(article.get("created_at"))
+        if article_dt and article_dt > synthesis_dt:
+            newer_articles.append(article)
+        else:
+            older_articles.append(article)
+
+    if not newer_articles:
+        return {
+            "has_synthesis": True,
+            "refresh_needed": False,
+            "is_stale": False,
+            "freshness_score": 0.0,
+            "reasons": [],
+            "new_article_count": 0,
+            "latest_article_at": latest_article_at,
+            "synthesis_updated_at": synthesis_dt,
+        }
+
+    score = 0.0
+    reasons = []
+
+    newer_sources = {a.get("source") for a in newer_articles if a.get("source")}
+    older_sources = {a.get("source") for a in older_articles if a.get("source")}
+    net_new_sources = sorted(source for source in newer_sources if source not in older_sources)
+    if net_new_sources:
+        score += min(1.6, 0.9 + len(net_new_sources) * 0.35)
+        reasons.append("new_sources")
+
+    newer_numbers = set()
+    older_numbers = set()
+    for article in newer_articles:
+        newer_numbers |= _number_tokens(" ".join([str(article.get("title") or ""), str(article.get("description") or "")]))
+    for article in older_articles:
+        older_numbers |= _number_tokens(" ".join([str(article.get("title") or ""), str(article.get("description") or "")]))
+    if newer_numbers - older_numbers:
+        score += 0.95
+        reasons.append("new_numbers")
+
+    if older_articles:
+        newest_title = str(newer_articles[0].get("title") or "")
+        baseline_title = str(older_articles[0].get("title") or "")
+        if newest_title and baseline_title and _title_overlap(newest_title, baseline_title) < 0.26:
+            score += 0.85
+            reasons.append("new_angle")
+
+    if len(newer_articles) >= 2:
+        score += 0.45
+        reasons.append("multiple_new_reports")
+
+    high_weight_new_source = any(get_source_effective_weight(str(article.get("source") or "")) >= 1.45 for article in newer_articles)
+    if high_weight_new_source:
+        score += 0.55
+        reasons.append("credible_new_reporting")
+
+    current_score = score_cluster_for_synthesis(ranked)
+    if current_score >= 3.5:
+        score += 0.35
+        reasons.append("high_priority_cluster")
+
+    age_minutes = max(0.0, ((latest_article_at or synthesis_dt) - synthesis_dt).total_seconds() / 60.0)
+    cooldown_active = age_minutes < 20 and len(newer_articles) == 1 and not net_new_sources and not (newer_numbers - older_numbers)
+    refresh_needed = score >= 1.2 and not cooldown_active
+
+    return {
+        "has_synthesis": True,
+        "refresh_needed": refresh_needed,
+        "is_stale": refresh_needed,
+        "freshness_score": round(score, 3),
+        "reasons": reasons,
+        "new_article_count": len(newer_articles),
+        "latest_article_at": latest_article_at,
+        "synthesis_updated_at": synthesis_dt,
+    }
+
+
 def rank_articles_in_cluster(arts):
     """Within a cluster, put the most credible source first."""
     return sorted(

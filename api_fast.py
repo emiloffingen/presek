@@ -13,7 +13,7 @@ from collections import defaultdict
 from database import db_manager as db
 from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time, 
-    cached_response, set_cache, is_balanced
+    cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
@@ -361,13 +361,14 @@ async def get_cluster_detail(cluster_id: str):
 
         # 2. Fetch synthesis and perspectives
         s_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", 
+            "SELECT summary, perspectives, created_at FROM cluster_summaries WHERE cluster_id = %s", 
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
         perspectives = s_row["perspectives"] if s_row and s_row["perspectives"] else []
         if isinstance(perspectives, str):
             perspectives = json.loads(perspectives)
+        freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         # 3. Fetch metadata (tags, etc)
         m_row = db.execute_one(
@@ -400,6 +401,12 @@ async def get_cluster_detail(cluster_id: str):
                 "cluster_id": cluster_id,
                 "articles": articles,
                 "synthesis": synthesis,
+                "synthesis_updated_at": freshness["synthesis_updated_at"],
+                "synthesis_freshness": {
+                    "is_stale": freshness["is_stale"],
+                    "new_article_count": freshness["new_article_count"],
+                    "reasons": freshness["reasons"],
+                },
                 "perspectives": perspectives,
                 "tags": tags,
                 "topics": topics,

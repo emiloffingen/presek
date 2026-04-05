@@ -12,7 +12,7 @@ from collections import defaultdict
 from flask import Blueprint, jsonify, request, Response
 from database import db_manager as db
 from ai_engine import sync_call_ai as _call_ai, clean_json_response
-from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
+from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced, assess_cluster_synthesis_freshness
 from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN, CURATED_INTERNATIONAL_SOURCES
 from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from embeddings import generate_query_embedding
@@ -595,11 +595,12 @@ def api_cluster_detail(cluster_id):
 
         # 2. Fetch synthesis and perspectives
         s_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", 
+            "SELECT summary, perspectives, created_at FROM cluster_summaries WHERE cluster_id = %s", 
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
         perspectives = normalize_perspectives(s_row["perspectives"] if s_row and s_row["perspectives"] else [])
+        freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         # 3. Fetch metadata (tags, etc)
         m_row = db.execute_one(
@@ -630,6 +631,12 @@ def api_cluster_detail(cluster_id):
             "cluster_id": cluster_id,
             "articles": articles,
             "synthesis": synthesis,
+            "synthesis_updated_at": freshness["synthesis_updated_at"],
+            "synthesis_freshness": {
+                "is_stale": freshness["is_stale"],
+                "new_article_count": freshness["new_article_count"],
+                "reasons": freshness["reasons"],
+            },
             "perspectives": perspectives,
             "tags": tags,
             "topics": topics,

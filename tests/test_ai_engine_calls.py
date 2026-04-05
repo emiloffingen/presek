@@ -1,6 +1,8 @@
 """Tests for AI engine API call functions with mocked HTTP requests."""
 import pytest
 import json
+import sys
+import types
 from unittest.mock import patch, MagicMock
 from io import BytesIO
 
@@ -267,3 +269,105 @@ class TestGenerateCoverArt:
 
         assert result == "/static/generated/abc123.svg"
         mock_log.warning.assert_called()
+
+
+class TestAutoSummarizeTopClusters:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_refreshes_cluster_when_existing_synthesis_is_stale(self, _mock_health):
+        import ai_engine
+        import datetime
+
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "id": 1,
+                "cluster_id": "cluster1",
+                "source": "MIA",
+                "title": "Владата најави пакет од 100 милиони",
+                "description": "Прв извештај.",
+                "created_at": now - datetime.timedelta(hours=2, minutes=30),
+                "summary": "Постоечко резиме",
+            },
+            {
+                "id": 2,
+                "cluster_id": "cluster1",
+                "source": "Reuters",
+                "title": "Reuters пишува за 120 милиони и нов рок",
+                "description": "Нов извор и различна бројка.",
+                "created_at": now - datetime.timedelta(minutes=20),
+                "summary": "",
+            },
+        ]
+
+        mock_db = MagicMock()
+        mock_db.execute.side_effect = [
+            rows,
+            [{"cluster_id": "cluster1", "created_at": now - datetime.timedelta(hours=2)}],
+        ]
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = True
+        summarize_delay = MagicMock()
+        synthesize_delay = MagicMock()
+        fake_tasks = types.SimpleNamespace(
+            summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+        )
+
+        with patch("database.db_manager", mock_db), \
+             patch("utils.redis_client", mock_redis), \
+             patch.dict(sys.modules, {"tasks": fake_tasks}), \
+             patch("config.AUTO_SUMMARIZE_TOP_N", 5), \
+             patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
+            ai_engine.auto_summarize_top_clusters()
+
+        synthesize_delay.assert_called_once()
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_does_not_refresh_minor_recent_followup(self, _mock_health):
+        import ai_engine
+        import datetime
+
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "id": 1,
+                "cluster_id": "cluster2",
+                "source": "MIA",
+                "title": "Трамп најави царини",
+                "description": "Прв извештај.",
+                "created_at": now - datetime.timedelta(minutes=18),
+                "summary": "Постоечко резиме",
+            },
+            {
+                "id": 2,
+                "cluster_id": "cluster2",
+                "source": "MIA",
+                "title": "Трамп најави царини за увоз",
+                "description": "Мало дополнување.",
+                "created_at": now - datetime.timedelta(minutes=5),
+                "summary": "",
+            },
+        ]
+
+        mock_db = MagicMock()
+        mock_db.execute.side_effect = [
+            rows,
+            [{"cluster_id": "cluster2", "created_at": now - datetime.timedelta(minutes=10)}],
+        ]
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = True
+        summarize_delay = MagicMock()
+        synthesize_delay = MagicMock()
+        fake_tasks = types.SimpleNamespace(
+            summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+        )
+
+        with patch("database.db_manager", mock_db), \
+             patch("utils.redis_client", mock_redis), \
+             patch.dict(sys.modules, {"tasks": fake_tasks}), \
+             patch("config.AUTO_SUMMARIZE_TOP_N", 5), \
+             patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
+            ai_engine.auto_summarize_top_clusters()
+
+        synthesize_delay.assert_not_called()

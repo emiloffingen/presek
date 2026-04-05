@@ -2,7 +2,13 @@ import pytest
 import datetime
 import math
 from unittest.mock import patch, MagicMock
-from utils import score_cluster, score_cluster_for_synthesis, rank_articles_in_cluster, get_source_effective_weight
+from utils import (
+    score_cluster,
+    score_cluster_for_synthesis,
+    rank_articles_in_cluster,
+    get_source_effective_weight,
+    assess_cluster_synthesis_freshness,
+)
 
 
 def _make_article(source="MIA", created_at=None, clicks=0):
@@ -195,3 +201,82 @@ class TestSourceEffectiveWeight:
     @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.2}})
     def test_effective_weight_uses_health_multiplier(self, _mock_health):
         assert get_source_effective_weight("MIA") < 2.0
+
+
+class TestSynthesisFreshness:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_missing_synthesis_requests_refresh(self, _mock_health):
+        arts = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави нови царини",
+                "description": "Прв извештај со главниот развој.",
+            },
+            {
+                **_make_article("Reuters"),
+                "title": "Реакции по најавата на Трамп",
+                "description": "Втор извор со контекст.",
+            },
+        ]
+
+        result = assess_cluster_synthesis_freshness(arts, None)
+
+        assert result["refresh_needed"] is True
+        assert "missing_synthesis" in result["reasons"]
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_no_new_articles_keeps_synthesis_fresh(self, _mock_health):
+        created_at = datetime.datetime.now() - datetime.timedelta(minutes=30)
+        arts = [
+            {**_make_article("MIA", created_at=created_at), "title": "Трамп најави царини", "description": "Опис."},
+            {**_make_article("Reuters", created_at=created_at), "title": "Реакции на царините", "description": "Опис."},
+        ]
+
+        result = assess_cluster_synthesis_freshness(arts, created_at)
+
+        assert result["refresh_needed"] is False
+        assert result["new_article_count"] == 0
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_new_source_and_numbers_mark_cluster_stale(self, _mock_health):
+        synthesis_time = datetime.datetime.now() - datetime.timedelta(hours=2)
+        old_time = synthesis_time - datetime.timedelta(minutes=30)
+        new_time = synthesis_time + datetime.timedelta(minutes=25)
+        arts = [
+            {
+                **_make_article("MIA", created_at=old_time),
+                "title": "Владата најави пакет од 100 милиони",
+                "description": "Прв извештај за пакетот.",
+            },
+            {
+                **_make_article("Reuters", created_at=new_time),
+                "title": "Reuters пишува за 120 милиони и нов рок",
+                "description": "Се додава друга бројка и нов извор.",
+            },
+        ]
+
+        result = assess_cluster_synthesis_freshness(arts, synthesis_time)
+
+        assert result["refresh_needed"] is True
+        assert "new_sources" in result["reasons"]
+        assert "new_numbers" in result["reasons"]
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_single_quick_followup_does_not_force_refresh_in_cooldown(self, _mock_health):
+        synthesis_time = datetime.datetime.now() - datetime.timedelta(minutes=10)
+        arts = [
+            {
+                **_make_article("MIA", created_at=synthesis_time - datetime.timedelta(minutes=5)),
+                "title": "Трамп најави царини",
+                "description": "Прв извештај.",
+            },
+            {
+                **_make_article("MIA", created_at=synthesis_time + datetime.timedelta(minutes=4)),
+                "title": "Трамп најави царини за увоз",
+                "description": "Мало дополнување без нов извор.",
+            },
+        ]
+
+        result = assess_cluster_synthesis_freshness(arts, synthesis_time)
+
+        assert result["refresh_needed"] is False

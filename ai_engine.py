@@ -420,7 +420,12 @@ def _download_safe_external_image(url: str, headers: dict[str, str], timeout: in
 
 def auto_summarize_top_clusters():
     from tasks import summarize_article_task, synthesize_cluster_task
-    from utils import redis_client, score_cluster_for_synthesis, rank_articles_in_cluster
+    from utils import (
+        redis_client,
+        score_cluster_for_synthesis,
+        rank_articles_in_cluster,
+        assess_cluster_synthesis_freshness,
+    )
     from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
     from database import db_manager as db
     try:
@@ -434,6 +439,11 @@ def auto_summarize_top_clusters():
             s = score_cluster_for_synthesis(sorted_arts)
             ranked.append((cid, sorted_arts, s))
         ranked.sort(key=lambda x: x[2], reverse=True)
+        summary_rows = db.execute(
+            "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            ([item[0] for item in ranked[:AUTO_SUMMARIZE_TOP_N]],)
+        ) if ranked else []
+        summary_map = {row["cluster_id"]: row for row in summary_rows}
         for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
             lead = arts[0]
             if not lead.get("summary"):
@@ -442,7 +452,11 @@ def auto_summarize_top_clusters():
                     summarize_article_task.delay(lead["id"], lead["title"])
             unique_sources = {a["source"] for a in arts}
             if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
-                if not db.get_synthesis_ids([cid]):
+                freshness = assess_cluster_synthesis_freshness(
+                    arts,
+                    (summary_map.get(cid) or {}).get("created_at"),
+                )
+                if freshness["refresh_needed"]:
                     dedup_key = f"task:synthesize:{cid}"
                     if redis_client.set(dedup_key, 1, nx=True, ex=600):
                         lines = [f"- [{a['source']}]: {a['title']}" for a in arts[:12]]
