@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildDeliveryDigest,
   buildPersonalizedClusters,
   createEmptyProfile,
   hasPersonalizationSignal,
+  loadDeliveryPreferences,
   recordClusterView,
+  toggleDeliveryPreference,
   toggleFollowedValue,
 } from './personalization.js';
 
@@ -107,3 +110,29 @@ test('hasPersonalizationSignal reflects reader activity or follows', () => {
   );
 });
 
+test('toggleDeliveryPreference flips briefing delivery settings', () => {
+  const storage = makeStorage();
+  const first = toggleDeliveryPreference('morningBriefing', storage);
+  assert.equal(first.morningBriefing, false);
+
+  const loaded = loadDeliveryPreferences(storage);
+  assert.equal(loaded.morningBriefing, false);
+});
+
+test('buildDeliveryDigest reflects follows and briefing headings', () => {
+  const profile = {
+    recentClusters: [],
+    followedTopics: ['Политика'],
+    followedSources: ['Телма'],
+  };
+  const prefs = { morningBriefing: true, breakingAlerts: true };
+  const digest = buildDeliveryDigest(
+    '## Што го движи денот\n### 1. Собрание\n## Каде се разликува известувањето',
+    profile,
+    prefs
+  );
+
+  assert.match(digest, /Следени теми: Политика\./);
+  assert.match(digest, /Следени извори: Телма\./);
+  assert.match(digest, /• Што го движи денот/);
+});

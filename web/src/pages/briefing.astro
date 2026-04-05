@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import { Clock, Sparkles, BookOpen } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
@@ -110,6 +111,11 @@ function formatBriefing(content: string) {
 							<p class="rail-copy">
 								Системот ги групира сродните објави, ги споредува главните тврдења и составува синтетизиран преглед што можете брзо да го проверите преку изворите.
 							</p>
+					</div>
+
+					<div class="rail-card">
+						<h4 class="rail-card-title">Испорака И Известувања</h4>
+						<BriefingDeliveryIsland client:load content={briefing?.content || ''} dateLabel={currentDate} />
 					</div>
 				</aside>
 			</div>

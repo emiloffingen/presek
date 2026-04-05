@@ -1,6 +1,7 @@
 const PROFILE_KEY = 'presek_reader_profile_v1';
 const MAX_RECENT_CLUSTERS = 24;
 const MAX_FOLLOWED = 12;
+const DELIVERY_KEY = 'presek_delivery_prefs_v1';
 
 function normalizeValue(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -52,6 +53,50 @@ export function saveReaderProfile(profile, storage = globalThis?.localStorage) {
   };
   storage.setItem(PROFILE_KEY, JSON.stringify(normalized));
   return normalized;
+}
+
+export function createDefaultDeliveryPreferences() {
+  return {
+    morningBriefing: true,
+    breakingAlerts: true,
+    browserPermission: 'default',
+  };
+}
+
+export function loadDeliveryPreferences(storage = globalThis?.localStorage) {
+  if (!storage) return createDefaultDeliveryPreferences();
+  const parsed = safeParse(storage.getItem(DELIVERY_KEY));
+  return {
+    morningBriefing: parsed?.morningBriefing !== false,
+    breakingAlerts: parsed?.breakingAlerts !== false,
+    browserPermission: normalizeValue(parsed?.browserPermission) || 'default',
+  };
+}
+
+export function saveDeliveryPreferences(prefs, storage = globalThis?.localStorage) {
+  if (!storage) return prefs;
+  const normalized = {
+    morningBriefing: prefs?.morningBriefing !== false,
+    breakingAlerts: prefs?.breakingAlerts !== false,
+    browserPermission: normalizeValue(prefs?.browserPermission) || 'default',
+  };
+  storage.setItem(DELIVERY_KEY, JSON.stringify(normalized));
+  return normalized;
+}
+
+export function toggleDeliveryPreference(field, storage = globalThis?.localStorage) {
+  const prefs = loadDeliveryPreferences(storage);
+  if (field !== 'morningBriefing' && field !== 'breakingAlerts') {
+    return prefs;
+  }
+  prefs[field] = !prefs[field];
+  return saveDeliveryPreferences(prefs, storage);
+}
+
+export function setBrowserPermissionStatus(status, storage = globalThis?.localStorage) {
+  const prefs = loadDeliveryPreferences(storage);
+  prefs.browserPermission = normalizeValue(status) || 'default';
+  return saveDeliveryPreferences(prefs, storage);
 }
 
 export function toggleFollowedValue(kind, value, storage = globalThis?.localStorage) {
@@ -220,3 +265,34 @@ export function buildPersonalizedClusters(clusters, profile, limit = 4) {
   return (unseen.length > 0 ? unseen : scored).slice(0, limit);
 }
 
+export function buildDeliveryDigest(content, profile, prefs) {
+  const lines = String(content || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const headlineLines = lines
+    .filter((line) => line.startsWith('## ') || line.startsWith('### '))
+    .slice(0, 5)
+    .map((line) => line.replace(/^#{2,3}\s+/, ''));
+
+  const followedTopics = normalizeList(profile?.followedTopics).slice(0, 3);
+  const followedSources = normalizeList(profile?.followedSources).slice(0, 3);
+  const introBits = [];
+
+  if (prefs?.morningBriefing !== false) {
+    introBits.push('Вашиот дневен брифинг е подготвен.');
+  }
+  if (followedTopics.length > 0) {
+    introBits.push(`Следени теми: ${followedTopics.join(', ')}.`);
+  }
+  if (followedSources.length > 0) {
+    introBits.push(`Следени извори: ${followedSources.join(', ')}.`);
+  }
+
+  return [
+    ...introBits,
+    ...headlineLines.map((line) => `• ${line}`),
+  ].join('\n').trim();
+}
