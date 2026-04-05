@@ -300,6 +300,133 @@ def _extract_terms(text):
     ]
 
 
+def _extract_number_tokens(text):
+    return re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", str(text or ""))
+
+
+def _join_fragments(parts):
+    clean = [str(part or "").strip(" .,;:") for part in parts if str(part or "").strip(" .,;:")]
+    return "; ".join(clean)
+
+
+def compare_cluster_sources(articles):
+    articles = _normalize_articles_for_local_use(articles)
+    if not articles:
+        return {"common_line": "", "difference_points": [], "open_points": []}
+
+    uncertainty_markers = (
+        "тврди", "според", "непотвр", "навод", "се очекува", "може",
+        "би мож", "засега", "се уште", "се уште", "се развива",
+    )
+
+    all_terms = Counter()
+    article_term_sets = []
+    title_pairs = []
+    number_map = {}
+    uncertain_sources = []
+
+    for article in articles:
+        combined = " ".join([article["title"], article["description"]]).strip()
+        terms = set(_extract_terms(combined))
+        article_term_sets.append(terms)
+        all_terms.update(terms)
+
+        title = article["title"]
+        if title:
+            title_pairs.append((article["source"], title))
+
+        for number in _extract_number_tokens(combined):
+            number_map.setdefault(number, set()).add(article["source"])
+
+        lowered = combined.lower()
+        if any(marker in lowered for marker in uncertainty_markers):
+            uncertain_sources.append(article["source"])
+
+    threshold = max(2, math.ceil(len(articles) / 2))
+    common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold]
+    common_line = ""
+    if common_terms:
+        common_line = "Повеќето извори се согласуваат околу: " + ", ".join(common_terms[:4]) + "."
+
+    difference_points = []
+    unique_titles = []
+    seen_titles = set()
+    for source, title in title_pairs:
+        key = title.casefold()
+        if key in seen_titles:
+            continue
+        seen_titles.add(key)
+        unique_titles.append((source, title))
+    if len(unique_titles) >= 2:
+        lead_source, lead_title = unique_titles[0]
+        second_source, second_title = unique_titles[1]
+        difference_points.append(
+            f"{lead_source} најдиректно го формулира развојот како „{lead_title}“, додека {second_source} повеќе нагласува „{second_title}“."
+        )
+
+    conflicting_numbers = []
+    for number, sources in number_map.items():
+        if len(sources) >= 1:
+            conflicting_numbers.append((number, sorted(sources)))
+    distinct_numbers = [item for item in conflicting_numbers if len(item[1]) >= 1]
+    if len(distinct_numbers) >= 2:
+        top_numbers = []
+        for number, sources in distinct_numbers[:3]:
+            top_numbers.append(f"{number} ({', '.join(sources[:2])})")
+        difference_points.append(
+            "Изворите не ги нагласуваат истите бројки или рокови: " + ", ".join(top_numbers) + "."
+        )
+
+    if len(articles) >= 2 and article_term_sets:
+        exclusive_parts = []
+        first_terms = article_term_sets[0]
+        second_terms = article_term_sets[1]
+        first_unique = [term for term in first_terms if term not in second_terms][:2]
+        second_unique = [term for term in second_terms if term not in first_terms][:2]
+        if first_unique or second_unique:
+            if first_unique:
+                exclusive_parts.append(f"{articles[0]['source']} повеќе отвора: {', '.join(first_unique)}")
+            if second_unique:
+                exclusive_parts.append(f"{articles[1]['source']} повеќе отвора: {', '.join(second_unique)}")
+        if exclusive_parts:
+            difference_points.append(_join_fragments(exclusive_parts) + ".")
+
+    open_points = []
+    if uncertain_sources:
+        source_list = ", ".join(dict.fromkeys(uncertain_sources))
+        open_points.append(
+            f"Дел од тврдењата и понатаму се формулирани како развој во тек или непотврдена најава, особено кај {source_list}."
+        )
+    if len(number_map) >= 2:
+        open_points.append("Не е целосно јасно кои бројки, рокови или размери ќе останат конечни по следните потврди.")
+    if not open_points and len(articles) >= 2:
+        open_points.append("Главната линија е јасна, но следните чекори, реакциите и конечните последици сè уште се развиваат.")
+
+    deduped_differences = []
+    seen = set()
+    for item in difference_points:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped_differences.append(item)
+
+    deduped_open = []
+    seen = set()
+    for item in open_points:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped_open.append(item)
+
+    return {
+        "common_line": common_line,
+        "difference_points": deduped_differences[:3],
+        "open_points": deduped_open[:2],
+    }
+
+
 def synthesize_cluster_fallback(articles):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
@@ -309,6 +436,7 @@ def synthesize_cluster_fallback(articles):
     descriptions = [article["description"] for article in articles if article["description"]]
     combined_text = " ".join([lead["title"], *descriptions[:4]])
     context_summary = summarize_locally(combined_text, sentence_count=3).strip()
+    comparison = compare_cluster_sources(articles)
 
     summary_lines = [
         f"• Главен развој: {lead['title']}",
@@ -320,27 +448,22 @@ def synthesize_cluster_fallback(articles):
         summary_lines.append(f"• Што следи: {descriptions[0][:220].rstrip(' .,;:')}." )
 
     perspectives = []
-    if len(articles) >= 2:
-        focus = [f"{article['source']} го нагласува „{article['title']}“" for article in articles[:3]]
-        perspectives.append({
-            "angle": "Различни акценти",
-            "content": "; ".join(focus) + ".",
-        })
-
-    all_terms = Counter()
-    for article in articles:
-        all_terms.update(_extract_terms(" ".join([article["title"], article["description"]])))
-    common_terms = [term for term, _count in all_terms.most_common(4)]
-    if common_terms:
+    if comparison["common_line"]:
         perspectives.append({
             "angle": "Заедничка линија",
-            "content": "Повеќето извори се вртат околу: " + ", ".join(common_terms) + ".",
+            "content": comparison["common_line"],
         })
 
-    if descriptions:
+    if comparison["difference_points"]:
+        perspectives.append({
+            "angle": "Различни акценти",
+            "content": " ".join(comparison["difference_points"][:2]),
+        })
+
+    if comparison["open_points"]:
         perspectives.append({
             "angle": "Што останува отворено",
-            "content": "Достапните извори најмногу објаснуваат што се случило, но оставаат отворени детали за следните чекори и пошироките последици.",
+            "content": " ".join(comparison["open_points"]),
         })
 
     return {
@@ -380,6 +503,7 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
     lowered = question.lower()
     lead = articles[0]
     citations = articles[:2]
+    comparison = compare_cluster_sources(articles)
     related_questions = [
         "Како се разликуваат изворите во известувањето?",
         "Што сè уште не е потврдено?",
@@ -387,16 +511,16 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
     ]
 
     if any(token in lowered for token in ["разлику", "извори", "перспектив"]):
-        emphasis = [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
+        emphasis = comparison["difference_points"] or [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
         return {
-            "answer": "; ".join(emphasis) + ". Разликите најчесто се во аголот и формулацијата, а не во основниот настан.",
+            "answer": " ".join(emphasis[:2]) + " Разликите најчесто се во аголот, бројките или формулацијата, а не нужно во самиот основен настан.",
             "citations": citations,
             "related_questions": related_questions,
             "confidence": "medium",
         }
 
     if any(token in lowered for token in ["нејасно", "непотврдено", "отворено", "што не се знае"]):
-        answer = "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
+        answer = " ".join(comparison["open_points"][:2]) or "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
         if synthesis:
             answer = f"{answer} Тековниот преглед укажува дека: {summarize_locally(synthesis, sentence_count=1)}"
         return {
@@ -454,6 +578,7 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
     answer = str(answer or "").strip()
     articles = _normalize_articles_for_local_use(articles)
     perspectives = perspectives or []
+    comparison = compare_cluster_sources(articles)
 
     sentences = [
         sentence.strip()
@@ -479,7 +604,9 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
         confirmed_points = sentences[:2]
 
     if not unclear_points:
-        if perspectives:
+        if comparison["open_points"]:
+            unclear_points.extend(comparison["open_points"][:2])
+        elif perspectives:
             unclear_points.append("Изворите нудат различни акценти, но не даваат целосна слика за сите следни чекори.")
         elif synthesis:
             unclear_points.append("Достапниот контекст ја објаснува главната линија, но не ги затвора сите отворени детали.")
@@ -498,6 +625,9 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
                 top.append(content)
         if top:
             source_differences = " ".join(top)[:360]
+
+    if not source_differences and comparison["difference_points"]:
+        source_differences = " ".join(comparison["difference_points"])[:360]
 
     if not source_differences and len(articles) >= 2:
         lead = articles[0]

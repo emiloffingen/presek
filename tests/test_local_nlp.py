@@ -4,6 +4,9 @@ from local_nlp import (
     is_valid_focus_entity,
     summarize_article_fallback,
     build_structured_answer_sections,
+    compare_cluster_sources,
+    synthesize_cluster_fallback,
+    answer_cluster_question_locally,
 )
 
 
@@ -65,6 +68,98 @@ class TestStructuredAnswerSections:
         assert "МИА" in sections["source_differences"]
         assert "Reuters" in sections["source_differences"]
         assert "формулира развојот" in sections["source_differences"]
+
+    def test_source_differences_and_unclear_points_use_comparison_logic(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата најави пакет од 100 милиони евра",
+                "description": "Според Владата, мерките стапуваат од вторник.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Фокусот е на рокот и чекорите за пакетот",
+                "description": "Агенцијата наведува дека 120 милиони евра се спомнуваат како можен опфат.",
+            },
+        ]
+
+        sections = build_structured_answer_sections(
+            "Главниот развој е пакетот. Последиците сè уште не се сосема јасни.",
+            articles,
+            synthesis="",
+            perspectives=[],
+        )
+
+        assert "100" in sections["source_differences"] or "120" in sections["source_differences"]
+        assert sections["unclear_points"]
+        assert any("рокови" in item.lower() or "потврди" in item.lower() or "непотврд" in item.lower() for item in sections["unclear_points"])
+
+
+class TestClusterComparison:
+    def test_compare_cluster_sources_finds_common_line_and_differences(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Избори во вторник со 100 набљудувачи",
+                "description": "МИА тврди дека подготовките се во завршна фаза.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Фокусот е на реакциите и рокот за избори",
+                "description": "Reuters пишува за 120 набљудувачи и можни дополнителни мерки.",
+            },
+            {
+                "source": "AP",
+                "title": "Избори и реакции на опозицијата",
+                "description": "Се очекува дополнителна потврда за бројките.",
+            },
+        ]
+
+        result = compare_cluster_sources(articles)
+
+        assert result["common_line"]
+        assert result["difference_points"]
+        assert result["open_points"]
+        assert any("100" in item or "120" in item for item in result["difference_points"])
+
+    def test_synthesize_cluster_fallback_uses_comparison_output(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Пакетот влегува во владина процедура",
+                "description": "Според Владата, мерките почнуваат во среда.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Се уште не е потврдено кога точно ќе стартува пакетот.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles)
+
+        assert any(item["angle"] == "Различни акценти" for item in result["perspectives"])
+        assert any(item["angle"] == "Што останува отворено" for item in result["perspectives"])
+
+    def test_local_answers_use_comparison_for_differences_and_open_points(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата најави пакет од 100 милиони евра",
+                "description": "Мерките почнуваат во вторник.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Се очекува пакетот да изнесува 120 милиони евра.",
+            },
+        ]
+
+        diff_answer = answer_cluster_question_locally("Како се разликуваат изворите?", articles)
+        unclear_answer = answer_cluster_question_locally("Што е нејасно или непотврдено?", articles)
+
+        assert "100" in diff_answer["answer"] or "120" in diff_answer["answer"]
+        assert "потврд" in unclear_answer["answer"].lower() or "развива" in unclear_answer["answer"].lower()
 
 
 class TestArticleSummaryFallback:
