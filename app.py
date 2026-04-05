@@ -118,8 +118,8 @@ if not _secret_key:
     sys.exit(1)
 app.secret_key = _secret_key
 
-_cors_origins = os.environ.get("CORS_ORIGINS", "")
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()] or ["*"]
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}}, supports_credentials=True)
 Compress(app)
 # Trust exactly one proxy hop (reverse proxy / load balancer) for correct IP forwarding
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)

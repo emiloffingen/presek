@@ -23,11 +23,15 @@ from local_nlp import (
     normalize_tag_name,
     filter_cluster_tags,
     is_valid_focus_entity,
-    build_citation_snippet,
     build_structured_answer_sections,
-    TAG_NOISE_WORDS,
 )
 from health import _probe_database, _probe_redis
+from api_helpers import (
+    normalize_perspectives as _parse_perspectives_blob,
+    default_related_questions as _default_related_questions,
+    text_terms as _text_terms,
+    rank_cluster_citations as _rank_cluster_citations,
+)
 
 log = logging.getLogger("presek")
 
@@ -45,105 +49,6 @@ app.add_middleware(
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     return is_valid_focus_entity(name, entity_type)
-
-
-def _parse_perspectives_blob(raw_perspectives) -> list[dict]:
-    if not raw_perspectives:
-        return []
-    if isinstance(raw_perspectives, str):
-        try:
-            raw_perspectives = json.loads(raw_perspectives)
-        except Exception:
-            return []
-    if not isinstance(raw_perspectives, list):
-        return []
-
-    parsed = []
-    for item in raw_perspectives:
-        if isinstance(item, str):
-            content = item.strip()
-            if content:
-                parsed.append({"angle": "Перспектива", "content": content})
-            continue
-        if not isinstance(item, dict):
-            continue
-        angle = str(item.get("angle") or item.get("label") or "Перспектива").strip()
-        content = str(item.get("content") or item.get("text") or "").strip()
-        if content:
-            parsed.append({"angle": angle or "Перспектива", "content": content})
-    return parsed
-
-
-def _default_related_questions(question: str, category: Optional[str]) -> list[str]:
-    fallback = [
-        "Што е главниот развој во оваа приказна?",
-        "Како се разликуваат изворите во известувањето?",
-        "Што сè уште не е потврдено?",
-    ]
-    if category:
-        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
-    return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
-
-
-def _text_terms(text: str) -> set[str]:
-    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
-    return {
-        term for term in terms
-        if term not in TAG_NOISE_WORDS and term not in {"вести", "вест", "извор", "извори", "кластер"}
-    }
-
-
-def _rank_cluster_citations(question: str, answer: str, articles: list[dict], preferred_numbers: list) -> list[dict]:
-    question_terms = _text_terms(question)
-    answer_terms = _text_terms(answer)
-    combined_terms = question_terms | answer_terms
-
-    preferred_order = []
-    for raw in preferred_numbers:
-        try:
-            idx = int(raw)
-        except Exception:
-            continue
-        if idx not in preferred_order:
-            preferred_order.append(idx)
-
-    ranked = []
-    for idx, article in enumerate(articles, start=1):
-        article_text = " ".join([
-            str(article.get("title") or ""),
-            str(article.get("description") or ""),
-            str(article.get("source") or ""),
-        ])
-        article_terms = _text_terms(article_text)
-        overlap = len(combined_terms & article_terms)
-        preferred_bonus = 5 if idx in preferred_order else 0
-        title_bonus = 1 if question_terms & _text_terms(str(article.get("title") or "")) else 0
-        ranked.append((
-            preferred_bonus + overlap + title_bonus,
-            -idx,
-            {
-                "source": article.get("source"),
-                "title": article.get("title"),
-                "link": article.get("link"),
-                "created_at": article.get("created_at"),
-                "snippet": build_citation_snippet(article),
-            },
-        ))
-
-    ranked.sort(reverse=True)
-    top = [item[2] for item in ranked if item[0] > 0]
-    if top:
-        return top[:3]
-    return [
-        {
-            "source": article.get("source"),
-            "title": article.get("title"),
-            "link": article.get("link"),
-            "created_at": article.get("created_at"),
-            "snippet": build_citation_snippet(article),
-        }
-        for article in articles[:2]
-    ]
 
 @app.get("/api/health")
 async def health():
