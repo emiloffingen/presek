@@ -1,16 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../api/client';
-import { Search, Loader2, Info } from 'lucide-react';
+import { Search, Loader2, Info, ShieldCheck, Zap, Activity } from 'lucide-react';
 
-interface Source {
+interface SourceRow {
   source: string;
   country: string;
   category: string;
+  credibility: number;
+  effective_weight: number;
+  trust_tier: string;
+  recent_volume: number;
+  speed_first_count: number;
+  quality_score: number | null;
+  tendency: string;
+  is_active: boolean;
+  last_fetched?: string;
+  pause_mode?: string | null;
+  pause_reason?: string | null;
+}
+
+function tierClass(tier: string) {
+  if (tier === 'Висока доверба') return 'source-tier-high';
+  if (tier === 'Потврден извор') return 'source-tier-medium';
+  return 'source-tier-low';
+}
+
+function formatLastFetched(value?: string) {
+  if (!value) return 'Нема свеж сигнал';
+  try {
+    const date = new Date(value);
+    return date.toLocaleString('mk-MK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return 'Нема свеж сигнал';
+  }
 }
 
 export const IzvoriPage: React.FC = () => {
-  const [sources, setSources] = useState<Source[]>([]);
-  const [hotSources, setHotSources] = useState<string[]>([]);
+  const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,33 +44,15 @@ export const IzvoriPage: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [allRes, pulseRes] = await Promise.all([
-          apiClient.getSources(),
-          apiClient.getPulse()
-        ]);
-        
+        const allRes = await apiClient.getSources();
         if (!Array.isArray(allRes)) {
-          console.error("API returned non-array for sources:", allRes);
-          setError("Грешка при вчитување на податоците.");
+          setError('Грешка при вчитување на податоците.');
           return;
         }
-
-        // Deduplicate sources by name
-        const unique = allRes.reduce((acc: Source[], curr: any) => {
-          if (curr && curr.source && !acc.find(s => s.source === curr.source)) {
-            acc.push(curr);
-          }
-          return acc;
-        }, []);
-        
-        setSources(unique);
-        
-        if (Array.isArray(pulseRes)) {
-          setHotSources(pulseRes.map((r: any) => r.source));
-        }
-      } catch (e: any) {
-        console.error("Failed to load sources:", e);
-        setError("Неуспешно поврзување со серверот.");
+        setSources(allRes);
+      } catch (e) {
+        console.error('Failed to load sources:', e);
+        setError('Неуспешно поврзување со серверот.');
       } finally {
         setLoading(false);
       }
@@ -52,34 +60,70 @@ export const IzvoriPage: React.FC = () => {
     load();
   }, []);
 
-  const filtered = sources.filter(s => 
-    s.source?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return sources;
+    return sources.filter((source) => source.source?.toLowerCase().includes(q));
+  }, [sources, searchTerm]);
 
-  const mkSources = filtered.filter(s => s.country === '🇲🇰' || !s.country || s.country === 'Македонија');
-  const intSources = filtered.filter(s => s.country && s.country !== '🇲🇰' && s.country !== 'Македонија');
+  const mkSources = filtered.filter((s) => s.country === '🇲🇰' || !s.country || s.country === 'Македонија');
+  const intSources = filtered.filter((s) => s.country && s.country !== '🇲🇰' && s.country !== 'Македонија');
+  const highTrust = filtered.filter((s) => s.trust_tier === 'Висока доверба').length;
+  const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 5);
+
+  const renderSourceCard = (source: SourceRow) => (
+    <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card">
+      <div className="source-reputation-top">
+        <div>
+          <h3 className="source-reputation-name">{source.source}</h3>
+          <p className="source-reputation-meta">{source.category || 'Општо'} · {source.country || 'МК'}</p>
+        </div>
+        <span className={`source-tier ${tierClass(source.trust_tier)}`}>{source.trust_tier}</span>
+      </div>
+
+      <p className="source-reputation-copy">{source.tendency}</p>
+
+      <div className="source-reputation-stats">
+        <div>
+          <span>24ч обем</span>
+          <strong>{source.recent_volume}</strong>
+        </div>
+        <div>
+          <span>Прв на сторија</span>
+          <strong>{source.speed_first_count}</strong>
+        </div>
+        <div>
+          <span>Тежина</span>
+          <strong>{source.effective_weight.toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div className="source-reputation-footer">
+        <span>{formatLastFetched(source.last_fetched)}</span>
+        {!source.is_active && <span className="source-status-paused">Паузиран</span>}
+      </div>
+    </a>
+  );
 
   return (
     <div className="bg-background text-foreground">
       <div className="site-layout py-8">
         <header className="sources-header">
-            <span className="sources-kicker">Именик</span>
-            <h1 className="sources-headline">
-                Медиумски Извори
-            </h1>
-            <p className="sources-intro">
-              Преглед на изворите што Пресек ги следи и вклучува во дневната слика, со акцент на активноста и присуството во покривањето.
-            </p>
-            <div className="max-w-md mt-6 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Пребарај извори..."
-                className="w-full bg-secondary border border-border pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-nyt-accent transition-colors rounded-full"
-              />
-            </div>
+          <span className="sources-kicker">Репутација</span>
+          <h1 className="sources-headline">Медиумски Извори</h1>
+          <p className="sources-intro">
+            Преглед на изворите што Пресек ги следи, со довербен tier, дневен ритам, сигнал за брзина и присуство во покривањето.
+          </p>
+          <div className="max-w-md mt-6 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Пребарај извори..."
+              className="w-full bg-secondary border border-border pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-nyt-accent transition-colors rounded-full"
+            />
+          </div>
         </header>
 
         <div className="sources-grid">
@@ -87,54 +131,31 @@ export const IzvoriPage: React.FC = () => {
             {loading ? (
               <div className="flex flex-col items-center py-20">
                 <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-                <p className="nyt-section-label text-muted-foreground">Вчитувам именик...</p>
+                <p className="nyt-section-label text-muted-foreground">Вчитувам извори...</p>
               </div>
             ) : error ? (
               <div className="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
                 <p className="text-nyt-red font-serif italic mb-4">{error}</p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="nyt-section-label text-nyt-accent underline"
-                >
+                <button onClick={() => window.location.reload()} className="nyt-section-label text-nyt-accent underline">
                   Обидете се повторно
                 </button>
               </div>
             ) : (
               <div className="space-y-12">
                 <section className="sources-section">
-                    <h2 className="sources-section-title">Македонски Медиуми</h2>
-                    <div className="sources-list-grid">
-                        {mkSources.map(s => (
-                          <a 
-                            key={s.source}
-                            href={`/?q=${encodeURIComponent(s.source)}`}
-                            className="source-link"
-                          >
-                              {s.source}
-                              {hotSources.includes(s.source) && (
-                                  <span className="source-hot">АКТИВЕН</span>
-                              )}
-                          </a>
-                        ))}
-                        {mkSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
-                    </div>
+                  <h2 className="sources-section-title">Македонски Медиуми</h2>
+                  <div className="source-reputation-grid">
+                    {mkSources.map(renderSourceCard)}
+                    {mkSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
+                  </div>
                 </section>
 
                 <section className="sources-section">
-                    <h2 className="sources-section-title">Меѓународни Медиуми</h2>
-                    <div className="sources-list-grid">
-                        {intSources.map(s => (
-                          <a 
-                            key={s.source}
-                            href={`/?q=${encodeURIComponent(s.source)}`}
-                            className="source-link"
-                          >
-                              {s.source}
-                              <span className="source-country">{s.country}</span>
-                          </a>
-                        ))}
-                        {intSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
-                    </div>
+                  <h2 className="sources-section-title">Меѓународни Медиуми</h2>
+                  <div className="source-reputation-grid">
+                    {intSources.map(renderSourceCard)}
+                    {intSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
+                  </div>
                 </section>
               </div>
             )}
@@ -142,10 +163,33 @@ export const IzvoriPage: React.FC = () => {
 
           <aside className="sources-rail">
             <div className="rail-card">
-                <h3 className="rail-card-title flex items-center gap-2 mb-4"><Info size={14}/> Информација</h3>
-                <p className="rail-copy">
-                    Листата ги прикажува изворите што системот активно ги следи. Таа се ажурира како што се менуваат обемот, ритамот и присуството на медиумите во покривањето.
-                </p>
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldCheck size={14} /> Доверба</h3>
+              <p className="rail-copy">
+                Репутациските tiers ги комбинираат основната credibility оценка, моменталниот quality сигнал и реалното присуство во покривањето.
+              </p>
+              <div className="source-mini-stats">
+                <div><span>Висока доверба</span><strong>{highTrust}</strong></div>
+                <div><span>Вкупно извори</span><strong>{filtered.length}</strong></div>
+              </div>
+            </div>
+
+            <div className="rail-card rail-card-accent">
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><Zap size={14} /> Први На Приказната</h3>
+              <div className="source-fast-list">
+                {fastMovers.map((source) => (
+                  <div key={source.source} className="source-fast-row">
+                    <span>{source.source}</span>
+                    <strong>{source.speed_first_count}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rail-card">
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><Activity size={14} /> Како Да Се Чита</h3>
+              <p className="rail-copy">
+                Висока доверба не значи секогаш прв извор. Некои редакции први јавуваат, други подобро потврдуваат, а трети носат follow-up и реакција.
+              </p>
             </div>
           </aside>
         </div>

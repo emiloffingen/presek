@@ -18,7 +18,7 @@ from prompts import (
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
 from health import record_refresh, record_task_event
-from utils import rank_articles_in_cluster, score_cluster, redis_client, delete_cache, delete_cache_prefix
+from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix
 from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
@@ -68,6 +68,78 @@ def _normalize_cluster_synthesis(summary, perspectives, article_rows):
         clean_perspectives = fallback_perspectives
 
     return clean_summary, clean_perspectives
+
+
+def _load_daily_brief_clusters(limit=6):
+    rows = db.execute(
+        "SELECT cluster_id, title, description, summary, source, category, topic, created_at FROM articles "
+        "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 180"
+    )
+    clusters = {}
+    for row in rows:
+        clusters.setdefault(row["cluster_id"], []).append(row)
+
+    ranked_clusters = []
+    for cluster_id, articles in clusters.items():
+        ranked = rank_articles_in_cluster(articles)
+        if not ranked:
+            continue
+        lead = ranked[0]
+        synthesis_row = db.execute_one(
+            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+            (cluster_id,),
+        )
+        normalized_perspectives = normalize_perspectives((synthesis_row or {}).get("perspectives") or [])
+        open_point = ""
+        difference_point = ""
+        if normalized_perspectives:
+            for item in normalized_perspectives:
+                angle = str(item.get("angle") or "").lower()
+                content = str(item.get("content") or "").strip()
+                if not content:
+                    continue
+                if not difference_point and ("различ" in angle or "акцент" in angle):
+                    difference_point = content
+                if not open_point and ("отвор" in angle or "нејас" in angle):
+                    open_point = content
+        ranked_clusters.append({
+            "cluster_id": cluster_id,
+            "title": lead.get("title"),
+            "description": lead.get("summary") or lead.get("description") or "",
+            "source": lead.get("source"),
+            "category": lead.get("category"),
+            "topic": lead.get("topic"),
+            "created_at": lead.get("created_at"),
+            "source_count": len({a.get("source") for a in ranked if a.get("source")}),
+            "difference_point": difference_point,
+            "open_point": open_point,
+            "cluster_summary": (synthesis_row or {}).get("summary") or "",
+            "score": score_cluster_for_homepage(ranked),
+            "other_titles": [str(item.get("title") or "").strip() for item in ranked[1:4] if str(item.get("title") or "").strip()],
+        })
+
+    ranked_clusters.sort(key=lambda item: item["score"], reverse=True)
+    return ranked_clusters[:limit]
+
+
+def _build_daily_brief_context(clusters):
+    blocks = []
+    for index, cluster in enumerate(clusters[:6], start=1):
+        blocks.append(
+            "\n".join([
+                f"### Кластер {index}",
+                f"Наслов: {cluster.get('title') or ''}",
+                f"Категорија: {cluster.get('category') or cluster.get('topic') or 'Вести'}",
+                f"Водечки извор: {cluster.get('source') or 'Извор'}",
+                f"Број на извори: {cluster.get('source_count') or 1}",
+                f"Краток контекст: {cluster.get('description') or ''}",
+                f"Синтеза: {cluster.get('cluster_summary') or ''}",
+                f"Други агли: {' | '.join(cluster.get('other_titles') or [])}",
+                f"Разлики: {cluster.get('difference_point') or ''}",
+                f"Отворено: {cluster.get('open_point') or ''}",
+            ])
+        )
+    return "\n\n".join(blocks)
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
@@ -326,13 +398,10 @@ def recategorize_clusters_task():
 def generate_daily_brief_task(retry_attempt=0):
     """Generate the flagship morning briefing."""
     try:
-        rows = db.execute(
-            "SELECT cluster_id, title, description, source, category, topic, created_at FROM articles "
-            "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
-        )
-        context = "\n".join([f"- {r['title']}" for r in rows])
+        clusters = _load_daily_brief_clusters(limit=6)
+        context = _build_daily_brief_context(clusters)
         brief, _ = _call_ai(context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
-        final_brief = brief or generate_daily_brief_fallback(rows)
+        final_brief = brief or generate_daily_brief_fallback(clusters)
         if final_brief:
             db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (final_brief,), fetch=False)
             delete_cache("daily_brief:latest")
@@ -340,11 +409,8 @@ def generate_daily_brief_task(retry_attempt=0):
             if not brief and retry_attempt < 2:
                 generate_daily_brief_task.apply_async(args=(retry_attempt + 1,), countdown=1800)
     except Exception as e:
-        rows = db.execute(
-            "SELECT cluster_id, title, description, source, category, topic, created_at FROM articles "
-            "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10"
-        )
-        fallback = generate_daily_brief_fallback(rows)
+        clusters = _load_daily_brief_clusters(limit=6)
+        fallback = generate_daily_brief_fallback(clusters)
         if fallback:
             db.execute("INSERT INTO daily_briefings (date, content) VALUES (CURRENT_DATE, %s) ON CONFLICT (date) DO UPDATE SET content = EXCLUDED.content", (fallback,), fetch=False)
             delete_cache("daily_brief:latest")

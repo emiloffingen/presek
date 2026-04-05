@@ -10,6 +10,7 @@ import re
 from typing import Optional
 
 from local_nlp import build_citation_snippet, TAG_NOISE_WORDS
+from utils import get_source_trust_label, build_cluster_source_signals
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
 _GENERIC_ANGLES = {"перспектива", "агол", "точка", "став", "гледиште"}
@@ -198,6 +199,16 @@ def rank_cluster_citations(
         if idx not in preferred_order:
             preferred_order.append(idx)
 
+    source_signals = build_cluster_source_signals(articles)
+    signal_by_key = {}
+    for article, signal in zip(articles, source_signals):
+        key = (
+            str(article.get("source") or ""),
+            str(article.get("title") or ""),
+            str(article.get("link") or ""),
+        )
+        signal_by_key[key] = signal
+
     ranked = []
     for idx, article in enumerate(articles, start=1):
         article_text = " ".join([
@@ -209,8 +220,14 @@ def rank_cluster_citations(
         overlap = len(combined_terms & article_terms)
         preferred_bonus = 5 if idx in preferred_order else 0
         title_bonus = 1 if question_terms & text_terms(str(article.get("title") or "")) else 0
+        trust_bonus = 1 if get_source_trust_label(str(article.get("source") or "")) == "Висока доверба" else 0
+        signal = signal_by_key.get((
+            str(article.get("source") or ""),
+            str(article.get("title") or ""),
+            str(article.get("link") or ""),
+        )) or {}
         ranked.append((
-            preferred_bonus + overlap + title_bonus,
+            preferred_bonus + overlap + title_bonus + trust_bonus,
             -idx,
             {
                 "source": article.get("source"),
@@ -218,6 +235,8 @@ def rank_cluster_citations(
                 "link": article.get("link"),
                 "created_at": article.get("created_at"),
                 "snippet": build_citation_snippet(article),
+                "trust_label": signal.get("trust_label") or get_source_trust_label(str(article.get("source") or "")),
+                "role_label": signal.get("role_label", ""),
             },
         ))
 
@@ -232,6 +251,8 @@ def rank_cluster_citations(
             "link": article.get("link"),
             "created_at": article.get("created_at"),
             "snippet": build_citation_snippet(article),
+            "trust_label": get_source_trust_label(str(article.get("source") or "")),
+            "role_label": "",
         }
         for article in articles[:2]
     ]

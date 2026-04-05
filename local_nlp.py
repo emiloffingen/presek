@@ -476,20 +476,52 @@ def generate_daily_brief_fallback(clusters):
     if not clusters:
         return "## Дневен Брифинг\n\nНема доволно достапни вести за автоматски локален брифинг."
 
-    lines = ["## Дневен Брифинг", "", "**Главни линии на денот**"]
-    for index, cluster in enumerate(clusters[:5], start=1):
+    lines = ["## Што го движи денот", ""]
+    intro_titles = [str(item.get("title") or "").strip() for item in clusters[:3] if str(item.get("title") or "").strip()]
+    if intro_titles:
+        lines.append(
+            "Денот најсилно се врти околу "
+            + ", ".join(intro_titles[:2])
+            + (f", а во поширокиот фокус влегува и {intro_titles[2]}." if len(intro_titles) > 2 else ".")
+        )
+        lines.append("")
+
+    difference_lines = []
+    watch_lines = []
+    for index, cluster in enumerate(clusters[:4], start=1):
         title = str(cluster.get("title") or "").strip()
         source = str(cluster.get("source") or "Извор").strip()
         topic = str(cluster.get("topic") or cluster.get("category") or "Вести").strip()
         description = str(cluster.get("description") or "").strip()
         summary = summarize_locally(f"{title}. {description}", sentence_count=2).strip()
+        source_count = int(cluster.get("source_count") or 1)
+        open_point = str(cluster.get("open_point") or "").strip()
+        difference_point = str(cluster.get("difference_point") or "").strip()
+
         lines.append(f"### {index}. {title}")
-        lines.append(f"- Тема: {topic}")
-        lines.append(f"- Водечки извор: {source}")
-        if summary:
-            lines.append(f"- Клучно: {summary}")
+        lines.append(
+            f"- Што е новото: {summary or title}"
+        )
+        lines.append(
+            f"- Зошто е важно: Темата влегува во {topic.lower()} агендата и во моментов ја следат {source_count} извори, со водечки сигнал од {source}."
+        )
         lines.append("")
 
+        if difference_point:
+            difference_lines.append(f"- {difference_point}")
+        elif source_count >= 3:
+            difference_lines.append(f"- Кај {title[:90]} најмногу се разликува акцентот меѓу изворите, а не основниот факт.")
+        if open_point:
+            watch_lines.append(f"- {open_point}")
+        else:
+            watch_lines.append(f"- Следете што ќе биде следната потврда, реакција или институционален чекор околу: {title[:90]}.")
+
+    lines.append("## Каде се разликува известувањето")
+    lines.extend(difference_lines[:3] or ["- Повеќето водечки приказни добиваат слична главна линија, но со различни акценти и рамки."])
+    lines.append("")
+    lines.append("## Што да се следи понатаму")
+    lines.extend(watch_lines[:3] or ["- Следните часови најмногу ќе зависат од нови потврди, официјални реакции и дополнителни бројки."])
+    lines.append("")
     lines.append("**Напомена**")
     lines.append("Овој брифинг е составен локално од највисоко рангираните кластери кога AI брифинг не е достапен.")
     return "\n".join(lines).strip()

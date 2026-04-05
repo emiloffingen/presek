@@ -48,6 +48,11 @@ function getRelativeTimeStr(dateStr: string) {
 	}
 }
 
+function topicHref(value: string) {
+	const normalized = String(value || '').trim();
+	return normalized ? `/tema/${encodeURIComponent(normalized)}` : '/';
+}
+
 function titleTerms(text: string) {
 	return Array.from(
 		new Set(
@@ -172,6 +177,7 @@ const articleRows = cluster
 	? cluster.articles.map((article: any, index: number) => ({
 			...article,
 			relationship: getRelationshipMeta(article.title, leadArticle?.title || article.title, index),
+			sourceSignal: article.source_signal || null,
 			exactTime: getTimeStr(article.created_at),
 			relativeTime: getRelativeTimeStr(article.created_at),
 	  }))
@@ -211,9 +217,9 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 								<a href="/" class="nyt-section-label flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
 									<ArrowLeft size={12} /> Назад
 								</a>
-								<span class="nyt-section-label text-nyt-red tracking-widest border-l pl-4 border-nyt-gray-300">
+								<a href={topicHref(cluster.articles[0].category || "Вести")} class="nyt-section-label text-nyt-red tracking-widest border-l pl-4 border-nyt-gray-300 hover:text-foreground transition-colors">
 									{cluster.articles[0].category || "Вести"}
-								</span>
+								</a>
 							</div>
 
 							<h1 class="cluster-headline">
@@ -315,6 +321,11 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 											<div class="article-row-source">
 												<span class="nyt-section-label text-nyt-red">{a.source}</span>
 												<span class={`article-row-badge article-row-badge-${a.relationship.tone}`}>{a.relationship.label}</span>
+												{a.sourceSignal?.trust_label && (
+													<span class={`article-row-badge article-row-badge-trust article-row-badge-trust-${a.sourceSignal.trust_label === 'Висока доверба' ? 'high' : a.sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>
+														{a.sourceSignal.trust_label}
+													</span>
+												)}
 											</div>
 											<div class="article-row-time">
 												<span class="nyt-section-label text-muted-foreground">{a.relativeTime}</span>
@@ -326,7 +337,15 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 												{a.title}
 											</h3>
 										</a>
+										{a.sourceSignal?.role_label && (
+											<p class="article-row-trust">
+												<strong>{a.sourceSignal.role_label}</strong>{a.sourceSignal.source_category ? ` · ${a.sourceSignal.source_category}` : ''}
+											</p>
+										)}
 										<p class="article-row-note">{a.relationship.description}</p>
+										{a.sourceSignal?.role_note && (
+											<p class="article-row-note article-row-note-trust">{a.sourceSignal.role_note}</p>
+										)}
 										<p class="article-row-summary">{a.description}</p>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
 											<Link2 size={12} /> Отвори го оригиналот
@@ -339,6 +358,19 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 
 					{/* Sidebar */}
 					<aside class="cluster-rail">
+						{cluster.topics && cluster.topics.length > 0 && (
+							<div class="rail-card">
+								<h3 class="rail-card-title">Тема</h3>
+								<div class="rail-tags">
+									{cluster.topics.map((item: string) => (
+										<a href={topicHref(item)} class="rail-chip rail-chip-topic">
+											{item}
+										</a>
+									))}
+								</div>
+							</div>
+						)}
+
 						{/* Tags */}
 						{cluster.tags && cluster.tags.length > 0 && (
 							<div class="rail-card">
@@ -368,9 +400,18 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 								<div class="related-list">
 								{cluster.related.map((rel: any) => (
 									<a href={`/cluster/${rel.cluster_id}`} class="related-link group no-underline">
+										{rel.relationship_label && <p class="related-kicker">{rel.relationship_label}</p>}
 										<h4>
 											{rel.title}
 										</h4>
+										{rel.relationship_note && <p class="related-copy">{rel.relationship_note}</p>}
+										{(rel.shared_entities?.length || rel.shared_tags?.length) > 0 && (
+											<p class="related-meta">
+												{rel.shared_entities?.length > 0 ? `Имиња: ${rel.shared_entities.join(' · ')}` : ''}
+												{rel.shared_entities?.length > 0 && rel.shared_tags?.length > 0 ? ' · ' : ''}
+												{rel.shared_tags?.length > 0 ? `Теми: ${rel.shared_tags.join(' · ')}` : ''}
+											</p>
+										)}
 									</a>
 								))}
 								</div>
@@ -684,6 +725,20 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 		color: #3b5ccc;
 	}
 
+	.article-row-badge-trust-high {
+		border-color: color-mix(in srgb, var(--nyt-accent) 34%, var(--border) 66%);
+		color: var(--nyt-accent);
+	}
+
+	.article-row-badge-trust-medium {
+		border-color: color-mix(in srgb, var(--foreground) 18%, var(--border) 82%);
+		color: var(--foreground);
+	}
+
+	.article-row-badge-trust-low {
+		color: var(--muted-foreground);
+	}
+
 	:root.dark .article-row-badge-confirm {
 		color: #7bd6a3;
 	}
@@ -732,6 +787,24 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
+	}
+
+	.article-row-trust {
+		margin: 0 0 0.35rem;
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--foreground);
+	}
+
+	.article-row-trust strong {
+		color: var(--nyt-accent);
+	}
+
+	.article-row-note-trust {
+		color: color-mix(in srgb, var(--secondary-foreground) 88%, var(--muted-foreground) 12%);
 	}
 
 	.coverage-metrics {
@@ -1090,12 +1163,35 @@ const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, ne
 		padding-top: 0;
 	}
 
+	.related-kicker,
+	.related-meta {
+		margin: 0 0 0.35rem;
+		font-family: var(--font-sans);
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.related-kicker {
+		color: var(--nyt-accent);
+	}
+
 	.related-link h4 {
-		margin: 0;
+		margin: 0 0 0.35rem;
 		font-size: 0.94rem;
 		line-height: 1.14;
 		color: var(--foreground);
 		transition: color 160ms ease;
+	}
+
+	.related-copy {
+		margin: 0 0 0.4rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
 	}
 
 	.prose-nyt {

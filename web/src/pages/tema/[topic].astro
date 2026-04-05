@@ -1,0 +1,664 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Footer from '../../components/Footer.astro';
+import NewsCard from '../../components/NewsCard.astro';
+import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
+
+const rawTopicParam = Astro.params.topic || '';
+const topic = (() => {
+	try {
+		return decodeURIComponent(rawTopicParam);
+	} catch {
+		return rawTopicParam;
+	}
+})()
+	.replace(/\s+/g, ' ')
+	.trim();
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+
+let clusters: any[] = [];
+let detailMap = new Map<string, any>();
+let error: string | null = null;
+
+async function fetchJson(url: string) {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Request failed: ${response.status} ${url}`);
+	}
+	return response.json();
+}
+
+function cleanText(text?: string) {
+	if (!text) return '';
+	return String(text)
+		.replace(/^[⚪🟢🔴]\s*/u, '')
+		.replace(/#[^\s#]+/g, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+function parseSynthesis(text?: string) {
+	if (!text) return [];
+	return String(text)
+		.replace(/\r/g, '')
+		.split('\n')
+		.map((line) => line.trim().replace(/^[-•]\s+/, ''))
+		.filter(Boolean)
+		.filter((line) => line.toLowerCase() !== 'статии:')
+		.map((line) => line.replace(/^\[[^\]]+\]:\s*/, '').trim())
+		.filter(Boolean);
+}
+
+function normalizePerspectives(items: any[]) {
+	if (!Array.isArray(items)) return [];
+	return items
+		.map((item) => {
+			if (!item || typeof item !== 'object') return null;
+			const angle = String(item.angle ?? item.label ?? 'Перспектива').trim();
+			const content = String(item.content ?? item.text ?? item.description ?? '').trim();
+			if (!content) return null;
+			return { angle: angle || 'Перспектива', content };
+		})
+		.filter(Boolean);
+}
+
+function countValues(values: string[]) {
+	const counts = new Map<string, number>();
+	for (const value of values) {
+		const clean = String(value || '').trim();
+		if (!clean) continue;
+		counts.set(clean, (counts.get(clean) || 0) + 1);
+	}
+	return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+}
+
+const newsUrl = new URL(`${API_URL}/news`);
+newsUrl.searchParams.set('page_size', '24');
+newsUrl.searchParams.set('topic', topic);
+
+try {
+	const newsData = await fetchJson(newsUrl.toString());
+	clusters = Array.isArray(newsData?.clusters) ? newsData.clusters : [];
+
+	if (clusters.length > 0) {
+		const ids = clusters.slice(0, 6).map((cluster: any) => cluster.cluster_id);
+		const detailResults = await Promise.allSettled(
+			ids.map((id: string) => fetchJson(`${API_URL}/cluster/${id}`))
+		);
+
+		detailResults.forEach((result, index) => {
+			if (result.status === 'fulfilled' && result.value?.data) {
+				detailMap.set(ids[index], result.value.data);
+			}
+		});
+	}
+} catch (e) {
+	console.error(e);
+	error = 'Темата моментално не е достапна.';
+}
+
+const leadCluster = clusters[0] ?? null;
+const supportingClusters = clusters.slice(1, 4);
+const feedClusters = clusters.slice(4, 16);
+const leadDetail = leadCluster ? detailMap.get(leadCluster.cluster_id) || null : null;
+
+const totalReports = clusters.reduce((sum: number, cluster: any) => sum + (cluster?.articles?.length || 0), 0);
+const uniqueSources = new Set(
+	clusters.flatMap((cluster: any) => (cluster?.articles || []).map((article: any) => article?.source).filter(Boolean))
+);
+const breakingCount = clusters.filter((cluster: any) => cluster?.is_breaking).length;
+const sourceRows = countValues(
+	clusters.flatMap((cluster: any) => (cluster?.articles || []).map((article: any) => article?.source))
+).slice(0, 6);
+
+const tagRows = countValues(
+	Array.from(detailMap.values()).flatMap((detail: any) => Array.isArray(detail?.tags) ? detail.tags : [])
+)
+	.filter(([name]) => name.toLowerCase() !== topic.toLowerCase())
+	.slice(0, 8);
+
+const adjacentTopics = countValues(
+	Array.from(detailMap.values()).flatMap((detail: any) => Array.isArray(detail?.topics) ? detail.topics : [])
+)
+	.filter(([name]) => name.toLowerCase() !== topic.toLowerCase())
+	.slice(0, 5);
+
+const leadSummary =
+	cleanText(leadCluster?.articles?.[0]?.summary) ||
+	cleanText(leadCluster?.articles?.[0]?.description) ||
+	'Најсилните кластери во оваа тема се подредени според тежина, доверба и развој.';
+
+const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);
+const synthesisLines = parseSynthesis(leadDetail?.synthesis || '').slice(0, 3);
+const relatedClusters = Array.isArray(leadDetail?.related) ? leadDetail.related.slice(0, 4) : [];
+
+function topicIntro() {
+	if (!clusters.length) return '';
+	if (breakingCount >= 2) {
+		return `Темата ${topic} денес се развива брзо, со ${clusters.length} активни кластери и ${uniqueSources.size} извори што додаваат нови детали.`;
+	}
+	if (clusters.length >= 6) {
+		return `Темата ${topic} е широко присутна низ денешниот циклус, со ${clusters.length} кластери и ${totalReports} извештаи што се надоврзуваат еден на друг.`;
+	}
+	return `Темата ${topic} останува релевантна денес, со ${clusters.length} кластери и повеќе редакции што ја следат од различни агли.`;
+}
+---
+
+<Layout title={topic ? `${topic} | Тема` : 'Тема'}>
+	<NYTHeader topic={topic} />
+
+	<main class="site-layout topic-page">
+		{error && (
+			<div class="topic-empty">
+				<p>{error}</p>
+			</div>
+		)}
+
+		{!error && !clusters.length && (
+			<div class="topic-empty">
+				<p>Нема доволно активни кластери за оваа тема во моментов.</p>
+			</div>
+		)}
+
+		{!error && clusters.length > 0 && (
+			<>
+				<header class="topic-hero">
+					<div class="topic-hero-copy">
+						<span class="topic-kicker">Тема</span>
+						<h1 class="topic-headline">{topic}</h1>
+						<p class="topic-intro">{topicIntro()}</p>
+						<p class="topic-summary">{leadSummary}</p>
+
+						<div class="topic-stats">
+							<div>
+								<span class="micro-label">Кластери</span>
+								<strong>{clusters.length}</strong>
+							</div>
+							<div>
+								<span class="micro-label">Извори</span>
+								<strong>{uniqueSources.size}</strong>
+							</div>
+							<div>
+								<span class="micro-label">Извештаи</span>
+								<strong>{totalReports}</strong>
+							</div>
+							<div>
+								<span class="micro-label">Во развој</span>
+								<strong>{breakingCount}</strong>
+							</div>
+						</div>
+					</div>
+
+					<div class="topic-hero-side">
+						<div class="topic-note-card">
+							<p class="topic-note-label">Што го движи овој простор</p>
+							<ul class="topic-note-list">
+								{(synthesisLines.length > 0 ? synthesisLines : [leadSummary]).map((line: string) => (
+									<li>{line}</li>
+								))}
+							</ul>
+						</div>
+					</div>
+				</header>
+
+				<div class="topic-layout">
+					<div class="topic-main">
+						{leadCluster && (
+							<section class="topic-lead">
+								<div class="section-heading-row">
+									<h2 class="section-title">Водечка Приказна</h2>
+									<p class="section-note">Кластерот што најмногу ја носи темата напред во моментов.</p>
+								</div>
+								<NewsCard cluster={leadCluster} isLead={true} />
+							</section>
+						)}
+
+						{keyAngles.length > 0 && (
+							<section class="topic-angles">
+								<div class="section-heading-row">
+									<h2 class="section-title">Каде Се Разликува Покривањето</h2>
+									<p class="section-note">Главните агли што излегуваат од водечкиот кластер во темата.</p>
+								</div>
+								<div class="topic-angle-grid">
+									{keyAngles.map((item: any) => (
+										<div class="topic-angle-card">
+											<h3>{item.angle}</h3>
+											<p>{item.content}</p>
+										</div>
+									))}
+								</div>
+							</section>
+						)}
+
+						{supportingClusters.length > 0 && (
+							<section class="topic-supporting">
+								<div class="section-heading-row">
+									<h2 class="section-title">Што Се Развива Понатаму</h2>
+									<p class="section-note">Придружни и следни кластери што ја прошируваат темата.</p>
+								</div>
+								<div class="topic-supporting-grid">
+									{supportingClusters.map((cluster: any) => (
+										<NewsCard cluster={cluster} />
+									))}
+								</div>
+							</section>
+						)}
+
+						{feedClusters.length > 0 && (
+							<section class="topic-feed">
+								<div class="section-heading-row">
+									<h2 class="section-title">Повеќе Од Оваа Тема</h2>
+									<p class="section-note">Останати активни кластери што вреди да останат во видното поле.</p>
+								</div>
+								<div class="topic-feed-grid">
+									{feedClusters.map((cluster: any) => (
+										<NewsCard cluster={cluster} />
+									))}
+								</div>
+							</section>
+						)}
+					</div>
+
+					<aside class="topic-rail">
+						{tagRows.length > 0 && (
+							<section class="rail-card">
+								<h3 class="rail-card-title">Имиња И Агли</h3>
+								<div class="topic-chip-list">
+									{tagRows.map(([name, count]) => (
+										<a href={`/?q=${encodeURIComponent(name)}`} class="topic-chip">
+											{name} <strong>{count}</strong>
+										</a>
+									))}
+								</div>
+							</section>
+						)}
+
+						{adjacentTopics.length > 0 && (
+							<section class="rail-card">
+								<h3 class="rail-card-title">Соседни Теми</h3>
+								<div class="topic-chip-list">
+									{adjacentTopics.map(([name, count]) => (
+										<a href={`/tema/${encodeURIComponent(name)}`} class="topic-chip topic-chip-alt">
+											{name} <strong>{count}</strong>
+										</a>
+									))}
+								</div>
+							</section>
+						)}
+
+						{sourceRows.length > 0 && (
+							<section class="rail-card">
+								<h3 class="rail-card-title">Извори Што Ја Водат Темата</h3>
+								<div class="topic-source-list">
+									{sourceRows.map(([name, count], index) => (
+										<div class="topic-source-row">
+											<span class="topic-source-rank">{String(index + 1).padStart(2, '0')}</span>
+											<div>
+												<p>{name}</p>
+												<span>{count} појавувања во кластери</span>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+						)}
+
+						{relatedClusters.length > 0 && (
+							<section class="rail-card">
+								<h3 class="rail-card-title">Што Да Читате Понатаму</h3>
+								<div class="topic-related-list">
+									{relatedClusters.map((item: any) => (
+										<a href={`/cluster/${item.cluster_id}`} class="topic-related-link">
+											{item.relationship_label && <span class="topic-related-kicker">{item.relationship_label}</span>}
+											<strong>{item.title}</strong>
+											{item.relationship_note && <p>{item.relationship_note}</p>}
+											<span class="topic-related-cta">Отвори кластер <ArrowRight size={12} /></span>
+										</a>
+									))}
+								</div>
+							</section>
+						)}
+					</aside>
+				</div>
+			</>
+		)}
+	</main>
+
+	<Footer />
+</Layout>
+
+<style>
+	.topic-page {
+		padding-top: 2rem;
+		padding-bottom: 4rem;
+	}
+
+	.topic-hero {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		padding-bottom: 1.6rem;
+		margin-bottom: 1.75rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.topic-kicker,
+	.micro-label {
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.micro-label {
+		color: var(--muted-foreground);
+	}
+
+	.topic-headline {
+		margin: 0.55rem 0 0.8rem;
+		font-size: clamp(2.5rem, 2rem + 1.5vw, 4.5rem);
+		line-height: 0.94;
+		letter-spacing: -0.03em;
+		max-width: 10ch;
+		text-wrap: balance;
+	}
+
+	.topic-intro {
+		margin: 0 0 0.8rem;
+		font-family: var(--font-nyt-body);
+		font-size: 1.04rem;
+		line-height: 1.58;
+		color: var(--secondary-foreground);
+		max-width: 58ch;
+	}
+
+	.topic-summary {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+		max-width: 68ch;
+	}
+
+	.topic-stats {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.85rem;
+		max-width: 34rem;
+		margin-top: 1rem;
+	}
+
+	.topic-stats strong {
+		display: block;
+		margin-top: 0.35rem;
+		font-family: var(--font-serif);
+		font-size: 1.7rem;
+		line-height: 1;
+	}
+
+	.topic-note-card,
+	.rail-card {
+		padding: 1rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+	}
+
+	.topic-note-label,
+	.rail-card-title {
+		margin: 0 0 0.85rem;
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.topic-note-list {
+		margin: 0;
+		padding-left: 1rem;
+		display: grid;
+		gap: 0.6rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.96rem;
+		line-height: 1.55;
+		color: var(--foreground);
+	}
+
+	.topic-layout {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.8rem;
+	}
+
+	.section-heading-row {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.section-title {
+		margin: 0;
+		font-size: clamp(1.32rem, 1.08rem + 0.72vw, 1.82rem);
+		line-height: 1.04;
+		letter-spacing: -0.02em;
+	}
+
+	.section-note {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.76rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.topic-main {
+		min-width: 0;
+	}
+
+	.topic-supporting,
+	.topic-feed,
+	.topic-angles {
+		margin-top: 1.6rem;
+	}
+
+	.topic-supporting-grid,
+	.topic-feed-grid,
+	.topic-angle-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.topic-angle-card {
+		padding: 1rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+	}
+
+	.topic-angle-card h3 {
+		margin: 0 0 0.5rem;
+		font-family: var(--font-sans);
+		font-size: 0.76rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.topic-angle-card p {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.98rem;
+		line-height: 1.58;
+	}
+
+	.topic-rail {
+		display: grid;
+		align-content: start;
+		gap: 0.85rem;
+	}
+
+	.topic-chip-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+	}
+
+	.topic-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.42rem 0.58rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.64rem;
+		font-weight: 900;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--foreground);
+		text-decoration: none;
+	}
+
+	.topic-chip strong {
+		font-size: 0.62rem;
+		color: var(--muted-foreground);
+	}
+
+	.topic-chip-alt {
+		background: color-mix(in srgb, var(--foreground) 3%, transparent);
+	}
+
+	.topic-source-list,
+	.topic-related-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.topic-source-row {
+		display: grid;
+		grid-template-columns: 2rem 1fr;
+		gap: 0.75rem;
+		align-items: start;
+	}
+
+	.topic-source-rank {
+		font-family: var(--font-serif);
+		font-size: 1.5rem;
+		line-height: 1;
+		font-weight: 900;
+		color: var(--nyt-gray-500);
+		text-align: center;
+	}
+
+	.topic-source-row p,
+	.topic-related-link strong {
+		margin: 0 0 0.2rem;
+		font-family: var(--font-serif);
+		font-size: 1rem;
+		line-height: 1.15;
+		color: var(--foreground);
+	}
+
+	.topic-source-row span {
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.topic-related-link {
+		display: block;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border);
+		text-decoration: none;
+	}
+
+	.topic-related-link:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	.topic-related-link p {
+		margin: 0 0 0.4rem;
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
+	}
+
+	.topic-related-kicker,
+	.topic-related-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-family: var(--font-sans);
+		font-size: 0.64rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.topic-empty {
+		padding: 4rem 0;
+		text-align: center;
+		font-family: var(--font-serif);
+		font-size: 1.15rem;
+	}
+
+	@media (min-width: 720px) {
+		.topic-supporting-grid,
+		.topic-angle-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (min-width: 980px) {
+		.topic-hero {
+			grid-template-columns: minmax(0, 1.4fr) minmax(17rem, 0.7fr);
+			align-items: start;
+		}
+
+		.topic-layout {
+			grid-template-columns: minmax(0, 1.6fr) minmax(17rem, 0.72fr);
+			gap: 1.9rem;
+		}
+
+		.topic-rail {
+			position: sticky;
+			top: 1.5rem;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.topic-page {
+			padding-top: 1.2rem;
+		}
+
+		.topic-headline {
+			max-width: none;
+			font-size: clamp(2rem, 1.7rem + 1vw, 2.8rem);
+			line-height: 0.98;
+		}
+
+		.topic-intro {
+			font-size: 0.96rem;
+		}
+
+		.topic-stats {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+</style>

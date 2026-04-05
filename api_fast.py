@@ -13,7 +13,9 @@ from collections import defaultdict
 from database import db_manager as db
 from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time, 
-    cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness
+    cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
+    annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
+    build_source_reputation_rows,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
@@ -289,12 +291,12 @@ async def get_news(
             r['reading_time'] = calculate_reading_time(r.get('description', ''))
             clusters[r['cluster_id']].append(r)
 
-        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters = [annotate_cluster_articles(arts) for arts in clusters.values()]
         
         if sort == 'popular':
             ranked_clusters.sort(key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
         else:
-            ranked_clusters.sort(key=score_cluster, reverse=True)
+            ranked_clusters.sort(key=score_cluster_for_homepage, reverse=True)
 
         start = page * page_size
         paged_clusters = ranked_clusters[start:start + page_size]
@@ -318,12 +320,14 @@ async def get_news(
             main = arts[0]
             cid = main["cluster_id"]
             s = score_cluster(arts)
+            homepage_score = score_cluster_for_homepage(arts)
             result.append({
                 "cluster_id": cid,
                 "articles": arts,
                 "representative_image": rep_images.get(cid),
                 "reading_time": main.get('reading_time', 1),
                 "score": round(s, 3),
+                "homepage_score": round(homepage_score, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,
                 "has_balanced": is_balanced(arts),
@@ -355,7 +359,7 @@ async def get_cluster_detail(cluster_id: str):
         if not rows:
             raise HTTPException(status_code=404, detail="Cluster not found")
             
-        articles = rank_articles_in_cluster(rows)
+        articles = annotate_cluster_articles(rows)
         for a in articles:
             a['reading_time'] = calculate_reading_time(a.get('description', ''))
 
@@ -382,18 +386,29 @@ async def get_cluster_detail(cluster_id: str):
         related = []
         if tags:
             related_rows = db.execute("""
-                SELECT 
-                    m.cluster_id, 
-                    (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-                    (SELECT image_url FROM articles WHERE cluster_id = m.cluster_id AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1) as image_url
-                FROM cluster_metadata m
-                WHERE m.cluster_id != %s
-                  AND m.updated_at >= NOW() - INTERVAL '48 hours'
-                  AND m.tags && %s
-                ORDER BY m.updated_at DESC
-                LIMIT 4
-            """, (cluster_id, tags))
-            related = related_rows
+                WITH cluster_ents AS (
+                    SELECT cluster_id, array_agg(entity_name) as entity_names
+                    FROM cluster_entities
+                    GROUP BY cluster_id
+                )
+                SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags, COALESCE(ce.entity_names, '{}') as entity_names
+                FROM articles a
+                LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+                LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id
+                WHERE a.cluster_id != %s
+                  AND a.created_at >= NOW() - INTERVAL '72 hours'
+                  AND (
+                    m.tags && %s
+                    OR EXISTS (
+                        SELECT 1 FROM cluster_entities ce2
+                        WHERE ce2.cluster_id = a.cluster_id
+                          AND ce2.entity_name = ANY(%s)
+                    )
+                  )
+                ORDER BY a.created_at DESC
+                LIMIT 120
+            """, (cluster_id, tags, list({entity for article in articles for entity in (article.get("entity_names") or [])})))
+            related = build_read_next_clusters(cluster_id, articles, tags, related_rows, limit=4)
 
         return {
             "status": "success",
@@ -836,12 +851,24 @@ async def get_stats_full():
 
 @app.get("/api/sources")
 async def get_sources():
-    """Return all known sources from articles."""
+    """Return source reputation rows."""
     try:
         rows = db.execute(
-            "SELECT DISTINCT source, country, category FROM articles ORDER BY source ASC"
+            "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE is_active = TRUE ORDER BY name ASC"
         )
-        return [dict(r) for r in rows]
+        pulse_rows = db.execute(
+            "SELECT source, COUNT(*) as count FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "GROUP BY source"
+        )
+        speed_rows = db.execute(
+            "SELECT source, COUNT(*) AS first_count FROM ("
+            "  SELECT DISTINCT ON (cluster_id) cluster_id, source "
+            "  FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' "
+            "  ORDER BY cluster_id, created_at ASC"
+            ") first_articles GROUP BY source ORDER BY first_count DESC"
+        )
+        return build_source_reputation_rows(rows, pulse_rows, speed_rows)
     except Exception as e:
         log.warning(f"FastAPI Sources Error: {e}")
         return []

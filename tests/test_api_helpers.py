@@ -1,4 +1,4 @@
-from api_helpers import normalize_perspectives, normalize_summary_text, related_questions_from_context
+from api_helpers import normalize_perspectives, normalize_summary_text, related_questions_from_context, rank_cluster_citations
 
 
 def test_normalize_summary_text_dedupes_and_strips_noise():
@@ -43,3 +43,33 @@ def test_related_questions_from_context_prioritizes_missing_angles():
 
     assert result[0] == "Како се разликуваат изворите во известувањето?"
     assert "Што останува нејасно или непотврдено?" in result
+
+
+def test_rank_cluster_citations_includes_source_trust_metadata():
+    articles = [
+        {
+            "source": "MIA",
+            "title": "Трамп најави царини",
+            "description": "Главниот развој.",
+            "link": "https://example.com/1",
+            "created_at": "2026-04-05T10:00:00",
+        },
+        {
+            "source": "Press24",
+            "title": "Реакции на царините",
+            "description": "Follow-up angle.",
+            "link": "https://example.com/2",
+            "created_at": "2026-04-05T10:10:00",
+        },
+    ]
+
+    result = rank_cluster_citations(
+        "Како се развива приказната?",
+        "Главниот развој е околу царините.",
+        articles,
+        preferred_numbers=[],
+    )
+
+    assert result
+    assert result[0]["trust_label"]
+    assert "role_label" in result[0]

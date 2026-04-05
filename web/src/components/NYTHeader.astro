@@ -44,6 +44,7 @@ const fallbackItems = [
 ];
 
 const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
+const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Култура'];
 ---
 
 <header class="site-layout topbar">
@@ -91,6 +92,20 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
                     <li>
                         <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
                             {item.word}
+                        </a>
+                    </li>
+                );
+            })}
+        </ul>
+        <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
+        <ul class="masthead-nav-list masthead-nav-list-topics">
+            {curatedTopics.map((item: string) => {
+                const isActive = topic === item || category === item;
+
+                return (
+                    <li>
+                        <a href={`/tema/${encodeURIComponent(item)}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                            {item}
                         </a>
                     </li>
                 );
@@ -251,6 +266,14 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
         transform: translateY(-50%);
     }
 
+    .masthead-nav-kicker-secondary {
+        color: var(--foreground);
+    }
+
+    .masthead-nav-kicker-secondary::after {
+        background: var(--foreground);
+    }
+
     .masthead-nav-list {
         display: flex;
         justify-content: flex-start;
@@ -259,6 +282,10 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
         padding: 0;
         margin: 0;
         min-width: max-content;
+    }
+
+    .masthead-nav-list-topics {
+        padding-left: 0.15rem;
     }
 
     .masthead-nav-list li {
@@ -332,6 +359,10 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 
         .masthead-nav-list {
             padding-bottom: 0.15rem;
+        }
+
+        .masthead-nav-list-topics {
+            padding-left: 0;
         }
     }
 

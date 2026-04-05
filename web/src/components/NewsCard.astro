@@ -6,6 +6,7 @@ interface Props {
 
 const { cluster, isLead = false } = Astro.props;
 const main = cluster.articles[0];
+const sourceSignal = main?.source_signal || {};
 const sourceCount = cluster.articles.length;
 const significanceLabel =
 	sourceCount >= 6 ? 'Широко покриено' :
@@ -53,6 +54,7 @@ function getTimeStr(dateStr: string) {
 	<div class="article-body">
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
+			{sourceSignal.trust_label && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
 			{cluster.is_breaking && <span class="breaking-label">LIVE</span>}
 			<span class="significance-label">{significanceLabel}</span>
 		</div>
@@ -64,7 +66,9 @@ function getTimeStr(dateStr: string) {
 		</a>
 
 		<p class="why-it-matters">
-			{sourceCount >= 6
+			{sourceSignal.role_label
+				? `${sourceSignal.role_label}. ${sourceCount >= 4 ? 'Повеќе редакции веќе ја потврдуваат или прошируваат темата.' : 'Следете ја приказната за нови потврди и реакции.'}`
+				: sourceCount >= 6
 				? `Темата се развива низ ${sourceCount} извори со пошироко медиумско покривање.`
 				: sourceCount >= 4
 				? `Повеќе редакции ја следат приказната и додаваат нови детали.`
@@ -203,6 +207,29 @@ function getTimeStr(dateStr: string) {
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
         color: var(--foreground);
+	}
+
+	.source-trust-badge {
+		font-family: var(--font-sans);
+		font-size: 0.56rem;
+		font-weight: 900;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		padding: 0.08rem 0.32rem;
+		border: 1px solid var(--border);
+	}
+
+	.source-trust-high {
+		color: var(--nyt-accent);
+		border-color: color-mix(in srgb, var(--nyt-accent) 34%, var(--border) 66%);
+	}
+
+	.source-trust-medium {
+		color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground) 18%);
+	}
+
+	.source-trust-low {
+		color: var(--muted-foreground);
 	}
 
     .breaking-label {

@@ -5,9 +5,15 @@ from unittest.mock import patch, MagicMock
 from utils import (
     score_cluster,
     score_cluster_for_synthesis,
+    score_cluster_for_homepage,
     rank_articles_in_cluster,
     get_source_effective_weight,
     assess_cluster_synthesis_freshness,
+    build_cluster_source_signals,
+    annotate_cluster_articles,
+    get_source_trust_label,
+    build_read_next_clusters,
+    build_source_reputation_rows,
 )
 
 
@@ -161,6 +167,69 @@ class TestScoreCluster:
 
         assert score_cluster_for_synthesis(divergent) > score_cluster_for_synthesis(aligned)
 
+    @patch("utils.get_source_health_map", return_value={})
+    def test_homepage_priority_prefers_corroborated_multi_source_cluster(self, _mock_health):
+        thin = [
+            {
+                **_make_article("Press24"),
+                "title": "Трамп најави мерки",
+                "description": "",
+            },
+            {
+                **_make_article("Press24", created_at=datetime.datetime.now() - datetime.timedelta(minutes=5)),
+                "title": "Трамп најави нови мерки",
+                "description": "",
+            },
+        ]
+        richer = [
+            {
+                **_make_article("MIA"),
+                "title": "Трамп најави нови царини",
+                "description": "Главен развој со детали.",
+            },
+            {
+                **_make_article("Reuters", created_at=datetime.datetime.now() - datetime.timedelta(minutes=8)),
+                "title": "Reuters пишува за реакциите и рокот за новите царини",
+                "description": "Втор извор со поширок контекст.",
+            },
+            {
+                **_make_article("DW", created_at=datetime.datetime.now() - datetime.timedelta(minutes=12)),
+                "title": "Европските пазари реагираат на најавените царини",
+                "description": "Трет извор со потврда и последица.",
+            },
+        ]
+
+        assert score_cluster_for_homepage(richer) > score_cluster_for_homepage(thin)
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_homepage_priority_penalizes_single_source_churn(self, _mock_health):
+        single_source = [
+            {
+                **_make_article("Press24"),
+                "title": "Кратка вест за развојот",
+                "description": "",
+            },
+            {
+                **_make_article("Press24", created_at=datetime.datetime.now() - datetime.timedelta(minutes=3)),
+                "title": "Уште краток follow-up за развојот",
+                "description": "",
+            },
+        ]
+        broader = [
+            {
+                **_make_article("Makfax"),
+                "title": "Главен развој во темата",
+                "description": "Опис еден.",
+            },
+            {
+                **_make_article("MIA", created_at=datetime.datetime.now() - datetime.timedelta(minutes=6)),
+                "title": "Втор извор го потврдува главниот развој",
+                "description": "Опис два.",
+            },
+        ]
+
+        assert score_cluster_for_homepage(broader) > score_cluster_for_homepage(single_source)
+
 
 # ── rank_articles_in_cluster ──────────────────────────────────────
 
@@ -201,6 +270,12 @@ class TestSourceEffectiveWeight:
     @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.2}})
     def test_effective_weight_uses_health_multiplier(self, _mock_health):
         assert get_source_effective_weight("MIA") < 2.0
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_trust_label_reflects_source_weight(self, _mock_health):
+        assert get_source_trust_label("MIA") == "Висока доверба"
+        assert get_source_trust_label("Makfax") == "Потврден извор"
+        assert get_source_trust_label("Press24") == "Следен извор"
 
 
 class TestSynthesisFreshness:
@@ -280,3 +355,147 @@ class TestSynthesisFreshness:
         result = assess_cluster_synthesis_freshness(arts, synthesis_time)
 
         assert result["refresh_needed"] is False
+
+
+class TestSourceSignals:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_build_cluster_source_signals_marks_lead_and_trust(self, _mock_health):
+        now = datetime.datetime.now()
+        arts = [
+            {
+                **_make_article("MIA", created_at=now - datetime.timedelta(minutes=30)),
+                "title": "Трамп најави царини",
+                "description": "Прв извештај.",
+            },
+            {
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=20)),
+                "title": "Реакции на царините и новите мерки на Трамп",
+                "description": "Вториот извор носи дополнителен контекст.",
+            },
+            {
+                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=10)),
+                "title": "Пазарите реагираат на царините",
+                "description": "Follow-up angle.",
+            },
+        ]
+
+        signals = build_cluster_source_signals(arts)
+
+        assert signals[0]["trust_label"] == "Висока доверба"
+        assert signals[0]["role_label"] in {"Најпотврден извор", "Водечки доверлив извор", "Прв извештај"}
+        assert len(signals) == 3
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_annotate_cluster_articles_attaches_source_signal(self, _mock_health):
+        now = datetime.datetime.now()
+        arts = [
+            {
+                **_make_article("MIA", created_at=now),
+                "title": "Тест наслов",
+                "description": "Тест опис.",
+            },
+            {
+                **_make_article("Makfax", created_at=now - datetime.timedelta(minutes=5)),
+                "title": "Друг агол за темата",
+                "description": "Тест опис 2.",
+            },
+        ]
+
+        annotated = annotate_cluster_articles(arts)
+
+        assert annotated[0]["source_signal"]["trust_label"]
+        assert annotated[1]["source_signal"]["role_label"]
+
+
+class TestReadNextClusters:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_build_read_next_clusters_prefers_meaningful_shared_context(self, _mock_health):
+        now = datetime.datetime.now()
+        current_articles = [
+            {
+                **_make_article("MIA", created_at=now - datetime.timedelta(minutes=40)),
+                "title": "Трамп најави царини за увоз",
+                "description": "Главниот развој.",
+                "entity_names": ["Трамп", "САД"],
+                "topic": "Економија",
+            },
+            {
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=30)),
+                "title": "Реакции на најавата за царини",
+                "description": "Контекст и реакции.",
+                "entity_names": ["Трамп", "САД"],
+                "topic": "Економија",
+            },
+        ]
+        candidates = [
+            {
+                **_make_article("DW", created_at=now - datetime.timedelta(minutes=20)),
+                "cluster_id": "next-1",
+                "title": "Европските пазари реагираат на царините на Трамп",
+                "description": "Следна фаза на истата тема.",
+                "entity_names": ["Трамп", "ЕУ"],
+                "cluster_tags": ["Трамп", "Царини"],
+                "topic": "Економија",
+            },
+            {
+                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=10)),
+                "cluster_id": "next-2",
+                "title": "Сосема друга домашна тема",
+                "description": "Нерелевантен кластер.",
+                "entity_names": ["Скопје"],
+                "cluster_tags": ["Скопје"],
+                "topic": "Македонија",
+            },
+        ]
+
+        result = build_read_next_clusters("current", current_articles, ["Трамп", "Царини"], candidates, limit=4)
+
+        assert result
+        assert result[0]["cluster_id"] == "next-1"
+        assert result[0]["relationship_label"] in {"Следен развој", "Позадина и контекст", "Исти актери, друг агол"}
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_build_read_next_clusters_skips_weakly_related_noise(self, _mock_health):
+        now = datetime.datetime.now()
+        current_articles = [
+            {
+                **_make_article("MIA", created_at=now - datetime.timedelta(minutes=40)),
+                "title": "Главен развој за Трамп",
+                "description": "Главен опис.",
+                "entity_names": ["Трамп"],
+                "topic": "Свет",
+            },
+        ]
+        candidates = [
+            {
+                **_make_article("Press24", created_at=now - datetime.timedelta(minutes=5)),
+                "cluster_id": "noise-1",
+                "title": "Локален спортски резултат",
+                "description": "Без врска со темата.",
+                "entity_names": ["Вардар"],
+                "cluster_tags": ["Спорт"],
+                "topic": "Спорт",
+            },
+        ]
+
+        result = build_read_next_clusters("current", current_articles, ["Трамп"], candidates, limit=4)
+
+        assert result == []
+
+
+class TestSourceReputationRows:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_build_source_reputation_rows_enriches_sources(self, _mock_health):
+        source_rows = [
+            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True},
+            {"name": "Press24", "country": "🇲🇰", "category": "Локални", "credibility": 0.9, "is_active": True},
+        ]
+        pulse_rows = [{"source": "MIA", "count": 9}, {"source": "Press24", "count": 2}]
+        speed_rows = [{"source": "MIA", "first_count": 12}, {"source": "Press24", "first_count": 1}]
+
+        result = build_source_reputation_rows(source_rows, pulse_rows, speed_rows)
+
+        assert result[0]["source"] == "MIA"
+        assert result[0]["trust_tier"] == "Висока доверба"
+        assert result[0]["recent_volume"] == 9
+        assert result[0]["speed_first_count"] == 12

@@ -92,3 +92,53 @@ class TestSummarizeArticleTaskQuality:
         prompt = mock_call_ai.call_args.args[0]
         assert "Наслов на веста" in prompt
         assert "Опис со повеќе детали за настанот." in prompt
+
+
+class TestDailyBriefTaskQuality:
+    def test_builds_cluster_level_context_for_daily_brief(self):
+        import tasks
+
+        cluster_articles = [
+            {
+                "cluster_id": "c1",
+                "title": "Трамп најави нови царини",
+                "description": "Главниот развој.",
+                "summary": "Кратко резиме.",
+                "source": "MIA",
+                "category": "Свет",
+                "topic": "Економија",
+                "created_at": "2026-04-05T10:00:00",
+            },
+            {
+                "cluster_id": "c1",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Втор агол.",
+                "summary": "",
+                "source": "Reuters",
+                "category": "Свет",
+                "topic": "Економија",
+                "created_at": "2026-04-05T10:10:00",
+            },
+        ]
+
+        with patch.object(tasks, "db") as mock_db, \
+             patch.object(tasks, "score_cluster_for_homepage", return_value=4.2):
+            mock_db.execute.return_value = cluster_articles
+            mock_db.execute_one.return_value = {
+                "summary": "• Главен развој: Трамп најави царини\n• Контекст: Реакции на пазарите\n• Што следи: Се чека рокот",
+                "perspectives": [
+                    {"angle": "Различни акценти", "content": "Reuters повеќе го нагласува рокот."},
+                    {"angle": "Што останува отворено", "content": "Не е јасно кога мерките ќе стапат на сила."},
+                ],
+            }
+
+            clusters = tasks._load_daily_brief_clusters(limit=3)
+            context = tasks._build_daily_brief_context(clusters)
+
+        assert clusters
+        assert clusters[0]["difference_point"]
+        assert clusters[0]["open_point"]
+        assert "### Кластер 1" in context
+        assert "Водечки извор: MIA" in context
+        assert "Разлики:" in context
+        assert "Отворено:" in context

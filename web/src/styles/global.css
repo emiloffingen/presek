@@ -340,6 +340,135 @@
     color: var(--muted-foreground);
 }
 
+.source-reputation-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.source-reputation-card {
+    display: block;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+    text-decoration: none;
+    color: inherit;
+}
+
+.source-reputation-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.7rem;
+}
+
+.source-reputation-name {
+    margin: 0 0 0.25rem;
+    font-size: 1.15rem;
+    line-height: 1.08;
+}
+
+.source-reputation-meta,
+.source-reputation-footer,
+.source-tier,
+.source-mini-stats span,
+.source-fast-row span {
+    font-family: var(--font-sans);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.source-tier {
+    padding: 0.18rem 0.4rem;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.source-tier-high {
+    color: var(--nyt-accent);
+    border-color: color-mix(in srgb, var(--nyt-accent) 34%, var(--border) 66%);
+}
+
+.source-tier-medium {
+    color: var(--foreground);
+}
+
+.source-tier-low {
+    color: var(--muted-foreground);
+}
+
+.source-reputation-copy {
+    margin: 0 0 0.8rem;
+    font-family: var(--font-nyt-body);
+    font-size: 0.96rem;
+    line-height: 1.58;
+    color: var(--secondary-foreground);
+}
+
+.source-reputation-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+}
+
+.source-reputation-stats strong,
+.source-mini-stats strong,
+.source-fast-row strong {
+    display: block;
+    margin-top: 0.2rem;
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    line-height: 1;
+    color: var(--foreground);
+}
+
+.source-reputation-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.9rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+}
+
+.source-status-paused {
+    color: var(--nyt-red);
+}
+
+.source-mini-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.source-fast-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.source-fast-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+}
+
+.source-fast-row:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
 .rail-copy {
     margin: 0;
     font-family: var(--font-nyt-body);
@@ -604,5 +733,9 @@
 
     .sources-list-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .source-reputation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
