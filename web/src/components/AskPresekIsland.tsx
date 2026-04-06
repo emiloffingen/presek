@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { LoaderCircle, MessageCircleMore, ArrowUpRight, Quote } from 'lucide-react';
+import { genericAskError, normalizeAskErrorMessage } from '../lib/askPresekErrors.js';
 
 type Citation = {
   source: string;
@@ -53,6 +54,31 @@ export default function AskPresekIsland({
     [suggestedQuestions]
   );
 
+  const parseApiResponse = async (res: Response) => {
+    const rawText = await res.text();
+    let data: any = null;
+
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = null;
+      }
+    }
+
+    return {
+      ok: res.ok,
+      status: res.status,
+      data,
+      message: normalizeAskErrorMessage(
+        data?.detail ||
+          data?.message ||
+          (rawText && rawText.trim() ? rawText.trim() : ''),
+        res.status
+      ),
+    };
+  };
+
   const submitQuestion = async (nextQuestion?: string) => {
     const finalQuestion = (nextQuestion ?? question).trim();
     if (!finalQuestion || loading) return;
@@ -68,8 +94,9 @@ export default function AskPresekIsland({
         },
         body: JSON.stringify({ cluster_id: clusterId, query: finalQuestion }),
       });
+      let parsed = await parseApiResponse(res);
 
-      if (!res.ok && (res.status === 404 || res.status === 405)) {
+      if (!parsed.ok || !parsed.data) {
         res = await fetch(`${API_URL}/cluster/${clusterId}/ask`, {
           method: 'POST',
           headers: {
@@ -77,15 +104,16 @@ export default function AskPresekIsland({
           },
           body: JSON.stringify({ question: finalQuestion }),
         });
+        parsed = await parseApiResponse(res);
       }
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.detail || data?.message || 'Неуспешно прашање.');
+      if (!parsed.ok || !parsed.data) {
+        throw new Error(parsed.message);
       }
+      const data = parsed.data;
 
       const nextResult = {
-        answer: data.answer || '',
+        answer: data.answer || data.response || '',
         citations: Array.isArray(data.citations) ? data.citations : [],
         related_questions: Array.isArray(data.related_questions) ? data.related_questions : [],
         confidence: data.confidence || 'medium',
@@ -102,7 +130,12 @@ export default function AskPresekIsland({
         return next.slice(0, 4);
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Се појави грешка.');
+      setResult(null);
+      setError(
+        err instanceof Error
+          ? normalizeAskErrorMessage(err.message)
+          : genericAskError
+      );
     } finally {
       setLoading(false);
     }
@@ -111,7 +144,7 @@ export default function AskPresekIsland({
   return (
     <div className="ask-presek">
       <p className="rail-copy ask-intro">
-        Имате прашање за оваа вест? Пресек одговара врз основа на споредените извори во овој кластер.
+        Имате прашање за оваа приказна? Пресек одговара врз основа на споредените извори во овој кластер и јасно покажува што е поткрепено, а што останува отворено.
       </p>
 
       <div className="ask-suggestions">
@@ -134,7 +167,7 @@ export default function AskPresekIsland({
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Прашајте што е ново, што е спорно или како се разликуваат изворите..."
+          placeholder="Прашајте што е ново, што е потврдено или каде изворите се разликуваат..."
           className="ask-input"
           rows={4}
         />
@@ -192,7 +225,7 @@ export default function AskPresekIsland({
 
           {result.citations.length > 0 && (
             <div className="ask-citations">
-              <p className="nyt-section-label text-muted-foreground">Поткрепено со</p>
+              <p className="nyt-section-label text-muted-foreground">Извори</p>
               <div className="ask-citation-list">
                 {result.citations.map((citation) => (
                   <a

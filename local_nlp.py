@@ -271,6 +271,9 @@ def summarize_article_fallback(title, description=None):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
     summary = summarize_locally(text, sentence_count=2).strip()
+    summary = re.sub(r'^[⚪🟢🔴]\s*', '', summary, flags=re.UNICODE)
+    summary = re.sub(r'#[^\s#]+', '', summary)
+    summary = re.sub(r'\s+', ' ', summary).strip()
     if summary:
         return summary[:420]
     return str(title or "").strip()
@@ -297,6 +300,133 @@ def _extract_terms(text):
     ]
 
 
+def _extract_number_tokens(text):
+    return re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", str(text or ""))
+
+
+def _join_fragments(parts):
+    clean = [str(part or "").strip(" .,;:") for part in parts if str(part or "").strip(" .,;:")]
+    return "; ".join(clean)
+
+
+def compare_cluster_sources(articles):
+    articles = _normalize_articles_for_local_use(articles)
+    if not articles:
+        return {"common_line": "", "difference_points": [], "open_points": []}
+
+    uncertainty_markers = (
+        "тврди", "според", "непотвр", "навод", "се очекува", "може",
+        "би мож", "засега", "се уште", "се уште", "се развива",
+    )
+
+    all_terms = Counter()
+    article_term_sets = []
+    title_pairs = []
+    number_map = {}
+    uncertain_sources = []
+
+    for article in articles:
+        combined = " ".join([article["title"], article["description"]]).strip()
+        terms = set(_extract_terms(combined))
+        article_term_sets.append(terms)
+        all_terms.update(terms)
+
+        title = article["title"]
+        if title:
+            title_pairs.append((article["source"], title))
+
+        for number in _extract_number_tokens(combined):
+            number_map.setdefault(number, set()).add(article["source"])
+
+        lowered = combined.lower()
+        if any(marker in lowered for marker in uncertainty_markers):
+            uncertain_sources.append(article["source"])
+
+    threshold = max(2, math.ceil(len(articles) / 2))
+    common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold]
+    common_line = ""
+    if common_terms:
+        common_line = "Повеќето извори се согласуваат околу: " + ", ".join(common_terms[:4]) + "."
+
+    difference_points = []
+    unique_titles = []
+    seen_titles = set()
+    for source, title in title_pairs:
+        key = title.casefold()
+        if key in seen_titles:
+            continue
+        seen_titles.add(key)
+        unique_titles.append((source, title))
+    if len(unique_titles) >= 2:
+        lead_source, lead_title = unique_titles[0]
+        second_source, second_title = unique_titles[1]
+        difference_points.append(
+            f"{lead_source} најдиректно го формулира развојот како „{lead_title}“, додека {second_source} повеќе нагласува „{second_title}“."
+        )
+
+    conflicting_numbers = []
+    for number, sources in number_map.items():
+        if len(sources) >= 1:
+            conflicting_numbers.append((number, sorted(sources)))
+    distinct_numbers = [item for item in conflicting_numbers if len(item[1]) >= 1]
+    if len(distinct_numbers) >= 2:
+        top_numbers = []
+        for number, sources in distinct_numbers[:3]:
+            top_numbers.append(f"{number} ({', '.join(sources[:2])})")
+        difference_points.append(
+            "Изворите не ги нагласуваат истите бројки или рокови: " + ", ".join(top_numbers) + "."
+        )
+
+    if len(articles) >= 2 and article_term_sets:
+        exclusive_parts = []
+        first_terms = article_term_sets[0]
+        second_terms = article_term_sets[1]
+        first_unique = [term for term in first_terms if term not in second_terms][:2]
+        second_unique = [term for term in second_terms if term not in first_terms][:2]
+        if first_unique or second_unique:
+            if first_unique:
+                exclusive_parts.append(f"{articles[0]['source']} повеќе отвора: {', '.join(first_unique)}")
+            if second_unique:
+                exclusive_parts.append(f"{articles[1]['source']} повеќе отвора: {', '.join(second_unique)}")
+        if exclusive_parts:
+            difference_points.append(_join_fragments(exclusive_parts) + ".")
+
+    open_points = []
+    if uncertain_sources:
+        source_list = ", ".join(dict.fromkeys(uncertain_sources))
+        open_points.append(
+            f"Дел од тврдењата и понатаму се формулирани како развој во тек или непотврдена најава, особено кај {source_list}."
+        )
+    if len(number_map) >= 2:
+        open_points.append("Не е целосно јасно кои бројки, рокови или размери ќе останат конечни по следните потврди.")
+    if not open_points and len(articles) >= 2:
+        open_points.append("Главната линија е јасна, но следните чекори, реакциите и конечните последици сè уште се развиваат.")
+
+    deduped_differences = []
+    seen = set()
+    for item in difference_points:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped_differences.append(item)
+
+    deduped_open = []
+    seen = set()
+    for item in open_points:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped_open.append(item)
+
+    return {
+        "common_line": common_line,
+        "difference_points": deduped_differences[:3],
+        "open_points": deduped_open[:2],
+    }
+
+
 def synthesize_cluster_fallback(articles):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
@@ -306,6 +436,7 @@ def synthesize_cluster_fallback(articles):
     descriptions = [article["description"] for article in articles if article["description"]]
     combined_text = " ".join([lead["title"], *descriptions[:4]])
     context_summary = summarize_locally(combined_text, sentence_count=3).strip()
+    comparison = compare_cluster_sources(articles)
 
     summary_lines = [
         f"• Главен развој: {lead['title']}",
@@ -317,27 +448,22 @@ def synthesize_cluster_fallback(articles):
         summary_lines.append(f"• Што следи: {descriptions[0][:220].rstrip(' .,;:')}." )
 
     perspectives = []
-    if len(articles) >= 2:
-        focus = [f"{article['source']} го нагласува „{article['title']}“" for article in articles[:3]]
-        perspectives.append({
-            "angle": "Различни акценти",
-            "content": "; ".join(focus) + ".",
-        })
-
-    all_terms = Counter()
-    for article in articles:
-        all_terms.update(_extract_terms(" ".join([article["title"], article["description"]])))
-    common_terms = [term for term, _count in all_terms.most_common(4)]
-    if common_terms:
+    if comparison["common_line"]:
         perspectives.append({
             "angle": "Заедничка линија",
-            "content": "Повеќето извори се вртат околу: " + ", ".join(common_terms) + ".",
+            "content": comparison["common_line"],
         })
 
-    if descriptions:
+    if comparison["difference_points"]:
+        perspectives.append({
+            "angle": "Различни акценти",
+            "content": " ".join(comparison["difference_points"][:2]),
+        })
+
+    if comparison["open_points"]:
         perspectives.append({
             "angle": "Што останува отворено",
-            "content": "Достапните извори најмногу објаснуваат што се случило, но оставаат отворени детали за следните чекори и пошироките последици.",
+            "content": " ".join(comparison["open_points"]),
         })
 
     return {
@@ -350,20 +476,52 @@ def generate_daily_brief_fallback(clusters):
     if not clusters:
         return "## Дневен Брифинг\n\nНема доволно достапни вести за автоматски локален брифинг."
 
-    lines = ["## Дневен Брифинг", "", "**Главни линии на денот**"]
-    for index, cluster in enumerate(clusters[:5], start=1):
+    lines = ["## Што го движи денот", ""]
+    intro_titles = [str(item.get("title") or "").strip() for item in clusters[:3] if str(item.get("title") or "").strip()]
+    if intro_titles:
+        lines.append(
+            "Денот најсилно се врти околу "
+            + ", ".join(intro_titles[:2])
+            + (f", а во поширокиот фокус влегува и {intro_titles[2]}." if len(intro_titles) > 2 else ".")
+        )
+        lines.append("")
+
+    difference_lines = []
+    watch_lines = []
+    for index, cluster in enumerate(clusters[:4], start=1):
         title = str(cluster.get("title") or "").strip()
         source = str(cluster.get("source") or "Извор").strip()
         topic = str(cluster.get("topic") or cluster.get("category") or "Вести").strip()
         description = str(cluster.get("description") or "").strip()
         summary = summarize_locally(f"{title}. {description}", sentence_count=2).strip()
+        source_count = int(cluster.get("source_count") or 1)
+        open_point = str(cluster.get("open_point") or "").strip()
+        difference_point = str(cluster.get("difference_point") or "").strip()
+
         lines.append(f"### {index}. {title}")
-        lines.append(f"- Тема: {topic}")
-        lines.append(f"- Водечки извор: {source}")
-        if summary:
-            lines.append(f"- Клучно: {summary}")
+        lines.append(
+            f"- Што е новото: {summary or title}"
+        )
+        lines.append(
+            f"- Зошто е важно: Темата влегува во {topic.lower()} агендата и во моментов ја следат {source_count} извори, со водечки сигнал од {source}."
+        )
         lines.append("")
 
+        if difference_point:
+            difference_lines.append(f"- {difference_point}")
+        elif source_count >= 3:
+            difference_lines.append(f"- Кај {title[:90]} најмногу се разликува акцентот меѓу изворите, а не основниот факт.")
+        if open_point:
+            watch_lines.append(f"- {open_point}")
+        else:
+            watch_lines.append(f"- Следете што ќе биде следната потврда, реакција или институционален чекор околу: {title[:90]}.")
+
+    lines.append("## Каде се разликува известувањето")
+    lines.extend(difference_lines[:3] or ["- Повеќето водечки приказни добиваат слична главна линија, но со различни акценти и рамки."])
+    lines.append("")
+    lines.append("## Што да се следи понатаму")
+    lines.extend(watch_lines[:3] or ["- Следните часови најмногу ќе зависат од нови потврди, официјални реакции и дополнителни бројки."])
+    lines.append("")
     lines.append("**Напомена**")
     lines.append("Овој брифинг е составен локално од највисоко рангираните кластери кога AI брифинг не е достапен.")
     return "\n".join(lines).strip()
@@ -377,6 +535,7 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
     lowered = question.lower()
     lead = articles[0]
     citations = articles[:2]
+    comparison = compare_cluster_sources(articles)
     related_questions = [
         "Како се разликуваат изворите во известувањето?",
         "Што сè уште не е потврдено?",
@@ -384,16 +543,16 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
     ]
 
     if any(token in lowered for token in ["разлику", "извори", "перспектив"]):
-        emphasis = [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
+        emphasis = comparison["difference_points"] or [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
         return {
-            "answer": "; ".join(emphasis) + ". Разликите најчесто се во аголот и формулацијата, а не во основниот настан.",
+            "answer": " ".join(emphasis[:2]) + " Разликите најчесто се во аголот, бројките или формулацијата, а не нужно во самиот основен настан.",
             "citations": citations,
             "related_questions": related_questions,
             "confidence": "medium",
         }
 
     if any(token in lowered for token in ["нејасно", "непотврдено", "отворено", "што не се знае"]):
-        answer = "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
+        answer = " ".join(comparison["open_points"][:2]) or "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
         if synthesis:
             answer = f"{answer} Тековниот преглед укажува дека: {summarize_locally(synthesis, sentence_count=1)}"
         return {
@@ -451,6 +610,7 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
     answer = str(answer or "").strip()
     articles = _normalize_articles_for_local_use(articles)
     perspectives = perspectives or []
+    comparison = compare_cluster_sources(articles)
 
     sentences = [
         sentence.strip()
@@ -476,7 +636,9 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
         confirmed_points = sentences[:2]
 
     if not unclear_points:
-        if perspectives:
+        if comparison["open_points"]:
+            unclear_points.extend(comparison["open_points"][:2])
+        elif perspectives:
             unclear_points.append("Изворите нудат различни акценти, но не даваат целосна слика за сите следни чекори.")
         elif synthesis:
             unclear_points.append("Достапниот контекст ја објаснува главната линија, но не ги затвора сите отворени детали.")
@@ -487,16 +649,33 @@ def build_structured_answer_sections(answer, articles=None, synthesis="", perspe
         for item in perspectives[:2]:
             angle = str(item.get("angle") or "").strip()
             content = str(item.get("content") or "").strip()
-            text = f"{angle}: {content}".strip(": ").strip()
-            if text:
-                top.append(text)
+            if not content:
+                continue
+            if angle:
+                top.append(f"{angle}: {content}")
+            else:
+                top.append(content)
         if top:
-            source_differences = " ".join(top)[:320]
-    elif len(articles) >= 2:
-        source_differences = (
-            f"{articles[0]['source']} најмногу го истакнува водечкиот развој, "
-            f"додека {articles[1]['source']} додава поширок контекст или реакција."
-        )
+            source_differences = " ".join(top)[:360]
+
+    if not source_differences and comparison["difference_points"]:
+        source_differences = " ".join(comparison["difference_points"])[:360]
+
+    if not source_differences and len(articles) >= 2:
+        lead = articles[0]
+        second = articles[1]
+        lead_title = str(lead.get("title") or "").strip()
+        second_title = str(second.get("title") or "").strip()
+        if lead_title and second_title and lead_title != second_title:
+            source_differences = (
+                f"{lead['source']} најдиректно го формулира развојот како „{lead_title}“, "
+                f"додека {second['source']} повеќе нагласува „{second_title}“."
+            )[:360]
+        else:
+            source_differences = (
+                f"{lead['source']} повеќе се држи до водечкиот развој, "
+                f"додека {second['source']} додава контекст, реакција или поширока последица."
+            )
 
     return {
         "confirmed_points": confirmed_points[:3],
@@ -511,15 +690,15 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
     """
     # Editorial, category-aware palette
     colors = {
-        "Македонија": "#b23a48",
-        "Балкан":     "#52796f",
-        "Европа":     "#4d908e",
-        "Америка":    "#577590",
-        "Свет":       "#6d597a",
-        "Спорт":      "#c77d36",
-        "Технологија":"#495057",
-        "Економија":  "#588157",
-        "default":    "#6c757d"
+        "Македонија": "#a63d40",
+        "Балкан": "#3d6b63",
+        "Европа": "#3f7d8a",
+        "Америка": "#3e6282",
+        "Свет": "#5f556f",
+        "Спорт": "#b36b24",
+        "Технологија": "#3e4954",
+        "Економија": "#456a4f",
+        "default": "#5f6470",
     }
 
     bg_color = colors.get(category, colors["default"])
@@ -534,7 +713,7 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
             .replace('"', "&quot;")
         )
 
-    def wrap_lines(text, max_chars=24, max_lines=4):
+    def wrap_lines(text, max_chars=22, max_lines=4):
         if not text:
             return ["Преглед на веста"]
         words = text.split()
@@ -560,45 +739,52 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
 
     lines = wrap_lines(title)
     title_svg = []
-    y = 168
+    y = 176
     for line in lines:
         title_svg.append(
-            f'<text x="56" y="{y}" font-family="Georgia, \'Times New Roman\', serif" '
-            f'font-size="52" font-weight="700" letter-spacing="-1.2" fill="#172033">{escape(line)}</text>'
+            f'<text x="58" y="{y}" font-family="Georgia, \'Times New Roman\', serif" '
+            f'font-size="47" font-weight="700" letter-spacing="-1.15" fill="#162132">{escape(line)}</text>'
         )
-        y += 58
+        y += 54
 
     subtitle = f"{category.upper()} / ПРЕСЕК"
-    pattern_seed = len(title) % 3
+    pattern_seed = len(title) % 4
     pattern_svg = [
-        '<circle cx="705" cy="82" r="118" fill="#fffdf7" fill-opacity="0.2" />',
-        '<path d="M560 40 L790 40 L640 220 Z" fill="#fffdf7" fill-opacity="0.18" />',
-        '<rect x="560" y="28" width="200" height="170" rx="24" fill="#fffdf7" fill-opacity="0.16" />',
+        '<circle cx="690" cy="84" r="112" fill="#fffdf7" fill-opacity="0.24" /><circle cx="612" cy="148" r="42" fill="#fffdf7" fill-opacity="0.18" />',
+        '<path d="M558 44 L770 44 L636 214 Z" fill="#fffdf7" fill-opacity="0.18" /><rect x="598" y="108" width="140" height="12" fill="#162132" fill-opacity="0.12" />',
+        '<rect x="564" y="40" width="188" height="166" rx="28" fill="#fffdf7" fill-opacity="0.17" /><circle cx="648" cy="122" r="58" fill="#162132" fill-opacity="0.08" />',
+        '<path d="M566 62 C612 26, 710 26, 752 78 C706 116, 614 122, 566 62 Z" fill="#fffdf7" fill-opacity="0.18" /><rect x="584" y="134" width="160" height="46" fill="#fffdf7" fill-opacity="0.12" />',
     ][pattern_seed]
 
     svg = f"""<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fcfbf7" />
+      <stop offset="0%" stop-color="#f8f2e7" />
+      <stop offset="58%" stop-color="#fdfbf7" />
       <stop offset="100%" stop-color="{bg_color}" />
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#162132" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#314055" stop-opacity="0.72" />
     </linearGradient>
   </defs>
 
   <rect width="100%" height="100%" fill="url(#bg)" />
-  <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.28" />
-  <rect x="28" y="28" width="744" height="394" fill="none" stroke="#1f2937" stroke-opacity="0.12" />
-  <rect x="40" y="40" width="720" height="370" fill="#fffdf9" fill-opacity="0.34" />
-  <rect x="56" y="56" width="66" height="26" fill="#1f2937" fill-opacity="0.9" />
-  <text x="89" y="74" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" fill="#fffdf7">{escape(category.upper())}</text>
-  <text x="56" y="112" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="2.2" fill="#334155" fill-opacity="0.78">{escape(subtitle)}</text>
-  <line x1="56" y1="126" x2="164" y2="126" stroke="#334155" stroke-opacity="0.55" stroke-width="3" />
+  <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.18" />
+  <rect x="26" y="26" width="748" height="398" fill="none" stroke="#162132" stroke-opacity="0.12" />
+  <rect x="42" y="42" width="716" height="366" fill="#fffdf9" fill-opacity="0.42" />
+  <rect x="58" y="58" width="80" height="28" fill="url(#ink)" />
+  <text x="98" y="77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="1.2" fill="#fffdf7">{escape(category.upper())}</text>
+  <text x="58" y="114" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" letter-spacing="2.8" fill="#314055" fill-opacity="0.82">{escape(subtitle)}</text>
+  <line x1="58" y1="130" x2="190" y2="130" stroke="#314055" stroke-opacity="0.5" stroke-width="2.5" />
+  <text x="58" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="{bg_color}" fill-opacity="0.85">ПОДРЕДЕНО ПО ЗНАЧЕЊЕ, ИЗВОРИ И КОНТЕКСТ</text>
 
   {"".join(title_svg)}
 
   <g>
     {pattern_svg}
   </g>
-
-  <text x="744" y="392" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" letter-spacing="2.5" fill="#1f2937" fill-opacity="0.42">GENERATED COVER</text>
+  <line x1="58" y1="372" x2="744" y2="372" stroke="#162132" stroke-opacity="0.12" />
+  <text x="58" y="394" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="2.1" fill="#162132" fill-opacity="0.42">ПРЕСЕК ДИГИТАЛЕН ПРЕГЛЕД</text>
 </svg>"""
     return svg

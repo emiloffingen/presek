@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import { Clock, Sparkles, BookOpen } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
@@ -49,7 +50,13 @@ function formatBriefing(content: string) {
         } else if (line.startsWith('**') && line.endsWith('**')) {
             return `<p class="font-black mt-6 mb-2 text-foreground uppercase text-xs tracking-widest">${line.substring(2, line.length - 2)}</p>`;
         } else if (line.startsWith('- ') || line.startsWith('• ')) {
-            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${line.substring(2)}</li>`;
+            const item = line.substring(2);
+            const parts = item.split(':');
+            if (parts.length > 1) {
+                const label = parts.shift();
+                return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90"><strong>${label}:</strong>${parts.join(':')}</li>`;
+            }
+            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${item}</li>`;
         } else {
             return `<p class="mb-4 text-lg leading-relaxed text-foreground/90">${line}</p>`;
         }
@@ -83,27 +90,32 @@ function formatBriefing(content: string) {
 						<div class="briefing-empty">
 							<p class="text-4xl mb-4">📋</p>
 							<h3 class="font-black text-foreground mb-2 uppercase tracking-widest text-sm">Брифингот сè уште не е подготвен</h3>
-							<p class="text-muted-foreground text-xs leading-relaxed font-serif italic">
-								Обидете се подоцна за денешниот преглед на вестите. <br/>
-								Нашиот систем ја финализира анализата на утринските објави.
-							</p>
+								<p class="text-muted-foreground text-xs leading-relaxed font-serif italic">
+									Обидете се подоцна за денешниот преглед. <br/>
+									Сè уште ги подредуваме темите што најсилно го отвораат денот.
+								</p>
 						</div>
 					)}
 				</div>
 
 				<aside class="briefing-rail">
 					<div class="rail-card">
-						<h3 class="rail-card-title flex items-center gap-2"><BookOpen size={14}/> Зошто Брифинг?</h3>
-						<p class="rail-copy">
-							Секое утро, нашиот систем ги анализира најважните настани од стотици извори за да ви овозможи брз и објективен преглед на денот.
-						</p>
+							<h3 class="rail-card-title flex items-center gap-2"><BookOpen size={14}/> Зошто Брифинг?</h3>
+							<p class="rail-copy">
+								Брифингот е наменет за брз прв преглед: што е големата тема, што е новото и каде се насобира најмногу медиумско внимание.
+							</p>
 					</div>
 
 					<div class="rail-card rail-card-accent">
-						<h4 class="rail-card-title">Како Се Генерира?</h4>
-						<p class="rail-copy">
-							Системот ги групира вестите во кластери, ги споредува фактите од различни медиуми и генерира неутрално резиме без уредувачка пристрасност.
-						</p>
+							<h4 class="rail-card-title">Како Се Генерира?</h4>
+							<p class="rail-copy">
+								Системот ги групира сродните објави, ги споредува главните тврдења и составува синтетизиран преглед што можете брзо да го проверите преку изворите.
+							</p>
+					</div>
+
+					<div class="rail-card">
+						<h4 class="rail-card-title">Испорака И Известувања</h4>
+						<BriefingDeliveryIsland client:load variant="summary" content={briefing?.content || ''} dateLabel={currentDate} />
 					</div>
 				</aside>
 			</div>

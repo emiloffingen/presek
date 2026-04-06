@@ -1,6 +1,8 @@
 """Tests for AI engine API call functions with mocked HTTP requests."""
 import pytest
 import json
+import sys
+import types
 from unittest.mock import patch, MagicMock
 from io import BytesIO
 
@@ -23,6 +25,8 @@ class TestGeminiProvider:
         provider = GeminiProvider()
         result = provider.call("Test prompt", "System prompt", max_tokens=200, json_mode=False)
         assert result == "Резиме на вестта."
+        request = mock_urlopen.call_args[0][0]
+        assert "gemini-2.0-flash" in request.full_url
 
     @patch('ai_engine.GOOGLE_API_KEY', '')
     def test_no_api_key(self):
@@ -216,3 +220,154 @@ class TestTranslateToMacedonian:
         mock_call_ai.return_value = ('{"summary": "Преведено"}', "gemini")
         result = translate_to_macedonian("Text")
         assert result == "Преведено"
+
+    @patch('ai_engine.log')
+    @patch('ai_engine._call_ai')
+    def test_translation_error_logs_and_falls_back_to_original(self, mock_call_ai, mock_log):
+        from ai_engine import translate_to_macedonian
+        mock_call_ai.side_effect = RuntimeError("provider down")
+        result = translate_to_macedonian("Text")
+        assert result == "Text"
+        mock_log.warning.assert_called()
+
+
+class TestGenerateCoverArt:
+    @patch('ai_engine._download_safe_external_image')
+    @patch('ai_engine.search_google_image')
+    def test_remote_image_fetch_uses_safe_helper(self, mock_search, mock_download):
+        from ai_engine import generate_cover_art
+
+        mock_search.return_value = "https://example.com/image.jpg"
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.iter_content.return_value = [b"jpg"]
+        mock_download.return_value = mock_response
+
+        with patch('builtins.open', MagicMock()), \
+             patch('os.makedirs'):
+            result = generate_cover_art("abc123", "Title")
+
+        assert result == "/static/generated/abc123.jpg"
+        mock_download.assert_called_once()
+        mock_response.close.assert_called()
+
+    @patch('ai_engine.log')
+    @patch('ai_engine._download_safe_external_image', side_effect=PermissionError("Blocked upstream target"))
+    @patch('ai_engine.search_google_image')
+    def test_remote_fetch_failure_falls_back_to_placeholder(self, mock_search, _mock_download, mock_log):
+        from ai_engine import generate_cover_art
+
+        mock_search.return_value = "https://example.com/image.jpg"
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {"category": "Вести"}
+
+        with patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+             patch('os.makedirs'), \
+             patch('database.db_manager', mock_db), \
+             patch('builtins.open', MagicMock()):
+            result = generate_cover_art("abc123", "Title")
+
+        assert result == "/static/generated/abc123.svg"
+        mock_log.warning.assert_called()
+
+
+class TestAutoSummarizeTopClusters:
+    @patch("utils.get_source_health_map", return_value={})
+    def test_refreshes_cluster_when_existing_synthesis_is_stale(self, _mock_health):
+        import ai_engine
+        import datetime
+
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "id": 1,
+                "cluster_id": "cluster1",
+                "source": "MIA",
+                "title": "Владата најави пакет од 100 милиони",
+                "description": "Прв извештај.",
+                "created_at": now - datetime.timedelta(hours=2, minutes=30),
+                "summary": "Постоечко резиме",
+            },
+            {
+                "id": 2,
+                "cluster_id": "cluster1",
+                "source": "Reuters",
+                "title": "Reuters пишува за 120 милиони и нов рок",
+                "description": "Нов извор и различна бројка.",
+                "created_at": now - datetime.timedelta(minutes=20),
+                "summary": "",
+            },
+        ]
+
+        mock_db = MagicMock()
+        mock_db.execute.side_effect = [
+            rows,
+            [{"cluster_id": "cluster1", "created_at": now - datetime.timedelta(hours=2)}],
+        ]
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = True
+        summarize_delay = MagicMock()
+        synthesize_delay = MagicMock()
+        fake_tasks = types.SimpleNamespace(
+            summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+        )
+
+        with patch("database.db_manager", mock_db), \
+             patch("utils.redis_client", mock_redis), \
+             patch.dict(sys.modules, {"tasks": fake_tasks}), \
+             patch("config.AUTO_SUMMARIZE_TOP_N", 5), \
+             patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
+            ai_engine.auto_summarize_top_clusters()
+
+        synthesize_delay.assert_called_once()
+
+    @patch("utils.get_source_health_map", return_value={})
+    def test_does_not_refresh_minor_recent_followup(self, _mock_health):
+        import ai_engine
+        import datetime
+
+        now = datetime.datetime.now()
+        rows = [
+            {
+                "id": 1,
+                "cluster_id": "cluster2",
+                "source": "MIA",
+                "title": "Трамп најави царини",
+                "description": "Прв извештај.",
+                "created_at": now - datetime.timedelta(minutes=18),
+                "summary": "Постоечко резиме",
+            },
+            {
+                "id": 2,
+                "cluster_id": "cluster2",
+                "source": "MIA",
+                "title": "Трамп најави царини за увоз",
+                "description": "Мало дополнување.",
+                "created_at": now - datetime.timedelta(minutes=5),
+                "summary": "",
+            },
+        ]
+
+        mock_db = MagicMock()
+        mock_db.execute.side_effect = [
+            rows,
+            [{"cluster_id": "cluster2", "created_at": now - datetime.timedelta(minutes=10)}],
+        ]
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = True
+        summarize_delay = MagicMock()
+        synthesize_delay = MagicMock()
+        fake_tasks = types.SimpleNamespace(
+            summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+        )
+
+        with patch("database.db_manager", mock_db), \
+             patch("utils.redis_client", mock_redis), \
+             patch.dict(sys.modules, {"tasks": fake_tasks}), \
+             patch("config.AUTO_SUMMARIZE_TOP_N", 5), \
+             patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
+            ai_engine.auto_summarize_top_clusters()
+
+        synthesize_delay.assert_not_called()

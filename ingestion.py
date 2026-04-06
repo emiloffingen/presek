@@ -176,7 +176,7 @@ async def ingest_all_sources_async():
     headers = {'User-Agent': 'Presek/6.0 Async Reader (+https://presek.mk)'}
     import httpx
 
-    async with httpx.AsyncClient(headers=headers, verify=False) as client:
+    async with httpx.AsyncClient(headers=headers, verify=True) as client:
         tasks = [fetch_feed_async(client, s) for s in sources]
         results = await asyncio.gather(*tasks)
         

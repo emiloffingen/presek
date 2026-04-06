@@ -2,6 +2,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import secrets
 import re
 import time
 import logging
@@ -9,11 +10,11 @@ import urllib.request
 import urllib.error
 from collections import defaultdict
 
-from flask import Blueprint, jsonify, request, Response
+from flask import Blueprint, jsonify, request, Response, redirect
 from database import db_manager as db
 from ai_engine import sync_call_ai as _call_ai, clean_json_response
-from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced
-from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
+from utils import score_cluster, rank_articles_in_cluster, cached_response, set_cache, calculate_reading_time, is_balanced, assess_cluster_synthesis_freshness, annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters, build_source_reputation_rows, build_editor_analytics_payload
+from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN, CURATED_INTERNATIONAL_SOURCES
 from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from embeddings import generate_query_embedding
 from local_nlp import (
@@ -26,6 +27,14 @@ from local_nlp import (
     build_structured_answer_sections,
 )
 from health import get_source_statuses, reset_source_policy
+from api_helpers import (
+    normalize_perspectives,
+    default_related_questions as _default_related_questions,
+    related_questions_from_context as _related_questions_from_context,
+    text_terms as _text_terms,
+    rank_cluster_citations as _rank_cluster_citations,
+    normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
+)
 
 api_bp = Blueprint('api', __name__)
 log = logging.getLogger("presek")
@@ -35,9 +44,115 @@ _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "i
 _PROXY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
+def _normalize_sync_list(values, limit=24):
+    cleaned = []
+    seen = set()
+    for value in values or []:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        cleaned.append(text)
+        if len(cleaned) >= limit:
+            break
+    return cleaned
+
+
+def _normalize_recent_clusters(items):
+    rows = []
+    seen = set()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        cluster_id = str(item.get("cluster_id") or "").strip()
+        if not cluster_id or cluster_id in seen:
+            continue
+        seen.add(cluster_id)
+        rows.append({
+            "cluster_id": cluster_id,
+            "title": str(item.get("title") or "").strip(),
+            "category": str(item.get("category") or "").strip(),
+            "topic": str(item.get("topic") or "").strip(),
+            "primarySource": str(item.get("primarySource") or "").strip(),
+            "sources": _normalize_sync_list(item.get("sources") or [], limit=8),
+            "tags": _normalize_sync_list(item.get("tags") or [], limit=10),
+            "viewedAt": str(item.get("viewedAt") or "").strip(),
+        })
+        if len(rows) >= 24:
+            break
+    return rows
+
+
+def _normalize_delivery_preferences(prefs):
+    prefs = prefs or {}
+    return {
+        "morningBriefing": prefs.get("morningBriefing") is not False,
+        "breakingAlerts": prefs.get("breakingAlerts") is not False,
+        "browserPermission": str(prefs.get("browserPermission") or "default").strip() or "default",
+    }
+
+
+def _normalize_synced_profile(payload):
+    payload = payload or {}
+    return {
+        "followedTopics": _normalize_sync_list(payload.get("followedTopics") or [], limit=12),
+        "followedSources": _normalize_sync_list(payload.get("followedSources") or [], limit=12),
+        "recentClusters": _normalize_recent_clusters(payload.get("recentClusters") or []),
+        "deliveryPreferences": _normalize_delivery_preferences(payload.get("deliveryPreferences") or {}),
+    }
+
+
+def _merge_synced_profiles(left, right):
+    left = _normalize_synced_profile(left)
+    right = _normalize_synced_profile(right)
+    merged_recent = _normalize_recent_clusters(
+        sorted(
+            left["recentClusters"] + right["recentClusters"],
+            key=lambda item: str(item.get("viewedAt") or ""),
+            reverse=True,
+        )
+    )
+    return {
+        "followedTopics": _normalize_sync_list(left["followedTopics"] + right["followedTopics"], limit=12),
+        "followedSources": _normalize_sync_list(left["followedSources"] + right["followedSources"], limit=12),
+        "recentClusters": merged_recent,
+        "deliveryPreferences": {
+            **left["deliveryPreferences"],
+            **right["deliveryPreferences"],
+        },
+    }
+
+
+def _default_server_delivery_subscription():
+    return _normalize_server_delivery_subscription({})
+
+
+def _normalize_server_delivery_row(row):
+    if not row:
+        return _default_server_delivery_subscription()
+    return _normalize_server_delivery_subscription({
+        "channel": row.get("channel"),
+        "target": row.get("target"),
+        "morningBriefing": row.get("morning_briefing"),
+        "weeklyDigest": row.get("weekly_digest"),
+        "breakingTopics": row.get("breaking_topics"),
+        "breakingSources": row.get("breaking_sources"),
+        "isActive": row.get("is_active"),
+    })
+
+
+def _safe_tracking_redirect_path(path):
+    clean = str(path or "").strip()
+    if not clean.startswith("/"):
+        return "/briefing"
+    if clean.startswith("//") or clean.startswith("/api/"):
+        return "/briefing"
+    return clean
+
+
 def _source_admin_authorized():
     token = (request.headers.get("X-Admin-Token") or "").strip()
-    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or os.environ.get("SECRET_KEY") or "").strip()
+    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
     remote_addr = (request.remote_addr or "").strip()
     forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
 
@@ -48,115 +163,6 @@ def _source_admin_authorized():
     return False
 
 
-def normalize_perspectives(raw_perspectives):
-    if not isinstance(raw_perspectives, list):
-        return []
-
-    normalized = []
-    for item in raw_perspectives:
-        if isinstance(item, dict):
-            angle = (
-                item.get("angle")
-                or item.get("label")
-                or item.get("title")
-                or item.get("name")
-                or ""
-            )
-            content = (
-                item.get("content")
-                or item.get("text")
-                or item.get("description")
-                or ""
-            )
-        elif isinstance(item, str):
-            angle = ""
-            content = item
-        else:
-            continue
-
-        angle = str(angle).strip()
-        content = str(content).strip()
-        if not angle and not content:
-            continue
-
-        normalized.append({
-            "angle": angle or "Перспектива",
-            "content": content,
-        })
-
-    return normalized
-
-
-def _default_related_questions(question, category=None):
-    fallback = [
-        "Што е главниот развој во оваа приказна?",
-        "Како се разликуваат изворите во известувањето?",
-        "Што сè уште не е потврдено?",
-    ]
-    if category:
-        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
-    return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
-
-
-def _text_terms(text):
-    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
-    return {
-        term for term in terms
-        if term not in {"вести", "вест", "извор", "извори", "кластер"}
-    }
-
-
-def _rank_cluster_citations(question, answer, rows, preferred_numbers):
-    question_terms = _text_terms(question)
-    answer_terms = _text_terms(answer)
-    combined_terms = question_terms | answer_terms
-
-    preferred_order = []
-    for raw in preferred_numbers or []:
-        try:
-            idx = int(raw)
-        except Exception:
-            continue
-        if idx not in preferred_order:
-            preferred_order.append(idx)
-
-    ranked = []
-    for idx, row in enumerate(rows, start=1):
-        article_text = " ".join([
-            str(row.get("title") or ""),
-            str(row.get("description") or ""),
-            str(row.get("source") or ""),
-        ])
-        article_terms = _text_terms(article_text)
-        overlap = len(combined_terms & article_terms)
-        preferred_bonus = 5 if idx in preferred_order else 0
-        title_bonus = 1 if question_terms & _text_terms(str(row.get("title") or "")) else 0
-        ranked.append((
-            preferred_bonus + overlap + title_bonus,
-            -idx,
-            {
-                "source": row.get("source"),
-                "title": row.get("title"),
-                "link": row.get("link"),
-                "created_at": row.get("created_at"),
-                "snippet": build_citation_snippet(row),
-            },
-        ))
-
-    ranked.sort(reverse=True)
-    top = [item[2] for item in ranked if item[0] > 0]
-    if top:
-        return top[:3]
-    return [
-        {
-            "source": row.get("source"),
-            "title": row.get("title"),
-            "link": row.get("link"),
-            "created_at": row.get("created_at"),
-            "snippet": build_citation_snippet(row),
-        }
-        for row in rows[:2]
-    ]
 
 
 def _get_top_entities_payload(limit=10):
@@ -187,6 +193,78 @@ def _get_top_entities_payload(limit=10):
     return filtered
 
 
+def _build_cluster_answer_fallback(query, rows, synthesis="", perspectives=None):
+    rows = [dict(row) if not isinstance(row, dict) else row for row in (rows or [])]
+    category = rows[0].get("category") if rows else None
+    perspectives = normalize_perspectives(perspectives or [])
+    local_answer = None
+
+    try:
+        local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    except Exception as e:
+        log.warning(f"[cluster_answer] local helper failed, using minimal fallback: {e}")
+
+    if not local_answer and rows:
+        lead = rows[0]
+        answer = f"Најважното во овој момент е: {str(lead.get('title') or 'Оваа приказна')}."
+        source = str(lead.get("source") or "Извор").strip()
+        answer += f" Водечкиот достапен извор во овој кластер е {source}."
+        local_answer = {
+            "answer": answer,
+            "citations": rows[:2],
+            "related_questions": _default_related_questions(query, category),
+            "confidence": "low",
+        }
+
+    sections = {
+        "confirmed_points": [],
+        "unclear_points": [],
+        "source_differences": "",
+    }
+    try:
+        sections = build_structured_answer_sections(
+            local_answer["answer"] if local_answer else "",
+            rows,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[cluster_answer] section builder failed during fallback: {e}")
+
+    citations = []
+    try:
+        citations = _rank_cluster_citations(query, local_answer["answer"] if local_answer else "", rows, [])
+    except Exception as e:
+        log.warning(f"[cluster_answer] citation ranking failed during fallback: {e}")
+        citations = [
+            {
+                "source": row.get("source"),
+                "title": row.get("title"),
+                "link": row.get("link"),
+                "created_at": row.get("created_at"),
+                "snippet": build_citation_snippet(row),
+            }
+            for row in rows[:2]
+        ]
+
+    return {
+        "answer": (local_answer or {}).get("answer", "Во моментов системот не може да даде подетален одговор."),
+        "citations": citations,
+        "related_questions": (local_answer or {}).get("related_questions") or _related_questions_from_context(
+            query,
+            category,
+            has_perspectives=bool(perspectives),
+            has_multiple_sources=len(rows) >= 2,
+            has_unclear_points=bool(sections.get("unclear_points")),
+        ),
+        "confidence": (local_answer or {}).get("confidence", "low"),
+        "confirmed_points": sections.get("confirmed_points", [])[:3],
+        "unclear_points": sections.get("unclear_points", [])[:2],
+        "source_differences": sections.get("source_differences", ""),
+        "generated_locally": True,
+    }
+
+
 def _build_cluster_answer(cluster_id, query):
     rows = db.execute(
         """
@@ -200,6 +278,7 @@ def _build_cluster_answer(cluster_id, query):
     )
     if not rows:
         return None, ("Cluster not found", 404)
+    rows = [dict(row) if not isinstance(row, dict) else row for row in rows]
 
     synthesis_row = db.execute_one(
         "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
@@ -210,14 +289,22 @@ def _build_cluster_answer(cluster_id, query):
         synthesis_row["perspectives"] if synthesis_row and synthesis_row.get("perspectives") else []
     )
 
-    local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    try:
+        local_answer = answer_cluster_question_locally(query, rows, synthesis=synthesis, perspectives=perspectives)
+    except Exception as e:
+        log.warning(f"[cluster_answer] local answer generation failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if local_answer:
-        sections = build_structured_answer_sections(
-            local_answer["answer"],
-            rows,
-            synthesis=synthesis,
-            perspectives=perspectives,
-        )
+        try:
+            sections = build_structured_answer_sections(
+                local_answer["answer"],
+                rows,
+                synthesis=synthesis,
+                perspectives=perspectives,
+            )
+        except Exception as e:
+            log.warning(f"[cluster_answer] section building failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
         payload = {
             **local_answer,
             "citations": _rank_cluster_citations(query, local_answer["answer"], rows, []),
@@ -257,11 +344,19 @@ def _build_cluster_answer(cluster_id, query):
         "Биди прецизен, краток и јасно посочи кога нешто не е потврдено."
     )
 
-    response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+    try:
+        response_text, _ = _call_ai(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+    except Exception as e:
+        log.warning(f"[cluster_answer] AI call failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if not response_text:
-        return None, ("Системот не можеше да одговори", 503)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
 
-    parsed = clean_json_response(response_text)
+    try:
+        parsed = clean_json_response(response_text)
+    except Exception as e:
+        log.warning(f"[cluster_answer] AI response cleaning failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if isinstance(parsed, dict):
         answer = str(parsed.get("answer") or "").strip()
         confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
@@ -279,12 +374,16 @@ def _build_cluster_answer(cluster_id, query):
         related_questions = []
         confidence = "medium"
 
-    sections = build_structured_answer_sections(
-        answer,
-        rows,
-        synthesis=synthesis,
-        perspectives=perspectives,
-    )
+    try:
+        sections = build_structured_answer_sections(
+            answer,
+            rows,
+            synthesis=synthesis,
+            perspectives=perspectives,
+        )
+    except Exception as e:
+        log.warning(f"[cluster_answer] final section building failed for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(query, rows, synthesis=synthesis, perspectives=perspectives), None
     if not confirmed_points:
         confirmed_points = sections["confirmed_points"]
     if not unclear_points:
@@ -302,7 +401,13 @@ def _build_cluster_answer(cluster_id, query):
         "source_differences": source_differences,
     }
     if not payload["related_questions"]:
-        payload["related_questions"] = _default_related_questions(query, rows[0].get("category"))
+        payload["related_questions"] = _related_questions_from_context(
+            query,
+            rows[0].get("category"),
+            has_perspectives=bool(perspectives),
+            has_multiple_sources=len(rows) >= 2,
+            has_unclear_points=bool(unclear_points),
+        )
 
     return payload, None
 
@@ -406,12 +511,12 @@ def api_news():
             r['reading_time'] = calculate_reading_time(r.get('description', ''))
             clusters[r['cluster_id']].append(r)
 
-        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters = [annotate_cluster_articles(arts) for arts in clusters.values()]
 
         if sort_by == 'popular':
             ranked_clusters.sort(key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
         else:
-            ranked_clusters.sort(key=score_cluster, reverse=True)
+            ranked_clusters.sort(key=score_cluster_for_homepage, reverse=True)
 
         # Pagination & Meta
         start = page * page_size
@@ -430,6 +535,7 @@ def api_news():
         result = []
         for arts in paged_clusters:
             s = score_cluster(arts)
+            homepage_score = score_cluster_for_homepage(arts)
             cid = arts[0]["cluster_id"]
             result.append({
                 "cluster_id": cid,
@@ -437,6 +543,7 @@ def api_news():
                 "representative_image": rep_images.get(cid),
                 "reading_time": arts[0].get('reading_time', 1),
                 "score": round(s, 3),
+                "homepage_score": round(homepage_score, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,
                 "has_balanced": is_balanced(arts)
@@ -461,6 +568,84 @@ def api_news():
     except Exception as e:
         log.error(f"[api/news] Error: {e}", exc_info=True)
         return error_response("Failed to fetch news")
+
+
+@api_bp.route("/api/intelligence/international-curated")
+def api_international_curated():
+    try:
+        try:
+            limit = int(request.args.get("limit", 6))
+        except ValueError:
+            return error_response("Invalid limit", 400)
+
+        limit = min(12, max(1, limit))
+        cache_key = f"intl:curated:{limit}"
+        cached = cached_response(cache_key, ttl=60)
+        if cached:
+            return jsonify(cached)
+
+        rows = db.execute(
+            """
+            SELECT *
+            FROM articles
+            WHERE country != %s
+              AND source = ANY(%s)
+              AND created_at >= NOW() - INTERVAL '72 hours'
+              AND (
+                    is_translated = 1
+                    OR (
+                        COALESCE(original_title, '') <> ''
+                        AND title <> original_title
+                    )
+                  )
+            ORDER BY created_at DESC
+            LIMIT 400
+            """,
+            ("🇲🇰", list(CURATED_INTERNATIONAL_SOURCES)),
+        )
+
+        clusters = defaultdict(list)
+        for row in rows:
+            row["reading_time"] = calculate_reading_time(row.get("description", ""))
+            clusters[row["cluster_id"]].append(row)
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters.sort(key=score_cluster, reverse=True)
+        paged_clusters = ranked_clusters[:limit]
+
+        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
+        synthesis_ids = db.get_synthesis_ids(cluster_ids) if cluster_ids else []
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        ) if cluster_ids else []
+        rep_images = {row["cluster_id"]: row["representative_image"] for row in metadata_rows}
+
+        result = []
+        for arts in paged_clusters:
+            cluster_score = score_cluster(arts)
+            cid = arts[0]["cluster_id"]
+            result.append({
+                "cluster_id": cid,
+                "articles": arts,
+                "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get("reading_time", 1),
+                "score": round(cluster_score, 3),
+                "is_breaking": cluster_score >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": cid in synthesis_ids,
+                "has_balanced": is_balanced(arts),
+            })
+
+        payload = {
+            "status": "success",
+            "clusters": result,
+            "total_clusters": len(ranked_clusters),
+        }
+        set_cache(cache_key, payload, ttl=60)
+        return jsonify(payload)
+    except Exception as e:
+        log.error(f"[api/intelligence/international-curated] Error: {e}", exc_info=True)
+        return error_response("Failed to fetch curated international stories")
 
 
 @api_bp.route("/api/intelligence/entity/<name>")
@@ -514,17 +699,18 @@ def api_cluster_detail(cluster_id):
         if not rows:
             return error_response("Cluster not found", 404)
             
-        articles = rank_articles_in_cluster(rows)
+        articles = annotate_cluster_articles(rows)
         for a in articles:
             a['reading_time'] = calculate_reading_time(a.get('description', ''))
 
         # 2. Fetch synthesis and perspectives
         s_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", 
+            "SELECT summary, perspectives, created_at FROM cluster_summaries WHERE cluster_id = %s", 
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
         perspectives = normalize_perspectives(s_row["perspectives"] if s_row and s_row["perspectives"] else [])
+        freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         # 3. Fetch metadata (tags, etc)
         m_row = db.execute_one(
@@ -538,23 +724,40 @@ def api_cluster_detail(cluster_id):
         related = []
         if tags:
             related_rows = db.execute("""
-                SELECT 
-                    m.cluster_id, 
-                    (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-                    (SELECT image_url FROM articles WHERE cluster_id = m.cluster_id AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1) as image_url
-                FROM cluster_metadata m
-                WHERE m.cluster_id != %s
-                  AND m.updated_at >= NOW() - INTERVAL '48 hours'
-                  AND m.tags && %s
-                ORDER BY m.updated_at DESC
-                LIMIT 4
-            """, (cluster_id, tags))
-            related = related_rows
+                WITH cluster_ents AS (
+                    SELECT cluster_id, array_agg(entity_name) as entity_names
+                    FROM cluster_entities
+                    GROUP BY cluster_id
+                )
+                SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags, COALESCE(ce.entity_names, '{}') as entity_names
+                FROM articles a
+                LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+                LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id
+                WHERE a.cluster_id != %s
+                  AND a.created_at >= NOW() - INTERVAL '72 hours'
+                  AND (
+                    m.tags && %s
+                    OR EXISTS (
+                        SELECT 1 FROM cluster_entities ce2
+                        WHERE ce2.cluster_id = a.cluster_id
+                          AND ce2.entity_name = ANY(%s)
+                    )
+                  )
+                ORDER BY a.created_at DESC
+                LIMIT 120
+            """, (cluster_id, tags, list({entity for article in articles for entity in (article.get("entity_names") or [])})))
+            related = build_read_next_clusters(cluster_id, articles, tags, related_rows, limit=4)
 
         payload = {
             "cluster_id": cluster_id,
             "articles": articles,
             "synthesis": synthesis,
+            "synthesis_updated_at": freshness["synthesis_updated_at"],
+            "synthesis_freshness": {
+                "is_stale": freshness["is_stale"],
+                "new_article_count": freshness["new_article_count"],
+                "reasons": freshness["reasons"],
+            },
             "perspectives": perspectives,
             "tags": tags,
             "topics": topics,
@@ -635,6 +838,53 @@ def api_stats_full():
             ") first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
         )
 
+        profile_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) AS synced_profiles, "
+            "COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, "
+            "COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources "
+            "FROM synced_reader_profiles"
+        ) or {}
+        delivery_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, "
+            "COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, "
+            "COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, "
+            "COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, "
+            "COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, "
+            "COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts "
+            "FROM synced_delivery_subscriptions"
+        ) or {}
+        top_followed_topics = db.execute(
+            "SELECT value AS topic, COUNT(*) AS followers "
+            "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value "
+            "GROUP BY value ORDER BY followers DESC, topic ASC LIMIT 6"
+        )
+        top_followed_sources = db.execute(
+            "SELECT value AS source, COUNT(*) AS followers "
+            "FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value "
+            "GROUP BY value ORDER BY followers DESC, source ASC LIMIT 6"
+        )
+        tracking_stats_row = db.execute_one(
+            "SELECT "
+            "COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, "
+            "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d "
+            "FROM delivery_tracking_events "
+            "WHERE created_at >= NOW() - INTERVAL '7 days'"
+        ) or {}
+        tracking_performance_rows = db.execute(
+            "SELECT delivery_kind, "
+            "COUNT(*) FILTER (WHERE event_type = 'send') AS sends, "
+            "COUNT(*) FILTER (WHERE event_type = 'open') AS opens, "
+            "COUNT(*) FILTER (WHERE event_type = 'click') AS clicks "
+            "FROM delivery_tracking_events "
+            "WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "GROUP BY delivery_kind"
+        )
+
         result = {
             "total_articles": total,
             "last_24h": last_24h,
@@ -648,7 +898,15 @@ def api_stats_full():
             "by_category": by_category,
             "velocity": velocity_out,
             "speed_leaderboard": [{"source": r["source"], "first_count": r["first_count"]} for r in speed_leaderboard],
-            "sentiment_index": []
+            "sentiment_index": [],
+            "editor_analytics": build_editor_analytics_payload(
+                profile_stats_row,
+                delivery_stats_row,
+                top_followed_topics,
+                top_followed_sources,
+                tracking_stats_row,
+                tracking_performance_rows,
+            ),
         }
 
         set_cache("stats:full", result, ttl=60)
@@ -687,6 +945,181 @@ def api_briefing():
     except Exception as e:
         log.error(f"[api/briefing] Error: {e}", exc_info=True)
         return error_response("Failed to fetch briefing")
+
+
+@api_bp.route("/api/profile/sync/init", methods=["POST"])
+def api_profile_sync_init():
+    token = secrets.token_urlsafe(18)
+    empty_profile = _normalize_synced_profile({})
+    db.execute(
+        "INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)",
+        (token, json.dumps(empty_profile)),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": empty_profile,
+    })
+
+
+@api_bp.route("/api/profile/sync")
+def api_profile_sync_get():
+    token = (request.args.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+    row = db.execute_one(
+        "SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not row:
+        return error_response("Synced profile not found", 404)
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": _normalize_synced_profile(row.get("profile_data") or {}),
+        "updated_at": row.get("updated_at"),
+    })
+
+
+@api_bp.route("/api/profile/sync", methods=["POST"])
+def api_profile_sync_save():
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+    existing = db.execute_one(
+        "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not existing:
+        return error_response("Synced profile not found", 404)
+
+    incoming = _normalize_synced_profile(payload.get("profile") or {})
+    merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
+    db.execute(
+        "UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s",
+        (json.dumps(merged), token),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "profile": merged,
+    })
+
+
+@api_bp.route("/api/profile/delivery")
+def api_profile_delivery_get():
+    token = (request.args.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+
+    profile = db.execute_one(
+        "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not profile:
+        return error_response("Synced profile not found", 404)
+
+    row = db.execute_one(
+        "SELECT channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at "
+        "FROM synced_delivery_subscriptions WHERE sync_token = %s",
+        (token,),
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "subscription": _normalize_server_delivery_row(row),
+        "updated_at": row.get("updated_at") if row else None,
+    })
+
+
+@api_bp.route("/api/profile/delivery", methods=["POST"])
+def api_profile_delivery_save():
+    if not request.is_json:
+        return error_response("Content-Type must be application/json", 415)
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    if not token:
+        return error_response("Missing sync token", 400)
+
+    profile = db.execute_one(
+        "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
+        (token,),
+    )
+    if not profile:
+        return error_response("Synced profile not found", 404)
+
+    subscription = _normalize_server_delivery_subscription(payload.get("subscription") or {})
+    db.execute(
+        """INSERT INTO synced_delivery_subscriptions
+           (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+           ON CONFLICT (sync_token) DO UPDATE SET
+             channel = EXCLUDED.channel,
+             target = EXCLUDED.target,
+             morning_briefing = EXCLUDED.morning_briefing,
+             weekly_digest = EXCLUDED.weekly_digest,
+             breaking_topics = EXCLUDED.breaking_topics,
+             breaking_sources = EXCLUDED.breaking_sources,
+             is_active = EXCLUDED.is_active,
+             updated_at = NOW()""",
+        (
+            token,
+            subscription["channel"],
+            subscription["target"],
+            subscription["morningBriefing"],
+            subscription["weeklyDigest"],
+            subscription["breakingTopics"],
+            subscription["breakingSources"],
+            subscription["isActive"],
+        ),
+        fetch=False,
+    )
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "subscription": subscription,
+    })
+
+
+@api_bp.route("/api/delivery/track/<event_type>")
+def api_delivery_track(event_type):
+    clean_type = str(event_type or "").strip().lower()
+    if clean_type not in {"open", "click"}:
+        return error_response("Invalid event type", 400)
+
+    try:
+        event_id = int(request.args.get("event_id", "0"))
+    except ValueError:
+        return error_response("Invalid event id", 400)
+
+    parent = db.execute_one(
+        "SELECT sync_token, delivery_kind, channel, target, cluster_id, metadata FROM delivery_tracking_events WHERE id = %s AND event_type = 'send'",
+        (event_id,),
+    )
+    redirect_path = _safe_tracking_redirect_path(request.args.get("redirect") or "/briefing")
+    if parent:
+        db.execute(
+            """INSERT INTO delivery_tracking_events
+               (sync_token, parent_event_id, event_type, delivery_kind, channel, target, cluster_id, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)""",
+            (
+                parent.get("sync_token"),
+                event_id,
+                clean_type,
+                parent.get("delivery_kind"),
+                parent.get("channel") or "ntfy",
+                parent.get("target") or "",
+                parent.get("cluster_id"),
+                json.dumps({"redirect": redirect_path}),
+            ),
+            fetch=False,
+        )
+    return redirect(f"{os.environ.get('PUBLIC_SITE_URL', 'https://presek.live').rstrip('/')}{redirect_path}", code=302)
 
 @api_bp.route("/api/live")
 def api_live():
@@ -871,7 +1304,7 @@ def api_archive():
 
 @api_bp.route("/api/sources")
 def api_sources():
-    """Return all active sources with metadata."""
+    """Return source reputation rows."""
     try:
         include_inactive = (request.args.get("include_inactive") or "").strip() in {"1", "true", "yes"}
         where_sql = "" if include_inactive else "WHERE is_active = TRUE"
@@ -884,7 +1317,49 @@ def api_sources():
             item = dict(row)
             item["source_status"] = source_statuses.get(item["name"])
             payload.append(item)
-        return jsonify(payload)
+        pulse_rows = db.execute(
+            "SELECT source, COUNT(*) as count FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '24 hours' "
+            "GROUP BY source"
+        )
+        speed_rows = db.execute(
+            "SELECT source, COUNT(*) AS first_count FROM ("
+            "  SELECT DISTINCT ON (cluster_id) cluster_id, source "
+            "  FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' "
+            "  ORDER BY cluster_id, created_at ASC"
+            ") first_articles GROUP BY source ORDER BY first_count DESC"
+        )
+        history_rows = db.execute(
+            "WITH cluster_first AS ("
+            "  SELECT DISTINCT ON (cluster_id) cluster_id, source, created_at "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "  ORDER BY cluster_id, created_at ASC"
+            "), cluster_counts AS ("
+            "  SELECT cluster_id, COUNT(DISTINCT source) AS source_count "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "  GROUP BY cluster_id"
+            "), source_weeks AS ("
+            "  SELECT source, "
+            "    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') AS recent_7d_volume, "
+            "    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '14 days' AND created_at < NOW() - INTERVAL '7 days') AS previous_7d_volume "
+            "  FROM articles "
+            "  WHERE created_at >= NOW() - INTERVAL '14 days' "
+            "  GROUP BY source"
+            ") "
+            "SELECT cf.source, "
+            "  COUNT(*) AS lead_count_30d, "
+            "  COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, "
+            "  COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, "
+            "  COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, "
+            "  COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume "
+            "FROM cluster_first cf "
+            "LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id "
+            "LEFT JOIN source_weeks sw ON sw.source = cf.source "
+            "GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
+        )
+        return jsonify(build_source_reputation_rows(payload, pulse_rows, speed_rows, history_rows))
     except Exception as e:
         log.error(f"[api/sources] {e}")
         return error_response("Failed to fetch sources")
@@ -1086,16 +1561,6 @@ def proxy_image():
     import socket
     import ipaddress
     import requests
-    from requests.adapters import HTTPAdapter
-    from requests.packages.urllib3.util.ssl_ import create_urllib3_context
-
-    parsed = urllib.parse.urlparse(url)
-    hostname = (parsed.hostname or "").lower()
-    if not hostname:
-        return error_response("Blocked URL", 403)
-
-    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
-        return error_response("Blocked URL", 403)
 
     def _is_private_ip(addr: str) -> bool:
         try:
@@ -1103,23 +1568,40 @@ def proxy_image():
             return (ip.is_private or ip.is_loopback or ip.is_link_local
                     or ip.is_multicast or ip.is_reserved or ip.is_unspecified)
         except ValueError:
-            return True # Treat invalid IPs as private/unsafe
+            return True
 
-    # Resolve and pin IP
-    try:
-        resolved_infos = socket.getaddrinfo(hostname, None)
-        safe_ip = None
+    def _resolve_public_ips(candidate_url: str):
+        parsed = urllib.parse.urlparse(candidate_url)
+        hostname = (parsed.hostname or "").lower()
+        if not hostname:
+            raise ValueError("Blocked URL")
+        if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+            raise ValueError("Blocked URL")
+
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        resolved_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+        safe_ips = []
         for info in resolved_infos:
             ip = info[4][0]
-            if not _is_private_ip(ip):
-                safe_ip = ip
-                break
-        
-        if not safe_ip:
-            return error_response("Blocked URL (Private/Reserved IP)", 403)
-            
-    except socket.gaierror:
-        return error_response("Could not resolve hostname", 404)
+            if not _is_private_ip(ip) and ip not in safe_ips:
+                safe_ips.append(ip)
+        if not safe_ips:
+            raise PermissionError("Blocked URL (Private/Reserved IP)")
+        return safe_ips
+
+    def _peer_ip(response):
+        sock = None
+        raw = getattr(response, "raw", None)
+        if raw is not None:
+            connection = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+            if connection is not None:
+                sock = getattr(connection, "sock", None)
+        if sock is None:
+            return None
+        try:
+            return sock.getpeername()[0]
+        except Exception:
+            return None
 
     try:
         width_arg = request.args.get("w")
@@ -1139,21 +1621,40 @@ def proxy_image():
         )
 
     try:
-        # Simple fetch with basic headers
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
-        
-        # Use session for better SSL handling
         s = requests.Session()
-        response = s.get(
-            url, 
-            headers=headers, 
-            timeout=10, 
-            stream=True, 
-            verify=True
-        )
-        
+        current_url = url
+        response = None
+
+        for _ in range(4):
+            safe_ips = _resolve_public_ips(current_url)
+            response = s.get(
+                current_url,
+                headers=headers,
+                timeout=10,
+                stream=True,
+                verify=True,
+                allow_redirects=False,
+            )
+            peer_ip = _peer_ip(response)
+            if not peer_ip or peer_ip not in safe_ips:
+                response.close()
+                return error_response("Blocked upstream target", 403)
+            if 300 <= response.status_code < 400:
+                location = response.headers.get("Location")
+                response.close()
+                if not location:
+                    return error_response("Invalid upstream redirect", 502)
+                current_url = urllib.parse.urljoin(current_url, location)
+                if not re.match(r'^https?://', current_url):
+                    return error_response("Invalid upstream redirect", 502)
+                continue
+            break
+        else:
+            return error_response("Too many upstream redirects", 502)
+
         if response.status_code != 200:
             return error_response("Failed to fetch image", response.status_code)
 
@@ -1194,6 +1695,12 @@ def proxy_image():
             headers={"Cache-Control": "public, max-age=86400"}
         )
 
+    except socket.gaierror:
+        return error_response("Could not resolve hostname", 404)
+    except PermissionError as e:
+        return error_response(str(e), 403)
+    except ValueError as e:
+        return error_response(str(e), 403)
     except Exception as e:
         log.warning(f"[proxy] Optimization error for {url}: {e}")
         return error_response("Failed to process image", 502)

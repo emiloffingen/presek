@@ -59,6 +59,42 @@ try {
 					<div class="stats-grid">
 						<div class="stats-main">
 							<section class="stats-module">
+								<h2 class="stats-section-title">Редакциски Сигнали</h2>
+								<div class="editor-metrics">
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Синхронизирани профили</p>
+										<p class="editor-value">{stats.editor_analytics?.synced_profiles ?? 0}</p>
+										<p class="editor-copy">Профили што зачувуваат теми, извори или историја на читање.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Активни во 7 дена</p>
+										<p class="editor-value">{stats.editor_analytics?.active_profiles_7d ?? 0}</p>
+										<p class="editor-copy">Профили што се ажурирале во последната недела.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Активна достава</p>
+										<p class="editor-value">{stats.editor_analytics?.delivery_active ?? 0}</p>
+										<p class="editor-copy">Синхронизирани профили со вклучена достава.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Ntfy цели</p>
+										<p class="editor-value">{stats.editor_analytics?.delivery_targets ?? 0}</p>
+										<p class="editor-copy">Профили со реално внесен канал за испорака.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Отворања во 7 дена</p>
+										<p class="editor-value">{stats.editor_analytics?.opens_7d ?? 0}</p>
+										<p class="editor-copy">Отворања на доставени брифинзи и известувања преку следените врски.</p>
+									</div>
+									<div class="editor-card">
+										<p class="nyt-section-label text-muted-foreground mb-1">Кликови во 7 дена</p>
+										<p class="editor-value">{stats.editor_analytics?.clicks_7d ?? 0}</p>
+										<p class="editor-copy">Кликови од доставата кон брифинг, кластер или поврзана страница.</p>
+									</div>
+								</div>
+							</section>
+
+							<section class="stats-module">
 								<h2 class="stats-section-title">Најактивни Медиуми</h2>
 								<div class="source-bars">
 									{stats.by_source.slice(0, 10).map((src: any) => (
@@ -89,16 +125,79 @@ try {
 									))}
 								</div>
 							</section>
+
+							<section class="stats-module">
+								<h2 class="stats-section-title">Што Луѓето Го Следат</h2>
+								<div class="follow-grid">
+									<div class="follow-card">
+										<h3 class="follow-title">Најследени Теми</h3>
+										<div class="follow-list">
+											{(stats.editor_analytics?.top_followed_topics ?? []).slice(0, 6).map((item: any, idx: number) => (
+												<div class="follow-row">
+													<span class="follow-rank">{idx + 1}.</span>
+													<span class="follow-label">{item.topic}</span>
+													<span class="follow-count">{item.followers}</span>
+												</div>
+											))}
+										</div>
+									</div>
+									<div class="follow-card">
+										<h3 class="follow-title">Најследени Извори</h3>
+										<div class="follow-list">
+											{(stats.editor_analytics?.top_followed_sources ?? []).slice(0, 6).map((item: any, idx: number) => (
+												<div class="follow-row">
+													<span class="follow-rank">{idx + 1}.</span>
+													<span class="follow-label">{item.source}</span>
+													<span class="follow-count">{item.followers}</span>
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
+							</section>
+
+							<section class="stats-module">
+								<h2 class="stats-section-title">Најуспешни Типови На Достава</h2>
+								<div class="follow-grid">
+									{(stats.editor_analytics?.delivery_kind_performance ?? []).slice(0, 3).map((item: any) => (
+										<div class="follow-card">
+											<h3 class="follow-title">{item.label}</h3>
+											<div class="system-list">
+												<div class="system-row">
+													<span>Испраќања:</span>
+													<span class="text-foreground font-black">{item.sends}</span>
+												</div>
+												<div class="system-row">
+													<span>Отворања:</span>
+													<span class="text-foreground font-black">{item.opens}</span>
+												</div>
+												<div class="system-row">
+													<span>Кликови:</span>
+													<span class="text-foreground font-black">{item.clicks}</span>
+												</div>
+												<div class="system-row">
+													<span>Стапка на отворање:</span>
+													<span class="text-foreground font-black">{item.open_rate}%</span>
+												</div>
+												<div class="system-row">
+													<span>Стапка на клик:</span>
+													<span class="text-foreground font-black">{item.click_rate}%</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
 						</div>
 
 						<aside class="stats-rail">
-							<div class="rail-card">
-								<h3 class="rail-card-title">Информации За Системот</h3>
-								<div class="system-list">
-									<div class="system-row">
-										<span>Статус:</span>
-										<span class="text-green-600 font-black">Online</span>
-									</div>
+								<div class="rail-card">
+									<h3 class="rail-card-title">Оперативна Слика</h3>
+									<div class="system-list">
+										<div class="system-row">
+											<span>Статус:</span>
+											<span class="text-green-600 font-black">Активно</span>
+										</div>
 									<div class="system-row">
 										<span>База на податоци:</span>
 										<span class="text-foreground font-black">{stats.db_size_mb} MB</span>
@@ -114,11 +213,11 @@ try {
 								</div>
 							</div>
 
-							<div class="rail-card rail-card-dark">
-								<h4 class="rail-card-title speed-title">Speed Leaderboard</h4>
-								<p class="speed-copy">
-									Кој прв ги објавува вестите? Анализа на првичните извори за нови настани во последните 7 дена.
-								</p>
+								<div class="rail-card rail-card-dark">
+									<h4 class="rail-card-title speed-title">Прв На Приказната</h4>
+									<p class="speed-copy">
+										Кои извори најчесто први влегуваат во нова приказна? Преглед на раните објави во последните 7 дена.
+									</p>
 								<div class="speed-list">
 									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
 										<div class="speed-row">
@@ -129,6 +228,44 @@ try {
 											<span class="speed-count">{src.first_count}</span>
 										</div>
 									))}
+								</div>
+							</div>
+
+							<div class="rail-card">
+								<h4 class="rail-card-title">Достава И Следење</h4>
+								<div class="system-list">
+									<div class="system-row">
+										<span>Утрински брифинзи:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.morning_briefings ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Неделни дигести:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.weekly_digests ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Известувања за теми:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.breaking_topic_alerts ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Известувања за извори:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.breaking_source_alerts ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Историја на читање:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.profiles_with_recent_reads ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Испраќања / 7 дена:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.sends_7d ?? 0}</span>
+									</div>
+									<div class="system-row">
+										<span>Стапка на отворање:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.open_rate_7d ?? 0}%</span>
+									</div>
+									<div class="system-row">
+										<span>Стапка на клик:</span>
+										<span class="text-foreground font-black">{stats.editor_analytics?.click_rate_7d ?? 0}%</span>
+									</div>
 								</div>
 							</div>
 						</aside>
@@ -299,6 +436,71 @@ try {
 		gap: 1rem;
 	}
 
+	.editor-metrics,
+	.follow-grid {
+		display: grid;
+		grid-template-columns: repeat(1, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.editor-card,
+	.follow-card {
+		padding: 1rem;
+		border: 1px solid var(--border);
+		background: var(--background);
+	}
+
+	.editor-value {
+		margin: 0 0 0.4rem;
+		font-family: var(--font-serif);
+		font-size: clamp(1.5rem, 1.15rem + 0.8vw, 2.15rem);
+		line-height: 1;
+	}
+
+	.editor-copy {
+		margin: 0;
+		font-size: 0.95rem;
+		line-height: 1.55;
+		color: var(--secondary-foreground);
+	}
+
+	.follow-title {
+		margin: 0 0 0.8rem;
+		font-size: 0.82rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.follow-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.follow-row {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		gap: 0.75rem;
+		align-items: center;
+		padding: 0.75rem 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.follow-row:first-child {
+		padding-top: 0;
+		border-top: 0;
+	}
+
+	.follow-rank,
+	.follow-count {
+		font-size: 0.82rem;
+		font-weight: 900;
+	}
+
+	.follow-label {
+		font-size: 0.98rem;
+	}
+
 	.category-card {
 		padding: 1rem;
 		border: 1px solid var(--border);
@@ -361,6 +563,11 @@ try {
 		.stats-grid {
 			grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
 			gap: 2rem;
+		}
+
+		.editor-metrics,
+		.follow-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 
 		.category-grid {

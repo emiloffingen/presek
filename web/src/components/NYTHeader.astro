@@ -44,13 +44,14 @@ const fallbackItems = [
 ];
 
 const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
+const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Култура'];
 ---
 
 <header class="site-layout topbar">
     <div class="topbar-row">
         <div class="topbar-left">
             <SearchIsland client:load />
-            <span class="topbar-edition">Пресек Дневно Издание</span>
+            <span class="topbar-edition">Пресек Денешно Издание</span>
         </div>
 
         <div class="topbar-center">
@@ -59,8 +60,8 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 
         <div class="topbar-right">
             <a href="/briefing" class="nyt-section-label topbar-link">Дневен Брифинг</a>
+            <a href="/settings" class="nyt-section-label topbar-link">Поставки</a>
             <a href="/stats" class="nyt-section-label topbar-link">Медиумски Пулс</a>
-            <a href="/status" class="nyt-section-label topbar-link">Систем</a>
             <ThemeIsland client:load />
         </div>
     </div>
@@ -82,7 +83,7 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 
 <nav class="site-layout masthead-nav" aria-label="Популарно сега">
     <div class="masthead-nav-shell">
-        <span class="masthead-nav-kicker">Популарно Сега</span>
+        <span class="masthead-nav-kicker">Во Фокус</span>
         <ul class="masthead-nav-list">
             {headerItems.map((item: any) => {
                 const searchStr = new URLSearchParams({ q: item.word }).toString();
@@ -92,6 +93,20 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
                     <li>
                         <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
                             {item.word}
+                        </a>
+                    </li>
+                );
+            })}
+        </ul>
+        <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
+        <ul class="masthead-nav-list masthead-nav-list-topics">
+            {curatedTopics.map((item: string) => {
+                const isActive = topic === item || category === item;
+
+                return (
+                    <li>
+                        <a href={`/tema/${encodeURIComponent(item)}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                            {item}
                         </a>
                     </li>
                 );
@@ -252,6 +267,14 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
         transform: translateY(-50%);
     }
 
+    .masthead-nav-kicker-secondary {
+        color: var(--foreground);
+    }
+
+    .masthead-nav-kicker-secondary::after {
+        background: var(--foreground);
+    }
+
     .masthead-nav-list {
         display: flex;
         justify-content: flex-start;
@@ -260,6 +283,10 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
         padding: 0;
         margin: 0;
         min-width: max-content;
+    }
+
+    .masthead-nav-list-topics {
+        padding-left: 0.15rem;
     }
 
     .masthead-nav-list li {
@@ -333,6 +360,10 @@ const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 
         .masthead-nav-list {
             padding-bottom: 0.15rem;
+        }
+
+        .masthead-nav-list-topics {
+            padding-left: 0;
         }
     }
 

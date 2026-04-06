@@ -13,7 +13,7 @@ from unittest.mock import patch, MagicMock
 @pytest.fixture
 def app():
     """Create Flask test app with mocked DB and Redis."""
-    with patch.dict(os.environ, {"SECRET_KEY": "test-secret-key-for-tests"}), \
+    with patch.dict(os.environ, {"SECRET_KEY": "test-secret-key-for-tests", "PRESEK_ADMIN_TOKEN": "test-admin-token"}), \
          patch('utils.redis_client') as mock_redis:
 
         mock_redis.get.return_value = None
@@ -104,6 +104,13 @@ class TestViewRoutes:
     def test_localhost_keeps_legacy_template_access(self, client):
         resp = client.get("/stats", headers={"Host": "localhost"})
         assert resp.status_code == 200
+
+    def test_briefing_format_escapes_html(self, app):
+        formatter = app.jinja_env.filters["briefing_format"]
+        rendered = str(formatter("## Наслов\n<script>alert(1)</script>\n- <b>точка</b>"))
+        assert "<script>" not in rendered
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered
+        assert "&lt;b&gt;точка&lt;/b&gt;" in rendered
 
 
 # ── /api/news ─────────────────────────────────────────────────────
@@ -253,6 +260,24 @@ class TestChatCluster:
         assert data["source_differences"].startswith("МИА")
         assert "snippet" in data["citations"][0]
 
+    def test_cluster_ask_falls_back_when_ai_path_throws(self, client):
+        mock_db = MagicMock()
+        mock_db.execute.return_value = [
+            {"title": "T1", "description": "D1", "source": "MIA", "link": "https://example.com/1", "created_at": None, "category": "Свет"},
+            {"title": "T2", "description": "D2", "source": "Reuters", "link": "https://example.com/2", "created_at": None, "category": "Свет"},
+        ]
+        mock_db.execute_one.return_value = None
+        with patch('routes.api.db', mock_db), \
+             patch('routes.api.answer_cluster_question_locally', side_effect=RuntimeError("boom")), \
+             patch('routes.api._call_ai', side_effect=RuntimeError("boom")):
+            resp = client.post("/api/cluster/abc123def456/ask",
+                               data=json.dumps({"question": "Што е ново?"}),
+                               content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["answer"]
+        assert data["confidence"] in {"low", "medium", "high"}
+
 
 # ── /proxy ────────────────────────────────────────────────────────
 
@@ -278,23 +303,48 @@ class TestProxy:
         assert resp.status_code == 403
 
     def test_valid_url_fetched(self, client):
-        import urllib.request
         import socket
+        import types
+
+        class FakeImage:
+            mode = "RGB"
+            width = 10
+            height = 10
+
+            def convert(self, _mode):
+                return self
+
+            def resize(self, _size, _resampling):
+                return self
+
+            def save(self, fp, _format, quality=None, method=None):
+                fp.write(b"webp-bytes")
+
+        fake_image_module = types.SimpleNamespace(
+            open=MagicMock(return_value=FakeImage()),
+            Resampling=types.SimpleNamespace(LANCZOS="LANCZOS"),
+        )
+        fake_pil_module = types.SimpleNamespace(Image=fake_image_module)
+
         mock_resp = MagicMock()
-        mock_resp.headers.get.return_value = "image/jpeg"
-        mock_resp.read.side_effect = [b"\xff\xd8\xff" * 100, b""]
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp.status_code = 200
+        mock_resp.headers.get.return_value = "image/png"
+        mock_resp.iter_content.return_value = [b"png-bytes"]
+        mock_resp.raw.connection.sock.getpeername.return_value = ("93.184.216.34", 443)
 
         # Return a public IP so the DNS-based SSRF check passes in CI (no real network)
         public_addrinfo = [(socket.AF_INET, socket.SOCK_STREAM, 0, '', ('93.184.216.34', 0))]
+        mock_session = MagicMock()
+        mock_session.get.return_value = mock_resp
 
         with patch('routes.api.cached_response', return_value=None), \
              patch('routes.api.set_cache'), \
              patch('socket.getaddrinfo', return_value=public_addrinfo), \
-             patch('urllib.request.urlopen', return_value=mock_resp):
+             patch.dict('sys.modules', {'PIL': fake_pil_module, 'PIL.Image': fake_image_module}), \
+             patch('requests.Session', return_value=mock_session):
             resp = client.get("/proxy?url=https://example.com/image.jpg")
-        assert resp.status_code in (200, 502)
+        assert resp.status_code == 200
+        assert resp.content_type == "image/webp"
 
 
 # ── /api/sources controls ────────────────────────────────────────
@@ -332,7 +382,7 @@ class TestSourceControls:
             resp = client.post(
                 "/api/sources/MIA/control",
                 data=json.dumps({"action": "pause"}),
-                headers={"X-Admin-Token": "test-secret-key-for-tests", "X-Forwarded-For": "1.2.3.4"},
+                headers={"X-Admin-Token": "test-admin-token", "X-Forwarded-For": "1.2.3.4"},
                 content_type="application/json",
             )
         assert resp.status_code == 200
@@ -352,7 +402,7 @@ class TestSourceControls:
             resp = client.post(
                 "/api/sources/Unknown%20Feed/control",
                 data=json.dumps({"action": "reset"}),
-                headers={"X-Admin-Token": "test-secret-key-for-tests", "X-Forwarded-For": "1.2.3.4"},
+                headers={"X-Admin-Token": "test-admin-token", "X-Forwarded-For": "1.2.3.4"},
                 content_type="application/json",
             )
         assert resp.status_code == 200
@@ -361,6 +411,116 @@ class TestSourceControls:
             (0.8, "Unknown Feed"),
             fetch=False
         )
+
+    def test_source_control_rejects_secret_key_token(self, client):
+        with patch.dict(os.environ, {"PRESEK_ADMIN_TOKEN": "", "SECRET_KEY": "test-secret-key-for-tests"}):
+            resp = client.post(
+                "/api/sources/MIA/control",
+                data=json.dumps({"action": "pause"}),
+                headers={"X-Admin-Token": "test-secret-key-for-tests", "X-Forwarded-For": "1.2.3.4"},
+                content_type="application/json",
+            )
+        assert resp.status_code == 403
+
+
+class TestProfileSync:
+    def test_profile_sync_init(self, client):
+        mock_db = MagicMock()
+        with patch("routes.api.db", mock_db), patch("routes.api.secrets.token_urlsafe", return_value="sync-token-123"):
+            resp = client.post("/api/profile/sync/init")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["status"] == "success"
+        assert data["token"] == "sync-token-123"
+
+    def test_profile_sync_get(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "profile_data": {
+                "followedTopics": ["Политика"],
+                "followedSources": ["MIA"],
+                "recentClusters": [{"cluster_id": "abc", "viewedAt": "2026-04-05T10:00:00Z"}],
+                "deliveryPreferences": {"morningBriefing": False},
+            },
+            "updated_at": "2026-04-05T10:00:00Z",
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/profile/sync?token=sync-token-123")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["profile"]["followedTopics"] == ["Политика"]
+        assert data["profile"]["deliveryPreferences"]["morningBriefing"] is False
+
+    def test_profile_sync_save_merges(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "profile_data": {
+                "followedTopics": ["Политика"],
+                "followedSources": [],
+                "recentClusters": [],
+                "deliveryPreferences": {"morningBriefing": True, "breakingAlerts": True, "browserPermission": "default"},
+            }
+        }
+        payload = {
+            "token": "sync-token-123",
+            "profile": {
+                "followedTopics": ["Економија"],
+                "followedSources": ["Телма"],
+                "recentClusters": [{"cluster_id": "xyz", "viewedAt": "2026-04-05T11:00:00Z"}],
+                "deliveryPreferences": {"morningBriefing": False, "breakingAlerts": True, "browserPermission": "granted"},
+            },
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.post("/api/profile/sync", data=json.dumps(payload), content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["profile"]["followedTopics"] == ["Политика", "Економија"]
+        assert data["profile"]["followedSources"] == ["Телма"]
+
+    def test_profile_delivery_get(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.side_effect = [
+            {"exists": 1},
+            {
+                "channel": "ntfy",
+                "target": "reader-feed",
+                "morning_briefing": True,
+                "weekly_digest": True,
+                "breaking_topics": True,
+                "breaking_sources": False,
+                "is_active": True,
+                "updated_at": "2026-04-05T10:00:00Z",
+            },
+        ]
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/profile/delivery?token=sync-token-123")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["weeklyDigest"] is True
+        assert data["subscription"]["breakingTopics"] is True
+
+    def test_profile_delivery_save(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {"exists": 1}
+        payload = {
+            "token": "sync-token-123",
+            "subscription": {
+                "target": "reader-feed",
+                "morningBriefing": True,
+                "weeklyDigest": True,
+                "breakingTopics": True,
+                "breakingSources": True,
+                "isActive": True,
+            },
+        }
+        with patch("routes.api.db", mock_db):
+            resp = client.post("/api/profile/delivery", data=json.dumps(payload), content_type="application/json")
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["subscription"]["target"] == "reader-feed"
+        assert data["subscription"]["weeklyDigest"] is True
+        assert data["subscription"]["breakingSources"] is True
 
 
 # ── View routes with DB ───────────────────────────────────────────
@@ -471,6 +631,87 @@ class TestRateLimiting:
         """Root path bypasses rate limiting."""
         resp = client.get("/")
         assert resp.status_code == 200
+
+
+class TestStatsFull:
+    def test_stats_full_includes_editor_analytics(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.side_effect = [
+            {"count": 1200},
+            {"count": 180},
+            {"count": 600},
+            {"mb": 256.4},
+            {"n": 18},
+            {
+                "oldest": datetime.datetime(2026, 4, 1, 8, 0, 0),
+                "newest": datetime.datetime(2026, 4, 5, 10, 0, 0),
+            },
+            {
+                "synced_profiles": 14,
+                "active_profiles_7d": 9,
+                "profiles_with_recent_reads": 8,
+                "profiles_following_topics": 7,
+                "profiles_following_sources": 6,
+            },
+            {
+                "delivery_active": 5,
+                "delivery_targets": 4,
+                "morning_briefings": 4,
+                "weekly_digests": 2,
+                "breaking_topic_alerts": 3,
+                "breaking_source_alerts": 1,
+            },
+            {
+                "sends_7d": 12,
+                "opens_7d": 8,
+                "clicks_7d": 3,
+            },
+        ]
+        mock_db.execute.side_effect = [
+            [{"source": "MIA", "n": 50}],
+            [{"category": "Политика", "n": 40}],
+            [{"t": datetime.datetime(2026, 4, 5, 9, 0, 0), "n": 12}],
+            [{"source": "MIA", "first_count": 6}],
+            [{"topic": "Политика", "followers": 5}],
+            [{"source": "MIA", "followers": 4}],
+            [
+                {"delivery_kind": "breaking", "sends": 10, "opens": 7, "clicks": 3},
+                {"delivery_kind": "morning", "sends": 20, "opens": 10, "clicks": 2},
+            ],
+        ]
+
+        with patch("routes.api.db", mock_db), \
+             patch("routes.api.cached_response", return_value=None), \
+             patch("routes.api.set_cache"):
+            resp = client.get("/api/stats/full")
+
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["editor_analytics"]["synced_profiles"] == 14
+        assert data["editor_analytics"]["delivery_active"] == 5
+        assert data["editor_analytics"]["open_rate_7d"] == 66.7
+        assert data["editor_analytics"]["top_followed_topics"][0]["topic"] == "Политика"
+        assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"
+        assert data["editor_analytics"]["delivery_kind_performance"][0]["delivery_kind"] == "breaking"
+        assert data["editor_analytics"]["delivery_kind_performance"][0]["click_rate"] == 30.0
+
+    def test_delivery_track_redirects_and_records_event(self, client):
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {
+            "sync_token": "sync-token-123",
+            "delivery_kind": "morning",
+            "channel": "ntfy",
+            "target": "reader-feed",
+            "cluster_id": "abc123",
+            "metadata": {},
+        }
+
+        with patch("routes.api.db", mock_db):
+            resp = client.get("/api/delivery/track/open?event_id=7&redirect=/briefing")
+
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "https://presek.live/briefing"
+        mock_db.execute.assert_called_once()
 
 
 # ── Security headers ──────────────────────────────────────────────

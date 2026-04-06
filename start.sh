@@ -106,11 +106,11 @@ bootstrap_runtime() {
 }
 
 screen_session_exists() {
-  screen -list | grep -q "[[:space:]]${SESSION}[[:space:]]"
+  screen -list 2>/dev/null | grep -q "[[:space:]]${SESSION}[[:space:]]"
 }
 
 list_screen_sessions() {
-  screen -list | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
+  (screen -list 2>/dev/null || true) | awk -v session="$SESSION" '$1 ~ ("\\." session "$") { print $1 }'
 }
 
 load_env() {
@@ -130,6 +130,86 @@ show_port_usage() {
   if command -v ss >/dev/null 2>&1; then
     ss -lptn "sport = :$port" 2>/dev/null || true
   fi
+}
+
+systemd_unit_active() {
+  local unit="$1"
+  command -v systemctl >/dev/null 2>&1 || return 1
+  [ "$(systemctl is-active "$unit" 2>/dev/null || true)" = "active" ]
+}
+
+assert_manual_mode_safe() {
+  local active_units=()
+  local units=(
+    presek.target
+    presek-web.service
+    presek-fastapi.service
+    presek-astro.service
+    presek-worker.service
+    presek-beat.service
+  )
+  local unit
+
+  for unit in "${units[@]}"; do
+    if systemd_unit_active "$unit"; then
+      active_units+=("$unit")
+    fi
+  done
+
+  if [ "${#active_units[@]}" -gt 0 ]; then
+    fail "Refusing to run start.sh while production systemd units are active: ${active_units[*]}. Stop them with systemctl first, or manage the app through systemd + nginx."
+  fi
+}
+
+port_pids() {
+  local port="$1"
+  if ! command -v ss >/dev/null 2>&1; then
+    return 0
+  fi
+
+  (
+    ss -lptn "sport = :$port" 2>/dev/null \
+      | grep -o 'pid=[0-9]\+' \
+      | cut -d= -f2 \
+      | sort -u
+  ) || true
+}
+
+force_free_port() {
+  local port="$1"
+  local pids
+  pids="$(port_pids "$port")"
+
+  if [ -z "$pids" ]; then
+    warn "No listening process found on port $port"
+    return 0
+  fi
+
+  warn "Port $port is busy; stopping owning processes:"
+  show_port_usage "$port"
+
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    kill "$pid" >/dev/null 2>&1 || true
+  done <<< "$pids"
+
+  sleep 2
+
+  pids="$(port_pids "$port")"
+  if [ -n "$pids" ]; then
+    warn "Some processes on port $port ignored SIGTERM; sending SIGKILL"
+    while IFS= read -r pid; do
+      [ -n "$pid" ] || continue
+      kill -9 "$pid" >/dev/null 2>&1 || true
+    done <<< "$pids"
+    sleep 1
+  fi
+
+  if [ -n "$(port_pids "$port")" ]; then
+    fail "Could not free port $port"
+  fi
+
+  ok "Freed port $port"
 }
 
 ensure_port_free() {
@@ -201,6 +281,9 @@ cleanup_stale_processes() {
   stop_matching_processes "gunicorn.*app:app"
   stop_matching_processes "uvicorn.*api_fast:app"
   stop_matching_processes "entry.mjs"
+  force_free_port 5000
+  [ "$ENABLE_FASTAPI" = "1" ] && force_free_port 5001
+  [ "$ENABLE_ASTRO" = "1" ] && force_free_port 3000
   sleep 2
 }
 
@@ -231,6 +314,7 @@ touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 load_env
 
 warn "start.sh is a local/manual fallback launcher. Supported production runtime is systemd + nginx."
+assert_manual_mode_safe
 
 case "${1:-}" in
   --stop)

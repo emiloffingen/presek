@@ -1,0 +1,139 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
+import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
+import OnboardingIsland from '../components/OnboardingIsland.tsx';
+import { KeyRound, Radio, Sparkles } from 'lucide-react';
+---
+
+<Layout title="Поставки">
+  <NYTHeader />
+
+  <main class="site-layout py-12">
+    <div class="settings-shell">
+      <header class="settings-header">
+        <span class="page-kicker">Синхронизиран профил</span>
+        <h1 class="settings-headline">Поставки</h1>
+        <p class="settings-lede">
+          Управувајте со вашиот клуч за синхронизација, следените теми и извори, и каналите за достава што го претвораат Пресек во услуга меѓу уреди.
+        </p>
+      </header>
+
+      <div class="settings-page-grid">
+        <div class="settings-main">
+          <div class="settings-card">
+            <OnboardingIsland client:load />
+          </div>
+          <div class="settings-card">
+            <SettingsProfileIsland client:load />
+          </div>
+        </div>
+
+        <aside class="settings-rail">
+          <div class="settings-card">
+            <h3 class="settings-rail-title"><Radio size={14} /> Достава и известувања</h3>
+            <BriefingDeliveryIsland client:load variant="full" />
+          </div>
+
+          <div class="settings-card settings-card-accent">
+            <h3 class="settings-rail-title"><KeyRound size={14} /> Зошто синхронизацијата е важна</h3>
+            <p class="settings-rail-copy">
+              Синхронизацијата ги носи вашите следења, изборите за достава и историјата на читање меѓу уреди. Така `За Вас`, итните известувања и неделните дигести остануваат конзистентни наместо да почнуваат одново во секој прелистувач.
+            </p>
+          </div>
+
+          <div class="settings-card">
+            <h3 class="settings-rail-title"><Sparkles size={14} /> Што контролира ова</h3>
+            <p class="settings-rail-copy">
+              Оваа страница ги управува деловите од Пресек што треба да се приспособат на вас: рангирање, препораки, достава за следени теми, достава за следени извори и поспориот неделен преглед.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .settings-shell {
+    max-width: 78rem;
+    margin: 0 auto;
+  }
+
+  .settings-header {
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .settings-headline {
+    margin: 0 0 0.9rem;
+    font-size: clamp(2.4rem, 1.8rem + 1.8vw, 4.4rem);
+    line-height: 0.96;
+  }
+
+  .settings-lede {
+    margin: 0;
+    max-width: 58ch;
+    font-family: var(--font-nyt-body);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--secondary-foreground);
+  }
+
+  .settings-page-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .settings-main,
+  .settings-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-card {
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+  }
+
+  .settings-card-accent {
+    background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
+  }
+
+  .settings-rail-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.9rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .settings-rail-copy {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--secondary-foreground);
+  }
+
+  @media (min-width: 960px) {
+    .settings-page-grid {
+      grid-template-columns: minmax(0, 1.4fr) minmax(19rem, 0.95fr);
+      gap: 2rem;
+    }
+  }
+</style>
