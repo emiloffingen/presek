@@ -632,6 +632,53 @@ async def serve_manifest():
     return FileResponse(os.path.join("static", "manifest.json"), media_type="application/manifest+json")
 
 
+@app.get("/robots.txt")
+async def robots_txt():
+    return Response("User-agent: *\nDisallow: /api/\nAllow: /\n", media_type="text/plain")
+
+
+@app.get("/og/cluster/{cluster_id}.svg")
+async def og_cluster_image(cluster_id: str):
+    if not cluster_id or not re.match(r"^[a-f0-9]{6,64}$", cluster_id):
+        raise HTTPException(status_code=400, detail="Invalid cluster")
+
+    row = db.execute_one("SELECT title FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+    count_row = db.execute_one("SELECT COUNT(*) FROM articles WHERE cluster_id = %s", (cluster_id,))
+
+    title = row["title"] if row else "Вест"
+    count = count_row["count"] if count_row and isinstance(count_row, dict) else (count_row[0] if count_row else 1)
+    safe_title = title.replace("&", "&amp;").replace('"', "&quot;")
+    if len(safe_title) > 65:
+        line1 = safe_title[:65]
+        line2 = safe_title[65:130] + ("..." if len(safe_title) > 130 else "")
+    else:
+        line1 = safe_title
+        line2 = ""
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1a1a1a"/>
+  <rect width="1200" height="10" y="0" fill="#E63946"/>
+  <text x="80" y="120" font-family="serif" font-size="32" font-weight="800" fill="#E63946" letter-spacing="2">ПРЕСЕК АНАЛИЗА</text>
+  <text x="80" y="240" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line1}</text>
+  <text x="80" y="320" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line2}</text>
+  <text x="80" y="520" font-family="sans-serif" font-size="28" fill="#aaaaaa">{count} извори анализирани во овој кластер</text>
+  <text x="1120" y="560" font-family="serif" font-size="48" font-weight="bold" fill="#E63946" text-anchor="end">пресек.мк</text>
+</svg>"""
+    return Response(svg, media_type="image/svg+xml")
+
+
+@app.get("/og-image.svg")
+async def og_image():
+    row = db.execute_one("SELECT COUNT(*) FROM articles")
+    count = row["count"] if row and isinstance(row, dict) else (row[0] if row else 0)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1a1a2e"/>
+  <text x="600" y="280" font-family="sans-serif" font-size="72" font-weight="bold" fill="#ffffff" text-anchor="middle">Пресек</text>
+  <text x="600" y="380" font-family="sans-serif" font-size="36" fill="#aaaaaa" text-anchor="middle">{count} статии индексирани</text>
+</svg>"""
+    return Response(svg, media_type="image/svg+xml")
+
+
 @app.get("/static/{asset_path:path}")
 async def serve_static_asset(asset_path: str):
     clean = str(asset_path or "").strip().lstrip("/")

@@ -1,6 +1,6 @@
 [Unit]
 Description=Presek Celery worker
-After=network-online.target presek-web.service
+After=network-online.target presek-fastapi.service
 Wants=network-online.target
 PartOf=presek.target
 

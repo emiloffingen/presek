@@ -7,11 +7,11 @@ Together with the files in `deploy/systemd/`, this is the supported production d
 ## Routing model
 
 - `https://presek.live/` goes to Astro on `127.0.0.1:3000`
-- Public `/api/` requests go to Flask on `127.0.0.1:5000`
-- FastAPI is kept for internal/specialized endpoints only
-- Flask-only utility routes such as `/robots.txt`, `/proxy`, `sw.js`, and OG image routes stay on Flask
+- Public `/api/` requests go to FastAPI on `127.0.0.1:5001`
+- `/proxy`, `/static`, `sw.js`, and `manifest.json` also go to FastAPI
+- Only legacy OG image routes remain separate if you keep a compatibility shim during transition
 
-This keeps a single public API owner for the Astro site, which reduces route drift between Flask and FastAPI.
+This keeps a single public API owner for the Astro site.
 
 ## Files
 

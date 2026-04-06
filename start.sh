@@ -7,7 +7,6 @@ APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 SESSION="${SCREEN_SESSION_NAME:-presek}"
 VENV="$APP_DIR/venv"
 PYTHON="$VENV/bin/python3"
-GUNICORN="$VENV/bin/gunicorn"
 CELERY="$VENV/bin/celery"
 UVICORN="$VENV/bin/uvicorn"
 LOG_DIR="$APP_DIR/logs"
@@ -27,9 +26,7 @@ BACKFILL_LOG="$LOG_DIR/backfill.log"
 ENABLE_FASTAPI="${ENABLE_FASTAPI:-1}"
 ENABLE_ASTRO="${ENABLE_ASTRO:-1}"
 ENABLE_BACKFILL="${ENABLE_BACKFILL:-0}"
-ENABLE_FLASK="${ENABLE_FLASK:-0}"
 PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
-FLASK_BIND_HOST="${FLASK_BIND_HOST:-127.0.0.1}"
 FASTAPI_BIND_HOST="${FASTAPI_BIND_HOST:-127.0.0.1}"
 ASTRO_BIND_HOST="${ASTRO_BIND_HOST:-127.0.0.1}"
 
@@ -81,7 +78,7 @@ bootstrap_runtime() {
     fail "Python virtualenv exists but $PYTHON is missing"
   fi
 
-  if [ "$FORCE_PY_DEPS" = "1" ] || [ ! -x "$GUNICORN" ] || [ ! -x "$CELERY" ] || [ ! -x "$UVICORN" ]; then
+  if [ "$FORCE_PY_DEPS" = "1" ] || [ ! -x "$CELERY" ] || [ ! -x "$UVICORN" ]; then
     info "Installing Python dependencies"
     "$PYTHON" -m pip install --upgrade pip
     "$PYTHON" -m pip install -r "$APP_DIR/requirements.txt"
@@ -143,7 +140,6 @@ assert_manual_mode_safe() {
   local active_units=()
   local units=(
     presek.target
-    presek-web.service
     presek-fastapi.service
     presek-astro.service
     presek-worker.service
@@ -279,10 +275,8 @@ stop_session() {
 
 cleanup_stale_processes() {
   info "Cleaning up stale app processes..."
-  stop_matching_processes "gunicorn.*app:app"
   stop_matching_processes "uvicorn.*api_fast:app"
   stop_matching_processes "entry.mjs"
-  [ "$ENABLE_FLASK" = "1" ] && force_free_port 5000
   [ "$ENABLE_FASTAPI" = "1" ] && force_free_port 5001
   [ "$ENABLE_ASTRO" = "1" ] && force_free_port 3000
   sleep 2
@@ -291,9 +285,6 @@ cleanup_stale_processes() {
 print_summary() {
   divider
   echo -e "  ${CYAN}Public URL:${RESET}      $PUBLIC_URL"
-  if [ "$ENABLE_FLASK" = "1" ]; then
-    echo -e "  ${CYAN}Legacy Flask:${RESET}    http://127.0.0.1:5000"
-  fi
   if [ "$ENABLE_FASTAPI" = "1" ]; then
     echo -e "  ${CYAN}FastAPI:${RESET}         http://127.0.0.1:5001"
   fi
@@ -352,9 +343,7 @@ require_cmd screen
 require_cmd curl
 require_cmd ss
 [ -x "$PYTHON" ] || fail "Python not found at $PYTHON"
-[ -x "$GUNICORN" ] || fail "Gunicorn not found at $GUNICORN"
 [ -x "$CELERY" ] || fail "Celery not found at $CELERY"
-[ -f "$APP_DIR/app.py" ] || fail "Missing Flask entrypoint: $APP_DIR/app.py"
 [ -f "$APP_DIR/celery_app.py" ] || fail "Missing Celery entrypoint: $APP_DIR/celery_app.py"
 
 [ -n "${SECRET_KEY:-}" ] || fail "SECRET_KEY is not set"
@@ -407,7 +396,6 @@ if screen_session_exists; then
   stop_session
 fi
 
-[ "$ENABLE_FLASK" = "1" ] && ensure_port_free 5000
 [ "$ENABLE_FASTAPI" = "1" ] && ensure_port_free 5001
 [ "$ENABLE_ASTRO" = "1" ] && ensure_port_free 3000
 
@@ -419,11 +407,6 @@ else
 fi
 
 info "Starting services in screen session '$SESSION'..."
-
-if [ "$ENABLE_FLASK" = "1" ]; then
-  start_window "web" "cd '$APP_DIR' && exec '$GUNICORN' app:app --bind '$FLASK_BIND_HOST:5000' --workers 2 --threads 4 --worker-class gthread --timeout 60 --keep-alive 5 --access-logfile '$WEB_LOG' --error-logfile '$WEB_LOG' --log-level info"
-  sleep 1
-fi
 
 start_window "worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
 sleep 1
@@ -447,10 +430,6 @@ if [ "$ENABLE_BACKFILL" = "1" ]; then
 fi
 
 ok "Launch commands submitted"
-
-if [ "$ENABLE_FLASK" = "1" ]; then
-  wait_for_http "Legacy Flask" "http://127.0.0.1:5000/healthz"
-fi
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
   wait_for_http "FastAPI" "http://127.0.0.1:5001/api/health"

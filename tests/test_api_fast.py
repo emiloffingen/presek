@@ -506,3 +506,34 @@ def test_fastapi_serves_static_assets_from_static_root():
     api_fast = _load_api_fast()
     response = asyncio.run(api_fast.serve_static_asset("manifest.json"))
     assert str(response.path).endswith("static/manifest.json")
+
+
+def test_fastapi_serves_robots_txt():
+    api_fast = _load_api_fast()
+    response = asyncio.run(api_fast.robots_txt())
+    assert response.media_type == "text/plain"
+    assert "User-agent" in response.content
+
+
+def test_fastapi_serves_og_cluster_svg():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"title": "Наслов"},
+        {"count": 3},
+    ]
+    with patch.object(api_fast, "db", mock_db):
+        response = asyncio.run(api_fast.og_cluster_image("abc123def456"))
+    assert response.media_type == "image/svg+xml"
+    assert "Наслов" in response.content
+    assert "3 извори" in response.content
+
+
+def test_fastapi_serves_default_og_image():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {"count": 42}
+    with patch.object(api_fast, "db", mock_db):
+        response = asyncio.run(api_fast.og_image())
+    assert response.media_type == "image/svg+xml"
+    assert "42 статии индексирани" in response.content

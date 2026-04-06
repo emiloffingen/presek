@@ -6,4 +6,4 @@ COPY . .
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health').read()" || exit 1
-CMD exec gunicorn --bind :${PORT:-8000} --workers 4 --threads 8 --worker-class gthread --timeout 300 --access-logfile - --error-logfile - app:app
+CMD exec uvicorn api_fast:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4

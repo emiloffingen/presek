@@ -58,7 +58,7 @@ main() {
   install -d /etc/nginx/sites-enabled
   install -d /etc/nginx/snippets
 
-  for unit in presek.target presek-web.service presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
@@ -71,8 +71,6 @@ main() {
 
   systemctl daemon-reload
   systemctl enable presek.target
-  systemctl disable presek-web.service >/dev/null 2>&1 || true
-  systemctl stop presek-web.service >/dev/null 2>&1 || true
 
   nginx -t
   systemctl restart nginx
