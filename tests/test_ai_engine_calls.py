@@ -247,32 +247,10 @@ class TestTranslateToMacedonian:
 
 
 class TestGenerateCoverArt:
-    @patch('ai_engine._download_safe_external_image')
-    @patch('ai_engine.search_google_image')
-    def test_remote_image_fetch_uses_safe_helper(self, mock_search, mock_download):
-        from ai_engine import generate_cover_art
-
-        mock_search.return_value = "https://example.com/image.jpg"
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.iter_content.return_value = [b"jpg"]
-        mock_download.return_value = mock_response
-
-        with patch('builtins.open', MagicMock()), \
-             patch('os.makedirs'):
-            result = generate_cover_art("abc123", "Title")
-
-        assert result == "/static/generated/abc123.jpg"
-        mock_download.assert_called_once()
-        mock_response.close.assert_called()
-
     @patch('ai_engine.log')
-    @patch('ai_engine._download_safe_external_image', side_effect=PermissionError("Blocked upstream target"))
-    @patch('ai_engine.search_google_image')
-    def test_remote_fetch_failure_falls_back_to_placeholder(self, mock_search, _mock_download, mock_log):
+    def test_generates_local_placeholder_art(self, mock_log):
         from ai_engine import generate_cover_art
 
-        mock_search.return_value = "https://example.com/image.jpg"
         mock_db = MagicMock()
         mock_db.execute_one.return_value = {"category": "Вести"}
 
@@ -283,7 +261,7 @@ class TestGenerateCoverArt:
             result = generate_cover_art("abc123", "Title")
 
         assert result == "/static/generated/abc123.svg"
-        mock_log.warning.assert_called()
+        mock_log.warning.assert_not_called()
 
 
 class TestAutoSummarizeTopClusters:

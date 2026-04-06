@@ -7,6 +7,7 @@ from ingestion import (
     normalize_feed_link,
     normalize_candidate_title,
     parse_entry_timestamp,
+    extract_image_url,
 )
 
 def test_normalize_headline():
@@ -92,3 +93,37 @@ def test_parse_entry_timestamp_rejects_future_dates():
     fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
     entry = {"published_parsed": time.struct_time((2026, 4, 5, 20, 30, 0, 0, 0, 0))}
     assert parse_entry_timestamp(entry, fallback) == fallback
+
+
+def test_extract_image_url_prefers_large_media_image():
+    entry = {
+        "media_content": [
+            {"url": "https://example.com/thumb.jpg", "type": "image/jpeg", "width": "120", "height": "90"},
+            {"url": "https://example.com/hero.jpg", "type": "image/jpeg", "width": "1400", "height": "900"},
+        ]
+    }
+    assert extract_image_url(entry) == "https://example.com/hero.jpg"
+
+
+def test_extract_image_url_avoids_logo_noise():
+    entry = {
+        "links": [
+            {"href": "https://example.com/logo.png", "type": "image/png"},
+        ],
+        "enclosures": [
+            {"url": "https://cdn.example.com/story-main.webp", "type": "image/webp", "width": "900", "height": "600"},
+        ],
+    }
+    assert extract_image_url(entry) == "https://cdn.example.com/story-main.webp"
+
+
+def test_extract_image_url_rejects_non_http_candidates():
+    entry = {
+        "media_content": [
+            {"url": "data:image/png;base64,abc", "type": "image/png", "width": "1000", "height": "800"},
+        ],
+        "enclosures": [
+            {"url": "https://cdn.example.com/story.jpg", "type": "image/jpeg"},
+        ],
+    }
+    assert extract_image_url(entry) == "https://cdn.example.com/story.jpg"

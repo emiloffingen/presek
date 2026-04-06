@@ -98,17 +98,98 @@ def parse_entry_timestamp(entry, fallback_now: datetime.datetime) -> datetime.da
 
 def extract_image_url(entry):
     """Extracts the best representative image URL from an RSS entry."""
-    image_url = None
-    if "media_content" in entry and entry.media_content:
-        image_url = entry.media_content[0].get("url")
-    elif "links" in entry:
-        for l in entry.links:
-            if "image" in l.get("type", ""):
-                image_url = l.get("href")
-                break
-    if not image_url and "enclosures" in entry and entry.enclosures:
-        image_url = entry.enclosures[0].get("url")
-    return image_url
+    def _to_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    def _image_url_score(url: str, mime_type: str, width: int, height: int, source_rank: float) -> float:
+        if not url or not re.match(r"^https?://", str(url).strip(), flags=re.IGNORECASE):
+            return -100.0
+
+        parsed = urlsplit(str(url).strip())
+        path = (parsed.path or "").lower()
+        query = (parsed.query or "").lower()
+        combined = f"{path}?{query}"
+        mime = str(mime_type or "").lower()
+
+        score = source_rank
+        if "image/" in mime or path.endswith((".jpg", ".jpeg", ".png", ".webp", ".avif")):
+            score += 4.0
+        elif "image" in mime:
+            score += 3.0
+        elif mime:
+            score -= 4.0
+        else:
+            score += 1.0
+
+        area = width * height
+        if area:
+            score += min(area / 160000.0, 6.0)
+        if width >= 1200 or height >= 1200:
+            score += 1.2
+        elif width >= 600 or height >= 600:
+            score += 0.8
+        if width and width < 140:
+            score -= 5.0
+        if height and height < 140:
+            score -= 5.0
+
+        if any(pattern in combined for pattern in ("thumb", "thumbnail", "sprite", "logo", "icon", "avatar", "favicon", "pixel", "small")):
+            score -= 6.0
+        if any(pattern in combined for pattern in ("hero", "lead", "main", "large", "full", "original")):
+            score += 1.5
+
+        return score
+
+    candidates = []
+
+    for item in getattr(entry, "media_content", None) or entry.get("media_content", []) or []:
+        candidates.append({
+            "url": item.get("url") or item.get("href"),
+            "mime": item.get("type") or item.get("medium"),
+            "width": _to_int(item.get("width")),
+            "height": _to_int(item.get("height")),
+            "source_rank": 3.0,
+        })
+
+    for item in getattr(entry, "links", None) or entry.get("links", []) or []:
+        link_type = str(item.get("type") or "").lower()
+        rel = str(item.get("rel") or "").lower()
+        if "image" in link_type or rel == "enclosure":
+            candidates.append({
+                "url": item.get("href") or item.get("url"),
+                "mime": item.get("type"),
+                "width": _to_int(item.get("width")),
+                "height": _to_int(item.get("height")),
+                "source_rank": 2.0 if "image" in link_type else 1.4,
+            })
+
+    for item in getattr(entry, "enclosures", None) or entry.get("enclosures", []) or []:
+        candidates.append({
+            "url": item.get("url") or item.get("href"),
+            "mime": item.get("type"),
+            "width": _to_int(item.get("width")),
+            "height": _to_int(item.get("height")),
+            "source_rank": 1.0,
+        })
+
+    best_url = None
+    best_score = -100.0
+    for candidate in candidates:
+        score = _image_url_score(
+            candidate["url"],
+            candidate["mime"],
+            candidate["width"],
+            candidate["height"],
+            candidate["source_rank"],
+        )
+        if score > best_score:
+            best_score = score
+            best_url = candidate["url"]
+
+    return best_url
 
 async def fetch_feed_async(client: "httpx.AsyncClient", source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed."""

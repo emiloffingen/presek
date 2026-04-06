@@ -490,25 +490,7 @@ def generate_cover_art(cluster_id: str, title: str) -> str | None:
     from local_nlp import generate_local_placeholder
     from database import db_manager as db
     os.makedirs("static/generated", exist_ok=True)
-    save_path_jpg = f"static/generated/{cluster_id}.jpg"
     save_path_svg = f"static/generated/{cluster_id}.svg"
-    img_url = search_google_image(title)
-    if img_url:
-        try:
-            resp = _download_safe_external_image(
-                img_url,
-                headers={"User-Agent": "Mozilla/5.0"},
-                timeout=15,
-            )
-            if resp.status_code == 200:
-                with open(save_path_jpg, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                resp.close()
-                return f"/static/generated/{cluster_id}.jpg"
-            resp.close()
-        except Exception as e:
-            log.warning(f"[cover-art] Remote image fetch failed for {cluster_id}: {e}")
     try:
         cat_row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
         category = cat_row['category'] if cat_row else "Вести"

@@ -202,9 +202,20 @@ const adjacentTopic =
 	cluster?.related?.find((item: any) => item?.shared_topics?.length)?.shared_topics?.[0] ||
 	cluster?.related?.find((item: any) => item?.shared_tags?.length)?.shared_tags?.[0] ||
 	'';
+const shareDescription = (
+	cluster?.summary ||
+	leadDescription ||
+	summaryCardText
+).replace(/\s+/g, ' ').trim().slice(0, 220);
+const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 ---
 
-<Layout title={cluster ? cluster.articles[0].title : "Детали за вест"}>
+<Layout
+	title={cluster ? cluster.articles[0].title : "Детали за вест"}
+	description={cluster ? shareDescription : "Детали за вест од Пресек"}
+	image={shareImage}
+	type={cluster ? "article" : "website"}
+>
     <NYTHeader />
 
 	<main class="site-layout py-12">
