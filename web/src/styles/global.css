@@ -223,6 +223,55 @@
     color: var(--secondary-foreground);
 }
 
+.rail-suggestions {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.rail-suggestion-list {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.rail-suggestion-card {
+    display: grid;
+    gap: 0.65rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.rail-suggestion-card:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.rail-suggestion-kicker {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.rail-suggestion-card strong {
+    display: block;
+    margin: 0 0 0.25rem;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.15;
+    color: var(--foreground);
+}
+
+.rail-suggestion-card p {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--secondary-foreground);
+}
+
 .page-kicker {
     display: inline-block;
     margin-bottom: 0.85rem;

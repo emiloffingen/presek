@@ -405,11 +405,72 @@ def _load_weekly_topic_engagement(days=45):
     return topic_map
 
 
-def _build_weekly_digest_sections(profile, clusters, topic_engagement=None):
+def _load_weekly_source_engagement(days=45):
+    send_rows = db.execute(
+        "SELECT id, metadata "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type = 'send' "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+    child_rows = db.execute(
+        "SELECT parent_event_id, event_type "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+
+    child_map = {}
+    for row in child_rows or []:
+        parent_id = int(row.get("parent_event_id") or 0)
+        if parent_id <= 0:
+            continue
+        bucket = child_map.setdefault(parent_id, {"opens": 0, "clicks": 0})
+        event_type = str(row.get("event_type") or "").strip()
+        if event_type == "open":
+            bucket["opens"] += 1
+        elif event_type == "click":
+            bucket["clicks"] += 1
+
+    source_map = {}
+    for row in send_rows or []:
+        event_id = int(row.get("id") or 0)
+        metadata = row.get("metadata") or {}
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
+        for source in (metadata.get("focus_sources") or []):
+            clean = str(source or "").strip()
+            if not clean:
+                continue
+            bucket = source_map.setdefault(clean, {"sends": 0, "opens": 0, "clicks": 0})
+            bucket["sends"] += 1
+            bucket["opens"] += child_stats["opens"]
+            bucket["clicks"] += child_stats["clicks"]
+
+    for bucket in source_map.values():
+        sends = int(bucket.get("sends") or 0)
+        opens = int(bucket.get("opens") or 0)
+        clicks = int(bucket.get("clicks") or 0)
+        bucket["open_rate"] = (opens / sends) if sends else 0.0
+        bucket["click_rate"] = (clicks / sends) if sends else 0.0
+        bucket["section_score"] = round(
+            min(1.15, bucket["click_rate"] * 1.75 + bucket["open_rate"] * 0.6 + min(0.18, clicks * 0.04)),
+            3,
+        )
+    return source_map
+
+
+def _build_weekly_digest_sections(profile, clusters, topic_engagement=None, source_engagement=None):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = [topic for topic in profile["followedTopics"] if topic]
     followed_sources = [source for source in profile["followedSources"] if source]
     topic_engagement = topic_engagement or {}
+    source_engagement = source_engagement or {}
 
     lead_cluster = clusters[0] if clusters else None
     sections = []
@@ -448,15 +509,31 @@ def _build_weekly_digest_sections(profile, clusters, topic_engagement=None):
 
     source_focus = []
     if followed_sources:
-        for source in followed_sources[:2]:
+        for source in followed_sources[:3]:
             source_cluster = next((cluster for cluster in clusters if str(cluster.get("source") or "").strip() == source), None)
             if source_cluster:
-                source_focus.append(source_cluster)
+                source_focus.append((source, source_cluster))
     if source_focus:
+        source_focus.sort(
+            key=lambda item: (
+                float((source_engagement.get(item[0]) or {}).get("section_score") or 0.0),
+                float(item[1].get("match_score") or 0.0),
+                float(item[1].get("score") or 0.0),
+            ),
+            reverse=True,
+        )
+        source_clusters = [cluster for _, cluster in source_focus[:2]]
+        strongest_source = source_focus[0][0]
+        strongest_source_perf = source_engagement.get(strongest_source) or {}
         sections.append({
             "title": "Извори што ги следите",
-            "subtitle": "каде следените извори ја водат или потврдуваат неделата",
-            "clusters": source_focus[:2],
+            "subtitle": (
+                f"{strongest_source} носи најсилен одзив меѓу следените извори оваа недела"
+                if float(strongest_source_perf.get("section_score") or 0.0) >= 0.6
+                else "каде следените извори ја водат или потврдуваат неделата"
+            ),
+            "clusters": source_clusters,
+            "score": float(strongest_source_perf.get("section_score") or 0.0) + max(float(source_clusters[0].get("match_score") or 0.0), 0.0),
         })
 
     open_items = [cluster for cluster in clusters if cluster.get("open_point")]
@@ -465,9 +542,13 @@ def _build_weekly_digest_sections(profile, clusters, topic_engagement=None):
             "title": "Што останува отворено",
             "subtitle": "линии што влегуваат во следната недела без целосна потврда",
             "clusters": open_items[:2],
+            "score": max(float(open_items[0].get("match_score") or 0.0), 0.0),
         })
 
-    return sections[:4]
+    static_lead = sections[:1]
+    dynamic_sections = sections[1:]
+    dynamic_sections.sort(key=lambda item: float(item.get("score") or 0.0), reverse=True)
+    return (static_lead + dynamic_sections)[:4]
 
 
 def _select_profile_weekly_clusters(profile, limit=5):
@@ -516,7 +597,12 @@ def _build_profile_weekly_digest_message(profile, clusters):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = profile["followedTopics"][:4]
     followed_sources = profile["followedSources"][:4]
-    sections = _build_weekly_digest_sections(profile, clusters, _load_weekly_topic_engagement())
+    sections = _build_weekly_digest_sections(
+        profile,
+        clusters,
+        _load_weekly_topic_engagement(),
+        _load_weekly_source_engagement(),
+    )
 
     lines = ["Пресек неделен преглед"]
     if followed_topics:

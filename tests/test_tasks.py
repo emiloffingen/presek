@@ -277,6 +277,24 @@ class TestProfileDeliveryTasks:
         assert result["Политика"]["open_rate"] == 1.0
         assert result["Економија"]["click_rate"] == 1.0
 
+    def test_load_weekly_source_engagement_uses_focus_sources_from_send_metadata(self):
+        import tasks
+
+        with patch.object(tasks, "db") as mock_db:
+            mock_db.execute.side_effect = [
+                [
+                    {"id": 21, "metadata": {"focus_sources": ["MIA", "Телма"]}},
+                ],
+                [
+                    {"parent_event_id": 21, "event_type": "open"},
+                    {"parent_event_id": 21, "event_type": "click"},
+                ],
+            ]
+            result = tasks._load_weekly_source_engagement(days=30)
+
+        assert result["MIA"]["open_rate"] == 1.0
+        assert result["Телма"]["click_rate"] == 1.0
+
     def test_build_weekly_digest_sections_prioritizes_high_performing_followed_topics(self):
         import tasks
 
@@ -312,6 +330,42 @@ class TestProfileDeliveryTasks:
         assert sections[1]["title"] == "Следена тема: Политика"
         assert "силен интерес" in sections[1]["subtitle"]
 
+    def test_build_weekly_digest_sections_prioritizes_strong_source_section_over_weaker_topic_section(self):
+        import tasks
+
+        clusters = [
+            {
+                "cluster_id": "lead-1",
+                "title": "Lead weekly story",
+                "source": "MIA",
+                "source_count": 4,
+                "topic": "Политика",
+                "category": "Политика",
+                "match_score": 3.1,
+                "match_reason": "следена тема: Политика",
+            },
+            {
+                "cluster_id": "source-1",
+                "title": "Source-led follow-up",
+                "source": "Телма",
+                "source_count": 3,
+                "topic": "Свет",
+                "category": "Свет",
+                "match_score": 4.0,
+                "match_reason": "следен извор: Телма",
+            },
+        ]
+
+        sections = tasks._build_weekly_digest_sections(
+            {"followedTopics": ["Политика"], "followedSources": ["Телма"]},
+            clusters,
+            {"Политика": {"section_score": 0.15}},
+            {"Телма": {"section_score": 0.85}},
+        )
+
+        assert sections[1]["title"] == "Извори што ги следите"
+        assert "Телма" in sections[1]["subtitle"]
+
     def test_build_profile_weekly_digest_message_renders_section_headings(self):
         import tasks
 
@@ -329,6 +383,7 @@ class TestProfileDeliveryTasks:
         ]
 
         with patch.object(tasks, "_load_weekly_topic_engagement", return_value={"Политика": {"section_score": 0.8}}), \
+             patch.object(tasks, "_load_weekly_source_engagement", return_value={}), \
              patch.object(tasks, "_build_weekly_digest_sections", return_value=[
                  {"title": "Што најмногу се помести", "subtitle": "главен неделен развој", "clusters": clusters}
              ]):

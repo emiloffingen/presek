@@ -1,0 +1,72 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Sparkles } from 'lucide-react';
+import PreferenceToggle from './PreferenceToggle.tsx';
+import {
+  buildFollowRecommendations,
+  hasPersonalizationSignal,
+  loadReaderProfile,
+} from '../lib/personalization.js';
+
+export default function HomeRailSuggestionsIsland() {
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [profile, setProfile] = useState(() => loadReaderProfile());
+
+  useEffect(() => {
+    setProfile(loadReaderProfile());
+  }, [refreshKey]);
+
+  const suggestions = useMemo(() => buildFollowRecommendations(profile, 2), [profile]);
+  const followedCount = (profile?.followedTopics || []).length + (profile?.followedSources || []).length;
+  const show = suggestions.topics.length + suggestions.sources.length > 0 && (!hasPersonalizationSignal(profile) || followedCount < 4);
+
+  if (!show) {
+    return null;
+  }
+
+  return (
+    <section className="rail-module rail-suggestions">
+      <div className="rail-suggestions-head">
+        <h3 className="rail-title">
+          <Sparkles size={14} /> СЛЕДЕТЕ ПОАМЕТНО
+        </h3>
+        <p className="rail-note">
+          Неколку брзи следења се доволни `За Вас`, известувањата и неделниот преглед да станат многу попрецизни.
+        </p>
+      </div>
+
+      <div className="rail-suggestion-list">
+        {suggestions.topics.map((item) => (
+          <div key={`topic:${item.value}`} className="rail-suggestion-card">
+            <div>
+              <p className="rail-suggestion-kicker">Тема</p>
+              <strong>{item.value}</strong>
+              <p>{item.reason}</p>
+            </div>
+            <PreferenceToggle
+              kind="topic"
+              value={item.value}
+              label={`тема: ${item.value}`}
+              onChanged={() => setRefreshKey((value) => value + 1)}
+            />
+          </div>
+        ))}
+
+        {suggestions.sources.map((item) => (
+          <div key={`source:${item.value}`} className="rail-suggestion-card">
+            <div>
+              <p className="rail-suggestion-kicker">Извор</p>
+              <strong>{item.value}</strong>
+              <p>{item.reason}</p>
+            </div>
+            <PreferenceToggle
+              kind="source"
+              value={item.value}
+              label={`извор: ${item.value}`}
+              onChanged={() => setRefreshKey((value) => value + 1)}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

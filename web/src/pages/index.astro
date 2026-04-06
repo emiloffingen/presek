@@ -5,6 +5,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
+import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5000/api");
@@ -256,6 +257,8 @@ function getThumb(cluster: any) {
 					)}
 					<p class="rail-note">Каде се собира најмногу медиумско внимание, не само каде прво се појавила објавата.</p>
 				</section>
+
+				<HomeRailSuggestionsIsland client:load />
 
 				<section class="rail-module">
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
