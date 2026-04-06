@@ -1,7 +1,9 @@
 from local_nlp import (
     filter_cluster_tags,
     extract_cluster_tags_locally,
+    generate_daily_brief_fallback,
     is_valid_focus_entity,
+    summarize_locally,
     summarize_article_fallback,
     build_structured_answer_sections,
     compare_cluster_sources,
@@ -160,9 +162,44 @@ class TestClusterComparison:
 
         assert "100" in diff_answer["answer"] or "120" in diff_answer["answer"]
         assert "потврд" in unclear_answer["answer"].lower() or "развива" in unclear_answer["answer"].lower()
+        assert diff_answer["answer"].startswith("Изворите најмногу се разликуваат")
+        assert unclear_answer["answer"].startswith("Најотворени остануваат")
+
+    def test_local_answers_use_cleaner_main_development_intro(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата најави пакет од 100 милиони евра",
+                "description": "Мерките почнуваат во вторник.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Се очекува пакетот да изнесува 120 милиони евра.",
+            },
+        ]
+
+        answer = answer_cluster_question_locally("Што е најважното ново?", articles)
+
+        assert answer["answer"].startswith("Во овој момент, главниот развој е:")
 
 
 class TestArticleSummaryFallback:
+    def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
+        text = (
+            "ФОТО: Галерија од настанот. "
+            "Владата денеска усвои пакет од 120 милиони евра за енергетска поддршка на домаќинствата и малите компании. "
+            "Премиерот најави дека мерките ќе почнат да важат од вторник по објавата во Службен весник. "
+            "#економија #вести #најново."
+        )
+
+        result = summarize_locally(text, sentence_count=2)
+
+        assert "120 милиони евра" in result
+        assert "вторник" in result.lower()
+        assert "ФОТО:" not in result
+        assert "#економија" not in result
+
     def test_summarize_article_fallback_returns_clean_compact_text(self):
         result = summarize_article_fallback(
             "⚪ Трамп најави нови царини",
@@ -172,3 +209,71 @@ class TestArticleSummaryFallback:
         assert "⚪" not in result
         assert "#економија" not in result
         assert "Трамп" in result
+
+    def test_synthesize_cluster_fallback_uses_common_line_in_summary(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата усвои пакет за поддршка",
+                "description": "Повеќето мерки стартуваат во вторник со пакет од 120 милиони евра.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Фокусот е на реакциите за пакетот за поддршка",
+                "description": "И Reuters пишува за пакетот од 120 милиони евра и владината одлука.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles)
+
+        assert "Заедничка линија" in result["summary"]
+        assert "Што се случува" in result["summary"]
+        assert "Покриеност" in result["summary"]
+
+    def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Пакетот влегува во владина процедура",
+                "description": "Според Владата, мерките почнуваат во среда.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Се уште не е потврдено кога точно ќе стартува пакетот.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles)
+
+        assert "Што останува отворено" in result["summary"] or "Следно за следење" in result["summary"]
+
+
+class TestLocalBriefingFallback:
+    def test_generate_daily_brief_fallback_uses_editorial_sections(self):
+        clusters = [
+            {
+                "title": "Владата усвои пакет за поддршка",
+                "source": "МИА",
+                "topic": "Економија",
+                "description": "Пакетот вреди 120 милиони евра и стартува во вторник.",
+                "source_count": 4,
+                "difference_point": "Изворите се разликуваат околу рокот за почеток.",
+                "open_point": "Останува да се потврди точниот датум на старт.",
+            },
+            {
+                "title": "Опозицијата бара дополнителна расправа",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Опозицијата бара дополнителни објаснувања за мерките.",
+                "source_count": 3,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "## Што го движи денот" in result
+        assert "## Каде се разликува известувањето" in result
+        assert "## Што да се следи понатаму" in result
+        assert "- Што се менува:" in result
+        assert "- Зошто е важно:" in result

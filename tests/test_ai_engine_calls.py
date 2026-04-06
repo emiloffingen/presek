@@ -95,7 +95,7 @@ class TestOpenAICompatibleProvider:
 
 
 class TestCallAI:
-    def _mock_providers(self, gemini=None, groq=None, cerebras=None, mistral=None, openrouter=None, local=None):
+    def _mock_providers(self, gemini=None, groq=None, cerebras=None, mistral=None, openrouter=None, openai=None, local=None):
         """Return a PROVIDERS dict with mocked .call() results."""
         def make_provider(return_value):
             p = MagicMock()
@@ -104,6 +104,7 @@ class TestCallAI:
 
         return {
             "gemini":     make_provider(gemini),
+            "openai":     make_provider(openai),
             "groq":       make_provider(groq),
             "cerebras":   make_provider(cerebras),
             "mistral":    make_provider(mistral),
@@ -112,36 +113,23 @@ class TestCallAI:
         }
 
     @patch('utils.redis_client')
-    def test_gemini_first(self, mock_redis):
+    def test_local_first(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(gemini="Gemini result")
+        providers = self._mock_providers(local="Local result")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
-        assert result == "Gemini result"
-        assert tier == "gemini"
-
-    @patch('utils.redis_client')
-    def test_fallback_to_groq(self, mock_redis):
-        mock_redis.incr.return_value = 1
-        mock_redis.expire.return_value = True
-        providers = self._mock_providers(gemini=None, groq="Groq result")
-
-        with patch.dict('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine.redis_client', mock_redis):
-            from ai_engine import _call_ai
-            result, tier = _call_ai("Test", "System")
-        assert result == "Groq result"
-        assert tier == "groq"
+        assert result == "Local result"
+        assert tier == "local"
 
     @patch('utils.redis_client')
     def test_all_fail_returns_none(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers()  # all None
+        providers = self._mock_providers(local=None)
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
@@ -154,42 +142,62 @@ class TestCallAI:
     def test_daily_limit_reached(self, mock_redis):
         from config import AI_DAILY_LIMIT
         mock_redis.incr.return_value = AI_DAILY_LIMIT + 1
-        providers = self._mock_providers(gemini="Should not be called")
+        providers = self._mock_providers(local="Local result")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
-        assert result is None
-        assert tier == "limit_reached"
-        providers["gemini"].call.assert_not_called()
+        assert result == "Local result"
+        assert tier == "local"
+        providers["local"].call.assert_called_once()
 
     @patch('utils.redis_client')
     def test_redis_error_continues(self, mock_redis):
         """If Redis fails during limit check, should still try AI providers."""
         mock_redis.incr.side_effect = Exception("Redis down")
-        providers = self._mock_providers(gemini="Works anyway")
+        providers = self._mock_providers(local="Works anyway")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
         assert result == "Works anyway"
-        assert tier == "gemini"
+        assert tier == "local"
 
     @patch('utils.redis_client')
     def test_task_routing_translation(self, mock_redis):
-        """Translation task uses translation chain (gemini first)."""
+        """Translation task now uses the local chain."""
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(gemini="Translated")
+        providers = self._mock_providers(local="Translated")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Text", "System", task_type="translation")
         assert result == "Translated"
-        assert tier == "gemini"
+        assert tier == "local"
+
+
+class TestLocalProvider:
+    def test_translation_returns_original_text(self):
+        from ai_engine import LocalProvider
+        provider = LocalProvider()
+        result = provider.call("English text", "Translate this to Macedonian", max_tokens=120, json_mode=False)
+        assert result == "English text"
+
+    def test_summary_strips_summarize_prefix(self):
+        from ai_engine import LocalProvider
+        provider = LocalProvider()
+        result = provider.call(
+            "Summarize: Владата усвои пакет од 120 милиони евра. Опозицијата го критикува рокот за спроведување.",
+            "Return a concise 2-sentence news summary in Macedonian.",
+            max_tokens=120,
+            json_mode=False,
+        )
+        assert "Summarize:" not in result
+        assert "120 милиони евра" in result
 
 
 class TestTranslateToMacedonian:

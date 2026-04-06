@@ -19,6 +19,7 @@ from config import (
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
+    OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
     POLLINATIONS_API_KEY,
 )
 from prompts import (
@@ -197,7 +198,8 @@ class OpenAICompatibleProvider(AIProvider):
             log.warning(f"[{self.name}] Error: {e}")
             return None
 
-from local_nlp import summarize_locally
+
+from local_nlp import summarize_locally, summarize_article_fallback
 
 # --- Provider Registry ---
 
@@ -210,17 +212,21 @@ class LocalProvider(AIProvider):
                 await asyncio.sleep(0.01)
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
-        if "Synthesis" in system or "synthesis" in system:
+        lowered_system = (system or "").lower()
+        if "translate" in lowered_system or "превед" in lowered_system:
+            return str(prompt or "").strip()
+        if "synthesis" in lowered_system or "синтез" in lowered_system:
             lines = prompt.split("\n")
             titles = [l.replace("- [", "").split("]:")[0] for l in lines if "]:" in l]
             main_text = "\n".join(lines)
             summary = summarize_locally(main_text, sentence_count=4)
             return f"Збирен извештај од {len(titles)} извори: {summary}"
-        text = prompt.replace("Summarize the following:", "").strip()
-        return summarize_locally(text)
+        text = re.sub(r"^\s*summarize(?: the following)?\s*:\s*", "", prompt, flags=re.IGNORECASE).strip()
+        return summarize_article_fallback("", text)
 
 PROVIDERS = {
     "gemini":     GeminiProvider(),
+    "openai":     OpenAICompatibleProvider("openai", OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL),
     "groq":       OpenAICompatibleProvider("groq", GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL),
     "cerebras":   OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
     "mistral":    OpenAICompatibleProvider("mistral", MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL),
@@ -229,11 +235,11 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["mistral", "groq", "gemini"],
-    "summarize":    ["mistral", "local", "groq", "gemini"],
-    "synthesis":    ["mistral", "local", "groq", "gemini"],
-    "daily_brief":  ["mistral", "groq", "gemini"],
-    "default":      ["mistral", "local", "groq", "gemini"],
+    "translation":  ["local"],
+    "summarize":    ["local"],
+    "synthesis":    ["local"],
+    "daily_brief":  ["local"],
+    "default":      ["local"],
 }
 
 # --- Service Methods ---

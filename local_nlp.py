@@ -219,51 +219,97 @@ def extract_keyphrases_locally(text, top_n=5):
     sorted_phrases = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
     return [p[0] for p in sorted_phrases[:top_n]]
 
+
+def _sentence_tokens(text):
+    return [
+        token for token in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]+", (text or "").lower(), re.UNICODE)
+        if token not in STOPWORDS and len(token) > 2
+    ]
+
+
+def _normalize_summary_sentence(sentence):
+    text = re.sub(r"\s+", " ", str(sentence or "")).strip()
+    text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
+    return text
+
+
+def _is_noisy_summary_sentence(sentence):
+    text = _normalize_summary_sentence(sentence)
+    if not text:
+        return True
+    if len(text) < 28:
+        return True
+    lowered = text.lower()
+    if lowered.startswith(("фото:", "видео:", "gallery:", "галерија:", "коментар:", "реклама:")):
+        return True
+    if text.count("#") >= 2:
+        return True
+    return False
+
 def summarize_locally(text, sentence_count=3):
     """
-    Non-AI Summarizer: Scores sentences based on word frequency.
-    Works entirely locally and is very fast.
+    Non-AI summarizer for news-like text.
+    It is still fully local, but prefers early, information-dense,
+    title-aligned sentences and penalizes noisy fragments.
     """
     if not text or len(text) < 100:
         return text
 
-    # 1. Clean and split into sentences
-    # Handle common abbreviations and punctuation
-    sentences = re.split(r'(?<=[.!?]) +', text)
+    sentences = [
+        _normalize_summary_sentence(sentence)
+        for sentence in re.split(r'(?<=[.!?])\s+', text)
+    ]
+    sentences = [sentence for sentence in sentences if sentence]
     if len(sentences) <= sentence_count:
         return text
 
-    # 2. Tokenize words and count frequency (excluding stopwords)
-    words = re.findall(r'[а-шА-Ш\w]+', text.lower(), re.UNICODE)
-    words = [w for w in words if w not in STOPWORDS and len(w) > 2]
-    
+    title_like_terms = set(_sentence_tokens(sentences[0]))
+    words = _sentence_tokens(text)
     word_freq = Counter(words)
     if not word_freq:
         return ". ".join(sentences[:sentence_count])
 
-    # Normalize frequency
     max_freq = max(word_freq.values())
     for word in word_freq:
         word_freq[word] = word_freq[word] / max_freq
 
-    # 3. Score sentences based on word frequency
     sentence_scores = {}
     for i, sentence in enumerate(sentences):
-        sentence_words = re.findall(r'[а-шА-Ш\w]+', sentence.lower(), re.UNICODE)
-        score = 0
-        for word in sentence_words:
-            if word in word_freq:
-                score += word_freq[word]
-        
-        # Position bonus: sentences at the start are usually more important in news
-        position_bonus = 1.0 / (i + 1)
-        sentence_scores[i] = score + position_bonus
+        sentence_words = _sentence_tokens(sentence)
+        if not sentence_words:
+            continue
 
-    # 4. Pick top N sentences and sort by original order
+        score = sum(word_freq.get(word, 0) for word in sentence_words)
+        overlap = len(set(sentence_words) & title_like_terms)
+        number_bonus = 0.4 if _extract_number_tokens(sentence) else 0.0
+        lead_bonus = 1.6 / (i + 1)
+        density_bonus = min(len(sentence_words), 24) / 24
+
+        if _is_noisy_summary_sentence(sentence):
+            score *= 0.2
+
+        if len(sentence) > 260:
+            score *= 0.7
+
+        score += overlap * 0.45 + number_bonus + lead_bonus + density_bonus
+        sentence_scores[i] = score
+
     top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:sentence_count]
     top_indices.sort()
 
-    summary = [sentences[i].strip() for i in top_indices]
+    summary = []
+    seen = set()
+    for idx in top_indices:
+        sentence = sentences[idx].strip()
+        key = sentence.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        summary.append(sentence)
+
+    if not summary:
+        summary = [sentence for sentence in sentences[:sentence_count] if not _is_noisy_summary_sentence(sentence)]
+
     return " ".join(summary)
 
 
@@ -307,6 +353,11 @@ def _extract_number_tokens(text):
 def _join_fragments(parts):
     clean = [str(part or "").strip(" .,;:") for part in parts if str(part or "").strip(" .,;:")]
     return "; ".join(clean)
+
+
+def _source_list(articles, limit=3):
+    names = [str(article.get("source") or "Извор").strip() for article in articles[:limit]]
+    return ", ".join(name for name in names if name)
 
 
 def compare_cluster_sources(articles):
@@ -438,20 +489,32 @@ def synthesize_cluster_fallback(articles):
     context_summary = summarize_locally(combined_text, sentence_count=3).strip()
     comparison = compare_cluster_sources(articles)
 
-    summary_lines = [
-        f"• Главен развој: {lead['title']}",
-        f"• Опфат на извори: темата е покриена од {len(articles)} извори, со водечки извештаи од {', '.join(article['source'] for article in articles[:3])}.",
-    ]
+    summary_lines = [f"• Што се случува: {lead['title']}"]
+    if comparison["common_line"]:
+        common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
+        summary_lines.append(f"• Заедничка линија: {common_line}")
+    summary_lines.append(
+        f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}."
+    )
+    follow_line = ""
     if context_summary:
         summary_lines.append(f"• Контекст: {context_summary}")
-    if descriptions:
-        summary_lines.append(f"• Што следи: {descriptions[0][:220].rstrip(' .,;:')}." )
+    if comparison["open_points"]:
+        follow_line = f"• Што останува отворено: {' '.join(comparison['open_points'][:1])}"
+    elif descriptions:
+        next_line = summarize_locally(descriptions[0], sentence_count=1).strip() or descriptions[0][:220].rstrip(" .,;:")
+        follow_line = f"• Следно за следење: {next_line}."
+
+    if follow_line:
+        if len(summary_lines) >= 4:
+            summary_lines = summary_lines[:3]
+        summary_lines.append(follow_line)
 
     perspectives = []
     if comparison["common_line"]:
         perspectives.append({
             "angle": "Заедничка линија",
-            "content": comparison["common_line"],
+            "content": re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip(),
         })
 
     if comparison["difference_points"]:
@@ -499,31 +562,27 @@ def generate_daily_brief_fallback(clusters):
         difference_point = str(cluster.get("difference_point") or "").strip()
 
         lines.append(f"### {index}. {title}")
-        lines.append(
-            f"- Што е новото: {summary or title}"
-        )
-        lines.append(
-            f"- Зошто е важно: Темата влегува во {topic.lower()} агендата и во моментов ја следат {source_count} извори, со водечки сигнал од {source}."
-        )
+        lines.append(f"- Што се менува: {summary or title}")
+        lines.append(f"- Зошто е важно: Темата е во фокусот на {topic.lower()} покривањето и во моментов ја следат {source_count} извори, со водечки сигнал од {source}.")
         lines.append("")
 
         if difference_point:
             difference_lines.append(f"- {difference_point}")
         elif source_count >= 3:
-            difference_lines.append(f"- Кај {title[:90]} најмногу се разликува акцентот меѓу изворите, а не основниот факт.")
+            difference_lines.append(f"- Кај {title[:90]} најмногу се разликува акцентот меѓу изворите, додека главната линија останува слична.")
         if open_point:
             watch_lines.append(f"- {open_point}")
         else:
-            watch_lines.append(f"- Следете што ќе биде следната потврда, реакција или институционален чекор околу: {title[:90]}.")
+            watch_lines.append(f"- Следен сигнал за следење е нова потврда, реакција или институционален чекор околу: {title[:90]}.")
 
     lines.append("## Каде се разликува известувањето")
-    lines.extend(difference_lines[:3] or ["- Повеќето водечки приказни добиваат слична главна линија, но со различни акценти и рамки."])
+    lines.extend(difference_lines[:3] or ["- Повеќето водечки приказни носат слична главна линија, но различен акцент, рамка или избор на детали."])
     lines.append("")
     lines.append("## Што да се следи понатаму")
     lines.extend(watch_lines[:3] or ["- Следните часови најмногу ќе зависат од нови потврди, официјални реакции и дополнителни бројки."])
     lines.append("")
     lines.append("**Напомена**")
-    lines.append("Овој брифинг е составен локално од највисоко рангираните кластери кога AI брифинг не е достапен.")
+    lines.append("Овој брифинг е составен локално од најважните рангирани кластери кога AI брифинг не е достапен.")
     return "\n".join(lines).strip()
 
 
@@ -545,16 +604,19 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
     if any(token in lowered for token in ["разлику", "извори", "перспектив"]):
         emphasis = comparison["difference_points"] or [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
         return {
-            "answer": " ".join(emphasis[:2]) + " Разликите најчесто се во аголот, бројките или формулацијата, а не нужно во самиот основен настан.",
+            "answer": "Изворите најмногу се разликуваат во акцентот и формулацијата. " + " ".join(emphasis[:2]),
             "citations": citations,
             "related_questions": related_questions,
             "confidence": "medium",
         }
 
     if any(token in lowered for token in ["нејасно", "непотврдено", "отворено", "што не се знае"]):
-        answer = " ".join(comparison["open_points"][:2]) or "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
+        answer = "Најотворени остануваат следните детали. "
+        open_line = " ".join(comparison["open_points"][:2]) or "Во достапните извори нема целосна слика за сите детали. Најјасно е основното случување, додека последиците, реакциите и следните чекори сè уште се развиваат."
         if synthesis:
-            answer = f"{answer} Тековниот преглед укажува дека: {summarize_locally(synthesis, sentence_count=1)}"
+            answer = f"{answer}{open_line} Тековниот преглед сугерира: {summarize_locally(synthesis, sentence_count=1)}"
+        else:
+            answer = f"{answer}{open_line}"
         return {
             "answer": answer,
             "citations": citations,
@@ -563,9 +625,12 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
         }
 
     if any(token in lowered for token in ["најваж", "што е ново", "што се случ", "главно", "што има"]):
-        answer = f"Најважното во овој момент е: {lead['title']}."
+        answer = f"Во овој момент, главниот развој е: {lead['title']}."
         if lead["description"]:
             answer += f" {summarize_locally(lead['description'], sentence_count=1)}"
+        if comparison["common_line"]:
+            common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
+            answer += f" Заедничката линија е: {common_line}"
         answer += f" Темата во моментов е покриена од {len(articles)} извори."
         return {
             "answer": answer,
@@ -583,7 +648,7 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
         scored.sort(key=lambda item: item[0], reverse=True)
         top = [article for score, article in scored if score > 0][:2]
         if top:
-            answer = f"Според достапните извори, најрелевантно за вашето прашање е: {top[0]['title']}."
+            answer = f"Најрелевантно за вашето прашање е: {top[0]['title']}."
             if top[0]["description"]:
                 answer += f" {summarize_locally(top[0]['description'], sentence_count=1)}"
             return {
