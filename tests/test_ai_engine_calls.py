@@ -181,11 +181,18 @@ class TestCallAI:
 
 
 class TestLocalProvider:
-    def test_translation_returns_original_text(self):
+    def test_translation_rewrites_common_english_news_terms(self):
         from ai_engine import LocalProvider
         provider = LocalProvider()
-        result = provider.call("English text", "Translate this to Macedonian", max_tokens=120, json_mode=False)
-        assert result == "English text"
+        result = provider.call(
+            "Government announced new tariffs on Tuesday",
+            "Translate this to Macedonian",
+            max_tokens=120,
+            json_mode=False,
+        )
+        assert "владата" in result.lower()
+        assert "царини" in result.lower()
+        assert "вторник" in result.lower()
 
     def test_summary_strips_summarize_prefix(self):
         from ai_engine import LocalProvider
@@ -213,7 +220,7 @@ class TestTranslateToMacedonian:
         from ai_engine import translate_to_macedonian
         mock_call_ai.return_value = (None, None)
         result = translate_to_macedonian("Text")
-        assert result is None
+        assert result == "Text"
 
     def test_empty_text(self):
         from ai_engine import translate_to_macedonian

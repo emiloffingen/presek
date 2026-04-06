@@ -1,8 +1,10 @@
 from local_nlp import (
     filter_cluster_tags,
     extract_cluster_tags_locally,
+    extract_keyphrases_locally,
     generate_daily_brief_fallback,
     is_valid_focus_entity,
+    rewrite_to_macedonian_locally,
     summarize_locally,
     summarize_article_fallback,
     build_structured_answer_sections,
@@ -51,6 +53,35 @@ class TestClusterTagExtraction:
         assert "Иран" in tags
         assert "Трамп" in tags
         assert "Подготвува Напади" not in tags
+
+    def test_extract_keyphrases_locally_filters_source_noise_and_prefers_real_phrases(self):
+        text = (
+            "Reuters јавува дека Владата усвои пакет за енергетска поддршка. "
+            "Пакетот за енергетска поддршка вреди 120 милиони евра. "
+            "AP пишува дека мерките почнуваат во вторник."
+        )
+
+        phrases = extract_keyphrases_locally(text, top_n=5)
+
+        assert any("пакет" in item.lower() for item in phrases)
+        assert not any(item.lower() == "reuters" for item in phrases)
+        assert not any(item.lower() == "ap" for item in phrases)
+
+    def test_prefers_repeated_explicit_entities_over_generic_tokens(self):
+        titles = [
+            "Европска комисија предлага нов пакет мерки за енергија",
+            "Реакција на Европска комисија по расправата за нови мерки",
+            "Лидерите чекаат одлука од Европска комисија",
+        ]
+        entities = [
+            {"entity_name": "Европска комисија", "entity_type": "organization"},
+            {"entity_name": "Reuters", "entity_type": "organization"},
+        ]
+
+        tags = extract_cluster_tags_locally(titles, entity_names=entities, top_n=4)
+
+        assert tags[0] == "Европска комисија"
+        assert "Reuters" not in tags
 
 
 class TestStructuredAnswerSections:
@@ -123,6 +154,25 @@ class TestClusterComparison:
         assert result["difference_points"]
         assert result["open_points"]
         assert any("100" in item or "120" in item for item in result["difference_points"])
+
+    def test_compare_cluster_sources_uses_phrase_based_common_line(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата усвои пакет за енергетска поддршка",
+                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
+                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+            },
+        ]
+
+        result = compare_cluster_sources(articles)
+
+        assert "во фокус" in result["common_line"].lower()
+        assert "енергетска поддршка" in result["common_line"].lower()
 
     def test_synthesize_cluster_fallback_uses_comparison_output(self):
         articles = [
@@ -209,6 +259,23 @@ class TestArticleSummaryFallback:
         assert "⚪" not in result
         assert "#економија" not in result
         assert "Трамп" in result
+
+
+class TestLocalMacedonianRewrite:
+    def test_rewrites_common_english_news_copy(self):
+        result = rewrite_to_macedonian_locally(
+            "Prime Minister announced new measures on Tuesday according to officials"
+        )
+
+        lowered = result.lower()
+        assert "премиерот" in lowered
+        assert "мерки" in lowered
+        assert "вторник" in lowered
+        assert "официјални претставници" in lowered or "според" in lowered
+
+    def test_keeps_existing_macedonian_text_clean(self):
+        result = rewrite_to_macedonian_locally("  Владата   најави   нов пакет мерки  ")
+        assert result == "Владата најави нов пакет мерки"
 
     def test_synthesize_cluster_fallback_uses_common_line_in_summary(self):
         articles = [

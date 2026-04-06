@@ -33,9 +33,120 @@ TAG_NOISE_WORDS = {
     "напади", "објави", "изјави", "порача", "соопшти",
 }
 
+SOURCE_NOISE_WORDS = {
+    "reuters", "ap", "afp", "mia", "mиа", "bbc", "cnn", "dw", "ansa", "tass",
+    "associated", "press",
+}
+
 TAG_GENERIC_STARTERS = {
     "ново", "нова", "нови", "нов", "главно", "главниот", "водечки",
     "утрински", "вечерни", "последни", "последно", "последната",
+}
+
+LOCAL_TRANSLATION_PHRASES = [
+    (r"\bbreaking news\b", "итна вест"),
+    (r"\blive updates?\b", "развој во живо"),
+    (r"\baccording to\b", "според"),
+    (r"\bprime minister\b", "премиерот"),
+    (r"\bforeign minister\b", "министерот за надворешни работи"),
+    (r"\bfinance minister\b", "министерот за финансии"),
+    (r"\bceasefire\b", "прекин на огнот"),
+    (r"\binterest rates?\b", "каматни стапки"),
+    (r"\bcentral bank\b", "централната банка"),
+    (r"\bwhite house\b", "Белата куќа"),
+    (r"\beuropean union\b", "Европската унија"),
+    (r"\bunited nations\b", "Обединетите нации"),
+]
+
+LOCAL_TRANSLATION_WORDS = {
+    "government": "владата",
+    "minister": "министерот",
+    "president": "претседателот",
+    "parliament": "парламентот",
+    "opposition": "опозицијата",
+    "police": "полицијата",
+    "court": "судот",
+    "judges": "судиите",
+    "judge": "судијата",
+    "election": "избори",
+    "elections": "избори",
+    "tariff": "царина",
+    "tariffs": "царини",
+    "sanction": "санкција",
+    "sanctions": "санкции",
+    "attack": "напад",
+    "attacks": "напади",
+    "protest": "протест",
+    "protests": "протести",
+    "package": "пакет",
+    "packages": "пакети",
+    "measure": "мерка",
+    "measures": "мерки",
+    "budget": "буџетот",
+    "economy": "економијата",
+    "market": "пазарот",
+    "markets": "пазарите",
+    "company": "компанијата",
+    "companies": "компаниите",
+    "deal": "договор",
+    "agreement": "договор",
+    "talks": "разговори",
+    "support": "поддршка",
+    "aid": "помош",
+    "bill": "законски предлог",
+    "law": "законот",
+    "report": "извештај",
+    "reports": "известува",
+    "reported": "објави",
+    "says": "вели",
+    "said": "изјави",
+    "announce": "најавува",
+    "announces": "најавува",
+    "announced": "најави",
+    "warns": "предупредува",
+    "warned": "предупреди",
+    "approves": "одобрува",
+    "approved": "одобри",
+    "launches": "почнува",
+    "launched": "почна",
+    "delays": "одложува",
+    "delayed": "одложи",
+    "confirms": "потврдува",
+    "confirmed": "потврди",
+    "denies": "негира",
+    "denied": "негираше",
+    "urges": "повикува",
+    "plans": "планира",
+    "plan": "план",
+    "new": "нов",
+    "latest": "најнов",
+    "official": "официјален",
+    "officials": "официјални претставници",
+}
+
+LOCAL_TRANSLATION_MONTHS = {
+    "january": "јануари",
+    "february": "февруари",
+    "march": "март",
+    "april": "април",
+    "may": "мај",
+    "june": "јуни",
+    "july": "јули",
+    "august": "август",
+    "september": "септември",
+    "october": "октомври",
+    "november": "ноември",
+    "december": "декември",
+    "monday": "понеделник",
+    "tuesday": "вторник",
+    "wednesday": "среда",
+    "thursday": "четврток",
+    "friday": "петок",
+    "saturday": "сабота",
+    "sunday": "недела",
+    "today": "денес",
+    "tomorrow": "утре",
+    "yesterday": "вчера",
 }
 
 
@@ -57,7 +168,11 @@ def is_valid_focus_entity(name, entity_type=None):
         return False
     if lowered in TAG_NOISE_WORDS:
         return False
+    if lowered in SOURCE_NOISE_WORDS:
+        return False
     if any(word in TAG_NOISE_WORDS for word in words):
+        return False
+    if any(word in SOURCE_NOISE_WORDS for word in words):
         return False
     if words and words[0] in TAG_GENERIC_STARTERS:
         return False
@@ -72,6 +187,14 @@ def is_valid_focus_entity(name, entity_type=None):
     if len(words) > 1 and any(len(word) < 3 for word in words):
         return False
     return True
+
+
+def _count_entity_mentions(entity_name, titles):
+    clean = normalize_tag_name(entity_name)
+    if not clean:
+        return 0
+    pattern = re.compile(rf"\b{re.escape(clean)}\b", re.IGNORECASE)
+    return sum(1 for title in titles if pattern.search(str(title or "")))
 
 
 def filter_cluster_tags(tags, limit=10):
@@ -99,7 +222,7 @@ def filter_cluster_tags(tags, limit=10):
 def _tokenize_title_terms(text):
     return [
         token for token in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
-        if token not in STOPWORDS and token not in TAG_NOISE_WORDS
+        if token not in STOPWORDS and token not in TAG_NOISE_WORDS and token not in SOURCE_NOISE_WORDS
     ]
 
 
@@ -112,11 +235,27 @@ def _extract_capitalized_phrases(text):
 
 def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
     candidates = []
+    prioritized_entities = []
+    normalized_titles = [str(title or "").strip() for title in titles or [] if str(title or "").strip()]
 
     for entity in entity_names or []:
+        if isinstance(entity, dict):
+            name = entity.get("entity_name") or entity.get("name") or entity.get("tag")
+            entity_type = entity.get("entity_type") or entity.get("type")
+        else:
+            name = entity
+            entity_type = None
+        clean = normalize_tag_name(name)
+        if not is_valid_focus_entity(clean, entity_type):
+            continue
+        mentions = _count_entity_mentions(clean, normalized_titles)
+        prioritized_entities.append((mentions, clean))
         candidates.append(entity)
 
-    normalized_titles = [str(title or "").strip() for title in titles or [] if str(title or "").strip()]
+    prioritized_entities.sort(key=lambda item: (item[0], len(item[1].split()), len(item[1])), reverse=True)
+    for _mentions, clean in prioritized_entities:
+        candidates.insert(0, clean)
+
     title_tokens = Counter()
     title_bigrams = Counter()
     capitalized = Counter()
@@ -192,16 +331,16 @@ def extract_keyphrases_locally(text, top_n=5):
     """
     if not text: return []
     
-    # Simple word counting excluding stopwords
-    words = re.findall(r'[а-шА-Ш\w]{4,}', text.lower())
-    words = [w for w in words if w not in STOPWORDS]
+    # Simple word counting excluding stopwords and source-brand noise
+    words = re.findall(r'[а-шА-ШA-Za-z\w]{4,}', text.lower())
+    words = [w for w in words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
     
     # Multi-word candidate search (Bigrams)
     raw_sentences = re.split(r'[.!?]\s*', text.lower())
     bigrams = []
     for sent in raw_sentences:
-        sent_words = re.findall(r'[а-шА-Ш\w]{3,}', sent)
-        sent_words = [w for w in sent_words if w not in STOPWORDS]
+        sent_words = re.findall(r'[а-шА-ШA-Za-z\w]{3,}', sent)
+        sent_words = [w for w in sent_words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
         for i in range(len(sent_words) - 1):
             bigrams.append(f"{sent_words[i]} {sent_words[i+1]}")
             
@@ -216,8 +355,44 @@ def extract_keyphrases_locally(text, top_n=5):
         if count > 1: # Only if it appears twice
             candidates[bigram] = count * 2.5
             
-    sorted_phrases = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-    return [p[0] for p in sorted_phrases[:top_n]]
+    phrase_candidates = []
+    for phrase in _extract_capitalized_phrases(text):
+        clean = normalize_tag_name(phrase)
+        if is_valid_focus_entity(clean):
+            phrase_candidates.append(clean)
+
+    ranked = []
+    seen = set()
+    for phrase, _score in sorted(candidates.items(), key=lambda x: x[1], reverse=True):
+        clean = normalize_tag_name(phrase)
+        if not clean:
+            continue
+        key = clean.casefold()
+        if key in seen or key in SOURCE_NOISE_WORDS:
+            continue
+        seen.add(key)
+        ranked.append(clean)
+
+    for phrase in phrase_candidates:
+        key = phrase.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        ranked.insert(0, phrase)
+
+    return ranked[:top_n]
+
+
+def _format_common_line_from_phrases(phrases):
+    clean = [normalize_tag_name(phrase).lower() for phrase in phrases if normalize_tag_name(phrase)]
+    clean = [phrase for phrase in clean if phrase not in SOURCE_NOISE_WORDS and phrase not in TAG_NOISE_WORDS]
+    if not clean:
+        return ""
+    if len(clean) == 1:
+        return f"Повеќето извори се согласуваат дека во фокус е {clean[0]}."
+    if len(clean) == 2:
+        return f"Повеќето извори се согласуваат дека во фокус се {clean[0]} и {clean[1]}."
+    return f"Повеќето извори се согласуваат дека во фокус се {', '.join(clean[:2])}, како и {clean[2]}."
 
 
 def _sentence_tokens(text):
@@ -231,6 +406,61 @@ def _normalize_summary_sentence(sentence):
     text = re.sub(r"\s+", " ", str(sentence or "")).strip()
     text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
     return text
+
+
+def rewrite_to_macedonian_locally(text):
+    """
+    Deterministic, low-cost rewrite for short news text.
+    It is not a full translation engine; it normalizes already-Macedonian text
+    and converts common English news vocabulary into usable Macedonian copy.
+    """
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    if not text:
+        return text
+
+    text = re.sub(r"^\s*translate(?: the following)?\s*:\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\s*summary\s*:\s*", "", text, flags=re.IGNORECASE)
+
+    # If the text is already mostly Cyrillic, just normalize presentation.
+    cyrillic_chars = len(re.findall(r"[А-Яа-яЀ-ӿ]", text))
+    latin_chars = len(re.findall(r"[A-Za-z]", text))
+    if cyrillic_chars >= max(8, latin_chars):
+        normalized = re.sub(r"\s+", " ", text).strip(" -–—")
+        return normalized[:420]
+
+    working = f" {text} "
+    for pattern, replacement in LOCAL_TRANSLATION_PHRASES:
+        working = re.sub(pattern, replacement, working, flags=re.IGNORECASE)
+
+    def _replace_word(match):
+        word = match.group(0)
+        lowered = word.lower()
+        replacement = LOCAL_TRANSLATION_MONTHS.get(lowered) or LOCAL_TRANSLATION_WORDS.get(lowered)
+        if not replacement:
+            return word
+        if word.isupper():
+            return replacement.upper()
+        if word[:1].isupper():
+            return replacement[:1].upper() + replacement[1:]
+        return replacement
+
+    working = re.sub(r"\b[A-Za-z][A-Za-z'-]*\b", _replace_word, working)
+    working = re.sub(r"\s+", " ", working).strip()
+
+    working = re.sub(r"\bthe\b", "", working, flags=re.IGNORECASE)
+    working = re.sub(r"\ba\b", "", working, flags=re.IGNORECASE)
+    working = re.sub(r"\ban\b", "", working, flags=re.IGNORECASE)
+    working = re.sub(r"\s+,", ",", working)
+    working = re.sub(r"\s+\.", ".", working)
+    working = re.sub(r"\s{2,}", " ", working).strip(" -–—")
+
+    if not re.search(r"[А-Яа-яЀ-ӿ]", working):
+        return text[:420]
+
+    if not re.search(r"[.!?]$", working):
+        working += "."
+
+    return working[:420]
 
 
 def _is_noisy_summary_sentence(sentence):
@@ -371,6 +601,7 @@ def compare_cluster_sources(articles):
     )
 
     all_terms = Counter()
+    all_keyphrases = Counter()
     article_term_sets = []
     title_pairs = []
     number_map = {}
@@ -381,6 +612,7 @@ def compare_cluster_sources(articles):
         terms = set(_extract_terms(combined))
         article_term_sets.append(terms)
         all_terms.update(terms)
+        all_keyphrases.update(extract_keyphrases_locally(combined, top_n=6))
 
         title = article["title"]
         if title:
@@ -394,9 +626,12 @@ def compare_cluster_sources(articles):
             uncertain_sources.append(article["source"])
 
     threshold = max(2, math.ceil(len(articles) / 2))
-    common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold]
+    common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold and term not in SOURCE_NOISE_WORDS]
+    common_phrases = [phrase for phrase, count in all_keyphrases.most_common(8) if count >= threshold]
     common_line = ""
-    if common_terms:
+    if common_phrases:
+        common_line = _format_common_line_from_phrases(common_phrases[:3])
+    elif common_terms:
         common_line = "Повеќето извори се согласуваат околу: " + ", ".join(common_terms[:4]) + "."
 
     difference_points = []

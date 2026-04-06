@@ -199,7 +199,7 @@ class OpenAICompatibleProvider(AIProvider):
             return None
 
 
-from local_nlp import summarize_locally, summarize_article_fallback
+from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally
 
 # --- Provider Registry ---
 
@@ -214,7 +214,7 @@ class LocalProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
         lowered_system = (system or "").lower()
         if "translate" in lowered_system or "превед" in lowered_system:
-            return str(prompt or "").strip()
+            return rewrite_to_macedonian_locally(prompt)
         if "synthesis" in lowered_system or "синтез" in lowered_system:
             lines = prompt.split("\n")
             titles = [l.replace("- [", "").split("]:")[0] for l in lines if "]:" in l]
@@ -336,8 +336,8 @@ def translate_to_macedonian(text: str) -> str | None:
             return str(cleaned)
     except Exception as e:
         log.warning(f"[translate] Falling back to original text after translation error: {e}")
-        return text
-    return res
+        return rewrite_to_macedonian_locally(text)
+    return rewrite_to_macedonian_locally(text)
 
 
 def _is_private_ip(addr: str) -> bool:
