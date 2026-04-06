@@ -395,6 +395,88 @@ class TestProfileDeliveryTasks:
         assert "## Што најмногу се помести" in message
         assert "Lead weekly story" in message
 
+    def test_select_profile_weekly_clusters_avoids_duplicate_heavy_same_topic_mix(self):
+        import tasks
+
+        clusters = [
+            {
+                "cluster_id": "p1",
+                "title": "Политички развој 1",
+                "source": "MIA",
+                "source_count": 4,
+                "topic": "Политика",
+                "category": "Политика",
+                "score": 4.8,
+            },
+            {
+                "cluster_id": "p2",
+                "title": "Политички развој 2",
+                "source": "Reuters",
+                "source_count": 3,
+                "topic": "Политика",
+                "category": "Политика",
+                "score": 4.1,
+            },
+            {
+                "cluster_id": "e1",
+                "title": "Економски развој",
+                "source": "Телма",
+                "source_count": 3,
+                "topic": "Економија",
+                "category": "Економија",
+                "score": 3.9,
+            },
+        ]
+
+        profile = {"followedTopics": ["Политика", "Економија"], "followedSources": []}
+
+        with patch.object(tasks, "_load_weekly_digest_clusters", return_value=clusters), \
+             patch.object(tasks, "_load_weekly_cluster_engagement", return_value={}):
+            result = tasks._select_profile_weekly_clusters(profile, limit=3)
+
+        returned_topics = [item["topic"] for item in result]
+        assert "Економија" in returned_topics
+        assert returned_topics.count("Политика") <= 1
+
+    def test_select_profile_brief_clusters_prefers_richer_editorial_cluster(self):
+        import tasks
+
+        clusters = [
+            {
+                "cluster_id": "thin-1",
+                "title": "Краток развој",
+                "source": "Makfax",
+                "source_count": 2,
+                "topic": "Политика",
+                "category": "Политика",
+                "score": 3.2,
+                "difference_point": "",
+                "open_point": "",
+                "cluster_summary": "",
+                "other_titles": [],
+            },
+            {
+                "cluster_id": "rich-1",
+                "title": "Развој со различни акценти",
+                "source": "MIA",
+                "source_count": 4,
+                "topic": "Политика",
+                "category": "Политика",
+                "score": 3.0,
+                "difference_point": "Изворите се разликуваат околу рокот.",
+                "open_point": "Останува да се потврди точниот датум.",
+                "cluster_summary": "Главниот развој со повеќе контекст.",
+                "other_titles": ["Агол 1", "Агол 2"],
+            },
+        ]
+
+        profile = {"followedTopics": ["Политика"], "followedSources": []}
+
+        with patch.object(tasks, "_load_daily_brief_clusters", return_value=clusters):
+            result = tasks._select_profile_brief_clusters(profile, limit=2)
+
+        assert result[0]["cluster_id"] == "rich-1"
+
     def test_send_profile_breaking_alerts_tracks_alerted_cluster(self):
         import tasks
 

@@ -259,6 +259,30 @@ class TestRankArticles:
         ranked = rank_articles_in_cluster(arts)
         assert ranked[0]["source"] == "MIA"  # 2.0 > 0.8 default
 
+    @patch("utils.get_source_health_map", return_value={})
+    def test_richer_corroborated_article_can_beat_thin_variant(self, _mock_health):
+        now = datetime.datetime.now()
+        arts = [
+            {
+                **_make_article("Makfax", created_at=now),
+                "title": "Трамп најави мерки",
+                "description": "",
+            },
+            {
+                **_make_article("MIA", created_at=now - datetime.timedelta(minutes=4)),
+                "title": "Трамп најави мерки за царини и реакциите",
+                "description": "Опис со повеќе детали, рокови и реакција на пазарите.",
+            },
+            {
+                **_make_article("Reuters", created_at=now - datetime.timedelta(minutes=6)),
+                "title": "Реакциите на пазарите по најавените царини на Трамп",
+                "description": "Втор извор што го потврдува главниот развој и додава контекст.",
+            },
+        ]
+
+        ranked = rank_articles_in_cluster(arts)
+        assert ranked[0]["source"] == "MIA"
+
     @patch("utils.get_source_health_map", return_value={"MIA": {"quality_score": 0.25}})
     def test_source_health_can_reorder_articles(self, _mock_health):
         arts = [_make_article("MIA"), _make_article("Sitel")]

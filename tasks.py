@@ -224,6 +224,61 @@ def _build_profile_briefing_message(profile, clusters):
     return "\n".join(line for line in lines if line is not None).strip()
 
 
+def _briefing_cluster_editorial_bonus(cluster):
+    bonus = 0.0
+    if str(cluster.get("difference_point") or "").strip():
+        bonus += 0.45
+    if str(cluster.get("open_point") or "").strip():
+        bonus += 0.35
+    if str(cluster.get("cluster_summary") or "").strip():
+        bonus += 0.2
+    if int(cluster.get("source_count") or 0) >= 3:
+        bonus += 0.18
+    if len(cluster.get("other_titles") or []) >= 2:
+        bonus += 0.12
+    return bonus
+
+
+def _dedupe_briefing_candidates(candidates, limit=4):
+    selected = []
+    topic_counts = {}
+    seen_titles = []
+
+    for item in candidates:
+        title = str(item.get("title") or "").strip()
+        topic = str(item.get("topic") or item.get("category") or "Вести").strip()
+        if not title:
+            continue
+
+        # Avoid stacking near-identical leads in the same brief.
+        if any(
+            str(other_title).casefold() == title.casefold()
+            or (len(set(title.lower().split()) | set(str(other_title).lower().split())) and
+                len(set(title.lower().split()) & set(str(other_title).lower().split())) /
+                len(set(title.lower().split()) | set(str(other_title).lower().split())) >= 0.72)
+            for other_title in seen_titles
+        ):
+            continue
+
+        # Keep variety across topics/categories; allow two if the score is clearly strong.
+        count = topic_counts.get(topic, 0)
+        if count >= 2:
+            continue
+        if count >= 1:
+            strength = float(item.get("match_score") or item.get("score") or 0.0)
+            has_editorial_depth = bool(item.get("difference_point") or item.get("open_point"))
+            if strength < 4.4 or not has_editorial_depth:
+                continue
+
+        selected.append(item)
+        seen_titles.append(title)
+        topic_counts[topic] = count + 1
+        if len(selected) >= limit:
+            break
+
+    return selected
+
+
 def _load_weekly_digest_clusters(limit=32):
     rows = db.execute(
         "SELECT cluster_id, title, description, summary, source, category, topic, created_at "
@@ -584,13 +639,13 @@ def _select_profile_weekly_clusters(profile, limit=5):
             match_reason = f"{match_reason}; {engagement_note}"
         ranked.append({
             **cluster,
-            "match_score": total_score,
+            "match_score": total_score + _briefing_cluster_editorial_bonus(cluster),
             "match_reason": match_reason,
         })
 
     personalized = [item for item in ranked if item["match_score"] >= 1.9]
     personalized.sort(key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True)
-    return (personalized or ranked)[:limit]
+    return _dedupe_briefing_candidates(personalized or ranked, limit=limit)
 
 
 def _build_profile_weekly_digest_message(profile, clusters):
@@ -652,17 +707,17 @@ def _select_profile_brief_clusters(profile, limit=4):
         total_score = match_score + min(1.4, float(cluster.get("score") or 0) * 0.18)
         ranked.append({
             **cluster,
-            "match_score": total_score,
+            "match_score": total_score + _briefing_cluster_editorial_bonus(cluster),
             "match_reason": "; ".join(reasons[:2]),
         })
 
     personalized = [item for item in ranked if item["match_score"] >= 2.1]
     personalized.sort(key=lambda item: (item["match_score"], item.get("score") or 0), reverse=True)
     if personalized:
-        return personalized[:limit]
+        return _dedupe_briefing_candidates(personalized, limit=limit)
 
     ranked.sort(key=lambda item: item.get("score") or 0, reverse=True)
-    return ranked[: min(limit, 3)]
+    return _dedupe_briefing_candidates(ranked, limit=min(limit, 3))
 
 
 def _parse_row_datetime(value):
