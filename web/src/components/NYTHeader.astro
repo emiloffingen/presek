@@ -364,9 +364,14 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     }
 
     @media (max-width: 720px) {
+        .topbar {
+            padding-top: 0.6rem;
+            padding-bottom: 0.65rem;
+        }
+
         .topbar-row {
             grid-template-columns: 1fr;
-            gap: 0.65rem;
+            gap: 0.5rem;
         }
 
         .topbar-left,
@@ -381,7 +386,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
         .topbar-center {
             justify-content: flex-start;
-            padding-top: 0.15rem;
+            padding-top: 0.05rem;
             border-top: 1px solid var(--border);
         }
 
@@ -392,7 +397,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         .topbar-right {
             flex-direction: column;
             align-items: stretch;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .topbar-links {
@@ -404,7 +409,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
         .topbar-link {
             justify-content: center;
-            padding: 0.5rem 0.7rem;
+            padding: 0.46rem 0.68rem;
             border: 1px solid var(--border);
             border-radius: 999px;
             background: color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%);
@@ -429,10 +434,35 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             display: inline;
         }
 
+        .masthead {
+            padding-top: 0.95rem;
+            padding-bottom: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .masthead-inner {
+            gap: 0.7rem;
+        }
+
+        .masthead-brand {
+            gap: 0.45rem;
+        }
+
+        .masthead-sub {
+            font-size: 0.62rem;
+            letter-spacing: 0.11em;
+        }
+
+        .masthead-nav {
+            padding-top: 0.4rem;
+            padding-bottom: 0.65rem;
+            margin-bottom: 1.2rem;
+        }
+
         .masthead-nav-shell {
             align-items: flex-start;
             flex-direction: column;
-            gap: 0.7rem;
+            gap: 0.55rem;
             overflow: visible;
         }
 
@@ -442,7 +472,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
         .masthead-nav-list {
             flex-wrap: wrap;
-            gap: 0.45rem;
+            gap: 0.38rem;
             min-width: 0;
             width: 100%;
             padding-bottom: 0;
@@ -458,10 +488,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
 
         .masthead-nav-link {
-            padding: 0.45rem 0.72rem;
+            padding: 0.4rem 0.68rem;
             border: 1px solid var(--border);
             border-radius: 999px;
-            font-size: 0.68rem;
+            font-size: 0.66rem;
             line-height: 1.1;
             background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
             box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--foreground) 5%, transparent);
