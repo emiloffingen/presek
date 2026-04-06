@@ -383,6 +383,10 @@ def test_fastapi_stats_full_includes_editor_analytics():
             {"suggestion_kind": "topic", "impressions": 18, "follows": 5, "dismissals": 1},
             {"suggestion_kind": "source", "impressions": 12, "follows": 1, "dismissals": 0},
         ],
+        [
+            {"surface": "cluster", "current_impressions": 8, "current_follows": 3, "previous_impressions": 10, "previous_follows": 2},
+            {"surface": "settings", "current_impressions": 4, "current_follows": 0, "previous_impressions": 4, "previous_follows": 1},
+        ],
     ]
 
     with patch.object(api_fast, "db", mock_db), \
@@ -398,6 +402,8 @@ def test_fastapi_stats_full_includes_editor_analytics():
     assert data["editor_analytics"]["delivery_kind_performance"][0]["delivery_kind"] == "breaking"
     assert data["editor_analytics"]["delivery_kind_performance"][0]["click_rate"] == 30.0
     assert data["editor_analytics"]["suggestion_surface_performance"][0]["surface"] == "cluster"
+    assert data["editor_analytics"]["suggestion_surface_performance"][0]["trend_label"] == "Во раст"
+    assert data["editor_analytics"]["suggestion_surface_performance"][0]["current_7d_rate"] == 37.5
     assert data["editor_analytics"]["suggestion_kind_performance"][0]["suggestion_kind"] == "topic"
 
 

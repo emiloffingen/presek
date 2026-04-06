@@ -452,6 +452,7 @@ def build_editor_analytics_payload(
     tracking_performance_rows=None,
     suggestion_surface_rows=None,
     suggestion_kind_rows=None,
+    suggestion_surface_period_rows=None,
 ):
     profile_stats_row = profile_stats_row or {}
     delivery_stats_row = delivery_stats_row or {}
@@ -521,6 +522,35 @@ def build_editor_analytics_payload(
     )
 
     suggestion_surface_performance = []
+    suggestion_surface_period_map = {}
+    for row in suggestion_surface_period_rows or []:
+        surface = str(row.get("surface") or "").strip()
+        if not surface:
+            continue
+        current_impressions = int(row.get("current_impressions") or 0)
+        current_follows = int(row.get("current_follows") or 0)
+        previous_impressions = int(row.get("previous_impressions") or 0)
+        previous_follows = int(row.get("previous_follows") or 0)
+        current_rate = round((current_follows / current_impressions) * 100, 1) if current_impressions else 0.0
+        previous_rate = round((previous_follows / previous_impressions) * 100, 1) if previous_impressions else 0.0
+        trend_delta = round(current_rate - previous_rate, 1)
+        if trend_delta >= 3:
+            trend_label = "Во раст"
+        elif trend_delta <= -3:
+            trend_label = "Во пад"
+        else:
+            trend_label = "Рамно"
+        suggestion_surface_period_map[surface] = {
+            "current_7d_impressions": current_impressions,
+            "current_7d_follows": current_follows,
+            "current_7d_rate": current_rate,
+            "previous_7d_impressions": previous_impressions,
+            "previous_7d_follows": previous_follows,
+            "previous_7d_rate": previous_rate,
+            "trend_delta": trend_delta,
+            "trend_label": trend_label,
+        }
+
     for row in suggestion_surface_rows or []:
         surface = str(row.get("surface") or "").strip()
         if not surface:
@@ -546,6 +576,16 @@ def build_editor_analytics_payload(
             "topic_follows": topic_follows,
             "source_follows": source_follows,
             "conversion_rate": round((follows / impressions) * 100, 1) if impressions else 0.0,
+            **suggestion_surface_period_map.get(surface, {
+                "current_7d_impressions": 0,
+                "current_7d_follows": 0,
+                "current_7d_rate": 0.0,
+                "previous_7d_impressions": 0,
+                "previous_7d_follows": 0,
+                "previous_7d_rate": 0.0,
+                "trend_delta": 0.0,
+                "trend_label": "Рамно",
+            }),
         })
     suggestion_surface_performance.sort(
         key=lambda item: (

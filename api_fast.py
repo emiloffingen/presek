@@ -1595,6 +1595,16 @@ async def get_stats_full():
             "AND COALESCE(suggestion_kind, '') != '' "
             "GROUP BY suggestion_kind"
         )
+        suggestion_surface_period_rows = db.execute(
+            "SELECT surface, "
+            "COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, "
+            "COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at < NOW() - INTERVAL '7 days' AND created_at >= NOW() - INTERVAL '14 days') AS previous_impressions, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at < NOW() - INTERVAL '7 days' AND created_at >= NOW() - INTERVAL '14 days') AS previous_follows "
+            "FROM suggestion_surface_events "
+            "WHERE created_at >= NOW() - INTERVAL '14 days' "
+            "GROUP BY surface"
+        )
 
         result = {
             "total_articles": total,
@@ -1619,6 +1629,7 @@ async def get_stats_full():
                 tracking_performance_rows,
                 suggestion_surface_rows,
                 suggestion_kind_rows,
+                suggestion_surface_period_rows,
             ),
         }
 

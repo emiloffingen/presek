@@ -165,6 +165,14 @@ try {
 											<h3 class="follow-title">{item.label}</h3>
 											<div class="system-list">
 												<div class="system-row">
+													<span>Тренд 7 дена:</span>
+													<span class="text-foreground font-black">{item.trend_label} ({item.trend_delta > 0 ? '+' : ''}{item.trend_delta} пп)</span>
+												</div>
+												<div class="system-row">
+													<span>Сега / претходно:</span>
+													<span class="text-foreground font-black">{item.current_7d_rate}% / {item.previous_7d_rate}%</span>
+												</div>
+												<div class="system-row">
 													<span>Импресии:</span>
 													<span class="text-foreground font-black">{item.impressions}</span>
 												</div>
