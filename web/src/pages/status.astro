@@ -1,3 +1,279 @@
 ---
-return Astro.redirect('/', 301);
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+
+let health = null;
+let error = null;
+
+try {
+  const res = await fetch(`${API_URL}/health`);
+  if (res.ok) {
+    health = await res.json();
+  } else {
+    error = `Статусот не е достапен (${res.status}).`;
+  }
+} catch (err) {
+  console.error(err);
+  error = 'Грешка при вчитување на статусот.';
+}
+
+function statusLabel(ok: boolean | undefined, success = 'ОК', failure = 'Проблем') {
+  return ok ? success : failure;
+}
+
+function statusClass(ok: boolean | undefined) {
+  return ok ? 'is-ok' : 'is-bad';
+}
+
+function formatUptime(seconds?: number) {
+  const total = Math.max(0, Number(seconds || 0));
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+
+  if (days > 0) return `${days}д ${hours}ч ${minutes}м`;
+  if (hours > 0) return `${hours}ч ${minutes}м`;
+  return `${minutes}м`;
+}
 ---
+
+<Layout title="Статус">
+  <NYTHeader />
+  <main class="site-layout py-20">
+    <article class="status-shell">
+      <header class="status-header">
+        <span class="page-kicker">Статус</span>
+        <h1 class="status-headline">Состојба На Системот</h1>
+        <p class="status-intro">
+          Брз преглед на тоа дали API-от, базата и Redis одговараат, без да копате по логови.
+        </p>
+      </header>
+
+      {error ? (
+        <div class="status-error">
+          <p>{error}</p>
+        </div>
+      ) : (
+        <div class="status-grid">
+          <section class="status-main">
+            <div class="status-summary">
+              <div>
+                <span class="micro-label">Севкупен статус</span>
+                <strong class={`status-pill ${statusClass(health?.status === 'ok')}`}>
+                  {health?.status === 'ok' ? 'Оперативен' : 'Деградиран'}
+                </strong>
+              </div>
+              <div>
+                <span class="micro-label">Верзија</span>
+                <strong>{health?.version || 'Непозната'}</strong>
+              </div>
+              <div>
+                <span class="micro-label">Активен</span>
+                <strong>{formatUptime(health?.uptime_seconds)}</strong>
+              </div>
+            </div>
+
+            <div class="status-cards">
+              <section class="status-card">
+                <h2 class="status-card-title">База</h2>
+                <p class={`status-line ${statusClass(health?.database?.ok)}`}>
+                  {statusLabel(health?.database?.ok)}
+                </p>
+                <dl class="status-metrics">
+                  <div>
+                    <dt>Статии</dt>
+                    <dd>{Number(health?.database?.article_count || 0).toLocaleString('mk-MK')}</dd>
+                  </div>
+                  <div>
+                    <dt>Големина</dt>
+                    <dd>{Number(health?.database?.size_mb || 0).toLocaleString('mk-MK')} MB</dd>
+                  </div>
+                </dl>
+                {health?.database?.error && <p class="status-detail">{health.database.error}</p>}
+              </section>
+
+              <section class="status-card">
+                <h2 class="status-card-title">Redis</h2>
+                <p class={`status-line ${statusClass(health?.redis?.ok)}`}>
+                  {statusLabel(health?.redis?.ok)}
+                </p>
+                {health?.redis?.url && <p class="status-detail">{health.redis.url}</p>}
+                {health?.redis?.error && <p class="status-detail">{health.redis.error}</p>}
+              </section>
+            </div>
+          </section>
+
+          <aside class="status-rail">
+            <div class="rail-card">
+              <h2 class="rail-card-title">Што Гледате</h2>
+              <p class="rail-copy">
+                Оваа страница го чита здравјето директно од FastAPI и е наменета за брз оперативен преглед кога нешто делува споро или празно.
+              </p>
+            </div>
+            <div class="rail-card rail-card-accent">
+              <h2 class="rail-card-title">Што Не Гледате</h2>
+              <p class="rail-copy">
+                Не ги заменува логовите, systemd статусите или smoke проверките, туку ви кажува дали основните сервиси се кренати и читливи.
+              </p>
+            </div>
+          </aside>
+        </div>
+      )}
+    </article>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .status-shell {
+    max-width: 76rem;
+    margin: 0 auto;
+  }
+
+  .status-header {
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .status-headline {
+    font-size: clamp(2.5rem, 1.9rem + 1.9vw, 4.8rem);
+    line-height: 0.95;
+    margin: 0 0 1rem;
+  }
+
+  .status-intro {
+    margin: 0;
+    max-width: 48rem;
+    font-family: var(--font-nyt-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--secondary-foreground);
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .status-main,
+  .status-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .status-summary,
+  .status-card,
+  .rail-card,
+  .status-error {
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+  }
+
+  .status-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1rem;
+  }
+
+  .status-summary strong,
+  .status-metrics dd {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--foreground);
+  }
+
+  .status-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .status-card-title,
+  .rail-card-title {
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-line {
+    margin: 0 0 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: fit-content;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid currentColor;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .is-ok {
+    color: #226b3d;
+  }
+
+  .is-bad {
+    color: #a33a2b;
+  }
+
+  .status-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.9rem;
+    margin: 0;
+  }
+
+  .status-metrics dt {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted-foreground);
+  }
+
+  .status-detail,
+  .rail-copy {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--secondary-foreground);
+    overflow-wrap: anywhere;
+  }
+
+  .rail-card-accent {
+    background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
+  }
+
+  @media (min-width: 960px) {
+    .status-grid {
+      grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
+      gap: 2rem;
+    }
+
+    .status-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -36,6 +36,7 @@ from config import (
     CURATED_INTERNATIONAL_SOURCES,
     SOURCE_CREDIBILITY,
     DEFAULT_CREDIBILITY,
+    validate_required_env,
 )
 from local_nlp import (
     answer_cluster_question_locally,
@@ -58,6 +59,7 @@ from api_helpers import (
 
 log = logging.getLogger("presek")
 
+validate_required_env()
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
 _start_time = datetime.datetime.now(datetime.timezone.utc)
 _APP_ROOT = Path(__file__).resolve().parent
@@ -1645,7 +1647,8 @@ async def get_sources():
     """Return source reputation rows."""
     try:
         rows = db.execute(
-            "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE is_active = TRUE ORDER BY name ASC"
+            "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at "
+            "FROM sources ORDER BY is_active DESC, name ASC"
         )
         pulse_rows = db.execute(
             "SELECT source, COUNT(*) as count FROM articles "

@@ -5,6 +5,7 @@ APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BRANCH="${BRANCH:-main}"
 REMOTE="${REMOTE:-origin}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
+NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
 RELEASE_STATE_DIR="$APP_DIR/.deploy"
@@ -30,6 +31,7 @@ main() {
   need_cmd git
   need_cmd npm
   need_cmd systemctl
+  need_cmd nginx
   need_cmd bash
 
   cd "$APP_DIR"
@@ -50,6 +52,12 @@ main() {
 
   info "Building Astro frontend"
   (cd web && npm ci >/dev/null && npm run build)
+
+  info "Validating nginx configuration"
+  sudo nginx -t
+
+  info "Reloading $NGINX_SERVICE"
+  sudo systemctl reload "$NGINX_SERVICE"
 
   info "Restarting $SYSTEMD_TARGET"
   sudo systemctl restart "$SYSTEMD_TARGET"

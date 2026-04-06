@@ -192,6 +192,20 @@ def test_fastapi_adds_gzip_middleware():
     assert gzip.options["minimum_size"] == 500
 
 
+def test_fastapi_requires_critical_env_vars_at_import():
+    sys.modules.pop("api_fast", None)
+    fake_modules = _install_fake_fastapi_modules()
+    with patch.dict(os.environ, {"DATABASE_URL": "", "SECRET_KEY": ""}, clear=False), \
+         patch.dict(sys.modules, fake_modules):
+        try:
+            importlib.import_module("api_fast")
+            assert False, "Expected import to fail without required env vars"
+        except RuntimeError as exc:
+            assert "Missing required environment variables" in str(exc)
+            assert "DATABASE_URL" in str(exc)
+            assert "SECRET_KEY" in str(exc)
+
+
 def test_fastapi_rate_limit_path_helper_matches_expensive_routes():
     api_fast = _load_api_fast()
     assert api_fast._is_rate_limited_path("/api/chat_cluster") is True
@@ -525,6 +539,28 @@ def test_fastapi_source_control_updates_source_for_local_admin():
     assert data["status"] == "success"
     assert data["source"]["source_status"]["quality_label"] == "Стабилен извор"
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_get_sources_includes_paused_sources():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute.side_effect = [
+        [
+            {"name": "MIA", "country": "🇲🇰", "category": "Главни", "credibility": 1.5, "is_active": True, "pause_mode": None, "pause_reason": None, "paused_at": None, "last_fetched": None},
+            {"name": "Paused Feed", "country": "🇲🇰", "category": "Независни", "credibility": 0.8, "is_active": False, "pause_mode": "manual", "pause_reason": "Manual pause", "paused_at": "2026-04-06T00:00:00+00:00", "last_fetched": None},
+        ],
+        [{"source": "MIA", "count": 5}],
+        [{"source": "MIA", "first_count": 2}],
+        [{"source": "MIA", "lead_count_30d": 3, "corroborated_lead_count_30d": 2, "solo_lead_count_30d": 1, "recent_7d_volume": 4, "previous_7d_volume": 2}],
+    ]
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.get_sources())
+
+    assert len(data) == 2
+    assert any(row["source"] == "Paused Feed" and row["is_active"] is False for row in data)
+    first_query = mock_db.execute.call_args_list[0].args[0]
+    assert "FROM sources ORDER BY is_active DESC, name ASC" in first_query
 
 
 def test_fastapi_proxy_serves_local_static_files():

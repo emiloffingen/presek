@@ -1,6 +1,7 @@
 flask
 flask-cors
 flask-compress
+fastapi
 feedparser
 requests
 pytest
@@ -12,3 +13,4 @@ celery
 boto3
 Pillow
 httpx
+uvicorn

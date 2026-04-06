@@ -1,76 +1,98 @@
-"""
-Integrity tests to ensure the hybrid SSR/React architecture is whole and unified.
-Verifies that critical assets, data structures, and theme markers are present.
-"""
-import pytest
-from unittest.mock import patch, MagicMock
-import os
+from pathlib import Path
 
-@pytest.fixture
-def app():
-    """Create Flask test app with minimal mocks."""
-    with patch.dict(os.environ, {"SECRET_KEY": "test-integrity-key"}), \
-         patch('utils.redis_client'), \
-         patch('database.db_manager.execute', return_value=[]), \
-         patch('database.db_manager.execute_one', return_value={"count": 0, "n": 0}):
-        from app import app as flask_app
-        flask_app.config['TESTING'] = True
-        yield flask_app
 
-@pytest.fixture
-def client(app):
-    return app.test_client()
+ROOT = Path(__file__).resolve().parents[1]
 
-class TestArchitectureIntegrity:
-    """Verifies that the core architecture isn't broken."""
-    
-    def test_ssr_mounting_point(self, client):
-        """React needs #root to mount. Ensure it exists on all major pages."""
-        pages = ["/", "/briefing", "/stats", "/izvori", "/arhiva"]
-        for path in pages:
-            resp = client.get(path)
-            assert b'id="root"' in resp.data, f"Mounting point #root missing on {path}"
 
-    def test_hydration_data_presence(self, client):
-        """Major pages must provide hydration data to avoid flickers."""
-        page_data_markers = [
-            ("/", b"__INITIAL_DATA__"),
-            ("/briefing", b"__INITIAL_BRIEFING_DATA__"),
-            ("/stats", b"__INITIAL_STATS_DATA__"),
-            ("/izvori", b"__INITIAL_SOURCES_DATA__"),
-            ("/arhiva", b"__INITIAL_ARCHIVE_DATA__"),
-        ]
-        for path, marker in page_data_markers:
-            resp = client.get(path)
-            assert marker in resp.data, f"Hydration marker {marker} missing on {path}"
+def _read(rel_path: str) -> str:
+    return (ROOT / rel_path).read_text(encoding="utf-8")
 
-    def test_theme_sync_marker(self, client):
-        """The <html> tag must have a theme class for SSR consistency."""
-        resp = client.get("/")
-        # Should have class="dark" or class="" (defaulting to dark in our logic)
-        assert b'<html lang="mk" class="dark">' in resp.data or b'<html lang="mk" class="">' in resp.data
 
-    def test_vite_asset_injection(self, client):
-        """Vite assets must be injected into the head/body."""
-        resp = client.get("/")
-        # Check for module script injection
-        assert b'type="module"' in resp.data
-        # Check for stylesheet injection (either dist or dev server)
-        assert b'rel="stylesheet"' in resp.data
+class TestAstroFrontendIntegrity:
+    def test_core_astro_routes_exist(self):
+        for rel_path in (
+            "web/src/pages/index.astro",
+            "web/src/pages/briefing.astro",
+            "web/src/pages/archive.astro",
+            "web/src/pages/izvori.astro",
+            "web/src/pages/stats.astro",
+            "web/src/pages/cluster/[id].astro",
+            "web/src/pages/entity/[name].astro",
+        ):
+            assert (ROOT / rel_path).is_file(), f"Missing Astro route: {rel_path}"
 
-class TestDataStructureSync:
-    """Verifies that the data passed to SSR matches what React expects."""
-    
-    def test_initial_data_schema(self, client):
-        """Check if __INITIAL_DATA__ contains the expected keys."""
-        resp = client.get("/")
-        # Very basic check that it looks like valid JSON-ish script
-        assert b'"clusters"' in resp.data
-        assert b'"trending"' in resp.data
-        assert b'"theme"' in resp.data
+    def test_layout_keeps_theme_sync_and_canonical_metadata(self):
+        layout = _read("web/src/layouts/Layout.astro")
+        assert "<html lang=\"mk\">" in layout
+        assert "window.localStorage.setItem('theme', theme);" in layout
+        assert "<link rel=\"canonical\" href={canonicalUrl} />" in layout
+        assert "<meta property=\"og:url\" content={canonicalUrl} />" in layout
 
-    def test_sources_schema(self, client):
-        """Check if __INITIAL_SOURCES_DATA__ contains expected keys."""
-        resp = client.get("/izvori")
-        assert b'"sources"' in resp.data
-        assert b'"hot_sources"' in resp.data
+    def test_primary_pages_fetch_api_through_supported_base_url(self):
+        for rel_path in (
+            "web/src/pages/index.astro",
+            "web/src/pages/briefing.astro",
+            "web/src/pages/stats.astro",
+            "web/src/pages/cluster/[id].astro",
+            "web/src/pages/entity/[name].astro",
+            "web/src/pages/archive.astro",
+        ):
+            content = _read(rel_path)
+            assert "PUBLIC_API_URL" in content, f"Missing PUBLIC_API_URL fallback in {rel_path}"
+            assert "127.0.0.1:5001/api" in content or "\"/api\"" in content, f"Missing FastAPI fallback in {rel_path}"
+
+    def test_status_route_renders_live_health_page(self):
+        status_page = _read("web/src/pages/status.astro")
+        assert "fetch(`${API_URL}/health`)" in status_page
+        assert "Состојба На Системот" in status_page
+
+
+class TestDeploymentIntegrity:
+    def test_systemd_targets_fastapi_and_astro_runtime(self):
+        fastapi_service = _read("deploy/systemd/presek-fastapi.service")
+        astro_service = _read("deploy/systemd/presek-astro.service")
+
+        assert "uvicorn api_fast:app" in fastapi_service
+        assert "--port 5001" in fastapi_service
+        assert "node ./dist/server/entry.mjs" in astro_service
+        assert "PORT=3000" in astro_service
+
+    def test_nginx_routes_api_and_site_to_separate_upstreams(self):
+        nginx_conf = _read("deploy/nginx/presek.live.conf")
+        assert "upstream presek_fastapi" in nginx_conf
+        assert "upstream presek_astro" in nginx_conf
+        assert "location ^~ /api/" in nginx_conf
+        assert "proxy_pass http://presek_fastapi;" in nginx_conf
+        assert "location / {" in nginx_conf
+        assert "proxy_pass http://presek_astro;" in nginx_conf
+
+    def test_nginx_applies_security_headers_to_astro_responses(self):
+        nginx_conf = _read("deploy/nginx/presek.live.conf")
+        assert "add_header Cache-Control \"no-transform\"" in nginx_conf
+        assert "add_header Strict-Transport-Security" in nginx_conf
+        assert "add_header Content-Security-Policy" in nginx_conf
+        assert "default-src 'self'" in nginx_conf
+
+    def test_release_flow_reloads_nginx_before_smoke_checks(self):
+        deploy_script = _read("deploy/deploy_release.sh")
+        assert "sudo nginx -t" in deploy_script
+        assert "sudo systemctl reload \"$NGINX_SERVICE\"" in deploy_script
+        assert "sudo systemctl restart \"$SYSTEMD_TARGET\"" in deploy_script
+
+    def test_smoke_check_covers_public_status_and_security_headers(self):
+        smoke = _read("deploy/smoke_check.sh")
+        assert "<html lang=\\\"mk\\\">" in smoke
+        assert "Public status page" in smoke
+        assert "Content-Security-Policy" in smoke
+        assert "Strict-Transport-Security" in smoke
+
+
+class TestRuntimeDependencyIntegrity:
+    def test_requirements_include_live_api_server_dependencies(self):
+        requirements = {
+            line.strip()
+            for line in _read("requirements.txt").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        }
+        assert "fastapi" in requirements
+        assert "uvicorn" in requirements

@@ -89,19 +89,19 @@ export interface Weather {
 
 export interface HealthResponse {
   status: string;
-  uptime: string;
+  version: string;
+  uptime_seconds: number;
   database: {
     ok: boolean;
     article_count: number;
     size_mb: number;
+    error?: string;
   };
-  redis: { ok: boolean };
-  last_refresh: {
-    time: string;
-    new_articles: number;
-    errors: string[];
+  redis: {
+    ok: boolean;
+    url: string;
+    error?: string;
   };
-  server_time: string;
 }
 
 export interface BriefingResponse {

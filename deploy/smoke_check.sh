@@ -35,7 +35,7 @@ wait_http_ok() {
     body="$(cat /tmp/presek-smoke-body.$$ 2>/dev/null || true)"
     rm -f /tmp/presek-smoke-body.$$ 2>/dev/null || true
     if [ "$code" = "$expected" ]; then
-      if [ -z "$body_pattern" ] || printf "%s" "$body" | grep -q "$body_pattern"; then
+      if [ -z "$body_pattern" ] || printf "%s" "$body" | grep -Fq "$body_pattern"; then
         ok "$name responded with HTTP $code"
         return 0
       fi
@@ -44,6 +44,26 @@ wait_http_ok() {
   done
 
   fail "$name did not become healthy (last HTTP code: ${code:-none})"
+}
+
+wait_header_contains() {
+  local name="$1"
+  local url="$2"
+  local header_name="$3"
+  local expected_fragment="$4"
+  local headers=""
+
+  info "Checking $name header at $url"
+  for _ in $(seq 1 "$MAX_ATTEMPTS"); do
+    headers="$(curl -sSI "$url" 2>/dev/null || true)"
+    if printf "%s" "$headers" | grep -i "^${header_name}:" | grep -q "$expected_fragment"; then
+      ok "$name header present"
+      return 0
+    fi
+    sleep "$SLEEP_SECONDS"
+  done
+
+  fail "$name header check failed for ${header_name}: ${expected_fragment}"
 }
 
 wait_health_ready() {
@@ -94,14 +114,17 @@ main() {
   need_cmd python3
 
   wait_health_ready "API health" "$HEALTH_URL" 1 1
-  wait_http_ok "Astro frontend" "$ASTRO_URL" 200 "Пресек"
+  wait_http_ok "Astro frontend" "$ASTRO_URL" 200
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then
     wait_health_ready "FastAPI health" "$FASTAPI_URL" 1 1
   fi
 
   if [ "$ENABLE_PUBLIC_CHECK" = "1" ]; then
-    wait_http_ok "Public site" "$PUBLIC_URL" 200 "Пресек"
+    wait_http_ok "Public site" "$PUBLIC_URL" 200
+    wait_http_ok "Public status page" "$PUBLIC_URL/status" 200 "Состојба На Системот"
+    wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
+    wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
   else
     warn "Skipping public URL check (set ENABLE_PUBLIC_CHECK=1 to enable)"
   fi
