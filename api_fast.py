@@ -1,8 +1,9 @@
 import os
 import secrets
 from fastapi import FastAPI, Request, Query, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
+from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse, Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import asyncio
 import json
 import logging
@@ -10,6 +11,13 @@ import datetime
 import re
 from typing import Optional, List
 from collections import defaultdict
+import urllib.request
+import urllib.parse
+import socket
+import ipaddress
+from pathlib import Path
+
+import requests
 
 from database import db_manager as db
 from utils import (
@@ -17,10 +25,18 @@ from utils import (
     cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
     build_source_reputation_rows, build_editor_analytics_payload,
+    event_stream, check_rate_limit,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
-from config import BREAKING_SCORE_THRESHOLD, API_MAX_PAGE, API_MAX_Q_LEN
+from config import (
+    BREAKING_SCORE_THRESHOLD,
+    API_MAX_PAGE,
+    API_MAX_Q_LEN,
+    CURATED_INTERNATIONAL_SOURCES,
+    SOURCE_CREDIBILITY,
+    DEFAULT_CREDIBILITY,
+)
 from local_nlp import (
     answer_cluster_question_locally,
     generate_daily_brief_fallback,
@@ -30,7 +46,7 @@ from local_nlp import (
     build_citation_snippet,
     build_structured_answer_sections,
 )
-from health import _probe_database, _probe_redis
+from health import _probe_database, _probe_redis, get_source_statuses, reset_source_policy
 from api_helpers import (
     normalize_perspectives as _parse_perspectives_blob,
     default_related_questions as _default_related_questions,
@@ -44,6 +60,20 @@ log = logging.getLogger("presek")
 
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
 _start_time = datetime.datetime.now(datetime.timezone.utc)
+_APP_ROOT = Path(__file__).resolve().parent
+_STATIC_ROOT = _APP_ROOT / "static"
+_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
+_PROXY_MAX_BYTES = 10 * 1024 * 1024
+_WMO_ICON = {
+    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 53: "🌦️", 55: "🌦️",
+    61: "🌧️", 63: "🌧️", 65: "🌧️",
+    71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️",
+    80: "🌦️", 81: "🌦️", 82: "🌦️",
+    85: "❄️", 86: "❄️",
+    95: "⛈️", 96: "⛈️", 99: "⛈️",
+}
 _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live").rstrip("/")
 _default_cors_origins = [
     _public_site_url,
@@ -67,6 +97,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 
 def _normalize_sync_list(values, limit=24):
@@ -176,6 +207,106 @@ def _safe_tracking_redirect_path(path: str) -> str:
         return "/briefing"
     return clean
 
+
+def _is_rate_limited_path(path: str) -> bool:
+    clean = str(path or "").strip()
+    if not clean.startswith("/api/"):
+        return False
+    if clean in {"/api/chat_cluster", "/api/chat/stream"}:
+        return True
+    return bool(re.match(r"^/api/cluster/[a-f0-9]{6,64}/ask$", clean))
+
+
+def _rate_limit_error_payload() -> dict:
+    return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
+
+
+def _apply_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+    return response
+
+
+def _source_admin_authorized(request: Request) -> bool:
+    token = (request.headers.get("X-Admin-Token") or "").strip()
+    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
+    client_host = str(getattr(getattr(request, "client", None), "host", "") or "").strip()
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
+
+    if expected and token and token == expected:
+        return True
+    if client_host in {"127.0.0.1", "::1"} and not forwarded_for:
+        return True
+    return False
+
+
+def _error_json(message: str, status_code: int, details=None):
+    payload = {"status": "error", "message": message}
+    if details is not None:
+        payload["details"] = details
+    return JSONResponse(status_code=status_code, content=payload)
+
+
+def _resolve_public_ips(candidate_url: str):
+    parsed = urllib.parse.urlparse(candidate_url)
+    hostname = (parsed.hostname or "").lower()
+    if not hostname:
+        raise ValueError("Blocked URL")
+    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+        raise ValueError("Blocked URL")
+
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    resolved_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    safe_ips = []
+    for info in resolved_infos:
+        ip = info[4][0]
+        try:
+            addr = ipaddress.ip_address(ip)
+            if (
+                addr.is_private
+                or addr.is_loopback
+                or addr.is_link_local
+                or addr.is_multicast
+                or addr.is_reserved
+                or addr.is_unspecified
+            ):
+                continue
+        except ValueError:
+            continue
+        if ip not in safe_ips:
+            safe_ips.append(ip)
+    if not safe_ips:
+        raise PermissionError("Blocked URL (Private/Reserved IP)")
+    return safe_ips
+
+
+def _peer_ip(response):
+    sock = None
+    raw = getattr(response, "raw", None)
+    if raw is not None:
+        connection = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+        if connection is not None:
+            sock = getattr(connection, "sock", None)
+    if sock is None:
+        return None
+    try:
+        return sock.getpeername()[0]
+    except Exception:
+        return None
+
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     return is_valid_focus_entity(name, entity_type)
 
@@ -262,6 +393,189 @@ def _build_cluster_answer_fallback(question: str, articles, synthesis: str = "",
     }
 
 
+async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
+    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+        raise HTTPException(status_code=400, detail="Invalid cluster ID")
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+    if len(question) > API_MAX_Q_LEN:
+        raise HTTPException(status_code=400, detail="Question is too long")
+
+    articles = []
+    synthesis = ""
+    perspectives = []
+    try:
+        articles = db.execute(
+            """
+            SELECT title, description, source, link, created_at, category
+            FROM articles
+            WHERE cluster_id = %s
+            ORDER BY created_at DESC
+            LIMIT 8
+            """,
+            (cluster_id,)
+        )
+        articles = [dict(article) if not isinstance(article, dict) else article for article in articles]
+        if not articles:
+            raise HTTPException(status_code=404, detail="Cluster not found")
+
+        summary_row = db.execute_one(
+            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+            (cluster_id,)
+        )
+        synthesis = (summary_row or {}).get("summary") or ""
+        perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
+
+        try:
+            local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
+        except Exception as e:
+            log.warning(f"[fastapi cluster_answer] local answer generation failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+        if local_answer:
+            try:
+                sections = build_structured_answer_sections(
+                    local_answer["answer"],
+                    articles,
+                    synthesis=synthesis,
+                    perspectives=perspectives,
+                )
+            except Exception as e:
+                log.warning(f"[fastapi cluster_answer] section building failed for {cluster_id}: {e}", exc_info=True)
+                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+            return {
+                "status": "success",
+                "answer": local_answer.get("answer", ""),
+                "citations": _safe_rank_cluster_citations(question, local_answer.get("answer", ""), articles, [])[:3],
+                "related_questions": list(local_answer.get("related_questions") or [])[:3],
+                "confidence": local_answer.get("confidence", "medium"),
+                "confirmed_points": sections["confirmed_points"],
+                "unclear_points": sections["unclear_points"],
+                "source_differences": sections["source_differences"],
+                "generated_locally": True,
+            }
+
+        article_context = []
+        for idx, article in enumerate(articles, start=1):
+            article_context.append(
+                f"[{idx}] Извор: {article['source']}\n"
+                f"Наслов: {article['title']}\n"
+                f"Опис: {(article.get('description') or '').strip()}\n"
+            )
+
+        perspective_context = "\n".join(
+            f"- {item['angle']}: {item['content']}" for item in perspectives[:4]
+        )
+
+        prompt = (
+            "Контекст за еден новински кластер:\n\n"
+            f"Системско резиме:\n{synthesis or 'Нема достапно резиме.'}\n\n"
+            f"Перспективи:\n{perspective_context or 'Нема издвоени перспективи.'}\n\n"
+            "Извори:\n"
+            + "\n".join(article_context)
+            + "\n"
+            f"Прашање од корисник: {question}\n\n"
+            "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
+            "Врати JSON со полиња: "
+            "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+            "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
+            "Одговорот мора да биде на македонски."
+        )
+
+        system = (
+            "Ти си новинарски асистент за Пресек. Не измислувај факти. "
+            "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
+        )
+
+        try:
+            response_text, _provider = await _call_ai_async(
+                prompt,
+                system,
+                task_type="chat",
+                max_tokens=700,
+                json_mode=True,
+            )
+        except Exception as e:
+            log.warning(f"[fastapi cluster_answer] AI call failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+
+        if not response_text:
+            return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+
+        try:
+            parsed = clean_json_response(response_text)
+        except Exception as e:
+            log.warning(f"[fastapi cluster_answer] AI response cleaning failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+        if isinstance(parsed, dict):
+            answer = str(parsed.get("answer") or "").strip()
+            confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
+            unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
+            source_differences = str(parsed.get("source_differences") or "").strip()
+            citation_numbers = parsed.get("citation_numbers") or []
+            related_questions = parsed.get("related_questions") or []
+            confidence = str(parsed.get("confidence") or "medium").strip().lower()
+        else:
+            answer = str(parsed).strip()
+            confirmed_points = []
+            unclear_points = []
+            source_differences = ""
+            citation_numbers = [1, 2]
+            related_questions = []
+            confidence = "medium"
+
+        citations = _safe_rank_cluster_citations(question, answer, articles, citation_numbers)
+        try:
+            sections = build_structured_answer_sections(
+                answer,
+                articles,
+                synthesis=synthesis,
+                perspectives=perspectives,
+            )
+        except Exception as e:
+            log.warning(f"[fastapi cluster_answer] final section building failed for {cluster_id}: {e}", exc_info=True)
+            return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+        if not confirmed_points:
+            confirmed_points = sections["confirmed_points"]
+        if not unclear_points:
+            unclear_points = sections["unclear_points"]
+        if not source_differences:
+            source_differences = sections["source_differences"]
+
+        clean_related = []
+        for item in related_questions:
+            text = str(item).strip()
+            if text and text not in clean_related and text != question:
+                clean_related.append(text)
+
+        if not clean_related:
+            clean_related = _related_questions_from_context(
+                question,
+                articles[0].get("category"),
+                has_perspectives=bool(perspectives),
+                has_multiple_sources=len(articles) >= 2,
+                has_unclear_points=bool(unclear_points),
+            )
+
+        if confidence not in {"high", "medium", "low"}:
+            confidence = "medium"
+
+        return {
+            "status": "success",
+            "answer": answer,
+            "citations": citations[:3],
+            "related_questions": clean_related[:3],
+            "confidence": confidence,
+            "confirmed_points": confirmed_points[:3],
+            "unclear_points": unclear_points[:2],
+            "source_differences": source_differences,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"[fastapi cluster_answer] unexpected error for {cluster_id}: {e}", exc_info=True)
+        return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+
+
 def _fallback_citations(articles) -> list[dict]:
     return [
         {
@@ -282,6 +596,17 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
         log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
         return _fallback_citations(articles)
 
+
+@app.middleware("http")
+async def apply_runtime_policies(request: Request, call_next):
+    if _is_rate_limited_path(request.url.path):
+        client_host = str(getattr(getattr(request, "client", None), "host", "") or "0.0.0.0")
+        if not check_rate_limit(client_host):
+            return _apply_security_headers(JSONResponse(status_code=429, content=_rate_limit_error_payload()))
+
+    response = await call_next(request)
+    return _apply_security_headers(response)
+
 @app.get("/api/health")
 async def health():
     db_status = _probe_database()
@@ -295,6 +620,34 @@ async def health():
         "database": db_status,
         "redis": redis_status,
     }
+
+
+@app.get("/sw.js")
+async def serve_sw():
+    return FileResponse("sw.js", media_type="application/javascript")
+
+
+@app.get("/manifest.json")
+async def serve_manifest():
+    return FileResponse(os.path.join("static", "manifest.json"), media_type="application/manifest+json")
+
+
+@app.get("/static/{asset_path:path}")
+async def serve_static_asset(asset_path: str):
+    clean = str(asset_path or "").strip().lstrip("/")
+    if not clean:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    candidate = (_STATIC_ROOT / clean).resolve()
+    try:
+        candidate.relative_to(_STATIC_ROOT.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Blocked path")
+
+    if not candidate.exists() or not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+
+    return FileResponse(candidate)
 
 
 @app.post("/api/profile/sync/init")
@@ -512,6 +865,79 @@ async def get_top_entities(limit: int = 10):
 
     return filtered
 
+
+@app.get("/api/intelligence/international-curated")
+async def get_international_curated(limit: int = 6):
+    try:
+        limit = min(12, max(1, int(limit)))
+        cache_key = f"intl:curated:{limit}"
+        cached = cached_response(cache_key, ttl=60)
+        if cached:
+            return cached
+
+        rows = db.execute(
+            """
+            SELECT *
+            FROM articles
+            WHERE country != %s
+              AND source = ANY(%s)
+              AND created_at >= NOW() - INTERVAL '72 hours'
+              AND (
+                    is_translated = 1
+                    OR (
+                        COALESCE(original_title, '') <> ''
+                        AND title <> original_title
+                    )
+                  )
+            ORDER BY created_at DESC
+            LIMIT 400
+            """,
+            ("🇲🇰", list(CURATED_INTERNATIONAL_SOURCES)),
+        )
+
+        clusters = defaultdict(list)
+        for row in rows:
+            row["reading_time"] = calculate_reading_time(row.get("description", ""))
+            clusters[row["cluster_id"]].append(row)
+
+        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
+        ranked_clusters.sort(key=score_cluster, reverse=True)
+        paged_clusters = ranked_clusters[:limit]
+
+        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
+        synthesis_ids = db.get_synthesis_ids(cluster_ids) if cluster_ids else []
+        metadata_rows = db.execute(
+            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cluster_ids,),
+        ) if cluster_ids else []
+        rep_images = {row["cluster_id"]: row["representative_image"] for row in metadata_rows}
+
+        result = []
+        for arts in paged_clusters:
+            cluster_score = score_cluster(arts)
+            cid = arts[0]["cluster_id"]
+            result.append({
+                "cluster_id": cid,
+                "articles": arts,
+                "representative_image": rep_images.get(cid),
+                "reading_time": arts[0].get("reading_time", 1),
+                "score": round(cluster_score, 3),
+                "is_breaking": cluster_score >= BREAKING_SCORE_THRESHOLD,
+                "has_synthesis": cid in synthesis_ids,
+                "has_balanced": is_balanced(arts),
+            })
+
+        payload = {
+            "status": "success",
+            "clusters": result,
+            "total_clusters": len(ranked_clusters),
+        }
+        set_cache(cache_key, payload, ttl=60)
+        return payload
+    except Exception as e:
+        log.error(f"[fastapi/intelligence/international-curated] {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch curated international stories")
+
 @app.get("/api/news")
 async def get_news(
     q: Optional[str] = None,
@@ -711,191 +1137,79 @@ async def ask_cluster(cluster_id: str, request: Request):
     """Answers a question using only the current cluster's context."""
     try:
         try:
-            if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
-                raise HTTPException(status_code=400, detail="Invalid cluster ID")
-
             try:
                 payload = await request.json()
             except Exception:
                 raise HTTPException(status_code=400, detail="Invalid JSON body")
 
             question = str((payload or {}).get("question") or "").strip()
-            if not question:
-                raise HTTPException(status_code=400, detail="Question is required")
-            if len(question) > API_MAX_Q_LEN:
-                raise HTTPException(status_code=400, detail="Question is too long")
-
-            articles = db.execute(
-                """
-                SELECT title, description, source, link, created_at, category
-                FROM articles
-                WHERE cluster_id = %s
-                ORDER BY created_at DESC
-                LIMIT 8
-                """,
-                (cluster_id,)
-            )
-            articles = [dict(article) if not isinstance(article, dict) else article for article in articles]
-            if not articles:
-                raise HTTPException(status_code=404, detail="Cluster not found")
-
-            summary_row = db.execute_one(
-                "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
-                (cluster_id,)
-            )
-            synthesis = (summary_row or {}).get("summary") or ""
-            perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
-
-            try:
-                local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
-            except Exception as e:
-                log.warning(f"[fastapi cluster_answer] local answer generation failed for {cluster_id}: {e}", exc_info=True)
-                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-            if local_answer:
-                try:
-                    sections = build_structured_answer_sections(
-                        local_answer["answer"],
-                        articles,
-                        synthesis=synthesis,
-                        perspectives=perspectives,
-                    )
-                except Exception as e:
-                    log.warning(f"[fastapi cluster_answer] section building failed for {cluster_id}: {e}", exc_info=True)
-                    return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-                return {
-                    "status": "success",
-                    "answer": local_answer.get("answer", ""),
-                    "citations": _safe_rank_cluster_citations(question, local_answer.get("answer", ""), articles, [])[:3],
-                    "related_questions": list(local_answer.get("related_questions") or [])[:3],
-                    "confidence": local_answer.get("confidence", "medium"),
-                    "confirmed_points": sections["confirmed_points"],
-                    "unclear_points": sections["unclear_points"],
-                    "source_differences": sections["source_differences"],
-                    "generated_locally": True,
-                }
-
-            article_context = []
-            for idx, article in enumerate(articles, start=1):
-                article_context.append(
-                    f"[{idx}] Извор: {article['source']}\n"
-                    f"Наслов: {article['title']}\n"
-                    f"Опис: {(article.get('description') or '').strip()}\n"
-                )
-
-            perspective_context = "\n".join(
-                f"- {item['angle']}: {item['content']}" for item in perspectives[:4]
-            )
-
-            prompt = (
-                "Контекст за еден новински кластер:\n\n"
-                f"Системско резиме:\n{synthesis or 'Нема достапно резиме.'}\n\n"
-                f"Перспективи:\n{perspective_context or 'Нема издвоени перспективи.'}\n\n"
-                "Извори:\n"
-                + "\n".join(article_context)
-                + "\n"
-                f"Прашање од корисник: {question}\n\n"
-                "Одговори само врз основа на контекстот погоре. Ако нешто не е потврдено или недостига, кажи го тоа јасно. "
-                "Врати JSON со полиња: "
-                "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
-                "Во citation_numbers вклучи само броеви од листата на извори што директно го поддржуваат одговорот. "
-                "Одговорот мора да биде на македонски."
-            )
-
-            system = (
-                "Ти си новинарски асистент за Пресек. Не измислувај факти. "
-                "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
-            )
-
-            try:
-                response_text, _provider = await _call_ai_async(
-                    prompt,
-                    system,
-                    task_type="chat",
-                    max_tokens=700,
-                    json_mode=True,
-                )
-            except Exception as e:
-                log.warning(f"[fastapi cluster_answer] AI call failed for {cluster_id}: {e}", exc_info=True)
-                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-
-            if not response_text:
-                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-
-            try:
-                parsed = clean_json_response(response_text)
-            except Exception as e:
-                log.warning(f"[fastapi cluster_answer] AI response cleaning failed for {cluster_id}: {e}", exc_info=True)
-                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-            if isinstance(parsed, dict):
-                answer = str(parsed.get("answer") or "").strip()
-                confirmed_points = [str(item).strip() for item in parsed.get("confirmed_points") or [] if str(item).strip()]
-                unclear_points = [str(item).strip() for item in parsed.get("unclear_points") or [] if str(item).strip()]
-                source_differences = str(parsed.get("source_differences") or "").strip()
-                citation_numbers = parsed.get("citation_numbers") or []
-                related_questions = parsed.get("related_questions") or []
-                confidence = str(parsed.get("confidence") or "medium").strip().lower()
-            else:
-                answer = str(parsed).strip()
-                confirmed_points = []
-                unclear_points = []
-                source_differences = ""
-                citation_numbers = [1, 2]
-                related_questions = []
-                confidence = "medium"
-
-            citations = _safe_rank_cluster_citations(question, answer, articles, citation_numbers)
-            try:
-                sections = build_structured_answer_sections(
-                    answer,
-                    articles,
-                    synthesis=synthesis,
-                    perspectives=perspectives,
-                )
-            except Exception as e:
-                log.warning(f"[fastapi cluster_answer] final section building failed for {cluster_id}: {e}", exc_info=True)
-                return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
-            if not confirmed_points:
-                confirmed_points = sections["confirmed_points"]
-            if not unclear_points:
-                unclear_points = sections["unclear_points"]
-            if not source_differences:
-                source_differences = sections["source_differences"]
-
-            clean_related = []
-            for item in related_questions:
-                text = str(item).strip()
-                if text and text not in clean_related and text != question:
-                    clean_related.append(text)
-
-            if not clean_related:
-                clean_related = _related_questions_from_context(
-                    question,
-                    articles[0].get("category"),
-                    has_perspectives=bool(perspectives),
-                    has_multiple_sources=len(articles) >= 2,
-                    has_unclear_points=bool(unclear_points),
-                )
-
-            if confidence not in {"high", "medium", "low"}:
-                confidence = "medium"
-
-            return {
-                "status": "success",
-                "answer": answer,
-                "citations": citations[:3],
-                "related_questions": clean_related[:3],
-                "confidence": confidence,
-                "confirmed_points": confirmed_points[:3],
-                "unclear_points": unclear_points[:2],
-                "source_differences": source_differences,
-            }
+            return await _build_cluster_answer_payload(cluster_id, question)
         except HTTPException:
             raise
-        except Exception as e:
-            log.error(f"[fastapi cluster_answer] unexpected error for {cluster_id}: {e}", exc_info=True)
-            return _build_cluster_answer_fallback(question, articles if 'articles' in locals() else [], synthesis=synthesis if 'synthesis' in locals() else "", perspectives=perspectives if 'perspectives' in locals() else [])
     except HTTPException:
         raise
+
+
+@app.post("/api/chat_cluster")
+async def chat_cluster(request: Request):
+    try:
+        try:
+            payload = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+        cluster_id = str((payload or {}).get("cluster_id") or "").strip()
+        query = str((payload or {}).get("query") or "").strip()
+        if not cluster_id or not query:
+            raise HTTPException(status_code=400, detail="cluster_id and query are required")
+
+        answer_payload = await _build_cluster_answer_payload(cluster_id, query)
+        answer_payload["response"] = answer_payload["answer"]
+        return answer_payload
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"[fastapi/chat_cluster] {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process query")
+
+
+@app.get("/api/live")
+async def get_live():
+    return StreamingResponse(event_stream("updates"), media_type="text/event-stream")
+
+
+@app.get("/api/weather")
+async def get_weather():
+    cached = cached_response("weather:skopje", ttl=900)
+    if cached:
+        return cached
+    try:
+        weather_req = urllib.request.Request(
+            "https://api.open-meteo.com/v1/forecast"
+            "?latitude=41.9981&longitude=21.4254"
+            "&current=temperature_2m,weather_code&timezone=Europe%2FSkopje",
+            headers={"User-Agent": "Presek/6.0"},
+        )
+        aqi_req = urllib.request.Request(
+            "https://air-quality-api.open-meteo.com/v1/air-quality"
+            "?latitude=41.9981&longitude=21.4254"
+            "&current=us_aqi&timezone=Europe%2FSkopje",
+            headers={"User-Agent": "Presek/6.0"},
+        )
+        with urllib.request.urlopen(weather_req, timeout=5) as response:
+            weather = json.loads(response.read())
+        with urllib.request.urlopen(aqi_req, timeout=5) as response:
+            aqi = json.loads(response.read())
+
+        temp = round(weather["current"]["temperature_2m"])
+        code = weather["current"]["weather_code"]
+        icon = _WMO_ICON.get(code, "🌡️")
+        result = {"temp": temp, "icon": icon, "aqi": aqi["current"]["us_aqi"]}
+        set_cache("weather:skopje", result, ttl=900)
+        return result
+    except Exception as e:
+        log.warning(f"[fastapi/weather] {e}")
+        return {"temp": None, "icon": "🌡️", "aqi": None}
 
 @app.get("/api/briefing")
 async def get_briefing():
@@ -1228,6 +1542,77 @@ async def get_sources():
         log.warning(f"FastAPI Sources Error: {e}")
         return []
 
+
+@app.post("/api/sources/{name}/control")
+async def control_source(name: str, request: Request):
+    if not _source_admin_authorized(request):
+        return _error_json("Unauthorized", 403)
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return _error_json("Content-Type must be application/json", 415)
+
+    source_name = str(name or "").strip()
+    if not source_name:
+        return _error_json("Source name is required", 400)
+
+    action = str((payload or {}).get("action") or "").strip().lower()
+    valid_actions = {"pause", "resume", "downrank", "uprank", "reset"}
+    if action not in valid_actions:
+        return _error_json("Invalid action", 400)
+
+    source = db.execute_one(
+        "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE name = %s",
+        (source_name,),
+    )
+    if not source:
+        return _error_json("Source not found", 404)
+
+    current_cred = float(source.get("credibility") or DEFAULT_CREDIBILITY)
+    if action == "pause":
+        db.execute(
+            "UPDATE sources SET is_active = FALSE, pause_mode = 'manual', pause_reason = %s, paused_at = NOW() WHERE name = %s",
+            ("Manual pause", source_name),
+            fetch=False,
+        )
+    elif action == "resume":
+        db.execute(
+            "UPDATE sources SET is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL WHERE name = %s",
+            (source_name,),
+            fetch=False,
+        )
+        reset_source_policy(source_name)
+    elif action == "downrank":
+        db.execute(
+            "UPDATE sources SET credibility = %s WHERE name = %s",
+            (max(0.4, round(current_cred - 0.2, 2)), source_name),
+            fetch=False,
+        )
+    elif action == "uprank":
+        db.execute(
+            "UPDATE sources SET credibility = %s WHERE name = %s",
+            (min(3.0, round(current_cred + 0.2, 2)), source_name),
+            fetch=False,
+        )
+    elif action == "reset":
+        db.execute(
+            "UPDATE sources SET credibility = %s, pause_mode = NULL, pause_reason = NULL, paused_at = NULL WHERE name = %s",
+            (SOURCE_CREDIBILITY.get(source_name, DEFAULT_CREDIBILITY), source_name),
+            fetch=False,
+        )
+        reset_source_policy(source_name)
+
+    updated = db.execute_one(
+        "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources WHERE name = %s",
+        (source_name,),
+    )
+    if updated:
+        updated = dict(updated)
+        updated["source_status"] = get_source_statuses().get(source_name)
+    return {"status": "success", "source": updated}
+
+
 @app.get("/api/sources/pulse")
 async def get_sources_pulse():
     """Return top MK sources by article count in last 24h."""
@@ -1242,6 +1627,124 @@ async def get_sources_pulse():
     except Exception as e:
         log.warning(f"FastAPI Pulse Error: {e}")
         return []
+
+
+@app.get("/proxy")
+async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
+    if not url:
+        return _error_json("Missing url parameter", 400)
+
+    if url.startswith("/static/"):
+        if ".." in url:
+            return _error_json("Blocked URL", 403)
+        content_type = "image/jpeg"
+        if url.endswith(".svg"):
+            content_type = "image/svg+xml"
+        elif url.endswith(".png"):
+            content_type = "image/png"
+        elif url.endswith(".webp"):
+            content_type = "image/webp"
+        try:
+            full_path = os.path.join(os.getcwd(), url.lstrip("/"))
+            if not os.path.exists(full_path):
+                return _error_json("Local file not found", 404)
+            with open(full_path, "rb") as handle:
+                return Response(handle.read(), media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
+        except Exception as e:
+            return _error_json(f"Failed to serve local file: {e}", 500)
+
+    if not re.match(r'^https?://', url):
+        return _error_json("Invalid URL scheme", 400)
+
+    try:
+        target_width = int(w) if w and str(w).isdigit() else 600
+        target_width = max(20, min(1200, target_width))
+    except ValueError:
+        target_width = 600
+
+    cache_key = f"proxy:webp:v2:{target_width}:{url}"
+    cached = cached_response(cache_key, ttl=86400)
+    if cached:
+        return Response(
+            bytes.fromhex(cached["data"]),
+            media_type="image/webp",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        session = requests.Session()
+        current_url = url
+        response = None
+
+        for _ in range(4):
+            safe_ips = _resolve_public_ips(current_url)
+            response = session.get(
+                current_url,
+                headers=headers,
+                timeout=10,
+                stream=True,
+                verify=True,
+                allow_redirects=False,
+            )
+            peer_ip = _peer_ip(response)
+            if not peer_ip or peer_ip not in safe_ips:
+                response.close()
+                return _error_json("Blocked upstream target", 403)
+            if 300 <= response.status_code < 400:
+                location = response.headers.get("Location")
+                response.close()
+                if not location:
+                    return _error_json("Invalid upstream redirect", 502)
+                current_url = urllib.parse.urljoin(current_url, location)
+                if not re.match(r'^https?://', current_url):
+                    return _error_json("Invalid upstream redirect", 502)
+                continue
+            break
+        else:
+            return _error_json("Too many upstream redirects", 502)
+
+        if response.status_code != 200:
+            return _error_json("Failed to fetch image", response.status_code)
+
+        content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
+        if content_type not in _PROXY_ALLOWED_TYPES:
+            return _error_json("Unsupported content type", 415)
+
+        image_data = b""
+        for chunk in response.iter_content(chunk_size=8192):
+            image_data += chunk
+            if len(image_data) > _PROXY_MAX_BYTES:
+                return _error_json("Image too large", 413)
+
+        from io import BytesIO
+        from PIL import Image
+
+        img = Image.open(BytesIO(image_data))
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        if img.width > target_width:
+            ratio = target_width / float(img.width)
+            img = img.resize((target_width, int(float(img.height) * ratio)), Image.Resampling.LANCZOS)
+
+        webp_io = BytesIO()
+        quality = 20 if target_width <= 50 else 80
+        img.save(webp_io, "WEBP", quality=quality, method=6)
+        optimized_data = webp_io.getvalue()
+
+        set_cache(cache_key, {"data": optimized_data.hex(), "content_type": "image/webp"}, ttl=86400)
+        return Response(optimized_data, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
+    except socket.gaierror:
+        return _error_json("Could not resolve hostname", 404)
+    except PermissionError as e:
+        return _error_json(str(e), 403)
+    except ValueError as e:
+        return _error_json(str(e), 403)
+    except Exception as e:
+        log.warning(f"[fastapi/proxy] Optimization error for {url}: {e}")
+        return _error_json("Failed to process image", 502)
 
 @app.get("/api/chat/stream")
 async def chat_stream(cluster_id: str, query: str):

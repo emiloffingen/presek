@@ -27,6 +27,7 @@ BACKFILL_LOG="$LOG_DIR/backfill.log"
 ENABLE_FASTAPI="${ENABLE_FASTAPI:-1}"
 ENABLE_ASTRO="${ENABLE_ASTRO:-1}"
 ENABLE_BACKFILL="${ENABLE_BACKFILL:-0}"
+ENABLE_FLASK="${ENABLE_FLASK:-0}"
 PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
 FLASK_BIND_HOST="${FLASK_BIND_HOST:-127.0.0.1}"
 FASTAPI_BIND_HOST="${FASTAPI_BIND_HOST:-127.0.0.1}"
@@ -281,7 +282,7 @@ cleanup_stale_processes() {
   stop_matching_processes "gunicorn.*app:app"
   stop_matching_processes "uvicorn.*api_fast:app"
   stop_matching_processes "entry.mjs"
-  force_free_port 5000
+  [ "$ENABLE_FLASK" = "1" ] && force_free_port 5000
   [ "$ENABLE_FASTAPI" = "1" ] && force_free_port 5001
   [ "$ENABLE_ASTRO" = "1" ] && force_free_port 3000
   sleep 2
@@ -290,7 +291,9 @@ cleanup_stale_processes() {
 print_summary() {
   divider
   echo -e "  ${CYAN}Public URL:${RESET}      $PUBLIC_URL"
-  echo -e "  ${CYAN}Flask API:${RESET}       http://127.0.0.1:5000"
+  if [ "$ENABLE_FLASK" = "1" ]; then
+    echo -e "  ${CYAN}Legacy Flask:${RESET}    http://127.0.0.1:5000"
+  fi
   if [ "$ENABLE_FASTAPI" = "1" ]; then
     echo -e "  ${CYAN}FastAPI:${RESET}         http://127.0.0.1:5001"
   fi
@@ -404,7 +407,7 @@ if screen_session_exists; then
   stop_session
 fi
 
-ensure_port_free 5000
+[ "$ENABLE_FLASK" = "1" ] && ensure_port_free 5000
 [ "$ENABLE_FASTAPI" = "1" ] && ensure_port_free 5001
 [ "$ENABLE_ASTRO" = "1" ] && ensure_port_free 3000
 
@@ -417,8 +420,10 @@ fi
 
 info "Starting services in screen session '$SESSION'..."
 
-start_window "web" "cd '$APP_DIR' && exec '$GUNICORN' app:app --bind '$FLASK_BIND_HOST:5000' --workers 2 --threads 4 --worker-class gthread --timeout 60 --keep-alive 5 --access-logfile '$WEB_LOG' --error-logfile '$WEB_LOG' --log-level info"
-sleep 1
+if [ "$ENABLE_FLASK" = "1" ]; then
+  start_window "web" "cd '$APP_DIR' && exec '$GUNICORN' app:app --bind '$FLASK_BIND_HOST:5000' --workers 2 --threads 4 --worker-class gthread --timeout 60 --keep-alive 5 --access-logfile '$WEB_LOG' --error-logfile '$WEB_LOG' --log-level info"
+  sleep 1
+fi
 
 start_window "worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
 sleep 1
@@ -443,7 +448,9 @@ fi
 
 ok "Launch commands submitted"
 
-wait_for_http "Flask API" "http://127.0.0.1:5000/api/health"
+if [ "$ENABLE_FLASK" = "1" ]; then
+  wait_for_http "Legacy Flask" "http://127.0.0.1:5000/healthz"
+fi
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
   wait_for_http "FastAPI" "http://127.0.0.1:5001/api/health"

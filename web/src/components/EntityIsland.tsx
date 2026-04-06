@@ -210,7 +210,7 @@ export default function EntityIsland({
 
   useEffect(() => {
     if (initialData) return;
-    const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api' : 'http://127.0.0.1:5000/api');
+    const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api' : 'http://127.0.0.1:5001/api');
     fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(name)}`)
       .then((res) => res.json())
       .then(setData)
