@@ -162,6 +162,67 @@
     line-height: 1.15;
 }
 
+.onboarding-starters {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.9rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.onboarding-starters-title {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--foreground);
+}
+
+.onboarding-starters-copy {
+    margin: 0.2rem 0 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
+.onboarding-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.onboarding-chip {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 92%, var(--accent) 8%);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+}
+
+.onboarding-chip:hover {
+    border-color: var(--nyt-accent);
+    transform: translateY(-1px);
+}
+
+.onboarding-chip span {
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--foreground);
+}
+
+.onboarding-chip small {
+    font-family: var(--font-nyt-body);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--secondary-foreground);
+}
+
 .page-kicker {
     display: inline-block;
     margin-bottom: 0.85rem;

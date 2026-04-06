@@ -345,6 +345,131 @@ def _load_weekly_cluster_engagement(days=45):
     return engagement
 
 
+def _load_weekly_topic_engagement(days=45):
+    send_rows = db.execute(
+        "SELECT id, metadata "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type = 'send' "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+    child_rows = db.execute(
+        "SELECT parent_event_id, event_type "
+        "FROM delivery_tracking_events "
+        "WHERE delivery_kind = 'weekly' AND event_type IN ('open', 'click') "
+        "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
+        (days,),
+    )
+
+    child_map = {}
+    for row in child_rows or []:
+        parent_id = int(row.get("parent_event_id") or 0)
+        if parent_id <= 0:
+            continue
+        bucket = child_map.setdefault(parent_id, {"opens": 0, "clicks": 0})
+        event_type = str(row.get("event_type") or "").strip()
+        if event_type == "open":
+            bucket["opens"] += 1
+        elif event_type == "click":
+            bucket["clicks"] += 1
+
+    topic_map = {}
+    for row in send_rows or []:
+        event_id = int(row.get("id") or 0)
+        metadata = row.get("metadata") or {}
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
+        for topic in (metadata.get("focus_topics") or []):
+            clean = str(topic or "").strip()
+            if not clean:
+                continue
+            bucket = topic_map.setdefault(clean, {"sends": 0, "opens": 0, "clicks": 0})
+            bucket["sends"] += 1
+            bucket["opens"] += child_stats["opens"]
+            bucket["clicks"] += child_stats["clicks"]
+
+    for bucket in topic_map.values():
+        sends = int(bucket.get("sends") or 0)
+        opens = int(bucket.get("opens") or 0)
+        clicks = int(bucket.get("clicks") or 0)
+        bucket["open_rate"] = (opens / sends) if sends else 0.0
+        bucket["click_rate"] = (clicks / sends) if sends else 0.0
+        bucket["section_score"] = round(
+            min(1.2, bucket["click_rate"] * 1.8 + bucket["open_rate"] * 0.7 + min(0.2, clicks * 0.04)),
+            3,
+        )
+    return topic_map
+
+
+def _build_weekly_digest_sections(profile, clusters, topic_engagement=None):
+    profile = _normalize_synced_profile_for_delivery(profile)
+    followed_topics = [topic for topic in profile["followedTopics"] if topic]
+    followed_sources = [source for source in profile["followedSources"] if source]
+    topic_engagement = topic_engagement or {}
+
+    lead_cluster = clusters[0] if clusters else None
+    sections = []
+
+    if lead_cluster:
+        sections.append({
+            "title": "Што најмногу се помести",
+            "subtitle": lead_cluster.get("match_reason") or "главен неделен развој",
+            "clusters": [lead_cluster],
+        })
+
+    topic_sections = []
+    for topic in followed_topics:
+        matches = [
+            cluster for cluster in clusters
+            if topic in {
+                str(cluster.get("topic") or "").strip(),
+                str(cluster.get("category") or "").strip(),
+            }
+        ]
+        if not matches:
+            continue
+        performance = topic_engagement.get(topic) or {}
+        topic_sections.append({
+            "title": f"Следена тема: {topic}",
+            "subtitle": (
+                "силен интерес во претходните неделни прегледи"
+                if float(performance.get("section_score") or 0.0) >= 0.65
+                else "најважните линии за темата што ја следите"
+            ),
+            "clusters": matches[:2],
+            "score": float(performance.get("section_score") or 0.0) + max(float(matches[0].get("match_score") or 0.0), 0.0),
+        })
+    topic_sections.sort(key=lambda item: item.get("score") or 0.0, reverse=True)
+    sections.extend(topic_sections[:2])
+
+    source_focus = []
+    if followed_sources:
+        for source in followed_sources[:2]:
+            source_cluster = next((cluster for cluster in clusters if str(cluster.get("source") or "").strip() == source), None)
+            if source_cluster:
+                source_focus.append(source_cluster)
+    if source_focus:
+        sections.append({
+            "title": "Извори што ги следите",
+            "subtitle": "каде следените извори ја водат или потврдуваат неделата",
+            "clusters": source_focus[:2],
+        })
+
+    open_items = [cluster for cluster in clusters if cluster.get("open_point")]
+    if open_items:
+        sections.append({
+            "title": "Што останува отворено",
+            "subtitle": "линии што влегуваат во следната недела без целосна потврда",
+            "clusters": open_items[:2],
+        })
+
+    return sections[:4]
+
+
 def _select_profile_weekly_clusters(profile, limit=5):
     profile = _normalize_synced_profile_for_delivery(profile)
     engagement_map = _load_weekly_cluster_engagement()
@@ -391,6 +516,7 @@ def _build_profile_weekly_digest_message(profile, clusters):
     profile = _normalize_synced_profile_for_delivery(profile)
     followed_topics = profile["followedTopics"][:4]
     followed_sources = profile["followedSources"][:4]
+    sections = _build_weekly_digest_sections(profile, clusters, _load_weekly_topic_engagement())
 
     lines = ["Пресек неделен преглед"]
     if followed_topics:
@@ -398,18 +524,34 @@ def _build_profile_weekly_digest_message(profile, clusters):
     if followed_sources:
         lines.append(f"Фокус извори: {', '.join(followed_sources)}")
 
-    for cluster in clusters[:5]:
+    rendered_cluster_ids = set()
+    for section in sections:
+        section_clusters = []
+        for cluster in section.get("clusters") or []:
+            cluster_id = str(cluster.get("cluster_id") or "").strip()
+            if not cluster_id or cluster_id in rendered_cluster_ids:
+                continue
+            rendered_cluster_ids.add(cluster_id)
+            section_clusters.append(cluster)
+        if not section_clusters:
+            continue
+
         lines.append("")
-        lines.append(f"• {cluster.get('title') or 'Клучна приказна неделава'}")
-        lines.append(f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {cluster.get('match_reason') or 'неделен контекст'}")
-        if cluster.get("cluster_summary"):
-            lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
-        elif cluster.get("description"):
-            lines.append(f"  {str(cluster['description'])[:220]}")
-        if cluster.get("difference_point"):
-            lines.append(f"  Главна разлика: {str(cluster['difference_point'])[:180]}")
-        elif cluster.get("open_point"):
-            lines.append(f"  Што остана отворено: {str(cluster['open_point'])[:180]}")
+        lines.append(f"## {section.get('title') or 'Клучен дел'}")
+        if section.get("subtitle"):
+            lines.append(str(section["subtitle"]))
+
+        for cluster in section_clusters[:2]:
+            lines.append(f"• {cluster.get('title') or 'Клучна приказна неделава'}")
+            lines.append(f"  {cluster.get('source') or 'Извор'} · {cluster.get('source_count') or 1} извори · {cluster.get('match_reason') or 'неделен контекст'}")
+            if cluster.get("cluster_summary"):
+                lines.append(f"  {str(cluster['cluster_summary']).splitlines()[0][:220]}")
+            elif cluster.get("description"):
+                lines.append(f"  {str(cluster['description'])[:220]}")
+            if cluster.get("difference_point"):
+                lines.append(f"  Главна разлика: {str(cluster['difference_point'])[:180]}")
+            elif cluster.get("open_point"):
+                lines.append(f"  Што остана отворено: {str(cluster['open_point'])[:180]}")
 
     lines.append("")
     lines.append("Што да следите понатаму: Проверете ги темите и кластерите што остануваат отворени или влегуваат во нова фаза.")

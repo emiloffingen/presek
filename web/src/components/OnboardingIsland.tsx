@@ -1,13 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Sparkles, X } from 'lucide-react';
-import { completeOnboarding, dismissOnboarding, getOnboardingProgress } from '../lib/personalization.js';
+import {
+  buildFollowRecommendations,
+  completeOnboarding,
+  dismissOnboarding,
+  getOnboardingProgress,
+  loadReaderProfile,
+  toggleFollowedValue,
+} from '../lib/personalization.js';
 
 export default function OnboardingIsland({ compact = false }: { compact?: boolean }) {
   const [progress, setProgress] = useState(() => getOnboardingProgress());
+  const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
     setProgress(getOnboardingProgress());
+    setProfile(loadReaderProfile());
   }, []);
+
+  const recommendations = useMemo(() => buildFollowRecommendations(profile, compact ? 2 : 3), [profile, compact]);
 
   if (!progress.shouldShow) {
     return null;
@@ -21,6 +32,12 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
   const markDone = () => {
     completeOnboarding();
     setProgress((current) => ({ ...current, completed: true, shouldShow: false }));
+  };
+
+  const quickFollow = (kind: 'topic' | 'source', value: string) => {
+    const result = toggleFollowedValue(kind, value);
+    setProfile(result.profile);
+    setProgress(getOnboardingProgress());
   };
 
   return (
@@ -52,6 +69,47 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
           </div>
         ))}
       </div>
+
+      {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
+        <div className="onboarding-starters">
+          <div>
+            <p className="onboarding-starters-title">Почнете со неколку брзи следења</p>
+            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за `За Вас`, известувањата и неделниот преглед да станат побрзо корисни.</p>
+          </div>
+
+          {recommendations.topics.length > 0 && (
+            <div className="onboarding-chip-row">
+              {recommendations.topics.map((item) => (
+                <button
+                  key={`topic:${item.value}`}
+                  type="button"
+                  className="onboarding-chip"
+                  onClick={() => quickFollow('topic', item.value)}
+                >
+                  <span>{item.value}</span>
+                  <small>{item.reason}</small>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {recommendations.sources.length > 0 && (
+            <div className="onboarding-chip-row">
+              {recommendations.sources.map((item) => (
+                <button
+                  key={`source:${item.value}`}
+                  type="button"
+                  className="onboarding-chip"
+                  onClick={() => quickFollow('source', item.value)}
+                >
+                  <span>{item.value}</span>
+                  <small>{item.reason}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="onboarding-actions">
         <a href="/settings" className="onboarding-action">Отвори поставки</a>
