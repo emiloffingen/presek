@@ -6,6 +6,10 @@ import {
   dismissOnboarding,
   getOnboardingProgress,
   loadReaderProfile,
+  recordSuggestionDismiss,
+  recordSuggestionFollow,
+  recordSuggestionImpressions,
+  sendSuggestionEvents,
   toggleFollowedValue,
 } from '../lib/personalization.js';
 
@@ -20,12 +24,32 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
 
   const recommendations = useMemo(() => buildFollowRecommendations(profile, compact ? 2 : 3), [profile, compact]);
 
+  useEffect(() => {
+    if (!compact) return;
+    const result = recordSuggestionImpressions('onboarding', [
+      ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
+      ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
+    ]);
+    sendSuggestionEvents(
+      result.recorded.map((item) => ({
+        surface: 'onboarding',
+        eventType: 'impression',
+        suggestionKind: item.kind,
+        value: item.value,
+      }))
+    );
+  }, [compact, recommendations]);
+
   if (!progress.shouldShow) {
     return null;
   }
 
   const close = () => {
     const next = dismissOnboarding();
+    const tracked = recordSuggestionDismiss('onboarding');
+    if (tracked.recorded) {
+      sendSuggestionEvents([{ surface: 'onboarding', eventType: 'dismiss' }]);
+    }
     setProgress((current) => ({ ...current, dismissed: next.dismissed, shouldShow: false }));
   };
 
@@ -36,6 +60,12 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
 
   const quickFollow = (kind: 'topic' | 'source', value: string) => {
     const result = toggleFollowedValue(kind, value);
+    if (result.isFollowing) {
+      const tracked = recordSuggestionFollow('onboarding', kind, value);
+      if (tracked.recorded) {
+        sendSuggestionEvents([{ surface: 'onboarding', eventType: 'follow', suggestionKind: kind, value }]);
+      }
+    }
     setProfile(result.profile);
     setProgress(getOnboardingProgress());
   };

@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X } from 'lucide-react';
-import { buildFollowRecommendations, loadReaderProfile, toggleFollowedValue } from '../lib/personalization.js';
+import {
+  buildFollowRecommendations,
+  loadReaderProfile,
+  recordSuggestionFollow,
+  recordSuggestionImpressions,
+  sendSuggestionEvents,
+  toggleFollowedValue,
+} from '../lib/personalization.js';
 
 function summarizeRecent(profile: any) {
   const recent = Array.isArray(profile?.recentClusters) ? profile.recentClusters : [];
@@ -24,6 +31,21 @@ export default function SettingsProfileIsland() {
   const recentItems = useMemo(() => summarizeRecent(profile), [profile]);
   const recommendations = useMemo(() => buildFollowRecommendations(profile, 4), [profile]);
 
+  useEffect(() => {
+    const result = recordSuggestionImpressions('settings', [
+      ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
+      ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
+    ]);
+    sendSuggestionEvents(
+      result.recorded.map((item) => ({
+        surface: 'settings',
+        eventType: 'impression',
+        suggestionKind: item.kind,
+        value: item.value,
+      }))
+    );
+  }, [recommendations]);
+
   const removeFollow = (kind: 'topic' | 'source', value: string) => {
     const result = toggleFollowedValue(kind, value);
     setProfile(result.profile);
@@ -31,6 +53,12 @@ export default function SettingsProfileIsland() {
 
   const addFollow = (kind: 'topic' | 'source', value: string) => {
     const result = toggleFollowedValue(kind, value);
+    if (result.isFollowing) {
+      const tracked = recordSuggestionFollow('settings', kind, value);
+      if (tracked.recorded) {
+        sendSuggestionEvents([{ surface: 'settings', eventType: 'follow', suggestionKind: kind, value }]);
+      }
+    }
     setProfile(result.profile);
   };
 

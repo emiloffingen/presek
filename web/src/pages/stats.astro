@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import ReaderSuggestionAnalyticsIsland from '../components/ReaderSuggestionAnalyticsIsland.tsx';
 import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
@@ -155,6 +156,66 @@ try {
 									</div>
 								</div>
 							</section>
+
+							<section class="stats-module">
+								<h2 class="stats-section-title">Конверзија На Површини За Следење</h2>
+								<div class="follow-grid">
+									{(stats.editor_analytics?.suggestion_surface_performance ?? []).slice(0, 6).map((item: any) => (
+										<div class="follow-card">
+											<h3 class="follow-title">{item.label}</h3>
+											<div class="system-list">
+												<div class="system-row">
+													<span>Импресии:</span>
+													<span class="text-foreground font-black">{item.impressions}</span>
+												</div>
+												<div class="system-row">
+													<span>Следења:</span>
+													<span class="text-foreground font-black">{item.follows}</span>
+												</div>
+												<div class="system-row">
+													<span>Конверзија:</span>
+													<span class="text-foreground font-black">{item.conversion_rate}%</span>
+												</div>
+												<div class="system-row">
+													<span>Теми / извори:</span>
+													<span class="text-foreground font-black">{item.topic_follows} / {item.source_follows}</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+
+							<section class="stats-module">
+								<h2 class="stats-section-title">Конверзија По Вид На Предлог</h2>
+								<div class="follow-grid">
+									{(stats.editor_analytics?.suggestion_kind_performance ?? []).slice(0, 2).map((item: any) => (
+										<div class="follow-card">
+											<h3 class="follow-title">{item.label}</h3>
+											<div class="system-list">
+												<div class="system-row">
+													<span>Импресии:</span>
+													<span class="text-foreground font-black">{item.impressions}</span>
+												</div>
+												<div class="system-row">
+													<span>Следења:</span>
+													<span class="text-foreground font-black">{item.follows}</span>
+												</div>
+												<div class="system-row">
+													<span>Конверзија:</span>
+													<span class="text-foreground font-black">{item.conversion_rate}%</span>
+												</div>
+												<div class="system-row">
+													<span>Отфрлања:</span>
+													<span class="text-foreground font-black">{item.dismissals}</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+
+							<ReaderSuggestionAnalyticsIsland client:load />
 
 							<section class="stats-module">
 								<h2 class="stats-section-title">Најуспешни Типови На Достава</h2>

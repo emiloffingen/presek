@@ -1365,6 +1365,160 @@
     line-height: 1.2;
 }
 
+.stats-empty-copy {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.97rem;
+    line-height: 1.6;
+    color: var(--secondary-foreground);
+}
+
+.reader-analytics-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.reader-analytics-copy {
+    margin: 0.4rem 0 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.97rem;
+    line-height: 1.6;
+    color: var(--secondary-foreground);
+}
+
+.reader-analytics-total {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 12rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    text-align: right;
+}
+
+.reader-analytics-total span,
+.reader-analytics-total small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    color: var(--muted-foreground);
+}
+
+.reader-analytics-total strong {
+    font-family: var(--font-serif-display);
+    font-size: 1.55rem;
+    line-height: 1;
+}
+
+.reader-analytics-kind-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 0.9rem;
+}
+
+.reader-analytics-kind-card,
+.reader-analytics-surface-card {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    padding: 0.95rem;
+}
+
+.reader-analytics-kind-kicker {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.reader-analytics-kind-card strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-family: var(--font-serif-display);
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.reader-analytics-kind-card p {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
+.reader-analytics-surface-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.reader-analytics-surface-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.reader-analytics-surface-head h3 {
+    margin: 0 0 0.3rem;
+    font-family: var(--font-serif-display);
+    font-size: 1.02rem;
+    line-height: 1.15;
+}
+
+.reader-analytics-surface-head p {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--secondary-foreground);
+}
+
+.reader-analytics-surface-rate {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.reader-analytics-surface-kinds {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+}
+
+.reader-analytics-surface-kind {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-nyt-body);
+    font-size: 0.93rem;
+    line-height: 1.45;
+    color: var(--secondary-foreground);
+}
+
+.reader-analytics-dismissals {
+    margin: 0.8rem 0 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--muted-foreground);
+}
+
 @media (min-width: 720px) {
     .for-you-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1373,6 +1527,27 @@
     .onboarding-actions,
     .settings-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .reader-analytics-head {
+        flex-direction: column;
+    }
+
+    .reader-analytics-total {
+        min-width: 0;
+        width: 100%;
+        text-align: left;
+    }
+
+    .reader-analytics-total span,
+    .reader-analytics-total small {
+        justify-content: flex-start;
+    }
+
+    .reader-analytics-kind-grid {
+        grid-template-columns: 1fr;
     }
 }
 

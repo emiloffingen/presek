@@ -22,7 +22,7 @@ import requests
 from database import db_manager as db
 from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time, 
-    cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
+    cached_response, set_cache, delete_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
     build_source_reputation_rows, build_editor_analytics_payload,
     event_stream, check_rate_limit,
@@ -197,6 +197,20 @@ def _normalize_server_delivery_row(row):
         "breakingSources": row.get("breaking_sources"),
         "isActive": row.get("is_active"),
     })
+
+
+def _normalize_suggestion_surface(value: str) -> str:
+    return re.sub(r"[^a-z0-9_:-]+", "_", str(value or "").strip().lower())
+
+
+def _normalize_suggestion_kind(value: str) -> str:
+    clean = str(value or "").strip().lower()
+    return clean if clean in {"topic", "source"} else ""
+
+
+def _normalize_suggestion_event_type(value: str) -> str:
+    clean = str(value or "").strip().lower()
+    return clean if clean in {"impression", "follow", "dismiss"} else ""
 
 
 def _safe_tracking_redirect_path(path: str) -> str:
@@ -823,6 +837,63 @@ async def save_profile_delivery(request: Request):
         "status": "success",
         "token": token,
         "subscription": subscription,
+    }
+
+
+@app.post("/api/profile/suggestion-event")
+async def save_suggestion_events(request: Request):
+    payload = await request.json()
+    token = str(payload.get("token") or "").strip()
+    client_id = str(payload.get("clientId") or "").strip()[:64]
+    raw_events = payload.get("events") or []
+
+    if not client_id:
+        raise HTTPException(status_code=400, detail="Missing client id")
+    if not isinstance(raw_events, list) or not raw_events:
+        raise HTTPException(status_code=400, detail="Missing suggestion events")
+
+    clean_token = ""
+    if token:
+        profile = db.execute_one(
+            "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
+            (token,),
+        )
+        if profile:
+            clean_token = token
+
+    accepted = 0
+    for item in raw_events[:24]:
+        if not isinstance(item, dict):
+            continue
+        surface = _normalize_suggestion_surface(item.get("surface"))
+        event_type = _normalize_suggestion_event_type(item.get("eventType"))
+        suggestion_kind = _normalize_suggestion_kind(item.get("suggestionKind"))
+        value = str(item.get("value") or "").strip()[:160]
+        if not surface or not event_type:
+            continue
+        if event_type in {"impression", "follow"} and not suggestion_kind:
+            continue
+        db.execute(
+            """INSERT INTO suggestion_surface_events
+               (sync_token, client_id, surface, suggestion_kind, event_type, value, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)""",
+            (
+                clean_token or None,
+                client_id,
+                surface,
+                suggestion_kind or None,
+                event_type,
+                value,
+                json.dumps({}),
+            ),
+            fetch=False,
+        )
+        accepted += 1
+
+    delete_cache("stats:full")
+    return {
+        "status": "success",
+        "accepted": accepted,
     }
 
 
@@ -1503,6 +1574,27 @@ async def get_stats_full():
             "WHERE created_at >= NOW() - INTERVAL '30 days' "
             "GROUP BY delivery_kind"
         )
+        suggestion_surface_rows = db.execute(
+            "SELECT surface, "
+            "COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, "
+            "COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows "
+            "FROM suggestion_surface_events "
+            "WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "GROUP BY surface"
+        )
+        suggestion_kind_rows = db.execute(
+            "SELECT suggestion_kind, "
+            "COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, "
+            "COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, "
+            "COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals "
+            "FROM suggestion_surface_events "
+            "WHERE created_at >= NOW() - INTERVAL '30 days' "
+            "AND COALESCE(suggestion_kind, '') != '' "
+            "GROUP BY suggestion_kind"
+        )
 
         result = {
             "total_articles": total,
@@ -1525,6 +1617,8 @@ async def get_stats_full():
                 top_followed_sources,
                 tracking_stats_row,
                 tracking_performance_rows,
+                suggestion_surface_rows,
+                suggestion_kind_rows,
             ),
         }
 

@@ -6,14 +6,20 @@ import {
   buildDeliveryDigest,
   buildPersonalizedClusters,
   createDefaultOnboardingState,
+  createDefaultSuggestionAnalytics,
   createEmptyProfile,
   dismissOnboarding,
   exportSyncPayload,
+  getSuggestionConversionSummary,
   getOnboardingProgress,
   hasPersonalizationSignal,
   loadDeliveryPreferences,
+  loadSuggestionAnalytics,
   loadSyncToken,
   mergeSyncPayload,
+  recordSuggestionDismiss,
+  recordSuggestionFollow,
+  recordSuggestionImpressions,
   recordClusterView,
   saveDeliveryPreferences,
   saveSyncToken,
@@ -254,4 +260,42 @@ test('buildFollowRecommendations omits already followed repeated topics and sour
   const recommendations = buildFollowRecommendations(profile, 3);
   assert.deepEqual(recommendations.topics, []);
   assert.deepEqual(recommendations.sources, []);
+});
+
+test('suggestion analytics stores deduplicated impressions and follow conversions by surface', () => {
+  const storage = makeStorage();
+
+  recordSuggestionImpressions('home_rail', [
+    { kind: 'topic', value: 'Политика' },
+    { kind: 'source', value: 'Телма' },
+  ], storage);
+  recordSuggestionImpressions('home_rail', [
+    { kind: 'topic', value: 'Политика' },
+    { kind: 'source', value: 'Телма' },
+  ], storage);
+  recordSuggestionFollow('home_rail', 'topic', 'Политика', storage);
+
+  const analytics = loadSuggestionAnalytics(storage);
+  assert.equal(analytics.surfaces.home_rail.topic.impressions, 1);
+  assert.equal(analytics.surfaces.home_rail.source.impressions, 1);
+  assert.equal(analytics.surfaces.home_rail.topic.follows, 1);
+
+  const summary = getSuggestionConversionSummary(storage);
+  assert.equal(summary.surfaces[0].surface, 'home_rail');
+  assert.equal(summary.surfaces[0].impressions, 2);
+  assert.equal(summary.surfaces[0].follows, 1);
+  assert.equal(summary.totals.by_kind.topic.follows, 1);
+  assert.equal(summary.totals.by_kind.source.impressions, 1);
+});
+
+test('suggestion analytics tracks dismissals and starts from empty defaults', () => {
+  const storage = makeStorage();
+  assert.deepEqual(createDefaultSuggestionAnalytics().surfaces, {});
+
+  recordSuggestionDismiss('onboarding', storage);
+  const summary = getSuggestionConversionSummary(storage);
+
+  assert.equal(summary.surfaces[0].surface, 'onboarding');
+  assert.equal(summary.surfaces[0].dismissals, 1);
+  assert.equal(summary.totals.dismissals, 1);
 });

@@ -5,6 +5,8 @@ import {
   buildFollowRecommendations,
   hasPersonalizationSignal,
   loadReaderProfile,
+  recordSuggestionImpressions,
+  sendSuggestionEvents,
 } from '../lib/personalization.js';
 
 export default function HomeRailSuggestionsIsland() {
@@ -18,6 +20,22 @@ export default function HomeRailSuggestionsIsland() {
   const suggestions = useMemo(() => buildFollowRecommendations(profile, 2), [profile]);
   const followedCount = (profile?.followedTopics || []).length + (profile?.followedSources || []).length;
   const show = suggestions.topics.length + suggestions.sources.length > 0 && (!hasPersonalizationSignal(profile) || followedCount < 4);
+
+  useEffect(() => {
+    if (!show) return;
+    const result = recordSuggestionImpressions('home_rail', [
+      ...suggestions.topics.map((item) => ({ kind: 'topic', value: item.value })),
+      ...suggestions.sources.map((item) => ({ kind: 'source', value: item.value })),
+    ]);
+    sendSuggestionEvents(
+      result.recorded.map((item) => ({
+        surface: 'home_rail',
+        eventType: 'impression',
+        suggestionKind: item.kind,
+        value: item.value,
+      }))
+    );
+  }, [show, suggestions]);
 
   if (!show) {
     return null;
@@ -46,6 +64,7 @@ export default function HomeRailSuggestionsIsland() {
               kind="topic"
               value={item.value}
               label={`тема: ${item.value}`}
+              analyticsSurface="home_rail"
               onChanged={() => setRefreshKey((value) => value + 1)}
             />
           </div>
@@ -62,6 +81,7 @@ export default function HomeRailSuggestionsIsland() {
               kind="source"
               value={item.value}
               label={`извор: ${item.value}`}
+              analyticsSurface="home_rail"
               onChanged={() => setRefreshKey((value) => value + 1)}
             />
           </div>

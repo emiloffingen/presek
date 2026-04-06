@@ -450,6 +450,8 @@ def build_editor_analytics_payload(
     top_source_rows=None,
     tracking_stats_row=None,
     tracking_performance_rows=None,
+    suggestion_surface_rows=None,
+    suggestion_kind_rows=None,
 ):
     profile_stats_row = profile_stats_row or {}
     delivery_stats_row = delivery_stats_row or {}
@@ -489,6 +491,72 @@ def build_editor_analytics_payload(
         reverse=True,
     )
 
+    suggestion_kind_performance = []
+    for row in suggestion_kind_rows or []:
+        suggestion_kind = str(row.get("suggestion_kind") or "").strip()
+        if not suggestion_kind:
+            continue
+        impressions = int(row.get("impressions") or 0)
+        follows = int(row.get("follows") or 0)
+        dismissals = int(row.get("dismissals") or 0)
+        suggestion_kind_performance.append({
+            "suggestion_kind": suggestion_kind,
+            "label": {
+                "topic": "Теми",
+                "source": "Извори",
+            }.get(suggestion_kind, suggestion_kind),
+            "impressions": impressions,
+            "follows": follows,
+            "dismissals": dismissals,
+            "conversion_rate": round((follows / impressions) * 100, 1) if impressions else 0.0,
+        })
+    suggestion_kind_performance.sort(
+        key=lambda item: (
+            item["conversion_rate"],
+            item["follows"],
+            item["impressions"],
+            item["label"],
+        ),
+        reverse=True,
+    )
+
+    suggestion_surface_performance = []
+    for row in suggestion_surface_rows or []:
+        surface = str(row.get("surface") or "").strip()
+        if not surface:
+            continue
+        impressions = int(row.get("impressions") or 0)
+        follows = int(row.get("follows") or 0)
+        dismissals = int(row.get("dismissals") or 0)
+        topic_follows = int(row.get("topic_follows") or 0)
+        source_follows = int(row.get("source_follows") or 0)
+        suggestion_surface_performance.append({
+            "surface": surface,
+            "label": {
+                "onboarding": "Почетен водич",
+                "home_rail": "Почетна десна колона",
+                "cluster": "Кластер страница",
+                "topic": "Тема страница",
+                "for_you": "За Вас",
+                "settings": "Поставки",
+            }.get(surface, surface),
+            "impressions": impressions,
+            "follows": follows,
+            "dismissals": dismissals,
+            "topic_follows": topic_follows,
+            "source_follows": source_follows,
+            "conversion_rate": round((follows / impressions) * 100, 1) if impressions else 0.0,
+        })
+    suggestion_surface_performance.sort(
+        key=lambda item: (
+            item["conversion_rate"],
+            item["follows"],
+            item["impressions"],
+            item["label"],
+        ),
+        reverse=True,
+    )
+
     return {
         "synced_profiles": int(profile_stats_row.get("synced_profiles") or 0),
         "active_profiles_7d": int(profile_stats_row.get("active_profiles_7d") or 0),
@@ -507,6 +575,8 @@ def build_editor_analytics_payload(
         "open_rate_7d": round((opens_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
         "click_rate_7d": round((clicks_7d / sends_7d) * 100, 1) if sends_7d else 0.0,
         "delivery_kind_performance": delivery_kind_performance,
+        "suggestion_surface_performance": suggestion_surface_performance,
+        "suggestion_kind_performance": suggestion_kind_performance,
         "top_followed_topics": [
             {
                 "topic": str(row.get("topic") or "").strip(),

@@ -375,6 +375,14 @@ def test_fastapi_stats_full_includes_editor_analytics():
             {"delivery_kind": "breaking", "sends": 10, "opens": 7, "clicks": 3},
             {"delivery_kind": "morning", "sends": 20, "opens": 10, "clicks": 2},
         ],
+        [
+            {"surface": "cluster", "impressions": 20, "follows": 5, "dismissals": 1, "topic_follows": 3, "source_follows": 2},
+            {"surface": "settings", "impressions": 10, "follows": 1, "dismissals": 0, "topic_follows": 1, "source_follows": 0},
+        ],
+        [
+            {"suggestion_kind": "topic", "impressions": 18, "follows": 5, "dismissals": 1},
+            {"suggestion_kind": "source", "impressions": 12, "follows": 1, "dismissals": 0},
+        ],
     ]
 
     with patch.object(api_fast, "db", mock_db), \
@@ -389,6 +397,40 @@ def test_fastapi_stats_full_includes_editor_analytics():
     assert data["editor_analytics"]["top_followed_sources"][0]["source"] == "MIA"
     assert data["editor_analytics"]["delivery_kind_performance"][0]["delivery_kind"] == "breaking"
     assert data["editor_analytics"]["delivery_kind_performance"][0]["click_rate"] == 30.0
+    assert data["editor_analytics"]["suggestion_surface_performance"][0]["surface"] == "cluster"
+    assert data["editor_analytics"]["suggestion_kind_performance"][0]["suggestion_kind"] == "topic"
+
+
+def test_fastapi_suggestion_event_save_records_rows():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {"exists": 1}
+    payload = {
+        "token": "sync-token-123",
+        "clientId": "reader_abc123",
+        "events": [
+            {
+                "surface": "cluster",
+                "eventType": "impression",
+                "suggestionKind": "topic",
+                "value": "Политика",
+            },
+            {
+                "surface": "cluster",
+                "eventType": "follow",
+                "suggestionKind": "topic",
+                "value": "Политика",
+            },
+        ],
+    }
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast, "delete_cache"):
+        data = asyncio.run(api_fast.save_suggestion_events(_FakeRequest(payload)))
+
+    assert data["status"] == "success"
+    assert data["accepted"] == 2
+    assert mock_db.execute.call_count == 2
 
 
 def test_fastapi_delivery_track_records_event_and_redirects():

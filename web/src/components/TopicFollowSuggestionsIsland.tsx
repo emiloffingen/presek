@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
-import { loadReaderProfile } from '../lib/personalization.js';
+import { loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
 
 type TopicSuggestion = {
   topic: string;
@@ -55,6 +55,21 @@ export default function TopicFollowSuggestionsIsland({
     };
   }, [profile, currentTopic, relatedTopics, strongSources]);
 
+  useEffect(() => {
+    const result = recordSuggestionImpressions('topic', [
+      ...suggestions.topics.map((item) => ({ kind: 'topic', value: item.topic })),
+      ...suggestions.sources.map((item) => ({ kind: 'source', value: item.source })),
+    ]);
+    sendSuggestionEvents(
+      result.recorded.map((item) => ({
+        surface: 'topic',
+        eventType: 'impression',
+        suggestionKind: item.kind,
+        value: item.value,
+      }))
+    );
+  }, [suggestions]);
+
   if (suggestions.topics.length === 0 && suggestions.sources.length === 0) {
     return null;
   }
@@ -82,6 +97,7 @@ export default function TopicFollowSuggestionsIsland({
               kind="topic"
               value={item.topic}
               label={`тема: ${item.topic}`}
+              analyticsSurface="topic"
               onChanged={() => setRefreshKey((value) => value + 1)}
             />
           </div>
@@ -98,6 +114,7 @@ export default function TopicFollowSuggestionsIsland({
               kind="source"
               value={item.source}
               label={`извор: ${item.source}`}
+              analyticsSurface="topic"
               onChanged={() => setRefreshKey((value) => value + 1)}
             />
           </div>

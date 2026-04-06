@@ -345,6 +345,21 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_sync_created ON delivery_tracking_events(sync_token, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_event_kind_created ON delivery_tracking_events(event_type, delivery_kind, created_at DESC)")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS suggestion_surface_events (
+                    id SERIAL PRIMARY KEY,
+                    sync_token TEXT REFERENCES synced_reader_profiles(sync_token) ON DELETE SET NULL,
+                    client_id TEXT,
+                    surface TEXT NOT NULL,
+                    suggestion_kind TEXT,
+                    event_type TEXT NOT NULL,
+                    value TEXT DEFAULT '',
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_created ON suggestion_surface_events(created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_surface_kind ON suggestion_surface_events(surface, suggestion_kind, event_type, created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,

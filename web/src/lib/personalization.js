@@ -4,6 +4,23 @@ const MAX_FOLLOWED = 12;
 const DELIVERY_KEY = 'presek_delivery_prefs_v1';
 const SYNC_TOKEN_KEY = 'presek_sync_token_v1';
 const ONBOARDING_KEY = 'presek_onboarding_v1';
+const SUGGESTION_ANALYTICS_KEY = 'presek_suggestion_analytics_v1';
+const CLIENT_ID_KEY = 'presek_client_id_v1';
+const MAX_SUGGESTION_IMPRESSION_KEYS = 240;
+
+const SUGGESTION_SURFACE_LABELS = {
+  onboarding: 'Почетен водич',
+  home_rail: 'Почетна десна колона',
+  cluster: 'Кластер страница',
+  topic: 'Тема страница',
+  for_you: 'За Вас',
+  settings: 'Поставки',
+};
+
+const SUGGESTION_KIND_LABELS = {
+  topic: 'Теми',
+  source: 'Извори',
+};
 
 function normalizeValue(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -28,6 +45,227 @@ function safeParse(raw) {
   }
 }
 
+function todayStamp() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeSurface(surface) {
+  return normalizeValue(surface).toLowerCase().replace(/[^a-z0-9_:-]+/g, '_');
+}
+
+function createSuggestionBucket() {
+  return {
+    impressions: 0,
+    follows: 0,
+    dismissals: 0,
+  };
+}
+
+function normalizeSuggestionKind(kind) {
+  return kind === 'source' ? 'source' : 'topic';
+}
+
+function normalizeSuggestionEventType(eventType) {
+  const clean = normalizeValue(eventType).toLowerCase();
+  return ['impression', 'follow', 'dismiss'].includes(clean) ? clean : '';
+}
+
+function createKindSummary(kind, bucket) {
+  const impressions = bucket?.impressions || 0;
+  const follows = bucket?.follows || 0;
+  const dismissals = bucket?.dismissals || 0;
+  return {
+    kind,
+    label: SUGGESTION_KIND_LABELS[kind] || kind,
+    impressions,
+    follows,
+    dismissals,
+    conversion_rate: impressions > 0 ? Number(((follows / impressions) * 100).toFixed(1)) : 0,
+  };
+}
+
+export function createDefaultSuggestionAnalytics() {
+  return {
+    surfaces: {},
+    impressionKeys: [],
+  };
+}
+
+export function loadSuggestionAnalytics(storage = globalThis?.localStorage) {
+  if (!storage) return createDefaultSuggestionAnalytics();
+  const parsed = safeParse(storage.getItem(SUGGESTION_ANALYTICS_KEY));
+  const next = createDefaultSuggestionAnalytics();
+  next.surfaces = parsed?.surfaces && typeof parsed.surfaces === 'object' ? parsed.surfaces : {};
+  next.impressionKeys = Array.isArray(parsed?.impressionKeys) ? parsed.impressionKeys : [];
+  return next;
+}
+
+export function saveSuggestionAnalytics(analytics, storage = globalThis?.localStorage) {
+  const normalized = createDefaultSuggestionAnalytics();
+  normalized.surfaces = analytics?.surfaces && typeof analytics.surfaces === 'object' ? analytics.surfaces : {};
+  normalized.impressionKeys = Array.isArray(analytics?.impressionKeys)
+    ? analytics.impressionKeys.slice(-MAX_SUGGESTION_IMPRESSION_KEYS)
+    : [];
+  if (storage) {
+    storage.setItem(SUGGESTION_ANALYTICS_KEY, JSON.stringify(normalized));
+  }
+  return normalized;
+}
+
+function ensureSurfaceBuckets(analytics, surface) {
+  if (!analytics.surfaces[surface]) {
+    analytics.surfaces[surface] = {
+      topic: createSuggestionBucket(),
+      source: createSuggestionBucket(),
+    };
+  }
+  for (const kind of ['topic', 'source']) {
+    if (!analytics.surfaces[surface][kind]) {
+      analytics.surfaces[surface][kind] = createSuggestionBucket();
+    }
+  }
+  return analytics.surfaces[surface];
+}
+
+export function recordSuggestionImpressions(surface, suggestions, storage = globalThis?.localStorage) {
+  const cleanSurface = normalizeSurface(surface);
+  if (!storage || !cleanSurface) return { analytics: loadSuggestionAnalytics(storage), recorded: [] };
+  const items = (Array.isArray(suggestions) ? suggestions : [])
+    .map((item) => ({
+      kind: normalizeSuggestionKind(item?.kind),
+      value: normalizeValue(item?.value),
+    }))
+    .filter((item) => item.value);
+
+  if (items.length === 0) {
+    return { analytics: loadSuggestionAnalytics(storage), recorded: [] };
+  }
+
+  const stamp = todayStamp();
+  const analytics = loadSuggestionAnalytics(storage);
+  const surfaceBuckets = ensureSurfaceBuckets(analytics, cleanSurface);
+  const knownKeys = new Set(analytics.impressionKeys || []);
+  const recorded = [];
+
+  for (const item of items) {
+    const dedupeKey = `${stamp}:${cleanSurface}:${item.kind}:${item.value}`;
+    if (knownKeys.has(dedupeKey)) continue;
+    knownKeys.add(dedupeKey);
+    analytics.impressionKeys.push(dedupeKey);
+    surfaceBuckets[item.kind].impressions += 1;
+    recorded.push(item);
+  }
+
+  analytics.impressionKeys = analytics.impressionKeys.slice(-MAX_SUGGESTION_IMPRESSION_KEYS);
+  return { analytics: saveSuggestionAnalytics(analytics, storage), recorded };
+}
+
+export function recordSuggestionFollow(surface, kind, value, storage = globalThis?.localStorage) {
+  const cleanSurface = normalizeSurface(surface);
+  const cleanValue = normalizeValue(value);
+  if (!storage || !cleanSurface || !cleanValue) return { analytics: loadSuggestionAnalytics(storage), recorded: false };
+  const analytics = loadSuggestionAnalytics(storage);
+  const surfaceBuckets = ensureSurfaceBuckets(analytics, cleanSurface);
+  surfaceBuckets[normalizeSuggestionKind(kind)].follows += 1;
+  return { analytics: saveSuggestionAnalytics(analytics, storage), recorded: true };
+}
+
+export function recordSuggestionDismiss(surface, storage = globalThis?.localStorage) {
+  const cleanSurface = normalizeSurface(surface);
+  if (!storage || !cleanSurface) return { analytics: loadSuggestionAnalytics(storage), recorded: false };
+  const analytics = loadSuggestionAnalytics(storage);
+  const surfaceBuckets = ensureSurfaceBuckets(analytics, cleanSurface);
+  surfaceBuckets.topic.dismissals += 1;
+  surfaceBuckets.source.dismissals += 1;
+  return { analytics: saveSuggestionAnalytics(analytics, storage), recorded: true };
+}
+
+export function sendSuggestionEvents(events, storage = globalThis?.localStorage) {
+  const fetchImpl = globalThis?.fetch;
+  if (!storage || typeof fetchImpl !== 'function') return;
+
+  const cleanEvents = (Array.isArray(events) ? events : [])
+    .map((item) => ({
+      surface: normalizeSurface(item?.surface),
+      eventType: normalizeSuggestionEventType(item?.eventType),
+      suggestionKind: normalizeSuggestionKind(item?.suggestionKind),
+      value: normalizeValue(item?.value).slice(0, 160),
+    }))
+    .filter((item) => item.surface && item.eventType)
+    .map((item) => ({
+      ...item,
+      suggestionKind: item.eventType === 'dismiss' ? '' : item.suggestionKind,
+    }));
+
+  if (cleanEvents.length === 0) return;
+
+  fetchImpl('/api/profile/suggestion-event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: loadSyncToken(storage),
+      clientId: getOrCreateClientId(storage),
+      events: cleanEvents,
+    }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+export function getSuggestionConversionSummary(storage = globalThis?.localStorage) {
+  const analytics = loadSuggestionAnalytics(storage);
+  const surfaces = Object.entries(analytics.surfaces || {})
+    .map(([surface, buckets]) => {
+      const topic = createKindSummary('topic', buckets?.topic);
+      const source = createKindSummary('source', buckets?.source);
+      const impressions = topic.impressions + source.impressions;
+      const follows = topic.follows + source.follows;
+      const dismissals = Math.max(topic.dismissals, source.dismissals);
+      return {
+        surface,
+        label: SUGGESTION_SURFACE_LABELS[surface] || surface,
+        impressions,
+        follows,
+        dismissals,
+        conversion_rate: impressions > 0 ? Number(((follows / impressions) * 100).toFixed(1)) : 0,
+        by_kind: [topic, source],
+      };
+    })
+    .filter((item) => item.impressions > 0 || item.follows > 0 || item.dismissals > 0)
+    .sort((left, right) => {
+      if (right.follows !== left.follows) return right.follows - left.follows;
+      if (right.impressions !== left.impressions) return right.impressions - left.impressions;
+      return left.label.localeCompare(right.label, 'mk');
+    });
+
+  const totals = {
+    impressions: 0,
+    follows: 0,
+    dismissals: 0,
+    by_kind: {
+      topic: createKindSummary('topic', createSuggestionBucket()),
+      source: createKindSummary('source', createSuggestionBucket()),
+    },
+  };
+
+  for (const surface of surfaces) {
+    totals.impressions += surface.impressions;
+    totals.follows += surface.follows;
+    totals.dismissals += surface.dismissals;
+    for (const item of surface.by_kind) {
+      const bucket = totals.by_kind[item.kind];
+      bucket.impressions += item.impressions;
+      bucket.follows += item.follows;
+      bucket.dismissals += item.dismissals;
+    }
+  }
+
+  totals.by_kind.topic = createKindSummary('topic', totals.by_kind.topic);
+  totals.by_kind.source = createKindSummary('source', totals.by_kind.source);
+  totals.conversion_rate = totals.impressions > 0 ? Number(((totals.follows / totals.impressions) * 100).toFixed(1)) : 0;
+
+  return { surfaces, totals };
+}
+
 export function createEmptyProfile() {
   return {
     recentClusters: [],
@@ -39,6 +277,15 @@ export function createEmptyProfile() {
 export function loadSyncToken(storage = globalThis?.localStorage) {
   if (!storage) return '';
   return normalizeValue(storage.getItem(SYNC_TOKEN_KEY));
+}
+
+export function getOrCreateClientId(storage = globalThis?.localStorage) {
+  if (!storage) return '';
+  const existing = normalizeValue(storage.getItem(CLIENT_ID_KEY));
+  if (existing) return existing;
+  const next = `reader_${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36).slice(-6)}`;
+  storage.setItem(CLIENT_ID_KEY, next);
+  return next;
 }
 
 export function saveSyncToken(token, storage = globalThis?.localStorage) {

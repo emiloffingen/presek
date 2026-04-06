@@ -6,6 +6,8 @@ import {
   buildPersonalizedClusters,
   hasPersonalizationSignal,
   loadReaderProfile,
+  recordSuggestionImpressions,
+  sendSuggestionEvents,
 } from '../lib/personalization.js';
 
 function getSummary(cluster: any) {
@@ -32,6 +34,22 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   }, [clusters]);
 
   const recommendations = buildFollowRecommendations(profile, 2);
+
+  useEffect(() => {
+    if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return;
+    const result = recordSuggestionImpressions('for_you', [
+      ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
+      ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
+    ]);
+    sendSuggestionEvents(
+      result.recorded.map((item) => ({
+        surface: 'for_you',
+        eventType: 'impression',
+        suggestionKind: item.kind,
+        value: item.value,
+      }))
+    );
+  }, [recommendations]);
 
   if (!hasSignals || items.length === 0) {
     return null;
@@ -94,6 +112,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
                   kind="topic"
                   value={item.value}
                   label={`тема: ${item.value}`}
+                  analyticsSurface="for_you"
                   onChanged={() => setProfile(loadReaderProfile())}
                 />
               </div>
@@ -110,6 +129,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
                   kind="source"
                   value={item.value}
                   label={`извор: ${item.value}`}
+                  analyticsSurface="for_you"
                   onChanged={() => setProfile(loadReaderProfile())}
                 />
               </div>
