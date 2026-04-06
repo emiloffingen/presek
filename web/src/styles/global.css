@@ -35,6 +35,10 @@
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+    --color-link: var(--link);
+    --color-link-hover: var(--link-hover);
+    --color-surface-soft: var(--surface-soft);
+    --color-surface-strong: var(--surface-strong);
 
     --radius-sm: 0px;
     --radius-md: 0px;
@@ -54,11 +58,15 @@
         --border: #e5e7eb;
         --muted: #f9fafb;
         --muted-foreground: #6b7280;
+        --surface-soft: #f6f6f4;
+        --surface-strong: #eceeea;
 
         /* 10% Accent: Trust Blue (Primary Brand) */
         --nyt-accent: #1e40af; /* Deep Trust Blue */
         --nyt-red: #b91c1c;    /* Subdued Journalist Red (used sparingly) */
         --nyt-black: #111827;
+        --link: #1e3a8a;
+        --link-hover: #1d4ed8;
         
         /* NYT Smart Colors */
         --nyt-gray-100: #f3f4f6;
@@ -82,31 +90,35 @@
 
     .dark {
         /* Core Palette (Dark - APCA Compliant) */
-        --background: #111827;      /* Dark Gray instead of pure black */
-        --foreground: #f3f4f6;      /* Off-white instead of pure white */
-        --card: #1f2937;
+        --background: #17161a;
+        --foreground: #f4f1ea;
+        --card: #211f24;
         --card-foreground: #f3f4f6;
-        --primary: #f3f4f6;
-        --primary-foreground: #111827;
-        --secondary: #1f2937;
-        --secondary-foreground: #d1d5db;
-        --muted: #1f2937;
-        --muted-foreground: #9ca3af;
-        --accent: #ffffff;
-        --accent-foreground: #111827;
-        --border: #374151;
-        --input: #374151;
-        --ring: #ffffff;
+        --primary: #f4f1ea;
+        --primary-foreground: #17161a;
+        --secondary: #2b2830;
+        --secondary-foreground: #ddd7cd;
+        --muted: #221f26;
+        --muted-foreground: #a69fae;
+        --accent: #f4f1ea;
+        --accent-foreground: #17161a;
+        --border: #433f49;
+        --input: #433f49;
+        --ring: #93c5fd;
+        --surface-soft: #1c1a20;
+        --surface-strong: #26232b;
 
         /* NYT Smart Colors (Dark Mode - Automated Inversion) */
-        --nyt-black: #f3f4f6;      
-        --nyt-gray-100: #1f2937;   
-        --nyt-gray-200: #374151;   
-        --nyt-gray-300: #4b5563;   
-        --nyt-gray-500: #9ca3af;   
-        --nyt-gray-600: #d1d5db;   
-        --nyt-accent: #60a5fa;     
-        --nyt-red: #f87171;        
+        --nyt-black: #f4f1ea;
+        --nyt-gray-100: #211f24;
+        --nyt-gray-200: #322e37;
+        --nyt-gray-300: #4a4550;
+        --nyt-gray-500: #a69fae;
+        --nyt-gray-600: #ddd7cd;
+        --nyt-accent: #7ab2ff;
+        --nyt-red: #ff8c7d;
+        --link: #9bc2ff;
+        --link-hover: #c2daff;
     }
 }
 
@@ -122,6 +134,8 @@
     letter-spacing: 0.003em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    background-image:
+      linear-gradient(to bottom, color-mix(in srgb, var(--surface-soft) 46%, transparent), transparent 22rem);
   }
   html {
     @apply scroll-smooth;
@@ -130,6 +144,23 @@
     @apply font-serif font-black tracking-tight leading-none;
     letter-spacing: -0.025em;
     text-wrap: balance;
+  }
+  a {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.14em;
+    transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+  }
+  a:hover {
+    color: var(--link-hover);
+  }
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 }
 
@@ -160,6 +191,16 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     line-height: 1.15;
+}
+
+.theme-card {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%);
+}
+
+.theme-card-strong {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 72%, var(--surface-strong) 28%);
 }
 
 .onboarding-starters {
@@ -198,7 +239,7 @@
     gap: 0.2rem;
     padding: 0.7rem 0.8rem;
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 92%, var(--accent) 8%);
+    background: color-mix(in srgb, var(--card) 90%, var(--surface-soft) 10%);
     text-align: left;
     cursor: pointer;
     transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
@@ -296,7 +337,7 @@
     gap: 0.7rem;
     padding: 0.9rem;
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
+    background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
 }
 
 .for-you-follow-kicker {
@@ -339,6 +380,90 @@
     text-transform: uppercase;
 }
 
+.editorial-shell {
+    max-width: 78rem;
+    margin: 0 auto;
+}
+
+.editorial-header {
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.editorial-headline {
+    margin: 0 0 0.9rem;
+    font-size: clamp(2.35rem, 1.8rem + 1.8vw, 4.5rem);
+    line-height: 0.96;
+}
+
+.editorial-intro {
+    margin: 0;
+    max-width: 58ch;
+    font-family: var(--font-nyt-body);
+    font-size: 1.04rem;
+    line-height: 1.68;
+    color: var(--secondary-foreground);
+    text-wrap: pretty;
+}
+
+.editorial-page-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.editorial-main,
+.editorial-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.editorial-panel {
+    padding: 1.35rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
+}
+
+.editorial-panel-strong {
+    padding: 1.35rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 68%, var(--surface-strong) 32%);
+}
+
+.editorial-panel-title {
+    margin: 0 0 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.editorial-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.82rem 1rem;
+    border: 1px solid var(--nyt-accent);
+    background: var(--nyt-accent);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.editorial-action:hover {
+    background: transparent;
+    color: var(--nyt-accent);
+}
+
 .prose-nyt {
     max-width: 68ch;
     font-family: var(--font-nyt-body);
@@ -370,6 +495,13 @@
     }
     .lead-story {
         grid-column: span 2;
+    }
+}
+
+@media (min-width: 960px) {
+    .editorial-page-grid {
+        grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.92fr);
+        gap: 2rem;
     }
 }
 
@@ -445,7 +577,7 @@
 .rail-card {
     padding: 1.35rem;
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+    background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
 }
 
 .sources-section-title,
@@ -514,7 +646,7 @@
     display: block;
     padding: 1rem;
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+    background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
     text-decoration: none;
     color: inherit;
 }

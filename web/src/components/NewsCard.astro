@@ -154,7 +154,7 @@ function getTimeStr(dateStr: string) {
 		letter-spacing: -0.022em;
 		margin-bottom: 0.55rem;
 		color: var(--foreground);
-        font-weight: 800;
+        font-weight: 760;
         text-wrap: balance;
 	}
 
@@ -168,7 +168,7 @@ function getTimeStr(dateStr: string) {
 	}
 
     .headline-link:hover .headline {
-        color: var(--color-nyt-gray-600);
+        color: var(--link-hover);
     }
 
 	.summary {
@@ -219,6 +219,7 @@ function getTimeStr(dateStr: string) {
 		text-transform: uppercase;
 		padding: 0.08rem 0.32rem;
 		border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
 	}
 
 	.source-trust-high {
@@ -241,6 +242,7 @@ function getTimeStr(dateStr: string) {
         color: var(--nyt-red);
         border: 1px solid var(--nyt-red);
         padding: 0 4px;
+        background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
     }
 
 	.significance-label {

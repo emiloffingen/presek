@@ -207,10 +207,12 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         color: var(--foreground);
         text-decoration: none;
         opacity: 0.9;
+        border-bottom: 1px solid transparent;
     }
 
     .topbar-link:hover {
         color: var(--nyt-accent);
+        border-color: currentColor;
     }
 
     .topbar-link-accent {
@@ -357,6 +359,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         border-color: currentColor;
     }
 
+    .masthead-nav-link.is-active {
+        color: var(--nyt-accent);
+    }
+
     @media (max-width: 720px) {
         .topbar-row {
             grid-template-columns: 1fr;
@@ -401,7 +407,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             padding: 0.5rem 0.7rem;
             border: 1px solid var(--border);
             border-radius: 999px;
-            background: var(--background);
+            background: color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%);
             text-align: center;
             line-height: 1.1;
         }
@@ -456,6 +462,11 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             border-radius: 999px;
             font-size: 0.68rem;
             line-height: 1.1;
+            background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
+        }
+
+        .masthead-nav-link.is-active {
+            background: color-mix(in srgb, var(--nyt-accent) 16%, var(--card) 84%);
         }
     }
 
