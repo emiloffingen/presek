@@ -141,6 +141,23 @@ def _normalize_recent_clusters(items):
     return rows
 
 
+def _looks_macedonian_headline(text: str) -> bool:
+    value = str(text or "").strip()
+    if not value:
+        return False
+
+    cyrillic = sum(1 for ch in value if "\u0400" <= ch <= "\u04FF")
+    latin = sum(1 for ch in value if ("A" <= ch <= "Z") or ("a" <= ch <= "z"))
+
+    # Macedonian headlines should read primarily in Cyrillic. Allow a few
+    # Latin brand names or acronyms, but reject mixed or fully Latin titles.
+    if cyrillic < 8:
+        return False
+    if latin == 0:
+        return True
+    return cyrillic >= (latin * 2)
+
+
 def _normalize_delivery_preferences(prefs):
     prefs = prefs or {}
     return {
@@ -1017,6 +1034,8 @@ async def get_international_curated(limit: int = 6):
 
         clusters = defaultdict(list)
         for row in rows:
+            if not _looks_macedonian_headline(row.get("title")):
+                continue
             row["reading_time"] = calculate_reading_time(row.get("description", ""))
             clusters[row["cluster_id"]].append(row)
 

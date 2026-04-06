@@ -478,8 +478,8 @@ def test_fastapi_international_curated_returns_ranked_clusters():
     mock_db = MagicMock()
     mock_db.execute.side_effect = [
         [
-            {"cluster_id": "aaa111", "title": "A1", "description": "D1", "source": "Reuters"},
-            {"cluster_id": "bbb222", "title": "B1", "description": "D2", "source": "BBC"},
+            {"cluster_id": "aaa111", "title": "Прва меѓународна приказна со преведен наслов", "description": "D1", "source": "Reuters"},
+            {"cluster_id": "bbb222", "title": "Втора светска приказна со јасен македонски наслов", "description": "D2", "source": "BBC"},
         ],
         [{"cluster_id": "aaa111", "representative_image": "https://img/1.webp"}],
     ]
@@ -497,6 +497,40 @@ def test_fastapi_international_curated_returns_ranked_clusters():
     assert len(data["clusters"]) == 2
     assert data["clusters"][0]["cluster_id"] == "aaa111"
     assert data["clusters"][0]["has_synthesis"] is True
+
+
+def test_fastapi_international_curated_filters_non_macedonian_titles():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute.side_effect = [
+        [
+            {
+                "cluster_id": "bad111",
+                "title": "Potresna objava u Денес Showu: Imam Parkinsonovu bolest.",
+                "description": "Mixed language",
+                "source": "Jutarnji",
+            },
+            {
+                "cluster_id": "good222",
+                "title": "Алкохолизмот во литературата: Кога нивото на алкохолот во крвта се намалува",
+                "description": "Translated",
+                "source": "FAZ",
+            },
+        ],
+        [{"cluster_id": "good222", "representative_image": "https://img/2.webp"}],
+    ]
+    mock_db.get_synthesis_ids.return_value = []
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast, "cached_response", return_value=None), \
+         patch.object(api_fast, "rank_articles_in_cluster", side_effect=lambda arts: arts), \
+         patch.object(api_fast, "score_cluster", return_value=1), \
+         patch.object(api_fast, "calculate_reading_time", return_value=1), \
+         patch.object(api_fast, "set_cache"):
+        data = asyncio.run(api_fast.get_international_curated(limit=4))
+
+    assert data["status"] == "success"
+    assert [cluster["cluster_id"] for cluster in data["clusters"]] == ["good222"]
 
 
 def test_fastapi_chat_cluster_reuses_cluster_answer_payload():

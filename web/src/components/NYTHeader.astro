@@ -407,7 +407,8 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             padding: 0.5rem 0.7rem;
             border: 1px solid var(--border);
             border-radius: 999px;
-            background: color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%);
+            background: color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%);
+            box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--foreground) 6%, transparent);
             text-align: center;
             line-height: 1.1;
         }
@@ -462,11 +463,41 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             border-radius: 999px;
             font-size: 0.68rem;
             line-height: 1.1;
-            background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
+            background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
+            box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--foreground) 5%, transparent);
         }
 
         .masthead-nav-link.is-active {
             background: color-mix(in srgb, var(--nyt-accent) 16%, var(--card) 84%);
+        }
+
+        :global(.dark) .topbar-center {
+            border-top-color: color-mix(in srgb, var(--border) 82%, var(--nyt-accent) 18%);
+        }
+
+        :global(.dark) .topbar-link {
+            border-color: color-mix(in srgb, var(--border) 78%, var(--nyt-accent) 22%);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background) 8%), color-mix(in srgb, var(--card) 82%, var(--background) 18%));
+            box-shadow:
+                0 0.55rem 1.25rem color-mix(in srgb, black 24%, transparent),
+                inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+        }
+
+        :global(.dark) .masthead-nav-link {
+            border-color: color-mix(in srgb, var(--border) 74%, var(--nyt-accent) 26%);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--card) 90%, var(--background) 10%), color-mix(in srgb, var(--card) 80%, var(--background) 20%));
+            box-shadow:
+                0 0.5rem 1.1rem color-mix(in srgb, black 22%, transparent),
+                inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+        }
+
+        :global(.dark) .masthead-nav-link.is-active {
+            color: color-mix(in srgb, var(--nyt-accent) 80%, white 20%);
+            border-color: color-mix(in srgb, var(--nyt-accent) 58%, var(--border) 42%);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--nyt-accent) 28%, var(--card) 72%), color-mix(in srgb, var(--nyt-accent) 18%, var(--card) 82%));
         }
     }
 
