@@ -1,6 +1,6 @@
 import pytest
 from categories import (
-    validate_category, detect_category, detect_subcategory,
+    validate_category, detect_category, detect_subcategory, detect_topic,
     detect_country, normalize_headline, ALLOWED_CATEGORIES
 )
 
@@ -89,6 +89,17 @@ class TestDetectCategory:
     def test_balkan_before_svet(self):
         assert detect_category("Србија и Русија") == "Балкан"
 
+    def test_category_scores_richer_group_over_stray_keyword(self):
+        result = detect_category(
+            "Европска комисија во Брисел расправа за нов пакет",
+            description="Самит на Европската унија со нови мерки и комисијата."
+        )
+        assert result == "Европа"
+
+    def test_category_understands_common_english_geo_terms(self):
+        assert detect_category("White House announces new tariffs") == "Америка"
+        assert detect_category("European Commission opens new Brussels talks") == "Европа"
+
 
 # ── detect_subcategory ────────────────────────────────────────────
 
@@ -121,6 +132,17 @@ class TestDetectCountry:
     def test_unknown_default(self):
         assert detect_country("Unknown Source") == "🇲🇰"
         assert detect_country("") == "🇲🇰"
+
+
+class TestDetectTopic:
+    def test_detects_topic_from_macedonian_keywords(self):
+        assert detect_topic("Владата усвои нов буџет и мерки") == "Економија"
+        assert detect_topic("Протести и дебата во парламентот") == "Политика"
+
+    def test_detects_topic_from_common_english_news_words(self):
+        assert detect_topic("Government announces election summit") == "Политика"
+        assert detect_topic("Markets react to inflation and tariffs") == "Економија"
+        assert detect_topic("New software and AI chip launch") == "Технологија"
 
 
 # ── normalize_headline ────────────────────────────────────────────

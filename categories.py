@@ -20,6 +20,29 @@ THEMATIC_TOPICS = {
 }
 
 
+def _keyword_matches(text: str, keyword: str) -> bool:
+    keyword = str(keyword or "").strip().lower()
+    if not keyword:
+        return False
+    if len(keyword) <= 4 and " " not in keyword:
+        return bool(re.search(r"(?<!\w)" + re.escape(keyword), text))
+    return keyword in text
+
+
+def _score_keyword_group(text: str, keywords: list[str]) -> float:
+    score = 0.0
+    for kw in sorted(keywords, key=len, reverse=True):
+        if not _keyword_matches(text, kw):
+            continue
+        if " " in kw:
+            score += 2.2
+        elif len(kw) >= 8:
+            score += 1.4
+        else:
+            score += 1.0
+    return score
+
+
 def validate_category(category: str) -> str:
     """Return category if it is in the allowed list, else default to 'Македонија'."""
     return category if category in ALLOWED_CATEGORIES else "Македонија"
@@ -57,6 +80,7 @@ CATEGORIES = [
         "трамп", "харис", "бајден", "пентагон",
         "волстрит", "силиконска долина",
         "канада", "канадски", "отава", "торонто", "тридо",
+        "united states", "washington", "white house", "congress",
     ]),
 
     # Европа comes after Германија — Germany keywords are already caught above.
@@ -80,6 +104,7 @@ CATEGORIES = [
         "романија", "букурешт",
         "швајцарија", "женева", "берн",
         "еврозона", "шенген", "европски совет",
+        "european union", "european commission", "brussels",
     ]),
 
     ("Свет", [
@@ -102,6 +127,7 @@ CATEGORIES = [
         "тероризам", "санкции", "мигранти", "бегалци",
         "воена операција", "воени сили",
         "ракетен напад", "ракети",
+        "middle east", "united nations", "nato",
     ]),
 ]
 
@@ -117,16 +143,15 @@ def detect_category(title: str, description: str = "", source: str = "",
     if forced_category and forced_category in ALLOWED_CATEGORIES:
         return forced_category
     text = (title + " " + description).lower()
+    best_category = None
+    best_score = 0.0
     for cat_name, keywords in CATEGORIES:
-        # Check longer phrases first — more specific phrases win
-        for kw in sorted(keywords, key=len, reverse=True):
-            # Short single-word keywords need a word-start boundary to avoid
-            # false substring matches (e.g. "кина" inside "прекинато").
-            if len(kw) <= 4 and " " not in kw:
-                if re.search(r"(?<!\w)" + re.escape(kw), text):
-                    return cat_name
-            elif kw in text:
-                return cat_name
+        score = _score_keyword_group(text, keywords)
+        if score > best_score:
+            best_category = cat_name
+            best_score = score
+    if best_category:
+        return best_category
     return "Македонија"
 
 
@@ -215,28 +240,33 @@ TOPICS = [
         "криптовалути", "биткоин", "блокчеин", "вселена", "ракета", "наса",
         "иновација", "робот", "чип", "процесор", "мајкрософт", "гугл", "епл",
         "фејсбук", "мета", "твитер", "х", "социјални мрежи", "гејминг",
+        "software", "hardware", "ai", "artificial intelligence", "iphone", "android",
     ]),
     ("Економија", [
         "економија", "финансии", "буџет", "инфлација", "каматна стапка",
         "берза", "акции", "инвестиции", "банка", "бруто домашен производ", "бдп",
         "данок", "плата", "пензија", "пазар", "цени", "нафта", "енергија",
         "гас", "криза", "бизнис", "компанија", "корпорација", "трговија",
+        "inflation", "tariffs", "market", "markets", "economy", "budget",
     ]),
     ("Здравје", [
         "здравје", "медицина", "болест", "вирус", "пандемија", "вакцина",
         "лекари", "болница", "клиника", "терапија", "здравствен", "лекови",
         "симптоми", "дијагноза", "исхрана", "витамини", "фитнес", "ментално",
+        "hospital", "virus", "vaccine", "health",
     ]),
     ("Забава", [
         "забава", "музика", "филм", "кино", "холивуд", "актер", "актерка",
         "пејач", "пејачка", "концерт", "албум", "сцена", "култура", "уметност",
         "театар", "изложба", "мода", "стил", "ѕвезда", "славни", "шоу",
+        "movie", "music", "film", "show",
     ]),
     ("Политика", [
         "политика", "влада", "министер", "претседател", "парламент", "собрание",
         "избори", "гласање", "партија", "сдсм", "вмро-дпмНЕ", "дуи", "левица",
         "закон", "реформа", "дипломатија", "амбасадор", "протест", "дебата",
         "самит", "договор", "лидер", "политички", "државен",
+        "government", "president", "parliament", "minister", "election", "summit",
     ]),
 ]
 
@@ -244,13 +274,15 @@ TOPICS = [
 def detect_topic(title: str, description: str = "") -> str:
     """Detect thematic topic (Sport, Tech, Economy, etc.). Defaults to 'Вести'."""
     text = (title + " " + description).lower()
+    best_topic = None
+    best_score = 0.0
     for topic_name, keywords in TOPICS:
-        for kw in sorted(keywords, key=len, reverse=True):
-            if len(kw) <= 4 and " " not in kw:
-                if re.search(r"(?<!\w)" + re.escape(kw), text):
-                    return topic_name
-            elif kw in text:
-                return topic_name
+        score = _score_keyword_group(text, keywords)
+        if score > best_score:
+            best_topic = topic_name
+            best_score = score
+    if best_topic:
+        return best_topic
     return "Вести"
 
 
