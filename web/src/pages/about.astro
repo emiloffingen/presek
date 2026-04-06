@@ -43,12 +43,25 @@ import Footer from '../components/Footer.astro';
                 </div>
 
                 <aside class="about-rail">
+                    <div class="rail-card rail-card-accent">
+                        <h2 class="rail-card-title">Следете Нè На Телеграм</h2>
+                        <p class="rail-copy">За побрз пристап до Пресек и дневните развои, приклучете се на нашиот Телеграм канал.</p>
+                        <a
+                            href="https://t.me/+lt4m-3TGQH9iZTAy"
+                            target="_blank"
+                            rel="noreferrer"
+                            class="rail-link"
+                        >
+                            Отвори Телеграм Канал
+                        </a>
+                    </div>
+
                     <div class="rail-card">
                         <h2 class="rail-card-title">Што Прави Пресек?</h2>
                         <p class="rail-copy">Ги собира вестите, ги групира сродните приказни и ви помага побрзо да споредите што е факт, што е нагласок и што недостасува.</p>
                     </div>
 
-                    <div class="rail-card rail-card-accent">
+                    <div class="rail-card">
                         <h2 class="rail-card-title">Главна Намера</h2>
                         <p class="rail-copy">Помалку шум, повеќе контекст. Помалку расфрлани наслови, повеќе јасност за тоа што навистина го обликува денот.</p>
                     </div>
@@ -139,6 +152,25 @@ import Footer from '../components/Footer.astro';
         font-size: 1rem;
         line-height: 1.7;
         color: var(--secondary-foreground);
+    }
+
+    .rail-link {
+        display: inline-flex;
+        margin-top: 1rem;
+        padding: 0.65rem 0.9rem;
+        border: 1px solid var(--foreground);
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--foreground);
+    }
+
+    .rail-link:hover {
+        background: var(--foreground);
+        color: var(--background);
     }
 
     .rail-card-accent {

@@ -45,6 +45,7 @@ const fallbackItems = [
 
 const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
 const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Култура'];
+const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
 <header class="site-layout topbar">
@@ -71,6 +72,10 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
                 <a href="/stats" class="nyt-section-label topbar-link">
                     <span class="label-full">Медиумски Пулс</span>
                     <span class="label-short">Пулс</span>
+                </a>
+                <a href={telegramUrl} class="nyt-section-label topbar-link topbar-link-accent" target="_blank" rel="noreferrer">
+                    <span class="label-full">Телеграм Канал</span>
+                    <span class="label-short">Телеграм</span>
                 </a>
             </div>
             <ThemeIsland client:load />
@@ -205,6 +210,10 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
     }
 
     .topbar-link:hover {
+        color: var(--nyt-accent);
+    }
+
+    .topbar-link-accent {
         color: var(--nyt-accent);
     }
 
