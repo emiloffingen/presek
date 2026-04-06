@@ -906,11 +906,26 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
 
 def rank_articles_in_cluster(arts):
     """Within a cluster, put the most credible source first."""
+    all_titles = [str(article.get("title") or "") for article in arts]
+
     def sort_key(article):
         source_weight = get_source_effective_weight(article["source"])
         created_at = _coerce_datetime(article.get("created_at")) or datetime.datetime.min
-        description_bonus = 0.1 if str(article.get("description") or "").strip() else 0.0
-        return (source_weight + description_bonus, created_at)
+        description_text = str(article.get("description") or "").strip()
+        description_bonus = 0.12 if description_text else 0.0
+        evidence_bonus = min(0.16, len(description_text.split()) * 0.006) if description_text else 0.0
+        title = str(article.get("title") or "")
+        corroboration_bonus = 0.0
+        if title:
+            corroboration_bonus = min(
+                0.18,
+                sum(
+                    0.06
+                    for other_title in all_titles
+                    if other_title != title and _cluster_title_overlap(title, other_title) >= 0.3
+                )
+            )
+        return (source_weight + description_bonus + evidence_bonus + corroboration_bonus, created_at)
 
     return sorted(arts, key=sort_key, reverse=True)
 
