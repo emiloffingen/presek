@@ -3,7 +3,7 @@ import { MousePointerClick, Sparkles } from 'lucide-react';
 import { getSuggestionConversionSummary } from '../lib/personalization.js';
 
 export default function ReaderSuggestionAnalyticsIsland() {
-  const [summary, setSummary] = useState(() => getSuggestionConversionSummary());
+  const [summary, setSummary] = useState<any>(() => getSuggestionConversionSummary());
 
   useEffect(() => {
     setSummary(getSuggestionConversionSummary());

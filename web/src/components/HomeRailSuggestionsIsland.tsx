@@ -48,7 +48,7 @@ export default function HomeRailSuggestionsIsland() {
     <section className="rail-module rail-suggestions">
       <div className="rail-suggestions-head">
         <h3 className="rail-title">
-          <Sparkles size={14} /> СЛЕДЕТЕ ПОАМЕТНО
+          <Sparkles size={14} /> СЛЕДЕТЕ ПОПАМЕТНО
         </h3>
         <p className="rail-note">
           Неколку брзи следења се доволни `За Вас`, известувањата и неделниот преглед да станат многу попрецизни.

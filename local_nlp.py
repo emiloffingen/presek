@@ -8,19 +8,30 @@ from trending import STOPWORDS
 # Simple Macedonian Lexicon for Sentiment (Positive / Negative)
 # This is a starter list that can be expanded.
 SENTIMENT_LEXICON = {
-    # Positive
+    # Positive - General & Politics
     "добро": 1.0, "одлично": 2.0, "супер": 2.0, "успех": 1.5, "напредок": 1.5,
-    "победа": 2.0, "развој": 1.0, "раст": 1.0, "стабилност": 1.0, "безбедност": 1.0,
+    "победа": 2.0, "развој": 1.0, "раст": 1.0, "стабилност": 1.5, "безбедност": 1.5,
     "хуманост": 1.5, "правда": 1.5, "слобода": 1.5, "демократија": 1.0, "поддршка": 1.0,
     "помош": 1.0, "решение": 1.5, "просперитет": 2.0, "мир": 2.0, "радост": 1.5,
+    "инвестиции": 1.5, "договор": 1.0, "соработка": 1.0, "реформи": 1.0, "награда": 1.5,
+    "подобрување": 1.5, "спасени": 2.0, "изградба": 1.0, "позитивно": 1.5,
+    "солидарност": 1.5, "донација": 1.5, "триумф": 2.0, "зголемување": 1.0,
+    "европски": 0.5, "стандард": 1.0, "интеграција": 1.0, "надеж": 1.5, "одобрено": 1.0,
     
-    # Negative
-    "лошо": -1.0, "катастрофа": -2.0, "криза": -1.5, "проблем": -1.0, "скандал корупција": -2.0,
-    "напад": -1.5, "војна": -2.0, "смрт": -2.0, "убиство": -2.0, "затвор": -1.5,
-    "кражба": -1.5, "криминал": -2.0, "криминалци": -2.0, "корупција": -2.0, "неуспех": -1.5,
-    "патека": -0.5, "порано": -0.5, "порака": -0.5, "порази": -1.5, "поразот": -1.5,
-    "загуба": -1.5, "критикува": -1.0, "осудува": -1.5, "неправда": -1.5, "хаос": -1.5,
-    "смртност": -2.0, "болест": -1.5, "штета": -1.5, "закана": -1.5, "бомба": -2.0,
+    # Negative - Crime, War, Crisis
+    "лошо": -1.0, "катастрофа": -2.0, "криза": -1.5, "проблем": -1.0,
+    "скандал": -2.0, "корупција": -2.0, "напад": -1.5, "војна": -2.0, 
+    "смрт": -2.0, "убиство": -2.0, "затвор": -1.5, "кражба": -1.5, 
+    "криминал": -2.0, "криминалци": -2.0, "неуспех": -1.5, "патека": -0.5, 
+    "порано": -0.5, "порака": -0.5, "порази": -1.5, "поразот": -1.5,
+    "загуба": -1.5, "критикува": -1.0, "осудува": -1.5, "неправда": -1.5, 
+    "хаос": -1.5, "смртност": -2.0, "болест": -1.5, "штета": -1.5, "закана": -1.5, 
+    "бомба": -2.0, "несреќа": -2.0, "пожар": -1.5, "судир": -1.5, "повредени": -1.5,
+    "жртви": -2.0, "уапсен": -1.0, "уапсени": -1.0, "притвор": -1.0, "осомничен": -1.0,
+    "насилство": -2.0, "престрелка": -1.5, "тензии": -1.5, "судење": -0.5,
+    "инфлација": -1.5, "поскапување": -1.0, "штрајк": -1.0, "протест": -1.0,
+    "оставка": -1.0, "трагедија": -2.0, "уценува": -1.5, "опаснo": -1.5, "опасност": -1.5,
+    "загуби": -1.5, "колапс": -2.0, "пад": -1.0, "намалување": -0.5, "влошување": -1.5,
 }
 
 TAG_NOISE_WORDS = {
@@ -50,12 +61,20 @@ LOCAL_TRANSLATION_PHRASES = [
     (r"\bprime minister\b", "премиерот"),
     (r"\bforeign minister\b", "министерот за надворешни работи"),
     (r"\bfinance minister\b", "министерот за финансии"),
+    (r"\bdefense minister\b", "министерот за одбрана"),
+    (r"\binterior minister\b", "министерот за внатрешни работи"),
+    (r"\bhealth minister\b", "министерот за здравство"),
     (r"\bceasefire\b", "прекин на огнот"),
     (r"\binterest rates?\b", "каматни стапки"),
     (r"\bcentral bank\b", "централната банка"),
     (r"\bwhite house\b", "Белата куќа"),
     (r"\beuropean union\b", "Европската унија"),
     (r"\bunited nations\b", "Обединетите нации"),
+    (r"\bsecurity council\b", "Советот за безбедност"),
+    (r"\bhuman rights\b", "човекови права"),
+    (r"\bclimate change\b", "климатски промени"),
+    (r"\bsupreme court\b", "Врховниот суд"),
+    (r"\belection commission\b", "изборната комисија"),
 ]
 
 LOCAL_TRANSLATION_WORDS = {
@@ -70,6 +89,9 @@ LOCAL_TRANSLATION_WORDS = {
     "judge": "судијата",
     "election": "избори",
     "elections": "избори",
+    "voters": "гласачите",
+    "vote": "гласање",
+    "campaign": "кампања",
     "tariff": "царина",
     "tariffs": "царини",
     "sanction": "санкција",
@@ -78,12 +100,15 @@ LOCAL_TRANSLATION_WORDS = {
     "attacks": "напади",
     "protest": "протест",
     "protests": "протести",
+    "strike": "штрајк",
+    "strikes": "штрајкови",
     "package": "пакет",
     "packages": "пакети",
     "measure": "мерка",
     "measures": "мерки",
     "budget": "буџетот",
     "economy": "економијата",
+    "inflation": "инфлација",
     "market": "пазарот",
     "markets": "пазарите",
     "company": "компанијата",
@@ -91,6 +116,7 @@ LOCAL_TRANSLATION_WORDS = {
     "deal": "договор",
     "agreement": "договор",
     "talks": "разговори",
+    "negotiations": "преговори",
     "support": "поддршка",
     "aid": "помош",
     "bill": "законски предлог",
@@ -122,6 +148,16 @@ LOCAL_TRANSLATION_WORDS = {
     "latest": "најнов",
     "official": "официјален",
     "officials": "официјални претставници",
+    "citizens": "граѓани",
+    "crisis": "криза",
+    "war": "војна",
+    "peace": "мир",
+    "military": "војската",
+    "troops": "трупи",
+    "leader": "лидерот",
+    "leaders": "лидерите",
+    "meeting": "средба",
+    "summit": "самит",
 }
 
 LOCAL_TRANSLATION_MONTHS = {
@@ -304,20 +340,37 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
 
     return filter_cluster_tags(sources or [], limit=min(top_n, 4))
 
+# Negation words in Macedonian
+NEGATIONS = {"не", "ниту", "никако", "без", "престана", "прекина", "против"}
+
 def analyze_sentiment_locally(text):
     """
     Returns a score between -2.0 and 2.0 based on keyword frequency.
+    Improved with negation detection.
     """
     if not text: return 0.0
     
-    words = re.findall(r'[а-шА-Ш\w]{3,}', text.lower())
-    score = 0
+    words = re.findall(r'[А-Яа-яЀ-ӿ\w]{2,}', text.lower())
+    score = 0.0
     matches = 0
+    negate_next = False
     
     for w in words:
+        if w in NEGATIONS:
+            negate_next = True
+            continue
+            
         if w in SENTIMENT_LEXICON:
-            score += SENTIMENT_LEXICON[w]
+            val = SENTIMENT_LEXICON[w]
+            if negate_next:
+                val = -val * 0.8 # Flip and slightly damp
+                negate_next = False
+            
+            score += val
             matches += 1
+        else:
+            # Reset negation if no sentiment word follows immediately
+            negate_next = False
             
     if matches == 0: return 0.0
     
@@ -332,28 +385,35 @@ def extract_keyphrases_locally(text, top_n=5):
     if not text: return []
     
     # Simple word counting excluding stopwords and source-brand noise
-    words = re.findall(r'[а-шА-ШA-Za-z\w]{4,}', text.lower())
+    words = re.findall(r'[А-Яа-яЀ-ӿ\w]{4,}', text.lower())
     words = [w for w in words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
     
-    # Multi-word candidate search (Bigrams)
+    # Multi-word candidate search (Bigrams & Trigrams)
     raw_sentences = re.split(r'[.!?]\s*', text.lower())
     bigrams = []
+    trigrams = []
     for sent in raw_sentences:
-        sent_words = re.findall(r'[а-шА-ШA-Za-z\w]{3,}', sent)
+        sent_words = re.findall(r'[А-Яа-яЀ-ӿ\w]{3,}', sent)
         sent_words = [w for w in sent_words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]
         for i in range(len(sent_words) - 1):
             bigrams.append(f"{sent_words[i]} {sent_words[i+1]}")
+        for i in range(len(sent_words) - 2):
+            trigrams.append(f"{sent_words[i]} {sent_words[i+1]} {sent_words[i+2]}")
             
     word_counts = Counter(words)
     bigram_counts = Counter(bigrams)
+    trigram_counts = Counter(trigrams)
     
-    # Combine and score (bias towards bigrams)
+    # Combine and score (bias towards bigrams and trigrams)
     candidates = {}
     for word, count in word_counts.items():
         candidates[word] = count
     for bigram, count in bigram_counts.items():
         if count > 1: # Only if it appears twice
             candidates[bigram] = count * 2.5
+    for trigram, count in trigram_counts.items():
+        if count > 0: # Even once might be significant if words are rare, but let's stick to count > 0, score * 3.5
+            candidates[trigram] = count * 3.5
             
     phrase_candidates = []
     for phrase in _extract_capitalized_phrases(text):
@@ -476,11 +536,10 @@ def _is_noisy_summary_sentence(sentence):
         return True
     return False
 
-def summarize_locally(text, sentence_count=3):
+def summarize_locally(text, sentence_count=3, topic=None):
     """
     Non-AI summarizer for news-like text.
-    It is still fully local, but prefers early, information-dense,
-    title-aligned sentences and penalizes noisy fragments.
+    Improved with Topic-Awareness.
     """
     if not text or len(text) < 100:
         return text
@@ -503,6 +562,17 @@ def summarize_locally(text, sentence_count=3):
     for word in word_freq:
         word_freq[word] = word_freq[word] / max_freq
 
+    # Topic-specific keywords to boost
+    topic_boost_words = set()
+    if topic == "Економија":
+        topic_boost_words = {"денари", "евра", "процент", "милиони", "буџет", "плата", "цени", "инфлација", "берза"}
+    elif topic == "Политика":
+        topic_boost_words = {"министер", "претседател", "собрание", "закон", "партија", "лидер", "влада", "избори"}
+    elif topic == "Спорт":
+        topic_boost_words = {"натпревар", "гол", "победа", "првенство", "клуб", "лига", "фудбал", "кошарка"}
+    elif topic == "Криминал":
+        topic_boost_words = {"полиција", "апсење", "убиство", "суд", "обвинителство", "затвор", "напад"}
+
     sentence_scores = {}
     for i, sentence in enumerate(sentences):
         sentence_words = _sentence_tokens(sentence)
@@ -511,17 +581,24 @@ def summarize_locally(text, sentence_count=3):
 
         score = sum(word_freq.get(word, 0) for word in sentence_words)
         overlap = len(set(sentence_words) & title_like_terms)
-        number_bonus = 0.4 if _extract_number_tokens(sentence) else 0.0
-        lead_bonus = 1.6 / (i + 1)
+        number_bonus = 0.5 if _extract_number_tokens(sentence) else 0.0
+        lead_bonus = 1.8 / (i + 1)
         density_bonus = min(len(sentence_words), 24) / 24
+        proper_noun_bonus = len(_extract_capitalized_phrases(sentence)) * 0.3
+        
+        # Topic alignment bonus
+        topic_bonus = 0.0
+        if topic_boost_words:
+            matched_topic_words = len(set(sentence_words) & topic_boost_words)
+            topic_bonus = matched_topic_words * 0.5
 
         if _is_noisy_summary_sentence(sentence):
-            score *= 0.2
+            score *= 0.1
 
-        if len(sentence) > 260:
-            score *= 0.7
+        if len(sentence) > 280:
+            score *= 0.6
 
-        score += overlap * 0.45 + number_bonus + lead_bonus + density_bonus
+        score += (overlap * 0.5) + number_bonus + lead_bonus + density_bonus + proper_noun_bonus + topic_bonus
         sentence_scores[i] = score
 
     top_indices = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:sentence_count]
@@ -543,10 +620,10 @@ def summarize_locally(text, sentence_count=3):
     return " ".join(summary)
 
 
-def summarize_article_fallback(title, description=None):
+def summarize_article_fallback(title, description=None, topic=None):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
-    summary = summarize_locally(text, sentence_count=2).strip()
+    summary = summarize_locally(text, sentence_count=2, topic=topic).strip()
     summary = re.sub(r'^[⚪🟢🔴]\s*', '', summary, flags=re.UNICODE)
     summary = re.sub(r'#[^\s#]+', '', summary)
     summary = re.sub(r'\s+', ' ', summary).strip()

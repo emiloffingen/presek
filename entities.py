@@ -5,7 +5,6 @@ import re
 from collections import Counter
 
 # Common Macedonian entities (VIPs) for exact matching
-# This list can be expanded over time.
 KNOWN_ENTITIES = {
     # Politics - People
     "Христијан Мицкоски": "PERSON",
@@ -46,6 +45,11 @@ KNOWN_ENTITIES = {
     "Камала Харис": "PERSON",
     "Илон Маск": "PERSON",
     "Папата Франциск": "PERSON",
+    "Бенјамин Нетанјаху": "PERSON",
+    "Роберт Фицо": "PERSON",
+    "Ентони Блинкен": "PERSON",
+    "Ким Џонг Ун": "PERSON",
+    "Мајк Пенс": "PERSON",
 
     # Organizations - Domestic
     "Влада": "ORG",
@@ -71,6 +75,16 @@ KNOWN_ENTITIES = {
     "КХЛ": "ORG",
     "Судски совет": "ORG",
     "Уставен суд": "ORG",
+    "Апелационен суд": "ORG",
+    "Кривичен суд": "ORG",
+    "Државна изборна комисија": "ORG",
+    "ДИК": "ORG",
+    "Државен завод за статистика": "ORG",
+    "ДЗС": "ORG",
+    "Агенција за храна и ветеринарство": "ORG",
+    "ЕСМ": "ORG",
+    "МЕПСО": "ORG",
+    "ЕВН": "ORG",
 
     # Organizations - International
     "Европска Унија": "ORG",
@@ -90,35 +104,38 @@ KNOWN_ENTITIES = {
     "Пентагон": "ORG",
     "ЦИА": "ORG",
     "ФБИ": "ORG",
+    "УНИЦЕФ": "ORG",
+    "ЕЦБ": "ORG",
+    "ОБСЕ": "ORG",
+    "ХАМАС": "ORG",
+    "ОПЕК": "ORG",
 }
 
 # Regex for detecting Macedonian proper nouns (starts with capital letter)
-# Matches words like "Мицкоски", "Скопје", "Македонија"
-# Excludes common words at the start of sentences by looking at surrounding context.
-PROPER_NOUN_PATTERN = re.compile(r'\b([А-Ш][а-ш]{2,}(?:\s+[А-Ш][а-ш]{2,})?)\b')
+PROPER_NOUN_PATTERN = re.compile(r"(?:\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b(?:[\s-]+\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b){0,2})")
 
 # Words to ignore (common words that are capitalized at start of sentence)
 IGNORE_WORDS = {
     "Денеска", "Утре", "Вчера", "Повеќе", "Според", "Како", "Ова", "Оваа", "Тоа",
     "Сите", "Нема", "Има", "Беше", "Биде", "Овие", "Никој", "Секој", "Веста",
     "Информација", "Медиумите", "Новите", "Повторно", "Наместо", "Додека",
-    "Поради", "Заради", "Иако", "Освен", "Меѓутоа", "Сепак", "Затоа",
+    "Поради", "Заради", "Иако", "Освен", "Меѓутоа", "Сепак", "Затоа", "Но", "Значи",
+    "Кога", "Само", "Она", "Исто", "Истото", "Токму", "Тогаш", "Спротивно",
+    "Впрочем", "Меѓу", "Преку", "Во", "На", "За", "Од", "Со", "До",
+    "Не", "Да", "Дали", "Прво", "Првиот", "Два", "Три", "Потоа", "После",
 }
 
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
     Updates the global knowledge graph with seen entities and their relationships.
-    Includes local sentiment analysis if context_text is provided.
     """
     from database import db_manager as db
     from local_nlp import analyze_sentiment_locally
-    import json
 
     if not entities: return
 
     sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
 
-    # 1. Upsert Entities
     for ent in entities:
         sql = """
             INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
@@ -130,9 +147,7 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
         """
         db.execute(sql, (ent['name'], ent['type'], sentiment), fetch=False)
 
-    # 2. Build Relationships (Co-occurrence)
     if len(entities) > 1:
-        # Sort to ensure (A, B) is same as (B, A)
         sorted_names = sorted([e['name'] for e in entities])
         for i in range(len(sorted_names)):
             for j in range(i + 1, len(sorted_names)):
@@ -148,9 +163,7 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
 
 def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
     """
-    Extracts entities (PERSON, ORG) from text using a hybrid approach:
-    1. Exact matching against KNOWN_ENTITIES.
-    2. Regex heuristic for other proper nouns.
+    Extracts entities (PERSON, ORG) from text using a hybrid approach.
     """
     if not text:
         return []
@@ -162,25 +175,21 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
         if name in text:
             found[name] = etype
 
-    # 2. Regex heuristics for others if we have room
+    # 2. Heuristic extraction of capitalized phrases
     if len(found) < max_entities:
         candidates = PROPER_NOUN_PATTERN.findall(text)
-        # Filter candidates
         for c in candidates:
-            if len(found) >= max_entities + 3: # Get a few extra to pick the best
+            if len(found) >= max_entities + 5:
                 break
             if c in found or c in IGNORE_WORDS:
                 continue
-            # If it looks like a single common word, skip
             if len(c) < 4:
                 continue
             
-            # Simple heuristic: if it's not in KNOWN_ENTITIES but looks like a proper noun
-            # we default to a generic "ENTITY" or try to guess.
-            # For simplicity, we only add if it appears multiple times or is multi-word.
-            if " " in c: # Multi-word is likely a name/org
+            # Simple heuristic: multi-word phrases are likely ORG or PERSON
+            if " " in c:
                 found[c] = "ENTITY"
-            elif text.count(c) > 1: # Mentioned multiple times
+            elif text.count(c) > 1: # Repeated single proper noun
                 found[c] = "ENTITY"
 
     # Convert to requested format and limit

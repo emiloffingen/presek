@@ -14,7 +14,7 @@ from config import GOOGLE_API_KEY
 
 log = logging.getLogger("presek")
 
-EMBEDDING_MODEL = "gemini-embedding-001"
+EMBEDDING_MODEL = "text-embedding-004"
 EMBEDDING_DIM = 768
 EMBEDDING_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:batchEmbedContents"
 
@@ -32,13 +32,58 @@ def generate_embedding(text: str) -> list[float] | None:
 
 def generate_embeddings_batch(texts: list[str]) -> list[list[float] | None]:
     """
-    Returns None for all texts to force local TF-IDF clustering fallback.
-    Keeping the function signature for compatibility.
+    Generate embeddings for a list of texts using Google's Batch API.
     """
-    return [None] * len(texts)
+    if not GOOGLE_API_KEY or not texts:
+        return [None] * len(texts)
+
+    all_vectors = []
+    for i in range(0, len(texts), BATCH_SIZE):
+        chunk = texts[i : i + BATCH_SIZE]
+        vectors = _embed_chunk(chunk)
+        all_vectors.extend(vectors)
+        # Small delay to respect free-tier rate limits if needed
+        if len(texts) > BATCH_SIZE:
+            time.sleep(0.5)
+
+    return all_vectors
 
 
 def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
+    if not GOOGLE_API_KEY:
+        return [None] * len(texts)
+
+    requests = []
+    for text in texts:
+        # Truncate text to stay within model limits (~2048 tokens or ~10k chars)
+        truncated = str(text or "")[:2000]
+        requests.append({
+            "model": f"models/{EMBEDDING_MODEL}",
+            "content": {"parts": [{"text": truncated}]},
+            "taskType": "RETRIEVAL_DOCUMENT",
+            "outputDimensionality": EMBEDDING_DIM
+        })
+
+    payload = json.dumps({"requests": requests}).encode("utf-8")
+    url = f"{EMBEDDING_URL}?key={GOOGLE_API_KEY}"
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        embeddings = data.get("embeddings", [])
+        return [e.get("values") for e in embeddings]
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        log.warning(f"[embeddings] Batch error {e.code}: {body}")
+    except Exception as e:
+        log.warning(f"[embeddings] Unexpected error: {e}")
+
     return [None] * len(texts)
 
 
@@ -105,7 +150,7 @@ def generate_query_embedding(text: str) -> list[float] | None:
         }]
     }).encode("utf-8")
 
-    url = f"{EMBEDDING_URL}?key={GOOGLE_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:embedContent?key={GOOGLE_API_KEY}"
 
     try:
         req = urllib.request.Request(
@@ -116,9 +161,9 @@ def generate_query_embedding(text: str) -> list[float] | None:
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
-        embeddings = data.get("embeddings", [])
-        if embeddings:
-            return embeddings[0].get("values")
+        embedding = data.get("embedding", {})
+        if embedding:
+            return embedding.get("values")
     except Exception as e:
         log.warning(f"[embeddings] Query embedding error: {e}")
 

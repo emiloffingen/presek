@@ -58,7 +58,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
     >
       {thumbSrc && !thumbRight && (
         <div className="cluster-thumb-wrap">
-          <img src={thumbSrc} alt="" className="cluster-thumb" loading={isLead ? 'eager' : 'lazy'} />
+          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading={isLead ? 'eager' : 'lazy'} />
         </div>
       )}
       
@@ -104,7 +104,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
 
       {thumbSrc && thumbRight && (
         <div className="cluster-thumb-wrap">
-          <img src={thumbSrc} alt="" className="cluster-thumb" loading="lazy" />
+          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading="lazy" />
         </div>
       )}
     </article>

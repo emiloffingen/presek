@@ -469,7 +469,7 @@ def prune_db():
     from config import DB_RETAIN_DAYS
     interval = f"{int(DB_RETAIN_DAYS)} days"
     # Delete old articles
-    db_manager.execute(f"DELETE FROM articles WHERE created_at < NOW() - INTERVAL '{interval}'", fetch=False)
+    db_manager.execute("DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s", (interval,), fetch=False)
     
     # Clean up orphaned metadata/summaries (since we use logical cluster_ids instead of hard FKs)
     db_manager.execute("""

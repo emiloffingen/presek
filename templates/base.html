@@ -17,7 +17,26 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
-    <title>{% block title %}Пресек{% endblock %}</title>
+    <title>{% block title %}Пресек · Најважните вести на едно место{% endblock %}</title>
+    <meta name="description" content="{% block description %}Пресек е модерен македонски агрегатор на вести кој користи напредна јазична обработка (NLP) за да ги групира и сумира најважните настани од сите медиуми.{% endblock %}">
+    <meta name="keywords" content="вести, македонија, агрегатор, пресек, новини, актуелно, економија, спорт, политика">
+    <meta name="author" content="Presek.live">
+    <link rel="canonical" href="{{ request.url }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:title" content="{% block og_title %}Пресек · Дигитален преглед на вести{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Сите македонски вести на едно место, сумирани со помош на напредна јазична обработка (NLP).{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}/static/img/presek_emblem.png{% endblock %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.url }}">
+    <meta property="twitter:title" content="{% block tw_title %}Пресек · Вести{% endblock %}">
+    <meta property="twitter:description" content="{% block tw_description %}Најважните вести од Македонија и светот на едно место.{% endblock %}">
+    <meta property="twitter:image" content="{% block tw_image %}/static/img/presek_emblem.png{% endblock %}">
+
     <meta http-equiv="Cache-Control" content="no-transform">
     {{ vite_asset('style.css') }}
 
@@ -307,5 +326,7 @@
         }).catch(err => console.error('SW registration failed:', err));
       }
     </script>
+</body>
+</html>
 </body>
 </html>

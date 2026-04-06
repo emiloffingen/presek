@@ -404,10 +404,15 @@ def test_fastapi_stats_full_includes_editor_analytics():
         ],
     ]
 
+    mock_request = MagicMock()
+    mock_request.headers = {"X-Admin-Token": "test-token"}
+    mock_request.client.host = "127.0.0.1"
+
     with patch.object(api_fast, "db", mock_db), \
          patch.object(api_fast, "cached_response", return_value=None), \
-         patch.object(api_fast, "set_cache"):
-        data = asyncio.run(api_fast.get_stats_full())
+         patch.object(api_fast, "set_cache"), \
+         patch.dict(os.environ, {"PRESEK_ADMIN_TOKEN": "test-token"}):
+        data = asyncio.run(api_fast.get_stats_full(mock_request))
 
     assert data["editor_analytics"]["synced_profiles"] == 14
     assert data["editor_analytics"]["delivery_active"] == 5

@@ -35,30 +35,33 @@ const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString(
     day: 'numeric' 
 });
 
+function esc(s: string) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function formatBriefing(content: string) {
     if (!content) return "";
-    
-    // Simple markdown-ish to HTML conversion
+
     return content.split('\n').map(line => {
         const stripped = line.trim();
         if (!stripped) return '<div class="my-4"></div>';
-        
+
         if (line.startsWith('### ')) {
-            return `<h3 class="font-serif font-black text-2xl mt-8 mb-4 text-foreground border-b border-border pb-2">${line.substring(4)}</h3>`;
+            return `<h3 class="font-serif font-black text-2xl mt-8 mb-4 text-foreground border-b border-border pb-2">${esc(line.substring(4))}</h3>`;
         } else if (line.startsWith('## ')) {
-            return `<h2 class="font-serif font-black text-3xl mt-10 mb-6 text-foreground border-b-2 border-foreground pb-2">${line.substring(3)}</h2>`;
+            return `<h2 class="font-serif font-black text-3xl mt-10 mb-6 text-foreground border-b-2 border-foreground pb-2">${esc(line.substring(3))}</h2>`;
         } else if (line.startsWith('**') && line.endsWith('**')) {
-            return `<p class="font-black mt-6 mb-2 text-foreground uppercase text-xs tracking-widest">${line.substring(2, line.length - 2)}</p>`;
+            return `<p class="font-black mt-6 mb-2 text-foreground uppercase text-xs tracking-widest">${esc(line.substring(2, line.length - 2))}</p>`;
         } else if (line.startsWith('- ') || line.startsWith('• ')) {
             const item = line.substring(2);
             const parts = item.split(':');
             if (parts.length > 1) {
-                const label = parts.shift();
-                return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90"><strong>${label}:</strong>${parts.join(':')}</li>`;
+                const label = parts.shift()!;
+                return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90"><strong>${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
             }
-            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${item}</li>`;
+            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${esc(item)}</li>`;
         } else {
-            return `<p class="mb-4 text-lg leading-relaxed text-foreground/90">${line}</p>`;
+            return `<p class="mb-4 text-lg leading-relaxed text-foreground/90">${esc(line)}</p>`;
         }
     }).join('\n');
 }

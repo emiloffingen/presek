@@ -368,7 +368,7 @@ async def ingest_all_sources_async():
                 
                 if not cluster_id:
                     # find_or_create_cluster is currently synchronous
-                    cluster_id = clustering.find_or_create_cluster(display_title, recent_articles, embedding=emb, category=category)
+                    cluster_id = clustering.find_or_create_cluster(display_title, recent_articles, embedding=emb, category=category, source=c['source'])
                 
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]

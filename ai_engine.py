@@ -68,7 +68,7 @@ def _record_success(name: str):
 
 class AIProvider(ABC):
     @abstractmethod
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         pass
 
     @abstractmethod
@@ -101,42 +101,35 @@ class GeminiProvider(AIProvider):
         except Exception as e:
             log.warning(f"[gemini-stream] Error: {e}")
 
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not GOOGLE_API_KEY: return None
         
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GOOGLE_API_KEY}"
+        
+        # Topic-aware prompt enhancement for Gemini
+        if topic:
+            system = f"{system}\n\nФокус на тема: {topic}"
+
         payload = {
-            "system_instruction": {"parts": [{"text": system}]},
-            "contents": [{"parts": [{"text": prompt}]}],
+            "contents": [{"parts": [{"text": f"{system}\n\nInput:\n{prompt}"}]}],
             "generationConfig": {
                 "maxOutputTokens": max_tokens,
-                "temperature": 0.1
+                "temperature": 0.1 if json_mode else 0.2,
+                "responseMimeType": "application/json" if json_mode else "text/plain"
             }
         }
-        if json_mode: 
-            payload["generationConfig"]["responseMimeType"] = "application/json"
         
         try:
-            headers = {"Content-Type": "application/json"}
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                
-                if not data or "candidates" not in data or not data["candidates"]:
-                    return None
-                    
-                candidate = data["candidates"][0]
-                if "content" not in candidate or "parts" not in candidate["content"]:
-                    return None
-                    
-                return candidate["content"]["parts"][0]["text"].strip()
-        except urllib.error.HTTPError as e:
-            body = e.read().decode()
-            log.warning(f"[gemini] API Error {e.code}: {body}")
-            return None
+                data = json.loads(resp.read().decode())
+                return data['candidates'][0]['content']['parts'][0]['text']
         except Exception as e:
-            log.warning(f"[gemini] API Error: {e}")
-            return None
+            if hasattr(e, 'read'):
+                log.error(f"[gemini] API Error: {e.read().decode()}")
+            else:
+                log.error(f"[gemini] Error: {e}")
+        return None
 
 class OpenAICompatibleProvider(AIProvider):
     def __init__(self, name, key, url, model):
@@ -155,27 +148,29 @@ class OpenAICompatibleProvider(AIProvider):
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": max_tokens,
-            "temperature": 0.2,
             "stream": True
         }
-        headers = {"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
         try:
             async with httpx.AsyncClient() as client:
-                async with client.stream("POST", self.url, json=payload, headers=headers, timeout=60.0) as resp:
-                    async for line in resp.aiter_lines():
+                async with client.stream("POST", self.url, json=payload, headers={"Authorization": f"Bearer {self.key}"}, timeout=60.0) as response:
+                    async for line in response.aiter_lines():
                         if line.startswith("data: "):
-                            data_str = line[6:].strip()
+                            data_str = line[6:]
                             if data_str == "[DONE]": break
                             try:
                                 data = json.loads(data_str)
-                                delta = data['choices'][0]['delta'].get('content', '')
-                                if delta: yield delta
-                            except: continue
+                                content = data['choices'][0]['delta'].get('content', '')
+                                if content: yield content
+                            except: pass
         except Exception as e:
             log.warning(f"[{self.name}-stream] Error: {e}")
 
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not self.key: return None
+        
+        if topic:
+            system = f"{system}\n\nФокус на тема: {topic}"
+
         payload = {
             "model": self.model,
             "messages": [
@@ -183,21 +178,23 @@ class OpenAICompatibleProvider(AIProvider):
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": max_tokens,
-            "temperature": 0.1
+            "temperature": 0.1 if json_mode else 0.3
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
-        
-        try:
-            headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}"}
-            req = urllib.request.Request(self.url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            log.warning(f"[{self.name}] Error: {e}")
-            return None
 
+        try:
+            req = urllib.request.Request(
+                self.url, 
+                data=json.dumps(payload).encode(),
+                headers={"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=40) as resp:
+                data = json.loads(resp.read().decode())
+                return data['choices'][0]['message']['content']
+        except Exception as e:
+            log.error(f"[{self.name}] Error: {e}")
+        return None
 
 from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally
 
@@ -211,7 +208,7 @@ class LocalProvider(AIProvider):
                 yield word + ' '
                 await asyncio.sleep(0.01)
 
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         lowered_system = (system or "").lower()
         if "translate" in lowered_system or "превед" in lowered_system:
             return rewrite_to_macedonian_locally(prompt)
@@ -219,10 +216,10 @@ class LocalProvider(AIProvider):
             lines = prompt.split("\n")
             titles = [l.replace("- [", "").split("]:")[0] for l in lines if "]:" in l]
             main_text = "\n".join(lines)
-            summary = summarize_locally(main_text, sentence_count=4)
+            summary = summarize_locally(main_text, sentence_count=4, topic=topic)
             return f"Збирен извештај од {len(titles)} извори: {summary}"
         text = re.sub(r"^\s*summarize(?: the following)?\s*:\s*", "", prompt, flags=re.IGNORECASE).strip()
-        return summarize_article_fallback("", text)
+        return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
     "gemini":     GeminiProvider(),
@@ -237,14 +234,14 @@ PROVIDERS = {
 TASK_ROUTING = {
     "translation":  ["local"],
     "summarize":    ["local"],
-    "synthesis":    ["local"],
-    "daily_brief":  ["local"],
+    "synthesis":    ["mistral", "gemini", "local"],
+    "daily_brief":  ["mistral", "gemini", "local"],
     "default":      ["local"],
 }
 
 # --- Service Methods ---
 
-async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False):
+async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False, topic: str = None):
     from config import AI_DAILY_LIMIT
     from utils import redis_client
     
@@ -253,14 +250,14 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
     if not stream:
         try:
             if chain and chain[0] == "local":
-                res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+                res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode, topic=topic)
                 if res: return res, "local"
 
             count = redis_client.incr("ai:daily_calls")
             redis_client.expire("ai:daily_calls", 86400)
             if count > AI_DAILY_LIMIT:
                 if "local" in chain:
-                    res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+                    res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode, topic=topic)
                     if res:
                         return res, "local"
                 return None, "limit_reached"
@@ -269,13 +266,13 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
 
         for name in chain:
             if name == "local":
-                res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode)
+                res = PROVIDERS["local"].call(prompt, system, max_tokens, json_mode, topic=topic)
                 if res: return res, "local"
                 continue
             if _is_circuit_open(name): continue
             provider = PROVIDERS.get(name)
             if not provider: continue
-            result = provider.call(prompt, system, max_tokens, json_mode)
+            result = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
             if result:
                 _record_success(name)
                 return result, name
@@ -293,19 +290,18 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
             return provider.stream_call(prompt, system, max_tokens)
         return None
 
-def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False):
+def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Synchronous AI entrypoint used by the app and tests."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        return loop.run_until_complete(_call_ai_async(prompt, system, task_type, max_tokens, json_mode))
+        return loop.run_until_complete(_call_ai_async(prompt, system, task_type, max_tokens, json_mode, topic=topic))
     finally:
         loop.close()
 
-
-def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False):
+def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
-    return _call_ai(prompt, system, task_type, max_tokens, json_mode)
+    return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
 
 def clean_json_response(text: str) -> dict | str:
     if not text: return ""
@@ -335,180 +331,42 @@ def translate_to_macedonian(text: str) -> str | None:
                 return cleaned['summary']
             return str(cleaned)
     except Exception as e:
-        log.warning(f"[translate] Falling back to original text after translation error: {e}")
-        return rewrite_to_macedonian_locally(text)
+        log.error(f"[ai] Translation failed: {e}")
     return rewrite_to_macedonian_locally(text)
 
-
-def _is_private_ip(addr: str) -> bool:
+def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
+    """Generate an AI cover image for a cluster using Pollinations.ai."""
+    if not POLLINATIONS_API_KEY: return None
+    
+    clean_prompt = re.sub(r'[^\w\s]', '', prompt[:200])
+    # Enhanced prompt for news visuals
+    styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
+    encoded_prompt = urllib.parse.quote(styled_prompt)
+    
+    # URL for Pollinations.ai (Free/Fast)
+    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
+    
     try:
-        ip = ipaddress.ip_address(addr)
-        return (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        )
-    except ValueError:
-        return True
-
-
-def _resolve_public_ips(candidate_url: str) -> list[str]:
-    parsed = urllib.parse.urlparse(candidate_url)
-    hostname = (parsed.hostname or "").lower()
-    if not hostname:
-        raise ValueError("Blocked URL")
-    if hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
-        raise ValueError("Blocked URL")
-
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    resolved_infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-    safe_ips = []
-    for info in resolved_infos:
-        ip = info[4][0]
-        if not _is_private_ip(ip) and ip not in safe_ips:
-            safe_ips.append(ip)
-    if not safe_ips:
-        raise PermissionError("Blocked URL (Private/Reserved IP)")
-    return safe_ips
-
-
-def _peer_ip(response):
-    sock = None
-    raw = getattr(response, "raw", None)
-    if raw is not None:
-        connection = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
-        if connection is not None:
-            sock = getattr(connection, "sock", None)
-    if sock is None:
-        return None
-    try:
-        return sock.getpeername()[0]
-    except Exception:
-        return None
-
-
-def _download_safe_external_image(url: str, headers: dict[str, str], timeout: int = 15):
-    import requests
-
-    session = requests.Session()
-    current_url = url
-    response = None
-
-    for _ in range(4):
-        safe_ips = _resolve_public_ips(current_url)
-        response = session.get(
-            current_url,
-            headers=headers,
-            timeout=timeout,
-            stream=True,
-            verify=True,
-            allow_redirects=False,
-        )
-        peer_ip = _peer_ip(response)
-        if not peer_ip or peer_ip not in safe_ips:
-            response.close()
-            raise PermissionError("Blocked upstream target")
-        if 300 <= response.status_code < 400:
-            location = response.headers.get("Location")
-            response.close()
-            if not location:
-                raise ValueError("Invalid upstream redirect")
-            current_url = urllib.parse.urljoin(current_url, location)
-            if not re.match(r"^https?://", current_url):
-                raise ValueError("Invalid upstream redirect")
-            continue
-        return response
-
-    raise ValueError("Too many upstream redirects")
-
-def auto_summarize_top_clusters():
-    from tasks import summarize_article_task, synthesize_cluster_task
-    from utils import (
-        redis_client,
-        score_cluster_for_synthesis,
-        rank_articles_in_cluster,
-        assess_cluster_synthesis_freshness,
-    )
-    from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
-    from database import db_manager as db
-    try:
-        rows = db.execute("SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '1 day' ORDER BY created_at DESC LIMIT 500")
-        clusters_map = defaultdict(list)
-        for r in rows:
-            clusters_map[r["cluster_id"]].append(r)
-        ranked = []
-        for cid, arts in clusters_map.items():
-            sorted_arts = rank_articles_in_cluster(arts)
-            s = score_cluster_for_synthesis(sorted_arts)
-            ranked.append((cid, sorted_arts, s))
-        ranked.sort(key=lambda x: x[2], reverse=True)
-        summary_rows = db.execute(
-            "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)",
-            ([item[0] for item in ranked[:AUTO_SUMMARIZE_TOP_N]],)
-        ) if ranked else []
-        summary_map = {row["cluster_id"]: row for row in summary_rows}
-        for cid, arts, score in ranked[:AUTO_SUMMARIZE_TOP_N]:
-            lead = arts[0]
-            if not lead.get("summary"):
-                dedup_key = f"task:summarize:{lead['id']}"
-                if redis_client.set(dedup_key, 1, nx=True, ex=600):
-                    summarize_article_task.delay(lead["id"], lead["title"])
-            unique_sources = {a["source"] for a in arts}
-            if len(unique_sources) >= AUTO_SUMMARIZE_MIN_SRC:
-                freshness = assess_cluster_synthesis_freshness(
-                    arts,
-                    (summary_map.get(cid) or {}).get("created_at"),
-                )
-                if freshness["refresh_needed"]:
-                    dedup_key = f"task:synthesize:{cid}"
-                    if redis_client.set(dedup_key, 1, nx=True, ex=600):
-                        lines = [f"- [{a['source']}]: {a['title']}" for a in arts[:12]]
-                        synthesize_cluster_task.delay(cid, "\n".join(lines))
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            content = resp.read()
+            if len(content) < 5000: return None # Failed generation
+            
+            # Store locally
+            os.makedirs("static/generated", exist_ok=True)
+            path = f"static/generated/{cluster_id}.jpg"
+            with open(path, "wb") as f:
+                f.write(content)
+            return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
-        log.error(f"[auto-summarize] Error: {e}")
-
-def search_google_image(query: str) -> str | None:
-    import requests
-    search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}&tbm=isch"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        resp = requests.get(search_url, headers=headers, timeout=10)
-        pattern = r'\["(http[^"]+)",\d+,\d+\]'
-        matches = re.findall(pattern, resp.text)
-        for m in matches:
-            if "gstatic.com" in m or "encrypted-tbn" in m: continue
-            m = m.replace("\\u003d", "=").replace("\\u0026", "&")
-            if m.lower().split('?')[0].endswith(('.jpg', '.jpeg', '.png', '.webp')): return m
-    except: pass
+        log.warning(f"[ai] Cover art failed: {e}")
     return None
 
-def generate_cover_art(cluster_id: str, title: str) -> str | None:
-    import os
-    from local_nlp import generate_local_placeholder
-    from database import db_manager as db
-    os.makedirs("static/generated", exist_ok=True)
-    save_path_svg = f"static/generated/{cluster_id}.svg"
-    try:
-        cat_row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
-        category = cat_row['category'] if cat_row else "Вести"
-        svg_content = generate_local_placeholder(cluster_id, title, category)
-        with open(save_path_svg, "w", encoding="utf-8") as f: f.write(svg_content)
-        return f"/static/generated/{cluster_id}.svg"
-    except Exception as e:
-        log.warning(f"[cover-art] Local placeholder generation failed for {cluster_id}: {e}")
-        return None
-
-def cleanup_cover_art():
-    import os
-    from database import db_manager as db
+def cleanup_cover_art(valid_ids: set[str]):
+    """Remove generated images for clusters that no longer exist."""
     gen_dir = "static/generated"
     if not os.path.exists(gen_dir): return
     try:
-        rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
-        valid_ids = {r["cluster_id"] for r in rows}
         for filename in os.listdir(gen_dir):
             if filename.endswith((".jpg", ".svg")):
                 cid = filename.split(".")[0]

@@ -5,9 +5,12 @@ weighted by recency and a proper-noun bonus (capitalized mid-sentence words).
 """
 
 import database
+import logging
 import re
 from collections import Counter
 from datetime import datetime, timedelta
+
+log = logging.getLogger(__name__)
 
 # ── Macedonian + Serbian + Albanian stopwords ──────────────────────────────
 STOPWORDS = {
@@ -122,7 +125,7 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
         ).fetchall()
         conn.close()
     except Exception as e:
-        print(f"[trending] DB error: {e}")
+        log.error(f"DB error: {e}")
         return []
 
     if not rows:

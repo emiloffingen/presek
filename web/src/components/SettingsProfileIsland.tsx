@@ -11,12 +11,12 @@ import {
 
 function summarizeRecent(profile: any) {
   const recent = Array.isArray(profile?.recentClusters) ? profile.recentClusters : [];
-  return recent.slice(0, 5).map((item) => ({
+  return recent.slice(0, 5).map((item: any) => ({
     clusterId: String(item?.cluster_id || '').trim(),
     title: String(item?.title || '').trim(),
     topic: String(item?.topic || item?.category || '').trim(),
     source: String(item?.primarySource || '').trim(),
-  })).filter((item) => item.clusterId && item.title);
+  })).filter((item: any) => item.clusterId && item.title);
 }
 
 export default function SettingsProfileIsland() {
@@ -211,7 +211,7 @@ export default function SettingsProfileIsland() {
         </div>
         {recentItems.length > 0 ? (
           <div className="settings-recent-list">
-            {recentItems.map((item) => (
+            {recentItems.map((item: any) => (
               <a key={item.clusterId} href={`/cluster/${item.clusterId}`} className="settings-recent-item">
                 <div>
                   <p className="settings-recent-topic">{item.topic || 'Кластер'}</p>

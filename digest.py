@@ -13,12 +13,15 @@ Cron (every Monday 08:00):
 
 import database
 import argparse
+import logging
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
+
+log = logging.getLogger(__name__)
 
 
 import urllib.request
@@ -60,10 +63,10 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         )
         with urllib.request.urlopen(req, timeout=10) as r:
             ok = r.status == 200
-        print(f"[digest] ntfy {'sent' if ok else 'failed'} to topic '{topic}'")
+        log.info(f"ntfy {'sent' if ok else 'failed'} to topic '{topic}'")
         return ok
     except Exception as e:
-        print(f"[digest] ntfy error: {e}")
+        log.warning(f"ntfy error: {e}")
         return False
 
 
@@ -94,7 +97,7 @@ def fetch_top_stories(days: int = 7,
         """, (days,)).fetchall()
         conn.close()
     except Exception as e:
-        print(f"[digest] DB error: {e}")
+        log.error(f"DB error: {e}")
         return {}
 
     # Group by cluster, pick representative (first/most-cited)
@@ -250,10 +253,10 @@ def send_email(html: str, subject: str,
             server.starttls(context=ctx)
             server.login(smtp_user, smtp_pass)
             server.sendmail(from_addr, to_address, msg.as_string())
-        print(f"[digest] Email sent to {to_address} via {host}")
+        log.info(f"Email sent to {to_address} via {host}")
         return True
     except Exception as e:
-        print(f"[digest] SMTP error on {host}: {e}")
+        log.warning(f"SMTP error on {host}: {e}")
         return False
 
 
@@ -272,7 +275,7 @@ def generate_digest(days: int = 1,
     if save_path:
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(html)
-        print(f"[digest] Saved to {save_path}")
+        log.info(f"Saved to {save_path}")
 
     if smtp_user and smtp_pass and to_address:
         subject = f"Пресек — Дневен преглед {mk_date(start)} — {mk_date(now)}"
@@ -295,7 +298,7 @@ def send_digest(days: int = 1) -> bool:
 
     stories = fetch_top_stories(days=days)
     if not stories:
-        print("[digest] No stories found, skipping digest.")
+        log.info("No stories found, skipping digest.")
         return False
 
     ok = False

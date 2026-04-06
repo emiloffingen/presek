@@ -68,10 +68,12 @@ class TestDeploymentIntegrity:
 
     def test_nginx_applies_security_headers_to_astro_responses(self):
         nginx_conf = _read("deploy/nginx/presek.live.conf")
+        headers_snippet = _read("deploy/nginx/security-headers.conf")
         assert "add_header Cache-Control \"no-transform\"" in nginx_conf
-        assert "add_header Strict-Transport-Security" in nginx_conf
-        assert "add_header Content-Security-Policy" in nginx_conf
-        assert "default-src 'self'" in nginx_conf
+        assert "presek-security-headers.conf" in nginx_conf
+        assert "add_header Strict-Transport-Security" in headers_snippet
+        assert "add_header Content-Security-Policy" in headers_snippet
+        assert "default-src 'self'" in headers_snippet
 
     def test_release_flow_reloads_nginx_before_smoke_checks(self):
         deploy_script = _read("deploy/deploy_release.sh")
@@ -88,10 +90,10 @@ class TestDeploymentIntegrity:
 
 class TestRuntimeDependencyIntegrity:
     def test_requirements_include_live_api_server_dependencies(self):
-        requirements = {
-            line.strip()
+        pkg_names = {
+            line.strip().split("==")[0].split(">=")[0].split("~=")[0].lower()
             for line in _read("requirements.txt").splitlines()
             if line.strip() and not line.strip().startswith("#")
         }
-        assert "fastapi" in requirements
-        assert "uvicorn" in requirements
+        assert "fastapi" in pkg_names
+        assert "uvicorn" in pkg_names

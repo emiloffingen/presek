@@ -279,7 +279,7 @@ def _source_admin_authorized(request: Request) -> bool:
     client_host = str(getattr(getattr(request, "client", None), "host", "") or "").strip()
     forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
 
-    if expected and token and token == expected:
+    if expected and token and secrets.compare_digest(token, expected):
         return True
     if client_host in {"127.0.0.1", "::1"} and not forwarded_for:
         return True
@@ -667,7 +667,7 @@ async def serve_manifest():
 
 @app.get("/robots.txt")
 async def robots_txt():
-    return Response("User-agent: *\nDisallow: /api/\nAllow: /\n", media_type="text/plain")
+    return Response("User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n", media_type="text/plain")
 
 
 @app.get("/og/cluster/{cluster_id}.svg")
@@ -1177,7 +1177,7 @@ async def get_news(
         }
     except Exception as e:
         log.error(f"FastAPI News Error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"message": str(e)})
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 @app.get("/api/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str):
@@ -1479,7 +1479,7 @@ async def get_archive(
         }
     except Exception as e:
         log.error(f"FastAPI Archive Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Failed to load archive"}
 
 @app.get("/api/stats")
 async def get_stats():
@@ -1490,7 +1490,9 @@ async def get_stats():
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
 
 @app.get("/api/stats/full")
-async def get_stats_full():
+async def get_stats_full(request: Request):
+    if not _source_admin_authorized(request):
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         cached = cached_response("stats:full", ttl=120)
         if cached:
@@ -1926,7 +1928,10 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
         return _error_json("Failed to process image", 502)
 
 @app.get("/api/chat/stream")
-async def chat_stream(cluster_id: str, query: str):
+async def chat_stream(
+    cluster_id: str = Query(..., min_length=6, max_length=64),
+    query: str = Query(..., min_length=1, max_length=500),
+):
     """Streams AI response for a specific cluster."""
     
     # 1. Get cluster context
@@ -1946,7 +1951,7 @@ async def chat_stream(cluster_id: str, query: str):
                         yield f"data: {json.dumps({'token': chunk})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {json.dumps({'error': 'Chat generation failed'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

@@ -20,7 +20,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, comp
       >
         {imageUrl && (
           <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-surface-3 dark:bg-dark-3">
-            <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={article.title} className="w-full h-full object-cover" />
           </div>
         )}
         <div className="flex-1 min-w-0">
