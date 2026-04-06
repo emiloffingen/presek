@@ -62,8 +62,15 @@ def normalize_candidate_title(title: str) -> str:
     if not title:
         return ""
     text = normalize_headline(re.sub(r"<[^>]+>", " ", title))
+    text = re.sub(r"^\[(live|update|breaking|video|photo)\]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^(live|update|updated|breaking)\s*[:\-]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*[\-–—|]\s*(live updates?|updated|video|photo|gallery)\s*$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b\d{1,2}:\d{2}\b", "", text)
+    text = re.sub(r"\b(live|updates?|updated)\b", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s+", " ", text).strip().lower()
     text = re.sub(r"[\"'“”‘’`]+", "", text)
+    text = re.sub(r"[!?,.;:()\[\]{}]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 

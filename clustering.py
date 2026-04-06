@@ -42,6 +42,59 @@ MK_STOPWORDS = {
     "the","and","for","from","that","this","with","has",
 }
 
+
+def _normalize_cluster_title(title: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", str(title or ""))
+    text = re.sub(r"[\"'“”‘’`]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip().lower()
+    return text
+
+
+def _title_terms(title: str) -> list[str]:
+    normalized = _normalize_cluster_title(title)
+    words = re.findall(r"[а-шА-ШA-Za-z\w]{3,}", normalized)
+    return [mk_stem(word) for word in words if word not in MK_STOPWORDS]
+
+
+def _title_phrase_overlap(left: str, right: str) -> float:
+    left_terms = _title_terms(left)
+    right_terms = _title_terms(right)
+    if not left_terms or not right_terms:
+        return 0.0
+
+    left_bigrams = {" ".join(pair) for pair in zip(left_terms, left_terms[1:])}
+    right_bigrams = {" ".join(pair) for pair in zip(right_terms, right_terms[1:])}
+    if left_bigrams and right_bigrams:
+        union = len(left_bigrams | right_bigrams) or 1
+        return len(left_bigrams & right_bigrams) / union
+
+    left_set = set(left_terms)
+    right_set = set(right_terms)
+    union = len(left_set | right_set) or 1
+    return len(left_set & right_set) / union
+
+
+def _recency_multiplier(created_at) -> float:
+    if not created_at:
+        return 1.0
+    if isinstance(created_at, str):
+        try:
+            created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except Exception:
+            return 1.0
+    if not isinstance(created_at, datetime.datetime):
+        return 1.0
+    if created_at.tzinfo is not None:
+        created_at = created_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+    age_hours = max(0.0, (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - created_at).total_seconds() / 3600.0)
+    if age_hours <= 6:
+        return 1.08
+    if age_hours <= 24:
+        return 1.0
+    if age_hours <= 36:
+        return 0.92
+    return 0.82
+
 def text_to_vector(text: str) -> Counter:
     # Handle both title and description if available
     words = re.findall(r'[а-шА-Ш\w]{3,}', text.lower())
@@ -126,8 +179,9 @@ def find_or_create_cluster(title: str, recent_articles: list,
     # Heuristic: extract potential entities from title (capitalized words)
     # This helps in boosting matches even if lexical similarity is low
     potential_entities = set(re.findall(r'[А-Ш][а-ш]+', title))
+    normalized_input = _normalize_cluster_title(title)
 
-    cluster_docs: dict[str, list[str]] = {}
+    cluster_docs: dict[str, list[dict]] = {}
     cluster_size: dict[str, int] = {}
     cluster_cat: dict[str, str] = {}
     all_cids = set()
@@ -138,10 +192,10 @@ def find_or_create_cluster(title: str, recent_articles: list,
         all_cids.add(cid)
         cluster_size[cid] = cluster_size.get(cid, 0) + 1
         if cid not in cluster_docs:
-            cluster_docs[cid] = [article["title"]]
+            cluster_docs[cid] = [{"title": article["title"], "created_at": article.get("created_at")}]
             cluster_cat[cid] = article.get("category")
         elif len(cluster_docs[cid]) < 3:
-            cluster_docs[cid].append(article["title"])
+            cluster_docs[cid].append({"title": article["title"], "created_at": article.get("created_at")})
 
     # Fetch entities for these clusters to enable boosting
     from database import db_manager
@@ -150,7 +204,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
     best_cid = None
     best_score = 0.0
 
-    for cid, titles in cluster_docs.items():
+    for cid, reps in cluster_docs.items():
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE:
             continue
         
@@ -161,9 +215,13 @@ def find_or_create_cluster(title: str, recent_articles: list,
 
         # Check all representatives
         current_best_rep_score = 0.0
-        for rep_title in titles:
+        for rep in reps:
+            rep_title = rep["title"]
             vec2 = text_to_vector(rep_title)
-            score = get_cosine(vec1, vec2)
+            lexical_score = get_cosine(vec1, vec2)
+            phrase_score = _title_phrase_overlap(normalized_input, rep_title)
+            score = lexical_score + min(0.22, phrase_score * 0.35)
+            score *= _recency_multiplier(rep.get("created_at"))
             if score > current_best_rep_score:
                 current_best_rep_score = score
         
@@ -180,4 +238,3 @@ def find_or_create_cluster(title: str, recent_articles: list,
             best_cid = cid
 
     return best_cid if best_cid else str(uuid.uuid4())[:8]
-

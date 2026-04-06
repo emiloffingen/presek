@@ -1,6 +1,7 @@
 import pytest
+import datetime
 from unittest.mock import patch, MagicMock
-from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster
+from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster, _title_phrase_overlap
 from collections import Counter
 
 # db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
@@ -39,6 +40,17 @@ def test_get_cosine():
     # Cosine similarity of partially overlapping vectors
     score = get_cosine(vec1, vec2)
     assert 0.0 < score < 1.0
+
+def test_title_phrase_overlap_prefers_shared_bigram_structure():
+    close = _title_phrase_overlap(
+        "Владата усвои пакет мерки за економија",
+        "Нов пакет мерки за економија усвои владата"
+    )
+    far = _title_phrase_overlap(
+        "Владата усвои пакет мерки за економија",
+        "Фудбалски натпревар во Лига Шампиони"
+    )
+    assert close > far
 
 @patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
@@ -131,3 +143,14 @@ def test_cluster_age_decay():
 
     # Fresh cluster should be matched, old cluster may not due to age penalty
     assert cid_new == "c-new"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_phrase_overlap_helps_short_variants_join_same_cluster():
+    recent_articles = [
+        {"cluster_id": "c1", "title": "Пакет мерки за економија од Владата", "created_at": datetime.datetime.now()},
+        {"cluster_id": "c2", "title": "Фудбалски натпревар во Скопје", "created_at": datetime.datetime.now()},
+    ]
+
+    cid = find_or_create_cluster("Владата со пакет мерки за економија", recent_articles)
+    assert cid == "c1"

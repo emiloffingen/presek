@@ -70,6 +70,18 @@ def test_normalize_candidate_title_removes_prefix_noise():
     assert normalize_candidate_title("ВИДЕО: <b>Ова е</b> наслов") == "ова е наслов"
 
 
+def test_normalize_candidate_title_removes_live_update_churn():
+    base = normalize_candidate_title("Government announces tariffs")
+    variant = normalize_candidate_title("[LIVE] Government announces tariffs - Updated")
+    assert variant == base
+
+
+def test_normalize_candidate_title_removes_clock_noise():
+    base = normalize_candidate_title("Владата најави пакет мерки")
+    variant = normalize_candidate_title("09:30 Владата најави пакет мерки")
+    assert variant == base
+
+
 def test_parse_entry_timestamp_uses_published_parsed():
     fallback = datetime.datetime(2026, 4, 4, 22, 0, 0)
     entry = {"published_parsed": time.struct_time((2026, 4, 4, 20, 30, 0, 0, 0, 0))}
