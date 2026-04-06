@@ -59,9 +59,20 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
         </div>
 
         <div class="topbar-right">
-            <a href="/briefing" class="nyt-section-label topbar-link">Дневен Брифинг</a>
-            <a href="/settings" class="nyt-section-label topbar-link">Поставки</a>
-            <a href="/stats" class="nyt-section-label topbar-link">Медиумски Пулс</a>
+            <div class="topbar-links">
+                <a href="/briefing" class="nyt-section-label topbar-link">
+                    <span class="label-full">Дневен Брифинг</span>
+                    <span class="label-short">Брифинг</span>
+                </a>
+                <a href="/settings" class="nyt-section-label topbar-link">
+                    <span class="label-full">Поставки</span>
+                    <span class="label-short">Поставки</span>
+                </a>
+                <a href="/stats" class="nyt-section-label topbar-link">
+                    <span class="label-full">Медиумски Пулс</span>
+                    <span class="label-short">Пулс</span>
+                </a>
+            </div>
             <ThemeIsland client:load />
         </div>
     </div>
@@ -146,6 +157,14 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
         justify-content: flex-end;
     }
 
+    .topbar-links {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
     .topbar-edition {
         display: inline-flex;
         align-items: center;
@@ -187,6 +206,10 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
 
     .topbar-link:hover {
         color: var(--nyt-accent);
+    }
+
+    .label-short {
+        display: none;
     }
 
     .masthead {
@@ -334,8 +357,11 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
         .topbar-left,
         .topbar-center,
         .topbar-right {
-            justify-content: space-between;
             flex-wrap: wrap;
+        }
+
+        .topbar-left {
+            justify-content: space-between;
         }
 
         .topbar-center {
@@ -348,22 +374,79 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
             text-align: left;
         }
 
+        .topbar-right {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        .topbar-links {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+            width: 100%;
+        }
+
+        .topbar-link {
+            justify-content: center;
+            padding: 0.5rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--background);
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .topbar-right :global(button) {
+            align-self: flex-end;
+        }
+
+        .topbar-edition {
+            display: none;
+        }
+
+        .label-full {
+            display: none;
+        }
+
+        .label-short {
+            display: inline;
+        }
+
         .masthead-nav-shell {
             align-items: flex-start;
             flex-direction: column;
-            gap: 0.55rem;
+            gap: 0.7rem;
+            overflow: visible;
         }
 
         .masthead-nav-kicker {
-            padding-right: 0.85rem;
+            padding-right: 0;
         }
 
         .masthead-nav-list {
-            padding-bottom: 0.15rem;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            min-width: 0;
+            width: 100%;
+            padding-bottom: 0;
         }
 
         .masthead-nav-list-topics {
             padding-left: 0;
+        }
+
+        .masthead-nav-list li + li::before,
+        .masthead-nav-kicker::after {
+            display: none;
+        }
+
+        .masthead-nav-link {
+            padding: 0.45rem 0.72rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 0.68rem;
+            line-height: 1.1;
         }
     }
 

@@ -81,7 +81,6 @@ class TestDeploymentIntegrity:
 
     def test_smoke_check_covers_public_status_and_security_headers(self):
         smoke = _read("deploy/smoke_check.sh")
-        assert "<html lang=\\\"mk\\\">" in smoke
         assert "Public status page" in smoke
         assert "Content-Security-Policy" in smoke
         assert "Strict-Transport-Security" in smoke

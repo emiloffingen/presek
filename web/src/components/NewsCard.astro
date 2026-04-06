@@ -15,7 +15,9 @@ const significanceLabel =
 	'Во тек';
 
 // Handle image proxy
-const thumb = cluster.representative_image || cluster.articles.find((a: any) => a.image_url)?.image_url;
+const leadArticleImage = main?.image_url;
+const fallbackArticleImage = cluster.articles.find((a: any) => a.image_url)?.image_url;
+const thumb = leadArticleImage || fallbackArticleImage || cluster.representative_image;
 const thumbSrc = thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : null;
 const isFallbackArt = !thumb || String(thumb).includes('/static/generated/') || String(thumb).endsWith('.svg');
 

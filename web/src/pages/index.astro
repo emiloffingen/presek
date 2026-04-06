@@ -127,7 +127,10 @@ function getTimeStr(dateStr: string) {
 }
 
 function getThumb(cluster: any) {
-    const thumb = cluster?.representative_image || cluster?.articles?.find((a: any) => a.image_url)?.image_url;
+    const leadArticleImage = cluster?.articles?.[0]?.image_url;
+    const fallbackArticleImage = cluster?.articles?.find((a: any) => a.image_url)?.image_url;
+    const representative = cluster?.representative_image;
+    const thumb = leadArticleImage || fallbackArticleImage || representative;
     return thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : '/img/placeholder.svg';
 }
 ---
@@ -501,36 +504,55 @@ function getThumb(cluster: any) {
 			padding-bottom: 2.5rem;
 		}
 
+		.lead-hero {
+			gap: 0.8rem;
+		}
+
+		.lead-copy {
+			display: grid;
+			gap: 0.55rem;
+		}
+
+		.lead-media {
+			order: -1;
+		}
+
 		.lead-headline {
-			font-size: clamp(1.72rem, 1.34rem + 0.92vw, 2.4rem);
-			line-height: 1;
-			max-width: 10.5ch;
+			font-size: clamp(1.52rem, 1.2rem + 0.78vw, 2.05rem);
+			line-height: 0.98;
+			margin: 0.15rem 0 0.35rem;
+			max-width: none;
 		}
 
 		.lead-media img {
-			aspect-ratio: 16 / 11;
-			max-height: 12rem;
+			aspect-ratio: 16 / 10;
+			max-height: 13.5rem;
 			object-fit: cover;
+			object-position: center;
 		}
 
 		.lead-summary {
-			font-size: 0.92rem;
-			line-height: 1.48;
+			font-size: 0.88rem;
+			line-height: 1.42;
 			-webkit-line-clamp: 2;
 		}
 
+		.lead-signal {
+			font-size: 0.62rem;
+		}
+
 		.lead-meta {
-			margin-top: 0.65rem;
-			font-size: 0.66rem;
+			margin-top: 0.2rem;
+			font-size: 0.63rem;
 		}
 
 		.lead-related {
-			margin-top: 0.75rem;
+			margin-top: 0.35rem;
 		}
 
 		.lead-related a {
-			padding: 0.58rem 0;
-			font-size: 0.9rem;
+			padding: 0.46rem 0;
+			font-size: 0.84rem;
 		}
 
 		.section-heading-row {
@@ -661,6 +683,7 @@ function getThumb(cluster: any) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.55rem;
+		overflow: hidden;
 	}
 
 	.focus-chip {
@@ -673,6 +696,8 @@ function getThumb(cluster: any) {
 		text-transform: uppercase;
 		color: var(--foreground);
 		text-decoration: none;
+		max-width: 100%;
+		overflow-wrap: anywhere;
 	}
 
 	.focus-chip:hover {
@@ -736,6 +761,20 @@ function getThumb(cluster: any) {
 
 		.lead-headline {
 			max-width: none;
+		}
+
+		.focus-cloud {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.45rem;
+		}
+
+		.focus-chip {
+			display: block;
+			text-align: center;
+			padding: 0.5rem 0.45rem;
+			font-size: 0.58rem;
+			line-height: 1.25;
 		}
 	}
 </style>
