@@ -34,11 +34,12 @@ try {
 	<NYTHeader />
 
 	<main class="site-layout py-12">
-        <div class="entity-shell">
+        <div class="entity-shell editorial-shell">
             <EntityIsland name={decodedName} initialClusters={clusters} initialData={entityData} />
 
-            <section class="entity-news">
+            <section class="entity-news editorial-panel">
                 <div class="entity-news-head">
+                    <span class="page-kicker">Кластери</span>
                     <h2>Сите Неодамнешни Кластери</h2>
                     <p>Подолу се сите свежи стории каде {decodedName} влегува како дел од развојот, контекстот или поврзаната мрежа.</p>
                 </div>
@@ -60,11 +61,6 @@ try {
 </Layout>
 
 <style>
-    .entity-shell {
-        max-width: 76rem;
-        margin: 0 auto;
-    }
-
     .entity-news {
         margin-top: 2rem;
     }
@@ -97,7 +93,7 @@ try {
     .entity-empty {
         padding: 2rem;
         border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+        background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
         text-align: center;
     }
 </style>

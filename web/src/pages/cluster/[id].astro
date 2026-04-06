@@ -208,6 +208,40 @@ const shareDescription = (
 	summaryCardText
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
+
+function isWeakVisual(url?: string | null) {
+	const value = String(url || '').toLowerCase().trim();
+	if (!value) return true;
+	return [
+		'/static/generated/',
+		'.svg',
+		'placeholder',
+		'default',
+		'logo',
+		'emblem',
+		'avatar',
+		'icon',
+	].some((token) => value.includes(token));
+}
+
+function getLeadVisual(clusterData: any) {
+	const candidates = [
+		clusterData?.representative_image,
+		clusterData?.articles?.[0]?.image_url,
+		...((clusterData?.articles || []).map((article: any) => article?.image_url)),
+	].filter(Boolean);
+
+	const preferred = candidates.find((candidate: string) => !isWeakVisual(candidate));
+	const chosen = preferred || candidates[0] || '';
+	if (!chosen) return null;
+
+	return {
+		src: `/proxy?url=${encodeURIComponent(chosen)}`,
+		isWeak: isWeakVisual(chosen),
+	};
+}
+
+const leadVisual = cluster ? getLeadVisual(cluster) : null;
 ---
 
 <Layout
@@ -279,6 +313,24 @@ const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-
 						</div>
 
 						<div class="cluster-header-side">
+							{leadVisual && (
+								<div class:list={["cluster-visual-card", leadVisual.isWeak ? "is-weak" : ""]}>
+									{leadVisual.isWeak ? (
+										<div class="cluster-visual-fallback">
+											<p class="cluster-visual-kicker">Пресек Преглед</p>
+											<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
+											<p>{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+										</div>
+									) : (
+										<img
+											src={leadVisual.src}
+											alt={cluster.articles[0].title}
+											class="cluster-visual-image"
+											loading="eager"
+										/>
+									)}
+								</div>
+							)}
 							<div class="cluster-summary-card">
 								<p class="cluster-summary-label">Во кратки линии</p>
 								<p class="cluster-summary-copy">{summaryCardText}</p>
@@ -626,7 +678,7 @@ const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-
 	.rail-card {
 		padding: 1rem;
 		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
 	}
 
 	.cluster-rail .rail-card {
@@ -636,7 +688,63 @@ const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-
 	.cluster-summary-card {
 		padding: 0.95rem 1rem;
 		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 87%, var(--secondary) 13%);
+		background: color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%);
+	}
+
+	.cluster-visual-card {
+		margin-bottom: 0.9rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
+		overflow: hidden;
+	}
+
+	.cluster-visual-image {
+		display: block;
+		width: 100%;
+		aspect-ratio: 16 / 10;
+		object-fit: cover;
+		object-position: center;
+	}
+
+	.cluster-visual-card.is-weak {
+		background:
+			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent 90%), transparent 32%),
+			linear-gradient(155deg, color-mix(in srgb, var(--card) 70%, var(--surface-strong) 30%), color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%));
+	}
+
+	.cluster-visual-fallback {
+		display: grid;
+		gap: 0.55rem;
+		padding: 1.2rem;
+		min-height: 14rem;
+		align-content: end;
+	}
+
+	.cluster-visual-kicker {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.cluster-visual-fallback h2 {
+		margin: 0;
+		font-size: clamp(1.5rem, 1.2rem + 0.8vw, 2.2rem);
+		line-height: 0.98;
+		max-width: 9ch;
+	}
+
+	.cluster-visual-fallback p {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--secondary-foreground);
 	}
 
 	.cluster-summary-label {
