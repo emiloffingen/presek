@@ -351,6 +351,7 @@ def test_fastapi_stats_full_includes_editor_analytics():
         {"count": 1200},
         {"count": 180},
         {"count": 600},
+        {"count": 90},
         {"mb": 256.4},
         {"n": 18},
         {

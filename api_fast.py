@@ -1503,7 +1503,10 @@ async def get_stats_full():
         summarized = db.execute_one(
             "SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''"
         )["count"] or 0
-        summarized_pct = round((summarized / total * 100), 1) if total else 0
+        summarized_24h = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' AND summary IS NOT NULL AND summary != ''"
+        )["count"] or 0
+        summarized_pct = round((summarized_24h / last_24h * 100), 1) if last_24h else 0
 
         db_size_row = db.execute_one(
             "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"
@@ -1631,6 +1634,8 @@ async def get_stats_full():
             "total_articles": total,
             "last_24h": last_24h,
             "summarized_pct": summarized_pct,
+            "summarized_24h": summarized_24h,
+            "summarized_all_time": summarized,
             "uptime": "Online",
             "db_size_mb": db_size_mb,
             "total_feeds": total_feeds,

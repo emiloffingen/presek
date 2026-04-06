@@ -48,8 +48,9 @@ try {
 							<p class="metric-value text-nyt-red">{stats.last_24h.toLocaleString()}</p>
 						</div>
 						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек Сублимат</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек Сублимат 24ч</p>
 							<p class="metric-value">{stats.summarized_pct}%</p>
+							<p class="metric-caption">{stats.summarized_24h} од {stats.last_24h.toLocaleString()} статии во последните 24 часа.</p>
 						</div>
 						<div class="metric-card editorial-panel">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
@@ -406,6 +407,17 @@ try {
 		font-size: clamp(2rem, 1.45rem + 1vw, 3rem);
 		line-height: 1;
 		margin: 0;
+	}
+
+	.metric-caption {
+		margin: 0.45rem 0 0;
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+		line-height: 1.45;
 	}
 
 	.stats-grid {
