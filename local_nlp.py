@@ -455,11 +455,102 @@ def _format_common_line_from_phrases(phrases):
     return f"Повеќето извори се согласуваат дека во фокус се {', '.join(clean[:2])}, како и {clean[2]}."
 
 
-def _sentence_tokens(text):
-    return [
-        token for token in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]+", (text or "").lower(), re.UNICODE)
-        if token not in STOPWORDS and len(token) > 2
-    ]
+def _jaccard_similarity(sent1, sent2):
+    """Calculates word-level overlap similarity between two sentences."""
+    words1 = set(_sentence_tokens(sent1))
+    words2 = set(_sentence_tokens(sent2))
+    if not words1 or not words2: return 0.0
+    return len(words1 & words2) / len(words1 | words2)
+
+def synthesize_locally(articles, sentence_count=4, topic=None):
+    """
+    Journalistic synthesis for a cluster of articles.
+    Collects sentences from all articles and selects the best UNIQUE ones.
+    """
+    if not articles: return ""
+    
+    all_sentences = []
+    seen_hashes = set()
+    
+    # 1. Collect and initial cleaning
+    for art in articles:
+        text = f"{art.get('title', '')}. {art.get('description', '')}"
+        raw_sents = re.split(r'(?<=[.!?])\s+', text)
+        for s in raw_sents:
+            clean_s = _normalize_summary_sentence(s)
+            if not clean_s or _is_noisy_summary_sentence(clean_s):
+                continue
+            # Simple hash to avoid exact string duplicates immediately
+            h = hash(clean_s.lower())
+            if h not in seen_hashes:
+                all_sentences.append(clean_s)
+                seen_hashes.add(h)
+
+    if not all_sentences: return ""
+
+    # 2. Score all sentences
+    # We use the full text of all articles to build frequency map
+    full_corpus = " ".join(all_sentences)
+    word_freq = Counter(_sentence_tokens(full_corpus))
+    if not word_freq: return all_sentences[0]
+    
+    max_freq = max(word_freq.values())
+    for w in word_freq: word_freq[w] /= max_freq
+
+    # Topic-specific keywords to boost
+    topic_boost_words = set()
+    if topic == "Економија":
+        topic_boost_words = {"денари", "евра", "процент", "милиони", "буџет", "плата", "цени", "инфлација", "берза"}
+    elif topic == "Политика":
+        topic_boost_words = {"министер", "претседател", "собрание", "закон", "партија", "лидер", "влада", "избори"}
+    elif topic == "Спорт":
+        topic_boost_words = {"натпревар", "гол", "победа", "првенство", "клуб", "лига", "фудбал", "кошарка"}
+    elif topic == "Криминал":
+        topic_boost_words = {"полиција", "апсење", "убиство", "суд", "обвинителство", "затвор", "напад"}
+
+    scored_sentences = []
+    for i, s in enumerate(all_sentences):
+        s_words = _sentence_tokens(s)
+        if not s_words: continue
+        
+        score = sum(word_freq.get(w, 0) for w in s_words)
+        num_bonus = 0.5 if _extract_number_tokens(s) else 0.0
+        prop_bonus = len(_extract_capitalized_phrases(s)) * 0.35
+        
+        topic_bonus = 0.0
+        if topic_boost_words:
+            matched = len(set(s_words) & topic_boost_words)
+            topic_bonus = matched * 0.6
+
+        # Penalize very long or very short
+        length_penalty = 1.0
+        if len(s) > 280: length_penalty = 0.6
+        if len(s) < 40: length_penalty = 0.4
+
+        final_score = (score + num_bonus + prop_bonus + topic_bonus) * length_penalty
+        scored_sentences.append({"text": s, "score": final_score})
+
+    # Sort by score
+    scored_sentences.sort(key=lambda x: x['score'], reverse=True)
+
+    # 3. Selection with Uniqueness Filter (The "Journalist" step)
+    selected = []
+    for candidate in scored_sentences:
+        if len(selected) >= sentence_count:
+            break
+        
+        is_redundant = False
+        for s in selected:
+            # If 50% similar or more, it's likely the same fact
+            if _jaccard_similarity(candidate['text'], s) > 0.45:
+                is_redundant = True
+                break
+        
+        if not is_redundant:
+            selected.append(candidate['text'])
+
+    # Format as bullet points
+    return "\n".join([f"• {s}" for s in selected])
 
 
 def _normalize_summary_sentence(sentence):

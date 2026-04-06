@@ -196,7 +196,7 @@ class OpenAICompatibleProvider(AIProvider):
             log.error(f"[{self.name}] Error: {e}")
         return None
 
-from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally
+from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
 
 # --- Provider Registry ---
 
@@ -213,11 +213,27 @@ class LocalProvider(AIProvider):
         if "translate" in lowered_system or "превед" in lowered_system:
             return rewrite_to_macedonian_locally(prompt)
         if "synthesis" in lowered_system or "синтез" in lowered_system:
-            lines = prompt.split("\n")
-            titles = [l.replace("- [", "").split("]:")[0] for l in lines if "]:" in l]
-            main_text = "\n".join(lines)
-            summary = summarize_locally(main_text, sentence_count=4, topic=topic)
-            return f"Збирен извештај од {len(titles)} извори: {summary}"
+            # For local synthesis, we need the raw article data if available
+            # If prompt is just text, we fall back to summarizing that text
+            try:
+                # Prompt for synthesis usually looks like: "Articles:\n- [Source]: Title\n..."
+                # But if we are called from auto_summarize_top_clusters, we might have better data.
+                # However, since the interface is prompt-based, we extract titles/desc from prompt if possible.
+                lines = prompt.split("\n")
+                fake_articles = []
+                for line in lines:
+                    if "]:" in line:
+                        parts = line.split("]:", 1)
+                        fake_articles.append({"title": parts[1].strip(), "description": "", "source": parts[0].replace("- [", "").strip()})
+                
+                if fake_articles:
+                    summary = synthesize_locally(fake_articles, sentence_count=4, topic=topic)
+                    return summary
+            except:
+                pass
+            
+            summary = summarize_locally(prompt, sentence_count=4, topic=topic)
+            return summary
         text = re.sub(r"^\s*summarize(?: the following)?\s*:\s*", "", prompt, flags=re.IGNORECASE).strip()
         return summarize_article_fallback("", text, topic=topic)
 
