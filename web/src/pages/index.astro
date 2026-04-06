@@ -6,6 +6,7 @@ import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
+import { chooseClusterImage } from '../utils/imageSelection';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
@@ -127,11 +128,7 @@ function getTimeStr(dateStr: string) {
 }
 
 function getThumb(cluster: any) {
-    const leadArticleImage = cluster?.articles?.[0]?.image_url;
-    const fallbackArticleImage = cluster?.articles?.find((a: any) => a.image_url)?.image_url;
-    const representative = cluster?.representative_image;
-    const thumb = leadArticleImage || fallbackArticleImage || representative;
-    return thumb ? `/proxy?url=${encodeURIComponent(thumb)}` : '/img/placeholder.svg';
+    return chooseClusterImage(cluster).proxiedUrl || '/img/placeholder.svg';
 }
 ---
 
