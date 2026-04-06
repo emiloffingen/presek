@@ -135,7 +135,12 @@ function getThumb(cluster: any) {
 }
 ---
 
-<Layout title={q || category || topic || "Главни Вести"}>
+<Layout
+	title={q || category || topic || "Пресек | Македонски информативен агрегатор"}
+	description={q || category || topic
+		? "Пресек ги групира поврзаните вести, ги споредува изворите и ви дава побрз преглед на темата."
+		: "Пресек е македонски информативен агрегатор што ги собира главните вести, ги групира по тема и покажува како различни извори известуваат за истиот настан."}
+>
     <NYTHeader q={q} category={category} topic={topic} />
 
 	<main class="site-layout">
