@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
-  buildFollowRecommendations,
+  buildSurfaceFollowSuggestions,
   hasPersonalizationSignal,
   loadReaderProfile,
   recordSuggestionImpressions,
@@ -17,7 +17,10 @@ export default function HomeRailSuggestionsIsland() {
     setProfile(loadReaderProfile());
   }, [refreshKey]);
 
-  const suggestions = useMemo(() => buildFollowRecommendations(profile, 2), [profile]);
+  const suggestions = useMemo(
+    () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 }),
+    [profile]
+  );
   const followedCount = (profile?.followedTopics || []).length + (profile?.followedSources || []).length;
   const show = suggestions.topics.length + suggestions.sources.length > 0 && (!hasPersonalizationSignal(profile) || followedCount < 4);
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Compass, Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
-  buildFollowRecommendations,
+  buildSurfaceFollowSuggestions,
   buildPersonalizedClusters,
   hasPersonalizationSignal,
   loadReaderProfile,
@@ -33,7 +33,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
     setItems(buildPersonalizedClusters(clusters, profile, 4));
   }, [clusters]);
 
-  const recommendations = buildFollowRecommendations(profile, 2);
+  const recommendations = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 });
 
   useEffect(() => {
     if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return;
@@ -91,7 +91,8 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
         })}
       </div>
 
-      {(recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
+      {((profile?.followedTopics || []).length + (profile?.followedSources || []).length < 5) &&
+        (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="for-you-follow-block">
           <div className="for-you-follow-head">
             <p className="for-you-kicker"><Sparkles size={14} /> Следете го следното</p>

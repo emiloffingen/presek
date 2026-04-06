@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X } from 'lucide-react';
 import {
-  buildFollowRecommendations,
+  buildSurfaceFollowSuggestions,
   loadReaderProfile,
   recordSuggestionFollow,
   recordSuggestionImpressions,
@@ -29,7 +29,10 @@ export default function SettingsProfileIsland() {
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
   const recentItems = useMemo(() => summarizeRecent(profile), [profile]);
-  const recommendations = useMemo(() => buildFollowRecommendations(profile, 4), [profile]);
+  const recommendations = useMemo(
+    () => buildSurfaceFollowSuggestions(profile, 'settings', { topicLimit: 3, sourceLimit: 2 }),
+    [profile]
+  );
 
   useEffect(() => {
     const result = recordSuggestionImpressions('settings', [

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Sparkles, X } from 'lucide-react';
 import {
-  buildFollowRecommendations,
+  buildSurfaceFollowSuggestions,
   completeOnboarding,
   dismissOnboarding,
   getOnboardingProgress,
@@ -22,7 +22,10 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     setProfile(loadReaderProfile());
   }, []);
 
-  const recommendations = useMemo(() => buildFollowRecommendations(profile, compact ? 2 : 3), [profile, compact]);
+  const recommendations = useMemo(
+    () => buildSurfaceFollowSuggestions(profile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2 }),
+    [profile, compact]
+  );
 
   useEffect(() => {
     if (!compact) return;

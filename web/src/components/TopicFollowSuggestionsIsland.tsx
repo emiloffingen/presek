@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
-import { loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
+import { buildSurfaceFollowSuggestions, loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
 
 type TopicSuggestion = {
   topic: string;
@@ -32,6 +32,7 @@ export default function TopicFollowSuggestionsIsland({
   const suggestions = useMemo(() => {
     const followedTopics = new Set(profile?.followedTopics || []);
     const followedSources = new Set(profile?.followedSources || []);
+    const base = buildSurfaceFollowSuggestions(profile, 'topic', { topicLimit: 2, sourceLimit: 1 });
 
     const topicItems = [
       {
@@ -39,12 +40,13 @@ export default function TopicFollowSuggestionsIsland({
         reason: 'Ова е темата што веќе ја читате во длабочина.',
       },
       ...relatedTopics,
+      ...base.topics.map((item) => ({ topic: item.value, reason: item.reason })),
     ]
       .filter((item) => item.topic && !followedTopics.has(item.topic))
       .filter((item, index, list) => list.findIndex((entry) => entry.topic === item.topic) === index)
       .slice(0, 3);
 
-    const sourceItems = (strongSources || [])
+    const sourceItems = [...(strongSources || []), ...base.sources.map((item) => ({ source: item.value, reason: item.reason }))]
       .filter((item) => item.source && !followedSources.has(item.source))
       .filter((item, index, list) => list.findIndex((entry) => entry.source === item.source) === index)
       .slice(0, 2);

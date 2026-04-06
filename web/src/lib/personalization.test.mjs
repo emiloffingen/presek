@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildFollowRecommendations,
+  buildSurfaceFollowSuggestions,
   buildDeliveryDigest,
   buildPersonalizedClusters,
   createDefaultOnboardingState,
@@ -260,6 +261,47 @@ test('buildFollowRecommendations omits already followed repeated topics and sour
   const recommendations = buildFollowRecommendations(profile, 3);
   assert.deepEqual(recommendations.topics, []);
   assert.deepEqual(recommendations.sources, []);
+});
+
+test('buildSurfaceFollowSuggestions keeps weak surfaces topic-first and stricter on sources', () => {
+  const profile = {
+    recentClusters: [
+      { cluster_id: 'c1', topic: 'Политика', category: 'Политика', primarySource: 'Телма', sources: ['Телма'], tags: [] },
+      { cluster_id: 'c2', topic: 'Политика', category: 'Политика', primarySource: 'Телма', sources: ['Телма', 'МИА'], tags: [] },
+      { cluster_id: 'c3', topic: 'Економија', category: 'Економија', primarySource: 'МИА', sources: ['МИА'], tags: [] },
+    ],
+    followedTopics: [],
+    followedSources: [],
+  };
+
+  const homeRail = buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 });
+  const forYou = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 });
+
+  assert.equal(homeRail.topics.length, 2);
+  assert.equal(homeRail.sources.length, 0);
+  assert.equal(forYou.topics[0].value, 'Политика');
+  assert.ok(forYou.sources.every((item) => ['Телма', 'МИА'].includes(item.value)));
+});
+
+test('buildSurfaceFollowSuggestions suppresses onboarding sources until the reader has some follows', () => {
+  const coldProfile = {
+    recentClusters: [
+      { cluster_id: 'c1', topic: 'Политика', category: 'Политика', primarySource: 'Телма', sources: ['Телма'], tags: [] },
+      { cluster_id: 'c2', topic: 'Политика', category: 'Политика', primarySource: 'Телма', sources: ['Телма'], tags: [] },
+    ],
+    followedTopics: [],
+    followedSources: [],
+  };
+  const warmerProfile = {
+    ...coldProfile,
+    followedTopics: ['Политика'],
+  };
+
+  const cold = buildSurfaceFollowSuggestions(coldProfile, 'onboarding', { topicLimit: 2, sourceLimit: 1 });
+  const warm = buildSurfaceFollowSuggestions(warmerProfile, 'onboarding', { topicLimit: 2, sourceLimit: 1 });
+
+  assert.equal(cold.sources.length, 0);
+  assert.ok(warm.sources.length <= 1);
 });
 
 test('suggestion analytics stores deduplicated impressions and follow conversions by surface', () => {

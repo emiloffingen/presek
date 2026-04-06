@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
-import { buildFollowRecommendations, loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
+import { buildSurfaceFollowSuggestions, loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
 
 type Suggestion = {
   value: string;
@@ -25,7 +25,7 @@ export default function ClusterFollowSuggestionsIsland({
   }, [refreshKey]);
 
   const suggestions = useMemo(() => {
-    const base = buildFollowRecommendations(profile, 3);
+    const base = buildSurfaceFollowSuggestions(profile, 'cluster', { topicLimit: 2, sourceLimit: 1 });
     const followedTopics = new Set(profile?.followedTopics || []);
     const followedSources = new Set(profile?.followedSources || []);
 

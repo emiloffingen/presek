@@ -708,6 +708,43 @@ export function buildFollowRecommendations(profile, limit = 4) {
   };
 }
 
+export function buildSurfaceFollowSuggestions(profile, surface, options = {}) {
+  const cleanSurface = normalizeSurface(surface);
+  const normalizedProfile = profile || createEmptyProfile();
+  const topicLimit = Number.isFinite(options.topicLimit) ? Math.max(0, options.topicLimit) : 2;
+  const sourceLimit = Number.isFinite(options.sourceLimit) ? Math.max(0, options.sourceLimit) : 1;
+  const recommendations = buildFollowRecommendations(normalizedProfile, Math.max(4, topicLimit + sourceLimit + 2));
+  const topicCounts = buildReaderSignals(normalizedProfile).topicCounts;
+  const sourceCounts = buildReaderSignals(normalizedProfile).sourceCounts;
+  const followedCount = (normalizedProfile.followedTopics || []).length + (normalizedProfile.followedSources || []).length;
+  const hasSignals = hasPersonalizationSignal(normalizedProfile);
+
+  let topics = [...recommendations.topics];
+  let sources = [...recommendations.sources];
+
+  if (cleanSurface === 'onboarding') {
+    topics = topics.slice(0, topicLimit || 2);
+    sources = followedCount > 0 ? sources.slice(0, Math.min(1, sourceLimit || 1)) : [];
+  } else if (cleanSurface === 'home_rail') {
+    topics = topics.slice(0, topicLimit || 2);
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, hasSignals ? 0 : 1);
+  } else if (cleanSurface === 'for_you') {
+    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 2).slice(0, topicLimit || 2);
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, sourceLimit || 1);
+  } else if (cleanSurface === 'settings') {
+    topics = topics.slice(0, Math.max(2, topicLimit));
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.max(1, sourceLimit));
+  } else if (cleanSurface === 'cluster' || cleanSurface === 'topic') {
+    topics = topics.slice(0, Math.max(2, topicLimit));
+    sources = sources.slice(0, Math.max(1, sourceLimit));
+  } else {
+    topics = topics.slice(0, topicLimit);
+    sources = sources.slice(0, sourceLimit);
+  }
+
+  return { topics, sources };
+}
+
 export function exportSyncPayload(storage = globalThis?.localStorage) {
   return {
     followedTopics: loadReaderProfile(storage).followedTopics,
