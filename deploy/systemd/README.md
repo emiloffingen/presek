@@ -6,7 +6,6 @@ These units are the supported production runtime for `presek.live`.
 
 ## Services
 
-- `presek-web.service`: Flask + Gunicorn on `127.0.0.1:5000`
 - `presek-worker.service`: Celery worker
 - `presek-beat.service`: Celery beat scheduler
 - `presek-fastapi.service`: FastAPI on `127.0.0.1:5001`
@@ -40,8 +39,8 @@ sudo systemctl start presek.target
 
 ```sh
 sudo systemctl status presek.target
-sudo systemctl status presek-web.service
-sudo journalctl -u presek-web.service -f
+sudo systemctl status presek-fastapi.service
+sudo journalctl -u presek-fastapi.service -f
 sudo journalctl -u presek-worker.service -f
 sudo systemctl restart presek-astro.service
 sudo systemctl stop presek.target
@@ -51,8 +50,8 @@ bash deploy/backup_postgres.sh
 
 ## Notes
 
-- `presek-web.service` runs the DB schema init in `ExecStartPre`.
+- `presek-fastapi.service` is the public API service.
 - `presek-astro.service` refuses to start if the Astro server build is missing.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.
-- After install or restart, run `deploy/smoke_check.sh` to verify Flask, FastAPI, and Astro locally before trusting the release.
+- After install or restart, run `deploy/smoke_check.sh` to verify the API and Astro locally before trusting the release.
 - Keep a regular backup cadence with `deploy/backup_postgres.sh` or a system cron/timer wrapper around it.

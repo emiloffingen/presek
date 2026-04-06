@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 import types
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 
 class _FakeHTTPException(Exception):
     def __init__(self, status_code, detail):
@@ -15,9 +15,16 @@ class _FakeHTTPException(Exception):
 class _FakeFastAPI:
     def __init__(self, *args, **kwargs):
         self.user_middleware = []
+        self.http_middlewares = []
 
     def add_middleware(self, cls, **options):
         self.user_middleware.append(types.SimpleNamespace(cls=cls, options=options))
+
+    def middleware(self, _kind):
+        def decorator(fn):
+            self.http_middlewares.append(fn)
+            return fn
+        return decorator
 
     def get(self, _path, **_kwargs):
         def decorator(fn):
@@ -31,8 +38,10 @@ class _FakeFastAPI:
 
 
 class _FakeRequest:
-    def __init__(self, payload):
+    def __init__(self, payload, headers=None, client_host="127.0.0.1"):
         self._payload = payload
+        self.headers = headers or {}
+        self.client = types.SimpleNamespace(host=client_host)
 
     async def json(self):
         return self._payload
@@ -44,6 +53,25 @@ class _FakeRedirectResponse:
         self.status_code = status_code
 
 
+class _FakeResponse:
+    def __init__(self, content=None, media_type=None, headers=None, status_code=200):
+        self.content = content
+        self.media_type = media_type
+        self.headers = headers or {}
+        self.status_code = status_code
+
+
+class _FakeJSONResponse(_FakeResponse):
+    def __init__(self, status_code=200, content=None):
+        super().__init__(content=content, media_type="application/json", status_code=status_code)
+
+
+class _FakeFileResponse(_FakeResponse):
+    def __init__(self, path, media_type=None, status_code=200):
+        super().__init__(content=None, media_type=media_type, status_code=status_code)
+        self.path = path
+
+
 def _install_fake_fastapi_modules():
     fastapi_mod = types.ModuleType("fastapi")
     fastapi_mod.FastAPI = _FakeFastAPI
@@ -53,11 +81,15 @@ def _install_fake_fastapi_modules():
 
     responses_mod = types.ModuleType("fastapi.responses")
     responses_mod.StreamingResponse = type("StreamingResponse", (), {})
-    responses_mod.JSONResponse = type("JSONResponse", (), {})
+    responses_mod.JSONResponse = _FakeJSONResponse
     responses_mod.RedirectResponse = _FakeRedirectResponse
+    responses_mod.Response = _FakeResponse
+    responses_mod.FileResponse = _FakeFileResponse
 
     cors_mod = types.ModuleType("fastapi.middleware.cors")
     cors_mod.CORSMiddleware = type("CORSMiddleware", (), {})
+    gzip_mod = types.ModuleType("fastapi.middleware.gzip")
+    gzip_mod.GZipMiddleware = type("GZipMiddleware", (), {})
 
     middleware_pkg = types.ModuleType("fastapi.middleware")
 
@@ -66,6 +98,7 @@ def _install_fake_fastapi_modules():
         "fastapi.responses": responses_mod,
         "fastapi.middleware": middleware_pkg,
         "fastapi.middleware.cors": cors_mod,
+        "fastapi.middleware.gzip": gzip_mod,
     }
 
 
@@ -151,6 +184,31 @@ def test_fastapi_cors_origins_follow_env_var():
 
     cors = next(m for m in api_fast.app.user_middleware if m.cls.__name__ == "CORSMiddleware")
     assert cors.options["allow_origins"] == ["https://app.example", "https://admin.example"]
+
+
+def test_fastapi_adds_gzip_middleware():
+    api_fast = _load_api_fast()
+    gzip = next(m for m in api_fast.app.user_middleware if m.cls.__name__ == "GZipMiddleware")
+    assert gzip.options["minimum_size"] == 500
+
+
+def test_fastapi_rate_limit_path_helper_matches_expensive_routes():
+    api_fast = _load_api_fast()
+    assert api_fast._is_rate_limited_path("/api/chat_cluster") is True
+    assert api_fast._is_rate_limited_path("/api/chat/stream") is True
+    assert api_fast._is_rate_limited_path("/api/cluster/abc123def456/ask") is True
+    assert api_fast._is_rate_limited_path("/api/news") is False
+
+
+def test_fastapi_security_headers_helper_sets_expected_headers():
+    api_fast = _load_api_fast()
+    response = _FakeResponse(headers={})
+    updated = api_fast._apply_security_headers(response)
+
+    assert updated.headers["X-Content-Type-Options"] == "nosniff"
+    assert updated.headers["X-Frame-Options"] == "DENY"
+    assert updated.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+    assert "default-src 'self'" in updated.headers["Content-Security-Policy"]
 
 
 def test_fastapi_profile_sync_init_creates_token():
@@ -351,3 +409,131 @@ def test_fastapi_delivery_track_records_event_and_redirects():
     assert response.status_code == 302
     assert response.url.endswith("/briefing")
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_international_curated_returns_ranked_clusters():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute.side_effect = [
+        [
+            {"cluster_id": "aaa111", "title": "A1", "description": "D1", "source": "Reuters"},
+            {"cluster_id": "bbb222", "title": "B1", "description": "D2", "source": "BBC"},
+        ],
+        [{"cluster_id": "aaa111", "representative_image": "https://img/1.webp"}],
+    ]
+    mock_db.get_synthesis_ids.return_value = ["aaa111"]
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast, "cached_response", return_value=None), \
+         patch.object(api_fast, "rank_articles_in_cluster", side_effect=lambda arts: arts), \
+         patch.object(api_fast, "score_cluster", side_effect=lambda arts: 2 if arts[0]["cluster_id"] == "aaa111" else 1), \
+         patch.object(api_fast, "calculate_reading_time", return_value=1), \
+         patch.object(api_fast, "set_cache"):
+        data = asyncio.run(api_fast.get_international_curated(limit=2))
+
+    assert data["status"] == "success"
+    assert len(data["clusters"]) == 2
+    assert data["clusters"][0]["cluster_id"] == "aaa111"
+    assert data["clusters"][0]["has_synthesis"] is True
+
+
+def test_fastapi_chat_cluster_reuses_cluster_answer_payload():
+    api_fast = _load_api_fast()
+
+    with patch.object(api_fast, "_build_cluster_answer_payload", return_value={
+        "status": "success",
+        "answer": "Одговор",
+        "citations": [],
+        "related_questions": [],
+        "confidence": "medium",
+        "confirmed_points": [],
+        "unclear_points": [],
+        "source_differences": "",
+    }):
+        data = asyncio.run(api_fast.chat_cluster(_FakeRequest({"cluster_id": "abc123def456", "query": "Што е ново?"})))
+
+    assert data["status"] == "success"
+    assert data["answer"] == "Одговор"
+    assert data["response"] == "Одговор"
+
+
+def test_fastapi_source_control_updates_source_for_local_admin():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"name": "MIA", "credibility": 1.0},
+        {"name": "MIA", "credibility": 1.2, "is_active": True},
+    ]
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.object(api_fast, "get_source_statuses", return_value={"MIA": {"quality_label": "Стабилен извор"}}):
+        data = asyncio.run(
+            api_fast.control_source(
+                "MIA",
+                _FakeRequest({"action": "uprank"}, client_host="127.0.0.1"),
+            )
+        )
+
+    assert data["status"] == "success"
+    assert data["source"]["source_status"]["quality_label"] == "Стабилен извор"
+    mock_db.execute.assert_called_once()
+
+
+def test_fastapi_proxy_serves_local_static_files():
+    api_fast = _load_api_fast()
+
+    with patch.object(api_fast.os.path, "exists", return_value=True), \
+         patch("builtins.open", mock_open(read_data=b"svg-bytes")):
+        response = asyncio.run(api_fast.proxy_image("/static/example.svg", None))
+
+    assert response.status_code == 200
+    assert response.media_type == "image/svg+xml"
+    assert response.content == b"svg-bytes"
+
+
+def test_fastapi_serves_sw_and_manifest_as_files():
+    api_fast = _load_api_fast()
+
+    sw = asyncio.run(api_fast.serve_sw())
+    manifest = asyncio.run(api_fast.serve_manifest())
+
+    assert sw.path == "sw.js"
+    assert sw.media_type == "application/javascript"
+    assert manifest.path.endswith("static/manifest.json")
+
+
+def test_fastapi_serves_static_assets_from_static_root():
+    api_fast = _load_api_fast()
+    response = asyncio.run(api_fast.serve_static_asset("manifest.json"))
+    assert str(response.path).endswith("static/manifest.json")
+
+
+def test_fastapi_serves_robots_txt():
+    api_fast = _load_api_fast()
+    response = asyncio.run(api_fast.robots_txt())
+    assert response.media_type == "text/plain"
+    assert "User-agent" in response.content
+
+
+def test_fastapi_serves_og_cluster_svg():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"title": "Наслов"},
+        {"count": 3},
+    ]
+    with patch.object(api_fast, "db", mock_db):
+        response = asyncio.run(api_fast.og_cluster_image("abc123def456"))
+    assert response.media_type == "image/svg+xml"
+    assert "Наслов" in response.content
+    assert "3 извори" in response.content
+
+
+def test_fastapi_serves_default_og_image():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {"count": 42}
+    with patch.object(api_fast, "db", mock_db):
+        response = asyncio.run(api_fast.og_image())
+    assert response.media_type == "image/svg+xml"
+    assert "42 статии индексирани" in response.content

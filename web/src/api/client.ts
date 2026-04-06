@@ -30,7 +30,7 @@ class ApiClient {
       this.baseURL = url;
     } else {
       // Server-side (SSR): match the production default API owner behind nginx.
-      this.baseURL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+      this.baseURL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
     }
     
     this.client = axios.create({

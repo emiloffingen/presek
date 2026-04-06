@@ -41,7 +41,7 @@ export default function AskPresekIsland({
   const API_URL =
     typeof window !== 'undefined'
       ? '/api'
-      : import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+      : import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
 
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);

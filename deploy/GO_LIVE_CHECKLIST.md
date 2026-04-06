@@ -28,13 +28,10 @@ bash deploy/smoke_check.sh
 
 This now checks:
 
-- Flask health returns `200`
-- Flask health reports `database.ok = true`
-- Flask health reports `redis.ok = true`
 - Astro responds successfully
-- FastAPI health returns `200`
-- FastAPI health reports `database.ok = true`
-- FastAPI health reports `redis.ok = true`
+- API health returns `200`
+- API health reports `database.ok = true`
+- API health reports `redis.ok = true`
 - Public site responds successfully
 
 ## 3. Deploy
@@ -47,7 +44,6 @@ bash deploy/deploy_release.sh
 
 ```sh
 sudo systemctl status presek.target --no-pager
-sudo journalctl -u presek-web.service -n 50 --no-pager
 sudo journalctl -u presek-astro.service -n 50 --no-pager
 sudo journalctl -u presek-fastapi.service -n 50 --no-pager
 sudo journalctl -u presek-worker.service -n 50 --no-pager
@@ -65,14 +61,12 @@ Confirm:
 
 Open and verify:
 
-- `https://presek.live/status`
 - `https://presek.live/`
 - one `https://presek.live/cluster/...` page
 - `https://presek.live/archive`
 
 Confirm:
 
-- `/status` shows `DB OK` and `Redis OK`
 - freshness is not stale
 - homepage renders articles and images
 - one cluster page loads fully

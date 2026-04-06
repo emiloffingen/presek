@@ -9,7 +9,7 @@ const date = Astro.url.searchParams.get('date') || new Date().toISOString().spli
 const source = Astro.url.searchParams.get('source') || '';
 const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
 
 let archive = {
   clusters: [],

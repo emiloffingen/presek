@@ -1,5 +1,5 @@
 """
-api_helpers.py — Shared helpers used by both routes/api.py (Flask) and api_fast.py (FastAPI).
+api_helpers.py — Shared helpers used by the FastAPI backend and background tasks.
 
 Keeping these in one place ensures bug fixes and behavioural changes apply everywhere.
 """

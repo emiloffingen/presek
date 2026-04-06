@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
-HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5000/api/health}"
+HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5001/api/health}"
 ASTRO_URL="${ASTRO_URL:-http://127.0.0.1:3000}"
 FASTAPI_URL="${FASTAPI_URL:-http://127.0.0.1:5001/api/health}"
 ENABLE_FASTAPI_CHECK="${ENABLE_FASTAPI_CHECK:-1}"
@@ -93,7 +93,7 @@ main() {
   need_cmd curl
   need_cmd python3
 
-  wait_health_ready "Flask health" "$HEALTH_URL" 1 1
+  wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200 "Пресек"
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then

@@ -15,13 +15,12 @@
   - `bash deploy/deploy_release.sh`
 - Confirm:
   - `sudo systemctl status presek.target --no-pager`
-  - `sudo journalctl -u presek-web.service -n 50 --no-pager`
+  - `sudo journalctl -u presek-fastapi.service -n 50 --no-pager`
   - `sudo journalctl -u presek-astro.service -n 50 --no-pager`
 
 ## After deploy
 
 - Open:
-  - `/status`
   - `/`
   - one `/cluster/...` page
   - `/archive`

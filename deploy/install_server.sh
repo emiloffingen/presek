@@ -58,11 +58,11 @@ main() {
   install -d /etc/nginx/sites-enabled
   install -d /etc/nginx/snippets
 
-  for unit in presek.target presek-web.service presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
-  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-web.service /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
+  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
   replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
   cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
@@ -82,7 +82,7 @@ main() {
   echo "Deployment files installed."
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
-  echo "  sudo journalctl -u presek-web.service -f"
+  echo "  sudo journalctl -u presek-fastapi.service -f"
   echo "  sudo bash deploy/backup_postgres.sh"
 }
 
