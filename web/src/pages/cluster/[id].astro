@@ -7,6 +7,7 @@ import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSugges
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import { chooseClusterImage } from '../../utils/imageSelection';
+import { cleanAndDecode } from '../../utils/textUtils';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
 
 const { id } = Astro.params;
@@ -141,10 +142,10 @@ function parseSynthesis(text: string) {
             if (sourceMatch) {
                 return {
                     source: sourceMatch[1],
-                    content: sourceMatch[2].trim(),
+                    content: cleanAndDecode(sourceMatch[2].trim()),
                 };
             }
-            return { source: null, content: item.trim() };
+            return { source: null, content: cleanAndDecode(item.trim()) };
         })
         .filter((item) => item.content && item.content.toLowerCase() !== 'статии:');
 }
@@ -155,7 +156,7 @@ function normalizePerspectives(items: any[]) {
     return items
         .map((item) => {
             if (typeof item === 'string') {
-                const content = item.trim();
+                const content = cleanAndDecode(item.trim());
                 return content ? { angle: 'Перспектива', content } : null;
             }
 
@@ -164,9 +165,9 @@ function normalizePerspectives(items: any[]) {
             const angle = String(
                 item.angle ?? item.label ?? item.title ?? item.name ?? 'Перспектива'
             ).trim();
-            const content = String(
+            const content = cleanAndDecode(String(
                 item.content ?? item.text ?? item.description ?? ''
-            ).trim();
+            ).trim());
 
             if (!content) return null;
             return { angle: angle || 'Перспектива', content };
@@ -180,6 +181,8 @@ const leadArticle = cluster?.articles?.[0];
 const articleRows = cluster
 	? cluster.articles.map((article: any, index: number) => ({
 			...article,
+			title: cleanAndDecode(article.title),
+			description: cleanAndDecode(article.description),
 			relationship: getRelationshipMeta(article.title, leadArticle?.title || article.title, index),
 			sourceSignal: article.source_signal || null,
 			exactTime: getTimeStr(article.created_at),
@@ -224,8 +227,8 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 ---
 
 <Layout
-	title={cluster ? cluster.articles[0].title : "Детали за вест"}
-	description={cluster ? shareDescription : "Детали за вест од Пресек"}
+	title={cluster ? cleanAndDecode(cluster.articles[0].title) : "Детали за вест"}
+	description={cluster ? cleanAndDecode(shareDescription) : "Детали за вест од Пресек"}
 	image={shareImage}
 	type={cluster ? "article" : "website"}
 >
@@ -264,10 +267,10 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 							</div>
 
 							<h1 class="cluster-headline">
-								{cluster.articles[0].title}
+								{cleanAndDecode(cluster.articles[0].title)}
 							</h1>
 
-							{leadDescription && <p class="cluster-dek">{leadDescription}</p>}
+							{leadDescription && <p class="cluster-dek">{cleanAndDecode(leadDescription)}</p>}
 
 							<div class="cluster-header-meta">
 								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
@@ -312,7 +315,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 							)}
 							<div class="cluster-summary-card">
 								<p class="cluster-summary-label">Во кратки црти</p>
-								<p class="cluster-summary-copy">{summaryCardText}</p>
+								<p class="cluster-summary-copy">{cleanAndDecode(summaryCardText)}</p>
 								{sourcePreview.length > 0 && (
 									<p class="cluster-summary-sources">
 										<span>Извори:</span> {sourcePreview.join(' · ')}

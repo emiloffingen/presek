@@ -1,5 +1,6 @@
 ---
 import { chooseClusterImage } from '../utils/imageSelection';
+import { cleanAndDecode } from '../utils/textUtils';
 
 interface Props {
 	cluster: any;
@@ -20,19 +21,12 @@ const selectedImage = chooseClusterImage(cluster);
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 
-function cleanCardSummary(text?: string) {
-	if (!text) return '';
-	return String(text)
-		.replace(/^[⚪🟢🔴]\s*/u, '')
-		.replace(/#[^\s#]+/g, '')
-		.replace(/\s+/g, ' ')
-		.trim();
-}
+const displayTitle = cleanAndDecode(main.title);
 
 function getCardSummary(article: any, lead = false) {
-	const preferred = cleanCardSummary(article?.summary);
-	const fallback = cleanCardSummary(article?.description);
-	const text = preferred || fallback;
+	const preferred = article?.summary;
+	const fallback = article?.description;
+	const text = cleanAndDecode(preferred || fallback);
 	if (!text) return '';
 	const limit = lead ? 250 : 170;
 	return text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
@@ -62,7 +56,7 @@ function getTimeStr(dateStr: string) {
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
 			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard"]}>
-				{main.title}
+				{displayTitle}
 			</h2>
 		</a>
 

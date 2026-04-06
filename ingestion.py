@@ -31,12 +31,18 @@ def is_junk(title: str, desc: str) -> bool:
     return any(word in text for word in JUNK_KEYWORDS)
 
 def clean_rss_footer(text: str) -> str:
-    """Removes common RSS footers like 'The post ... appeared first on ...'"""
+    """Removes common RSS footers and 'continue reading' artifacts."""
     if not text: return ""
     text = re.sub(r'The post .* appeared first on .*', '', text)
     text = re.sub(r'Прочитајте повеќе на .*', '', text)
     text = re.sub(r'This article was originally published on .*', '', text)
     text = re.sub(r'Source: https?://.*', '', text)
+    
+    # Generic 'Read More' artifacts
+    text = re.sub(r'Read More\s*»?\s*$', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'Прочитај повеќе\s*$', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'Continue reading\s*\.*$', '', text, flags=re.IGNORECASE)
+    
     return text.strip()
 
 
