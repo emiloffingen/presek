@@ -13,7 +13,7 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
 
   <main class="site-layout py-12">
     <div class="settings-shell editorial-shell">
-      <header class="settings-header editorial-header">
+      <header class="settings-header editorial-header motion-rise">
         <span class="page-kicker">Синхронизиран профил</span>
         <h1 class="settings-headline editorial-headline">Поставки</h1>
         <p class="settings-lede editorial-intro">
@@ -22,7 +22,7 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
       </header>
 
       <div class="settings-page-grid editorial-page-grid">
-        <div class="settings-main editorial-main">
+        <div class="settings-main editorial-main motion-rise motion-delay-1">
           <div class="settings-card editorial-panel">
             <OnboardingIsland client:load />
           </div>
@@ -31,7 +31,7 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
           </div>
         </div>
 
-        <aside class="settings-rail editorial-rail">
+        <aside class="settings-rail editorial-rail motion-rise motion-delay-2">
           <div class="settings-card editorial-panel">
             <h3 class="settings-rail-title editorial-panel-title"><Radio size={14} /> Достава и известувања</h3>
             <BriefingDeliveryIsland client:load variant="full" />

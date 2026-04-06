@@ -251,7 +251,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 					sources={cluster.articles.map((article: any) => article.source).filter(Boolean)}
 					tags={cluster.tags || []}
 				/>
-				<header class="cluster-header">
+				<header class="cluster-header motion-rise">
 					<div class="cluster-header-grid">
 						<div class="cluster-header-copy">
 							<div class="cluster-header-top">
@@ -331,7 +331,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 				</header>
 
 				<div class="cluster-grid">
-					<div class="cluster-main">
+					<div class="cluster-main motion-rise motion-delay-1">
 						{/* AI Synthesis Section */}
 						{cluster.synthesis && synthesisItems.length > 0 && (
 							<section class="cluster-synthesis">
@@ -419,7 +419,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 					</div>
 
 					{/* Sidebar */}
-					<aside class="cluster-rail">
+					<aside class="cluster-rail motion-rise motion-delay-2">
 						{cluster.topics && cluster.topics.length > 0 && (
 							<div class="rail-card">
 								<h3 class="rail-card-title">Тема</h3>

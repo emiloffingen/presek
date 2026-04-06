@@ -35,9 +35,11 @@ try {
 
 	<main class="site-layout py-12">
         <div class="entity-shell editorial-shell">
-            <EntityIsland name={decodedName} initialClusters={clusters} initialData={entityData} />
+            <div class="motion-rise">
+                <EntityIsland name={decodedName} initialClusters={clusters} initialData={entityData} />
+            </div>
 
-            <section class="entity-news editorial-panel">
+            <section class="entity-news editorial-panel motion-rise motion-delay-1">
                 <div class="entity-news-head">
                     <span class="page-kicker">Кластери</span>
                     <h2>Сите Неодамнешни Кластери</h2>

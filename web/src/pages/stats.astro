@@ -26,7 +26,7 @@ try {
 
 	<main class="site-layout py-12">
 		<div class="stats-shell editorial-shell">
-			<header class="stats-header editorial-header">
+			<header class="stats-header editorial-header motion-rise">
 				<span class="page-kicker">Аналитика</span>
 				<h1 class="stats-headline editorial-headline">
 					Медиумски Пулс
@@ -38,7 +38,7 @@ try {
 
 			{stats ? (
 				<div class="stats-flow">
-					<div class="stats-metrics">
+					<div class="stats-metrics motion-rise motion-delay-1">
 						<div class="metric-card editorial-panel">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
 							<p class="metric-value">{stats.total_articles.toLocaleString()}</p>
@@ -57,7 +57,7 @@ try {
 						</div>
 					</div>
 
-					<div class="stats-grid">
+					<div class="stats-grid motion-rise motion-delay-2">
 						<div class="stats-main">
 							<section class="stats-module editorial-panel">
 								<h2 class="stats-section-title editorial-panel-title">Редакциски Сигнали</h2>

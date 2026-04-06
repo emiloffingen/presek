@@ -160,7 +160,7 @@ function getThumb(cluster: any) {
 					)}
 
 				{leadCluster && (
-					<section class="lead-hero">
+					<section class="lead-hero motion-rise">
 						<div class="lead-copy">
 							<div class="lead-kicker">
 								<span class="source-label">{leadCluster.articles[0].source}</span>
@@ -197,7 +197,7 @@ function getThumb(cluster: any) {
 				)}
 
 					{supportingClusters.length > 0 && (
-						<section class="supporting-grid">
+						<section class="supporting-grid motion-rise motion-delay-1">
 							{supportingClusters.map((cluster) => (
 								<NewsCard cluster={cluster} />
 							))}
@@ -211,7 +211,7 @@ function getThumb(cluster: any) {
 					<OnboardingIsland client:load compact />
 
 					{showInternationalRail && (
-						<section class="international-section">
+						<section class="international-section motion-rise motion-delay-2">
 							<div class="section-heading-row">
 								<h2 class="section-title">Од Регионот И Светот</h2>
 								<p class="section-note">Куриран избор од странски извори со веќе преведени наслови на македонски.</p>
@@ -225,7 +225,7 @@ function getThumb(cluster: any) {
 					)}
 
 					{feedClusters.length > 0 && (
-						<section class="feed-section">
+						<section class="feed-section motion-rise motion-delay-3">
 						<div class="section-heading-row">
 							<h2 class="section-title">Понатаму Во Денот</h2>
 							<p class="section-note">Развојни и придружни приказни што вреди да останат во видното поле.</p>
@@ -240,7 +240,7 @@ function getThumb(cluster: any) {
 			</div>
 
 			<aside class="front-rail">
-				<section class="rail-module rail-pulse">
+				<section class="rail-module rail-pulse motion-rise-fast motion-delay-1">
 					<h3 class="rail-title">
 						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
 					</h3>
@@ -265,7 +265,7 @@ function getThumb(cluster: any) {
 
 				<HomeRailSuggestionsIsland client:load />
 
-				<section class="rail-module">
+				<section class="rail-module motion-rise-fast motion-delay-2">
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
 					<div class="focus-cloud">
 						{focusEntities.map((ent: any) => (
