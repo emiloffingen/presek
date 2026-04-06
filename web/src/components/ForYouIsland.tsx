@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Compass, Sparkles } from 'lucide-react';
-import { buildPersonalizedClusters, hasPersonalizationSignal, loadReaderProfile } from '../lib/personalization.js';
+import PreferenceToggle from './PreferenceToggle.tsx';
+import {
+  buildFollowRecommendations,
+  buildPersonalizedClusters,
+  hasPersonalizationSignal,
+  loadReaderProfile,
+} from '../lib/personalization.js';
 
 function getSummary(cluster: any) {
   const article = cluster?.articles?.[0];
@@ -11,9 +17,11 @@ function getSummary(cluster: any) {
 export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   const [items, setItems] = useState<any[]>([]);
   const [hasSignals, setHasSignals] = useState(false);
+  const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
     const profile = loadReaderProfile();
+    setProfile(profile);
     const nextHasSignals = hasPersonalizationSignal(profile);
     setHasSignals(nextHasSignals);
     if (!nextHasSignals) {
@@ -22,6 +30,8 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
     }
     setItems(buildPersonalizedClusters(clusters, profile, 4));
   }, [clusters]);
+
+  const recommendations = buildFollowRecommendations(profile, 2);
 
   if (!hasSignals || items.length === 0) {
     return null;
@@ -62,7 +72,51 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
           );
         })}
       </div>
+
+      {(recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
+        <div className="for-you-follow-block">
+          <div className="for-you-follow-head">
+            <p className="for-you-kicker"><Sparkles size={14} /> Следете го следното</p>
+            <p className="for-you-note">
+              Овие теми и извори се појавуваат во препораките што веќе ви одговараат.
+            </p>
+          </div>
+
+          <div className="for-you-follow-grid">
+            {recommendations.topics.map((item) => (
+              <div key={`topic:${item.value}`} className="for-you-follow-card">
+                <div>
+                  <p className="for-you-follow-kicker">Тема</p>
+                  <strong>{item.value}</strong>
+                  <p>{item.reason}</p>
+                </div>
+                <PreferenceToggle
+                  kind="topic"
+                  value={item.value}
+                  label={`тема: ${item.value}`}
+                  onChanged={() => setProfile(loadReaderProfile())}
+                />
+              </div>
+            ))}
+
+            {recommendations.sources.map((item) => (
+              <div key={`source:${item.value}`} className="for-you-follow-card">
+                <div>
+                  <p className="for-you-follow-kicker">Извор</p>
+                  <strong>{item.value}</strong>
+                  <p>{item.reason}</p>
+                </div>
+                <PreferenceToggle
+                  kind="source"
+                  value={item.value}
+                  label={`извор: ${item.value}`}
+                  onChanged={() => setProfile(loadReaderProfile())}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
-

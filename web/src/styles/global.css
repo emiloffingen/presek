@@ -272,6 +272,60 @@
     color: var(--secondary-foreground);
 }
 
+.for-you-follow-block {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.for-you-follow-head {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.for-you-follow-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+}
+
+.for-you-follow-card {
+    display: grid;
+    gap: 0.7rem;
+    padding: 0.9rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
+}
+
+.for-you-follow-kicker {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.for-you-follow-card strong {
+    display: block;
+    margin: 0 0 0.25rem;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.15;
+    color: var(--foreground);
+}
+
+.for-you-follow-card p {
+    margin: 0;
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--secondary-foreground);
+}
+
 .page-kicker {
     display: inline-block;
     margin-bottom: 0.85rem;
