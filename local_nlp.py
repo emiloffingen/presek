@@ -464,93 +464,103 @@ def _jaccard_similarity(sent1, sent2):
 
 def synthesize_locally(articles, sentence_count=4, topic=None):
     """
-    Journalistic synthesis for a cluster of articles.
-    Collects sentences from all articles and selects the best UNIQUE ones.
+    Sophisticated Local Synthesis Engine.
+    Implements Narrative Construction: Anchor -> Detail -> Action/Reaction.
     """
     if not articles: return ""
     
-    all_sentences = []
-    seen_hashes = set()
+    all_candidates = []
+    source_counts = {}
     
-    # 1. Collect and initial cleaning
+    # 1. Extraction & Pre-scoring
     for art in articles:
+        src = art.get('source', 'Извор')
         text = f"{art.get('title', '')}. {art.get('description', '')}"
+        # Split but keep track of position
         raw_sents = re.split(r'(?<=[.!?])\s+', text)
-        for s in raw_sents:
+        for idx, s in enumerate(raw_sents):
             clean_s = _normalize_summary_sentence(s)
             if not clean_s or _is_noisy_summary_sentence(clean_s):
                 continue
-            # Simple hash to avoid exact string duplicates immediately
-            h = hash(clean_s.lower())
-            if h not in seen_hashes:
-                all_sentences.append(clean_s)
-                seen_hashes.add(h)
+            
+            # Identify "Action" verbs in Macedonian
+            is_action = any(v in clean_s.lower() for v in ["изјави", "најави", "предупреди", "порача", "истакна", "повика", "одлучи"])
+            
+            # Base heuristic score
+            s_words = _sentence_tokens(clean_s)
+            if not s_words: continue
+            
+            entities = set(_extract_capitalized_phrases(clean_s))
+            
+            # Calculate value
+            val_score = len(s_words) * 0.1 # Density
+            val_score += 0.8 if idx == 0 else 0.0 # Lead priority
+            val_score += 0.6 if is_action else 0.0 # Action priority
+            val_score += 0.5 if _extract_number_tokens(clean_s) else 0.0 # Data priority
+            val_score += len(entities) * 0.4 # Entity density
+            
+            all_candidates.append({
+                "text": clean_s,
+                "score": val_score,
+                "entities": entities,
+                "source": src,
+                "is_action": is_action
+            })
 
-    if not all_sentences: return ""
+    if not all_candidates: return ""
 
-    # 2. Score all sentences
-    # We use the full text of all articles to build frequency map
-    full_corpus = " ".join(all_sentences)
-    word_freq = Counter(_sentence_tokens(full_corpus))
-    if not word_freq: return all_sentences[0]
-    
-    max_freq = max(word_freq.values())
-    for w in word_freq: word_freq[w] /= max_freq
+    # Sort candidates by raw score
+    all_candidates.sort(key=lambda x: x['score'], reverse=True)
 
-    # Topic-specific keywords to boost
-    topic_boost_words = set()
-    if topic == "Економија":
-        topic_boost_words = {"денари", "евра", "процент", "милиони", "буџет", "плата", "цени", "инфлација", "берза"}
-    elif topic == "Политика":
-        topic_boost_words = {"министер", "претседател", "собрание", "закон", "партија", "лидер", "влада", "избори"}
-    elif topic == "Спорт":
-        topic_boost_words = {"натпревар", "гол", "победа", "првенство", "клуб", "лига", "фудбал", "кошарка"}
-    elif topic == "Криминал":
-        topic_boost_words = {"полиција", "апсење", "убиство", "суд", "обвинителство", "затвор", "напад"}
-
-    scored_sentences = []
-    for i, s in enumerate(all_sentences):
-        s_words = _sentence_tokens(s)
-        if not s_words: continue
-        
-        score = sum(word_freq.get(w, 0) for w in s_words)
-        num_bonus = 0.5 if _extract_number_tokens(s) else 0.0
-        prop_bonus = len(_extract_capitalized_phrases(s)) * 0.35
-        
-        topic_bonus = 0.0
-        if topic_boost_words:
-            matched = len(set(s_words) & topic_boost_words)
-            topic_bonus = matched * 0.6
-
-        # Penalize very long or very short
-        length_penalty = 1.0
-        if len(s) > 280: length_penalty = 0.6
-        if len(s) < 40: length_penalty = 0.4
-
-        final_score = (score + num_bonus + prop_bonus + topic_bonus) * length_penalty
-        scored_sentences.append({"text": s, "score": final_score})
-
-    # Sort by score
-    scored_sentences.sort(key=lambda x: x['score'], reverse=True)
-
-    # 3. Selection with Uniqueness Filter (The "Journalist" step)
+    # 2. Greedy Narrative Selection
     selected = []
-    for candidate in scored_sentences:
-        if len(selected) >= sentence_count:
+    used_entities = set()
+    used_sources = set()
+    
+    for _ in range(sentence_count):
+        best_candidate = None
+        best_boosted_score = -1.0
+        
+        for cand in all_candidates:
+            # Skip if already selected or too redundant
+            if any(_jaccard_similarity(cand['text'], s['text']) > 0.4 for s in selected):
+                continue
+            
+            # Calculate Dynamic Boosts
+            diversity_boost = 1.3 if cand['source'] not in used_sources else 1.0
+            new_entity_boost = 1.0 + (len(cand['entities'] - used_entities) * 0.3)
+            
+            # Narrative Flow: 
+            # - First sentence should be an "Anchor" (high raw score)
+            # - Last sentences should favor "Action/Reaction"
+            flow_boost = 1.0
+            if len(selected) == 0: flow_boost = 1.2
+            if len(selected) >= 2 and cand['is_action']: flow_boost = 1.4
+            
+            boosted_score = cand['score'] * diversity_boost * new_entity_boost * flow_boost
+            
+            if boosted_score > best_boosted_score:
+                best_boosted_score = boosted_score
+                best_candidate = cand
+        
+        if best_candidate:
+            selected.append(best_candidate)
+            used_entities.update(best_candidate['entities'])
+            used_sources.add(best_candidate['source'])
+        else:
             break
-        
-        is_redundant = False
-        for s in selected:
-            # If 50% similar or more, it's likely the same fact
-            if _jaccard_similarity(candidate['text'], s) > 0.45:
-                is_redundant = True
-                break
-        
-        if not is_redundant:
-            selected.append(candidate['text'])
 
-    # Format as bullet points
-    return "\n".join([f"• {s}" for s in selected])
+    # 3. Final Formatting
+    # Sort selected back to a natural flow if needed, but here greedy order usually works
+    res = []
+    for s in selected:
+        txt = s['text']
+        # Capitalize first letter if not
+        if txt and txt[0].islower():
+            txt = txt[0].upper() + txt[1:]
+        res.append(f"• {txt}")
+        
+    return "\n".join(res)
 
 
 def _normalize_summary_sentence(sentence):
