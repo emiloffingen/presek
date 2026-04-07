@@ -344,9 +344,10 @@ def translate_to_macedonian(text: str) -> str | None:
         res, _ = sync_call_ai(text, TRANSLATION_SYSTEM_PROMPT, task_type="translation")
         if res:
             cleaned = clean_json_response(res)
+            import html
             if isinstance(cleaned, dict) and 'summary' in cleaned:
-                return cleaned['summary']
-            return str(cleaned)
+                return html.unescape(cleaned['summary'])
+            return html.unescape(str(cleaned))
     except Exception as e:
         log.error(f"[ai] Translation failed: {e}")
     return rewrite_to_macedonian_locally(text)

@@ -1220,7 +1220,7 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
     y = 176
     for line in lines:
         title_svg.append(
-            f'<text x="70" y="{y}" font-family="Georgia, \'Times New Roman\', serif" '
+            f'<text x="400" y="{y}" font-family="serif" text-anchor="middle" '
             f'font-size="44" font-weight="700" letter-spacing="-1.15" fill="#162132">{escape(line)}</text>'
         )
         y += 52
@@ -1251,13 +1251,13 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
   <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.18" />
   <rect x="26" y="26" width="748" height="398" fill="none" stroke="#162132" stroke-opacity="0.12" />
   <rect x="42" y="42" width="716" height="366" fill="#fffdf9" fill-opacity="0.42" />
-  <line x1="70" y1="130" x2="202" y2="130" stroke="#314055" stroke-opacity="0.5" stroke-width="2.5" />
+  <line x1="250" y1="130" x2="550" y2="130" stroke="#314055" stroke-opacity="0.5" stroke-width="2.5" />
 
   {"".join(title_svg)}
 
   <g>
     {pattern_svg}
   </g>
-  <line x1="70" y1="372" x2="744" y2="372" stroke="#162132" stroke-opacity="0.12" />
+  <line x1="100" y1="372" x2="700" y2="372" stroke="#162132" stroke-opacity="0.12" />
 </svg>"""
     return svg
