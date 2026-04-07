@@ -177,6 +177,22 @@ function normalizePerspectives(items: any[]) {
 }
 
 const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
+function extractSafeText(text?: string) {
+	if (!text) return '';
+	const trimmed = text.trim();
+	if (trimmed.startsWith('{') || trimmed.startsWith('&lt;%') || trimmed.includes('&quot;summary&quot;')) {
+		try {
+			const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
+			if (toParse.startsWith('{')) {
+				const parsed = JSON.parse(toParse);
+				if (parsed.summary) return cleanAndDecode(parsed.summary);
+				if (parsed.text) return cleanAndDecode(parsed.text);
+			}
+		} catch (e) {}
+	}
+	return cleanAndDecode(text);
+}
+
 const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
 const leadArticle = cluster?.articles?.[0];
 const articleRows = cluster
@@ -195,8 +211,7 @@ const suggestedQuestions = [
 	'Како се разликуваат изворите во известувањето?',
 	'Што останува нејасно или непотврдено?',
 ];
-const leadDescription =
-	cluster?.articles?.find((article: any) => article?.description?.trim())?.description?.trim() || '';
+const leadDescription = extractSafeText(cluster?.articles?.find((article: any) => article?.description?.trim())?.description);
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
@@ -208,7 +223,7 @@ const adjacentTopic =
 	cluster?.related?.find((item: any) => item?.shared_tags?.length)?.shared_tags?.[0] ||
 	'';
 const shareDescription = (
-	cluster?.synthesis ||
+	extractSafeText(cluster?.synthesis) ||
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
 ).replace(/\s+/g, ' ').trim().slice(0, 220);

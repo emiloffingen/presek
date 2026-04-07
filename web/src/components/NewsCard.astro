@@ -26,17 +26,19 @@ const displayTitle = cleanAndDecode(main.title);
 function getCardSummary(article: any, lead = false) {
 	let text = article?.summary || article?.description || '';
 	
-	// Safety check for JSON leakage
-	if (typeof text === 'string' && text.trim().startsWith('{')) {
+	// Safety check for JSON leakage - can be raw or double-escaped from DB
+	const trimmed = typeof text === 'string' ? text.trim() : '';
+	if (trimmed.startsWith('{') || trimmed.startsWith('&lt;%') || trimmed.includes('&quot;summary&quot;')) {
 		try {
-			const parsed = JSON.parse(text);
-			if (parsed.summary) {
-				text = parsed.summary;
-			} else if (parsed.text) {
-				text = parsed.text;
+			// If it contains &quot;, it's already been through an escaping cycle
+			const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
+			if (toParse.startsWith('{')) {
+				const parsed = JSON.parse(toParse);
+				if (parsed.summary) text = parsed.summary;
+				else if (parsed.text) text = parsed.text;
 			}
 		} catch (e) {
-			// Not valid JSON, keep as is
+			// Not valid JSON
 		}
 	}
 	
