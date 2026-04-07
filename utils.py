@@ -287,11 +287,11 @@ def build_read_next_clusters(current_cluster_id, current_articles, current_tags,
         elif shared_tags and title_overlap < 0.22:
             score += 1.6 + len(shared_tags) * 0.18
             relation_label = "Позадина и контекст"
-            relation_note = "Ја шири сликата со поврзан контекст, не само со уште еден ист наслов."
+            relation_note = "Поврзани информации и претходен контекст за оваа тема."
         elif shared_entities:
             score += 1.35 + len(shared_entities) * 0.15
             relation_label = "Исти актери, друг агол"
-            relation_note = "Ги врзува истите имиња, но од поинаков агол или друга последица."
+            relation_note = "Поврзани лица со оваа вест, но во поинаков контекст или настан."
         elif shared_topics:
             score += 1.05 + len(shared_topics) * 0.12
 

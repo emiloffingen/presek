@@ -1269,17 +1269,13 @@
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    margin-top: auto;
+    margin-top: 0.5rem;
 }
 
 .for-you-card-meta {
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    font-size: 0.64rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
 }
 
 .onboarding-card {
