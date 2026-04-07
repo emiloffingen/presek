@@ -31,8 +31,9 @@ log = logging.getLogger("presek")
 GEMINI_MODEL = "gemini-2.0-flash"
 
 from utils import redis_client
-
-# --- Provider Circuit Breaker (Global via Redis) ---
+import os
+from database import db_manager as db
+import local_nlp
 CIRCUIT_PREFIX = "ai:circuit:"
 CIRCUIT_FAIL_THRESHOLD = 3
 CIRCUIT_RETRY_AFTER = 300 # 5 minutes
@@ -351,31 +352,45 @@ def translate_to_macedonian(text: str) -> str | None:
     return rewrite_to_macedonian_locally(text)
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
-    """Generate an AI cover image for a cluster using Pollinations.ai."""
+    """Generate a stylized placeholder (Local) or AI cover image (Fallback)."""
+    # Fetch category for context-aware styling
+    category = "Вести"
+    try:
+        row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+        if row: category = row.get("category", "Вести")
+    except: pass
+
+    # --- Priority 1: Local Stylized SVG (Non-AI, Fast, Reliable) ---
+    try:
+        svg_content = local_nlp.generate_local_placeholder(cluster_id, prompt, category)
+        if svg_content:
+            os.makedirs("static/generated", exist_ok=True)
+            path = f"static/generated/{cluster_id}.svg"
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(svg_content)
+            return f"/static/generated/{cluster_id}.svg"
+    except Exception as e:
+        log.warning(f"[ai] Local placeholder failed: {e}")
+
+    # --- Priority 2: AI Fallback (Pollinations) ---
     if not POLLINATIONS_API_KEY: return None
     
     clean_prompt = re.sub(r'[^\w\s]', '', prompt[:200])
-    # Enhanced prompt for news visuals
     styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
     encoded_prompt = urllib.parse.quote(styled_prompt)
-    
-    # URL for Pollinations.ai (Free/Fast)
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
     
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             content = resp.read()
-            if len(content) < 5000: return None # Failed generation
-            
-            # Store locally
-            os.makedirs("static/generated", exist_ok=True)
-            path = f"static/generated/{cluster_id}.jpg"
-            with open(path, "wb") as f:
-                f.write(content)
-            return f"/static/generated/{cluster_id}.jpg"
+            if len(content) > 5000:
+                path = f"static/generated/{cluster_id}.jpg"
+                with open(path, "wb") as f:
+                    f.write(content)
+                return f"/static/generated/{cluster_id}.jpg"
     except Exception as e:
-        log.warning(f"[ai] Cover art failed: {e}")
+        log.debug(f"[ai] AI cover art failed: {e}")
     return None
 
 def cleanup_cover_art(valid_ids: set[str]):

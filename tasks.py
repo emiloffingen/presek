@@ -1468,6 +1468,10 @@ def generate_cluster_metadata_task():
             )
             rep_image = img_row['image_url'] if img_row else None
 
+            # If still no image after all extraction attempts, trigger a placeholder generation
+            if not rep_image:
+                rep_image = generate_cover_art(r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
+
             db.execute(
                 """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, updated_at)
                    VALUES (%s, %s, %s, NOW())
@@ -1747,12 +1751,12 @@ def backfill_cover_art_task():
             FROM articles a
             WHERE a.image_url IS NULL
               AND a.created_at >= NOW() - INTERVAL '24 hours'
-            LIMIT 5
+            LIMIT 50
         """)
         for idx, r in enumerate(rows):
             backfill_cover_art_single_task.apply_async(
                 args=(r['cluster_id'], r['title'] or ''),
-                countdown=idx * 4,
+                countdown=idx * 2,
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
