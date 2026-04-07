@@ -71,8 +71,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard"]}>
-				{displayTitle}
+			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard"]} set:html={displayTitle}>
 			</h2>
 		</a>
 
@@ -87,8 +86,7 @@ function getTimeStr(dateStr: string) {
 		</p>
 
 		{displaySummary && (
-			<p class="summary">
-				{displaySummary}
+			<p class="summary" set:html={displaySummary}>
 			</p>
 		)}
 
@@ -96,8 +94,7 @@ function getTimeStr(dateStr: string) {
             <ul class="sub-headlines">
                 {cluster.articles.slice(1, 4).map((sub: any) => (
                     <li>
-                        <a href={`/cluster/${cluster.cluster_id}`}>
-                            {cleanAndDecode(sub.title)}
+                        <a href={`/cluster/${cluster.cluster_id}`} set:html={cleanAndDecode(sub.title)}>
                         </a>
                     </li>
                 ))}

@@ -193,11 +193,11 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
 							</div>
 							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-								<h1 class="lead-headline">{leadTitle}</h1>
+								<h1 class="lead-headline" set:html={leadTitle}></h1>
 							</a>
 							<p class="lead-signal">{leadSignal}</p>
 							{leadSummary && (
-								<p class="lead-summary">{leadSummary}</p>
+								<p class="lead-summary" set:html={leadSummary}></p>
 							)}
 							<div class="lead-meta">
 								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>

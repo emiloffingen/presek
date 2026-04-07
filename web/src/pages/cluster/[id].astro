@@ -298,11 +298,10 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 								</a>
 							</div>
 
-							<h1 class="cluster-headline">
-								{cleanAndDecode(cluster.articles[0].title)}
+							<h1 class="cluster-headline" set:html={cleanAndDecode(cluster.articles[0].title)}>
 							</h1>
 
-							{leadDescription && <p class="cluster-dek">{cleanAndDecode(leadDescription)}</p>}
+							{leadDescription && <p class="cluster-dek" set:html={cleanAndDecode(leadDescription)}></p>}
 
 							<div class="cluster-header-meta">
 								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
@@ -350,7 +349,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 									<p class="cluster-summary-label">Во кратки црти</p>
 									<div class="cluster-summary-copy">
 										{ai_summary_bullets.map((line: string) => (
-											<p class="mb-2 last:mb-0">{cleanAndDecode(line)}</p>
+											<p class="mb-2 last:mb-0" set:html={cleanAndDecode(line)}></p>
 										))}
 									</div>
 									{sourcePreview.length > 0 && (
@@ -387,7 +386,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
                                                 <span class="text-nyt-accent font-black mt-1">●</span>
                                                 <span>
                                                     {item.source && <strong class="nyt-section-label text-[10px] mr-2 text-nyt-accent">[{item.source}]</strong>}
-                                                    {item.content}
+                                                    <span set:html={item.content}></span>
                                                 </span>
                                             </li>
                                         ))}
@@ -406,8 +405,8 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 								<div class="perspective-grid">
 									{perspectives.map((p: any) => (
 										<div class="perspective-card">
-											<h3>{p.angle}</h3>
-											<p>{p.content}</p>
+											<h3 set:html={p.angle}></h3>
+											<p set:html={p.content}></p>
 										</div>
 									))}
 								</div>
