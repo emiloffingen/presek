@@ -217,6 +217,21 @@ const shareDescription = (
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 
+const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
+
+const filteredRelated = (cluster?.related || []).filter((rel: any) => {
+	// If it shares entities, it's likely relevant
+	if (rel.shared_entities && rel.shared_entities.length > 0) return true;
+	
+	// If it only shares tags, ensure they aren't all generic
+	if (rel.shared_tags && rel.shared_tags.length > 0) {
+		const nonGenericTags = rel.shared_tags.filter((tag: string) => !GENERIC_TAGS.includes(tag.toUpperCase()));
+		return nonGenericTags.length > 0;
+	}
+	
+	return true; // Keep if no shared info provided (fallback)
+});
+
 function getLeadVisual(clusterData: any) {
 	const selected = chooseClusterImage(clusterData, 'hero');
 	if (!selected.proxiedUrl) return null;
@@ -478,11 +493,11 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 						</div>
 
 						{/* Related */}
-						{cluster.related && cluster.related.length > 0 && (
+						{filteredRelated && filteredRelated.length > 0 && (
 							<div class="rail-card">
 								<h3 class="rail-card-title">Поврзани Вести</h3>
 								<div class="related-list">
-								{cluster.related.map((rel: any) => (
+								{filteredRelated.map((rel: any) => (
 									<a href={`/cluster/${rel.cluster_id}`} class="related-link group no-underline">
 										{rel.relationship_label && <p class="related-kicker">{rel.relationship_label}</p>}
 										<h4>

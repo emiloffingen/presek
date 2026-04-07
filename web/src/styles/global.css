@@ -1907,3 +1907,240 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Ask Presek Component Styles */
+.ask-presek {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ask-intro {
+    margin-bottom: 0.5rem;
+}
+
+.ask-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.ask-suggestion {
+    padding: 0.4rem 0.7rem;
+    background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    color: var(--secondary-foreground);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.ask-suggestion:hover {
+    background: var(--secondary);
+    border-color: var(--nyt-accent);
+    color: var(--nyt-accent);
+}
+
+.ask-form {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.ask-input {
+    width: 100%;
+    padding: 0.75rem;
+    padding-bottom: 3rem; /* Space for the absolute button */
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-family: var(--font-nyt-body);
+    font-size: 0.95rem;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.ask-input:focus {
+    border-color: var(--nyt-accent);
+}
+
+.ask-submit {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--nyt-accent);
+    color: white;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.ask-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ask-error {
+    font-size: 0.85rem;
+    color: var(--nyt-red);
+    margin: 0;
+}
+
+.ask-result {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    border: 1px solid var(--border);
+}
+
+.ask-result-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+.ask-confidence {
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.ask-answer {
+    font-family: var(--font-nyt-body);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.ask-evidence-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ask-evidence-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ask-evidence-list li {
+    font-family: var(--font-nyt-body);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.ask-evidence-list li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--nyt-accent);
+}
+
+.ask-evidence-list-muted li::before {
+    color: var(--muted-foreground);
+}
+
+.ask-citation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ask-citation {
+    display: flex;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    padding: 0.5rem;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.ask-citation:hover {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+.ask-citation div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.ask-citation strong {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--nyt-accent);
+}
+
+.ask-citation span {
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.ask-citation small {
+    font-family: var(--font-nyt-body);
+    font-size: 0.8rem;
+    color: var(--secondary-foreground);
+    line-height: 1.4;
+}
+
+.ask-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ask-history-item {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    padding: 0.6rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.ask-history-item strong {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+}
+
+.ask-history-item span {
+    font-family: var(--font-nyt-body);
+    font-size: 0.85rem;
+    color: var(--secondary-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
