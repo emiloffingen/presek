@@ -87,25 +87,14 @@ export default function AskPresekIsland({
     setError('');
 
     try {
-      let res = await fetch(`${API_URL}/chat_cluster`, {
+      const res = await fetch(`${API_URL}/chat_cluster`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ cluster_id: clusterId, query: finalQuestion }),
       });
-      let parsed = await parseApiResponse(res);
-
-      if (!parsed.ok || !parsed.data) {
-        res = await fetch(`${API_URL}/cluster/${clusterId}/ask`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ question: finalQuestion }),
-        });
-        parsed = await parseApiResponse(res);
-      }
+      const parsed = await parseApiResponse(res);
 
       if (!parsed.ok || !parsed.data) {
         throw new Error(parsed.message);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { apiClient } from '../api/client';
+import { apiBaseUrl } from '../lib/apiBase';
 import { Search, Loader2, Info, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
 
 interface SourceRow {
@@ -63,14 +63,18 @@ export const IzvoriPage: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const allRes = await apiClient.getSources();
+        const res = await fetch(`${apiBaseUrl()}/sources?_t=${Date.now()}`);
+        if (!res.ok) {
+          setError('Неуспешно поврзување со серверот.');
+          return;
+        }
+        const allRes = await res.json();
         if (!Array.isArray(allRes)) {
           setError('Грешка при вчитување на податоците.');
           return;
         }
         setSources(allRes);
-      } catch (e) {
-        console.error('Failed to load sources:', e);
+      } catch {
         setError('Неуспешно поврзување со серверот.');
       } finally {
         setLoading(false);
