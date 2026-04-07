@@ -70,6 +70,12 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
           {cluster.is_breaking && (
             <span className="breaking-dot" style={{ color: 'var(--accent-color)', fontWeight: 900, marginLeft: 4 }}>● LIVE</span>
           )}
+          {cluster.has_synthesis && (
+            <span className="text-[9px] font-black bg-accent text-white px-1 ml-2">СУБЛИМАТ</span>
+          )}
+          {cluster.has_fact_check && (
+            <span className="text-[9px] font-black bg-blue-600 text-white px-1 ml-2">FACT CHECK</span>
+          )}
         </div>
 
         <h2 className={`cluster-headline ${isLead ? 'text-2xl md:text-4xl' : 'text-lg'}`}>

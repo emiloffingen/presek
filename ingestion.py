@@ -31,6 +31,15 @@ def is_junk(title: str, desc: str) -> bool:
     text = f"{title} {desc}".lower()
     return any(word in text for word in JUNK_KEYWORDS)
 
+def detect_fact_check(source: str, title: str) -> bool:
+    """Identify if an article is a fact-check."""
+    if source.lower() == "vistinomer":
+        return True
+    
+    fact_keywords = ["проверка на факти", "факти:", "неточно:", "дезинформација", "манипулација", "вистина или лага"]
+    lowered_title = title.lower()
+    return any(kw in lowered_title for kw in fact_keywords)
+
 def clean_rss_footer(text: str) -> str:
     """Removes common RSS footers and 'continue reading' artifacts."""
     if not text: return ""
@@ -381,13 +390,14 @@ async def ingest_all_sources_async():
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
                 created_at = c.get("created_at") or cycle_now
+                is_fact = detect_fact_check(c['source'], c['title'])
 
                 prepared_rows.append((
                     display_title, c['title'] if is_intl else "",
                     c['link'], c['source'], category, subcategory, 
                     cluster_id, created_at, c['image_url'], clean_desc,
                     clean_desc if is_intl else "", c['country'], 0,
-                    str(emb) if emb else None, topic
+                    str(emb) if emb else None, topic, is_fact
                 ))
 
                 if emb:
@@ -406,7 +416,7 @@ async def ingest_all_sources_async():
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory, 
                     cluster_id, created_at, image_url, description, original_description, 
-                    country, is_translated, embedding, topic
+                    country, is_translated, embedding, topic, is_fact_check
                 ) VALUES %s ON CONFLICT (link) DO NOTHING RETURNING id, country
             """
             execute_values(cur, sql, prepared_rows)

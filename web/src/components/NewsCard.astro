@@ -1,6 +1,7 @@
 ---
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
+import { ShieldCheck } from 'lucide-react';
 
 interface Props {
 	cluster: any;
@@ -67,6 +68,11 @@ function getTimeStr(dateStr: string) {
 			<span class="source-label">{main.source}</span>
 			{sourceSignal.trust_label && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
 			{cluster.is_breaking && <span class="breaking-label">Во живо</span>}
+			{cluster.has_fact_check && (
+				<span class="fact-check-badge">
+					<ShieldCheck size={10} /> ФАКТ-ЧЕК
+				</span>
+			)}
 			<span class="significance-label">{significanceLabel}</span>
 		</div>
 
@@ -263,6 +269,19 @@ function getTimeStr(dateStr: string) {
         padding: 0 4px;
         background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
     }
+
+	.fact-check-badge {
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		color: #059669;
+		border: 1px solid #059669;
+		padding: 0 4px;
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		background: #f0fdf4;
+	}
 
 	.significance-label {
 		font-family: var(--font-sans);

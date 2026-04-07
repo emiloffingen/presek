@@ -57,8 +57,7 @@ SENTIMENT_LEXICON = {
     "лошо": -1.0, "катастрофа": -2.0, "криза": -1.5, "проблем": -1.0,
     "скандал": -2.0, "корупција": -2.0, "напад": -1.5, "војна": -2.0, 
     "смрт": -2.0, "убиство": -2.0, "затвор": -1.5, "кражба": -1.5, 
-    "криминал": -2.0, "криминалци": -2.0, "неуспех": -1.5, "патека": -0.5, 
-    "порано": -0.5, "порака": -0.5, "порази": -1.5, "поразот": -1.5,
+    "криминал": -2.0, "криминалци": -2.0, "неуспех": -1.5, "порази": -1.5, "поразот": -1.5,
     "загуба": -1.5, "критикува": -1.0, "осудува": -1.5, "неправда": -1.5, 
     "хаос": -1.5, "смртност": -2.0, "болест": -1.5, "штета": -1.5, "закана": -1.5, 
     "бомба": -2.0, "несреќа": -2.0, "пожар": -1.5, "судир": -1.5, "повредени": -1.5,
@@ -892,8 +891,8 @@ def compare_cluster_sources(articles):
     )
 
     all_terms = Counter()
-    all_keyphrases = Counter()
     article_term_sets = []
+    article_texts_lower = []
     title_pairs = []
     number_map = {}
     uncertain_sources = []
@@ -903,7 +902,7 @@ def compare_cluster_sources(articles):
         terms = set(_extract_terms(combined))
         article_term_sets.append(terms)
         all_terms.update(terms)
-        all_keyphrases.update(extract_keyphrases_locally(combined, top_n=6))
+        article_texts_lower.append(combined.lower())
 
         title = article["title"]
         if title:
@@ -918,7 +917,21 @@ def compare_cluster_sources(articles):
 
     threshold = max(2, math.ceil(len(articles) / 2))
     common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold and term not in SOURCE_NOISE_WORDS]
-    common_phrases = [phrase for phrase, count in all_keyphrases.most_common(8) if count >= threshold]
+
+    # Pool all articles, extract keyphrases once, then keep only the
+    # phrases that actually appear (as a substring) in `threshold` or more
+    # of the per-article texts. This is robust against KeyBERT returning
+    # slightly different surface forms between articles.
+    pooled_text = " ".join(a["title"] + ". " + a["description"] for a in articles)
+    candidate_phrases = extract_keyphrases_locally(pooled_text, top_n=12)
+    common_phrases = []
+    for phrase in candidate_phrases:
+        if not phrase or " " not in phrase:
+            continue  # only multi-word phrases qualify here
+        needle = phrase.lower()
+        hits = sum(1 for txt in article_texts_lower if needle in txt)
+        if hits >= threshold:
+            common_phrases.append(phrase)
     common_line = ""
     if common_phrases:
         common_line = _format_common_line_from_phrases(common_phrases[:3])

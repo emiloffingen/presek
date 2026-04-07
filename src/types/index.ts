@@ -14,11 +14,31 @@ export interface Article {
   reading_time: number;
   summary?: string;
   is_translated: number;
+  is_fact_check?: boolean;
 }
 
 export interface ClusterSummary {
   angle: string;
   content: string;
+}
+
+export interface TimelineEntry {
+  article_id: number;
+  title: string;
+  source: string;
+  created_at: string;
+  is_first: boolean;
+  is_major: boolean;
+}
+
+export interface SentimentData {
+  score: number;
+  label: string;
+  tone_analysis?: {
+    sensationalism: number;
+    objectivity: number;
+    emotional_charge: number;
+  };
 }
 
 export interface NewsCluster {
@@ -29,11 +49,15 @@ export interface NewsCluster {
   is_breaking: boolean;
   has_synthesis: boolean;
   has_balanced: boolean;
+  has_fact_check: boolean;
   reading_time: number;
 }
 
 export interface ClusterDetail extends NewsCluster {
   synthesis: string;
+  generated_article: string | null;
+  sentiment: SentimentData | null;
+  timeline: TimelineEntry[];
   perspectives: ClusterSummary[];
   tags: string[];
   topics: string[];

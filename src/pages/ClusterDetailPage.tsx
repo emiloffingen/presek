@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Flame, Sparkles, Newspaper, Link2,
-  MessageCircle, Loader2, Clock, Tag, Send,
+  MessageCircle, Loader2, Clock, Tag, Send, Activity,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterDetail } from '../types';
@@ -95,6 +95,9 @@ export const ClusterDetailPage: React.FC = () => {
                 {cluster.has_synthesis && (
                     <span className="text-[10px] font-black uppercase tracking-widest text-white bg-accent px-2 py-0.5">СУБЛИМАТ</span>
                 )}
+                {cluster.has_fact_check && (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 px-2 py-0.5">FACT CHECK</span>
+                )}
             </div>
             <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight text-primary mb-4">
                 {article.title}
@@ -110,24 +113,62 @@ export const ClusterDetailPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
+                {cluster.generated_article && (
+                    <section className="mb-12">
+                        <h2 className="rail-label mb-6 flex items-center gap-2 text-accent"><Sparkles size={14}/> ВОДЕЧКА СТОРИЈА</h2>
+                        <div className="prose-nyt text-xl leading-relaxed text-secondary font-serif">
+                            {cluster.generated_article.split('\n').filter(p => p.trim()).map((paragraph, idx) => (
+                                <p key={idx} className={`mb-6 last:mb-0 ${idx === 0 ? "first-letter:text-5xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[1] first-letter:text-accent" : ""}`}>
+                                    {paragraph}
+                                </p>
+                            ))}
+                        </div>
+                        <div className="h-px bg-color my-10" />
+                    </section>
+                )}
+
                 {cluster.has_synthesis && cluster.synthesis && (
                     <section className="mb-12">
                         <h2 className="rail-label mb-6 flex items-center gap-2"><Sparkles size={14}/> ПРЕСЕК СУБЛИМАТ</h2>
-                        <div className="article-prose text-lg leading-relaxed italic border-l-4 border-accent pl-6 py-2 text-secondary">
+                        <div className="article-prose text-lg leading-relaxed italic border-l-4 border-accent pl-6 py-2 text-secondary whitespace-pre-line">
                             {cluster.synthesis}
                         </div>
                         
                         {cluster.perspectives && cluster.perspectives.length > 0 && (
                             <div className="mt-10 grid gap-6">
                                 <p className="section-heading">РАЗЛИЧНИ ПЕРСПЕКТИВИ</p>
-                                {cluster.perspectives.map((p, i) => (
-                                    <div key={i} className="bg-secondary p-5 border-t border-color">
-                                        <p className="font-bold text-sm mb-2 uppercase tracking-tight text-primary">{p.angle}</p>
-                                        <p className="text-sm text-secondary leading-relaxed">{p.content}</p>
-                                    </div>
-                                ))}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {cluster.perspectives.map((p, i) => (
+                                        <div key={i} className="bg-secondary p-5 border-t border-color">
+                                            <p className="font-bold text-sm mb-2 uppercase tracking-tight text-primary">{p.angle}</p>
+                                            <p className="text-sm text-secondary leading-relaxed">{p.content}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
+                    </section>
+                )}
+
+                {cluster.timeline && cluster.timeline.length > 1 && (
+                    <section className="mb-12 bg-secondary p-8 border border-color">
+                        <h2 className="rail-label mb-8 flex items-center gap-2"><Clock size={14}/> ХРОНОЛОГИЈА НА НАСТАНОТ</h2>
+                        <div className="space-y-8 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-color">
+                            {cluster.timeline.map((entry, idx) => (
+                                <div key={entry.article_id} className="relative pl-10">
+                                    <div className={`absolute left-0 top-1.5 w-4.5 h-4.5 rounded-full border-2 bg-primary ${entry.is_major ? 'border-accent scale-110' : 'border-color'}`} />
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-black uppercase text-accent">{entry.source}</span>
+                                            <span className="text-[10px] font-bold text-muted">{new Date(entry.created_at).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                        <h3 className={`font-serif leading-tight ${entry.is_major ? 'text-lg font-bold text-primary' : 'text-base text-secondary'}`}>
+                                            {entry.title}
+                                        </h3>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 )}
 
@@ -137,7 +178,12 @@ export const ClusterDetailPage: React.FC = () => {
                         {cluster.articles.map((art) => (
                             <div key={art.id} className="border-b border-color pb-4">
                                 <div className="flex justify-between items-start gap-3 mb-2">
-                                    <span className="text-[10px] font-black uppercase text-accent">{art.source}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase text-accent">{art.source}</span>
+                                        {art.is_fact_check && (
+                                            <span className="text-[9px] font-bold text-white bg-blue-600 px-1">FACT CHECK</span>
+                                        )}
+                                    </div>
                                     <span className="text-[10px] text-muted">
                                         {new Date(art.created_at).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
@@ -152,6 +198,43 @@ export const ClusterDetailPage: React.FC = () => {
             </div>
 
             <aside className="lg:col-span-4 space-y-10">
+                {/* Sentiment / Media Pulse */}
+                {cluster.sentiment && (
+                    <div className="rail-widget border-t-2 border-primary">
+                        <h3 className="rail-label flex items-center gap-2"><Activity size={14}/> МЕДИУМСКИ ПУЛС</h3>
+                        <div className="bg-secondary p-5">
+                            <div className="flex items-end gap-1 mb-4 h-12">
+                                {cluster.sentiment.tone_analysis && (
+                                    <>
+                                        <div className="flex-1 bg-accent/20 relative group" style={{ height: `${(cluster.sentiment.tone_analysis.sensationalism || 0) * 100}%` }}>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-primary text-[10px] p-1 border border-color opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Сензационализам</div>
+                                        </div>
+                                        <div className="flex-1 bg-green-500/20 relative group" style={{ height: `${(cluster.sentiment.tone_analysis.objectivity || 0) * 100}%` }}>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-primary text-[10px] p-1 border border-color opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Објективност</div>
+                                        </div>
+                                        <div className="flex-1 bg-red-500/20 relative group" style={{ height: `${(cluster.sentiment.tone_analysis.emotional_charge || 0) * 100}%` }}>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-primary text-[10px] p-1 border border-color opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">Емотивност</div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase text-muted">Тон на известување</span>
+                                <span className="text-xs font-bold text-primary uppercase">{cluster.sentiment.label || 'Неутрален'}</span>
+                            </div>
+                            <div className="mt-2 w-full h-1.5 bg-primary overflow-hidden border border-color">
+                                <div 
+                                    className={`h-full transition-all duration-1000 ${cluster.sentiment.score > 0.2 ? 'bg-green-500' : cluster.sentiment.score < -0.2 ? 'bg-nyt-red' : 'bg-accent'}`}
+                                    style={{ 
+                                        width: `${((cluster.sentiment.score + 1) / 2) * 100}%`,
+                                        marginLeft: '0%' 
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* AI Chat */}
                 <div className="rail-widget border-t-2 border-primary">
                     <h3 className="rail-label flex items-center gap-2"><MessageCircle size={14}/> ПРАШАЈ ГО ПРЕСЕК</h3>

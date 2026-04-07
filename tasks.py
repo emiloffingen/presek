@@ -1228,7 +1228,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
         else:
             fallback = synthesize_cluster_fallback(article_rows)
-            sentiment_data = {"sentiment": {"score": 0, "label": "неутрален"}, "tone_analysis": {}}
+            sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
             summary, perspectives = _normalize_cluster_synthesis(
                 fallback.get("summary", ""),
                 fallback.get("perspectives", []),
@@ -1264,7 +1264,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         fallback = synthesize_cluster_fallback(article_rows)
-        sentiment_data = {"sentiment": {"score": 0, "label": "неутрален"}, "tone_analysis": {}}
+        sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
         summary, perspectives = _normalize_cluster_synthesis(
             fallback.get("summary", ""),
             fallback.get("perspectives", []),
@@ -1295,9 +1295,19 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 @celery_app.task
 def run_ingestion():
     """
-    Main ingestion orchestrator. 
+    Main ingestion orchestrator.
     Serialized for efficiency and to prevent DB/API bottlenecks.
+    A short Redis mutex prevents two workers from racing the same cycle
+    when beat double-dispatches across a restart.
     """
+    lock_key = "lock:run_ingestion"
+    try:
+        acquired = redis_client.set(lock_key, "1", nx=True, ex=900)
+    except Exception:
+        acquired = True  # If Redis is down, fall through rather than block ingestion entirely.
+    if not acquired:
+        log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
+        return
     log.info("Presek 4.0: Starting unified ingestion cycle...")
     new_count, errors = ingest_feeds()
     

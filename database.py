@@ -238,6 +238,25 @@ class DatabaseManager:
         try:
             with conn.cursor() as cur:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+
+                # Migration: Handle vector dimension change (768 -> 384 for MiniLM)
+                cur.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name='articles' AND column_name='embedding'
+                        ) THEN
+                            -- Check if we need to change dimension
+                            IF (SELECT atttypmod FROM pg_attribute 
+                                WHERE attrelid = 'articles'::regclass AND attname = 'embedding') != 384 THEN
+                                ALTER TABLE articles DROP COLUMN embedding;
+                                ALTER TABLE articles ADD COLUMN embedding vector(384);
+                            END IF;
+                        END IF;
+                    END $$;
+                """)
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS articles (
                     id SERIAL PRIMARY KEY, 
                     cluster_id TEXT NOT NULL, 
