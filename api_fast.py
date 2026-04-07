@@ -952,6 +952,29 @@ async def track_delivery_event(event_type: str, event_id: int = Query(..., ge=1)
 
     return RedirectResponse(url=f"{_public_site_url}{_safe_tracking_redirect_path(redirect)}", status_code=302)
 
+@app.get("/api/intelligence/source-pulse")
+async def get_source_pulse():
+    """Aggregates sentiment data by source to show media landscape analysis."""
+    # We query cluster_summaries joined with articles to get source-level metrics
+    sql = """
+        SELECT 
+            a.source,
+            AVG(CAST(s.sentiment->>'score' AS REAL)) as avg_sentiment,
+            AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
+            AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+            COUNT(DISTINCT a.cluster_id) as cluster_count
+        FROM cluster_summaries s
+        JOIN articles a ON s.cluster_id = a.cluster_id
+        WHERE s.sentiment IS NOT NULL
+          AND s.created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY a.source
+        HAVING COUNT(DISTINCT a.cluster_id) >= 5
+        ORDER BY cluster_count DESC
+    """
+    rows = db.execute(sql)
+    return {"status": "success", "data": rows}
+
+
 @app.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
     """Returns detailed profile and relationships for an entity."""
@@ -1104,28 +1127,37 @@ async def get_news(
             SELECT a.*, COALESCE(ce.entity_names, '{}') as entity_names
             FROM (
         """
-        params = []
+        # Hybrid Search if query is present
         if q:
-            sql += "SELECT * FROM articles WHERE 1=1 AND (title ILIKE %s OR description ILIKE %s) LIMIT 100"
-            params = [f'%{q}%', f'%{q}%']
+            from embeddings import generate_query_embedding
+            query_vec = generate_query_embedding(q)
+            if query_vec:
+                rows = db.hybrid_search(q, query_vec, limit=100)
+            else:
+                # Fallback to simple ILIKE if embedding fails
+                sql = "SELECT * FROM articles WHERE (title ILIKE %s OR description ILIKE %s) LIMIT 100"
+                params = [f'%{q}%', f'%{q}%']
+                rows = db.execute(sql, tuple(params))
         elif entity:
-            sql += """
+            sql = """
                 SELECT a.* FROM articles a
                 JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
                 WHERE ce.entity_name = %s
                 ORDER BY a.created_at DESC LIMIT 100
             """
             params = [entity]
+            rows = db.execute(sql, tuple(params))
         elif topic:
-            sql += "SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT 100"
+            sql = "SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT 100"
             params = [topic]
+            rows = db.execute(sql, tuple(params))
         elif category:
-            sql += "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100"
+            sql = "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100"
             params = [category]
+            rows = db.execute(sql, tuple(params))
         else:
-            sql += "SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 200"
-
-        rows = db.execute(sql + ") a LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id", tuple(params))
+            sql = "SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 200"
+            rows = db.execute(sql)
 
         clusters = defaultdict(list)
         for r in rows:
@@ -1238,33 +1270,54 @@ async def get_cluster_detail(cluster_id: str):
         tags = filter_cluster_tags(m_row["tags"] if m_row else [])
         topics = m_row["topics"] if m_row else []
 
-        # 4. Related clusters
+        # 4. Related clusters (Semantic)
         related = []
-        if tags:
-            related_rows = db.execute("""
-                WITH cluster_ents AS (
-                    SELECT cluster_id, array_agg(entity_name) as entity_names
-                    FROM cluster_entities
-                    GROUP BY cluster_id
-                )
-                SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags, COALESCE(ce.entity_names, '{}') as entity_names
-                FROM articles a
-                LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
-                LEFT JOIN cluster_ents ce ON a.cluster_id = ce.cluster_id
-                WHERE a.cluster_id != %s
-                  AND a.created_at >= NOW() - INTERVAL '72 hours'
-                  AND (
-                    m.tags && %s
-                    OR EXISTS (
-                        SELECT 1 FROM cluster_entities ce2
-                        WHERE ce2.cluster_id = a.cluster_id
-                          AND ce2.entity_name = ANY(%s)
-                    )
-                  )
-                ORDER BY a.created_at DESC
-                LIMIT 120
-            """, (cluster_id, tags, list({entity for article in articles for entity in (article.get("entity_names") or [])})))
-            related = build_read_next_clusters(cluster_id, articles, tags, related_rows, limit=4)
+        lead_article = articles[0]
+        if lead_article.get("embedding"):
+            # Ensure embedding is a list
+            if isinstance(lead_article["embedding"], str):
+                lead_vec = json.loads(lead_article["embedding"])
+            else:
+                lead_vec = list(lead_article["embedding"])
+            
+            # Find semantically similar clusters
+            related_results = db.search_semantic(lead_vec, limit=8)
+            
+            seen_cids = {cluster_id}
+            related_cids = []
+            for r in related_results:
+                cid = r.get("cluster_id")
+                if cid and cid not in seen_cids:
+                    related_cids.append(cid)
+                    seen_cids.add(cid)
+                    if len(related_cids) >= 4:
+                        break
+            
+            if related_cids:
+                r_rows = db.execute("""
+                    SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags 
+                    FROM articles a 
+                    LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+                    WHERE a.cluster_id = ANY(%s)
+                """, (related_cids,))
+                
+                # Group and annotate
+                r_grouped = defaultdict(list)
+                for r in r_rows:
+                    r_grouped[r["cluster_id"]].append(r)
+                
+                for cid in related_cids:
+                    arts = r_grouped.get(cid)
+                    if not arts: continue
+                    ranked = annotate_cluster_articles(arts)
+                    main = ranked[0]
+                    related.append({
+                        "cluster_id": cid,
+                        "title": main["title"],
+                        "image_url": main.get("image_url"),
+                        "tags": filter_cluster_tags(main.get("cluster_tags", [])),
+                        "relationship_label": "Сродна тема"
+                    })
 
         # 5. Build timeline
         chrono_articles = sorted(articles, key=lambda x: x['created_at'])

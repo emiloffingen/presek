@@ -109,6 +109,38 @@ class DatabaseManager:
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return self.execute(sql, (vec_str, vec_str, limit))
 
+    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50):
+        """
+        Combines Full-Text Search (FTS) and Semantic Search (pgvector) using a weighted score.
+        """
+        vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        
+        sql = """
+            WITH fts_results AS (
+                SELECT id, ts_rank_cd(search_vector, plainto_tsquery('simple', %s)) AS rank
+                FROM articles
+                WHERE search_vector @@ plainto_tsquery('simple', %s)
+                ORDER BY rank DESC
+                LIMIT 100
+            ),
+            semantic_results AS (
+                SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
+                FROM articles
+                WHERE embedding IS NOT NULL
+                ORDER BY similarity DESC
+                LIMIT 100
+            )
+            SELECT a.*, 
+                   (COALESCE(f.rank, 0) * 0.4 + COALESCE(s.similarity, 0) * 0.6) AS hybrid_score
+            FROM articles a
+            LEFT JOIN fts_results f ON a.id = f.id
+            LEFT JOIN semantic_results s ON a.id = s.id
+            WHERE f.id IS NOT NULL OR s.id IS NOT NULL
+            ORDER BY hybrid_score DESC
+            LIMIT %s
+        """
+        return self.execute(sql, (query_text, query_text, vec_str, limit))
+
     def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
         sql = "SELECT * FROM articles WHERE 1=1"
         params = []

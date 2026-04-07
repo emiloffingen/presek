@@ -20,6 +20,9 @@ const IzvoriPage = lazy(() =>
 const ArchivePage = lazy(() =>
   import('./pages/ArchivePage').then((module) => ({ default: module.ArchivePage }))
 );
+const EntityPage = lazy(() =>
+  import('./pages/EntityPage').then((module) => ({ default: module.EntityPage }))
+);
 
 function RouteFallback() {
   return (
@@ -45,6 +48,7 @@ function App() {
           <Route path="/saved" element={<SavedPage />} />
           <Route path="/izvori" element={<IzvoriPage />} />
           <Route path="/arhiva" element={<ArchivePage />} />
+          <Route path="/entity/:name" element={<EntityPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

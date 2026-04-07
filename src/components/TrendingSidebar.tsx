@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, BookOpen, BarChart3, Zap } from 'lucide-react';
+import { TrendingUp, BookOpen, BarChart3, Zap, Users } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { TrendingWord } from '../types';
 import { useUIStore, useNewsStore } from '../store/useNewsStore';
 
 export const TrendingSidebar: React.FC = () => {
   const [trending, setTrending] = useState<TrendingWord[]>([]);
+  const [entities, setEntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { setSearchQuery } = useUIStore();
@@ -15,8 +16,12 @@ export const TrendingSidebar: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await apiClient.getTrending();
-        setTrending(data.slice(0, 15));
+        const [trendData, entData] = await Promise.all([
+          apiClient.getTrending(),
+          fetch('/api/intelligence/top-entities?limit=10').then(r => r.json())
+        ]);
+        setTrending(trendData.slice(0, 15));
+        setEntities(entData || []);
       } catch {
         // silently fail
       } finally {
@@ -36,6 +41,32 @@ export const TrendingSidebar: React.FC = () => {
 
   return (
     <aside className="space-y-4">
+      {/* Entities */}
+      {!loading && entities.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Users size={16} className="text-accent" />
+            <h3 className="section-heading m-0">Луѓе и Организ.</h3>
+          </div>
+          <div className="space-y-3">
+            {entities.map((ent, idx) => (
+              <button 
+                key={idx}
+                onClick={() => navigate(`/entity/${encodeURIComponent(ent.name)}`)}
+                className="w-full flex items-center justify-between group border-none bg-transparent p-0 cursor-pointer"
+              >
+                <span className="text-xs font-bold text-primary group-hover:text-accent transition-colors truncate pr-2">
+                  {ent.name}
+                </span>
+                <span className="text-[10px] font-black text-muted tabular-nums">
+                  {ent.total_mentions}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Trending */}
       <div className="card p-4">
         <div className="flex items-center gap-2 mb-3">

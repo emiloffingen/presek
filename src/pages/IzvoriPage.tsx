@@ -10,10 +10,19 @@ interface Source {
   category: string;
 }
 
+interface SourcePulse {
+  source: string;
+  avg_sentiment: number;
+  avg_objectivity: number;
+  avg_sensationalism: number;
+  cluster_count: number;
+}
+
 export const IzvoriPage: React.FC = () => {
   const navigate = useNavigate();
   const [sources, setSources] = useState<Source[]>(() => window.__INITIAL_SOURCES_DATA__?.sources || []);
   const [hotSources, setHotSources] = useState<string[]>(() => window.__INITIAL_SOURCES_DATA__?.hot_sources || []);
+  const [pulse, setPulse] = useState<SourcePulse[]>([]);
   const [loading, setLoading] = useState(sources.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const hydrated = useRef(sources.length > 0);
@@ -23,12 +32,14 @@ export const IzvoriPage: React.FC = () => {
 
     const load = async () => {
       try {
-        const [allRes, pulseRes] = await Promise.all([
-          apiClient.getSources(), // Assuming this exists or using fetch
-          fetch('/api/sources/pulse').then(r => r.json())
+        const [allRes, pulseRes, intelRes] = await Promise.all([
+          apiClient.getSources(), 
+          fetch('/api/sources/pulse').then(r => r.json()),
+          fetch('/api/intelligence/source-pulse').then(r => r.json())
         ]);
         setSources(allRes);
         setHotSources(pulseRes.map((r: any) => r.source));
+        setPulse(intelRes.data || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -77,6 +88,35 @@ export const IzvoriPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-12">
+                {pulse.length > 0 && (
+                  <section className="bg-secondary/30 p-8 border border-color">
+                    <h2 className="rail-label mb-8">МЕДИУМСКИ ПУЛС (7 ДЕНА)</h2>
+                    <div className="space-y-6">
+                      {pulse.slice(0, 6).map(p => (
+                        <div key={p.source} className="group">
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-sm font-bold text-primary">{p.source}</span>
+                            <span className="text-[10px] font-black text-muted uppercase">Објективност: {(p.avg_objectivity * 100).toFixed(0)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-primary overflow-hidden border border-color flex">
+                            <div 
+                              className="h-full bg-blue-500 transition-all duration-1000" 
+                              style={{ width: `${p.avg_objectivity * 100}%` }}
+                            />
+                            <div 
+                              className="h-full bg-accent transition-all duration-1000" 
+                              style={{ width: `${p.avg_sensationalism * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-muted mt-6 italic">
+                      * Сината лента прикажува просечна објективност, црвената сензационализам. Податоците се базираат на AI анализа на насловите и воведот на статиите.
+                    </p>
+                  </section>
+                )}
+
                 <section>
                     <h2 className="rail-label mb-6">МАКЕДОНСКИ МЕДИУМИ</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
