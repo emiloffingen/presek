@@ -1170,6 +1170,7 @@ async def get_news(
                 "homepage_score": round(homepage_score, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,
+                "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
                 "entities": main.get("entity_names", [])
             })
@@ -1205,10 +1206,14 @@ async def get_cluster_detail(cluster_id: str):
 
         # 2. Fetch synthesis and perspectives
         s_row = db.execute_one(
-            "SELECT summary, perspectives, created_at FROM cluster_summaries WHERE cluster_id = %s", 
+            "SELECT summary, generated_article, perspectives, created_at, sentiment FROM cluster_summaries WHERE cluster_id = %s", 
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
+        generated_article = s_row["generated_article"] if s_row else None
+        sentiment = s_row["sentiment"] if s_row and s_row["sentiment"] else None
+        if isinstance(sentiment, str):
+            sentiment = json.loads(sentiment)
         
         # Parse synthesis into bullets for the 'ai_summary_bullets' field
         ai_summary_bullets = []
@@ -1260,12 +1265,30 @@ async def get_cluster_detail(cluster_id: str):
             """, (cluster_id, tags, list({entity for article in articles for entity in (article.get("entity_names") or [])})))
             related = build_read_next_clusters(cluster_id, articles, tags, related_rows, limit=4)
 
+        # 5. Build timeline
+        chrono_articles = sorted(articles, key=lambda x: x['created_at'])
+        timeline = []
+        for i, a in enumerate(chrono_articles):
+            is_major = (a.get('source_signal') or {}).get('trust_level', 0) >= 0.8
+            timeline.append({
+                "article_id": a['id'],
+                "title": a['title'],
+                "source": a['source'],
+                "created_at": a['created_at'],
+                "is_first": i == 0,
+                "is_major": is_major or i == 0
+            })
+
         return {
             "status": "success",
             "data": {
                 "cluster_id": cluster_id,
                 "articles": articles,
+                "timeline": timeline,
                 "synthesis": synthesis,
+                "generated_article": generated_article,
+                "sentiment": sentiment,
+                "has_fact_check": any(a.get("is_fact_check") for a in articles),
                 "ai_summary_bullets": ai_summary_bullets,
                 "synthesis_updated_at": freshness["synthesis_updated_at"],
                 "synthesis_freshness": {

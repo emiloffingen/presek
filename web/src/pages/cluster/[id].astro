@@ -3,6 +3,8 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import AskPresekIsland from '../../components/AskPresekIsland.tsx';
+import StoryTimeline from '../../components/StoryTimeline.tsx';
+import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
@@ -215,6 +217,7 @@ const leadDescription = extractSafeText(cluster?.articles?.find((article: any) =
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
+const generatedArticle = cluster?.generated_article || '';
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
@@ -372,6 +375,24 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 
 				<div class="cluster-grid">
 					<div class="cluster-main motion-rise motion-delay-1">
+						{/* Lead Article Section */}
+						{generatedArticle && (
+							<section class="cluster-article-hero">
+								<div class="cluster-module-head">
+									<Sparkles size={18} className="text-nyt-accent" />
+									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ВОДЕЧКА СТОРИЈА</h2>
+								</div>
+								<div class="prose-nyt text-xl leading-relaxed text-foreground font-serif">
+									{generatedArticle.split('\n').filter(p => p.trim()).map((paragraph, idx) => (
+										<p class:list={["mb-6 last:mb-0", idx === 0 ? "first-letter:text-5xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[1] first-letter:text-nyt-accent" : ""]}>
+											{paragraph}
+										</p>
+									))}
+								</div>
+								<div class="h-px bg-nyt-gray-300 my-10" />
+							</section>
+						)}
+
 						{/* AI Synthesis Section */}
 						{cluster.synthesis && synthesisItems.length > 0 && (
 							<section class="cluster-synthesis">
@@ -411,6 +432,16 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 									))}
 								</div>
 							</section>
+						)}
+
+						{/* Timeline */}
+						{cluster.timeline && cluster.timeline.length > 1 && (
+							<StoryTimeline timeline={cluster.timeline} />
+						)}
+
+						{/* Media Pulse / Sentiment */}
+						{cluster.sentiment && (
+							<MediaPulseRadar data={cluster.sentiment} />
 						)}
 
 						{/* Articles List */}

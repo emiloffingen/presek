@@ -1217,28 +1217,40 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         if raw:
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
+            generated_article = res.get('article', '') if isinstance(res, dict) else ''
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
+
+            sentiment_data = {
+                "sentiment": res.get('sentiment', {}),
+                "tone_analysis": res.get('tone_analysis', {})
+            }
+
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
         else:
             fallback = synthesize_cluster_fallback(article_rows)
+            sentiment_data = {"sentiment": {"score": 0, "label": "неутрален"}, "tone_analysis": {}}
             summary, perspectives = _normalize_cluster_synthesis(
                 fallback.get("summary", ""),
                 fallback.get("perspectives", []),
                 article_rows,
             )
+            generated_article = ""
             if (summary or perspectives) and retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
-                   VALUES (%s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, perspectives, created_at, sentiment)
+                   VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
-                   SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
-                (cluster_id, summary, json.dumps(perspectives), datetime.datetime.now()),
+                   SET summary = EXCLUDED.summary,
+                       generated_article = EXCLUDED.generated_article,
+                       perspectives = EXCLUDED.perspectives,
+                       created_at = EXCLUDED.created_at,
+                       sentiment = EXCLUDED.sentiment""",
+                (cluster_id, summary, generated_article, json.dumps(perspectives), datetime.datetime.now(), json.dumps(sentiment_data)),
                 fetch=False
             )
-
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
             if not any_img:
                 img_url = generate_cover_art(cluster_id, summary)
@@ -1252,6 +1264,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         fallback = synthesize_cluster_fallback(article_rows)
+        sentiment_data = {"sentiment": {"score": 0, "label": "неутрален"}, "tone_analysis": {}}
         summary, perspectives = _normalize_cluster_synthesis(
             fallback.get("summary", ""),
             fallback.get("perspectives", []),
@@ -1259,11 +1272,15 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         )
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, created_at)
-                   VALUES (%s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, perspectives, created_at, sentiment)
+                   VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
-                   SET summary = EXCLUDED.summary, perspectives = EXCLUDED.perspectives, created_at = EXCLUDED.created_at""",
-                (cluster_id, summary, json.dumps(perspectives), datetime.datetime.now()),
+                   SET summary = EXCLUDED.summary, 
+                       generated_article = EXCLUDED.generated_article,
+                       perspectives = EXCLUDED.perspectives, 
+                       created_at = EXCLUDED.created_at,
+                       sentiment = EXCLUDED.sentiment""",
+                (cluster_id, summary, "", json.dumps(perspectives), datetime.datetime.now(), json.dumps(sentiment_data)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)

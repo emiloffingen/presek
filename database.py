@@ -256,7 +256,7 @@ class DatabaseManager:
                     clicks INTEGER DEFAULT 0, 
                     original_description TEXT DEFAULT '',
                     is_translated INTEGER DEFAULT 0, 
-                    embedding vector(768), 
+                    embedding vector(384),
                     search_vector tsvector
                 )""")
 
@@ -265,9 +265,13 @@ class DatabaseManager:
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
                     cluster_id TEXT PRIMARY KEY, 
                     summary TEXT, 
+                    generated_article TEXT,
                     perspectives JSONB DEFAULT '[]', 
+                    sentiment JSONB DEFAULT '{}',
                     created_at TIMESTAMP
                 )""")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS generated_article TEXT")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
                     cluster_id TEXT PRIMARY KEY, 
