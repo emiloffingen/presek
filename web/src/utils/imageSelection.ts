@@ -28,7 +28,15 @@ export function isWeakVisual(url?: string | null) {
   return WEAK_VISUAL_TOKENS.some((token) => value.includes(token));
 }
 
-export function chooseClusterImage(cluster: ClusterLike) {
+type ImageVariant = 'hero' | 'card' | 'thumb';
+
+const VARIANT_WIDTH: Record<ImageVariant, number> = {
+  hero: 1200,
+  card: 720,
+  thumb: 320,
+};
+
+export function chooseClusterImage(cluster: ClusterLike, variant: ImageVariant = 'card') {
   const candidates = [
     cluster?.representative_image,
     cluster?.articles?.[0]?.image_url,
@@ -37,10 +45,11 @@ export function chooseClusterImage(cluster: ClusterLike) {
 
   const preferred = candidates.find((candidate) => !isWeakVisual(candidate));
   const chosen = preferred || candidates[0] || '';
+  const width = VARIANT_WIDTH[variant];
 
   return {
     rawUrl: chosen || null,
-    proxiedUrl: chosen ? `/proxy?url=${encodeURIComponent(chosen)}` : null,
+    proxiedUrl: chosen ? `/proxy?url=${encodeURIComponent(chosen)}&w=${width}` : null,
     isWeak: isWeakVisual(chosen),
   };
 }

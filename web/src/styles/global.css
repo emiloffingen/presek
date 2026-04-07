@@ -193,18 +193,6 @@
     width: 100%;
 }
 
-.nyt-border-double {
-    border-bottom: 4px double var(--border);
-}
-
-.nyt-rule {
-    border-top: 1px solid var(--border);
-}
-
-.nyt-vertical-rule {
-    border-left: 1px solid var(--border);
-}
-
 .nyt-section-label {
     font-family: 'Manrope', sans-serif;
     font-size: 0.64rem;
@@ -212,16 +200,6 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     line-height: 1.15;
-}
-
-.theme-card {
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
-}
-
-.theme-card-strong {
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 78%, var(--surface-strong) 22%);
 }
 
 .motion-rise {
@@ -241,7 +219,6 @@
 .motion-delay-1 { animation-delay: 70ms; }
 .motion-delay-2 { animation-delay: 140ms; }
 .motion-delay-3 { animation-delay: 210ms; }
-.motion-delay-4 { animation-delay: 280ms; }
 
 @keyframes rise-fade {
     from {
@@ -259,8 +236,7 @@
     .motion-rise-fast,
     .motion-delay-1,
     .motion-delay-2,
-    .motion-delay-3,
-    .motion-delay-4 {
+    .motion-delay-3 {
         opacity: 1;
         transform: none;
         animation: none;
@@ -655,49 +631,6 @@
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-}
-
-.sources-list-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem 1rem;
-}
-
-.source-link {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid var(--border);
-    text-decoration: none;
-    text-align: left;
-    font-family: var(--font-serif);
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: var(--foreground);
-}
-
-.source-link:hover {
-    color: var(--nyt-accent);
-}
-
-.source-hot,
-.source-country {
-    font-family: var(--font-sans);
-    font-size: 0.58rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.source-hot {
-    background: var(--nyt-accent);
-    color: white;
-    padding: 0.1rem 0.3rem;
-}
-
-.source-country {
-    color: var(--muted-foreground);
 }
 
 .source-reputation-grid {
@@ -1136,10 +1069,6 @@
     .entity-grid {
         grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
         gap: 2rem;
-    }
-
-    .sources-list-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .source-reputation-grid {

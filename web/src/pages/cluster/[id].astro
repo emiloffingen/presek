@@ -218,7 +218,7 @@ const shareDescription = (
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 
 function getLeadVisual(clusterData: any) {
-	const selected = chooseClusterImage(clusterData);
+	const selected = chooseClusterImage(clusterData, 'hero');
 	if (!selected.proxiedUrl) return null;
 
 	return {

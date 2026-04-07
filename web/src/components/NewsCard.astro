@@ -17,7 +17,7 @@ const significanceLabel =
 	cluster.is_breaking ? 'Итен развој' :
 	'Во тек';
 
-const selectedImage = chooseClusterImage(cluster);
+const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 

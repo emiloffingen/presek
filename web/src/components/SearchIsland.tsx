@@ -329,6 +329,15 @@ export default function SearchIsland() {
                   placeholder="Внесете клучни зборови..."
                   className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
                   aria-label="Пребарај вести"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="presek-search-listbox"
+                  aria-expanded={showSuggestions && suggestions.length > 0}
+                  aria-activedescendant={
+                    activeIndex >= 0 && suggestions[activeIndex]
+                      ? `search-suggestion-${suggestions[activeIndex].cluster_id}`
+                      : undefined
+                  }
                 />
                 <button
                   type="submit"
@@ -350,7 +359,12 @@ export default function SearchIsland() {
                 </h3>
 
                 {showSuggestions && (
-                  <div className="space-y-2">
+                  <div
+                    id="presek-search-listbox"
+                    role="listbox"
+                    aria-label="Резултати од пребарување"
+                    className="space-y-2"
+                  >
                     {isLoading && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                         <LoaderCircle size={16} className="animate-spin" />
@@ -369,6 +383,9 @@ export default function SearchIsland() {
                         <button
                           key={item.cluster_id}
                           id={`search-suggestion-${item.cluster_id}`}
+                          type="button"
+                          role="option"
+                          aria-selected={activeIndex === index}
                           onClick={() => navigateToCluster(item.cluster_id)}
                         className={`w-full text-left border-b border-border py-4 transition-colors ${
                           activeIndex === index
