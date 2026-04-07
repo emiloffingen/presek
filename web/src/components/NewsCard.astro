@@ -24,9 +24,23 @@ const isFallbackArt = selectedImage.isWeak;
 const displayTitle = cleanAndDecode(main.title);
 
 function getCardSummary(article: any, lead = false) {
-	const preferred = article?.summary;
-	const fallback = article?.description;
-	const text = cleanAndDecode(preferred || fallback);
+	let text = article?.summary || article?.description || '';
+	
+	// Safety check for JSON leakage
+	if (typeof text === 'string' && text.trim().startsWith('{')) {
+		try {
+			const parsed = JSON.parse(text);
+			if (parsed.summary) {
+				text = parsed.summary;
+			} else if (parsed.text) {
+				text = parsed.text;
+			}
+		} catch (e) {
+			// Not valid JSON, keep as is
+		}
+	}
+	
+	text = cleanAndDecode(text);
 	if (!text) return '';
 	const limit = lead ? 250 : 170;
 	return text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
