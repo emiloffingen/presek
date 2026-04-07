@@ -5,7 +5,7 @@ import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import { Clock, Sparkles, BookOpen } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:5001/api";
 
 let briefing = null;
 let error = null;
@@ -39,31 +39,58 @@ function esc(s: string) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function renderBriefingLine(line: string) {
+    if (line.startsWith('### ')) {
+        return `<h3 class="font-serif font-black text-2xl mt-8 mb-4 text-foreground border-b border-border pb-2">${esc(line.substring(4))}</h3>`;
+    }
+    if (line.startsWith('## ')) {
+        return `<h2 class="font-serif font-black text-3xl mt-10 mb-6 text-foreground border-b-2 border-foreground pb-2">${esc(line.substring(3))}</h2>`;
+    }
+    if (line.startsWith('**') && line.endsWith('**')) {
+        return `<p class="font-black mt-6 mb-2 text-foreground uppercase text-xs tracking-widest">${esc(line.substring(2, line.length - 2))}</p>`;
+    }
+    return `<p class="mb-4 text-lg leading-relaxed text-foreground/90">${esc(line)}</p>`;
+}
+
+function renderBriefingListItem(line: string) {
+    const item = line.substring(2);
+    const parts = item.split(':');
+    if (parts.length > 1) {
+        const label = parts.shift()!;
+        return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90"><strong>${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
+    }
+    return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${esc(item)}</li>`;
+}
+
 function formatBriefing(content: string) {
     if (!content) return "";
 
-    return content.split('\n').map(line => {
-        const stripped = line.trim();
-        if (!stripped) return '<div class="my-4"></div>';
+    const out: string[] = [];
+    let buffer: string[] = [];
 
-        if (line.startsWith('### ')) {
-            return `<h3 class="font-serif font-black text-2xl mt-8 mb-4 text-foreground border-b border-border pb-2">${esc(line.substring(4))}</h3>`;
-        } else if (line.startsWith('## ')) {
-            return `<h2 class="font-serif font-black text-3xl mt-10 mb-6 text-foreground border-b-2 border-foreground pb-2">${esc(line.substring(3))}</h2>`;
-        } else if (line.startsWith('**') && line.endsWith('**')) {
-            return `<p class="font-black mt-6 mb-2 text-foreground uppercase text-xs tracking-widest">${esc(line.substring(2, line.length - 2))}</p>`;
-        } else if (line.startsWith('- ') || line.startsWith('• ')) {
-            const item = line.substring(2);
-            const parts = item.split(':');
-            if (parts.length > 1) {
-                const label = parts.shift()!;
-                return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90"><strong>${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
-            }
-            return `<li class="ml-6 mb-2 text-lg leading-relaxed text-foreground/90">${esc(item)}</li>`;
-        } else {
-            return `<p class="mb-4 text-lg leading-relaxed text-foreground/90">${esc(line)}</p>`;
+    const flushList = () => {
+        if (buffer.length === 0) return;
+        out.push(`<ul class="list-disc mb-4">${buffer.join('')}</ul>`);
+        buffer = [];
+    };
+
+    for (const line of content.split('\n')) {
+        const stripped = line.trim();
+        if (!stripped) {
+            flushList();
+            out.push('<div class="my-4"></div>');
+            continue;
         }
-    }).join('\n');
+        if (line.startsWith('- ') || line.startsWith('• ')) {
+            buffer.push(renderBriefingListItem(line));
+            continue;
+        }
+        flushList();
+        out.push(renderBriefingLine(line));
+    }
+    flushList();
+
+    return out.join('\n');
 }
 ---
 

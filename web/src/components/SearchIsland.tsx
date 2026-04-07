@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Search, X, Zap, ArrowUpRight, LoaderCircle } from 'lucide-react';
+import { cleanAndDecode } from '../utils/textUtils';
 
 type Suggestion = {
   cluster_id: string;
@@ -117,20 +118,26 @@ export default function SearchIsland() {
         }
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
-          ? data.clusters.slice(0, 6).map((cluster: any) => ({
-              cluster_id: cluster.cluster_id,
-              title: cluster.articles?.[0]?.title || 'Наслов',
-              source: cluster.articles?.[0]?.source || '',
-              category: cluster.articles?.[0]?.category || '',
-              description: cluster.articles?.[0]?.description || '',
-              sourceCount: Array.isArray(cluster.articles) ? cluster.articles.length : 0,
-              matchLabel:
-                (cluster.articles?.[0]?.title || '').toLowerCase() === trimmed.toLowerCase()
-                  ? 'Точен наслов'
-                  : (cluster.articles?.[0]?.title || '').toLowerCase().includes(trimmed.toLowerCase())
-                  ? 'Совпаѓање во наслов'
-                  : 'Поврзана тема',
-            }))
+          ? data.clusters.slice(0, 6).map((cluster: any) => {
+              const rawTitle = cluster.articles?.[0]?.title || '';
+              const title = cleanAndDecode(rawTitle) || 'Наслов';
+              const lowered = title.toLowerCase();
+              const queryLower = trimmed.toLowerCase();
+              return {
+                cluster_id: cluster.cluster_id,
+                title,
+                source: cluster.articles?.[0]?.source || '',
+                category: cluster.articles?.[0]?.category || '',
+                description: cleanAndDecode(cluster.articles?.[0]?.description || ''),
+                sourceCount: Array.isArray(cluster.articles) ? cluster.articles.length : 0,
+                matchLabel:
+                  lowered === queryLower
+                    ? 'Точен наслов'
+                    : lowered.includes(queryLower)
+                    ? 'Совпаѓање во наслов'
+                    : 'Поврзана тема',
+              };
+            })
           : [];
 
         if (!cancelled) {
@@ -322,13 +329,6 @@ export default function SearchIsland() {
                   placeholder="Внесете клучни зборови..."
                   className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
                   aria-label="Пребарај вести"
-                  aria-controls="presek-search-results"
-                  aria-expanded={showSuggestions}
-                  aria-activedescendant={
-                    activeIndex >= 0 && suggestions[activeIndex]
-                      ? `search-suggestion-${suggestions[activeIndex].cluster_id}`
-                      : undefined
-                  }
                 />
                 <button
                   type="submit"

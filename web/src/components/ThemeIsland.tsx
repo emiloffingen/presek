@@ -11,20 +11,20 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     setTheme(initialTheme);
   }, []);
 
-  useEffect(() => {
-    if (theme) {
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
       const root = document.documentElement;
-      if (theme === 'dark') {
+      if (next === 'dark') {
         root.classList.add('dark');
       } else {
         root.classList.remove('dark');
       }
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+      // Only persist when the user explicitly toggles, so an unset
+      // preference keeps tracking the OS on subsequent visits.
+      localStorage.setItem('theme', next);
+      return next;
+    });
   };
 
   if (theme === null) return <div className="p-2 w-9 h-9" />;

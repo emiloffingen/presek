@@ -43,12 +43,7 @@ class ApiClient {
 
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
-      (error: AxiosError) => {
-        if (error.response?.status === 429) {
-          console.warn('Rate limited. Please wait before making more requests.');
-        }
-        return Promise.reject(error);
-      }
+      (error: AxiosError) => Promise.reject(error)
     );
   }
 
@@ -112,14 +107,11 @@ class ApiClient {
 
   async getSources(): Promise<any[]> {
     try {
-      console.log(`[apiClient] Fetching sources from: ${this.baseURL}/sources`);
       const response = await this.client.get<any[]>('/sources', {
         params: { _t: Date.now() } // Cache busting
       });
-      console.log(`[apiClient] Sources received: ${Array.isArray(response.data) ? response.data.length : 'not an array'}`);
       return response.data;
     } catch (error) {
-      console.error(`[apiClient] Get sources failed:`, error);
       throw this.handleError(error);
     }
   }
@@ -131,7 +123,6 @@ class ApiClient {
       });
       return response.data;
     } catch (error) {
-      console.error(`[apiClient] Get pulse failed:`, error);
       throw this.handleError(error);
     }
   }
@@ -185,12 +176,7 @@ class ApiClient {
   private handleError(error: unknown): Error {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<any>;
-      const method = axiosError.config?.method?.toUpperCase();
-      const url = axiosError.config?.url;
       const status = axiosError.response?.status;
-      
-      console.error(`[apiClient] API Error: ${method} ${url} | Status: ${status}`);
-      
       if (axiosError.response?.data?.message) {
         return new Error(axiosError.response.data.message);
       }

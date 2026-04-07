@@ -10,7 +10,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:5001/api";
 
 // Get search params for SSR filtering
 const { searchParams } = Astro.url;
@@ -112,6 +112,7 @@ function getLeadSummary(cluster: any) {
 
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const leadSummary = leadCluster ? getLeadSummary(leadCluster) : '';
+const leadTitle = leadCluster ? cleanAndDecode(leadCluster.articles[0].title) : '';
 const freshness = health?.freshness || null;
 const showInternationalRail = !q && !category && !topic && internationalClusters.length > 0;
 
@@ -163,7 +164,7 @@ function getThumb(cluster: any) {
 								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
 							</div>
 							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-								<h1 class="lead-headline">{leadCluster.articles[0].title}</h1>
+								<h1 class="lead-headline">{leadTitle}</h1>
 							</a>
 							<p class="lead-signal">{leadSignal}</p>
 							{leadSummary && (
@@ -179,15 +180,15 @@ function getThumb(cluster: any) {
 								<ul class="lead-related">
 									{leadCluster.articles.slice(1, 4).map((article: any) => (
 										<li>
-											<a href={`/cluster/${leadCluster.cluster_id}`}>{article.title}</a>
+											<a href={`/cluster/${leadCluster.cluster_id}`}>{cleanAndDecode(article.title)}</a>
 										</li>
 									))}
 								</ul>
 							)}
 						</div>
 
-						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media">
-							<img src={getThumb(leadCluster)} alt={leadCluster.articles[0].title} loading="eager" />
+						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media" aria-hidden="true" tabindex="-1">
+							<img src={getThumb(leadCluster)} alt="" loading="eager" />
 						</a>
 					</section>
 				)}

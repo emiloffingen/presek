@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Compass, Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
@@ -9,44 +9,43 @@ import {
   recordSuggestionImpressions,
   sendSuggestionEvents,
 } from '../lib/personalization.js';
-
-import he from 'he';
+import { cleanAndDecode } from '../utils/textUtils';
 
 function getSummary(cluster: any) {
   const article = cluster?.articles?.[0];
-  const text = article?.summary || article?.description || '';
-  if (!text) return '';
-  
-  let cleaned = he.decode(String(text));
-  return cleaned
-    .replace(/&nbsp;/g, ' ')
-    .replace(/^[⚪🟢🔴]\s*/u, '')
-    .replace(/#[^\s#]+/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return cleanAndDecode(article?.summary || article?.description || '');
 }
 
 export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   const [items, setItems] = useState<any[]>([]);
   const [hasSignals, setHasSignals] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
-    const profile = loadReaderProfile();
-    setProfile(profile);
-    const nextHasSignals = hasPersonalizationSignal(profile);
-    setHasSignals(nextHasSignals);
-    if (!nextHasSignals) {
-      setItems([]);
-      return;
-    }
-    setItems(buildPersonalizedClusters(clusters, profile, 4));
+    // Small delay to simulate processing and prevent flicker
+    const timer = setTimeout(() => {
+      const profile = loadReaderProfile();
+      setProfile(profile);
+      const nextHasSignals = hasPersonalizationSignal(profile);
+      setHasSignals(nextHasSignals);
+      if (!nextHasSignals) {
+        setItems([]);
+      } else {
+        setItems(buildPersonalizedClusters(clusters, profile, 4));
+      }
+      setLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
   }, [clusters]);
 
-  const recommendations = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 });
+  const recommendations = useMemo(
+    () => buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 }),
+    [profile]
+  );
 
   useEffect(() => {
-    if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return;
+    if (loading || (recommendations.topics.length === 0 && recommendations.sources.length === 0)) return;
     const result = recordSuggestionImpressions('for_you', [
       ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
       ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
@@ -59,7 +58,36 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
         value: item.value,
       }))
     );
-  }, [recommendations]);
+  }, [recommendations, loading]);
+
+  if (loading) {
+    return (
+      <section className="for-you-module skeleton-fade">
+        <div className="for-you-head">
+          <div>
+            <div className="skeleton h-4 w-24 mb-2"></div>
+            <div className="skeleton h-8 w-64"></div>
+          </div>
+        </div>
+        <div className="for-you-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="for-you-card">
+              <div className="skeleton h-3 w-32 mb-4"></div>
+              <div className="skeleton h-6 w-full mb-2"></div>
+              <div className="skeleton h-6 w-3/4 mb-4"></div>
+              <div className="skeleton h-4 w-full mb-1"></div>
+              <div className="skeleton h-4 w-full mb-1"></div>
+              <div className="skeleton h-4 w-1/2 mb-6"></div>
+              <div className="flex justify-between items-center">
+                <div className="skeleton h-3 w-20"></div>
+                <div className="skeleton h-3 w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (!hasSignals || items.length === 0) {
     return null;
@@ -88,7 +116,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
                 <Compass size={12} />
                 <span>{item.reason || 'Поврзано со вашето читање'}</span>
               </p>
-              <h3>{article.title || 'Кластер'}</h3>
+              <h3>{cleanAndDecode(article.title) || 'Кластер'}</h3>
               {summary && <p className="for-you-card-copy">{summary}</p>}
               <div className="for-you-card-footer">
                 <div className="for-you-card-meta">

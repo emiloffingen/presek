@@ -50,7 +50,7 @@ function getTimeStr(dateStr: string) {
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
 			{sourceSignal.trust_label && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
-			{cluster.is_breaking && <span class="breaking-label">LIVE</span>}
+			{cluster.is_breaking && <span class="breaking-label">Во живо</span>}
 			<span class="significance-label">{significanceLabel}</span>
 		</div>
 
@@ -98,10 +98,10 @@ function getTimeStr(dateStr: string) {
 	{thumbSrc && (
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={`/cluster/${cluster.cluster_id}`}>
-				<img 
-					src={thumbSrc} 
-					alt={main.title} 
-					class:list={["article-image max-h-64 md:max-h-none object-cover", { "article-image-fallback": isFallbackArt }]}
+				<img
+					src={thumbSrc}
+					alt={displayTitle}
+					class:list={["article-image", { "article-image-fallback": isFallbackArt }]}
 					loading={isLead ? "eager" : "lazy"}
                     onerror="this.onerror=null; this.src='/img/placeholder.svg';"
 				/>
