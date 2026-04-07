@@ -200,7 +200,7 @@ const leadDescription =
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 
 const summaryCardText =
-	cluster?.synthesis ||
+	cluster?.summary ||
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`;
 
@@ -223,6 +223,7 @@ function getLeadVisual(clusterData: any) {
 
 	return {
 		src: selected.proxiedUrl,
+		rawUrl: selected.rawUrl,
 		isWeak: selected.isWeak,
 	};
 }
@@ -294,12 +295,12 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 								)}
 							</div>
 							<div class="cluster-preference-actions">
-								<PreferenceToggle client:load kind="source" value={cluster.articles[0].source || ''} />
+								<PreferenceToggle client:load kind="topic" value={cluster.topics?.[0] || cluster.articles[0].topic || cluster.articles[0].category || ''} label="ја темата" />
 							</div>
 						</div>
 
 						<div class="cluster-header-side">
-							{leadVisual && (
+							{leadVisual && leadVisual.rawUrl && (
 								<div class:list={["cluster-visual-card", leadVisual.isWeak ? "is-weak" : ""]}>
 									{leadVisual.isWeak ? (
 										<div class="cluster-visual-fallback">

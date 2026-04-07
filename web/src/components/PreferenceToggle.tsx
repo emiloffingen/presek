@@ -34,6 +34,14 @@ export default function PreferenceToggle({
   };
 
   const noun = label || (kind === 'topic' ? 'тема' : 'извор');
+  const actionText = isFollowing 
+    ? `Следите ${noun}` 
+    : (label ? `Следи ${noun}` : `Следи ${noun}`);
+  
+  // Custom logic for common Macedonian specific labels to be grammatically correct
+  let displayAction = isFollowing ? `Следите ${noun}` : `Следи ${noun}`;
+  if (!isFollowing && label === 'ја темата') displayAction = "Следи ја темата";
+  if (!isFollowing && label === 'го изворот') displayAction = "Следи го изворот";
 
   return (
     <button
@@ -43,7 +51,7 @@ export default function PreferenceToggle({
       aria-pressed={isFollowing}
     >
       {isFollowing ? <BellRing size={14} /> : <BellPlus size={14} />}
-      <span>{isFollowing ? `Следите ${noun}` : `Следи ${noun}`}</span>
+      <span>{displayAction}</span>
     </button>
   );
 }
