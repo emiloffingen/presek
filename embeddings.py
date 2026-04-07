@@ -1,25 +1,54 @@
 """
 embeddings.py — Vector embedding generation for semantic search in Presek.
 
-Uses Google's text-embedding-004 model (free tier, multilingual, 768 dimensions).
-Supports batch embedding for efficient processing of multiple articles.
-"""
-import json
-import logging
-import urllib.request
-import urllib.error
-import time
+Uses a local sentence-transformers model (paraphrase-multilingual-MiniLM-L12-v2,
+384 dims, 50+ languages including Macedonian/Cyrillic). Runs entirely offline
+on CPU after the model is downloaded once to ~/.cache/huggingface.
 
-from config import GOOGLE_API_KEY
+No API key, no quota, no network at runtime.
+"""
+import logging
+import threading
 
 log = logging.getLogger("presek")
 
-EMBEDDING_MODEL = "text-embedding-004"
-EMBEDDING_DIM = 768
-EMBEDDING_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:batchEmbedContents"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_DIM = 384
 
-# Max texts per batch (Google API limit is 100)
-BATCH_SIZE = 100
+# Batch size for encode() — MiniLM is small enough that 64 is comfortable on CPU
+BATCH_SIZE = 64
+
+_model = None
+_model_lock = threading.Lock()
+
+
+def get_shared_model():
+    """Public accessor: returns the loaded SentenceTransformer, or None.
+    Other modules (e.g. KeyBERT) can reuse this to avoid double-loading."""
+    return _get_model()
+
+
+def _get_model():
+    """Lazy-load the sentence-transformers model on first use."""
+    global _model
+    if _model is not None:
+        return _model
+    with _model_lock:
+        if _model is not None:
+            return _model
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            log.error("[embeddings] sentence-transformers is not installed. Run: pip install sentence-transformers")
+            return None
+        try:
+            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' (first run downloads ~120 MB)")
+            _model = SentenceTransformer(EMBEDDING_MODEL)
+            log.info(f"[embeddings] Model loaded, dim={_model.get_sentence_embedding_dimension()}")
+        except Exception as e:
+            log.error(f"[embeddings] Failed to load model: {e}")
+            _model = None
+        return _model
 
 
 def generate_embedding(text: str) -> list[float] | None:
@@ -31,60 +60,30 @@ def generate_embedding(text: str) -> list[float] | None:
 
 
 def generate_embeddings_batch(texts: list[str]) -> list[list[float] | None]:
-    """
-    Generate embeddings for a list of texts using Google's Batch API.
-    """
-    if not GOOGLE_API_KEY or not texts:
+    """Generate embeddings for a list of texts using the local MiniLM model."""
+    if not texts:
+        return []
+
+    model = _get_model()
+    if model is None:
         return [None] * len(texts)
 
-    all_vectors = []
-    for i in range(0, len(texts), BATCH_SIZE):
-        chunk = texts[i : i + BATCH_SIZE]
-        vectors = _embed_chunk(chunk)
-        all_vectors.extend(vectors)
-        # Small delay to respect free-tier rate limits if needed
-        if len(texts) > BATCH_SIZE:
-            time.sleep(0.5)
-
-    return all_vectors
-
-
-def _embed_chunk(texts: list[str]) -> list[list[float] | None]:
-    if not GOOGLE_API_KEY:
-        return [None] * len(texts)
-
-    requests = []
-    for text in texts:
-        # Truncate text to stay within model limits (~2048 tokens or ~10k chars)
-        truncated = str(text or "")[:2000]
-        requests.append({
-            "model": f"models/{EMBEDDING_MODEL}",
-            "content": {"parts": [{"text": truncated}]},
-            "taskType": "RETRIEVAL_DOCUMENT",
-            "outputDimensionality": EMBEDDING_DIM
-        })
-
-    payload = json.dumps({"requests": requests}).encode("utf-8")
-    url = f"{EMBEDDING_URL}?key={GOOGLE_API_KEY}"
+    # Truncate each text defensively — MiniLM has a 512 token cap but we slice
+    # characters upstream to match the old pipeline's behaviour.
+    cleaned = [str(t or "")[:2000] for t in texts]
 
     try:
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
+        vectors = model.encode(
+            cleaned,
+            batch_size=BATCH_SIZE,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+            show_progress_bar=False,
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-
-        embeddings = data.get("embeddings", [])
-        return [e.get("values") for e in embeddings]
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        log.warning(f"[embeddings] Batch error {e.code}: {body}")
+        return [vec.tolist() for vec in vectors]
     except Exception as e:
-        log.warning(f"[embeddings] Unexpected error: {e}")
-
-    return [None] * len(texts)
+        log.warning(f"[embeddings] Local encode error: {e}")
+        return [None] * len(texts)
 
 
 def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
@@ -93,10 +92,6 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
     Returns the count of articles embedded.
     """
     from database import db_manager as db
-
-    if not GOOGLE_API_KEY:
-        log.warning("[embeddings] Skipping embed_recent_articles: no GOOGLE_API_KEY")
-        return 0
 
     try:
         rows = db.execute(
@@ -136,35 +131,8 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
 
 
 def generate_query_embedding(text: str) -> list[float] | None:
-    """Generate an embedding optimized for search queries (uses RETRIEVAL_QUERY task type)."""
-    if not GOOGLE_API_KEY or not text:
+    """Generate an embedding for a search query. Same model as documents —
+    MiniLM is symmetric, no separate query/document task type needed."""
+    if not text:
         return None
-
-    truncated = text[:2000]
-    payload = json.dumps({
-        "requests": [{
-            "model": f"models/{EMBEDDING_MODEL}",
-            "content": {"parts": [{"text": truncated}]},
-            "taskType": "RETRIEVAL_QUERY",
-            "outputDimensionality": EMBEDDING_DIM
-        }]
-    }).encode("utf-8")
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBEDDING_MODEL}:embedContent?key={GOOGLE_API_KEY}"
-
-    try:
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-
-        embedding = data.get("embedding", {})
-        if embedding:
-            return embedding.get("values")
-    except Exception as e:
-        log.warning(f"[embeddings] Query embedding error: {e}")
-
-    return None
+    return generate_embedding(text)

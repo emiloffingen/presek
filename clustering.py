@@ -103,7 +103,12 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
 # ── Parameters ────────────────────────────────────────────────────
 SIMILARITY_THRESHOLD = 0.48  # Tuned threshold
 MAX_CLUSTER_SIZE     = 35
-VECTOR_THRESHOLD     = 0.26  # Optimized for text-embedding-004
+# Cosine-distance cutoff for pgvector semantic lookup. Tuned for the local
+# paraphrase-multilingual-MiniLM-L12-v2 model (384-dim, L2-normalized):
+# same-story pairs typically sit around 0.10–0.25, clearly-related topics
+# 0.25–0.35, unrelated >0.45. 0.30 keeps precision high without being so
+# strict that it misses near-duplicate stories from different sources.
+VECTOR_THRESHOLD     = 0.30
 
 def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
     if not embedding: return None
@@ -142,7 +147,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
     """
     Unified clustering pipeline:
     1. Title Fingerprinting (Instant match for same-story duplicates)
-    2. Semantic Vector Match (Google text-embedding-004)
+    2. Semantic Vector Match (local MiniLM embeddings via pgvector)
     3. Multi-representative TF-IDF with Entity & Recency Boosting
     """
     # 1. Title Fingerprinting

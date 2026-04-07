@@ -1240,15 +1240,15 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, perspectives, created_at, sentiment)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment)
                    VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
-                       generated_article = EXCLUDED.generated_article,
                        perspectives = EXCLUDED.perspectives,
+                       generated_article = EXCLUDED.generated_article,
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment""",
-                (cluster_id, summary, generated_article, json.dumps(perspectives), datetime.datetime.now(), json.dumps(sentiment_data)),
+                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data)),
                 fetch=False
             )
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
@@ -1272,15 +1272,15 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         )
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, perspectives, created_at, sentiment)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment)
                    VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
-                   SET summary = EXCLUDED.summary, 
+                   SET summary = EXCLUDED.summary,
+                       perspectives = EXCLUDED.perspectives,
                        generated_article = EXCLUDED.generated_article,
-                       perspectives = EXCLUDED.perspectives, 
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment""",
-                (cluster_id, summary, "", json.dumps(perspectives), datetime.datetime.now(), json.dumps(sentiment_data)),
+                (cluster_id, summary, json.dumps(perspectives), "", datetime.datetime.now(), json.dumps(sentiment_data)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)
@@ -1773,7 +1773,7 @@ def backfill_cover_art_task():
         for idx, r in enumerate(rows):
             backfill_cover_art_single_task.apply_async(
                 args=(r['cluster_id'], r['title'] or ''),
-                countdown=idx * 2,
+                countdown=idx * 4,
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")

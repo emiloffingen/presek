@@ -338,6 +338,83 @@ def clean_json_response(text: str) -> dict | str:
     text = text.replace('```', '').strip()
     return text
 
+def auto_summarize_top_clusters():
+    """Dispatch synthesis tasks for the top recent clusters.
+
+    Rules:
+      - Consider only clusters with ≥ AUTO_SUMMARIZE_MIN_SRC unique sources
+        (filters out single-source minor followups).
+      - Pick the top AUTO_SUMMARIZE_TOP_N by source diversity, newest first.
+      - If no synthesis exists yet, create one.
+      - If an existing synthesis is ≥ 30 min older than the newest article
+        in the cluster, refresh it.
+      - Dedup via redis so we don't re-queue within a 10-minute window.
+    """
+    import datetime
+    import sys
+    from collections import defaultdict
+    try:
+        from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
+        from database import db_manager as db
+        from utils import redis_client
+
+        rows = db.execute(
+            "SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '1 day' "
+            "ORDER BY created_at DESC LIMIT 500"
+        )
+        if not rows:
+            return
+
+        clusters_map = defaultdict(list)
+        for r in rows:
+            clusters_map[r["cluster_id"]].append(r)
+
+        ranked = []
+        for cid, arts in clusters_map.items():
+            unique_sources = {a.get("source") for a in arts if a.get("source")}
+            if len(unique_sources) < AUTO_SUMMARIZE_MIN_SRC:
+                continue
+            newest = max(a["created_at"] for a in arts)
+            ranked.append((cid, arts, len(unique_sources), newest))
+
+        # Sort by source count desc, then newest first
+        ranked.sort(key=lambda x: (x[2], x[3]), reverse=True)
+        top = ranked[:AUTO_SUMMARIZE_TOP_N]
+        if not top:
+            return
+
+        top_cids = [r[0] for r in top]
+        existing_rows = db.execute(
+            "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            (top_cids,)
+        ) or []
+        existing_map = {r["cluster_id"]: r["created_at"] for r in existing_rows}
+
+        STALE_THRESHOLD = datetime.timedelta(minutes=30)
+
+        # Tests patch sys.modules["tasks"] with a fake, so resolve dynamically.
+        tasks_mod = sys.modules.get("tasks")
+        if tasks_mod is None:
+            import tasks as tasks_mod  # noqa: F401
+
+        for cid, arts, _src_count, newest in top:
+            existing_at = existing_map.get(cid)
+            if existing_at is not None and (newest - existing_at) <= STALE_THRESHOLD:
+                continue  # Fresh enough, skip.
+
+            # Redis dedup
+            try:
+                if not redis_client.set(f"task:synthesize:{cid}", 1, nx=True, ex=600):
+                    continue
+            except Exception:
+                pass  # Redis hiccups shouldn't block synthesis.
+
+            lines = "\n".join(f"- [{a.get('source', 'Извор')}]: {a.get('title', '')}" for a in arts[:10])
+            tasks_mod.synthesize_cluster_task.delay(cid, lines)
+    except Exception as e:
+        log.error(f"[auto-summarize] Error: {e}")
+
+
 def translate_to_macedonian(text: str) -> str | None:
     if not text or not text.strip(): return text
     try:
@@ -349,7 +426,7 @@ def translate_to_macedonian(text: str) -> str | None:
                 return html.unescape(cleaned['summary'])
             return html.unescape(str(cleaned))
     except Exception as e:
-        log.error(f"[ai] Translation failed: {e}")
+        log.warning(f"[ai] Translation failed, falling back to local rewriter: {e}")
     return rewrite_to_macedonian_locally(text)
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:

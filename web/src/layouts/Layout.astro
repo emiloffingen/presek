@@ -65,9 +65,9 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<title>{pageTitle}</title>
 
 		<script is:inline>
-			// Immediate theme sync to prevent flicker.
-			// Only persist when the user has explicitly chosen a theme;
-			// otherwise we follow the OS preference live on every page load.
+			// Immediate theme sync to prevent flicker. We persist the
+			// resolved theme so subsequent navigations stay stable even if
+			// the OS preference changes mid-session.
 			const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
 			const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 			if (theme === 'dark') {
@@ -75,6 +75,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			} else {
 				document.documentElement.classList.remove('dark');
 			}
+			window.localStorage.setItem('theme', theme);
 		</script>
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">

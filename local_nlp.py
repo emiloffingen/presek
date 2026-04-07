@@ -1,9 +1,44 @@
 import re
 import math
+import logging
+import threading
 from collections import Counter
 
 # Reuse stopwords from your trending logic
 from trending import STOPWORDS
+
+log = logging.getLogger("presek")
+
+_keybert_model = None
+_keybert_lock = threading.Lock()
+_keybert_unavailable = False
+
+
+def _get_keybert():
+    """Lazy-load KeyBERT once, reusing the shared sentence-transformers model.
+    Returns None if KeyBERT or the embedding model is unavailable."""
+    global _keybert_model, _keybert_unavailable
+    if _keybert_unavailable:
+        return None
+    if _keybert_model is not None:
+        return _keybert_model
+    with _keybert_lock:
+        if _keybert_model is not None:
+            return _keybert_model
+        try:
+            from keybert import KeyBERT
+            from embeddings import get_shared_model
+            st_model = get_shared_model()
+            if st_model is None:
+                _keybert_unavailable = True
+                return None
+            _keybert_model = KeyBERT(model=st_model)
+            log.info("[local_nlp] KeyBERT ready (sharing MiniLM embedding model)")
+        except Exception as e:
+            log.warning(f"[local_nlp] KeyBERT unavailable, using legacy keyphrases: {e}")
+            _keybert_unavailable = True
+            return None
+        return _keybert_model
 
 # Simple Macedonian Lexicon for Sentiment (Positive / Negative)
 # This is a starter list that can be expanded.
@@ -262,10 +297,24 @@ def _tokenize_title_terms(text):
     ]
 
 
+# Alias — _sentence_tokens is used by the summarizer and similarity helpers;
+# semantically identical to title-term tokenization (filters stopwords + noise).
+_sentence_tokens = _tokenize_title_terms
+
+
 def _extract_capitalized_phrases(text):
     if not text:
         return []
-    pattern = re.compile(r"(?:\b[А-ЯA-ZЀ-ӿ][а-яa-zЀ-ӿ0-9]+\b(?:[\s-]+\b[А-ЯA-ZЀ-ӿ][а-яa-zЀ-ӿ0-9]+\b){0,2})")
+    # Uppercase class: Latin A-Z + Cyrillic Ѐ-Я (U+0400-U+042F)
+    # Lowercase class: Latin a-z + Cyrillic а-я plus extended lowercase ѐ-ӿ
+    # The earlier pattern used [Ѐ-ӿ] in the "uppercase" class which also
+    # matched lowercase Cyrillic, so the whole capitalization constraint
+    # was silently disabled and lowercase phrases polluted the results.
+    upper = r"[A-ZЀ-Я]"
+    lower = r"[a-zа-я0-9ѐ-ӿ]"
+    pattern = re.compile(
+        rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})"
+    )
     return [match.group(0).strip() for match in pattern.finditer(text)]
 
 
@@ -380,10 +429,74 @@ def analyze_sentiment_locally(text):
 
 def extract_keyphrases_locally(text, top_n=5):
     """
-    Extracts high-value phrases without AI using word frequency and co-occurrence.
+    Extract high-value phrases. Prefers KeyBERT (semantic, via shared MiniLM)
+    and falls back to the legacy frequency+co-occurrence heuristic if KeyBERT
+    is unavailable. Results are always filtered through the project's noise
+    and validity filters so source brands ("Reuters", "AP") stay out.
     """
-    if not text: return []
-    
+    if not text:
+        return []
+
+    kb = _get_keybert()
+    if kb is not None:
+        try:
+            # Ask for a generous candidate pool; we'll filter + dedupe below.
+            raw = kb.extract_keywords(
+                text,
+                keyphrase_ngram_range=(1, 3),
+                stop_words=None,  # Macedonian — no built-in list, we filter manually
+                use_mmr=True,
+                diversity=0.55,
+                top_n=max(top_n * 4, 20),
+            )
+        except Exception as e:
+            log.warning(f"[local_nlp] KeyBERT extract failed, falling back: {e}")
+            raw = None
+
+        if raw:
+            ranked = []
+            seen = set()
+
+            # Capitalized phrases get first claim on the slots (same rule
+            # the legacy path uses — named entities beat common nouns).
+            for phrase in _extract_capitalized_phrases(text):
+                clean = normalize_tag_name(phrase)
+                if not clean or not is_valid_focus_entity(clean):
+                    continue
+                key = clean.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                ranked.append(clean)
+
+            for phrase, _score in raw:
+                clean = normalize_tag_name(phrase)
+                if not clean:
+                    continue
+                key = clean.casefold()
+                if key in seen:
+                    continue
+                # Filter stopwords / source brands / tag noise, matching
+                # the guarantees of the legacy implementation.
+                tokens = [t for t in re.findall(r"[А-Яа-яЀ-ӿ\w]+", key) if t]
+                if not tokens:
+                    continue
+                if all(t in STOPWORDS for t in tokens):
+                    continue
+                if any(t in SOURCE_NOISE_WORDS for t in tokens):
+                    continue
+                if key in SOURCE_NOISE_WORDS or key in TAG_NOISE_WORDS:
+                    continue
+                seen.add(key)
+                ranked.append(clean)
+                if len(ranked) >= top_n:
+                    break
+
+            if ranked:
+                return ranked[:top_n]
+            # If KeyBERT returned nothing usable, drop through to legacy.
+
+    # --- Legacy fallback: frequency + co-occurrence ---
     # Simple word counting excluding stopwords and source-brand noise
     words = re.findall(r'[А-Яа-яЀ-ӿ\w]{4,}', text.lower())
     words = [w for w in words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS]

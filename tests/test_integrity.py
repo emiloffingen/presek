@@ -29,6 +29,9 @@ class TestAstroFrontendIntegrity:
         assert "<meta property=\"og:url\" content={canonicalUrl} />" in layout
 
     def test_primary_pages_fetch_api_through_supported_base_url(self):
+        # Pages can either import the shared apiBaseUrl() helper (which
+        # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
+        # the env lookup directly. Either pattern is acceptable.
         for rel_path in (
             "web/src/pages/index.astro",
             "web/src/pages/briefing.astro",
@@ -38,8 +41,22 @@ class TestAstroFrontendIntegrity:
             "web/src/pages/archive.astro",
         ):
             content = _read(rel_path)
-            assert "PUBLIC_API_URL" in content, f"Missing PUBLIC_API_URL fallback in {rel_path}"
-            assert "127.0.0.1:5001/api" in content or "\"/api\"" in content, f"Missing FastAPI fallback in {rel_path}"
+            uses_helper = "apiBaseUrl" in content
+            uses_inline_env = "PUBLIC_API_URL" in content
+            assert uses_helper or uses_inline_env, (
+                f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
+            )
+            if uses_inline_env:
+                assert "127.0.0.1:5001/api" in content or "\"/api\"" in content, (
+                    f"Missing FastAPI fallback in {rel_path}"
+                )
+
+        # The shared helper must still contain the canonical fallback values
+        # so that the assertion above is actually meaningful.
+        helper = _read("web/src/lib/apiBase.ts")
+        assert "PUBLIC_API_URL" in helper
+        assert "127.0.0.1:5001/api" in helper
+        assert "'/api'" in helper or "\"/api\"" in helper
 
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/status.astro")

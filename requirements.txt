@@ -17,3 +17,7 @@ uvicorn==0.43.0
 gunicorn==21.2.0
 numpy==2.4.4
 python-dotenv==1.2.2
+sentence-transformers==3.0.1
+keybert==0.8.5
+spacy==3.7.5
+fasttext==0.9.3
