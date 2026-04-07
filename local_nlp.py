@@ -1251,11 +1251,7 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
   <rect width="100%" height="100%" fill="#f8f5ef" fill-opacity="0.18" />
   <rect x="26" y="26" width="748" height="398" fill="none" stroke="#162132" stroke-opacity="0.12" />
   <rect x="42" y="42" width="716" height="366" fill="#fffdf9" fill-opacity="0.42" />
-  <rect x="58" y="58" width="80" height="28" fill="url(#ink)" />
-  <text x="98" y="77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="1.2" fill="#fffdf7">{escape(category.upper())}</text>
-  <text x="58" y="114" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800" letter-spacing="2.8" fill="#314055" fill-opacity="0.82">{escape(subtitle)}</text>
   <line x1="58" y1="130" x2="190" y2="130" stroke="#314055" stroke-opacity="0.5" stroke-width="2.5" />
-  <text x="58" y="152" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="{bg_color}" fill-opacity="0.85">ПОДРЕДЕНО ПО ЗНАЧЕЊЕ, ИЗВОРИ И КОНТЕКСТ</text>
 
   {"".join(title_svg)}
 
@@ -1263,6 +1259,5 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
     {pattern_svg}
   </g>
   <line x1="58" y1="372" x2="744" y2="372" stroke="#162132" stroke-opacity="0.12" />
-  <text x="58" y="394" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" letter-spacing="2.1" fill="#162132" fill-opacity="0.42">ПРЕСЕК ДИГИТАЛЕН ПРЕГЛЕД</text>
 </svg>"""
     return svg
