@@ -56,7 +56,7 @@ TAG_GENERIC_STARTERS = {
 
 LOCAL_TRANSLATION_PHRASES = [
     (r"\bbreaking news\b", "итна вест"),
-    (r"\blive updates?\b", "развој во живо"),
+    (r"\blive updates?\b", "следење во живо"),
     (r"\baccording to\b", "според"),
     (r"\bprime minister\b", "премиерот"),
     (r"\bforeign minister\b", "министерот за надворешни работи"),
@@ -68,7 +68,7 @@ LOCAL_TRANSLATION_PHRASES = [
     (r"\binterest rates?\b", "каматни стапки"),
     (r"\bcentral bank\b", "централната банка"),
     (r"\bwhite house\b", "Белата куќа"),
-    (r"\beuropean union\b", "Европската унија"),
+    (r"\beuropean union\b", "Европската Унија"),
     (r"\bunited nations\b", "Обединетите нации"),
     (r"\bsecurity council\b", "Советот за безбедност"),
     (r"\bhuman rights\b", "човекови права"),

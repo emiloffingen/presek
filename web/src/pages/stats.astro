@@ -30,7 +30,7 @@ try {
 			<header class="stats-header editorial-header motion-rise">
 				<span class="page-kicker">Аналитика</span>
 				<h1 class="stats-headline editorial-headline">
-					Медиумски Пулс
+					Медиумски пулс
 				</h1>
 				<p class="stats-subtitle editorial-intro">
 					Дневната слика на медиумската сцена: обем, ритам и доминантни извори.
@@ -49,7 +49,7 @@ try {
 							<p class="metric-value text-nyt-red">{stats.last_24h.toLocaleString()}</p>
 						</div>
 						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек Сублимат 24ч</p>
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек сублимат 24ч</p>
 							<p class="metric-value">{stats.summarized_pct}%</p>
 							<p class="metric-caption">{stats.summarized_24h} од {stats.last_24h.toLocaleString()} статии во последните 24 часа.</p>
 						</div>
@@ -62,7 +62,7 @@ try {
 					<div class="stats-grid motion-rise motion-delay-2">
 						<div class="stats-main">
 							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Редакциски Сигнали</h2>
+								<h2 class="stats-section-title editorial-panel-title">Редакциски сигнали</h2>
 								<div class="editor-metrics">
 									<div class="editor-card">
 										<p class="nyt-section-label text-muted-foreground mb-1">Синхронизирани профили</p>
@@ -80,25 +80,25 @@ try {
 										<p class="editor-copy">Синхронизирани профили со вклучена достава.</p>
 									</div>
 									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Ntfy цели</p>
+										<p class="nyt-section-label text-muted-foreground mb-1">Ntfy дестинации</p>
 										<p class="editor-value">{stats.editor_analytics?.delivery_targets ?? 0}</p>
-										<p class="editor-copy">Профили со реално внесен канал за испорака.</p>
+										<p class="editor-copy">Профили со успешно поврзан канал за испорака.</p>
 									</div>
 									<div class="editor-card">
 										<p class="nyt-section-label text-muted-foreground mb-1">Отворања во 7 дена</p>
 										<p class="editor-value">{stats.editor_analytics?.opens_7d ?? 0}</p>
-										<p class="editor-copy">Отворања на доставени брифинзи и известувања преку следените врски.</p>
+										<p class="editor-copy">Отворања на доставени брифинзи преку испратените известувања.</p>
 									</div>
 									<div class="editor-card">
 										<p class="nyt-section-label text-muted-foreground mb-1">Кликови во 7 дена</p>
 										<p class="editor-value">{stats.editor_analytics?.clicks_7d ?? 0}</p>
-										<p class="editor-copy">Кликови од доставата кон брифинг, кластер или поврзана страница.</p>
+										<p class="editor-copy">Кликови кон брифинг, кластер или поврзана страница.</p>
 									</div>
 								</div>
 							</section>
 
 							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Најактивни Медиуми</h2>
+								<h2 class="stats-section-title editorial-panel-title">Најактивни медиуми</h2>
 								<div class="source-bars">
 									{stats.by_source.slice(0, 10).map((src: any) => (
 										<div class="source-row">
@@ -118,7 +118,7 @@ try {
 							</section>
 
 							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Распределба По Категории</h2>
+								<h2 class="stats-section-title editorial-panel-title">Распределба по категории</h2>
 								<div class="category-grid">
 									{stats.by_category.map((cat: any) => (
 										<div class="category-card">
@@ -130,7 +130,7 @@ try {
 							</section>
 
 							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Што Луѓето Го Следат</h2>
+								<h2 class="stats-section-title editorial-panel-title">Што следат луѓето</h2>
 								<div class="follow-grid">
 									<div class="follow-card">
 										<h3 class="follow-title">Најследени Теми</h3>

@@ -1,0 +1,80 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import { Mail, MessageSquare, Info } from 'lucide-react';
+---
+
+<Layout 
+    title="Контакт"
+    description="Контактирајте го тимот на Пресек за прашања, предлози или соработка."
+>
+    <NYTHeader />
+    <main class="site-layout py-20">
+        <article class="editorial-shell">
+            <header class="editorial-header">
+                <span class="page-kicker">Комуникација</span>
+                <h1 class="editorial-headline">Контакт</h1>
+                <p class="editorial-intro">
+                    Имате прашање, предлог или сакате да го вклучите вашиот медиум во нашата мрежа? Тука сме за соработка и повратни информации.
+                </p>
+            </header>
+
+            <div class="editorial-page-grid">
+                <div class="editorial-main">
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">Електронска пошта</h2>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="p-3 bg-nyt-accent/10 text-nyt-accent rounded-full">
+                                <Mail size={24} />
+                            </div>
+                            <div>
+                                <p class="font-serif text-2xl font-black text-nyt-accent">contact@presek.mk</p>
+                                <p class="text-sm text-muted-foreground mt-1">Одговараме на сите легитимни барања во рок од 24 часа.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">За медиумите</h2>
+                        <div class="prose-nyt">
+                            <p>
+                                Доколку претставувате медиум и сакате да бидете вклучени во Пресек, ве молиме испратете го вашиот официјален RSS линк. Нашата мисија е да промовираме квалитетно и објективно новинарство преку правилно групирање и транспарентно цитирање.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">Техничка поддршка</h2>
+                        <div class="prose-nyt">
+                            <p>
+                                За пријавување на технички грешки, ве молиме наведете го вашиот уред и прелистувачот кој го користите. Ова ни помага побрзо да го идентификуваме и решиме проблемот.
+                            </p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="editorial-rail">
+                    <div class="rail-card rail-card-accent">
+                        <h2 class="rail-card-title">Зошто Пресек?</h2>
+                        <p class="rail-copy italic font-serif text-lg mb-4">
+                            "Нашата цел не е само да ги собереме вестите, туку да изградиме структура во која читателот веднаш ќе го препознае контекстот."
+                        </p>
+                        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-nyt-accent">
+                            <Info size={14} /> Уреднички тим
+                        </div>
+                    </div>
+
+                    <div class="rail-card">
+                        <h2 class="rail-card-title">Локација</h2>
+                        <p class="rail-copy">
+                            Пресек е дигитален проект со седиште во Скопје, Македонија, фокусиран на развој на напредни јазични технологии за македонскиот јазик.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </article>
+    </main>
+
+    <Footer />
+</Layout>

@@ -74,8 +74,12 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                     <span class="label-full">Медиумски Пулс</span>
                     <span class="label-short">Пулс</span>
                 </a>
+                <a href="/status" class="nyt-section-label topbar-link">
+                    <span class="label-full">Статус</span>
+                    <span class="label-short">Статус</span>
+                </a>
                 <a href={telegramUrl} class="nyt-section-label topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">
-                    <span class="label-full">Телеграм Канал</span>
+                    <span class="label-full">Телеграм канал</span>
                     <span class="label-short">Телеграм</span>
                 </a>
             </div>
@@ -100,7 +104,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
 <nav class="site-layout masthead-nav" aria-label="Популарно сега">
     <div class="masthead-nav-shell">
-        <span class="masthead-nav-kicker">Во Фокус</span>
+        <span class="masthead-nav-kicker">Во фокус</span>
         <ul class="masthead-nav-list">
             {headerItems.map((item: any) => {
                 const searchStr = new URLSearchParams({ q: item.word }).toString();

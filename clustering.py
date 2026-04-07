@@ -17,6 +17,9 @@ MK_SUFFIXES = [
 
 def mk_stem(word: str) -> str:
     if len(word) < 4: return word
+    # Don't stem proper nouns (starts with capital) unless it's the very start of a sentence
+    # but since we receive tokens, we'll be conservative.
+    if word[0].isupper(): return word
     word = re.sub(r'[^\w\s]', '', word)
     for suffix in MK_SUFFIXES:
         if word.endswith(suffix) and len(word) - len(suffix) >= 4:
@@ -31,6 +34,7 @@ MK_STOPWORDS = {
     "овој","оваа","ова","овие","тој","таа","тоа","тие",
     "еден","една","едно","еднa","нема","нема","нови","нов","нова",
     "само","уште","преку","бидејќи","поради","каде","како","кога",
+    "туку","пак","сепак","затоа","бидејки","ваков","ваква","вакви",
     "the","and","for","from","that","this","with","has",
 }
 
