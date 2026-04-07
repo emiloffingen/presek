@@ -1032,6 +1032,22 @@ async def get_top_entities(limit: int = 10):
     return filtered
 
 
+@app.get("/api/intelligence/entity/{name}/topics")
+async def get_entity_topics(name: str):
+    """Returns the most frequent thematic topics associated with an entity."""
+    sql = """
+        SELECT a.topic, COUNT(*) as count
+        FROM articles a
+        JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
+        WHERE ce.entity_name = %s AND a.topic IS NOT NULL
+        GROUP BY a.topic
+        ORDER BY count DESC
+        LIMIT 5
+    """
+    rows = db.execute(sql, (name,))
+    return {"status": "success", "data": rows}
+
+
 @app.get("/api/intelligence/international-curated")
 async def get_international_curated(limit: int = 6):
     try:
@@ -1239,7 +1255,7 @@ async def get_cluster_detail(cluster_id: str):
 
         # 2. Fetch synthesis and perspectives
         s_row = db.execute_one(
-            "SELECT summary, generated_article, perspectives, created_at, sentiment FROM cluster_summaries WHERE cluster_id = %s", 
+            "SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s",
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
@@ -1247,7 +1263,10 @@ async def get_cluster_detail(cluster_id: str):
         sentiment = s_row["sentiment"] if s_row and s_row["sentiment"] else None
         if isinstance(sentiment, str):
             sentiment = json.loads(sentiment)
-        
+
+        verification_report = s_row["verification_report"] if s_row and s_row["verification_report"] else None
+        if isinstance(verification_report, str):
+            verification_report = json.loads(verification_report)
         # Parse synthesis into bullets for the 'ai_summary_bullets' field
         ai_summary_bullets = []
         if synthesis:
@@ -1342,6 +1361,7 @@ async def get_cluster_detail(cluster_id: str):
                 "synthesis": synthesis,
                 "generated_article": generated_article,
                 "sentiment": sentiment,
+                "verification_report": verification_report,
                 "has_fact_check": any(a.get("is_fact_check") for a in articles),
                 "ai_summary_bullets": ai_summary_bullets,
                 "synthesis_updated_at": freshness["synthesis_updated_at"],

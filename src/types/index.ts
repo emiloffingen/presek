@@ -53,10 +53,17 @@ export interface NewsCluster {
   reading_time: number;
 }
 
+export interface VerificationReport {
+  agreements: string[];
+  conflicts: string[];
+  context?: string;
+}
+
 export interface ClusterDetail extends NewsCluster {
   synthesis: string;
   generated_article: string | null;
   sentiment: SentimentData | null;
+  verification_report: VerificationReport | null;
   timeline: TimelineEntry[];
   perspectives: ClusterSummary[];
   tags: string[];

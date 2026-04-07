@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Flame, Sparkles, Newspaper, Link2,
-  MessageCircle, Loader2, Clock, Tag, Send, Activity,
+  MessageCircle, Loader2, Clock, Tag, Send, Activity, ShieldCheck, AlertCircle
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ClusterDetail } from '../types';
@@ -132,6 +132,57 @@ export const ClusterDetailPage: React.FC = () => {
                             ))}
                         </div>
                         <div className="h-px bg-color my-10" />
+                    </section>
+                )}
+
+                {cluster.verification_report && (
+                    <section className="mb-12 bg-blue-50/30 dark:bg-blue-900/10 p-8 border border-blue-200 dark:border-blue-800">
+                        <h2 className="rail-label mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 tracking-[0.2em] uppercase">
+                            <ShieldCheck size={16}/> МЕДИУМСКА ВЕРИФИКАЦИЈА
+                        </h2>
+                        
+                        <div className="space-y-8">
+                            {cluster.verification_report.agreements && cluster.verification_report.agreements.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-emerald-600 mb-3 tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" /> ПОТВРДЕНИ ФАКТИ
+                                    </p>
+                                    <ul className="space-y-3 p-0 m-0 list-none">
+                                        {cluster.verification_report.agreements.map((item, i) => (
+                                            <li key={i} className="text-[15px] text-primary flex gap-3 leading-relaxed">
+                                                <span className="text-emerald-500 mt-1">✓</span>
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {cluster.verification_report.conflicts && cluster.verification_report.conflicts.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-rose-600 mb-3 tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-600" /> ПРОТИВРЕЧНОСТИ / РАЗЛИКИ
+                                    </p>
+                                    <ul className="space-y-3 p-0 m-0 list-none">
+                                        {cluster.verification_report.conflicts.map((item, i) => (
+                                            <li key={i} className="text-[15px] text-primary flex gap-3 leading-relaxed">
+                                                <AlertCircle size={14} className="text-rose-500 mt-1 shrink-0" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {cluster.verification_report.context && (
+                                <div className="pt-6 border-t border-blue-200 dark:border-blue-800">
+                                    <p className="text-[10px] font-black uppercase text-blue-600 mb-2 tracking-widest font-sans">ДОПОЛНИТЕЛЕН КОНТЕКСТ</p>
+                                    <p className="text-[15px] text-secondary leading-relaxed italic font-serif">
+                                        {cluster.verification_report.context}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </section>
                 )}
 

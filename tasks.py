@@ -17,7 +17,8 @@ from ai_engine import (
 from prompts import (
     TAGGING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT, 
     SYNTHESIS_SYSTEM_PROMPT, TOPIC_SYSTEM_PROMPT, 
-    DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT
+    DAILY_BRIEF_SYSTEM_PROMPT, ENTITY_EXTRACTION_PROMPT,
+    FACTCHECK_SYSTEM_PROMPT
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
@@ -1214,6 +1215,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     try:
         raw, _ = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
+        
+        verification_report = None
+        if len(article_rows) >= 3:
+            v_raw, _ = _call_ai(f"Статии за споредба:\n{content}", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck")
+            if v_raw:
+                verification_report = clean_json_response(v_raw)
+
         if raw:
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
@@ -1240,15 +1248,16 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment)
-                   VALUES (%s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
                        generated_article = EXCLUDED.generated_article,
                        created_at = EXCLUDED.created_at,
-                       sentiment = EXCLUDED.sentiment""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data)),
+                       sentiment = EXCLUDED.sentiment,
+                       verification_report = EXCLUDED.verification_report""",
+                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None),
                 fetch=False
             )
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
