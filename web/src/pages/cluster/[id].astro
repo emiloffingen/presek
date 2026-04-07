@@ -9,9 +9,10 @@ import ReaderTracker from '../../components/ReaderTracker.tsx';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode } from '../../utils/textUtils';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
+import { apiBaseUrl } from '../../lib/apiBase';
 
 const { id } = Astro.params;
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:5001/api";
+const API_URL = apiBaseUrl();
 
 let cluster = null;
 let error = null;

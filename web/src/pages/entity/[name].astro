@@ -4,10 +4,11 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import NewsCard from '../../components/NewsCard.astro';
 import EntityIsland from '../../components/EntityIsland';
 import Footer from '../../components/Footer.astro';
+import { apiBaseUrl } from '../../lib/apiBase';
 
 const { name } = Astro.params;
 const decodedName = decodeURIComponent(name || "");
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:5001/api";
+const API_URL = apiBaseUrl();
 
 let clusters = [];
 let entityData = null;

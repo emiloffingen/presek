@@ -101,8 +101,12 @@ function getTimeStr(dateStr: string) {
 				<img
 					src={thumbSrc}
 					alt={displayTitle}
+					width="700"
+					height="500"
 					class:list={["article-image", { "article-image-fallback": isFallbackArt }]}
 					loading={isLead ? "eager" : "lazy"}
+					decoding="async"
+					fetchpriority={isLead ? "high" : "auto"}
                     onerror="this.onerror=null; this.src='/img/placeholder.svg';"
 				/>
 			</a>

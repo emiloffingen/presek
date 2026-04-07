@@ -8,9 +8,10 @@ import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
+import { apiBaseUrl } from '../lib/apiBase';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:5001/api";
+const API_URL = apiBaseUrl();
 
 // Get search params for SSR filtering
 const { searchParams } = Astro.url;
@@ -41,34 +42,36 @@ if (category) newsUrl.searchParams.set('topic', category);
 if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
 
-try {
-    const newsData = await fetchJson(newsUrl.toString());
-    clusters = newsData?.clusters || [];
+// Fan out every SSR request in parallel — the news call is the only one
+// the page can't usefully render without, so we still surface its failure.
+const [newsResult, trendResult, entityResult, statsResult, healthResult, internationalResult] = await Promise.allSettled([
+    fetchJson(newsUrl.toString()),
+    fetchJson(`${API_URL}/trending`),
+    fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
+    fetchJson(`${API_URL}/stats/full`),
+    fetchJson(`${API_URL}/health`),
+    fetchJson(`${API_URL}/intelligence/international-curated?limit=4`),
+]);
 
-    const [trendResult, entityResult, statsResult, healthResult, internationalResult] = await Promise.allSettled([
-        fetchJson(`${API_URL}/trending`),
-        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
-        fetchJson(`${API_URL}/stats/full`),
-        fetchJson(`${API_URL}/health`),
-        fetchJson(`${API_URL}/intelligence/international-curated?limit=4`)
-    ]);
-
-    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
-        ? trendResult.value
-        : [];
-    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
-    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    health = healthResult.status === 'fulfilled' ? healthResult.value : null;
-    internationalClusters =
-        internationalResult.status === 'fulfilled' && Array.isArray(internationalResult.value?.clusters)
-            ? internationalResult.value.clusters
-            : [];
-} catch (e) {
-    console.error("News fetch error:", e);
-    error = "Грешка при вчитување на вестите.";
+if (newsResult.status === 'fulfilled') {
+    clusters = newsResult.value?.clusters || [];
+} else {
+    console.error('News fetch error:', newsResult.reason);
+    error = 'Грешка при вчитување на вестите.';
 }
+
+trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+    ? trendResult.value
+    : [];
+topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+    ? entityResult.value
+    : [];
+stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+health = healthResult.status === 'fulfilled' ? healthResult.value : null;
+internationalClusters =
+    internationalResult.status === 'fulfilled' && Array.isArray(internationalResult.value?.clusters)
+        ? internationalResult.value.clusters
+        : [];
 
 function normalizeFocusName(name: string) {
     const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
@@ -156,6 +159,16 @@ function getThumb(cluster: any) {
 						</div>
 					)}
 
+					{!error && clusters.length === 0 && (
+						<div class="empty-feed">
+							<p class="empty-feed-kicker">Тивко на лентата</p>
+							<h2 class="empty-feed-title">Денеска нема нови приказни што се истакнуваат.</h2>
+							<p class="empty-feed-copy">
+								Сè уште ги собираме објавите од медиумите. Освежете ја страницата за неколку минути или прелистајте ја <a href="/archive">архивата</a> за да видите што се случуваше претходните денови.
+							</p>
+						</div>
+					)}
+
 				{leadCluster && (
 					<section class="lead-hero motion-rise">
 						<div class="lead-copy">
@@ -188,7 +201,15 @@ function getThumb(cluster: any) {
 						</div>
 
 						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media" aria-hidden="true" tabindex="-1">
-							<img src={getThumb(leadCluster)} alt="" loading="eager" />
+							<img
+								src={getThumb(leadCluster)}
+								alt=""
+								width="1200"
+								height="1000"
+								loading="eager"
+								fetchpriority="high"
+								decoding="async"
+							/>
 						</a>
 					</section>
 				)}
@@ -338,6 +359,48 @@ function getThumb(cluster: any) {
 		gap: 0.95rem;
 		padding-bottom: 1.35rem;
 		border-bottom: 1px solid var(--border);
+	}
+
+	.empty-feed {
+		padding: 3rem 1.5rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 88%, var(--surface-soft) 12%);
+		text-align: center;
+		display: grid;
+		gap: 0.75rem;
+		justify-items: center;
+	}
+
+	.empty-feed-kicker {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.empty-feed-title {
+		margin: 0;
+		font-size: clamp(1.4rem, 1.1rem + 1vw, 1.85rem);
+		max-width: 28ch;
+		line-height: 1.1;
+	}
+
+	.empty-feed-copy {
+		margin: 0;
+		max-width: 48ch;
+		font-family: var(--font-nyt-body);
+		font-size: 0.98rem;
+		line-height: 1.55;
+		color: var(--secondary-foreground);
+	}
+
+	.empty-feed-copy a {
+		color: var(--nyt-accent);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
 	}
 
 	.lead-kicker,

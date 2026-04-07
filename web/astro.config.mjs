@@ -10,6 +10,10 @@ import node from '@astrojs/node';
 export default defineConfig({
   site: 'https://presek.live',
   output: 'server',
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: 'hover',
+  },
   integrations: [react(), sitemap()],
 
   vite: {
