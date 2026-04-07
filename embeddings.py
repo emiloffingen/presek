@@ -131,9 +131,9 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
 
 
 def generate_query_embedding(text: str) -> list[float] | None:
-    \"\"\"Generate an embedding for a search query. Same model as documents —
+    """Generate an embedding for a search query. Same model as documents —
     MiniLM is symmetric, no separate query/document task type needed.
-    Includes Redis caching to avoid CPU-heavy re-generation.\"\"\"
+    Includes Redis caching to avoid CPU-heavy re-generation."""
     if not text:
         return None
 
@@ -144,13 +144,13 @@ def generate_query_embedding(text: str) -> list[float] | None:
     from utils import redis_client
     import json
 
-    cache_key = f\"emb:query:{clean_text}\"
+    cache_key = f"emb:query:{clean_text}"
     try:
         cached = redis_client.get(cache_key)
         if cached:
             return json.loads(cached)
     except Exception as e:
-        log.warning(f\"[embeddings] Cache read error for query '{clean_text}': {e}\")
+        log.warning(f"[embeddings] Cache read error for query '{clean_text}': {e}")
 
     vector = generate_embedding(text)
 
@@ -159,7 +159,7 @@ def generate_query_embedding(text: str) -> list[float] | None:
             # Cache query embeddings for 24 hours
             redis_client.setex(cache_key, 86400, json.dumps(vector))
         except Exception as e:
-            log.warning(f\"[embeddings] Cache write error for query '{clean_text}': {e}\")
+            log.warning(f"[embeddings] Cache write error for query '{clean_text}': {e}")
 
     return vector
 

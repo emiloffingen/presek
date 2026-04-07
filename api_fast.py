@@ -243,13 +243,13 @@ def _safe_tracking_redirect_path(path: str) -> str:
 
 
 def _is_rate_limited_path(path: str) -> bool:
-    clean = str(path or \"\").strip()
-    if not clean.startswith(\"/api/\"):
+    clean = str(path or "").strip()
+    if not clean.startswith("/api/"):
         return False
     # Rate limit these expensive endpoints
-    if clean in {\"/api/chat_cluster\", \"/api/chat/stream\", \"/api/news\", \"/api/trending\", \"/api/intelligence/top-entities\"}:
+    if clean in {"/api/chat_cluster", "/api/chat/stream", "/api/news", "/api/trending", "/api/intelligence/top-entities"}:
         return True
-    return bool(re.match(r\"^/api/cluster/[a-f0-9]{6,64}/ask$\", clean))
+    return bool(re.match(r"^/api/cluster/[a-f0-9]{6,64}/ask$", clean))
 
 
 
@@ -638,13 +638,13 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
 
 @app.middleware("http")
 async def apply_runtime_policies(request: Request, call_next):
+
     if _is_rate_limited_path(request.url.path):
-        # Extract real IP from X-Forwarded-For if available (for Nginx/Cloudflare)
-        forwarded = request.headers.get(\"X-Forwarded-For\")
+        forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            client_host = forwarded.split(\",\")[0].strip()
+            client_host = forwarded.split(",")[0].strip()
         else:
-            client_host = str(getattr(getattr(request, \"client\", None), \"host\", \"\") or \"0.0.0.0\")
+            client_host = str(getattr(getattr(request, "client", None), "host", "") or "0.0.0.0")
 
         if not check_rate_limit(client_host):
 
