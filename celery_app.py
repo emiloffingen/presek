@@ -31,7 +31,7 @@ celery_app.conf.update(
     beat_schedule={
         'ingest-regular-feeds': {
             'task': 'tasks.run_ingestion',
-            'schedule': 300.0, # Every 5 minutes: Entry point for unified pipeline
+            'schedule': 1200.0, # Every 20 minutes
         },
         'prune-database': {
             'task': 'tasks.run_prune_db',
@@ -63,7 +63,7 @@ celery_app.conf.update(
         },
         'backfill-cover-art': {
             'task': 'tasks.backfill_cover_art_task',
-            'schedule': 600.0,  # Every 10 minutes: cover art generator
+            'schedule': 1800.0,  # Every 30 minutes
         },
     }
 )
