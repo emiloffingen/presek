@@ -81,7 +81,7 @@ function getTimeStr(dateStr: string) {
                 {cluster.articles.slice(1, 4).map((sub: any) => (
                     <li>
                         <a href={`/cluster/${cluster.cluster_id}`}>
-                            {sub.title}
+                            {cleanAndDecode(sub.title)}
                         </a>
                     </li>
                 ))}

@@ -6,6 +6,7 @@ import NewsCard from '../../components/NewsCard.astro';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import TopicFollowSuggestionsIsland from '../../components/TopicFollowSuggestionsIsland.tsx';
 import { buildTopicConnections } from '../../lib/topicDiscovery.js';
+import { cleanAndDecode } from '../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 
 const rawTopicParam = Astro.params.topic || '';
@@ -34,17 +35,12 @@ async function fetchJson(url: string) {
 }
 
 function cleanText(text?: string) {
-	if (!text) return '';
-	return String(text)
-		.replace(/^[⚪🟢🔴]\s*/u, '')
-		.replace(/#[^\s#]+/g, '')
-		.replace(/\s+/g, ' ')
-		.trim();
+	return cleanAndDecode(text);
 }
 
 function parseSynthesis(text?: string) {
 	if (!text) return [];
-	return String(text)
+	return String(cleanAndDecode(text))
 		.replace(/\r/g, '')
 		.split('\n')
 		.map((line) => line.trim().replace(/^[-•]\s+/, ''))

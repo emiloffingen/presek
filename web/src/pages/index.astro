@@ -7,6 +7,7 @@ import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
+import { cleanAndDecode } from '../utils/textUtils';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || (typeof window !== 'undefined' ? "/api" : "http://127.0.0.1:5001/api");
@@ -99,12 +100,7 @@ function getLeadSignal(cluster: any) {
 }
 
 function cleanLeadSummary(text?: string) {
-	if (!text) return '';
-	return String(text)
-		.replace(/^[⚪🟢🔴]\s*/u, '')
-		.replace(/#[^\s#]+/g, '')
-		.replace(/\s+/g, ' ')
-		.trim();
+	return cleanAndDecode(text);
 }
 
 function getLeadSummary(cluster: any) {
