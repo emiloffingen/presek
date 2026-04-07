@@ -199,10 +199,7 @@ const leadDescription =
 	cluster?.articles?.find((article: any) => article?.description?.trim())?.description?.trim() || '';
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 
-const summaryCardText =
-	cluster?.summary ||
-	leadDescription ||
-	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`;
+const ai_summary_bullets = cluster?.ai_summary_bullets || [];
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
@@ -211,9 +208,9 @@ const adjacentTopic =
 	cluster?.related?.find((item: any) => item?.shared_tags?.length)?.shared_tags?.[0] ||
 	'';
 const shareDescription = (
-	cluster?.summary ||
+	cluster?.synthesis ||
 	leadDescription ||
-	summaryCardText
+	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 
@@ -333,26 +330,28 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 									)}
 								</div>
 							)}
-							<div class="cluster-summary-card">
-								<p class="cluster-summary-label">Во кратки црти</p>
-								<div class="cluster-summary-copy">
-									{cleanAndDecode(summaryCardText).split('\n').map((line: string) => (
-										<p class="mb-2 last:mb-0">{line}</p>
-									))}
+							{ai_summary_bullets.length > 0 && (
+								<div class="cluster-summary-card">
+									<p class="cluster-summary-label">Во кратки црти</p>
+									<div class="cluster-summary-copy">
+										{ai_summary_bullets.map((line: string) => (
+											<p class="mb-2 last:mb-0">{cleanAndDecode(line)}</p>
+										))}
+									</div>
+									{sourcePreview.length > 0 && (
+										<p class="cluster-summary-sources">
+											<span>Извори:</span> {sourcePreview.join(' · ')}
+										</p>
+									)}
+									{synthesisUpdatedAt && (
+										<p class:list={["cluster-summary-update", synthesisFreshness.is_stale ? "is-stale" : ""]}>
+											{synthesisFreshness.is_stale
+												? `${synthesisFreshness.new_article_count || 1} нови извештаи се појавиле по последната синтеза.`
+												: `Последна синтеза: ${getRelativeTimeStr(synthesisUpdatedAt)}.`}
+										</p>
+									)}
 								</div>
-								{sourcePreview.length > 0 && (
-									<p class="cluster-summary-sources">
-										<span>Извори:</span> {sourcePreview.join(' · ')}
-									</p>
-								)}
-								{synthesisUpdatedAt && (
-									<p class:list={["cluster-summary-update", synthesisFreshness.is_stale ? "is-stale" : ""]}>
-										{synthesisFreshness.is_stale
-											? `${synthesisFreshness.new_article_count || 1} нови извештаи се појавиле по последната синтеза.`
-											: `Последна синтеза: ${getRelativeTimeStr(synthesisUpdatedAt)}.`}
-									</p>
-								)}
-							</div>
+							)}
 						</div>
 					</div>
 				</header>

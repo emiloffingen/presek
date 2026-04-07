@@ -515,6 +515,9 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
         )
 
         system = (
+            "You are a professional editorial assistant. You must synthesize the provided text into natural, flowing sentences. "
+            "CRITICAL: NEVER output raw metadata, author names, publication dates, or category tags (e.g., do not output strings like 'Александра Спасеска 07.04.2026 / 16:08 Хроника'). "
+            "Do not repeat the same sentence twice. Extract only the facts. "
             "Ти си новинарски асистент за Пресек. Не измислувај факти. "
             "Ако контекстот не е доволен, кажи што не е јасно. Биди прецизен и концизен."
         )
@@ -1204,6 +1207,16 @@ async def get_cluster_detail(cluster_id: str):
             (cluster_id,)
         )
         synthesis = s_row["summary"] if s_row else None
+        
+        # Parse synthesis into bullets for the 'ai_summary_bullets' field
+        ai_summary_bullets = []
+        if synthesis:
+            ai_summary_bullets = [
+                re.sub(r'^[-•*]\s*', '', line).strip()
+                for line in synthesis.split('\n')
+                if line.strip() and not line.strip().lower().startswith('статии:')
+            ]
+            
         perspectives = s_row["perspectives"] if s_row and s_row["perspectives"] else []
         if isinstance(perspectives, str):
             perspectives = json.loads(perspectives)
@@ -1251,6 +1264,7 @@ async def get_cluster_detail(cluster_id: str):
                 "cluster_id": cluster_id,
                 "articles": articles,
                 "synthesis": synthesis,
+                "ai_summary_bullets": ai_summary_bullets,
                 "synthesis_updated_at": freshness["synthesis_updated_at"],
                 "synthesis_freshness": {
                     "is_stale": freshness["is_stale"],
