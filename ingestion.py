@@ -1,4 +1,5 @@
 import re
+import html
 import datetime
 import asyncio
 import feedparser
@@ -33,6 +34,7 @@ def is_junk(title: str, desc: str) -> bool:
 def clean_rss_footer(text: str) -> str:
     """Removes common RSS footers and 'continue reading' artifacts."""
     if not text: return ""
+    text = html.unescape(text)
     text = re.sub(r'The post .* appeared first on .*', '', text)
     text = re.sub(r'Прочитајте повеќе на .*', '', text)
     text = re.sub(r'This article was originally published on .*', '', text)

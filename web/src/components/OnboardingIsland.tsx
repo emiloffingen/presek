@@ -91,7 +91,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
 
       <div className="onboarding-progress">
         <strong>{progress.doneCount}/{progress.total}</strong>
-        <span>чекори завршени</span>
+        <span> чекори завршени</span>
       </div>
 
       <div className="onboarding-steps">

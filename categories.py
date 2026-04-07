@@ -10,6 +10,7 @@ Allowed categories (exactly 6, geographic):
   Свет       = everything else (Australia, Asia, Africa, Middle East, etc.)
 """
 import re
+import html
 
 ALLOWED_CATEGORIES = {
     "Македонија", "Балкан", "Европа", "Германија", "Америка", "Свет",
@@ -315,6 +316,8 @@ def detect_country(source_name: str) -> str:
 def normalize_headline(title: str) -> str:
     """Clean up news titles by stripping tags, extra whitespace and common prefixes."""
     if not title: return ""
+    # Decode HTML entities
+    title = html.unescape(title)
     # Strip HTML tags
     t = re.sub(r'<[^>]+>', '', title)
     # Strip common prefixes and sensationalist labels
