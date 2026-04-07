@@ -9,7 +9,7 @@ import json
 import re
 from typing import Optional
 
-from local_nlp import build_citation_snippet, TAG_NOISE_WORDS
+from local_nlp import build_citation_snippet, ENTITY_NOISE_WORDS
 from utils import get_source_trust_label, build_cluster_source_signals
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
@@ -200,7 +200,7 @@ def normalize_server_delivery_subscription(payload) -> dict:
 
 def text_terms(text: str) -> set[str]:
     terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
-    return {t for t in terms if t not in TAG_NOISE_WORDS and t not in _EXTRA_NOISE}
+    return {t for t in terms if t not in ENTITY_NOISE_WORDS and t not in _EXTRA_NOISE}
 
 
 def rank_cluster_citations(
