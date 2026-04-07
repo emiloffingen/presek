@@ -98,6 +98,15 @@ class ApiClient {
     }
   }
 
+  async getRecommendations(params: { recentlyRead: string[]; followedTopics: string[]; limit?: number }): Promise<{ status: string; clusters: any[] }> {
+    try {
+      const response = await this.client.post('/intelligence/recommendations', params);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getStats(): Promise<{ status: string; data: Stats }> {
     try {
       const response = await this.client.get('/stats');

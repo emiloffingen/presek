@@ -7,6 +7,7 @@ import {
 import { apiClient } from '../api/client';
 import { ClusterDetail } from '../types';
 import { Header } from '../components/Header';
+import { recordClusterView } from '../lib/personalization';
 
 export const ClusterDetailPage: React.FC = () => {
   const { clusterId } = useParams<{ clusterId: string }>();
@@ -27,11 +28,18 @@ export const ClusterDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!clusterId) return;
-    if (hydrated.current && cluster?.cluster_id === clusterId) return;
+    if (hydrated.current && cluster?.cluster_id === clusterId) {
+      if (cluster) recordClusterView(cluster);
+      return;
+    }
 
     setLoading(true);
     apiClient.getClusterDetail(clusterId)
-      .then((res) => { setCluster(res.data); setError(null); })
+      .then((res) => { 
+        setCluster(res.data); 
+        setError(null);
+        recordClusterView(res.data);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Грешка'))
       .finally(() => {
         setLoading(false);

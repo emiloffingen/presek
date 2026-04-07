@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock } from 'lucide-react';
+import { Clock, Sparkles } from 'lucide-react';
 import { NewsCluster } from '../types';
 import { apiClient } from '../api/client';
 
@@ -8,6 +8,7 @@ interface ClusterCardProps {
   cluster: NewsCluster;
   isLead?: boolean;
   compact?: boolean;
+  reason?: string;
 }
 
 function timeAgo(dateStr: string): string {
@@ -24,7 +25,7 @@ function timeAgo(dateStr: string): string {
   }
 }
 
-export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compact }) => {
+export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compact, reason }) => {
   const navigate = useNavigate();
   const main = cluster.articles[0];
   
@@ -40,6 +41,12 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
         onClick={() => navigate(`/cluster/${cluster.cluster_id}`)}
         className="news-cluster border-b border-color pb-4 cursor-pointer group"
       >
+        {reason && (
+          <div className="flex items-center gap-1 mb-2 text-[9px] font-black uppercase text-accent">
+            <Sparkles size={10} fill="currentColor" />
+            {reason}
+          </div>
+        )}
         <div className="flex justify-between items-start gap-3 mb-1">
           <span className="text-[10px] font-black uppercase text-accent">{main.source}</span>
           <span className="text-[10px] text-muted">{timeAgo(main.created_at)}</span>

@@ -81,10 +81,13 @@ export const HomePage: React.FC = () => {
   // Personalized "For You" fetch
   useEffect(() => {
     const interests = getTopInterests();
-    if (interests.length > 0 && selectedCategory === 'Македонија' && !searchQuery && !selectedTopic) {
-      apiClient.getNews({
-        follow_topics: interests.join(','),
-        page_size: 6
+    const { recentlyRead } = useUIStore.getState();
+    
+    if ((interests.length > 0 || recentlyRead.length > 0) && selectedCategory === 'Македонија' && !searchQuery && !selectedTopic) {
+      apiClient.getRecommendations({
+        recentlyRead,
+        followedTopics: interests,
+        limit: 6
       }).then(res => setForYouClusters(res.clusters)).catch(() => {});
     } else {
       setForYouClusters([]);
@@ -157,7 +160,12 @@ export const HomePage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {forYouClusters.map(cluster => (
-                    <ClusterCard key={cluster.cluster_id} cluster={cluster} compact />
+                    <ClusterCard 
+                      key={cluster.cluster_id} 
+                      cluster={cluster} 
+                      compact 
+                      reason={cluster.reason}
+                    />
                   ))}
                 </div>
               </section>

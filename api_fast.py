@@ -1329,6 +1329,102 @@ async def ask_cluster(cluster_id: str, request: Request):
         raise
 
 
+@app.post("/api/intelligence/recommendations")
+async def get_personalized_recommendations(request: Request):
+    """
+    Returns clusters similar to the user's reading history and followed topics.
+    Payload: { recentlyRead: string[], followedTopics: string[], limit: int }
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    recent_ids = payload.get("recentlyRead", [])[:10]
+    followed_topics = payload.get("followedTopics", [])
+    limit = min(int(payload.get("limit", 6)), 20)
+
+    if not recent_ids and not followed_topics:
+        return {"status": "success", "clusters": []}
+
+    # 1. Get embeddings for recently read lead articles
+    user_vectors = []
+    if recent_ids:
+        rows = db.execute(
+            "SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL LIMIT 20",
+            (recent_ids,)
+        )
+        for r in rows:
+            if r["embedding"]:
+                if isinstance(r["embedding"], str):
+                    vec = json.loads(r["embedding"])
+                else:
+                    vec = list(r["embedding"])
+                user_vectors.append(vec)
+
+    # 2. Add vectors for followed topics
+    from embeddings import generate_query_embedding
+    for topic in followed_topics:
+        vec = generate_query_embedding(topic)
+        if vec:
+            user_vectors.append(vec)
+
+    if not user_vectors:
+        return {"status": "success", "clusters": []}
+
+    # 3. Calculate mean vector
+    import numpy as np
+    avg_vec = np.mean(user_vectors, axis=0).tolist()
+
+    # 4. Search semantic
+    results = db.search_semantic(avg_vec, limit=limit * 3)
+    
+    # 5. Group by cluster and format
+    seen_clusters = set(recent_ids)
+    cluster_ids = []
+    for r in results:
+        cid = r.get("cluster_id")
+        if cid and cid not in seen_clusters:
+            cluster_ids.append(cid)
+            seen_clusters.add(cid)
+            if len(cluster_ids) >= limit:
+                break
+
+    if not cluster_ids:
+        return {"status": "success", "clusters": []}
+
+    rows = db.execute(
+        "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+        (cluster_ids,)
+    )
+    
+    clusters_map = {}
+    for row in rows:
+        cid = row["cluster_id"]
+        clusters_map.setdefault(cid, []).append(row)
+
+    from utils import score_cluster
+    formatted = []
+    for cid in cluster_ids:
+        articles = clusters_map.get(cid, [])
+        if not articles: continue
+        
+        s_row = db.execute_one("SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s", (cid,))
+        m_row = db.execute_one("SELECT tags, representative_image FROM cluster_metadata WHERE cluster_id = %s", (cid,))
+        
+        formatted.append({
+            "cluster_id": cid,
+            "articles": articles,
+            "representative_image": m_row["representative_image"] if m_row else None,
+            "score": score_cluster(articles),
+            "has_synthesis": bool(s_row and s_row["summary"]),
+            "is_breaking": any(a.get("is_breaking") for a in articles),
+            "reason": "Предлог за Вас"
+        })
+
+    return {"status": "success", "clusters": formatted}
+
+
 @app.post("/api/chat_cluster")
 async def chat_cluster(request: Request):
     try:

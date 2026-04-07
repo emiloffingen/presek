@@ -55,6 +55,8 @@ interface UIStore {
   searchQuery: string;
   stats: FullStats | null;
   userInterests: Record<string, number>;
+  followedSources: Set<string>;
+  recentlyRead: string[];
 
   setSidebarOpen: (open: boolean) => void;
   setSelectedCategory: (category: string) => void;
@@ -62,6 +64,8 @@ interface UIStore {
   setSearchQuery: (query: string) => void;
   setStats: (stats: FullStats | null) => void;
   trackInterest: (key: string) => void;
+  toggleSource: (source: string) => void;
+  addRecentRead: (clusterId: string) => void;
   getTopInterests: () => string[];
 }
 
@@ -109,6 +113,24 @@ const _loadInterests = (): Record<string, number> => {
   }
 };
 
+const _loadSources = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem('presek:sources');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const _loadRecent = (): string[] => {
+  try {
+    const raw = localStorage.getItem('presek:recent');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const useUIStore = create<UIStore>((set, get) => ({
   sidebarOpen: true,
   selectedCategory: 'Македонија',
@@ -116,6 +138,8 @@ export const useUIStore = create<UIStore>((set, get) => ({
   searchQuery: '',
   stats: null,
   userInterests: _loadInterests(),
+  followedSources: _loadSources(),
+  recentlyRead: _loadRecent(),
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
@@ -130,6 +154,18 @@ export const useUIStore = create<UIStore>((set, get) => ({
       return { userInterests: next };
     });
   },
+  toggleSource: (source) => set(state => {
+    const next = new Set(state.followedSources);
+    if (next.has(source)) next.delete(source);
+    else next.add(source);
+    localStorage.setItem('presek:sources', JSON.stringify([...next]));
+    return { followedSources: next };
+  }),
+  addRecentRead: (clusterId) => set(state => {
+    const next = [clusterId, ...state.recentlyRead.filter(id => id !== clusterId)].slice(0, 20);
+    localStorage.setItem('presek:recent', JSON.stringify(next));
+    return { recentlyRead: next };
+  }),
   getTopInterests: () => {
     const interests = get().userInterests;
     return Object.entries(interests)
