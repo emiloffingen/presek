@@ -1189,11 +1189,22 @@
 .for-you-kicker,
 .for-you-note,
 .for-you-card-kicker,
-.for-you-card-meta,
 .for-you-card-cta {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.for-you-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     margin: 0;
     font-family: var(--font-sans);
     font-size: 0.66rem;
@@ -1251,6 +1262,24 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.for-you-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: auto;
+}
+
+.for-you-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
 }
 
 .onboarding-card {

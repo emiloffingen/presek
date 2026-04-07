@@ -10,10 +10,20 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 
+import he from 'he';
+
 function getSummary(cluster: any) {
   const article = cluster?.articles?.[0];
   const text = article?.summary || article?.description || '';
-  return String(text).replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  
+  let cleaned = he.decode(String(text));
+  return cleaned
+    .replace(/&nbsp;/g, ' ')
+    .replace(/^[⚪🟢🔴]\s*/u, '')
+    .replace(/#[^\s#]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
@@ -80,12 +90,14 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
               </p>
               <h3>{article.title || 'Кластер'}</h3>
               {summary && <p className="for-you-card-copy">{summary}</p>}
-              <div className="for-you-card-meta">
-                <span>{article.source || 'Извор'}</span>
-                <span>·</span>
-                <span>{cluster.articles?.length || 0} извори</span>
+              <div className="for-you-card-footer">
+                <div className="for-you-card-meta">
+                  <span>{article.source || 'Извор'}</span>
+                  <span>·</span>
+                  <span>{cluster.articles?.length || 0} извори</span>
+                </div>
+                <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
               </div>
-              <span className="for-you-card-cta">Отвори кластер <ArrowUpRight size={12} /></span>
             </a>
           );
         })}

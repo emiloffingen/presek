@@ -198,6 +198,7 @@ const leadDescription =
 	cluster?.articles?.find((article: any) => article?.description?.trim())?.description?.trim() || '';
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 const summaryCardText =
+	cluster?.synthesis ||
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`;
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
@@ -315,7 +316,11 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 							)}
 							<div class="cluster-summary-card">
 								<p class="cluster-summary-label">Во кратки црти</p>
-								<p class="cluster-summary-copy">{cleanAndDecode(summaryCardText)}</p>
+								<div class="cluster-summary-copy">
+									{cleanAndDecode(summaryCardText).split('\n').map((line: string) => (
+										<p class="mb-2 last:mb-0">{line}</p>
+									))}
+								</div>
 								{sourcePreview.length > 0 && (
 									<p class="cluster-summary-sources">
 										<span>Извори:</span> {sourcePreview.join(' · ')}
@@ -393,7 +398,8 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 												)}
 											</div>
 											<div class="article-row-time">
-												<span class="nyt-section-label text-muted-foreground">{a.relativeTime}</span>
+												<span class="nyt-section-label text-muted-foreground lowercase first-letter:uppercase">{a.relativeTime}</span>
+												<span class="text-muted-foreground opacity-40">·</span>
 												<span class="article-row-time-exact">{a.exactTime}</span>
 											</div>
 										</div>
@@ -476,9 +482,8 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 									<a href={`/cluster/${rel.cluster_id}`} class="related-link group no-underline">
 										{rel.relationship_label && <p class="related-kicker">{rel.relationship_label}</p>}
 										<h4>
-											{rel.title}
+											{cleanAndDecode(rel.title)}
 										</h4>
-										{rel.relationship_note && <p class="related-copy">{rel.relationship_note}</p>}
 										{(rel.shared_entities?.length || rel.shared_tags?.length) > 0 && (
 											<p class="related-meta">
 												{rel.shared_entities?.length > 0 ? `Имиња: ${rel.shared_entities.join(' · ')}` : ''}
@@ -528,7 +533,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 
 	.cluster-headline {
 		font-size: clamp(1.76rem, 1.3rem + 1vw, 3.35rem);
-		line-height: 0.96;
+		line-height: 1.12;
 		letter-spacing: -0.028em;
 		margin: 0 0 0.55rem;
 		max-width: 15ch;
@@ -945,7 +950,6 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 		font-size: 0.62rem;
 		font-weight: 800;
 		letter-spacing: 0.04em;
-		text-transform: uppercase;
 		color: var(--muted-foreground);
 	}
 
@@ -974,7 +978,6 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 		font-size: 0.7rem;
 		font-weight: 800;
 		letter-spacing: 0.05em;
-		text-transform: uppercase;
 		color: var(--muted-foreground);
 	}
 
@@ -984,7 +987,6 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 		font-size: 0.66rem;
 		font-weight: 800;
 		letter-spacing: 0.06em;
-		text-transform: uppercase;
 		color: var(--foreground);
 	}
 
