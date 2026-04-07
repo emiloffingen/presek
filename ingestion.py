@@ -36,7 +36,7 @@ def detect_fact_check(source: str, title: str) -> bool:
     if source.lower() == "vistinomer":
         return True
     
-    fact_keywords = ["проверка на факти", "факти:", "неточно:", "дезинформација", "манипулација", "вистина или лага"]
+    fact_keywords = ["проверка на факти", "факти:", "неточно:", "дезинформација", "манипулација", "вистина или лага", "факт-чек", "факт чек", "fact-check", "fact check", "лажна вест", "лажни вести"]
     lowered_title = title.lower()
     return any(kw in lowered_title for kw in fact_keywords)
 

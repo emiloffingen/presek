@@ -115,10 +115,10 @@ export const ClusterDetailPage: React.FC = () => {
             <div className="lg:col-span-8">
                 {cluster.generated_article && (
                     <section className="mb-12">
-                        <h2 className="rail-label mb-6 flex items-center gap-2 text-accent"><Sparkles size={14}/> ВОДЕЧКА СТОРИЈА</h2>
-                        <div className="prose-nyt text-xl leading-relaxed text-secondary font-serif">
+                        <h2 className="rail-label mb-6 flex items-center gap-2 text-accent tracking-[0.2em]"><Sparkles size={14}/> ВОДЕЧКА СТОРИЈА</h2>
+                        <div className="text-xl leading-relaxed text-primary font-serif">
                             {cluster.generated_article.split('\n').filter(p => p.trim()).map((paragraph, idx) => (
-                                <p key={idx} className={`mb-6 last:mb-0 ${idx === 0 ? "first-letter:text-5xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[1] first-letter:text-accent" : ""}`}>
+                                <p key={idx} className={`mb-6 last:mb-0 ${idx === 0 ? "first-letter:text-6xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[0.8] first-letter:text-accent" : ""}`}>
                                     {paragraph}
                                 </p>
                             ))}
@@ -129,19 +129,41 @@ export const ClusterDetailPage: React.FC = () => {
 
                 {cluster.has_synthesis && cluster.synthesis && (
                     <section className="mb-12">
-                        <h2 className="rail-label mb-6 flex items-center gap-2"><Sparkles size={14}/> ПРЕСЕК СУБЛИМАТ</h2>
-                        <div className="article-prose text-lg leading-relaxed italic border-l-4 border-accent pl-6 py-2 text-secondary whitespace-pre-line">
-                            {cluster.synthesis}
+                        <h2 className="rail-label mb-6 flex items-center gap-2 tracking-[0.2em]"><Sparkles size={14}/> ПРЕСЕК СУБЛИМАТ</h2>
+                        <div className="text-lg leading-relaxed text-primary font-serif">
+                            <ul className="list-none p-0 m-0 space-y-4">
+                                {cluster.synthesis.split('\n').filter(line => line.trim() && !line.toLowerCase().startsWith('статии:')).map((line, idx) => {
+                                    const match = line.match(/^\[(.*?)\]:\s*(.*)$/);
+                                    if (match) {
+                                        return (
+                                            <li key={idx} className="flex gap-3 items-start">
+                                                <span className="text-accent font-black mt-1">●</span>
+                                                <span>
+                                                    <strong className="text-[10px] font-black uppercase tracking-widest mr-2 text-accent">[{match[1]}]</strong>
+                                                    <span>{match[2]}</span>
+                                                </span>
+                                            </li>
+                                        );
+                                    }
+                                    const cleanLine = line.replace(/^[-•]\s+/, '');
+                                    return (
+                                        <li key={idx} className="flex gap-3 items-start">
+                                            <span className="text-accent font-black mt-1">●</span>
+                                            <span>{cleanLine}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
                         
                         {cluster.perspectives && cluster.perspectives.length > 0 && (
                             <div className="mt-10 grid gap-6">
-                                <p className="section-heading">РАЗЛИЧНИ ПЕРСПЕКТИВИ</p>
+                                <p className="text-[11px] font-black tracking-[0.2em] uppercase text-muted border-b-2 border-primary pb-2 mb-4">РАЗЛИЧНИ ПЕРСПЕКТИВИ</p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {cluster.perspectives.map((p, i) => (
-                                        <div key={i} className="bg-secondary p-5 border-t border-color">
-                                            <p className="font-bold text-sm mb-2 uppercase tracking-tight text-primary">{p.angle}</p>
-                                            <p className="text-sm text-secondary leading-relaxed">{p.content}</p>
+                                        <div key={i} className="bg-secondary p-6 border-t-2 border-color">
+                                            <p className="font-bold text-sm mb-3 uppercase tracking-tight text-primary font-sans">{p.angle}</p>
+                                            <p className="text-[15px] text-secondary leading-relaxed font-serif">{p.content}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -152,7 +174,7 @@ export const ClusterDetailPage: React.FC = () => {
 
                 {cluster.timeline && cluster.timeline.length > 1 && (
                     <section className="mb-12 bg-secondary p-8 border border-color">
-                        <h2 className="rail-label mb-8 flex items-center gap-2"><Clock size={14}/> ХРОНОЛОГИЈА НА НАСТАНОТ</h2>
+                        <h2 className="rail-label mb-8 flex items-center gap-2 text-accent tracking-[0.2em]"><Clock size={14}/> ХРОНОЛОГИЈА НА НАСТАНОТ</h2>
                         <div className="space-y-8 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-color">
                             {cluster.timeline.map((entry, idx) => (
                                 <div key={entry.article_id} className="relative pl-10">
