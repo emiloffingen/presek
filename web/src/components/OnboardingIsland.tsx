@@ -86,7 +86,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       </div>
 
       <p className="onboarding-copy">
-        Следете неколку теми и извори, па вклучете достава. Така `За Вас`, брифинзите и известувањата ќе почнат да работат како личен сервис, а не само како општа насловна.
+        Следете неколку теми и извори, па вклучете достава. Така „За Вас“, брифинзите и известувањата ќе почнат да работат како личен сервис, а не само како општа насловна.
       </p>
 
       <div className="onboarding-progress">
@@ -107,7 +107,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
         <div className="onboarding-starters">
           <div>
             <p className="onboarding-starters-title">Почнете со неколку брзи следења</p>
-            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за `За Вас`, известувањата и неделниот преглед да станат побрзо корисни.</p>
+            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за „За Вас“, известувањата и неделниот преглед да станат побрзо корисни.</p>
           </div>
 
           {recommendations.topics.length > 0 && (
