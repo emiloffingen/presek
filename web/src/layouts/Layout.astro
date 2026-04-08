@@ -8,6 +8,7 @@ interface Props {
 	image?: string;
 	canonical?: string;
 	type?: string;
+	schema?: object;
 }
 
 const {
@@ -16,6 +17,7 @@ const {
 	image = "/static/img/presek_emblem.png",
 	canonical,
 	type = "website",
+	schema,
 } = Astro.props;
 
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
@@ -67,6 +69,10 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={imageUrl} />
 		<title>{pageTitle}</title>
+
+		{schema && (
+			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
+		)}
 
 		<script is:inline>
 			// Immediate theme sync to prevent flicker. We persist the

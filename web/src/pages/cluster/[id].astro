@@ -15,6 +15,9 @@ import { apiBaseUrl } from '../../lib/apiBase';
 
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
+const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
+const cleanPath = Astro.url?.pathname === "/" ? "" : Astro.url.pathname.replace(/\/$/, "");
+const canonicalUrl = `${siteUrl}${cleanPath}`;
 
 let cluster = null;
 let error = null;
@@ -232,6 +235,7 @@ const shareDescription = (
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
+const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${shareImage.startsWith("/") ? shareImage : `/${shareImage}`}`;
 
 const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
 
@@ -260,6 +264,48 @@ function getLeadVisual(clusterData: any) {
 }
 
 const leadVisual = cluster ? getLeadVisual(cluster) : null;
+
+// JSON-LD Schema for Google News / AdSense
+const schema = cluster ? {
+	"@context": "https://schema.org",
+	"@type": "AnalysisNewsArticle",
+	"mainEntityOfPage": {
+		"@type": "WebPage",
+		"@id": canonicalUrl
+	},
+	"headline": cleanAndDecode(cluster.articles[0].title),
+	"description": cleanAndDecode(shareDescription),
+	"image": imageUrl,
+	"datePublished": cluster.articles[0].created_at,
+	"dateModified": synthesisUpdatedAt || cluster.articles[0].created_at,
+	"author": {
+		"@type": "Organization",
+		"name": "Пресек",
+		"url": siteUrl
+	},
+	"publisher": {
+		"@type": "Organization",
+		"name": "Пресек",
+		"logo": {
+			"@type": "ImageObject",
+			"url": `${siteUrl}/static/img/presek_emblem.png`
+		}
+	},
+	"articleBody": generatedArticle || extractSafeText(cluster.synthesis),
+	"about": cluster.tags?.map((tag: string) => ({
+		"@type": "Thing",
+		"name": tag
+	})) || [],
+	"mentions": cluster.articles.map((a: any) => ({
+		"@type": "NewsArticle",
+		"headline": cleanAndDecode(a.title),
+		"publisher": {
+			"@type": "Organization",
+			"name": a.source
+		},
+		"url": a.link
+	}))
+} : null;
 ---
 
 <Layout
@@ -267,6 +313,7 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 	description={cluster ? cleanAndDecode(shareDescription) : "Детали за вест од Пресек"}
 	image={shareImage}
 	type={cluster ? "article" : "website"}
+	schema={schema}
 >
     <NYTHeader />
 
@@ -484,6 +531,17 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 						{cluster.sentiment && (
 							<MediaPulseRadar data={cluster.sentiment} />
 						)}
+
+						<div class="mt-4 p-4 border border-dashed border-nyt-gray-300 bg-nyt-gray-100/50">
+							<p class="text-[11px] font-sans font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+								<Sparkles size={12} /> Транспарентност за вештачка интелигенција
+							</p>
+							<p class="text-xs text-secondary-foreground leading-relaxed">
+								Овој преглед е генериран со помош на вештачка интелигенција која ги анализира и споредува наведените извори. 
+								Системот е програмиран да користи исклучиво факти од влезните статии и да ги нагласи разликите во известувањето. 
+								За повеќе детали, прочитајте ги нашите <a href="/editorial" class="underline hover:text-nyt-accent">уреднички стандарди</a>.
+							</p>
+						</div>
 
 						{/* Articles List */}
 						<section class="cluster-module">

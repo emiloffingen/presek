@@ -1,0 +1,166 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout 
+    title="Уреднички стандарди и методологија"
+    description="Дознајте како Пресек ги групира вестите, како работи нашиот алгоритам и како се врши синтезата со помош на вештачка интелигенција."
+>
+    <NYTHeader />
+    <main class="site-layout py-20">
+        <article class="editorial-shell">
+            <header class="editorial-header">
+                <span class="page-kicker">Транспарентност</span>
+                <h1 class="editorial-headline">Уреднички стандарди</h1>
+                <p class="editorial-intro">
+                    Пресек е технолошка платформа која користи напредна јазична обработка за да внесе ред во медиумскиот шум. Нашата методологија е изградена врз принципи на неутралност и транспарентност.
+                </p>
+            </header>
+
+            <div class="editorial-page-grid">
+                <div class="editorial-main">
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">1. Како работи кластерирањето?</h2>
+                        <div class="prose-nyt">
+                            <p>
+                                Нашиот систем континуирано ги следи RSS лентите на над 60 македонски и меѓународни медиуми. Користејќи алгоритми за векторска сличност, системот ги препознава сториите што известуваат за ист настан и ги групира во „кластери“.
+                            </p>
+                            <p>
+                                Ова овозможува да видите како различни медиуми (со различни уреднички политики) пристапуваат кон истата тема во исто време.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">2. Употреба на вештачка интелигенција (AI)</h2>
+                        <div class="prose-nyt">
+                            <p>
+                                Пресек користи големи јазични модели (LLM) за да генерира „Пресек Сублимат“ и „Водечка Сторија“. Овој процес е строго контролиран:
+                            </p>
+                            <ul>
+                                <li><strong>Без халуцинации:</strong> Моделот е инструиран да користи исклучиво факти присутни во влезните статии.</li>
+                                <li><strong>Компаративна анализа:</strong> Наместо само да ги спојува текстовите, AI е насочен да бара разлики во известувањето и акцентите на медиумите.</li>
+                                <li><strong>Човечки надзор:</strong> Нашите инженери и уредници редовно ги ревидираат излезните резултати за да ја осигураат јазичната и фактичката прецизност.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="editorial-panel">
+                        <h2 class="editorial-panel-title">3. Рангирање и релевантност</h2>
+                        <div class="prose-nyt">
+                            <p>
+                                Рангирањето на вестите на насловната страница не е субјективно. Тоа се заснова на:
+                            </p>
+                            <ul>
+                                <li><strong>Медиумски волумен:</strong> Колку повеќе медиуми известуваат за една тема, толку повисоко е нејзиното значење.</li>
+                                <li><strong>Брзина на развој:</strong> Настаните што се развиваат брзо добиваат ознака „Во тек“ или „Брејкинг“.</li>
+                                <li><strong>Разноликост на извори:</strong> Темите покриени од медиуми со различен профил добиваат поголема тежина.</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="editorial-rail">
+                    <div class="rail-card">
+                        <h3 class="rail-card-title">Автоматизација со цел</h3>
+                        <p class="rail-copy">
+                            Целта на автоматизацијата во Пресек не е да го замени новинарството, туку да го направи попрегледно за крајниот корисник во ера на информативно преоптоварување.
+                        </p>
+                    </div>
+                    <div class="rail-card rail-card-accent">
+                        <h3 class="rail-card-title">Корекција на грешки</h3>
+                        <p class="rail-copy">
+                            Доколку забележите грешка во групирањето или синтезата, ве молиме контактирајте нè преку нашата <a href="/contact">контакт страница</a>.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </article>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .editorial-shell {
+        max-width: 76rem;
+        margin: 0 auto;
+    }
+    .editorial-header {
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .editorial-headline {
+        font-size: clamp(2.5rem, 2rem + 2vw, 4rem);
+        line-height: 1;
+        margin: 0.5rem 0 1.5rem;
+    }
+    .editorial-intro {
+        font-family: var(--font-nyt-body);
+        font-size: 1.25rem;
+        line-height: 1.6;
+        color: var(--secondary-foreground);
+        max-width: 50rem;
+    }
+    .editorial-page-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+    .editorial-panel {
+        margin-bottom: 3rem;
+    }
+    .editorial-panel-title {
+        font-family: var(--font-sans);
+        font-size: 0.85rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+        color: var(--nyt-accent);
+    }
+    .prose-nyt {
+        font-family: var(--font-nyt-body);
+        font-size: 1.1rem;
+        line-height: 1.7;
+        color: var(--secondary-foreground);
+    }
+    .prose-nyt p { margin-bottom: 1.5rem; }
+    .prose-nyt ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .prose-nyt li { margin-bottom: 0.75rem; }
+
+    .rail-card {
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 95%, var(--secondary) 5%);
+        margin-bottom: 1.5rem;
+    }
+    .rail-card-accent {
+        background: color-mix(in srgb, var(--background) 90%, var(--nyt-accent) 10%);
+    }
+    .rail-card-title {
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    .rail-copy {
+        font-family: var(--font-nyt-body);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    @media (min-width: 960px) {
+        .editorial-page-grid {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+</style>
