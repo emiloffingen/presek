@@ -203,9 +203,29 @@ export const IzvoriPage: React.FC = () => {
             </section>
 
             {loading ? (
-              <div className="flex flex-col items-center py-20">
-                <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
-                <p className="nyt-section-label text-muted-foreground">Вчитувам извори...</p>
+              <div className="space-y-12">
+                <section>
+                  <div className="h-6 w-48 bg-secondary/50 rounded animate-pulse mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="p-6 border border-border bg-card rounded-lg space-y-4">
+                        <div className="flex justify-between">
+                          <div className="space-y-2">
+                            <div className="h-5 w-32 bg-secondary/50 rounded animate-pulse"></div>
+                            <div className="h-3 w-20 bg-secondary/50 rounded animate-pulse"></div>
+                          </div>
+                          <div className="h-6 w-24 bg-secondary/50 rounded animate-pulse"></div>
+                        </div>
+                        <div className="h-16 w-full bg-secondary/30 rounded animate-pulse"></div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
+                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
+                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
             ) : error ? (
               <div className="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
