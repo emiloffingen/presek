@@ -132,6 +132,7 @@ function getTimeStr(dateStr: string) {
 						loading={isLead ? "eager" : "lazy"}
 						decoding="async"
 						fetchpriority={isLead ? "high" : "auto"}
+						onload="this.classList.add('is-loaded')"
 						onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
 					/>
 					<div class="article-image-placeholder is-error-fallback" style="display: none;">

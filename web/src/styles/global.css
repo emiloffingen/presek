@@ -91,36 +91,48 @@
 
     .dark {
         /* Core Palette (Dark - APCA Compliant) */
-        --background: #1a1715;
+        --background: #0f0d0c; /* Deep Dark */
         --foreground: #f2ece2;
-        --card: #23201d;
+        --card: #1a1715;
         --card-foreground: #f3f4f6;
         --primary: #f2ece2;
         --primary-foreground: #1a1715;
-        --secondary: #2d2824;
-        --secondary-foreground: #d8cec1;
-        --muted: #221d1a;
-        --muted-foreground: #aa9f92;
+        --secondary: #231f1c;
+        --secondary-foreground: #d1c7b7;
+        --muted: #1a1715;
+        --muted-foreground: #9a8f82;
         --accent: #f2ece2;
         --accent-foreground: #1a1715;
-        --border: #4a433d;
-        --input: #4a433d;
+        --border: #332d29;
+        --input: #332d29;
         --ring: #a5c5ff;
-        --surface-soft: #201c19;
-        --surface-strong: #2a2521;
+        --surface-soft: #161311;
+        --surface-strong: #1e1a17;
 
         /* NYT Smart Colors (Dark Mode - Automated Inversion) */
         --nyt-black: #f2ece2;
-        --nyt-gray-100: #23201d;
-        --nyt-gray-200: #332d29;
-        --nyt-gray-300: #4a433d;
-        --nyt-gray-500: #aa9f92;
-        --nyt-gray-600: #d8cec1;
-        --nyt-accent: #8bb6f5;
-        --nyt-red: #f48c78;
-        --link: #b5cdf8;
-        --link-hover: #d6e3fb;
+        --nyt-gray-100: #1a1715;
+        --nyt-gray-200: #231f1c;
+        --nyt-gray-300: #332d29;
+        --nyt-gray-500: #9a8f82;
+        --nyt-gray-600: #d1c7b7;
+        --nyt-accent: #a5c5ff;
+        --nyt-red: #ff8c7a;
+        --link: #a5c5ff;
+        --link-hover: #c7dbff;
     }
+}
+
+/* Image Reveal Effect */
+.article-image,
+.cluster-visual-image {
+    opacity: 0;
+    transition: opacity 0.6s ease-out;
+}
+
+.article-image.is-loaded,
+.cluster-visual-image.is-loaded {
+    opacity: 1;
 }
 
 @layer base {

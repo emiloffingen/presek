@@ -385,9 +385,10 @@ const schema = cluster ? {
 									) : (
 										<img
 											src={leadVisual.src}
-											alt={cluster.articles[0].title}
+											alt={cleanAndDecode(cluster.articles[0].title)}
 											class="cluster-visual-image"
 											loading="eager"
+											onload="this.classList.add('is-loaded')"
 										/>
 									)}
 								</div>
