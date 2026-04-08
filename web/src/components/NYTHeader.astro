@@ -140,14 +140,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
 <style>
     .header-sticky-wrapper {
-        position: sticky;
-        top: 0;
+        position: relative;
         z-index: 100;
-        background: color-mix(in srgb, var(--background) 92%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: var(--background);
         border-bottom: 1px solid var(--border);
-        transition: transform 0.3s ease;
     }
 
     /* Small adjustment to child components to remove individual borders if they conflict */
