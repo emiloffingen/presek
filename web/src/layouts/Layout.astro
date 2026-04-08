@@ -20,10 +20,14 @@ const {
 
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 const pageTitle = title.includes("Пресек") ? title : `${title} | Пресек`;
-const canonicalPath = Astro.url?.pathname
-	? `${Astro.url.pathname}${Astro.url.search || ""}`
-	: "/";
-const canonicalUrl = canonical || `${siteUrl}${canonicalPath}`;
+
+// Canonical logic: 
+// 1. If explicit canonical is passed, use it.
+// 2. Otherwise, use the current pathname without query parameters (important for SEO/indexing).
+// 3. Ensure home page is just the base domain.
+const cleanPath = Astro.url?.pathname === "/" ? "" : Astro.url.pathname.replace(/\/$/, "");
+const canonicalUrl = canonical || `${siteUrl}${cleanPath}`;
+
 const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.startsWith("/") ? image : `/${image}`}`;
 ---
 
