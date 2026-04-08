@@ -220,8 +220,14 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
 
     if not POLLINATIONS_API_KEY: return None
     
-    clean_prompt = re.sub(r'[^\w\s]', '', prompt[:200])
-    styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
+    # If the prompt looks like a summary (multiple sentences), use it to make a better illustration
+    clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
+    if len(clean_prompt) > 100:
+        # It's a summary, let's extract keywords or just use the first bit
+        styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
+    else:
+        styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
+    
     encoded_prompt = urllib.parse.quote(styled_prompt)
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
     

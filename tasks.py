@@ -1790,20 +1790,29 @@ def backfill_cover_art_single_task(cluster_id, title):
 
 @celery_app.task
 def backfill_cover_art_task():
-    """Queue cover art generation without blocking a worker between items."""
+    """Queue cover art generation only for clusters that have ZERO images from any source."""
     try:
+        # Find clusters where NO article has an image_url
         rows = db.execute("""
             SELECT DISTINCT a.cluster_id, 
+                   (SELECT summary FROM cluster_summaries WHERE cluster_id = a.cluster_id LIMIT 1) as summary,
                    (SELECT title FROM articles WHERE cluster_id = a.cluster_id ORDER BY created_at DESC LIMIT 1) as title
             FROM articles a
-            WHERE a.image_url IS NULL
-              AND a.created_at >= NOW() - INTERVAL '24 hours'
-            LIMIT 50
+            WHERE NOT EXISTS (
+                SELECT 1 FROM articles sub 
+                WHERE sub.cluster_id = a.cluster_id 
+                  AND sub.image_url IS NOT NULL 
+                  AND sub.image_url NOT LIKE '/static/generated/%'
+            )
+            AND a.created_at >= NOW() - INTERVAL '24 hours'
+            LIMIT 30
         """)
         for idx, r in enumerate(rows):
+            # Prioritize summary for a better AI prompt
+            prompt_text = r['summary'] or r['title'] or ''
             backfill_cover_art_single_task.apply_async(
-                args=(r['cluster_id'], r['title'] or ''),
-                countdown=idx * 4,
+                args=(r['cluster_id'], prompt_text),
+                countdown=idx * 5, # Space out requests to AI provider
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
