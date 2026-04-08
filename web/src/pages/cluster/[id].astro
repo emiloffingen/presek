@@ -430,7 +430,7 @@ const schema = cluster ? {
 				<div class="cluster-grid">
 					<div class="cluster-main motion-rise motion-delay-1">
 						{/* Lead Article Section */}
-						{generatedArticle && (
+						{generatedArticle ? (
 							<section class="cluster-article-hero">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
@@ -441,13 +441,11 @@ const schema = cluster ? {
 										<p class:list={["mb-6 last:mb-0", idx === 0 ? "drop-cap" : ""]}>
 											{paragraph}
 										</p>
-									))}								</div>
+									))}
+								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
 							</section>
-						)}
-
-						{/* AI Synthesis Section */}
-						{cluster.synthesis && synthesisItems.length > 0 && (
+						) : cluster.synthesis && (
 							<section class="cluster-synthesis">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
@@ -455,20 +453,39 @@ const schema = cluster ? {
 								</div>
 								<div class="prose-nyt text-lg leading-relaxed text-foreground font-serif">
 									<ul class="list-none p-0 m-0 space-y-4">
-                                        {synthesisItems.map(item => (
-                                            <li class="flex gap-3 items-start">
-                                                <span class="text-nyt-accent font-black mt-1">●</span>
-                                                <span>
-                                                    {item.source && <strong class="nyt-section-label text-[10px] mr-2 text-nyt-accent">[{item.source}]</strong>}
-                                                    <span set:html={item.content}></span>
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
+										{synthesisItems.map(item => (
+											<li class="flex gap-3 items-start">
+												<span class="text-nyt-accent font-black mt-1">●</span>
+												<span>
+													{item.source && <strong class="nyt-section-label text-[10px] mr-2 text-nyt-accent">[{item.source}]</strong>}
+													<span set:html={item.content}></span>
+												</span>
+											</li>
+										))}
+									</ul>
 								</div>
+								<div class="h-px bg-nyt-gray-300 my-10" />
 							</section>
 						)}
 
+						{/* Secondary Synthesis (Bullets if article exists) */}
+						{generatedArticle && cluster.synthesis && synthesisItems.length > 0 && (
+							<section class="cluster-synthesis mb-12">
+								<div class="cluster-module-head">
+									<h2 class="nyt-section-label tracking-[0.2em]">КЛУЧНИ ТОЧКИ</h2>
+								</div>
+								<div class="prose-nyt text-base leading-relaxed text-secondary-foreground font-serif">
+									<ul class="list-none p-0 m-0 space-y-3">
+										{synthesisItems.map(item => (
+											<li class="flex gap-3 items-start border-b border-border/50 pb-3 last:border-0">
+												<span class="text-nyt-accent font-black mt-0.5">●</span>
+												<span set:html={item.content}></span>
+											</li>
+										))}
+									</ul>
+								</div>
+							</section>
+						)}
 						{/* Perspectives */}
 						{perspectives.length > 0 && (
 							<section class="cluster-synthesis cluster-perspectives">
