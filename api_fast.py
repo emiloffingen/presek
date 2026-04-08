@@ -1413,13 +1413,20 @@ async def get_cluster_detail(cluster_id: str):
         timeline = []
         for i, a in enumerate(chrono_articles):
             is_major = (a.get('source_signal') or {}).get('trust_level', 0) >= 0.8
+            milestone = None
+            if i == 0: milestone = "ПОЧЕТОК"
+            elif i == len(chrono_articles) // 2 and len(chrono_articles) >= 4: milestone = "ДИВЕРГЕНЦИЈА"
+            elif i == len(chrono_articles) - 1 and len(chrono_articles) >= 3: milestone = "КОНСЕНЗУС"
+            else: milestone = "РАЗВОЈ"
+
             timeline.append({
                 "article_id": a['id'],
-                "title": a['title'],
+                "title": cleanAndDecode(a['title']),
                 "source": a['source'],
                 "created_at": a['created_at'],
                 "is_first": i == 0,
-                "is_major": is_major or i == 0
+                "is_major": is_major or milestone in ("ПОЧЕТОК", "ДИВЕРГЕНЦИЈА", "КОНСЕНЗУС"),
+                "milestone": milestone
             })
 
         return {
