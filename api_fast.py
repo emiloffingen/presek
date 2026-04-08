@@ -1142,16 +1142,12 @@ async def get_news(
     page_size: int = 24
 ):
     try:
-        # Fetch clusters with aggregated entity names
-        sql = """
-            WITH cluster_ents AS (
-                SELECT cluster_id, array_agg(entity_name) as entity_names
-                FROM cluster_entities
-                GROUP BY cluster_id
-            )
-            SELECT a.*, COALESCE(ce.entity_names, '{}') as entity_names
-            FROM (
-        """
+        # Clamp pagination + query length to prevent abuse
+        page = max(0, min(int(page or 0), API_MAX_PAGE))
+        page_size = max(1, min(int(page_size or 24), 50))
+        if q:
+            q = q.strip()[:API_MAX_Q_LEN]
+
         # Hybrid Search if query is present
         if q:
             from embeddings import generate_query_embedding
@@ -1159,10 +1155,14 @@ async def get_news(
             if query_vec:
                 rows = db.hybrid_search(q, query_vec, limit=100)
             else:
-                # Fallback to simple ILIKE if embedding fails
-                sql = "SELECT * FROM articles WHERE (title ILIKE %s OR description ILIKE %s) LIMIT 100"
-                params = [f'%{q}%', f'%{q}%']
-                rows = db.execute(sql, tuple(params))
+                # Fallback to simple ILIKE if embedding fails. Escape pattern
+                # metacharacters so user input can't act as a wildcard.
+                pattern = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                pattern = f"%{pattern}%"
+                rows = db.execute(
+                    "SELECT * FROM articles WHERE (title ILIKE %s OR description ILIKE %s) LIMIT 100",
+                    (pattern, pattern),
+                )
         elif entity:
             sql = """
                 SELECT a.* FROM articles a
@@ -1397,18 +1397,18 @@ async def get_cluster_detail(cluster_id: str):
 async def ask_cluster(cluster_id: str, request: Request):
     """Answers a question using only the current cluster's context."""
     try:
-        try:
-            try:
-                payload = await request.json()
-            except Exception:
-                raise HTTPException(status_code=400, detail="Invalid JSON body")
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-            question = str((payload or {}).get("question") or "").strip()
-            return await _build_cluster_answer_payload(cluster_id, question)
-        except HTTPException:
-            raise
+    question = str((payload or {}).get("question") or "").strip()
+    try:
+        return await _build_cluster_answer_payload(cluster_id, question)
     except HTTPException:
         raise
+    except Exception as e:
+        log.error(f"[fastapi/ask_cluster] unexpected error for {cluster_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to answer cluster question")
 
 
 @app.post("/api/intelligence/recommendations")
@@ -2034,27 +2034,32 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
         return _error_json("Missing url parameter", 400)
 
     if url.startswith("/static/"):
-        if ".." in url:
-            return _error_json("Blocked URL", 403)
-        content_type = "image/jpeg"
-        if url.endswith(".svg"):
-            content_type = "image/svg+xml"
-        elif url.endswith(".png"):
-            content_type = "image/png"
-        elif url.endswith(".webp"):
-            content_type = "image/webp"
+        # Resolve under _STATIC_ROOT and verify the result stays inside it,
+        # so encoded traversal sequences can't escape the static directory.
+        relative = url[len("/static/"):].lstrip("/")
         try:
-            full_path = os.path.join(os.getcwd(), url.lstrip("/"))
-            if not os.path.exists(full_path):
-                return _error_json("Local file not found", 404)
-            with open(full_path, "rb") as handle:
-                return Response(handle.read(), media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
-        except Exception as e:
-            return _error_json(f"Failed to serve local file: {e}", 500)
+            candidate = (_STATIC_ROOT / relative).resolve()
+            candidate.relative_to(_STATIC_ROOT.resolve())
+        except (ValueError, RuntimeError):
+            return _error_json("Blocked URL", 403)
+        if not candidate.exists() or not candidate.is_file():
+            return _error_json("Local file not found", 404)
+        suffix = candidate.suffix.lower()
+        content_type = {
+            ".svg": "image/svg+xml",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+        }.get(suffix, "image/jpeg")
+        return FileResponse(candidate, media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
 
     if not re.match(r'^https?://', url):
         return _error_json("Invalid URL scheme", 400)
 
+    import time
+    start_time = time.perf_counter()
     try:
         target_width = int(w) if w and str(w).isdigit() else 600
         target_width = max(20, min(1200, target_width))
@@ -2070,6 +2075,7 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
+    fetch_start = time.perf_counter()
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -2091,6 +2097,7 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
             peer_ip = _peer_ip(response)
             if not peer_ip or peer_ip not in safe_ips:
                 response.close()
+                log.warning(f"[proxy/security] Blocked unsafe peer IP {peer_ip} for {url}")
                 return _error_json("Blocked upstream target", 403)
             if 300 <= response.status_code < 400:
                 location = response.headers.get("Location")
@@ -2106,22 +2113,34 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
             return _error_json("Too many upstream redirects", 502)
 
         if response.status_code != 200:
+            log.warning(f"[proxy/fetch] Upstream {url} returned {response.status_code}")
             return _error_json("Failed to fetch image", response.status_code)
 
         content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
         if content_type not in _PROXY_ALLOWED_TYPES:
+            log.warning(f"[proxy/type] Unsupported content type {content_type} for {url}")
             return _error_json("Unsupported content type", 415)
 
-        image_data = b""
+        image_chunks = []
+        total_bytes = 0
         for chunk in response.iter_content(chunk_size=8192):
-            image_data += chunk
-            if len(image_data) > _PROXY_MAX_BYTES:
+            if not chunk:
+                continue
+            total_bytes += len(chunk)
+            if total_bytes > _PROXY_MAX_BYTES:
+                response.close()
+                log.warning(f"[proxy/size] Image too large ({total_bytes} bytes) for {url}")
                 return _error_json("Image too large", 413)
+            image_chunks.append(chunk)
+        image_data = b"".join(image_chunks)
+        fetch_duration = time.perf_counter() - fetch_start
 
+        optimize_start = time.perf_counter()
         from io import BytesIO
         from PIL import Image
 
         img = Image.open(BytesIO(image_data))
+        orig_w, orig_h = img.size
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
         if img.width > target_width:
@@ -2132,8 +2151,16 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
         quality = 20 if target_width <= 50 else 80
         img.save(webp_io, "WEBP", quality=quality, method=6)
         optimized_data = webp_io.getvalue()
+        optimize_duration = time.perf_counter() - optimize_start
 
         set_cache(cache_key, {"data": optimized_data.hex(), "content_type": "image/webp"}, ttl=86400)
+        
+        total_duration = time.perf_counter() - start_time
+        log.info(
+            f"[proxy/perf] {url} -> {len(optimized_data)} bytes. "
+            f"Total: {total_duration:.3f}s, Fetch: {fetch_duration:.3f}s, Optimize: {optimize_duration:.3f}s. "
+            f"Original: {orig_w}x{orig_h}, Target: {target_width}w"
+        )
         return Response(optimized_data, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
     except socket.gaierror:
         return _error_json("Could not resolve hostname", 404)
@@ -2169,6 +2196,7 @@ async def chat_stream(
                         yield f"data: {json.dumps({'token': chunk})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
+            log.warning(f"[fastapi/chat_stream] generation failed for {cluster_id}: {e}", exc_info=True)
             yield f"data: {json.dumps({'error': 'Chat generation failed'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

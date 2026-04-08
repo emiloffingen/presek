@@ -13,6 +13,7 @@ def validate_required_env(required_keys=REQUIRED_RUNTIME_ENV_KEYS):
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
+NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────

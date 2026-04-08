@@ -754,6 +754,21 @@ export function exportSyncPayload(storage = globalThis?.localStorage) {
   };
 }
 
+export function clearAllData(storage = globalThis?.localStorage) {
+  if (!storage) return;
+  const keys = [
+    PROFILE_KEY,
+    DELIVERY_KEY,
+    SYNC_TOKEN_KEY,
+    ONBOARDING_KEY,
+    SUGGESTION_ANALYTICS_KEY,
+    CLIENT_ID_KEY,
+  ];
+  for (const key of keys) {
+    storage.removeItem(key);
+  }
+}
+
 export function mergeSyncPayload(remoteProfile, storage = globalThis?.localStorage) {
   const localProfile = loadReaderProfile(storage);
   const localPrefs = loadDeliveryPreferences(storage);

@@ -2,14 +2,11 @@ import logging
 import datetime
 import json
 import os
-import re
-import urllib.error
-import urllib.parse
 import urllib.request
 from celery_app import celery_app
-from ingestion import ingest_feeds, ingest_diaspora_feeds
+from ingestion import ingest_feeds
 from database import db_manager as db, prune_db
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, BREAKING_SCORE_THRESHOLD
+from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
     translate_to_macedonian,
     sync_call_ai as _call_ai, clean_json_response, generate_cover_art
@@ -763,6 +760,10 @@ def _tracked_delivery_url(event_id, event_type, path):
 
 def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     clean_topic = str(topic or "").strip()
+    # Sanitize topic: only allow alphanumeric, underscores, and dashes, limit to 64 chars
+    import re
+    clean_topic = re.sub(r'[^a-zA-Z0-9_-]', '', clean_topic)[:64]
+    
     clean_message = str(message or "").strip()
     if not clean_topic or not clean_message:
         return False
@@ -774,6 +775,9 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     }
     if click_url:
         headers["Click"] = str(click_url).strip()[:500]
+    
+    if NTFY_TOKEN:
+        headers["Authorization"] = f"Bearer {NTFY_TOKEN}"
 
     url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
     req = urllib.request.Request(
@@ -1281,8 +1285,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         )
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment)
-                   VALUES (%s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report)
+                   VALUES (%s, %s, %s, %s, %s, %s, NULL)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
@@ -1317,30 +1321,38 @@ def run_ingestion():
     if not acquired:
         log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
-    log.info("Presek 4.0: Starting unified ingestion cycle...")
-    new_count, errors = ingest_feeds()
-    
-    # Record health metrics
-    record_refresh(new_count, errors)
-    record_task_event("run_ingestion", "ok" if not errors else "warning", f"new_articles:{new_count}")
-    if new_count > 0:
-        invalidate_public_data_caches()
-    
-    if new_count > 0:
-        # Chain dependent tasks to prevent resource spikes
-        # 1. Embed new articles first (crucial for clustering/search)
-        # 2. Extract metadata & entities
-        # 3. Categorize & summarize
-        (
-            generate_embeddings_task.si() |
-            generate_cluster_metadata_task.si() |
-            classify_topics_task.si() |
-            extract_entities_task.si() |
-            recategorize_clusters_task.si() |
-            auto_summarize_task.si()
-        ).apply_async()
-        
-    log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
+    try:
+        log.info("Presek 4.0: Starting unified ingestion cycle...")
+        new_count, errors = ingest_feeds()
+
+        # Record health metrics
+        record_refresh(new_count, errors)
+        record_task_event("run_ingestion", "ok" if not errors else "warning", f"new_articles:{new_count}")
+        if new_count > 0:
+            invalidate_public_data_caches()
+
+        if new_count > 0:
+            # Chain dependent tasks to prevent resource spikes
+            # 1. Embed new articles first (crucial for clustering/search)
+            # 2. Extract metadata & entities
+            # 3. Categorize & summarize
+            (
+                generate_embeddings_task.si() |
+                generate_cluster_metadata_task.si() |
+                classify_topics_task.si() |
+                extract_entities_task.si() |
+                recategorize_clusters_task.si() |
+                auto_summarize_task.si()
+            ).apply_async()
+
+        log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
+    finally:
+        # Release the mutex so the next beat can run immediately rather than
+        # waiting for the 15-minute TTL.
+        try:
+            redis_client.delete(lock_key)
+        except Exception:
+            pass
 
 @celery_app.task
 def auto_summarize_task():
@@ -1543,7 +1555,6 @@ def send_telegram_briefing_task():
         )
         if not row or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
             return
-        import urllib.request
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": row["content"][:4096]}).encode()
         req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
