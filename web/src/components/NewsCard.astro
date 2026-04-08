@@ -116,18 +116,29 @@ function getTimeStr(dateStr: string) {
 
 	{thumbSrc && (
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
-			<a href={`/cluster/${cluster.cluster_id}`}>
-				<img
-					src={thumbSrc}
-					alt={displayTitle}
-					width="700"
-					height="500"
-					class:list={["article-image", { "article-image-fallback": isFallbackArt }]}
-					loading={isLead ? "eager" : "lazy"}
-					decoding="async"
-					fetchpriority={isLead ? "high" : "auto"}
-                    onerror="this.onerror=null; this.src='/img/placeholder.svg';"
-				/>
+			<a href={`/cluster/${cluster.cluster_id}`} class="block h-full">
+				{isFallbackArt ? (
+					<div class="article-image-placeholder">
+						<p class="article-image-placeholder-label">Пресек Преглед</p>
+						<h3>{cluster.articles[0].category || 'Вести'}</h3>
+					</div>
+				) : (
+					<img
+						src={thumbSrc}
+						alt={displayTitle}
+						width="700"
+						height="500"
+						class="article-image"
+						loading={isLead ? "eager" : "lazy"}
+						decoding="async"
+						fetchpriority={isLead ? "high" : "auto"}
+						onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+					/>
+					<div class="article-image-placeholder is-error-fallback" style="display: none;">
+						<p class="article-image-placeholder-label">Сликата не е достапна</p>
+						<span class="text-xs opacity-60 uppercase font-bold tracking-tighter">Пресек</span>
+					</div>
+				)}
 			</a>
             {isLead && main.image_caption && (
                 <p class="image-caption">{main.image_caption}</p>
@@ -313,6 +324,44 @@ function getTimeStr(dateStr: string) {
 		object-fit: cover;
 		object-position: center top;
 		border: 1px solid var(--border);
+	}
+
+	.article-image-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		padding: 1rem;
+		background: 
+			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
+			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 80%, var(--secondary) 20%) 100%);
+		border: 1px solid var(--border);
+	}
+
+	.article-image-placeholder-label {
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+		margin-bottom: 0.4rem;
+	}
+
+	.article-image-placeholder h3 {
+		font-family: var(--font-serif);
+		font-size: 1.1rem;
+		line-height: 1.1;
+		color: var(--foreground);
+		max-width: 12ch;
+		margin: 0;
+	}
+
+	.is-error-fallback {
+		background: var(--muted);
 	}
 
 	.image-wrap-fallback {

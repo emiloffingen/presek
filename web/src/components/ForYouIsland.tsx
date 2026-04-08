@@ -90,7 +90,40 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   }
 
   if (!hasSignals || items.length === 0) {
-    return null;
+    if (!recommendations.topics.length && !recommendations.sources.length) return null;
+    
+    return (
+      <section className="for-you-module">
+        <div className="for-you-head">
+          <div>
+            <p className="for-you-kicker"><Compass size={14} /> Откријте</p>
+            <h2>Започнете го вашиот персонализиран тек</h2>
+          </div>
+          <p className="for-you-note">
+            Следете ги темите што ве интересираат за да добивате препораки прилагодени на вашето читање.
+          </p>
+        </div>
+        
+        <div className="for-you-follow-grid" style={{ marginTop: '1rem' }}>
+          {recommendations.topics.map((item) => (
+            <div key={`topic:${item.value}`} className="for-you-follow-card">
+              <div>
+                <p className="for-you-follow-kicker">Препорачана Тема</p>
+                <strong>{item.value}</strong>
+                <p>{item.reason}</p>
+              </div>
+              <PreferenceToggle
+                kind="topic"
+                value={item.value}
+                label={`тема: ${item.value}`}
+                analyticsSurface="for_you"
+                onChanged={() => setProfile(loadReaderProfile())}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (

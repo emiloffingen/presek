@@ -18,6 +18,9 @@ TimeoutStartSec=90
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-astro
+MemoryHigh=768M
+MemoryMax=1G
+CPUWeight=100
 
 [Install]
 WantedBy=presek.target

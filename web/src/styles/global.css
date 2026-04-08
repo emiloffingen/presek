@@ -135,6 +135,7 @@
     letter-spacing: 0.003em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    hyphens: auto;
     background-image:
       linear-gradient(to bottom, color-mix(in srgb, var(--surface-soft) 46%, transparent), transparent 22rem);
   }
@@ -147,9 +148,11 @@
     @apply scroll-smooth;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-black tracking-tight leading-none;
-    letter-spacing: -0.025em;
+    @apply font-serif font-black leading-none;
+    letter-spacing: -0.015em;
     text-wrap: balance;
+    hyphens: auto;
+    overflow-wrap: break-word;
   }
   a {
     color: inherit;

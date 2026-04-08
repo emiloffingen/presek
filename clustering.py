@@ -11,8 +11,12 @@ from database import get_db
 MK_SUFFIXES = [
     "увањето", "ување", "ањето", "ање", "ењето", "ење",
     "истите", "истот", "иста", "исти", "ските", "скиот", "ската", "ски", "ска", "ско",
+    "овските", "овскиот", "овската", "овски", "овска", "овско",
+    "евските", "евскиот", "евската", "евски", "евска", "евско",
     "ните", "ниот", "ната", "ното", "ни", "ите", "иот", "ата", "ото", "от", "та", "то",
-    "вме", "вте", "аа", "еа", "ше", "ат", "ет"
+    "вме", "вте", "аа", "еа", "ше", "ат", "ет",
+    "овиот", "овата", "овото", "ови", "ов", "ова", "ово",
+    "евиот", "евата", "евото", "еви", "ев", "ева", "ево",
 ]
 
 def mk_stem(word: str) -> str:
@@ -21,6 +25,13 @@ def mk_stem(word: str) -> str:
     # but since we receive tokens, we'll be conservative.
     if word[0].isupper(): return word
     word = re.sub(r'[^\w\s]', '', word)
+    
+    # Strip common comparative/superlative prefixes
+    if word.startswith("нај") and len(word) > 6:
+        word = word[3:]
+    elif word.startswith("по") and len(word) > 5:
+        word = word[2:]
+        
     for suffix in MK_SUFFIXES:
         if word.endswith(suffix) and len(word) - len(suffix) >= 4:
             return word[: -len(suffix)]
@@ -114,23 +125,29 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, cate
     if not embedding: return None
     conn = get_db()
     try:
+        # Adaptive threshold based on category diversity
+        threshold = VECTOR_THRESHOLD
+        if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион"):
+            threshold = 0.22  # Stricter for international news
+            
         params = [str(embedding), lookback_hours, str(embedding)]
         cat_filter = ""
         if category and category != 'Македонија':
-            cat_filter = "AND category = %s"
+            cat_filter = "AND a.category = %s"
             params.insert(1, category)
 
         sql = f"""
-            SELECT cluster_id, embedding <=> %s::vector as distance
-            FROM articles
-            WHERE embedding IS NOT NULL
+            SELECT a.cluster_id, a.embedding <=> %s::vector as distance,
+                   (SELECT count(*) FROM articles a2 WHERE a2.cluster_id = a.cluster_id) as c_size
+            FROM articles a
+            WHERE a.embedding IS NOT NULL
               {cat_filter}
-              AND created_at >= NOW() - %s * INTERVAL '1 hour'
-            ORDER BY embedding <=> %s::vector
+              AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
+            ORDER BY a.embedding <=> %s::vector
             LIMIT 1
         """
         row = conn.execute(sql, tuple(params)).fetchone()
-        if row and float(row['distance']) < VECTOR_THRESHOLD:
+        if row and float(row['distance']) < threshold and int(row['c_size']) < MAX_CLUSTER_SIZE:
             return row['cluster_id']
     except Exception as e:
         import logging

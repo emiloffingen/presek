@@ -231,6 +231,22 @@ KNOWN_ENTITIES = {
     "ОБСЕ": "ORG",
     "ХАМАС": "ORG",
     "ОПЕК": "ORG",
+    
+    # Short names / Aliases
+    "Мицкоски": "PERSON",
+    "Ковачевски": "PERSON",
+    "Пендаровски": "PERSON",
+    "Силјановска": "PERSON",
+    "Силјановска-Давкова": "PERSON",
+    "Трамп": "PERSON",
+    "Путин": "PERSON",
+    "Вучиќ": "PERSON",
+    "Зеленски": "PERSON",
+    "Апасиев": "PERSON",
+    "Макрон": "PERSON",
+    "Курти": "PERSON",
+    "ВМРО": "ORG",
+    "ВМРО ДПМНЕ": "ORG",
 }
 
 # Regex for detecting Macedonian proper nouns (starts with capital letter)
@@ -246,6 +262,31 @@ IGNORE_WORDS = {
     "Впрочем", "Меѓу", "Преку", "Во", "На", "За", "Од", "Со", "До",
     "Не", "Да", "Дали", "Прво", "Првиот", "Два", "Три", "Потоа", "После",
 }
+
+# Normalize variants to canonical forms
+ENTITY_ALIASES = {
+    "Мицкоски": "Христијан Мицкоски",
+    "Ковачевски": "Димитар Ковачевски",
+    "Пендаровски": "Стево Пендаровски",
+    "Силјановска": "Гордана Силјановска-Давкова",
+    "Силјановска-Давкова": "Гордана Силјановска-Давкова",
+    "Трамп": "Доналд Трамп",
+    "Путин": "Владимир Путин",
+    "Вучиќ": "Александар Вучиќ",
+    "Зеленски": "Володимир Зеленски",
+    "Апасиев": "Димитар Апасиев",
+    "Макрон": "Емануел Макрон",
+    "Курти": "Албин Курти",
+    "ВМРО": "ВМРО-ДПМНЕ",
+    "ВМРО ДПМНЕ": "ВМРО-ДПМНЕ",
+    "ОН": "Обединети Нации",
+    "СЗО": "Светска здравствена организација",
+    "МВР": "Министерство за внатрешни работи",
+    "МНР": "Министерство за надворешни работи",
+}
+
+def normalize_entity_name(name: str) -> str:
+    return ENTITY_ALIASES.get(name, name)
 
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
@@ -338,7 +379,13 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
     # Convert to requested format and limit
     result = []
     for name, etype in found.items():
-        result.append({"name": name, "type": etype})
+        canonical_name = normalize_entity_name(name)
+        
+        # Avoid duplicates if multiple variants resolved to the same canonical name
+        if any(r['name'] == canonical_name for r in result):
+            continue
+            
+        result.append({"name": canonical_name, "type": etype})
         if len(result) >= max_entities:
             break
 

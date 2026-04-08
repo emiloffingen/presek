@@ -49,94 +49,117 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
-<header class="site-layout topbar">
-    <div class="topbar-row">
-        <div class="topbar-left">
-            <SearchIsland client:load />
-            <span class="topbar-edition">Пресек Денешно Издание</span>
-        </div>
+<div class="header-sticky-wrapper">
+    <header class="site-layout topbar">
+        <div class="topbar-row">
+            <div class="topbar-left">
+                <SearchIsland client:load />
+                <span class="topbar-edition">Пресек Денешно Издание</span>
+            </div>
 
-        <div class="topbar-center">
-            <span class="nyt-section-label topbar-date">{currentDate}</span>
-        </div>
+            <div class="topbar-center">
+                <span class="nyt-section-label topbar-date">{currentDate}</span>
+            </div>
 
-        <div class="topbar-right">
-            <div class="topbar-links">
-                <a href="/briefing" class="nyt-section-label topbar-link">
-                    <span class="label-full">Дневен Брифинг</span>
-                    <span class="label-short">Брифинг</span>
-                </a>
-                <a href="/settings" class="nyt-section-label topbar-link">
-                    <span class="label-full">Поставки</span>
-                    <span class="label-short">Поставки</span>
-                </a>
-                <a href="/stats" class="nyt-section-label topbar-link">
-                    <span class="label-full">Медиумски Пулс</span>
-                    <span class="label-short">Пулс</span>
-                </a>
-                <a href="/status" class="nyt-section-label topbar-link">
-                    <span class="label-full">Статус</span>
-                    <span class="label-short">Статус</span>
-                </a>
-                <a href={telegramUrl} class="nyt-section-label topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">
-                    <span class="label-full">Телеграм канал</span>
-                    <span class="label-short">Телеграм</span>
+            <div class="topbar-right">
+                <div class="topbar-links">
+                    <a href="/briefing" class="nyt-section-label topbar-link">
+                        <span class="label-full">Дневен Брифинг</span>
+                        <span class="label-short">Брифинг</span>
+                    </a>
+                    <a href="/settings" class="nyt-section-label topbar-link">
+                        <span class="label-full">Поставки</span>
+                        <span class="label-short">Поставки</span>
+                    </a>
+                    <a href="/stats" class="nyt-section-label topbar-link">
+                        <span class="label-full">Медиумски Пулс</span>
+                        <span class="label-short">Пулс</span>
+                    </a>
+                    <a href="/status" class="nyt-section-label topbar-link">
+                        <span class="label-full">Статус</span>
+                        <span class="label-short">Статус</span>
+                    </a>
+                    <a href={telegramUrl} class="nyt-section-label topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">
+                        <span class="label-full">Телеграм канал</span>
+                        <span class="label-short">Телеграм</span>
+                    </a>
+                </div>
+                <ThemeIsland client:load />
+            </div>
+        </div>
+    </header>
+
+    <div class="site-layout masthead">
+        <div class="masthead-inner">
+            <div class="masthead-brand">
+                <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-8 md:h-10 site-logo" />
+                <a href="/" class="block">
+                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-12 md:h-16 lg:h-20" />
                 </a>
             </div>
-            <ThemeIsland client:load />
+            <div class="masthead-copy">
+                <p class="masthead-sub">Подредено по значење, извори и контекст.</p>
+            </div>
         </div>
     </div>
-</header>
 
-<div class="site-layout masthead">
-    <div class="masthead-inner">
-        <div class="masthead-brand">
-            <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-8 md:h-10 site-logo" />
-            <a href="/" class="block">
-                <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-12 md:h-16 lg:h-20" />
-            </a>
+    <nav class="site-layout masthead-nav" aria-label="Популарно сега">
+        <div class="masthead-nav-shell">
+            <span class="masthead-nav-kicker">Во фокус</span>
+            <ul class="masthead-nav-list">
+                {headerItems.map((item: any) => {
+                    const searchStr = new URLSearchParams({ q: item.word }).toString();
+                    const isActive = q === item.word;
+
+                    return (
+                        <li>
+                            <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                                {item.word}
+                            </a>
+                        </li>
+                    );
+                })}
+            </ul>
+            <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
+            <ul class="masthead-nav-list masthead-nav-list-topics">
+                {curatedTopics.map((item: string) => {
+                    const isActive = topic === item || category === item;
+
+                    return (
+                        <li>
+                            <a href={`/tema/${encodeURIComponent(item)}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                                {item}
+                            </a>
+                        </li>
+                    );
+                })}
+            </ul>
         </div>
-        <div class="masthead-copy">
-            <p class="masthead-sub">Подредено по значење, извори и контекст.</p>
-        </div>
-    </div>
+    </nav>
 </div>
 
-<nav class="site-layout masthead-nav" aria-label="Популарно сега">
-    <div class="masthead-nav-shell">
-        <span class="masthead-nav-kicker">Во фокус</span>
-        <ul class="masthead-nav-list">
-            {headerItems.map((item: any) => {
-                const searchStr = new URLSearchParams({ q: item.word }).toString();
-                const isActive = q === item.word;
-
-                return (
-                    <li>
-                        <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                            {item.word}
-                        </a>
-                    </li>
-                );
-            })}
-        </ul>
-        <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
-        <ul class="masthead-nav-list masthead-nav-list-topics">
-            {curatedTopics.map((item: string) => {
-                const isActive = topic === item || category === item;
-
-                return (
-                    <li>
-                        <a href={`/tema/${encodeURIComponent(item)}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                            {item}
-                        </a>
-                    </li>
-                );
-            })}
-        </ul>
-    </div>
-</nav>
-
 <style>
+    .header-sticky-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: color-mix(in srgb, var(--background) 92%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        transition: transform 0.3s ease;
+    }
+
+    /* Small adjustment to child components to remove individual borders if they conflict */
+    .topbar {
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+    }
+    
+    .masthead-nav {
+        margin-bottom: 0;
+        border-bottom: 0;
+    }
+
     .topbar {
         padding-top: 0.95rem;
         padding-bottom: 0.85rem;
