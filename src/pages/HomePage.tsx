@@ -219,11 +219,21 @@ export const HomePage: React.FC = () => {
 
             {isLoading && (
               <div className="news-feed-grid mt-8">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse">
-                    <div className="aspect-video bg-secondary mb-4 rounded-sm" />
-                    <div className="h-4 bg-secondary w-3/4 mb-2" />
-                    <div className="h-4 bg-secondary w-1/2" />
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="news-cluster animate-pulse">
+                    <div className="cluster-thumb-wrap">
+                      <div className="w-full aspect-[16/9] bg-secondary rounded-sm" />
+                    </div>
+                    <div className="cluster-main">
+                      <div className="cluster-meta">
+                        <div className="h-3 w-16 bg-secondary" />
+                        <div className="h-3 w-10 bg-secondary" />
+                      </div>
+                      <div className="h-6 w-11/12 bg-secondary mt-2 mb-2" />
+                      <div className="h-6 w-3/4 bg-secondary mb-3" />
+                      <div className="h-3 w-full bg-secondary mb-1" />
+                      <div className="h-3 w-5/6 bg-secondary" />
+                    </div>
                   </div>
                 ))}
               </div>

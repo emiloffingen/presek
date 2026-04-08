@@ -40,7 +40,11 @@ function VelocityChart({ data }: { data: Point[] }) {
 
   return (
     <div className="rounded-sm border border-color bg-secondary p-4">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-64 w-full" role="img" aria-label="Брзина на прилив во последни 24 часа">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-64 w-full" role="img" aria-labelledby="velocity-title velocity-desc">
+        <title id="velocity-title">Брзина на прилив во последни 24 часа</title>
+        <desc id="velocity-desc">
+          {`Линиски графикон со ${data.length} временски точки. Минимум: ${minValue}, максимум: ${maxValue} статии по часовен интервал.`}
+        </desc>
         <defs>
           <linearGradient id="velocity-fill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="var(--accent-color)" stopOpacity="0.28" />
@@ -107,7 +111,11 @@ function CategoryDonut({ data }: { data: NamedValue[] }) {
   return (
     <div className="grid gap-6 md:grid-cols-[220px_1fr] md:items-center">
       <div className="mx-auto w-[220px]">
-        <svg viewBox="0 0 180 180" className="h-[220px] w-[220px]" role="img" aria-label="Дистрибуција по категории">
+        <svg viewBox="0 0 180 180" className="h-[220px] w-[220px]" role="img" aria-labelledby="donut-title donut-desc">
+          <title id="donut-title">Дистрибуција по категории</title>
+          <desc id="donut-desc">
+            {data.map(d => `${d.name}: ${d.n} (${total ? Math.round((d.n / total) * 100) : 0}%)`).join(', ')}
+          </desc>
           <circle cx="90" cy="90" r={radius} fill="none" stroke="var(--border-color)" strokeWidth="22" />
           {data.map((item, index) => {
             const segment = total ? (item.n / total) * circumference : 0;

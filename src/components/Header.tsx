@@ -150,8 +150,19 @@ export const Header: React.FC = () => {
       </header>
 
       {/* Mobile Drawer */}
-      <div className={`mobile-drawer-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)} />
-      <div className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+      <button
+        type="button"
+        aria-label="Затвори меню"
+        tabIndex={mobileMenuOpen ? 0 : -1}
+        className={`mobile-drawer-overlay ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+      <div
+        className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!mobileMenuOpen}
+      >
         <div className="drawer-header">
           <span className="drawer-logo">Пресек</span>
           <button className="icon-btn" onClick={() => setMobileMenuOpen(false)}>
