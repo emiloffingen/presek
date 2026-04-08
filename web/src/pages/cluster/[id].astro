@@ -218,6 +218,7 @@ const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => artic
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
 const generatedArticle = cluster?.generated_article || '';
+const verificationReport = cluster?.verification_report || null;
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
@@ -431,6 +432,46 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 										</div>
 									))}
 								</div>
+							</section>
+						)}
+
+						{/* Media Comparison / Fact Check */}
+						{verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0) && (
+							<section class="cluster-module cluster-factcheck">
+								<div class="cluster-module-head">
+									<Newspaper size={18} className="text-foreground" />
+									<h2 class="nyt-section-label tracking-[0.2em]">МЕДИУМСКА СПОРЕДБА</h2>
+								</div>
+								
+								<div class="factcheck-grid">
+									{verificationReport.agreements?.length > 0 && (
+										<div class="factcheck-box factcheck-agreements">
+											<h3>Потврдени факти</h3>
+											<ul>
+												{verificationReport.agreements.map((item: string) => (
+													<li set:html={cleanAndDecode(item)}></li>
+												))}
+											</ul>
+										</div>
+									)}
+									
+									{verificationReport.conflicts?.length > 0 && (
+										<div class="factcheck-box factcheck-conflicts">
+											<h3>Разлики во известувањето</h3>
+											<ul>
+												{verificationReport.conflicts.map((item: string) => (
+													<li set:html={cleanAndDecode(item)}></li>
+												))}
+											</ul>
+										</div>
+									)}
+								</div>
+
+								{verificationReport.context && (
+									<div class="factcheck-footer">
+										<p><strong>Контекст:</strong> <span set:html={cleanAndDecode(verificationReport.context)}></span></p>
+									</div>
+								)}
 							</section>
 						)}
 
@@ -858,6 +899,73 @@ const leadVisual = cluster ? getLeadVisual(cluster) : null;
 		line-height: 1.62;
 		color: var(--secondary-foreground);
 		text-wrap: pretty;
+	}
+
+	.factcheck-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.factcheck-box {
+		padding: 1.25rem;
+		border-radius: 4px;
+	}
+
+	.factcheck-agreements {
+		background: color-mix(in srgb, #2f855a 8%, var(--background) 92%);
+		border: 1px solid color-mix(in srgb, #2f855a 20%, var(--border) 80%);
+	}
+
+	.factcheck-conflicts {
+		background: color-mix(in srgb, var(--nyt-red) 8%, var(--background) 92%);
+		border: 1px solid color-mix(in srgb, var(--nyt-red) 20%, var(--border) 80%);
+	}
+
+	.factcheck-box h3 {
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		margin: 0 0 1rem;
+		color: var(--foreground);
+	}
+
+	.factcheck-box ul {
+		margin: 0;
+		padding: 0 0 0 1.25rem;
+		list-style-type: disc;
+		font-family: var(--font-nyt-body);
+		font-size: 0.94rem;
+		line-height: 1.6;
+		color: var(--secondary-foreground);
+	}
+
+	.factcheck-agreements h3 {
+		color: #2f855a;
+	}
+
+	.factcheck-conflicts h3 {
+		color: var(--nyt-red);
+	}
+
+	.factcheck-footer {
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border);
+		font-family: var(--font-nyt-body);
+		font-size: 0.92rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
+	}
+
+	.factcheck-footer strong {
+		color: var(--foreground);
+		text-transform: uppercase;
+		font-size: 0.7rem;
+		font-family: var(--font-sans);
+		letter-spacing: 0.05em;
 	}
 
 	.article-list {
