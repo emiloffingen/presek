@@ -152,11 +152,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     }
 
     .header-hidden {
-        transform: translateY(-100%);
-    }
-
-    .header-visible {
-        transform: translateY(0);
+        transform: translateY(-100%) !important;
     }
 
     /* Small adjustment to child components to remove individual borders if they conflict */
@@ -588,44 +584,56 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
 <script is:inline>
     (function() {
-        let lastScrollY = window.scrollY;
-        const header = document.getElementById('main-header');
-        const scrollThreshold = 150; // Minimum scroll before hiding
-        
-        function updateHeader() {
-            const currentScrollY = window.scrollY;
+        const initHeader = () => {
+            let lastScrollY = window.scrollY;
+            const header = document.getElementById('main-header');
+            if (!header) return;
+
+            const scrollThreshold = 100;
+            const hideThreshold = 50;
+
+            const updateHeader = () => {
+                const currentScrollY = window.scrollY;
+                const scrollDelta = currentScrollY - lastScrollY;
+
+                // Always show at top
+                if (currentScrollY < scrollThreshold) {
+                    header.classList.remove('header-hidden');
+                    lastScrollY = currentScrollY;
+                    return;
+                }
+
+                // Hide on scroll down, show on scroll up
+                if (scrollDelta > hideThreshold) {
+                    header.classList.add('header-hidden');
+                    lastScrollY = currentScrollY;
+                } else if (scrollDelta < -hideThreshold) {
+                    header.classList.remove('header-hidden');
+                    lastScrollY = currentScrollY;
+                }
+            };
+
+            let ticking = false;
+            const onScroll = () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        updateHeader();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            };
+
+            window.addEventListener('scroll', onScroll, { passive: true });
             
-            // At the very top, always show
-            if (currentScrollY <= 50) {
-                header.classList.remove('header-hidden');
-                header.classList.add('header-visible');
-                lastScrollY = currentScrollY;
-                return;
-            }
+            // Cleanup function for possible future re-runs
+            return () => window.removeEventListener('scroll', onScroll);
+        };
 
-            // Scrolling down
-            if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
-                header.classList.add('header-hidden');
-                header.classList.remove('header-visible');
-            } 
-            // Scrolling up
-            else if (currentScrollY < lastScrollY) {
-                header.classList.remove('header-hidden');
-                header.classList.add('header-visible');
-            }
+        // Run on initial load
+        initHeader();
 
-            lastScrollY = currentScrollY;
-        }
-
-        let ticking = false;
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    updateHeader();
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        }, { passive: true });
+        // Support Astro View Transitions if enabled later
+        document.addEventListener('astro:page-load', initHeader);
     })();
 </script>
