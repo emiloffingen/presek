@@ -430,11 +430,10 @@ const schema = cluster ? {
 								</div>
 								<div class="prose-nyt text-xl leading-relaxed text-foreground font-serif">
 									{generatedArticle.split('\n').filter(p => p.trim()).map((paragraph, idx) => (
-										<p class:list={["mb-6 last:mb-0", idx === 0 ? "first-letter:text-5xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[1] first-letter:text-nyt-accent" : ""]}>
+										<p class:list={["mb-6 last:mb-0", idx === 0 ? "drop-cap" : ""]}>
 											{paragraph}
 										</p>
-									))}
-								</div>
+									))}								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
 							</section>
 						)}
@@ -708,6 +707,19 @@ const schema = cluster ? {
 		line-height: 1.58;
 		color: var(--secondary-foreground);
 		text-wrap: pretty;
+	}
+
+	.drop-cap::first-letter {
+		font-family: var(--font-serif);
+		font-size: 4.2rem;
+		font-weight: 900;
+		float: left;
+		line-height: 0.8;
+		margin-top: 0.12em;
+		margin-right: 0.12em;
+		color: var(--nyt-accent);
+		/* Adjust for wider Cyrillic glyphs like М, Ш, Щ */
+		padding-right: 0.05em;
 	}
 
 	.cluster-header-meta {

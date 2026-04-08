@@ -223,11 +223,41 @@
 
 .nyt-section-label {
     font-family: 'Manrope', sans-serif;
-    font-size: 0.64rem;
-    font-weight: 800;
+    font-size: 0.62rem;
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em; /* Increased for Cyrillic clarity at small sizes */
     line-height: 1.15;
+}
+
+/* Micro-interactions */
+button, 
+.onboarding-chip, 
+.reader-pref-toggle,
+.topic-chip,
+.source-reputation-card {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:active, 
+.onboarding-chip:active,
+.reader-pref-toggle:active {
+    transform: scale(0.97);
+}
+
+.source-reputation-card:hover,
+.nyt-article:hover {
+    border-color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--card) 96%, var(--nyt-accent) 4%);
+}
+
+.headline-link:hover .headline {
+    color: var(--nyt-accent);
+}
+
+/* Typographic tightening for Cyrillic Headlines */
+h1, h2, h3 {
+    letter-spacing: -0.02em; /* Tighter for that modern newspaper feel */
 }
 
 .motion-rise {
