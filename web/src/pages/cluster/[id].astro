@@ -392,7 +392,7 @@ const schema = cluster ? {
 									)}
 								</div>
 							)}
-							{ai_summary_bullets.length > 0 && (
+							{ai_summary_bullets.length > 0 && !cluster.synthesis && (
 								<div class="cluster-summary-card">
 									<p class="cluster-summary-label">Во кратки црти</p>
 									<div class="cluster-summary-copy">
