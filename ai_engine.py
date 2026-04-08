@@ -16,6 +16,7 @@ from config import (
     GOOGLE_API_KEY, GEMINI_URL,
     GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
     OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
+    OPENCLAW_URL, OPENCLAW_TOKEN,
     POLLINATIONS_API_KEY,
 )
 from prompts import (
@@ -42,6 +43,61 @@ class AIProvider(ABC):
         pass
 
 # --- Provider Registry ---
+
+class GeminiProvider(AIProvider):
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+        if not GOOGLE_API_KEY: return None
+        url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
+        # Gemini expects a specific JSON structure
+        payload = {
+            "contents": [{"parts": [{"text": f"SYSTEM: {system}\n\nUSER: {prompt}"}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2}
+        }
+        try:
+            data_encoded = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data_encoded, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            log.warning(f"[ai/gemini] Call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
+class OpenClawProvider(AIProvider):
+    """Local LLM Provider via OpenClaw Gateway."""
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+        if not OPENCLAW_URL: return None
+        payload = {
+            "model": "llama3", # Default local model name
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2,
+            "stream": False
+        }
+        headers = {"Content-Type": "application/json"}
+        if OPENCLAW_TOKEN:
+            headers["Authorization"] = f"Bearer {OPENCLAW_TOKEN}"
+            
+        try:
+            data_encoded = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(OPENCLAW_URL, data=data_encoded, headers=headers)
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            log.warning(f"[ai/openclaw] Local LLM failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
 
 class LocalProvider(AIProvider):
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -83,31 +139,55 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
+    "gemini": GeminiProvider(),
+    "openclaw": OpenClawProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
     "translation":  ["local"],
-    "summarize":    ["local"],
-    "synthesis":    ["local"],
-    "daily_brief":  ["local"],
-    "default":      ["local"],
+    "summarize":    ["gemini", "openclaw", "local"],
+    "synthesis":    ["gemini", "openclaw", "local"],
+    "daily_brief":  ["gemini", "openclaw", "local"],
+    "default":      ["gemini", "openclaw", "local"],
 }
 
 # --- Service Methods ---
 
 async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False, topic: str = None):
-    """Strictly Local AI entrypoint."""
-    provider = PROVIDERS["local"]
-    if stream:
-        return provider.stream_call(prompt, system, max_tokens)
-    return provider.call(prompt, system, max_tokens, json_mode, topic=topic), "local"
+    """Entrypoint with cascading failover."""
+    route = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
+    
+    for provider_name in route:
+        provider = PROVIDERS[provider_name]
+        try:
+            if stream:
+                return provider.stream_call(prompt, system, max_tokens), provider_name
+            
+            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
+            if res:
+                return res, provider_name
+        except Exception as e:
+            log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
+            continue
+            
+    return None, "none"
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
-    """Synchronous AI entrypoint used by the app and tests."""
-    # Since it's all local now, we don't really need the event loop for the non-stream call,
-    # but we'll keep the signature for compatibility.
-    return PROVIDERS["local"].call(prompt, system, max_tokens, json_mode, topic=topic), "local"
+    """Synchronous AI entrypoint with cascading failover."""
+    route = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
+    
+    for provider_name in route:
+        provider = PROVIDERS[provider_name]
+        try:
+            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
+            if res:
+                return res, provider_name
+        except Exception as e:
+            log.warning(f"[ai/cascade] Provider {provider_name} failed: {e}")
+            continue
+            
+    return None, "none"
 
 def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
