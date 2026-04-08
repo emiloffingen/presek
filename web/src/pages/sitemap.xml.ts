@@ -7,7 +7,7 @@ export const GET: APIRoute = async () => {
     let clusterIds: string[] = [];
     
     try {
-        const res = await fetch(`${API_URL}/news?page_size=100`);
+        const res = await fetch(`${API_URL}/news?page_size=300`);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {
@@ -18,7 +18,7 @@ export const GET: APIRoute = async () => {
         console.error("Sitemap fetch error:", e);
     }
 
-    const staticPages = ['', '/about', '/archive', '/izvori', '/stats', '/privacy'];
+    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/stats', '/privacy'];
     const now = new Date().toISOString();
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
