@@ -1231,6 +1231,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             summary = res.get('summary', '') if isinstance(res, dict) else res
             generated_article = res.get('article', '') if isinstance(res, dict) else ''
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
+            quote = res.get('quote', '') if isinstance(res, dict) else ''
 
             sentiment_data = {
                 "sentiment": res.get('sentiment', {}),
@@ -1247,21 +1248,23 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 article_rows,
             )
             generated_article = ""
+            quote = ""
             if (summary or perspectives) and retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
                        generated_article = EXCLUDED.generated_article,
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment,
-                       verification_report = EXCLUDED.verification_report""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None),
+                       verification_report = EXCLUDED.verification_report,
+                       quote = EXCLUDED.quote""",
+                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote),
                 fetch=False
             )
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
@@ -1826,3 +1829,13 @@ def generate_embeddings_task():
         embed_recent_articles()
     except Exception as e:
         log.warning(f"[tasks] Embedding generation failed: {e}")
+
+@celery_app.task
+def send_newsletter_task():
+    """Sends the daily newsletter to all subscribers."""
+    try:
+        from digest import send_newsletter_to_all_subscribers
+        count = send_newsletter_to_all_subscribers(days=1)
+        log.info(f"[tasks] Morning briefing sent to {count} subscribers.")
+    except Exception as e:
+        log.warning(f"[tasks] Newsletter delivery failed: {e}")

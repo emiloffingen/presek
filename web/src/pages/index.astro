@@ -6,10 +6,12 @@ import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
+import SourceMapIsland from '../components/SourceMapIsland.tsx';
+import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, BarChart3 } from 'lucide-react';
+import { TrendingUp, BarChart3, Quote } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
 
@@ -48,7 +50,7 @@ const [newsResult, trendResult, entityResult, statsResult, healthResult, interna
     fetchJson(newsUrl.toString()),
     fetchJson(`${API_URL}/trending`),
     fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
-    fetchJson(`${API_URL}/stats/full`),
+    fetchJson(`${API_URL}/stats/summary`),
     fetchJson(`${API_URL}/health`),
     fetchJson(`${API_URL}/intelligence/international-curated?limit=4`),
 ]);
@@ -274,6 +276,8 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 			</div>
 
 			<aside class="front-rail">
+				<NewsletterIsland client:load />
+
 				<section class="rail-module rail-pulse motion-rise-fast motion-delay-1">
 					<h3 class="rail-title">
 						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
@@ -298,6 +302,29 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 				</section>
 
 				<HomeRailSuggestionsIsland client:load />
+
+				<SourceMapIsland client:visible />
+
+				{stats?.quote_of_the_day && (
+					<section class="rail-module rail-quote motion-rise-fast">
+						<h3 class="rail-title flex items-center gap-2">
+							<Quote size={14} className="text-nyt-accent" /> ЦИТАТ НА ДЕНОТ
+						</h3>
+						<blockquote class="mt-4">
+							<p class="font-serif text-lg leading-snug italic text-foreground mb-3">
+								"{stats.quote_of_the_day.quote}"
+							</p>
+							<cite class="block border-t border-border pt-3">
+								<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`} class="group">
+									<span class="micro-label block mb-1">Поврзана вест</span>
+									<span class="font-serif font-bold text-xs group-hover:text-nyt-accent transition-colors leading-tight block">
+										{stats.quote_of_the_day.title}
+									</span>
+								</a>
+							</cite>
+						</blockquote>
+					</section>
+				)}
 
 				<section class="rail-module motion-rise-fast motion-delay-2">
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>

@@ -1118,6 +1118,23 @@ async def get_entity_topics(name: str):
     return {"status": "success", "data": rows}
 
 
+@app.get("/api/intelligence/live-map")
+async def get_live_map():
+    """Returns a list of sources and their recent activity for the live map."""
+    try:
+        sql = """
+            SELECT source, COUNT(*) as activity_score
+            FROM articles 
+            WHERE created_at >= NOW() - INTERVAL '24 hours'
+            GROUP BY source
+            ORDER BY activity_score DESC
+        """
+        rows = db.execute(sql)
+        return {"status": "success", "data": rows}
+    except Exception as e:
+        log.error(f"Live Map Error: {e}")
+        return {"status": "error", "data": []}
+
 @app.get("/api/intelligence/international-curated")
 async def get_international_curated(limit: int = 6):
     try:
@@ -1774,6 +1791,53 @@ async def get_stats():
     except Exception as e:
         log.error(f"FastAPI Stats Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
+
+@app.get("/api/stats/summary")
+async def get_stats_summary():
+    """Public stats for the homepage including quote of the day."""
+    try:
+        last_24h = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )["count"] or 0
+        total_feeds = db.execute_one(
+            "SELECT COUNT(*) FROM sources WHERE is_active = TRUE"
+        )["count"] or 0
+        
+        quote_row = db.execute_one("""
+            SELECT s.quote, s.cluster_id, 
+                   (SELECT title FROM articles WHERE cluster_id = s.cluster_id ORDER BY created_at DESC LIMIT 1) as title
+            FROM cluster_summaries s
+            WHERE s.quote IS NOT NULL AND s.quote != ''
+              AND s.created_at >= NOW() - INTERVAL '48 hours'
+            ORDER BY RANDOM() LIMIT 1
+        """)
+        
+        return {
+            "last_24h": last_24h,
+            "total_feeds": total_feeds,
+            "quote_of_the_day": quote_row
+        }
+    except Exception as e:
+        log.error(f"Stats Summary Error: {e}")
+        return {"last_24h": 0, "total_feeds": 0, "quote_of_the_day": None}
+
+@app.post("/api/newsletter/subscribe")
+async def subscribe_newsletter(request: Request):
+    """Subscribes an email to the daily briefing."""
+    try:
+        body = await request.json()
+        email = str(body.get("email", "")).strip().lower()
+        if not email or "@" not in email:
+            return {"status": "error", "message": "Невалидна е-пошта."}
+        
+        db.execute(
+            "INSERT INTO newsletter_subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
+            (email,), fetch=False
+        )
+        return {"status": "success", "message": "Успешно се пријавивте за дневниот брифинг!"}
+    except Exception as e:
+        log.error(f"Newsletter Subscribe Error: {e}")
+        return {"status": "error", "message": "Грешка при пријавување."}
 
 @app.get("/api/stats/full")
 async def get_stats_full(request: Request):

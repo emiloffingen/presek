@@ -27,6 +27,42 @@ log = logging.getLogger(__name__)
 import urllib.request
 import json as _json
 
+def send_newsletter_to_all_subscribers(days: int = 1) -> int:
+    """Sends the daily HTML digest to all active newsletter subscribers."""
+    import os
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    if not smtp_user or not smtp_pass:
+        log.warning("Newsletter skipped: SMTP credentials not set.")
+        return 0
+
+    stories = fetch_top_stories(days=days)
+    if not stories:
+        log.info("Newsletter skipped: No stories found.")
+        return 0
+
+    now = datetime.now()
+    start = now - timedelta(days=days)
+    html = render_html(stories, start, now)
+    subject = f"Пресек — Утрински Брифинг ({mk_date(now)})"
+
+    try:
+        from database import db_manager as db
+        subscribers = db.execute("SELECT email FROM newsletter_subscribers WHERE is_active = TRUE")
+        if not subscribers:
+            log.info("Newsletter skipped: No active subscribers.")
+            return 0
+
+        sent_count = 0
+        for sub in subscribers:
+            if send_email(html, subject, smtp_user, smtp_pass, sub["email"]):
+                sent_count += 1
+        
+        return sent_count
+    except Exception as e:
+        log.error(f"Newsletter distribution error: {e}")
+        return 0
+
 def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> bool:
     """Send a compact daily digest to ntfy.sh."""
     if not topic:

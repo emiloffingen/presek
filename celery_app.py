@@ -45,6 +45,10 @@ celery_app.conf.update(
             'task': 'tasks.send_daily_digest_task',
             'schedule': crontab(hour=7, minute=0), # 7 AM UTC / 8 AM local
         },
+        'send-daily-newsletter': {
+            'task': 'tasks.send_newsletter_task',
+            'schedule': crontab(hour=7, minute=0), # 7 AM UTC / 8 AM local
+        },
         'send-telegram-briefing': {
             'task': 'tasks.send_telegram_briefing_task',
             'schedule': crontab(hour=7, minute=5), # 7:05 AM UTC / 8:05 AM local
