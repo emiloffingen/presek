@@ -49,7 +49,7 @@ const curatedTopics = ['Политика', 'Економија', 'Свет', 'С
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
-<div class="header-sticky-wrapper">
+<div class="header-sticky-wrapper" id="main-header">
     <header class="site-layout topbar">
         <div class="topbar-row">
             <div class="topbar-left">
@@ -140,10 +140,23 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
 <style>
     .header-sticky-wrapper {
-        position: relative;
+        position: sticky;
+        top: 0;
         z-index: 100;
-        background: var(--background);
+        background: color-mix(in srgb, var(--background) 95%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
+    }
+
+    .header-hidden {
+        transform: translateY(-100%);
+    }
+
+    .header-visible {
+        transform: translateY(0);
     }
 
     /* Small adjustment to child components to remove individual borders if they conflict */
@@ -572,3 +585,47 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
     }
 </style>
+
+<script is:inline>
+    (function() {
+        let lastScrollY = window.scrollY;
+        const header = document.getElementById('main-header');
+        const scrollThreshold = 150; // Minimum scroll before hiding
+        
+        function updateHeader() {
+            const currentScrollY = window.scrollY;
+            
+            // At the very top, always show
+            if (currentScrollY <= 50) {
+                header.classList.remove('header-hidden');
+                header.classList.add('header-visible');
+                lastScrollY = currentScrollY;
+                return;
+            }
+
+            // Scrolling down
+            if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
+                header.classList.add('header-hidden');
+                header.classList.remove('header-visible');
+            } 
+            // Scrolling up
+            else if (currentScrollY < lastScrollY) {
+                header.classList.remove('header-hidden');
+                header.classList.add('header-visible');
+            }
+
+            lastScrollY = currentScrollY;
+        }
+
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateHeader();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    })();
+</script>
