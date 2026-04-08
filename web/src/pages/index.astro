@@ -303,7 +303,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
 					<div class="focus-cloud">
 						{focusEntities.map((ent: any) => (
-							<a href={`/?q=${encodeURIComponent(ent.name)}`} class="focus-chip">
+							<a href={`/subjekt/${encodeURIComponent(ent.name)}`} class="focus-chip">
 								{ent.name}
 							</a>
 						))}

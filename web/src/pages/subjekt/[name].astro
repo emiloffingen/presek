@@ -1,0 +1,112 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import NewsCard from '../../components/NewsCard.astro';
+import EntityIsland from '../../components/EntityIsland';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Footer from '../../components/Footer.astro';
+import { apiBaseUrl } from '../../lib/apiBase';
+
+const { name } = Astro.params;
+const decodedName = decodeURIComponent(name || "");
+const API_URL = apiBaseUrl();
+
+let entityData = null;
+let error = null;
+
+try {
+    const entityRes = await fetch(`${API_URL}/intelligence/entity/${encodeURIComponent(decodedName)}`);
+    if (entityRes.ok) {
+        entityData = await entityRes.json();
+    } else {
+        error = "Профилот не е пронајден.";
+    }
+} catch (e) {
+    console.error(e);
+    error = "Грешка при поврзување.";
+}
+
+const clusters = entityData?.clusters || [];
+---
+
+<Layout 
+    title={`${decodedName} | Профил`} 
+    description={`Медиумска анализа, тон на известување и најнови вести за ${decodedName} на Пресек.`}
+>
+	<NYTHeader />
+
+	<main class="site-layout py-12">
+        <Breadcrumbs items={[{ label: "Субјекти", href: "/izvori" }, { label: decodedName }]} />
+
+        <div class="entity-shell editorial-shell">
+            {error ? (
+                <div class="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
+                    <p class="text-nyt-red font-serif italic mb-4">{error}</p>
+                    <a href="/" class="nyt-section-label text-nyt-accent underline">Назад на почеток</a>
+                </div>
+            ) : (
+                <>
+                    <div class="motion-rise">
+                        <EntityIsland client:load name={decodedName} initialData={entityData} />
+                    </div>
+
+                    <section class="entity-news editorial-panel motion-rise motion-delay-1">
+                        <div class="entity-news-head">
+                            <span class="page-kicker">Архива</span>
+                            <h2>Неодамнешни Кластери</h2>
+                            <p>Сите свежи стории каде {decodedName} влегува како дел од развојот или контекстот.</p>
+                        </div>
+                        <div class="news-feed-grid">
+                            {clusters.map((cluster: any) => (
+                                <NewsCard cluster={cluster} />
+                            ))}
+                        </div>
+                        {clusters.length === 0 && (
+                            <div class="entity-empty">
+                                <p class="text-muted font-bold uppercase tracking-widest text-sm">Нема пронајдени вести за овој субјект.</p>
+                            </div>
+                        )}
+                    </section>
+                </>
+            )}
+        </div>
+	</main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .entity-news {
+        margin-top: 4rem;
+    }
+
+    .entity-news-head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .entity-news-head h2 {
+        margin: 0;
+        font-size: clamp(1.6rem, 1.2rem + 1vw, 2.4rem);
+        line-height: 1;
+        font-weight: 900;
+    }
+
+    .entity-news-head p {
+        margin: 0;
+        font-family: var(--font-nyt-body);
+        font-size: 1rem;
+        color: var(--secondary-foreground);
+    }
+
+    .entity-empty {
+        padding: 4rem;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
+        text-align: center;
+    }
+</style>

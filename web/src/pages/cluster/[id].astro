@@ -615,7 +615,7 @@ const schema = cluster ? {
 								<h3 class="rail-card-title">Теми Во Фокус</h3>
 								<div class="rail-tags">
 									{cluster.tags.map((tag: string) => (
-										<a href={`/?q=${encodeURIComponent(tag)}`} class="rail-chip">
+										<a href={`/subjekt/${encodeURIComponent(tag)}`} class="rail-chip">
 											{tag}
 										</a>
 									))}

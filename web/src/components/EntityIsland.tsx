@@ -24,26 +24,16 @@ interface Relationship {
   weight: number;
 }
 
-interface ClusterArticle {
-  title?: string;
-  source?: string;
-  created_at?: string;
-  category?: string;
-  description?: string;
-  summary?: string;
-}
-
-interface ClusterItem {
-  cluster_id: string;
-  articles: ClusterArticle[];
-  is_breaking?: boolean;
-  has_synthesis?: boolean;
-  entities?: string[];
+interface MediaStat {
+  source: string;
+  mention_count: number;
 }
 
 interface EntityPayload {
   profile: EntityProfile;
   related: Relationship[];
+  media: MediaStat[];
+  clusters: any[];
 }
 
 function formatDate(value?: string) {
@@ -72,23 +62,12 @@ function formatRelative(value?: string) {
 }
 
 function sentimentLabel(score: number) {
-  if (score >= 0.45) return 'Позитивен тон';
-  if (score <= -0.45) return 'Негативен тон';
-  return 'Мешан тон';
+  if (score >= 0.2) return 'Претежно позитивен';
+  if (score <= -0.2) return 'Претежно критичен';
+  return 'Главно неутрален';
 }
 
-function uniqueSources(clusters: ClusterItem[]) {
-  const seen = new Set<string>();
-  for (const cluster of clusters) {
-    for (const article of cluster.articles || []) {
-      const source = String(article.source || '').trim();
-      if (source) seen.add(source);
-    }
-  }
-  return Array.from(seen);
-}
-
-function buildTimeline(clusters: ClusterItem[]) {
+function buildTimeline(clusters: any[]) {
   const days: { key: string; label: string; count: number }[] = [];
   const now = new Date();
   for (let offset = 5; offset >= 0; offset -= 1) {
@@ -103,7 +82,7 @@ function buildTimeline(clusters: ClusterItem[]) {
   }
 
   for (const cluster of clusters) {
-    const createdAt = cluster.articles?.[0]?.created_at;
+    const createdAt = cluster.created_at;
     if (!createdAt) continue;
     const key = new Date(createdAt).toISOString().slice(0, 10);
     const day = days.find((item) => item.key === key);
@@ -117,52 +96,6 @@ function buildTimeline(clusters: ClusterItem[]) {
   }));
 }
 
-function buildCategoryMix(clusters: ClusterItem[]) {
-  const counts = new Map<string, number>();
-  for (const cluster of clusters) {
-    const category = String(cluster.articles?.[0]?.category || '').trim();
-    if (!category) continue;
-    counts.set(category, (counts.get(category) || 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-}
-
-function buildCoMentionedEntities(clusters: ClusterItem[], currentName: string) {
-  const counts = new Map<string, number>();
-  const current = currentName.toLowerCase();
-  for (const cluster of clusters) {
-    for (const entity of cluster.entities || []) {
-      const clean = String(entity || '').trim();
-      if (!clean || clean.toLowerCase() === current) continue;
-      counts.set(clean, (counts.get(clean) || 0) + 1);
-    }
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
-}
-
-function getHighlights(clusters: ClusterItem[]) {
-  return [...clusters]
-    .sort((left, right) => {
-      const leftLead = left.articles?.[0];
-      const rightLead = right.articles?.[0];
-      const leftScore =
-        (left.has_synthesis ? 3 : 0) +
-        (left.is_breaking ? 2 : 0) +
-        ((left.articles || []).length >= 4 ? 1 : 0);
-      const rightScore =
-        (right.has_synthesis ? 3 : 0) +
-        (right.is_breaking ? 2 : 0) +
-        ((right.articles || []).length >= 4 ? 1 : 0);
-      if (rightScore !== leftScore) return rightScore - leftScore;
-      return new Date(rightLead?.created_at || 0).getTime() - new Date(leftLead?.created_at || 0).getTime();
-    })
-    .slice(0, 3);
-}
-
 function splitRelated(related: Relationship[]) {
   if (!related.length) {
     return { strongest: [] as Relationship[], broader: [] as Relationship[] };
@@ -174,26 +107,15 @@ function splitRelated(related: Relationship[]) {
   return { strongest, broader };
 }
 
-function buildWhyItMatters(profile: EntityProfile, clusters: ClusterItem[], related: Relationship[]) {
-  const recentClusters = clusters.filter((cluster) => {
-    const createdAt = cluster.articles?.[0]?.created_at;
-    if (!createdAt) return false;
-    return Date.now() - new Date(createdAt).getTime() <= 72 * 3600 * 1000;
-  }).length;
-  const breakingCount = clusters.filter((cluster) => cluster.is_breaking).length;
-  const synthesisCount = clusters.filter((cluster) => cluster.has_synthesis).length;
-  const sourceCount = uniqueSources(clusters).length;
-
-  if (breakingCount >= 1) {
-    return `${profile.name} е повторно во фокус поради најмалку ${breakingCount} активни развои и ${recentClusters || 1} свежи кластери во последните три дена.`;
+function buildWhyItMatters(profile: EntityProfile, clusters: any[], related: Relationship[]) {
+  const recentCount = clusters.length;
+  if (recentCount >= 5) {
+    return `${profile.name} е во силен фокус со ${recentCount} активни теми во последниот период, што укажува на висок јавен и медиумски интерес.`;
   }
-  if (recentClusters >= 3) {
-    return `${profile.name} се појавува во засилен краткорочен циклус: ${recentClusters} неодамнешни кластери, ${sourceCount} извори и ${synthesisCount} веќе издвоени синтези.`;
+  if (related.length >= 5) {
+    return `${profile.name} се појавува во контекст на ${related.length} други клучни субјекти, градејќи комплексна мрежа на поврзаност во вестите.`;
   }
-  if (related.length >= 6) {
-    return `${profile.name} е важен јазол во тековното известување затоа што се врзува со ${related.length} други релевантни имиња и теми, а не само со една изолирана вест.`;
-  }
-  return `${profile.name} останува релевантен преку континуирано појавување во повеќе извори, со јасно присуство во тековниот news cycle и во поврзаните приказни околу него.`;
+  return `Присуството на ${profile.name} во медиумите се следи преку анализа на тонот и фреквенцијата на споменување во реално време.`;
 }
 
 export default function EntityIsland({
@@ -202,7 +124,7 @@ export default function EntityIsland({
   initialData = null,
 }: {
   name: string;
-  initialClusters?: ClusterItem[];
+  initialClusters?: any[];
   initialData?: EntityPayload | null;
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
@@ -220,55 +142,54 @@ export default function EntityIsland({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center py-12">
-        <Loader2 className="animate-spin text-accent" size={32} />
+      <div className="flex flex-col items-center py-20">
+        <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
+        <p className="nyt-section-label text-muted-foreground">Ги подготвувам податоците...</p>
       </div>
     );
   }
 
   if (!data) return null;
 
-  const { profile, related } = data;
-  const timeline = buildTimeline(initialClusters);
-  const categories = buildCategoryMix(initialClusters);
-  const coMentioned = buildCoMentionedEntities(initialClusters, profile.name);
-  const highlights = getHighlights(initialClusters);
-  const sources = uniqueSources(initialClusters);
+  const { profile, related, media, clusters } = data;
+  const timeline = buildTimeline(clusters);
   const relationBands = splitRelated(related);
-  const whyItMatters = buildWhyItMatters(profile, initialClusters, related);
+  const whyItMatters = buildWhyItMatters(profile, clusters, related);
 
   return (
     <div className="entity-flow">
       <header className="entity-hero">
         <div className="entity-hero-main">
           <div className="entity-badge">
-            {profile.type === 'PERSON' ? <User size={32} className="text-accent" /> : <Building2 size={32} className="text-accent" />}
+            {profile.type === 'PERSON' ? <User size={32} className="text-nyt-accent" /> : <Building2 size={32} className="text-nyt-accent" />}
           </div>
           <div className="entity-copy">
-            <span className="entity-type">{profile.type}</span>
+            <span className="entity-type">{profile.type === 'ORG' ? 'Организација' : 'Субјект'}</span>
             <h1 className="entity-name">{profile.name}</h1>
             <p className="entity-summary-copy">
-              Профилот подолу го врзува тековното присуство на {profile.name} со поврзаните имиња, динамиката на споменувања и најрелевантните кластери.
+              Системски профил кој го следи медиумското присуство, мрежата на поврзаност и тонот на известување за {profile.name}.
             </p>
           </div>
         </div>
 
         <div className="entity-metrics">
           <div className="entity-metric">
-            <p>Споменувања</p>
-            <strong>{profile.total_mentions}</strong>
+            <p>Вкупно споменувања</p>
+            <strong>{profile.total_mentions || clusters.length}</strong>
           </div>
           <div className="entity-metric">
-            <p>Последно активен</p>
-            <strong>{formatRelative(profile.last_seen)}</strong>
+            <p>Последно виден</p>
+            <strong>{formatRelative(profile.last_seen || clusters[0]?.created_at)}</strong>
           </div>
           <div className="entity-metric">
-            <p>Поврзани имиња</p>
+            <p>Медиумски тон</p>
+            <strong className={profile.sentiment_score > 0.2 ? 'text-green-600' : profile.sentiment_score < -0.2 ? 'text-nyt-red' : 'text-nyt-accent'}>
+              {sentimentLabel(profile.sentiment_score)}
+            </strong>
+          </div>
+          <div className="entity-metric">
+            <p>Поврзани субјекти</p>
             <strong>{related.length}</strong>
-          </div>
-          <div className="entity-metric">
-            <p>Тон</p>
-            <strong className="text-accent">{sentimentLabel(profile.sentiment_score)}</strong>
           </div>
         </div>
       </header>
@@ -276,19 +197,18 @@ export default function EntityIsland({
       <div className="entity-grid">
         <div className="sources-main">
           <section className="entity-summary entity-featured">
-            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Зошто Е Важно Сега</h2>
+            <h2 className="entity-section-title flex items-center gap-2"><Sparkles size={14} /> Медиумски Пресек</h2>
             <p className="entity-summary-copy">{whyItMatters}</p>
             <div className="entity-chip-list">
-              <span className="entity-chip">{initialClusters.length} кластери</span>
-              <span className="entity-chip">{sources.length} извори</span>
-              <span className="entity-chip">Прв пат виден {formatDate(profile.first_seen)}</span>
-              <span className="entity-chip">Последно појавување {formatDate(profile.last_seen)}</span>
+              <span className="entity-chip">{clusters.length} активни кластери</span>
+              <span className="entity-chip">{media.length} водечки медиуми</span>
+              {profile.first_seen && <span className="entity-chip">Прв пат во базата: {formatDate(profile.first_seen)}</span>}
             </div>
           </section>
 
           <div className="entity-insight-grid">
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2"><TrendingUp size={14} /> Моментум</h2>
+              <h2 className="entity-section-title flex items-center gap-2"><TrendingUp size={14} /> Динамика на појавување</h2>
               <div className="entity-pulse">
                 {timeline.map((item) => (
                   <div key={item.key} className="entity-pulse-bar">
@@ -303,58 +223,44 @@ export default function EntityIsland({
             </section>
 
             <section className="entity-summary">
-              <h2 className="entity-section-title flex items-center gap-2"><CalendarRange size={14} /> Во Што Се Појавува</h2>
-              <div className="entity-chip-list">
-                {categories.map(([category, count]) => (
-                  <span key={category} className="entity-chip">{category} · {count}</span>
+              <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Водечки медиуми</h2>
+              <div className="space-y-4 mt-4">
+                {media.map((m) => (
+                  <div key={m.source} className="flex items-center justify-between">
+                    <span className="font-serif font-bold text-sm">{m.source}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-nyt-accent" 
+                          style={{ width: `${Math.min((m.mention_count / (clusters.length || 1)) * 100, 100)}%` }} 
+                        />
+                      </div>
+                      <span className="font-sans text-[10px] font-black w-12 text-right">{m.mention_count} вести</span>
+                    </div>
+                  </div>
                 ))}
-                {categories.length === 0 && <span className="text-xs text-muted italic">Нема доволно категоризирани кластери.</span>}
+                {media.length === 0 && <p className="text-xs text-muted italic">Нема доволно податоци за извори.</p>}
               </div>
-              <p className="rail-copy">
-                Најчестите категории покажуваат дали {profile.name} моментално влегува во политичка, економска, меѓународна или поширока контекстуална приказна.
-              </p>
             </section>
           </div>
 
           <section className="entity-summary">
-            <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Кластери Во Фокус</h2>
-            <div className="entity-highlight-list">
-              {highlights.map((cluster) => {
-                const lead = cluster.articles?.[0];
-                if (!lead) return null;
-                return (
-                  <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="entity-highlight-link">
-                    <div className="entity-highlight-meta">
-                      <span>{lead.source || 'Извор'}</span>
-                      <span className="dot">·</span>
-                      <span>{formatRelative(lead.created_at)}</span>
-                      <span className="dot">·</span>
-                      <span>{(cluster.articles || []).length} извори</span>
-                    </div>
-                    <h3 className="entity-highlight-title">{lead.title}</h3>
-                    <p className="entity-highlight-copy">
-                      {cluster.has_synthesis
-                        ? 'Кластерот веќе има синтеза и носи споредени извори, не само основен развој.'
-                        : cluster.is_breaking
-                        ? 'Овој кластер се развива како брза тема што вреди да се следи.'
-                        : 'Овој кластер е корисен за контекстот и мрежата околу ентитетот.'}
-                    </p>
-                  </a>
-                );
-              })}
-              {highlights.length === 0 && <p className="text-xs text-muted italic">Нема издвоени кластери за прикажување.</p>}
-            </div>
-          </section>
-
-          <section className="entity-summary">
             <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Истиот Контекст</h2>
             <div className="entity-chip-list">
-              {coMentioned.map(([entity, count]) => (
-                <a key={entity} href={`/entity/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
+              {coMentionedEntities(clusters, profile.name).map(([entity, count]) => (
+                <a key={entity} href={`/subjekt/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
                   {entity} · {count}
                 </a>
               ))}
-              {coMentioned.length === 0 && <span className="text-xs text-muted italic">Нема доволно ко-споменувања во тековните кластери.</span>}
+              {coMentionedEntities(clusters, profile.name).length === 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {related.map(r => (
+                    <a key={r.related_entity} href={`/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
+                      {r.related_entity}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -364,14 +270,14 @@ export default function EntityIsland({
             <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Најтесно Поврзани</h3>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
-                <a key={rel.related_entity} href={`/entity/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
+                <a key={rel.related_entity} href={`/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
                   <div>
                     <span className="entity-related-name">{rel.related_entity}</span>
                     <p className="entity-related-band">Тесна врска</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="entity-related-track">
-                      <div className="h-full bg-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
+                      <div className="h-full bg-nyt-accent" style={{ width: `${Math.min(rel.weight * 10, 100)}%` }} />
                     </div>
                     <span className="entity-related-weight">{rel.weight}</span>
                   </div>
@@ -381,45 +287,30 @@ export default function EntityIsland({
             </div>
           </div>
 
-          <div className="rail-card">
-            <h3 className="rail-card-title">Поширок Круг</h3>
-            <div className="space-y-4">
-              {relationBands.broader.map((rel) => (
-                <a key={rel.related_entity} href={`/entity/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
-                  <div>
-                    <span className="entity-related-name">{rel.related_entity}</span>
-                    <p className="entity-related-band">Ист контекст</p>
-                  </div>
-                  <span className="entity-related-weight">{rel.weight}</span>
-                </a>
-              ))}
-              {relationBands.broader.length === 0 && <p className="text-xs text-muted italic">Нема дополнителни врски надвор од најтесниот круг.</p>}
-            </div>
-          </div>
-
-          <div className="rail-card">
-            <h3 className="rail-card-title">Слика Во Бројки</h3>
-            <div className="entity-stat-stack">
-              <div className="entity-stat-row">
-                <span>Кластери на страницата</span>
-                <strong>{initialClusters.length}</strong>
-              </div>
-              <div className="entity-stat-row">
-                <span>Активни извори</span>
-                <strong>{sources.length}</strong>
-              </div>
-              <div className="entity-stat-row">
-                <span>Кластери со синтеза</span>
-                <strong>{initialClusters.filter((cluster) => cluster.has_synthesis).length}</strong>
-              </div>
-              <div className="entity-stat-row">
-                <span>Breaking кластери</span>
-                <strong>{initialClusters.filter((cluster) => cluster.is_breaking).length}</strong>
-              </div>
-            </div>
+          <div className="rail-card rail-card-accent">
+            <h3 className="rail-card-title">Автоматизиран надзор</h3>
+            <p className="rail-copy">
+              Овие податоци се генерираат преку постојано следење на македонскиот медиумски простор. Анализата на тонот и поврзаноста помага во разбирање на јавниот дискурс.
+            </p>
           </div>
         </aside>
       </div>
     </div>
   );
+}
+
+function coMentionedEntities(clusters: any[], currentName: string) {
+  const counts = new Map<string, number>();
+  const current = currentName.toLowerCase();
+  for (const cluster of clusters) {
+    const ents = cluster.entities || []; 
+    for (const entity of ents) {
+      const clean = String(entity || '').trim();
+      if (!clean || clean.toLowerCase() === current) continue;
+      counts.set(clean, (counts.get(clean) || 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12);
 }

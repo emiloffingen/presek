@@ -986,28 +986,89 @@ async def get_source_pulse():
 
 @app.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
-    """Returns detailed profile and relationships for an entity."""
+    """Returns detailed profile, media stats, and recent clusters for an entity."""
     entity = db.execute_one("""
         SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score
         FROM knowledge_entities WHERE name = %s
     """, (name,))
     
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        # Fallback: if not in knowledge base but exists in tags, create a transient profile
+        exists = db.execute_one("SELECT 1 FROM cluster_metadata WHERE %s = ANY(tags) LIMIT 1", (name,))
+        if not exists:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        entity = {
+            "name": name,
+            "type": "ENTITY",
+            "total_mentions": 0,
+            "first_seen": None,
+            "last_seen": None,
+            "sentiment_score": 0
+        }
     
-    # Get top relationships
+    # 1. Get top relationships
     relationships = db.execute("""
         SELECT 
             CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
             weight
         FROM knowledge_relationships
         WHERE entity_a = %s OR entity_b = %s
-        ORDER BY weight DESC LIMIT 10
+        ORDER BY weight DESC LIMIT 8
     """, (name, name, name))
     
+    # 2. Get Top Media Outlets
+    media_stats = db.execute("""
+        SELECT a.source, COUNT(DISTINCT a.cluster_id) as mention_count
+        FROM articles a
+        JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+        WHERE %s = ANY(m.tags)
+        GROUP BY a.source
+        ORDER BY mention_count DESC LIMIT 5
+    """, (name,))
+
+    # 3. Get Recent Clusters
+    recent_clusters = db.execute("""
+        SELECT 
+            c.cluster_id, 
+            (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
+            c.created_at,
+            s.summary,
+            s.sentiment
+        FROM cluster_metadata c
+        LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id
+        WHERE %s = ANY(c.tags)
+        ORDER BY c.created_at DESC LIMIT 10
+    """, (name,))
+    
+    # Process clusters to include bullets and clean sentiment
+    processed_clusters = []
+    for c in recent_clusters:
+        bullets = []
+        if c["summary"]:
+            bullets = [
+                re.sub(r'^[-•*]\s*', '', line).strip()
+                for line in c["summary"].split('\n')
+                if line.strip() and not line.strip().lower().startswith('статии:')
+            ]
+        
+        sent_data = c["sentiment"]
+        if isinstance(sent_data, str):
+            try: sent_data = json.loads(sent_data)
+            except: sent_data = None
+
+        processed_clusters.append({
+            "cluster_id": c["cluster_id"],
+            "title": cleanAndDecode(c["title"]),
+            "created_at": c["created_at"],
+            "bullets": bullets[:2],
+            "sentiment": sent_data
+        })
+
     return {
         "profile": entity,
-        "related": relationships
+        "related": relationships,
+        "media": media_stats,
+        "clusters": processed_clusters
     }
 
 @app.get("/api/intelligence/top-entities")
