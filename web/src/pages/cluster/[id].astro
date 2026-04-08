@@ -11,7 +11,7 @@ import ReaderTracker from '../../components/ReaderTracker.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode } from '../../utils/textUtils';
-import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
+import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2, Image as ImageIcon } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
 const { id } = Astro.params;
@@ -357,6 +357,14 @@ const schema = cluster ? {
 								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извори</span>
 								<span>·</span>
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
+								<span>·</span>
+								<a 
+									href={`${API_URL}/cluster/${cluster.cluster_id}/share-card`} 
+									target="_blank" 
+									class="flex items-center gap-1 text-nyt-accent hover:underline font-sans text-[11px] font-bold uppercase tracking-wider"
+								>
+									<ImageIcon size={12}/> Сподели како слика
+								</a>
 								{synthesisUpdatedAt && (
 									<>
 										<span>·</span>

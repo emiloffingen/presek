@@ -2206,3 +2206,103 @@ async def get_trending():
     from trending import get_trending
     words = get_trending(limit=20)
     return words
+
+@app.get("/api/cluster/{cluster_id}/share-card")
+async def get_cluster_share_card(cluster_id: str):
+    """Generates a high-quality social sharing image for a news cluster."""
+    from io import BytesIO
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap
+
+    # 1. Fetch Data
+    articles = db.execute(
+        "SELECT title, source, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", 
+        (cluster_id,)
+    )
+    if not articles:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+    
+    s_row = db.execute_one(
+        "SELECT summary, sentiment FROM cluster_summaries WHERE cluster_id = %s",
+        (cluster_id,)
+    )
+    
+    headline = articles[0]["title"]
+    category = articles[0]["category"] or "ВЕСТИ"
+    source_count = len(articles)
+    
+    # 2. Image Config
+    W, H = 1200, 630
+    BG_COLOR = (15, 13, 12) # Matches our midnight dark mode
+    ACCENT_COLOR = (165, 197, 255) # Trust Blue
+    TEXT_COLOR = (242, 236, 226) # Off-white
+    MUTED_TEXT = (154, 143, 130)
+    
+    img = Image.new("RGB", (W, H), color=BG_COLOR)
+    draw = ImageDraw.Draw(img)
+    
+    # 3. Load Fonts
+    try:
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+        font_reg_path = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+        
+        title_font = ImageFont.truetype(font_path, 64)
+        kicker_font = ImageFont.truetype(font_path, 24)
+        body_font = ImageFont.truetype(font_reg_path, 32)
+        footer_font = ImageFont.truetype(font_reg_path, 22)
+    except:
+        title_font = ImageFont.load_default()
+        kicker_font = ImageFont.load_default()
+        body_font = ImageFont.load_default()
+        footer_font = ImageFont.load_default()
+
+    # 4. Draw Layout
+    padding = 80
+    curr_y = padding
+    
+    # Draw Logo / Kicker
+    draw.text((padding, curr_y), category.upper(), font=kicker_font, fill=ACCENT_COLOR)
+    curr_y += 45
+    
+    # Draw Headline
+    wrapped_title = textwrap.wrap(cleanAndDecode(headline), width=35)
+    for line in wrapped_title[:3]:
+        draw.text((padding, curr_y), line, font=title_font, fill=TEXT_COLOR)
+        curr_y += 75
+    
+    curr_y += 30
+    # Draw separator
+    draw.line([(padding, curr_y), (W - padding, curr_y)], fill=(51, 45, 41), width=2)
+    curr_y += 40
+    
+    # Draw Sublimate Bullets
+    if s_row and s_row["summary"]:
+        bullets = [
+            re.sub(r'^[-•*]\s*', '', line).strip()
+            for line in s_row["summary"].split('\n')
+            if line.strip() and not line.strip().lower().startswith('статии:')
+        ][:2] # Only top 2 for the card
+        
+        for bullet in bullets:
+            wrapped_bullet = textwrap.wrap(cleanAndDecode(bullet), width=65)
+            # Draw bullet point
+            draw.text((padding, curr_y), "●", font=body_font, fill=ACCENT_COLOR)
+            for line in wrapped_bullet[:2]:
+                draw.text((padding + 40, curr_y), line, font=body_font, fill=TEXT_COLOR)
+                curr_y += 42
+            curr_y += 15
+    else:
+        # Fallback if no synthesis
+        draw.text((padding, curr_y), f"Покриено од {source_count} извори во реално време.", font=body_font, fill=MUTED_TEXT)
+
+    # Draw Footer
+    footer_y = H - padding
+    draw.text((padding, footer_y), "PRESEK.LIVE", font=kicker_font, fill=TEXT_COLOR)
+    
+    stats_str = f"{source_count} ИЗВОРИ  ·  {datetime.datetime.now().strftime('%d.%m.%Y')}"
+    draw.text((W - padding - draw.textlength(stats_str, font=footer_font), footer_y + 4), stats_str, font=footer_font, fill=MUTED_TEXT)
+
+    # 5. Output
+    out = BytesIO()
+    img.save(out, format="PNG")
+    return Response(content=out.getvalue(), media_type="image/png")
