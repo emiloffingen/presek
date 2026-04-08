@@ -1774,7 +1774,7 @@ def send_profile_breaking_alerts_task():
             log.info(f"[tasks] Sent {sent} profile breaking alerts.")
 
 
-@celery_app.task(rate_limit='10/m')
+@celery_app.task(rate_limit='5/m')
 def backfill_cover_art_single_task(cluster_id, title):
     """Generate cover art for a single cluster without blocking a worker."""
     try:
@@ -1812,7 +1812,7 @@ def backfill_cover_art_task():
             prompt_text = r['summary'] or r['title'] or ''
             backfill_cover_art_single_task.apply_async(
                 args=(r['cluster_id'], prompt_text),
-                countdown=idx * 5, # Space out requests to AI provider
+                countdown=idx * 12, # Spaced 12s apart to match 5/min limit perfectly
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
