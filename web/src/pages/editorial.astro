@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 ---
 
 <Layout 
@@ -9,7 +10,8 @@ import Footer from '../components/Footer.astro';
     description="Дознајте како Пресек ги групира вестите, како работи нашиот алгоритам и како се врши синтезата со помош на вештачка интелигенција."
 >
     <NYTHeader />
-    <main class="site-layout py-20">
+    <main class="site-layout py-12">
+        <Breadcrumbs items={[{ label: "Уреднички стандарди" }]} />
         <article class="editorial-shell">
             <header class="editorial-header">
                 <span class="page-kicker">Транспарентност</span>

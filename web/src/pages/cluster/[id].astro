@@ -8,6 +8,7 @@ import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode } from '../../utils/textUtils';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2 } from 'lucide-react';
@@ -340,14 +341,10 @@ const schema = cluster ? {
 				<header class="cluster-header motion-rise">
 					<div class="cluster-header-grid">
 						<div class="cluster-header-copy">
-							<div class="cluster-header-top">
-								<a href="/" class="nyt-section-label flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-									<ArrowLeft size={12} /> Назад
-								</a>
-								<a href={topicHref(cluster.articles[0].category || "Вести")} class="nyt-section-label text-nyt-red tracking-widest border-l pl-4 border-nyt-gray-300 hover:text-foreground transition-colors">
-									{cluster.articles[0].category || "Вести"}
-								</a>
-							</div>
+							<Breadcrumbs items={[
+								{ label: cluster.articles[0].category || "Вести", href: topicHref(cluster.articles[0].category || "Вести") },
+								{ label: "Детали за вест" }
+							]} />
 
 							<h1 class="cluster-headline" set:html={cleanAndDecode(cluster.articles[0].title)}>
 							</h1>

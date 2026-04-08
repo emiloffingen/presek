@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ThemeIsland from '../components/ThemeIsland';
+import ConsentBanner from '../components/ConsentBanner';
 
 interface Props {
 	title: string;
@@ -90,6 +91,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
 		<slot />
+		<ConsentBanner client:load />
 	</body>
 </html>
 

@@ -182,6 +182,26 @@ export const IzvoriPage: React.FC = () => {
 
         <div className="sources-grid">
           <div className="sources-main">
+            <section className="mb-12 p-6 border border-border bg-secondary/30 rounded-lg">
+              <h2 className="text-sm font-black uppercase tracking-widest text-nyt-accent mb-4 flex items-center gap-2">
+                <ShieldCheck size={16} /> Методологија на Доверба
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-secondary-foreground leading-relaxed">
+                <div>
+                  <h3 className="font-bold text-foreground mb-2">1. Категоризација</h3>
+                  <p>Изворите се делат на Агенциски, Јавни сервиси, Независни и Алтернативни. Секоја категорија има различен влезен 'кредибилитет'.</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-2">2. Кохерентност</h3>
+                  <p>Системот ја мери 'стапката на потврда'. Колку почесто веста на еден медиум се совпаѓа со другите, толку е повисок неговиот индекс на стабилност.</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-2">3. Пондериран Влез</h3>
+                  <p>Вестите од извори со 'Висока доверба' имаат поголема тежина при формирање на водечката приказна на насловната страна.</p>
+                </div>
+              </div>
+            </section>
+
             {loading ? (
               <div className="flex flex-col items-center py-20">
                 <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />

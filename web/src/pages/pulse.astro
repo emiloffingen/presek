@@ -1,0 +1,136 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { apiBaseUrl } from '../lib/apiBase';
+import { Activity, Zap, ShieldCheck, Info } from 'lucide-react';
+
+const API_URL = apiBaseUrl();
+let pulseData = [];
+let error = null;
+
+try {
+    const res = await fetch(`${API_URL}/intelligence/source-pulse`);
+    if (res.ok) {
+        const json = await res.json();
+        pulseData = json.data || [];
+    } else {
+        error = "Неуспешно вчитување на пулсот.";
+    }
+} catch (e) {
+    console.error(e);
+    error = "Грешка при поврзување со серверот.";
+}
+
+function getSentimentLabel(score: number) {
+    if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
+    if (score < -0.2) return { label: 'Критичен', color: 'text-nyt-red' };
+    return { label: 'Неутрален', color: 'text-muted-foreground' };
+}
+
+function formatStat(val: number) {
+    return (val * 100).toFixed(0) + '%';
+}
+---
+
+<Layout 
+    title="Медиумски Пулс | Пресек"
+    description="Анализа на медиумскиот пејзаж во Македонија преку податоци за објективност, сензационализам и тон на известување."
+>
+    <NYTHeader />
+    <main class="site-layout py-12">
+        <Breadcrumbs items={[{ label: "Медиумски Пулс" }]} />
+        
+        <header class="mb-12">
+            <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Аналитика</span>
+            <h1 class="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Медиумски Пејзаж</h1>
+            <p class="font-nyt-body text-xl text-secondary-foreground max-w-3xl leading-relaxed">
+                Уникатен преглед на македонскиот медиумски простор базиран на AI анализа на илјадници статии во последните 7 дена.
+            </p>
+        </header>
+
+        {error && (
+            <div class="p-8 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red font-serif italic text-center rounded-lg">
+                {error}
+            </div>
+        )}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="border border-border rounded-lg overflow-hidden bg-card">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-secondary/50 border-bottom border-border">
+                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
+                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
+                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
+                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            {pulseData.map((row) => {
+                                const sent = getSentimentLabel(row.avg_sentiment);
+                                return (
+                                    <tr class="hover:bg-secondary/20 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <span class="font-serif font-bold text-lg">{row.source}</span>
+                                            <p class="text-[10px] uppercase font-bold text-muted-foreground mt-1">{row.cluster_count} покриени теми</p>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
+                                                {sent.label}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                    <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                                                </div>
+                                                <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                    <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                                </div>
+                                                <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="p-6 border border-border bg-secondary/30 rounded-lg">
+                    <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Info size={14} /> Методологија на Пулсот
+                    </h3>
+                    <div class="space-y-4 font-nyt-body text-sm text-secondary-foreground leading-relaxed">
+                        <p>
+                            Податоците се генерираат преку автоматизирана анализа на секој кластер. Нашата вештачка интелигенција го оценува известувањето на секој медиум посебно.
+                        </p>
+                        <ul class="space-y-2">
+                            <li><strong>Објективност:</strong> Присуство на факти наспроти уреднички коментари.</li>
+                            <li><strong>Тон:</strong> Емоционалниот полнеж на користените зборови во насловите.</li>
+                            <li><strong>Сензационализам:</strong> Употреба на драматични фрази и „clickbait“ структури.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="p-6 border border-nyt-accent/20 bg-nyt-accent/5 rounded-lg">
+                    <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 text-nyt-accent">Зошто ова е важно?</h3>
+                    <p class="font-nyt-body text-sm leading-relaxed italic">
+                        "Транспарентноста на медиумскиот тон им овозможува на читателите да препознаат кога една информација е пренесена суво, а кога со намера да се предизвика емоционална реакција."
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <Footer />
+</Layout>
