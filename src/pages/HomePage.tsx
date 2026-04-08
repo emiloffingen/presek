@@ -12,15 +12,25 @@ const CATEGORIES = [
 ];
 
 export const HomePage: React.FC = () => {
-  const { 
-    clusters, isLoading, error, page, hasMore, 
-    setClusters, addClusters, setLoading, setError, setHasMore, setPage, reset 
-  } = useNewsStore();
-  
-  const { 
-    selectedCategory, selectedTopic, searchQuery, 
-    trackInterest, getTopInterests 
-  } = useUIStore();
+  // Granular selectors — re-render only when these specific slices change.
+  const clusters = useNewsStore(s => s.clusters);
+  const isLoading = useNewsStore(s => s.isLoading);
+  const error = useNewsStore(s => s.error);
+  const page = useNewsStore(s => s.page);
+  const hasMore = useNewsStore(s => s.hasMore);
+  const setClusters = useNewsStore(s => s.setClusters);
+  const addClusters = useNewsStore(s => s.addClusters);
+  const setLoading = useNewsStore(s => s.setLoading);
+  const setError = useNewsStore(s => s.setError);
+  const setHasMore = useNewsStore(s => s.setHasMore);
+  const setPage = useNewsStore(s => s.setPage);
+  const reset = useNewsStore(s => s.reset);
+
+  const selectedCategory = useUIStore(s => s.selectedCategory);
+  const selectedTopic = useUIStore(s => s.selectedTopic);
+  const searchQuery = useUIStore(s => s.searchQuery);
+  const trackInterest = useUIStore(s => s.trackInterest);
+  const getTopInterests = useUIStore(s => s.getTopInterests);
 
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [newArticlesCount, setNewArticlesCount] = useState(0);
@@ -136,7 +146,7 @@ export const HomePage: React.FC = () => {
     <div className="min-h-screen bg-primary">
       <Header />
       
-      <main className="site-layout py-6">
+      <main className="site-layout py-4">
         {/* SSE Toast */}
         {newArticlesCount > 0 && (
           <button 
@@ -153,8 +163,8 @@ export const HomePage: React.FC = () => {
             
             {/* Personalization Section */}
             {forYouClusters.length > 0 && (
-              <section className="mb-12 bg-secondary/30 p-6 border-y-2 border-primary">
-                <div className="flex items-center gap-2 mb-6">
+              <section className="mb-8 bg-secondary/30 p-4 lg:p-5 border-y-2 border-primary">
+                <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="text-accent" size={18} />
                   <h2 className="rail-label m-0">ПРЕПОРАЧАНО ЗА ВАС</h2>
                 </div>
@@ -171,7 +181,7 @@ export const HomePage: React.FC = () => {
               </section>
             )}
 
-            <div className="flex justify-between items-center mb-8 border-b border-color pb-4">
+            <div className="flex justify-between items-center mb-5 border-b border-color pb-3">
               <h1 className="rail-label m-0">
                 {sectionTitle}
               </h1>

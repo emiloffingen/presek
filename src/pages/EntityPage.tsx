@@ -25,7 +25,7 @@ export const EntityPage: React.FC = () => {
       .catch(() => setError("Грешка при вчитување на профилот"));
 
     // 2. Fetch clusters for this entity
-    apiClient.getNews({ entity: name, page_size: 12 })
+    apiClient.getNews({ q: name, page_size: 12 })
       .then(res => setClusters(res.clusters))
       .catch(() => {});
 
@@ -36,37 +36,25 @@ export const EntityPage: React.FC = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [name]);
-...
-          <aside className="lg:col-span-4 space-y-12">
-            {topics.length > 0 && (
-              <div className="rail-widget border-t-2 border-primary">
-                <h3 className="rail-label">ДОМИНАНТНИ ТЕМИ</h3>
-                <div className="space-y-4 mt-6">
-                  {topics.map((t: any) => (
-                    <div key={t.topic}>
-                      <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
-                        <span className="text-primary">{t.topic}</span>
-                        <span className="text-muted">{t.count} објави</span>
-                      </div>
-                      <div className="h-1 bg-secondary border border-color">
-                        <div 
-                          className="h-full bg-accent" 
-                          style={{ width: `${Math.min(100, (t.count / clusters.length) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {profile?.related && profile.related.length > 0 && (
-
+  if (loading) {
+    return (
       <div className="min-h-screen bg-primary">
         <Header />
         <div className="page-container py-20 flex flex-col items-center">
           <Loader2 className="animate-spin text-accent mb-4" size={32} />
           <p className="text-muted uppercase text-xs font-black tracking-widest">Анализираме податоци...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-primary">
+        <Header />
+        <div className="page-container py-20 text-center">
+          <p className="text-accent font-bold uppercase tracking-widest">{error}</p>
         </div>
       </div>
     );
@@ -131,6 +119,28 @@ export const EntityPage: React.FC = () => {
           </div>
 
           <aside className="lg:col-span-4 space-y-12">
+            {topics.length > 0 && (
+              <div className="rail-widget border-t-2 border-primary">
+                <h3 className="rail-label">ДОМИНАНТНИ ТЕМИ</h3>
+                <div className="space-y-4 mt-6">
+                  {topics.map((t: any) => (
+                    <div key={t.topic}>
+                      <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
+                        <span className="text-primary">{t.topic}</span>
+                        <span className="text-muted">{t.count} објави</span>
+                      </div>
+                      <div className="h-1 bg-secondary border border-color">
+                        <div
+                          className="h-full bg-accent"
+                          style={{ width: `${Math.min(100, (t.count / Math.max(1, clusters.length)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {profile?.related && profile.related.length > 0 && (
               <div className="rail-widget border-t-2 border-primary">
                 <h3 className="rail-label flex items-center gap-2"><TrendingUp size={14}/> ПОВРЗАНИ СУБЈЕКТИ</h3>

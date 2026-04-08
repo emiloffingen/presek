@@ -27,10 +27,13 @@ function timeAgo(dateStr: string): string {
 
 export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compact, reason }) => {
   const navigate = useNavigate();
+  const [imgFailed, setImgFailed] = React.useState(false);
   const main = cluster.articles[0];
-  
-  const thumb = cluster.representative_image || cluster.articles.find(a => a.image_url)?.image_url;
-  const thumbSrc = thumb ? apiClient.getImageUrl(thumb, isLead ? 1000 : 600) : null;
+
+  const rawThumb = cluster.representative_image || cluster.articles.find(a => a.image_url)?.image_url;
+  // Treat the local placeholder as "no image" — it carries masthead text and looks terrible repeated.
+  const thumb = rawThumb && !rawThumb.includes('placeholder') ? rawThumb : null;
+  const thumbSrc = thumb && !imgFailed ? apiClient.getImageUrl(thumb, isLead ? 1000 : 600) : null;
 
   const cardClass = isLead ? 'lead-story' : '';
   const thumbRight = !isLead && !compact; // Simplified logic for React version
@@ -61,11 +64,11 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
   return (
     <article 
       onClick={() => navigate(`/cluster/${cluster.cluster_id}`)}
-      className={`news-cluster ${cardClass} fade-in cursor-pointer group`}
+      className={`news-cluster ${cardClass} animate-fade-in cursor-pointer group`}
     >
       {thumbSrc && !thumbRight && (
         <div className="cluster-thumb-wrap">
-          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading={isLead ? 'eager' : 'lazy'} />
+          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading={isLead ? 'eager' : 'lazy'} onError={() => setImgFailed(true)} />
         </div>
       )}
       

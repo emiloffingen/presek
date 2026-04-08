@@ -1,8 +1,8 @@
-// Пресек — Service Worker v20
+// Пресек — Service Worker v21
 // Enhanced navigation support - Stale-While-Revalidate for API and Cache-First for assets
 
-const CACHE_NAME = 'presek-v20';
-const API_CACHE_NAME = 'presek-api-v20';
+const CACHE_NAME = 'presek-v21';
+const API_CACHE_NAME = 'presek-api-v21';
 
 // Assets from Vite manifest are hashed, so we can cache them aggressively
 const STATIC_ASSETS = [

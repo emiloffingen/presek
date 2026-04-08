@@ -305,7 +305,7 @@ export const ClusterDetailPage: React.FC = () => {
                             </div>
                             <div className="mt-2 w-full h-1.5 bg-primary overflow-hidden border border-color">
                                 <div 
-                                    className={`h-full transition-all duration-1000 ${cluster.sentiment.score > 0.2 ? 'bg-green-500' : cluster.sentiment.score < -0.2 ? 'bg-nyt-red' : 'bg-accent'}`}
+                                    className={`h-full transition-all duration-1000 ${cluster.sentiment.score > 0.2 ? 'bg-green-500' : cluster.sentiment.score < -0.2 ? 'bg-brand-600' : 'bg-accent'}`}
                                     style={{ 
                                         width: `${((cluster.sentiment.score + 1) / 2) * 100}%`,
                                         marginLeft: '0%' 

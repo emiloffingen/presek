@@ -31,16 +31,35 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     apiClient.getWeather().then(setWeather).catch(() => {});
-    
+
     const now = new Date();
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     };
     setCurrentDate(now.toLocaleDateString('mk-MK', options));
   }, []);
+
+  // Lock body scroll while a full-screen overlay is open and close on Escape.
+  useEffect(() => {
+    const open = searchOpen || mobileMenuOpen;
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [searchOpen, mobileMenuOpen]);
 
   const toggleDark = () => {
     const isDark = document.documentElement.classList.toggle('dark');
@@ -92,17 +111,27 @@ export const Header: React.FC = () => {
       </div>
 
       <header className="site-header">
-        <div className="text-center py-8 relative">
-          <button 
-            className="icon-btn absolute left-0 top-1/2 -translate-y-1/2 lg:hidden"
+        <div className="masthead-row">
+          <button
+            className="icon-btn lg:hidden"
             onClick={() => setMobileMenuOpen(true)}
+            aria-label="Меню"
           >
             <Menu size={20} />
           </button>
-          
-          <button onClick={() => { navigate('/'); setSelectedCategory(''); reset(); }} className="inline-block hover:opacity-90 transition">
-            <img src="/static/logo.svg" alt="Presek" className="h-16" />
+
+          <button onClick={() => { navigate('/'); setSelectedCategory(''); reset(); }} className="masthead-logo hover:opacity-90 transition">
+            <img src="/static/logo.svg" alt="Presek" className="h-9 sm:h-11 lg:h-12" />
           </button>
+
+          <div className="flex items-center gap-1 lg:gap-2">
+            <button className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Пребарај">
+              <Search size={18} />
+            </button>
+            <button className="icon-btn" onClick={toggleDark} aria-label="Промени тема">
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
 
         <nav className="hidden lg:block">
@@ -116,15 +145,6 @@ export const Header: React.FC = () => {
                 {cat.label}
               </button>
             ))}
-          </div>
-          
-          <div className="flex justify-center mt-2 gap-4">
-            <button className="icon-btn" onClick={() => setSearchOpen(true)}>
-              <Search size={18} />
-            </button>
-            <button className="icon-btn" onClick={toggleDark}>
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
           </div>
         </nav>
       </header>
