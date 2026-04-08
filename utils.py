@@ -19,12 +19,13 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 def cached_response(key: str, ttl: int = 60):
+    """Read a cached JSON value. ``ttl`` is accepted for call-site symmetry
+    with set_cache but is unused — Redis enforces the existing TTL set on
+    write."""
+    del ttl  # accepted for symmetry with set_cache, not used on read
     try:
         val = redis_client.get(key)
         if val:
-            # We don't have a generic way to deserialize ISO strings back to datetime
-            # without knowing the schema, so we keep them as strings. 
-            # Flask's jsonify handles ISO strings well.
             return json.loads(val)
     except Exception as e:
         log.warning(f"[cache] read error on {key}: {e}")
@@ -60,6 +61,10 @@ RATE_LIMIT_MAX = 60     # requests per window
 
 def check_rate_limit(ip: str) -> bool:
     """Redis-backed rate limiter using a sliding window approach."""
+    # Exclude localhost from rate limiting to allow internal traffic (e.g. Astro SSR)
+    if ip in {"127.0.0.1", "::1"}:
+        return True
+
     key = f"rate_limit:{ip}"
     now = time.time()
     
