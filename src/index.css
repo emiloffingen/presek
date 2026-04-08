@@ -171,6 +171,31 @@ html {
     visibility: hidden; opacity: 0;
   }
   .search-overlay.active { visibility: visible; opacity: 1; }
+
+  /* ── Mobile Drawer ── */
+  .mobile-drawer-overlay {
+    @apply fixed inset-0 z-[90] bg-black/50 transition-opacity duration-200;
+    visibility: hidden; opacity: 0;
+  }
+  .mobile-drawer-overlay.active { visibility: visible; opacity: 1; }
+
+  .mobile-drawer {
+    @apply fixed top-0 left-0 z-[95] h-full w-[82%] max-w-[320px] bg-primary border-r shadow-2xl transition-transform duration-300 ease-out -translate-x-full overflow-y-auto;
+    border-color: var(--border-color);
+  }
+  .mobile-drawer.open { @apply translate-x-0; }
+
+  .drawer-header {
+    @apply flex items-center justify-between px-5 py-4 border-b;
+    border-color: var(--border-color);
+  }
+  .drawer-logo {
+    @apply font-serif text-xl font-bold tracking-tight;
+    color: var(--text-primary);
+  }
+  .drawer-nav {
+    @apply py-4;
+  }
   
   /* ── Layout ── */
   .page-container {

@@ -1,41 +1,26 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const useSSE = <T,>(url: string, onUpdate: (data: T) => void) => {
-  const eventSourceRef = useRef<EventSource | null>(null);
+  // Keep the callback in a ref so a fresh closure on each render
+  // doesn't tear down and reopen the EventSource.
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
-  const connect = useCallback(() => {
-    if (typeof EventSource === 'undefined') {
-      return;
-    }
+  useEffect(() => {
+    if (typeof EventSource === 'undefined') return;
 
-    eventSourceRef.current = new EventSource(url);
-
-    // Listen for default 'message' event used in utils.py
-    eventSourceRef.current.onmessage = (event) => {
+    const es = new EventSource(url);
+    es.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        onUpdate(data);
+        onUpdateRef.current(JSON.parse(event.data));
       } catch (error) {
         console.error('Error parsing SSE data:', error);
       }
     };
+    es.onerror = () => es.close();
 
-    eventSourceRef.current.onerror = () => {
-      disconnect();
-    };
-  }, [url, onUpdate]);
-
-  const disconnect = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    connect();
-    return () => disconnect();
-  }, [connect, disconnect]);
-
-  return { disconnect };
+    return () => es.close();
+  }, [url]);
 };

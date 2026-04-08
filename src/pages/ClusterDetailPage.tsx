@@ -144,13 +144,13 @@ export const ClusterDetailPage: React.FC = () => {
                         <div className="space-y-8">
                             {cluster.verification_report.agreements && cluster.verification_report.agreements.length > 0 && (
                                 <div>
-                                    <p className="text-[10px] font-black uppercase text-emerald-600 mb-3 tracking-widest flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" /> ПОТВРДЕНИ ФАКТИ
+                                    <p className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-3 tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" /> ПОТВРДЕНИ ФАКТИ
                                     </p>
                                     <ul className="space-y-3 p-0 m-0 list-none">
                                         {cluster.verification_report.agreements.map((item, i) => (
                                             <li key={i} className="text-[15px] text-primary flex gap-3 leading-relaxed">
-                                                <span className="text-emerald-500 mt-1">✓</span>
+                                                <span className="text-emerald-500 dark:text-emerald-400 mt-1">✓</span>
                                                 {item}
                                             </li>
                                         ))}
@@ -160,13 +160,13 @@ export const ClusterDetailPage: React.FC = () => {
 
                             {cluster.verification_report.conflicts && cluster.verification_report.conflicts.length > 0 && (
                                 <div>
-                                    <p className="text-[10px] font-black uppercase text-rose-600 mb-3 tracking-widest flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-600" /> ПРОТИВРЕЧНОСТИ / РАЗЛИКИ
+                                    <p className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 mb-3 tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400" /> ПРОТИВРЕЧНОСТИ / РАЗЛИКИ
                                     </p>
                                     <ul className="space-y-3 p-0 m-0 list-none">
                                         {cluster.verification_report.conflicts.map((item, i) => (
                                             <li key={i} className="text-[15px] text-primary flex gap-3 leading-relaxed">
-                                                <AlertCircle size={14} className="text-rose-500 mt-1 shrink-0" />
+                                                <AlertCircle size={14} className="text-rose-500 dark:text-rose-400 mt-1 shrink-0" />
                                                 {item}
                                             </li>
                                         ))}

@@ -17,24 +17,37 @@ export const EntityPage: React.FC = () => {
   useEffect(() => {
     if (!name) return;
 
+    let cancelled = false;
     setLoading(true);
-    // 1. Fetch entity profile
-    fetch(`/api/intelligence/entity/${encodeURIComponent(name)}`)
-      .then(r => r.json())
-      .then(data => setProfile(data))
-      .catch(() => setError("Грешка при вчитување на профилот"));
+    setError(null);
 
-    // 2. Fetch clusters for this entity
-    apiClient.getNews({ q: name, page_size: 12 })
-      .then(res => setClusters(res.clusters))
-      .catch(() => {});
+    const profileP = fetch(`/api/intelligence/entity/${encodeURIComponent(name)}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`profile ${r.status}`);
+        return r.json();
+      })
+      .then(data => { if (!cancelled) setProfile(data); });
 
-    // 3. Fetch topics for this entity
-    fetch(`/api/intelligence/entity/${encodeURIComponent(name)}/topics`)
-      .then(r => r.json())
-      .then(res => setTopics(res.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const clustersP = apiClient.getNews({ q: name, page_size: 12 })
+      .then(res => { if (!cancelled) setClusters(res.clusters); });
+
+    const topicsP = fetch(`/api/intelligence/entity/${encodeURIComponent(name)}/topics`)
+      .then(r => {
+        if (!r.ok) throw new Error(`topics ${r.status}`);
+        return r.json();
+      })
+      .then(res => { if (!cancelled) setTopics(res.data || []); });
+
+    Promise.allSettled([profileP, clustersP, topicsP]).then(results => {
+      if (cancelled) return;
+      // Profile is the only fetch we treat as fatal — without it the page has nothing to show.
+      if (results[0].status === 'rejected') {
+        setError('Грешка при вчитување на профилот');
+      }
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
   }, [name]);
 
   if (loading) {
@@ -92,8 +105,8 @@ export const EntityPage: React.FC = () => {
                 <div>
                   <p className="text-[10px] font-black text-muted uppercase mb-1">Сентимент</p>
                   <div className="flex items-center gap-2">
-                    <p className={`text-2xl font-serif font-bold ${profile?.profile?.sentiment_score > 0.1 ? 'text-emerald-600' : profile?.profile?.sentiment_score < -0.1 ? 'text-rose-600' : 'text-primary'}`}>
-                      {(profile?.profile?.sentiment_score * 100).toFixed(0)}%
+                    <p className={`text-2xl font-serif font-bold ${profile?.profile?.sentiment_score > 0.1 ? 'text-emerald-600 dark:text-emerald-400' : profile?.profile?.sentiment_score < -0.1 ? 'text-rose-600 dark:text-rose-400' : 'text-primary'}`}>
+                      {Math.max(-100, Math.min(100, Math.round((profile?.profile?.sentiment_score ?? 0) * 100)))}%
                     </p>
                   </div>
                 </div>
