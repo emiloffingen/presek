@@ -11,7 +11,7 @@ import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, BarChart3, Quote } from 'lucide-react';
+import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
 
@@ -162,10 +162,18 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		{/* Filtering Status */}
 		{(q || category || topic) && (
 			<div class="mb-10 py-4 border-y border-nyt-gray-300 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<h2 class="font-serif text-2xl font-black italic">
-					{q ? `Резултати за: "${q}"` : `${category || topic}`}
-				</h2>
-				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red">Прикажи ги сите вести</a>
+				<div class="flex flex-col gap-1">
+					<h2 class="font-serif text-2xl font-black italic">
+						{q ? `Резултати за: "${q}"` : `${category || topic}`}
+					</h2>
+					{q && (
+						<div class="flex items-center gap-1.5 text-nyt-accent">
+							<Sparkles size={12} />
+							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Сензорно пребарување активно</span>
+						</div>
+					)}
+				</div>
+				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red transition-colors">Прикажи ги сите вести</a>
 			</div>
 		)}
 

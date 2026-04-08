@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import SourceComparisonIsland from '../components/SourceComparisonIsland';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Activity, Zap, ShieldCheck, Info } from 'lucide-react';
 
@@ -104,9 +105,31 @@ function formatStat(val: number) {
                         </tbody>
                     </table>
                 </div>
+
+                <div class="mt-12">
+                    <SourceComparisonIsland client:load allSources={pulseData.map(r => r.source)} />
+                </div>
             </div>
 
             <aside class="space-y-6">
+                <div class="p-6 border border-nyt-accent bg-nyt-accent/5 rounded-lg shadow-sm">
+                    <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2 text-nyt-accent">
+                        <Zap size={14} className="fill-nyt-accent" /> Брзина на Известување
+                    </h3>
+                    <p class="text-[11px] text-muted-foreground mb-4 uppercase font-bold">Кој прв ги објавува вестите?</p>
+                    <div class="space-y-3">
+                        {pulseData.filter(r => r.first_report_count > 0).sort((a,b) => b.first_report_count - a.first_report_count).slice(0, 5).map((row, idx) => (
+                            <div class="flex items-center justify-between border-b border-border/50 pb-2 last:border-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-sans text-[10px] font-black text-nyt-accent w-4">{idx + 1}.</span>
+                                    <span class="font-serif font-bold text-sm">{row.source}</span>
+                                </div>
+                                <span class="bg-secondary px-2 py-0.5 rounded text-[10px] font-black">{row.first_report_count} пати прв</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 <div class="p-6 border border-border bg-secondary/30 rounded-lg">
                     <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Info size={14} /> Методологија на Пулсот

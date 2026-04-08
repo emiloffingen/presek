@@ -222,6 +222,7 @@ const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => artic
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
 const generatedArticle = cluster?.generated_article || '';
+const firstReporter = cluster?.first_reporter || null;
 const verificationReport = cluster?.verification_report || null;
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
@@ -353,6 +354,16 @@ const schema = cluster ? {
 
 							<div class="cluster-header-meta">
 								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
+								{firstReporter && (
+									<>
+										<span>·</span>
+										<span class="flex items-center gap-1">
+											<Zap size={12} className="text-nyt-red fill-nyt-red" /> 
+											<span class="text-nyt-red font-black">ПРВ ОБЈАВИ:</span> {firstReporter.source} 
+											<span class="opacity-60">({getTimeStr(firstReporter.created_at)})</span>
+										</span>
+									</>
+								)}
 								<span>·</span>
 								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извори</span>
 								<span>·</span>

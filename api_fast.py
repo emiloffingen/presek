@@ -963,21 +963,31 @@ async def track_delivery_event(event_type: str, event_id: int = Query(..., ge=1)
 
 @app.get("/api/intelligence/source-pulse")
 async def get_source_pulse():
-    """Aggregates sentiment data by source to show media landscape analysis."""
+    """Aggregates sentiment data and speed metrics by source."""
     # We query cluster_summaries joined with articles to get source-level metrics
+    # Plus a subquery to count how many times they were the earliest article in a cluster
     sql = """
+        WITH first_reporters AS (
+            SELECT DISTINCT ON (cluster_id) source, cluster_id
+            FROM articles
+            ORDER BY cluster_id, created_at ASC
+        )
         SELECT 
             a.source,
             AVG(CAST(s.sentiment->>'score' AS REAL)) as avg_sentiment,
             AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
             AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
-            COUNT(DISTINCT a.cluster_id) as cluster_count
+            COUNT(DISTINCT a.cluster_id) as cluster_count,
+            (SELECT COUNT(*) FROM first_reporters fr 
+             WHERE fr.source = a.source 
+               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE created_at >= NOW() - INTERVAL '7 days')
+            ) as first_report_count
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
         WHERE s.sentiment IS NOT NULL
           AND s.created_at >= NOW() - INTERVAL '7 days'
         GROUP BY a.source
-        HAVING COUNT(DISTINCT a.cluster_id) >= 5
+        HAVING COUNT(DISTINCT a.cluster_id) >= 3
         ORDER BY cluster_count DESC
     """
     rows = db.execute(sql)
@@ -1135,6 +1145,30 @@ async def get_live_map():
         log.error(f"Live Map Error: {e}")
         return {"status": "error", "data": []}
 
+@app.get("/api/intelligence/compare-sources")
+async def compare_sources(s1: str, s2: str):
+    """Side-by-side comparison of two media outlets."""
+    try:
+        sql = """
+            SELECT 
+                a.source,
+                AVG(CAST(s.sentiment->>'score' AS REAL)) as avg_sentiment,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+                COUNT(DISTINCT a.cluster_id) as cluster_count
+            FROM cluster_summaries s
+            JOIN articles a ON s.cluster_id = a.cluster_id
+            WHERE a.source = ANY(%s)
+              AND s.sentiment IS NOT NULL
+              AND s.created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY a.source
+        """
+        rows = db.execute(sql, ([s1, s2],))
+        return {"status": "success", "data": rows}
+    except Exception as e:
+        log.error(f"Source Comparison Error: {e}")
+        return {"status": "error", "data": []}
+
 @app.get("/api/intelligence/international-curated")
 async def get_international_curated(limit: int = 6):
     try:
@@ -1233,14 +1267,8 @@ async def get_news(
             if query_vec:
                 rows = db.hybrid_search(q, query_vec, limit=100)
             else:
-                # Fallback to simple ILIKE if embedding fails. Escape pattern
-                # metacharacters so user input can't act as a wildcard.
-                pattern = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                pattern = f"%{pattern}%"
-                rows = db.execute(
-                    "SELECT * FROM articles WHERE (title ILIKE %s OR description ILIKE %s) LIMIT 100",
-                    (pattern, pattern),
-                )
+                # Fallback to simple FTS if embedding fails
+                rows = db.search_articles(q, limit=100)
         elif entity:
             sql = """
                 SELECT a.* FROM articles a
@@ -1427,6 +1455,11 @@ async def get_cluster_detail(cluster_id: str):
 
         # 5. Build timeline
         chrono_articles = sorted(articles, key=lambda x: x['created_at'])
+        first_reporter = {
+            "source": chrono_articles[0]['source'],
+            "created_at": chrono_articles[0]['created_at']
+        } if chrono_articles else None
+
         timeline = []
         for i, a in enumerate(chrono_articles):
             is_major = (a.get('source_signal') or {}).get('trust_level', 0) >= 0.8
@@ -1452,6 +1485,7 @@ async def get_cluster_detail(cluster_id: str):
                 "cluster_id": cluster_id,
                 "articles": articles,
                 "timeline": timeline,
+                "first_reporter": first_reporter,
                 "synthesis": synthesis,
                 "generated_article": generated_article,
                 "sentiment": sentiment,
