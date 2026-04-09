@@ -18,15 +18,39 @@ interface MediaPulseRadarProps {
   data: SentimentData;
 }
 
+function parseFiniteNumber(value: unknown, fallback: number) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 const MediaPulseRadar: React.FC<MediaPulseRadarProps> = ({ data }) => {
   if (!data || (!data.sentiment && !data.tone_analysis)) return null;
 
   const rawSentiment = data.sentiment || { score: 0 };
   const sentiment = {
-    score: typeof rawSentiment.score === 'number' ? rawSentiment.score : 0,
+    score: clamp(parseFiniteNumber(rawSentiment.score, 0), -1, 1),
     label: rawSentiment.tone || rawSentiment.label || 'неутрален',
   };
-  const tone = data.tone_analysis || { sensationalism: 0, objectivity: 0.5, emotional_charge: 0 };
+  const rawTone = data.tone_analysis || {};
+  const tone = {
+    sensationalism: clamp(parseFiniteNumber(rawTone.sensationalism, 0), 0, 1),
+    objectivity: clamp(parseFiniteNumber(rawTone.objectivity, 0.5), 0, 1),
+    emotional_charge: clamp(parseFiniteNumber(rawTone.emotional_charge, 0), 0, 1),
+  };
 
   const getSentimentColor = (score: number) => {
     if (score > 0.3) return 'text-emerald-600';
