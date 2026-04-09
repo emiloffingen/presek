@@ -8,7 +8,7 @@ import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
-import WhatsAppShareIsland from '../../components/WhatsAppShareIsland.tsx';
+import ShareIsland from '../../components/ShareIsland.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode } from '../../utils/textUtils';
@@ -441,7 +441,7 @@ const schema = cluster ? {
 								<span>·</span>
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
 								<span>·</span>
-								<WhatsAppShareIsland
+								<ShareIsland
 									client:load
 									title={displayHeadline}
 									url={canonicalUrl}
@@ -880,18 +880,6 @@ const schema = cluster ? {
 		color: var(--link-hover);
 		border-color: color-mix(in srgb, var(--link-hover) 42%, var(--border) 58%);
 		background: color-mix(in srgb, var(--link-hover) 10%, var(--card) 90%);
-	}
-
-	.cluster-share-link-whatsapp {
-		border-color: color-mix(in srgb, #22c55e 42%, var(--border) 58%);
-		background: color-mix(in srgb, #22c55e 10%, var(--card) 90%);
-		color: #15803d;
-	}
-
-	.cluster-share-link-whatsapp:hover {
-		color: #166534;
-		border-color: color-mix(in srgb, #16a34a 48%, var(--border) 52%);
-		background: color-mix(in srgb, #16a34a 14%, var(--card) 86%);
 	}
 
 	.cluster-share-link:disabled {
