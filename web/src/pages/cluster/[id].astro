@@ -264,6 +264,7 @@ const shareDescription = (
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
+const shareCardPath = cluster ? `/api/cluster/${cluster.cluster_id}/share-card` : '/og-image.svg';
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${shareImage.startsWith("/") ? shareImage : `/${shareImage}`}`;
 
@@ -398,8 +399,10 @@ const schema = cluster ? {
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
 								<span>·</span>
 								<a 
-									href={`${API_URL}/cluster/${cluster.cluster_id}/share-card`} 
+									href={shareCardPath}
 									target="_blank" 
+									rel="noopener noreferrer"
+									download={`presek-${cluster.cluster_id}.png`}
 									class="flex items-center gap-1 text-nyt-accent hover:underline font-sans text-[11px] font-bold uppercase tracking-wider"
 								>
 									<ImageIcon size={12}/> Сподели како слика
