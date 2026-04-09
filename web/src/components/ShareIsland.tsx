@@ -112,13 +112,13 @@ export default function ShareIsland({
     },
     {
       name: 'Facebook',
-      icon: <Facebook size={14} />,
+      icon: <FacebookIcon size={14} />,
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
       color: 'hover:bg-blue-50 hover:text-blue-700'
     },
     {
       name: 'Twitter / X',
-      icon: <Twitter size={14} />,
+      icon: <TwitterIcon size={14} />,
       url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
       color: 'hover:bg-gray-50 hover:text-black'
     },
@@ -130,7 +130,7 @@ export default function ShareIsland({
     },
     {
         name: 'Instagram',
-        icon: <Instagram size={14} />,
+        icon: <InstagramIcon size={14} />,
         url: `https://www.instagram.com/`, // Link to IG as no direct share web URL
         color: 'hover:bg-pink-50 hover:text-pink-700'
     }
