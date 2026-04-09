@@ -17,6 +17,7 @@ import socket
 import ipaddress
 from pathlib import Path
 
+import html as _html
 import requests
 
 from database import db_manager as db
@@ -59,6 +60,27 @@ from api_helpers import (
 )
 
 log = logging.getLogger("presek")
+
+_CLEAN_ARTIFACTS = [
+    re.compile(r'Read\s+More\s*[»\>\-]*\s*$', re.I),
+    re.compile(r'Прочитај\s+повеќе\s*$', re.I),
+    re.compile(r'Continue\s+reading\s*$', re.I),
+    re.compile(r'\[\s*&#\d+;\s*\]'),
+    re.compile(r'\[\s*\.\.\.\s*\]'),
+    re.compile(r'\s*&#8230;\s*$'),
+    re.compile(r'\s*…\s*$'),
+]
+
+def cleanAndDecode(text: str) -> str:
+    if not text:
+        return ''
+    cleaned = _html.unescape(text)
+    for rx in _CLEAN_ARTIFACTS:
+        cleaned = rx.sub('', cleaned)
+    cleaned = re.sub(r'^[⚪🟢🔴]\s*', '', cleaned)
+    cleaned = re.sub(r'#[^\s#]+', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
 
 validate_required_env()
 app = FastAPI(title="Presek API 6.0", version="6.0.0")
@@ -1038,16 +1060,16 @@ async def get_entity_profile(name: str):
 
     # 3. Get Recent Clusters
     recent_clusters = db.execute("""
-        SELECT 
-            c.cluster_id, 
+        SELECT
+            c.cluster_id,
             (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-            c.created_at,
+            c.updated_at as created_at,
             s.summary,
             s.sentiment
         FROM cluster_metadata c
         LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id
         WHERE %s = ANY(c.tags)
-        ORDER BY c.created_at DESC LIMIT 10
+        ORDER BY c.updated_at DESC LIMIT 10
     """, (name,))
     
     # Process clusters to include bullets and clean sentiment
@@ -1508,7 +1530,7 @@ async def get_cluster_detail(cluster_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        log.error(f"FastAPI Cluster Error: {e}")
+        log.error(f"FastAPI Cluster Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch cluster detail")
 
 

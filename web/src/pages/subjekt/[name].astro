@@ -6,6 +6,7 @@ import EntityIsland from '../../components/EntityIsland';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Footer from '../../components/Footer.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
+import { cleanAndDecode } from '../../utils/textUtils';
 
 const { name } = Astro.params;
 const decodedName = decodeURIComponent(name || "");
@@ -57,9 +58,23 @@ const clusters = entityData?.clusters || [];
                             <p>Сите свежи стории каде {decodedName} влегува како дел од развојот или контекстот.</p>
                         </div>
                         <div class="news-feed-grid">
-                            {clusters.map((cluster: any) => (
-                                <NewsCard cluster={cluster} />
-                            ))}
+                            {clusters.map((cluster: any) => {
+                                if (cluster.articles && cluster.articles.length > 0) {
+                                    return <NewsCard cluster={cluster} />;
+                                }
+                                return (
+                                    <article class="nyt-article">
+                                        <div class="article-body">
+                                            <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
+                                                <h2 class="headline headline-standard" set:html={cleanAndDecode(cluster.title || '')}></h2>
+                                            </a>
+                                            {cluster.bullets && cluster.bullets.length > 0 && (
+                                                <p class="summary">{cluster.bullets[0]}</p>
+                                            )}
+                                        </div>
+                                    </article>
+                                );
+                            })}
                         </div>
                         {clusters.length === 0 && (
                             <div class="entity-empty">

@@ -3,8 +3,9 @@ import he from 'he';
 /**
  * Utility to decode common HTML entities using the robust 'he' library.
  */
-export function decodeHtmlEntities(text: string): string {
+export function decodeHtmlEntities(text: any): string {
     if (!text) return '';
+    if (typeof text !== 'string') text = String(text);
     return he.decode(text);
 }
 
@@ -12,8 +13,9 @@ export function decodeHtmlEntities(text: string): string {
  * Global cleaning and decoding for news text.
  * Strips scraping artifacts and standardizes whitespace.
  */
-export function cleanAndDecode(text: string): string {
+export function cleanAndDecode(text: any): string {
     if (!text) return '';
+    if (typeof text !== 'string') text = String(text);
     
     let cleaned = decodeHtmlEntities(text);
     
