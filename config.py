@@ -117,6 +117,7 @@ RSS_FEEDS = [
     ("Sportmanija",     "https://sportmanija.mk/feed/"),
     ("Fakulteti",       "https://fakulteti.mk/rss"),
     ("Magazin",         "https://magazin.mk/feed/"),
+    ("Portalb",         "https://portalb.mk/feed/"),
 ]
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
@@ -162,7 +163,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
     "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
     "Kajgana", "Pari.com.mk", "Bloomberg Adria", "E-Magazin",
-    "IT.mk", "Sportmanija", "Fakulteti", "Magazin",
+    "IT.mk", "Sportmanija", "Fakulteti", "Magazin", "Portalb",
 })
 
 DIASPORA_FEEDS = [
@@ -209,7 +210,7 @@ SOURCE_CREDIBILITY = {
     "Daily Sabah": 1.4, "TRT World": 1.6, "Balkan Insight": 1.7, "Kurir.rs": 1.2,
     "Blic.rs": 1.3, "Index.hr": 1.5, "Jutarnji": 1.4, "Klix.ba": 1.4, "Vijesti.me": 1.3,
     "Danas.rs": 1.5, "24 Chasa BG": 1.3, "Capital.bg": 1.4, "Telegrafi KS": 1.3,
-    "RTCG": 1.6, "Anadolu Agency": 1.5,
+    "RTCG": 1.6, "Anadolu Agency": 1.5, "Portalb": 1.2,
 }
 DEFAULT_CREDIBILITY = 0.8
 
