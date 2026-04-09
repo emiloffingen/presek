@@ -132,6 +132,12 @@ CURATED_INTERNATIONAL_SOURCES = (
     "Balkan Insight",
     "Daily Sabah",
     "Exit News",
+    "Danas.rs",
+    "24 Chasa BG",
+    "Capital.bg",
+    "Telegrafi KS",
+    "RTCG",
+    "Anadolu Agency",
 )
 
 # Specific per-source limits to prevent low-quality aggregators from flooding the system
@@ -169,6 +175,12 @@ DIASPORA_FEEDS = [
     ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "Балкан"),
     ("Klix.ba",      "https://www.klix.ba/rss",                                                  "Балкан"),
     ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "Балкан"),
+    ("Danas.rs",     "https://www.danas.rs/feed/",                                               "Балкан"),
+    ("24 Chasa BG",  "https://www.24chasa.bg/rss",                                              "Балкан"),
+    ("Capital.bg",   "https://www.capital.bg/rss/",                                              "Балкан"),
+    ("Telegrafi KS", "https://telegrafi.com/feed/",                                              "Балкан"),
+    ("RTCG",         "https://www.rtcg.me/rss.html",                                            "Балкан"),
+    ("Anadolu Agency", "https://www.aa.com.tr/en/rss/default?cat=world",                        "Балкан"),
 ]
 
 SOURCE_CREDIBILITY = {
@@ -196,6 +208,8 @@ SOURCE_CREDIBILITY = {
     "Слободна Европа Balkan": 1.7,
     "Daily Sabah": 1.4, "TRT World": 1.6, "Balkan Insight": 1.7, "Kurir.rs": 1.2,
     "Blic.rs": 1.3, "Index.hr": 1.5, "Jutarnji": 1.4, "Klix.ba": 1.4, "Vijesti.me": 1.3,
+    "Danas.rs": 1.5, "24 Chasa BG": 1.3, "Capital.bg": 1.4, "Telegrafi KS": 1.3,
+    "RTCG": 1.6, "Anadolu Agency": 1.5,
 }
 DEFAULT_CREDIBILITY = 0.8
 
