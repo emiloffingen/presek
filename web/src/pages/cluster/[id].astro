@@ -212,6 +212,34 @@ const articleRows = cluster
 			relativeTime: getRelativeTimeStr(article.created_at),
 	  }))
 	: [];
+const confirmRows = articleRows.filter((article: any) => article.relationship?.tone === 'confirm');
+const contextRows = articleRows.filter((article: any) => article.relationship?.tone === 'context');
+const contrastRows = articleRows.filter((article: any) => article.relationship?.tone === 'contrast');
+const comparisonHighlights = [
+	{
+		label: 'Заедничка линија',
+		value: confirmRows.length > 0 ? `${confirmRows.length + 1} извори` : `${articleRows.length} извори`,
+		copy:
+			confirmRows.length > 0
+				? `Главниот развој најјасно се повторува кај ${[leadArticle?.source, ...confirmRows.slice(0, 2).map((item: any) => item.source)].filter(Boolean).join(' · ')}.`
+				: 'Изворите во кластерот главно ја следат истата основна линија.',
+	},
+	{
+		label: 'Нов агол',
+		value: contrastRows.length > 0 ? `${contrastRows.length} извори` : contextRows.length > 0 ? `${contextRows.length} извори` : 'Слична рамка',
+		copy:
+			contrastRows.length > 0
+				? `${contrastRows.slice(0, 2).map((item: any) => item.source).join(' · ')} носат поинаков акцент или отвораат друг аспект.`
+				: contextRows.length > 0
+				? `${contextRows.slice(0, 2).map((item: any) => item.source).join(' · ')} додаваат дополнителен контекст и реакција.`
+				: 'Во овој кластер засега нема силно издвоен спротивен агол.',
+	},
+	{
+		label: 'Почни со',
+		value: articleRows[0]?.source || 'Водечки извор',
+		copy: articleRows[0]?.sourceSignal?.role_note || articleRows[0]?.relationship?.description || 'Прво прочитајте го водечкиот извор, па потоа споредете ги другите верзии.',
+	},
+];
 const suggestedQuestions = [
 	'Што е најважното ново во оваа вест?',
 	'Како се разликуваат изворите во известувањето?',
@@ -578,6 +606,19 @@ const schema = cluster ? {
 
 						{/* Articles List */}
 						<section class="cluster-module">
+							<div class="cluster-module-head">
+								<Newspaper size={18} className="text-foreground" />
+								<h2 class="nyt-section-label tracking-[0.2em]">КАКО ДА ГО ЧИТАТЕ КЛАСТЕРОТ</h2>
+							</div>
+							<div class="comparison-digest">
+								{comparisonHighlights.map((item) => (
+									<div class="comparison-digest-card">
+										<p class="comparison-digest-label">{item.label}</p>
+										<p class="comparison-digest-value">{item.value}</p>
+										<p class="comparison-digest-copy">{item.copy}</p>
+									</div>
+								))}
+							</div>
 							<h2 class="cluster-section-title">Сите Извори</h2>
 							<div class="article-list">
 								{articleRows.map((a: any) => (
@@ -603,15 +644,12 @@ const schema = cluster ? {
 												{a.title}
 											</h3>
 										</a>
-										{a.sourceSignal?.role_label && (
-											<p class="article-row-trust">
-												<strong>{a.sourceSignal.role_label}</strong>{a.sourceSignal.source_category ? ` · ${a.sourceSignal.source_category}` : ''}
-											</p>
-										)}
-										<p class="article-row-note">{a.relationship.description}</p>
-										{a.sourceSignal?.role_note && (
-											<p class="article-row-note article-row-note-trust">{a.sourceSignal.role_note}</p>
-										)}
+										<p class="article-row-note">
+											<strong>{a.sourceSignal?.role_label || a.relationship.label}</strong>
+											{a.sourceSignal?.source_category ? ` · ${a.sourceSignal.source_category}` : ''}
+											{' · '}
+											{a.sourceSignal?.role_note || a.relationship.description}
+										</p>
 										<p class="article-row-summary">{a.description}</p>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
 											<Link2 size={12} /> Отвори го оригиналот
@@ -1077,6 +1115,45 @@ const schema = cluster ? {
 		flex-direction: column;
 	}
 
+	.comparison-digest {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.8rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.comparison-digest-card {
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+	}
+
+	.comparison-digest-label {
+		margin: 0 0 0.35rem;
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.comparison-digest-value {
+		margin: 0 0 0.3rem;
+		font-family: var(--font-serif);
+		font-size: 1.2rem;
+		line-height: 1.05;
+		color: var(--foreground);
+	}
+
+	.comparison-digest-copy {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--secondary-foreground);
+	}
+
 	.article-row {
 		padding: 1rem 0;
 		border-top: 1px solid var(--border);
@@ -1196,25 +1273,17 @@ const schema = cluster ? {
 		margin: 0 0 0.45rem;
 		font-family: var(--font-nyt-body);
 		font-size: 0.88rem;
-		line-height: 1.45;
-		color: var(--nyt-gray-500);
+		line-height: 1.5;
+		color: var(--secondary-foreground);
 	}
 
-	.article-row-trust {
-		margin: 0 0 0.35rem;
+	.article-row-note strong {
 		font-family: var(--font-sans);
 		font-size: 0.66rem;
-		font-weight: 800;
+		font-weight: 900;
 		letter-spacing: 0.06em;
-		color: var(--foreground);
-	}
-
-	.article-row-trust strong {
+		text-transform: uppercase;
 		color: var(--nyt-accent);
-	}
-
-	.article-row-note-trust {
-		color: color-mix(in srgb, var(--secondary-foreground) 88%, var(--muted-foreground) 12%);
 	}
 
 	.coverage-metrics {
@@ -1326,6 +1395,10 @@ const schema = cluster ? {
 
 		.perspective-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.comparison-digest {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
 
 		.cluster-headline {

@@ -67,8 +67,8 @@ class _FakeJSONResponse(_FakeResponse):
 
 
 class _FakeFileResponse(_FakeResponse):
-    def __init__(self, path, media_type=None, status_code=200):
-        super().__init__(content=None, media_type=media_type, status_code=status_code)
+    def __init__(self, path, media_type=None, status_code=200, headers=None):
+        super().__init__(content=None, media_type=media_type, status_code=status_code, headers=headers or {})
         self.path = path
 
 
@@ -211,7 +211,7 @@ def test_fastapi_rate_limit_path_helper_matches_expensive_routes():
     assert api_fast._is_rate_limited_path("/api/chat_cluster") is True
     assert api_fast._is_rate_limited_path("/api/chat/stream") is True
     assert api_fast._is_rate_limited_path("/api/cluster/abc123def456/ask") is True
-    assert api_fast._is_rate_limited_path("/api/news") is False
+    assert api_fast._is_rate_limited_path("/api/news") is True
 
 
 def test_fastapi_security_headers_helper_sets_expected_headers():
@@ -237,6 +237,54 @@ def test_fastapi_profile_sync_init_creates_token():
     assert data["token"] == "sync-token-123"
     assert data["profile"]["followedTopics"] == []
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_client_ip_uses_trusted_x_real_ip_from_local_proxy():
+    api_fast = _load_api_fast()
+    request = _FakeRequest({}, headers={"X-Real-IP": "198.51.100.24"}, client_host="127.0.0.1")
+
+    assert api_fast._client_ip_for_request(request) == "198.51.100.24"
+
+
+def test_fastapi_client_ip_ignores_spoofed_forwarded_for_header():
+    api_fast = _load_api_fast()
+    request = _FakeRequest(
+        {},
+        headers={"X-Forwarded-For": "203.0.113.9", "X-Real-IP": "198.51.100.24"},
+        client_host="127.0.0.1",
+    )
+
+    assert api_fast._client_ip_for_request(request) == "198.51.100.24"
+
+
+def test_fastapi_public_health_omits_internal_connection_details():
+    api_fast = _load_api_fast()
+    request = _FakeRequest({}, headers={}, client_host="198.51.100.24")
+
+    with patch.object(api_fast, "_probe_database", return_value={"ok": True, "article_count": 8, "size_mb": 0.0, "error": "db_size probe failed"}), \
+         patch.object(api_fast, "_probe_redis", return_value={"ok": False, "url": "redis://user:secret@localhost:6379/0", "error": "connection refused"}):
+        data = asyncio.run(api_fast.health(request))
+
+    assert data["status"] == "degraded"
+    assert data["database"]["ok"] is True
+    assert "error" not in data["database"]
+    assert data["redis"]["ok"] is False
+    assert "url" not in data["redis"]
+    assert "error" not in data["redis"]
+
+
+def test_fastapi_admin_health_keeps_diagnostics():
+    api_fast = _load_api_fast()
+    request = _FakeRequest({}, headers={"X-Admin-Token": "admin-secret"}, client_host="198.51.100.24")
+
+    with patch.dict(os.environ, {"PRESEK_ADMIN_TOKEN": "admin-secret"}, clear=False), \
+         patch.object(api_fast, "_probe_database", return_value={"ok": True, "article_count": 8, "size_mb": 0.0, "error": "db_size probe failed"}), \
+         patch.object(api_fast, "_probe_redis", return_value={"ok": False, "url": "redis://localhost:6379/0", "error": "connection refused"}):
+        data = asyncio.run(api_fast.health(request))
+
+    assert data["database"]["error"] == "db_size probe failed"
+    assert data["redis"]["url"] == "redis://localhost:6379/0"
+    assert data["redis"]["error"] == "connection refused"
 
 
 def test_fastapi_profile_sync_get_returns_normalized_profile():
@@ -606,13 +654,13 @@ def test_fastapi_get_sources_includes_paused_sources():
 def test_fastapi_proxy_serves_local_static_files():
     api_fast = _load_api_fast()
 
-    with patch.object(api_fast.os.path, "exists", return_value=True), \
-         patch("builtins.open", mock_open(read_data=b"svg-bytes")):
+    with patch.object(api_fast.Path, "exists", return_value=True), \
+         patch.object(api_fast.Path, "is_file", return_value=True):
         response = asyncio.run(api_fast.proxy_image("/static/example.svg", None))
 
     assert response.status_code == 200
     assert response.media_type == "image/svg+xml"
-    assert response.content == b"svg-bytes"
+    assert str(response.path).endswith("static/example.svg")
 
 
 def test_fastapi_serves_sw_and_manifest_as_files():

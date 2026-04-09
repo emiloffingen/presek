@@ -49,12 +49,16 @@ export default function NewsletterIsland() {
 
   return (
     <section className="rail-module border border-border p-6 rounded-lg bg-card">
-      <div className="flex items-center gap-2 mb-4">
+      <p className="mb-2 font-sans text-[9px] font-black uppercase tracking-[0.22em] text-nyt-accent">Секое утро во едно писмо</p>
+      <div className="flex items-center gap-2 mb-3">
         <Mail size={16} className="text-nyt-accent" />
         <h3 className="font-sans text-[11px] font-black uppercase tracking-widest">Утрински Брифинг</h3>
       </div>
-      <p className="font-serif text-base leading-snug mb-4">
-        Добијте го најважниот пресек на денот, секое утро.
+      <p className="font-serif text-[1.05rem] leading-snug mb-2">
+        Најважните теми, собрани и подредени пред да почне денот.
+      </p>
+      <p className="text-sm leading-relaxed text-secondary-foreground mb-4">
+        Испраќаме краток избор од приказните што добиле најмногу потврди, внимание и контекст.
       </p>
       
       <form onSubmit={handleSubmit} className="space-y-3">

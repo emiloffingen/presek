@@ -10,6 +10,7 @@ interface Props {
 	canonical?: string;
 	type?: string;
 	schema?: object;
+	robots?: string;
 }
 
 const {
@@ -19,10 +20,13 @@ const {
 	canonical,
 	type = "website",
 	schema,
+	robots,
 } = Astro.props;
 
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 const pageTitle = title.includes("Пресек") ? title : `${title} | Пресек`;
+const adSenseClient = String(import.meta.env.PUBLIC_ADSENSE_CLIENT || '').trim();
+const shouldLoadAds = /^ca-pub-\d{10,}$/.test(adSenseClient) && adSenseClient !== 'ca-pub-0000000000000000';
 
 // Canonical logic: 
 // 1. If explicit canonical is passed, use it.
@@ -55,6 +59,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="apple-mobile-web-app-title" content="Пресек" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
+		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
 		<meta property="og:site_name" content="Пресек" />
 		<meta property="og:locale" content="mk_MK" />
@@ -70,8 +75,9 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={imageUrl} />
 		
-		{/* Google AdSense - Replace pub-0000000000000000 with your actual publisher ID */}
-		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
+		{shouldLoadAds && (
+			<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adSenseClient}`} crossorigin="anonymous"></script>
+		)}
 		
 		<title>{pageTitle}</title>
 

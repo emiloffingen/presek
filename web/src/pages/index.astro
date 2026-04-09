@@ -95,6 +95,8 @@ const focusEntities = topEntities
 const leadCluster = clusters[0] ?? null;
 const supportingClusters = clusters.slice(1, 5);
 const feedClusters = clusters.slice(5);
+const continuingClusters = feedClusters.filter((cluster: any) => (cluster?.articles?.length || 0) >= 2);
+const wireClusters = feedClusters.filter((cluster: any) => (cluster?.articles?.length || 0) < 2).slice(0, 8);
 
 function getLeadSignal(cluster: any) {
 	const count = cluster?.articles?.length || 0;
@@ -272,21 +274,36 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 						<section class="feed-section motion-rise motion-delay-3">
 						<div class="section-heading-row">
 							<h2 class="section-title">Понатаму во денот</h2>
-							<p class="section-note">Развојни и придружни приказни што вреди да останат во видното поле.</p>
+							<p class="section-note">Развојни приказни што веќе имаат повеќе од еден извор и вреди да останат во видното поле.</p>
 						</div>
 						<div class="news-feed-grid">
-							{feedClusters.map((cluster) => (
+							{continuingClusters.map((cluster) => (
 								<NewsCard cluster={cluster} />
 							))}
 						</div>
 					</section>
 				)}
+
+					{wireClusters.length > 0 && (
+						<section class="feed-section feed-section-wire motion-rise motion-delay-3">
+							<div class="section-heading-row">
+								<h2 class="section-title">Само објавено</h2>
+								<p class="section-note">Свежи единечни објави што сè уште чекаат потврда или пошироко покривање.</p>
+							</div>
+							<div class="news-feed-grid">
+								{wireClusters.map((cluster) => (
+									<NewsCard cluster={cluster} />
+								))}
+							</div>
+						</section>
+					)}
 			</div>
 
 			<aside class="front-rail">
 				<NewsletterIsland client:load />
 
 				<section class="rail-module rail-pulse motion-rise-fast motion-delay-1">
+					<p class="rail-kicker">Редакциски сигнал</p>
 					<h3 class="rail-title">
 						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
 					</h3>
@@ -306,7 +323,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 							{typeof freshness.age_minutes === 'number' && <strong>{freshness.age_minutes} мин</strong>}
 						</div>
 					)}
-					<p class="rail-note">Каде се собира најмногу медиумско внимание, не само каде прво се појавила објавата.</p>
+					<p class="rail-note">Брз ориентир за тоа каде денес се натрупува вниманието, а не само каде прво излегла веста.</p>
 				</section>
 
 				<HomeRailSuggestionsIsland client:load />
@@ -315,6 +332,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 				{stats?.quote_of_the_day && (
 					<section class="rail-module rail-quote motion-rise-fast">
+						<p class="rail-kicker">Од денешната слика</p>
 						<h3 class="rail-title flex items-center gap-2">
 							<Quote size={14} className="text-nyt-accent" /> ЦИТАТ НА ДЕНОТ
 						</h3>
@@ -335,6 +353,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 				)}
 
 				<section class="rail-module motion-rise-fast motion-delay-2">
+					<p class="rail-kicker">Што најчесто се повторува</p>
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
 					<div class="focus-cloud">
 						{focusEntities.map((ent: any) => (
@@ -343,7 +362,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 							</a>
 						))}
 					</div>
-					<p class="rail-note">Имиња и теми што најупорно се повторуваат низ денешната медиумска слика.</p>
+					<p class="rail-note">Имиња и теми што најупорно се враќаат низ денешните објави и реакции.</p>
 				</section>
 			</aside>
 		</div>
@@ -507,12 +526,20 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	.lead-signal,
 	.rail-note {
 		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		font-weight: 500;
+		line-height: 1.5;
+		color: var(--muted-foreground);
+	}
+
+	.lead-signal {
 		font-family: var(--font-sans);
 		font-size: 0.68rem;
 		font-weight: 800;
 		letter-spacing: 0.06em;
+		line-height: 1.2;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
 	}
 
 	.freshness-chip {
@@ -709,9 +736,21 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	}
 
 	.rail-module {
-		padding: 0.9rem;
+		padding: 1rem;
 		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 92%, var(--secondary) 8%), color-mix(in srgb, var(--background) 84%, var(--secondary) 16%));
+		box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 78%, transparent);
+	}
+
+	.rail-kicker {
+		margin: 0 0 0.55rem;
+		font-family: var(--font-sans);
+		font-size: 0.58rem;
+		font-weight: 900;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
 	}
 
 	.rail-title {
@@ -719,12 +758,12 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		align-items: center;
 		gap: 0.5rem;
 		font-family: var(--font-sans);
-		font-size: 0.74rem;
+		font-size: 0.72rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		padding-bottom: 0.8rem;
-		margin: 0 0 0.9rem;
+		padding-bottom: 0.7rem;
+		margin: 0 0 0.75rem;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -800,7 +839,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	}
 
 	.focus-chip {
-		padding: 0.42rem 0.58rem;
+		padding: 0.45rem 0.62rem;
 		border: 1px solid var(--border);
 		font-family: var(--font-sans);
 		font-size: 0.62rem;
@@ -811,6 +850,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		text-decoration: none;
 		max-width: 100%;
 		overflow-wrap: anywhere;
+		background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
 	}
 
 	.focus-chip:hover {

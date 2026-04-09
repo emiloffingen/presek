@@ -15,7 +15,6 @@ from health import (
     _source_quality_payload,
     _probe_database,
     _probe_redis,
-    register_health_routes,
 )
 
 
@@ -167,27 +166,3 @@ class TestHealthProbes:
             result = _probe_redis()
         assert result["ok"] is False
         assert "connection refused" in result["error"]
-
-
-class TestHealthRoute:
-    def test_health_route_exposes_probe_errors(self):
-        from flask import Flask
-
-        app = Flask(__name__)
-        register_health_routes(app)
-
-        with patch("health._probe_database", return_value={"ok": True, "article_count": 8, "size_mb": 0.0, "error": "db_size probe failed: permission denied"}), \
-             patch("health._probe_redis", return_value={"ok": False, "url": "redis://localhost:6379/0", "error": "connection refused"}), \
-             patch("health._get_redis") as mock_get_redis:
-            mock_get_redis.return_value.get.return_value = None
-            mock_get_redis.return_value.hgetall.return_value = {}
-            client = app.test_client()
-            resp = client.get("/api/health")
-
-        assert resp.status_code == 200
-        data = resp.get_json()
-        assert data["status"] == "degraded"
-        assert data["database"]["ok"] is True
-        assert "db_size probe failed" in data["database"]["error"]
-        assert data["redis"]["ok"] is False
-        assert "connection refused" in data["redis"]["error"]

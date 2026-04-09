@@ -12,6 +12,8 @@ const { cluster, isLead = false } = Astro.props;
 const main = cluster.articles[0];
 const sourceSignal = main?.source_signal || {};
 const sourceCount = cluster.articles.length;
+const showTrustBadge = sourceCount >= 2 && Boolean(sourceSignal.trust_label);
+const showSignificanceLabel = cluster.is_breaking || sourceCount >= 3;
 const significanceLabel =
 	sourceCount >= 6 ? 'Широко покриено' :
 	sourceCount >= 4 ? 'Следена тема' :
@@ -51,6 +53,27 @@ function getCardSummary(article: any, lead = false) {
 
 const displaySummary = getCardSummary(main, isLead);
 
+function getWhyItMatters() {
+	if (sourceSignal.role_label && sourceCount >= 4) {
+		return `${sourceSignal.role_label}. Темата веќе се потврдува и се проширува низ повеќе редакции.`;
+	}
+	if (sourceSignal.role_label && sourceCount >= 2) {
+		return `${sourceSignal.role_label}. Следете ја за нови потврди и реакции.`;
+	}
+	if (sourceCount >= 6) {
+		return `Развој со широко медиумско покривање од ${sourceCount} извори.`;
+	}
+	if (sourceCount >= 4) {
+		return 'Повеќе редакции веќе додаваат нови детали.';
+	}
+	if (sourceCount >= 2) {
+		return 'Приказна што почнува да добива потврди и поширок контекст.';
+	}
+	return 'Прв сигнал. Вреди да се следи дали ќе добие поширока потврда.';
+}
+
+const whyItMatters = getWhyItMatters();
+
 // Relative time format
 function getTimeStr(dateStr: string) {
     try {
@@ -66,14 +89,14 @@ function getTimeStr(dateStr: string) {
 	<div class="article-body">
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
-			{sourceSignal.trust_label && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
+			{showTrustBadge && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
 			{cluster.is_breaking && <span class="breaking-label">Во живо</span>}
 			{cluster.has_fact_check && (
 				<span class="fact-check-badge">
 					<ShieldCheck size={10} /> ФАКТ-ЧЕК
 				</span>
 			)}
-			<span class="significance-label">{significanceLabel}</span>
+			{showSignificanceLabel && <span class="significance-label">{significanceLabel}</span>}
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
@@ -82,13 +105,7 @@ function getTimeStr(dateStr: string) {
 		</a>
 
 		<p class="why-it-matters">
-			{sourceSignal.role_label
-				? `${sourceSignal.role_label}. ${sourceCount >= 4 ? 'Повеќе редакции веќе ја потврдуваат или прошируваат темата.' : 'Следете ја приказната за нови потврди и реакции.'}`
-				: sourceCount >= 6
-				? `Темата се развива низ ${sourceCount} извори со пошироко медиумско покривање.`
-				: sourceCount >= 4
-				? `Повеќе редакции ја следат приказната и додаваат нови детали.`
-				: `Клучен развој што вреди да се следи додека приказната се развива.`}
+			{whyItMatters}
 		</p>
 
 		{displaySummary && (
@@ -225,10 +242,11 @@ function getTimeStr(dateStr: string) {
 	.why-it-matters {
 		margin: 0 0 0.8rem;
 		font-family: var(--font-sans);
-		font-size: 0.66rem;
+		font-size: 0.63rem;
 		font-weight: 800;
 		letter-spacing: 0.06em;
 		color: var(--muted-foreground);
+		max-width: 42ch;
 	}
 
 	.article-meta {
@@ -297,7 +315,7 @@ function getTimeStr(dateStr: string) {
 
 	.significance-label {
 		font-family: var(--font-sans);
-		font-size: 0.6rem;
+		font-size: 0.56rem;
 		font-weight: 900;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;

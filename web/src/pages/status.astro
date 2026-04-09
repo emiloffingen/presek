@@ -40,7 +40,7 @@ function formatUptime(seconds?: number) {
 }
 ---
 
-<Layout title="Статус">
+<Layout title="Статус" robots="noindex, nofollow">
   <NYTHeader />
   <main class="site-layout py-20">
     <article class="status-shell">
@@ -100,7 +100,6 @@ function formatUptime(seconds?: number) {
                 <p class={`status-line ${statusClass(health?.redis?.ok)}`}>
                   {statusLabel(health?.redis?.ok)}
                 </p>
-                {health?.redis?.url && <p class="status-detail">{health.redis.url}</p>}
                 {health?.redis?.error && <p class="status-detail">{health.redis.error}</p>}
               </section>
             </div>

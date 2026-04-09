@@ -279,6 +279,25 @@ def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
 
 
+def _parse_ip_literal(value: str) -> str:
+    try:
+        return str(ipaddress.ip_address(str(value or "").strip()))
+    except ValueError:
+        return ""
+
+
+def _client_ip_for_request(request: Request) -> str:
+    client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
+    real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
+
+    # Only trust proxy-provided client IPs when the direct peer is our local reverse proxy.
+    if client_host in {"127.0.0.1", "::1"} and real_ip:
+        return real_ip
+    if client_host:
+        return client_host
+    return "0.0.0.0"
+
+
 def _apply_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -662,11 +681,7 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
 async def apply_runtime_policies(request: Request, call_next):
 
     if _is_rate_limited_path(request.url.path):
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            client_host = forwarded.split(",")[0].strip()
-        else:
-            client_host = str(getattr(getattr(request, "client", None), "host", "") or "0.0.0.0")
+        client_host = _client_ip_for_request(request)
 
         if not check_rate_limit(client_host):
 
@@ -676,18 +691,32 @@ async def apply_runtime_policies(request: Request, call_next):
     return _apply_security_headers(response)
 
 @app.get("/api/health")
-async def health():
+async def health(request: Request):
     db_status = _probe_database()
     redis_status = _probe_redis()
     uptime_seconds = int((datetime.datetime.now(datetime.timezone.utc) - _start_time).total_seconds())
     overall = "ok" if (db_status["ok"] and redis_status["ok"]) else "degraded"
-    return {
+    payload = {
         "status": overall,
         "version": "6.0.0-async",
         "uptime_seconds": uptime_seconds,
-        "database": db_status,
-        "redis": redis_status,
+        "database": {
+            "ok": db_status["ok"],
+            "article_count": db_status.get("article_count", 0),
+            "size_mb": db_status.get("size_mb", 0.0),
+        },
+        "redis": {
+            "ok": redis_status["ok"],
+        },
     }
+    if _source_admin_authorized(request):
+        if db_status.get("error"):
+            payload["database"]["error"] = db_status["error"]
+        if redis_status.get("url"):
+            payload["redis"]["url"] = redis_status["url"]
+        if redis_status.get("error"):
+            payload["redis"]["error"] = redis_status["error"]
+    return payload
 
 
 @app.get("/sw.js")
