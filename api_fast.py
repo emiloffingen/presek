@@ -2431,6 +2431,7 @@ async def get_cluster_share_card(cluster_id: str):
     from io import BytesIO
     from PIL import Image, ImageDraw, ImageFont
     import textwrap
+    from urllib.parse import quote
 
     # 1. Fetch Data
     articles = db.execute(
@@ -2445,16 +2446,37 @@ async def get_cluster_share_card(cluster_id: str):
         (cluster_id,)
     )
     
-    headline = articles[0]["title"]
+    headline = cleanAndDecode(articles[0]["title"])
     category = articles[0]["category"] or "ВЕСТИ"
     source_count = len(articles)
+    source_names = []
+    for article in articles:
+        source = (article.get("source") or "").strip()
+        if source and source not in source_names:
+            source_names.append(source)
+    source_preview = " · ".join(source_names[:3])
+    if len(source_names) > 3:
+        source_preview += " · +"
+    share_date = datetime.datetime.now().strftime('%d.%m.%Y')
+
+    bullets = []
+    if s_row and s_row["summary"]:
+        bullets = [
+            re.sub(r'^(што се случува|заедничка линија|покриеност|што останува отворено)\s*:\s*', '', re.sub(r'^[-•*]\s*', '', line).strip(), flags=re.IGNORECASE)
+            for line in s_row["summary"].split('\n')
+            if line.strip() and not line.strip().lower().startswith('статии:')
+        ]
+        bullets = [cleanAndDecode(item) for item in bullets if item][:3]
     
     # 2. Image Config
     W, H = 1200, 630
-    BG_COLOR = (15, 13, 12) # Matches our midnight dark mode
-    ACCENT_COLOR = (165, 197, 255) # Trust Blue
-    TEXT_COLOR = (242, 236, 226) # Off-white
+    BG_COLOR = (15, 13, 12)
+    PANEL_COLOR = (24, 21, 19)
+    PANEL_ACCENT = (32, 38, 48)
+    ACCENT_COLOR = (165, 197, 255)
+    TEXT_COLOR = (242, 236, 226)
     MUTED_TEXT = (154, 143, 130)
+    BORDER_COLOR = (51, 45, 41)
     
     img = Image.new("RGB", (W, H), color=BG_COLOR)
     draw = ImageDraw.Draw(img)
@@ -2464,63 +2486,79 @@ async def get_cluster_share_card(cluster_id: str):
         font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
         font_reg_path = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
         
-        title_font = ImageFont.truetype(font_path, 64)
+        title_font = ImageFont.truetype(font_path, 58)
         kicker_font = ImageFont.truetype(font_path, 24)
-        body_font = ImageFont.truetype(font_reg_path, 32)
+        label_font = ImageFont.truetype(font_path, 20)
+        body_font = ImageFont.truetype(font_reg_path, 30)
         footer_font = ImageFont.truetype(font_reg_path, 22)
     except:
         title_font = ImageFont.load_default()
         kicker_font = ImageFont.load_default()
+        label_font = ImageFont.load_default()
         body_font = ImageFont.load_default()
         footer_font = ImageFont.load_default()
 
     # 4. Draw Layout
-    padding = 80
-    curr_y = padding
-    
-    # Draw Logo / Kicker
-    draw.text((padding, curr_y), category.upper(), font=kicker_font, fill=ACCENT_COLOR)
-    curr_y += 45
-    
-    # Draw Headline
-    wrapped_title = textwrap.wrap(cleanAndDecode(headline), width=35)
+    padding = 72
+    inner_x0, inner_y0 = padding - 18, padding - 12
+    inner_x1, inner_y1 = W - padding + 18, H - padding + 12
+    draw.rounded_rectangle((inner_x0, inner_y0, inner_x1, inner_y1), radius=28, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
+    draw.rounded_rectangle((inner_x0 + 24, inner_y0 + 24, inner_x1 - 24, inner_y0 + 86), radius=18, fill=PANEL_ACCENT)
+
+    curr_y = padding + 8
+    draw.text((padding + 18, curr_y), "ПРЕСЕК СУБЛИМАТ", font=label_font, fill=ACCENT_COLOR)
+
+    badge_text = f"{source_count} ИЗВОРИ"
+    badge_width = draw.textlength(badge_text, font=label_font) + 36
+    badge_x0 = W - padding - badge_width
+    badge_y0 = curr_y - 8
+    draw.rounded_rectangle((badge_x0, badge_y0, badge_x0 + badge_width, badge_y0 + 38), radius=18, outline=ACCENT_COLOR, width=2)
+    draw.text((badge_x0 + 18, curr_y), badge_text, font=label_font, fill=ACCENT_COLOR)
+
+    curr_y += 72
+
+    wrapped_title = textwrap.wrap(headline, width=34)
     for line in wrapped_title[:3]:
         draw.text((padding, curr_y), line, font=title_font, fill=TEXT_COLOR)
-        curr_y += 75
-    
-    curr_y += 30
-    # Draw separator
-    draw.line([(padding, curr_y), (W - padding, curr_y)], fill=(51, 45, 41), width=2)
-    curr_y += 40
-    
-    # Draw Sublimate Bullets
-    if s_row and s_row["summary"]:
-        bullets = [
-            re.sub(r'^[-•*]\s*', '', line).strip()
-            for line in s_row["summary"].split('\n')
-            if line.strip() and not line.strip().lower().startswith('статии:')
-        ][:2] # Only top 2 for the card
-        
-        for bullet in bullets:
-            wrapped_bullet = textwrap.wrap(cleanAndDecode(bullet), width=65)
-            # Draw bullet point
-            draw.text((padding, curr_y), "●", font=body_font, fill=ACCENT_COLOR)
-            for line in wrapped_bullet[:2]:
-                draw.text((padding + 40, curr_y), line, font=body_font, fill=TEXT_COLOR)
-                curr_y += 42
-            curr_y += 15
-    else:
-        # Fallback if no synthesis
-        draw.text((padding, curr_y), f"Покриено од {source_count} извори во реално време.", font=body_font, fill=MUTED_TEXT)
+        curr_y += 68
 
-    # Draw Footer
-    footer_y = H - padding
-    draw.text((padding, footer_y), "PRESEK.LIVE", font=kicker_font, fill=TEXT_COLOR)
-    
-    stats_str = f"{source_count} ИЗВОРИ  ·  {datetime.datetime.now().strftime('%d.%m.%Y')}"
-    draw.text((W - padding - draw.textlength(stats_str, font=footer_font), footer_y + 4), stats_str, font=footer_font, fill=MUTED_TEXT)
+    meta_y = curr_y + 6
+    draw.text((padding, meta_y), category.upper(), font=kicker_font, fill=MUTED_TEXT)
+    if source_preview:
+        source_x = padding + draw.textlength(category.upper(), font=kicker_font) + 28
+        draw.text((source_x, meta_y), source_preview, font=footer_font, fill=MUTED_TEXT)
+    curr_y = meta_y + 52
+
+    draw.line([(padding, curr_y), (W - padding, curr_y)], fill=BORDER_COLOR, width=2)
+    curr_y += 28
+
+    if bullets:
+        for bullet in bullets[:2]:
+            wrapped_bullet = textwrap.wrap(bullet, width=58)
+            draw.text((padding, curr_y), "●", font=body_font, fill=ACCENT_COLOR)
+            bullet_y = curr_y
+            for line in wrapped_bullet[:2]:
+                draw.text((padding + 38, bullet_y), line, font=body_font, fill=TEXT_COLOR)
+                bullet_y += 38
+            curr_y = bullet_y + 12
+    else:
+        fallback = f"Покриено од {source_count} извори, со сумиран контекст и споредба на аглите во известувањето."
+        for line in textwrap.wrap(fallback, width=60)[:3]:
+            draw.text((padding, curr_y), line, font=body_font, fill=MUTED_TEXT)
+            curr_y += 38
+
+    footer_y = H - padding + 6
+    draw.text((padding, footer_y), "presek.live", font=kicker_font, fill=TEXT_COLOR)
+    stats_str = f"{share_date}  ·  сподели ја веста како слика"
+    draw.text((W - padding - draw.textlength(stats_str, font=footer_font), footer_y + 2), stats_str, font=footer_font, fill=MUTED_TEXT)
 
     # 5. Output
     out = BytesIO()
     img.save(out, format="PNG")
-    return Response(content=out.getvalue(), media_type="image/png")
+    safe_slug = re.sub(r"[^a-z0-9]+", "-", headline.lower()).strip("-")[:48] or cluster_id
+    filename = f"presek-{safe_slug}-{cluster_id}.png"
+    return Response(
+        content=out.getvalue(),
+        media_type="image/png",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )

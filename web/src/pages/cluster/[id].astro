@@ -403,9 +403,10 @@ const schema = cluster ? {
 									target="_blank" 
 									rel="noopener noreferrer"
 									download={`presek-${cluster.cluster_id}.png`}
-									class="flex items-center gap-1 text-nyt-accent hover:underline font-sans text-[11px] font-bold uppercase tracking-wider"
+									class="cluster-share-link"
+									title="Преземи брендирана слика за оваа вест"
 								>
-									<ImageIcon size={12}/> Сподели како слика
+									<ImageIcon size={12}/> Преземи слика
 								</a>
 								{synthesisUpdatedAt && (
 									<>
@@ -817,6 +818,28 @@ const schema = cluster ? {
 
 	.cluster-preference-actions {
 		margin-top: 0.8rem;
+	}
+
+	.cluster-share-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.36rem 0.62rem;
+		border: 1px solid color-mix(in srgb, var(--nyt-accent) 32%, var(--border) 68%);
+		background: color-mix(in srgb, var(--nyt-accent) 8%, var(--card) 92%);
+		color: var(--nyt-accent);
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		text-decoration: none;
+	}
+
+	.cluster-share-link:hover {
+		color: var(--link-hover);
+		border-color: color-mix(in srgb, var(--link-hover) 42%, var(--border) 58%);
+		background: color-mix(in srgb, var(--link-hover) 10%, var(--card) 90%);
 	}
 
 	.cluster-refresh-badge {
