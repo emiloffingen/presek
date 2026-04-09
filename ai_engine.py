@@ -16,6 +16,7 @@ from config import (
     GOOGLE_API_KEY, GEMINI_URL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENCLAW_URL, OPENCLAW_TOKEN,
+    CF_AI_URL, CF_AI_TOKEN,
     POLLINATIONS_API_KEY,
 )
 from prompts import (
@@ -81,7 +82,6 @@ class GeminiProvider(AIProvider):
         if res: yield res
 
 class MistralProvider(AIProvider):
-    """Premium backup provider."""
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not MISTRAL_API_KEY: return None
         payload = {
@@ -114,8 +114,43 @@ class MistralProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
+class CloudflareAIProvider(AIProvider):
+    """Cloudflare Workers AI Provider (Tier 3 fallback)."""
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+        if not CF_AI_TOKEN: return None
+        
+        # Hardcoded account ID from your gateway URL
+        account_id = "f368eacc80be4ddcfa1d6ff49717275b"
+        model = "@cf/meta/llama-3-8b-instruct"
+        url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
+
+        payload = {
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ]
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {CF_AI_TOKEN}"
+        }
+        try:
+            data_encoded = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data_encoded, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if "result" in data and "response" in data["result"]:
+                    return data["result"]["response"]
+                return None
+        except Exception as e:
+            log.warning(f"[ai/cloudflare] Direct AI call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 class OpenClawProvider(AIProvider):
-    """Local LLM Provider via OpenClaw Gateway."""
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not OPENCLAW_URL: return None
         
@@ -192,16 +227,17 @@ class LocalProvider(AIProvider):
 PROVIDERS = {
     "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
+    "cloudflare": CloudflareAIProvider(),
     "openclaw": OpenClawProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
     "translation":  ["local"],
-    "summarize":    ["gemini", "mistral", "openclaw", "local"],
-    "synthesis":    ["gemini", "mistral", "openclaw", "local"],
-    "daily_brief":  ["gemini", "mistral", "openclaw", "local"],
-    "default":      ["gemini", "mistral", "openclaw", "local"],
+    "summarize":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
+    "synthesis":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
+    "daily_brief":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
+    "default":      ["gemini", "mistral", "cloudflare", "openclaw", "local"],
 }
 
 # --- Service Methods ---
