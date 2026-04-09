@@ -48,11 +48,23 @@ class GeminiProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not GOOGLE_API_KEY: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
-        # Gemini expects a specific JSON structure
+        
+        # Standard content structure for Gemini API
         payload = {
-            "contents": [{"parts": [{"text": f"SYSTEM: {system}\n\nUSER: {prompt}"}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2}
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": f"Instructions: {system}\n\nUser Message: {prompt}"}]
+                }
+            ],
+            "generationConfig": {
+                "maxOutputTokens": max_tokens, 
+                "temperature": 0.2
+            }
         }
+        if json_mode:
+            payload["generationConfig"]["responseMimeType"] = "application/json"
+
         try:
             data_encoded = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data_encoded, headers={"Content-Type": "application/json"})
@@ -71,8 +83,14 @@ class OpenClawProvider(AIProvider):
     """Local LLM Provider via OpenClaw Gateway."""
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not OPENCLAW_URL: return None
+        
+        # Ensure URL is correct
+        base_url = OPENCLAW_URL
+        if not base_url.endswith("/v1/chat/completions") and "/v1/" not in base_url:
+            base_url = base_url.rstrip("/") + "/v1/chat/completions"
+
         payload = {
-            "model": "llama3", # Default local model name
+            "model": "llama3", 
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt}
@@ -87,12 +105,12 @@ class OpenClawProvider(AIProvider):
             
         try:
             data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(OPENCLAW_URL, data=data_encoded, headers=headers)
+            req = urllib.request.Request(base_url, data=data_encoded, headers=headers)
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"]
         except Exception as e:
-            log.warning(f"[ai/openclaw] Local LLM failed: {e}")
+            log.warning(f"[ai/openclaw] Local LLM failed at {base_url}: {e}")
             return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -114,7 +132,6 @@ class LocalProvider(AIProvider):
         
         if "synthesis" in lowered_system or "синтез" in lowered_system:
             try:
-                # Extract titles/desc from prompt if possible
                 lines = prompt.split("\n")
                 fake_articles = []
                 for line in lines:
@@ -201,7 +218,7 @@ def clean_json_response(text: str) -> dict | str:
         try:
             data = json.loads(json_text)
             if isinstance(data, dict):
-                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category')):
+                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category', 'article')):
                     return data
                 if len(data) == 1:
                     return str(list(data.values())[0]).strip()
@@ -212,7 +229,7 @@ def clean_json_response(text: str) -> dict | str:
     return text
 
 def auto_summarize_top_clusters():
-    """Dispatch synthesis tasks for the top recent clusters using local logic."""
+    """Dispatch synthesis tasks for the top recent clusters."""
     import sys
     from collections import defaultdict
     try:
@@ -276,7 +293,6 @@ def auto_summarize_top_clusters():
 
 def translate_to_macedonian(text: str) -> str | None:
     if not text or not text.strip(): return text
-    # Translation is now 100% local rewriter
     return rewrite_to_macedonian_locally(text)
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
@@ -300,10 +316,8 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
 
     if not POLLINATIONS_API_KEY: return None
     
-    # If the prompt looks like a summary (multiple sentences), use it to make a better illustration
     clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
     if len(clean_prompt) > 100:
-        # It's a summary, let's extract keywords or just use the first bit
         styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
     else:
         styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
