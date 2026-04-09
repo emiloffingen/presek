@@ -97,7 +97,7 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
         rows = db.execute(
             """SELECT id, title, description FROM articles
                WHERE embedding IS NULL
-                 AND created_at >= NOW() - INTERVAL '%s hours'
+                 AND created_at >= NOW() - (%s * INTERVAL '1 hour')
                ORDER BY created_at DESC
                LIMIT %s""",
             (hours, limit)
@@ -117,9 +117,13 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
         if vec is None:
             continue
         try:
+            # pgvector accepts the textual "[v1,v2,...]" form. We don't register
+            # a typecaster, so format the list explicitly here (matches the
+            # pattern used by database.search_semantic / hybrid_search).
+            vec_str = "[" + ",".join(map(str, vec)) + "]"
             db.execute(
-                "UPDATE articles SET embedding = %s WHERE id = %s",
-                (vec, row["id"]),
+                "UPDATE articles SET embedding = %s::vector WHERE id = %s",
+                (vec_str, row["id"]),
                 fetch=False,
             )
             embedded += 1

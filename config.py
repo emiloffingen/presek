@@ -277,8 +277,12 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
 
 # ── OpenClaw Gateway Configuration ──────────────────────────────
-OPENCLAW_URL = "http://127.0.0.1:18791/v1/chat/completions"
+OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "http://127.0.0.1:18791/v1/chat/completions")
 OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
+
+# ── Cloudflare AI Gateway ────────────────────────────────────────
+CF_AI_URL = os.environ.get("CF_AI_GATEWAY_URL", "")
+CF_AI_TOKEN = os.environ.get("CF_AI_GATEWAY_TOKEN", "")
 
 # ── Cloudflare R2 Configuration ──────────────────────────────────
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")

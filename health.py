@@ -1,6 +1,6 @@
 """
 health.py — Health check + monitoring for Presek.mk
-Add to app.py: from health import register_health_routes; register_health_routes(app, db)
+Used by api_fast.py for /api/health and per-source policy tracking.
 """
 
 import database
@@ -8,6 +8,8 @@ import time
 import json
 import os
 from datetime import datetime, timezone
+
+from utils import redis_client as _shared_redis_client
 
 _start_time = time.time()
 _REDIS_KEY = "presek:last_refresh"
@@ -21,8 +23,8 @@ LOW_ACCEPTANCE_MIN_FETCHED = 4
 
 
 def _get_redis():
-    import redis as _redis
-    return _redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+    """Return the shared Redis client (decode_responses=True)."""
+    return _shared_redis_client
 
 
 def _probe_database():
@@ -238,60 +240,3 @@ def _freshness_payload(last_refresh_time: str | None):
     return {"status": "stale", "age_minutes": age_minutes, "label": "Освежувањето доцни"}
 
 
-def register_health_routes(app):
-    """Register /api/health and /api/stats routes onto a Flask app."""
-
-    from flask import jsonify
-
-    @app.route("/api/health")
-    def health():
-        uptime_s = int(time.time() - _start_time)
-        hours, rem = divmod(uptime_s, 3600)
-        mins, secs = divmod(rem, 60)
-
-        db_status = _probe_database()
-        redis_status = _probe_redis()
-
-        last = {"time": None, "count": 0, "errors": []}
-        try:
-            raw = _get_redis().get(_REDIS_KEY)
-            if raw:
-                last = json.loads(raw)
-        except Exception:
-            pass
-
-        task_statuses = {}
-        try:
-            raw_tasks = _get_redis().hgetall(_TASK_REDIS_KEY) or {}
-            task_statuses = {
-                (key.decode() if isinstance(key, bytes) else key): json.loads(
-                    value.decode() if isinstance(value, bytes) else value
-                )
-                for key, value in raw_tasks.items()
-            }
-        except Exception:
-            task_statuses = {}
-
-        source_statuses = get_source_statuses()
-
-        freshness = _freshness_payload(last.get("time"))
-
-        overall = "ok" if (db_status["ok"] and redis_status["ok"]) else "degraded"
-        if overall == "ok" and freshness["status"] == "stale":
-            overall = "degraded"
-        return jsonify({
-            "status": overall,
-            "uptime": f"{hours}h {mins}m {secs}s",
-            "uptime_seconds": uptime_s,
-            "database": db_status,
-            "redis": redis_status,
-            "last_refresh": {
-                "time": last["time"],
-                "new_articles": last["count"],
-                "errors": last["errors"],
-            },
-            "freshness": freshness,
-            "tasks": task_statuses,
-            "sources": source_statuses,
-            "server_time": datetime.now(timezone.utc).isoformat(),
-        })

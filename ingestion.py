@@ -3,13 +3,11 @@ import html
 import datetime
 import asyncio
 import feedparser
+import httpx
 import logging
 from collections import defaultdict
-from typing import List, Dict, Any, Tuple, TYPE_CHECKING
+from typing import List, Dict, Any, Tuple
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
-
-if TYPE_CHECKING:
-    import httpx
 
 import clustering
 from ai_engine import translate_to_macedonian
@@ -208,7 +206,7 @@ def extract_image_url(entry):
 
     return best_url
 
-async def fetch_feed_async(client: "httpx.AsyncClient", source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
+async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed."""
     name = source['name']
     url = source['url']
@@ -279,7 +277,6 @@ async def ingest_all_sources_async():
     cycle_now = datetime.datetime.now()
     
     headers = {'User-Agent': 'Presek/6.0 Async Reader (+https://presek.mk)'}
-    import httpx
 
     async with httpx.AsyncClient(headers=headers, verify=True) as client:
         tasks = [fetch_feed_async(client, s) for s in sources]
@@ -475,6 +472,3 @@ def ingest_all_sources():
 
 def ingest_feeds():
     return ingest_all_sources()
-
-def ingest_diaspora_feeds():
-    return 0, []
