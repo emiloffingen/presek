@@ -8,10 +8,11 @@ import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
+import WhatsAppShareIsland from '../../components/WhatsAppShareIsland.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode } from '../../utils/textUtils';
-import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2, Image as ImageIcon, Zap } from 'lucide-react';
+import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2, Zap } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
 const { id } = Astro.params;
@@ -267,6 +268,8 @@ const shareDescription = (
 const shareCardPath = cluster ? `/api/cluster/${cluster.cluster_id}/share-card` : '/og-image.svg';
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${shareImage.startsWith("/") ? shareImage : `/${shareImage}`}`;
+const shareCardUrl = cluster ? `${siteUrl}${shareCardPath}` : `${siteUrl}/og-image.svg`;
+const shareFilename = cluster ? `presek-${cluster.cluster_id}.png` : 'presek-share.png';
 
 const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
 
@@ -398,16 +401,13 @@ const schema = cluster ? {
 								<span>·</span>
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
 								<span>·</span>
-								<a 
-									href={shareCardPath}
-									target="_blank" 
-									rel="noopener noreferrer"
-									download={`presek-${cluster.cluster_id}.png`}
-									class="cluster-share-link"
-									title="Преземи брендирана слика за оваа вест"
-								>
-									<ImageIcon size={12}/> Преземи слика
-								</a>
+								<WhatsAppShareIsland
+									client:load
+									title={cleanAndDecode(cluster.articles[0].title)}
+									url={canonicalUrl}
+									shareCardUrl={shareCardUrl}
+									filename={shareFilename}
+								/>
 								{synthesisUpdatedAt && (
 									<>
 										<span>·</span>
@@ -840,6 +840,23 @@ const schema = cluster ? {
 		color: var(--link-hover);
 		border-color: color-mix(in srgb, var(--link-hover) 42%, var(--border) 58%);
 		background: color-mix(in srgb, var(--link-hover) 10%, var(--card) 90%);
+	}
+
+	.cluster-share-link-whatsapp {
+		border-color: color-mix(in srgb, #22c55e 42%, var(--border) 58%);
+		background: color-mix(in srgb, #22c55e 10%, var(--card) 90%);
+		color: #15803d;
+	}
+
+	.cluster-share-link-whatsapp:hover {
+		color: #166534;
+		border-color: color-mix(in srgb, #16a34a 48%, var(--border) 52%);
+		background: color-mix(in srgb, #16a34a 14%, var(--card) 86%);
+	}
+
+	.cluster-share-link:disabled {
+		opacity: 0.7;
+		cursor: wait;
 	}
 
 	.cluster-refresh-badge {
