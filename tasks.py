@@ -1215,10 +1215,41 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 
 @celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
-    """Generates a multi-perspective synthesis for a cluster."""
+    """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
+    
+    # 1. Fetch Historical Context (Cross-Story Memory)
+    history_context = ""
     try:
-        raw, _ = _call_ai(f"Статии:\n{content}", SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
+        from embeddings import get_cluster_embedding
+        current_vec = get_cluster_embedding(cluster_id)
+        if current_vec:
+            # Find semantically similar clusters from the last 7 days
+            related = db.execute("""
+                SELECT s.summary, s.generated_article, a.title
+                FROM cluster_summaries s
+                JOIN articles a ON s.cluster_id = a.cluster_id
+                JOIN articles current_a ON current_a.cluster_id = %s
+                WHERE s.cluster_id != %s
+                  AND s.created_at >= NOW() - INTERVAL '7 days'
+                  AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
+                ORDER BY (
+                    SELECT AVG(embedding) FROM articles WHERE cluster_id = s.cluster_id
+                ) <=> %s::vector
+                LIMIT 1
+            """, (cluster_id, cluster_id, cluster_id, current_vec))
+            
+            if related:
+                r = related[0]
+                prev_text = r['generated_article'] or r['summary']
+                if prev_text:
+                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n{prev_text[:1000]}"
+    except Exception as e:
+        log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
+
+    try:
+        full_prompt = f"{history_context}\n\nНОВИ СТАТИИ ОД ДЕНЕС:\n{content}"
+        raw, _ = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         
         verification_report = None
         if len(article_rows) >= 3:
