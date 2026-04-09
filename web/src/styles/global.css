@@ -46,6 +46,14 @@
     --radius-lg: 0px;
 }
 
+@utility hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 @layer base {
     :root {
         /* 60% Dominant: Background (Soft Off-White) */

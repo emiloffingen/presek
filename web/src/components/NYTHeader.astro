@@ -62,7 +62,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             </div>
 
             <div class="topbar-right">
-                <div class="topbar-links">
+                <div class="topbar-links flex overflow-x-auto whitespace-nowrap hide-scrollbar md:flex-wrap">
                     <a href="/briefing" class="nyt-section-label topbar-link">
                         <span class="label-full">Дневен Брифинг</span>
                         <span class="label-short">Брифинг</span>
@@ -92,9 +92,9 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     <div class="site-layout masthead">
         <div class="masthead-inner">
             <div class="masthead-brand">
-                <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-8 md:h-10 site-logo" />
+                <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-6 md:h-10 site-logo" />
                 <a href="/" class="block">
-                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-12 md:h-16 lg:h-20" />
+                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-9 md:h-16 lg:h-20" />
                 </a>
             </div>
             <div class="masthead-copy">
@@ -104,9 +104,9 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     </div>
 
     <nav class="site-layout masthead-nav" aria-label="Популарно сега">
-        <div class="masthead-nav-shell">
+        <div class="masthead-nav-shell flex overflow-x-auto whitespace-nowrap hide-scrollbar md:flex-wrap items-center">
             <span class="masthead-nav-kicker">Во фокус</span>
-            <ul class="masthead-nav-list">
+            <ul class="masthead-nav-list flex-nowrap">
                 {headerItems.map((item: any) => {
                     const searchStr = new URLSearchParams({ q: item.word }).toString();
                     const isActive = q === item.word;
@@ -121,7 +121,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 })}
             </ul>
             <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
-            <ul class="masthead-nav-list masthead-nav-list-topics">
+            <ul class="masthead-nav-list masthead-nav-list-topics flex-nowrap">
                 {curatedTopics.map((item: string) => {
                     const isActive = topic === item || category === item;
 
@@ -199,7 +199,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         display: flex;
         align-items: center;
         gap: 0.85rem;
-        flex-wrap: wrap;
         justify-content: flex-end;
     }
 
@@ -398,19 +397,19 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
     @media (max-width: 720px) {
         .topbar {
-            padding-top: 0.6rem;
-            padding-bottom: 0.65rem;
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
         }
 
         .topbar-row {
             grid-template-columns: 1fr;
-            gap: 0.5rem;
+            gap: 0.25rem;
         }
 
         .topbar-left,
         .topbar-center,
         .topbar-right {
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         .topbar-left {
@@ -428,31 +427,37 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
 
         .topbar-right {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.4rem;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.6rem;
+            overflow: hidden;
         }
 
         .topbar-links {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            flex-wrap: nowrap;
             gap: 0.45rem;
-            width: 100%;
+            width: auto;
+            justify-content: flex-start;
+            padding-bottom: 0.2rem;
+            margin-bottom: -0.2rem;
         }
 
         .topbar-link {
             justify-content: center;
-            padding: 0.46rem 0.68rem;
+            padding: 0.38rem 0.65rem;
             border: 1px solid var(--border);
             border-radius: 999px;
             background: color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%);
-            box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--foreground) 6%, transparent);
+            box-shadow: 0 0.3rem 0.8rem color-mix(in srgb, var(--foreground) 4%, transparent);
             text-align: center;
-            line-height: 1.1;
+            line-height: 1;
+            font-size: 0.62rem;
+            flex: 0 0 auto;
         }
 
         .topbar-right :global(button) {
-            align-self: flex-end;
+            align-self: center;
+            flex: 0 0 auto;
         }
 
         .topbar-edition {
@@ -468,13 +473,13 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
 
         .masthead {
-            padding-top: 0.95rem;
-            padding-bottom: 0.9rem;
-            margin-bottom: 0.25rem;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
         }
 
         .masthead-inner {
-            gap: 0.7rem;
+            gap: 0.2rem;
         }
 
         .masthead-brand {
@@ -487,27 +492,31 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
 
         .masthead-nav {
-            padding-top: 0.4rem;
-            padding-bottom: 0.65rem;
-            margin-bottom: 1.2rem;
+            padding-top: 0.35rem;
+            padding-bottom: 0.45rem;
+            margin-bottom: 0.4rem;
         }
 
         .masthead-nav-shell {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 0.55rem;
-            overflow: visible;
+            align-items: center;
+            flex-direction: row;
+            gap: 0.8rem;
+            overflow-x: auto;
+            padding: 0.2rem 0;
+            margin-right: -1rem; /* Allow scroll to edge */
+            padding-right: 1rem;
         }
 
         .masthead-nav-kicker {
-            padding-right: 0;
+            padding-right: 0.6rem;
+            font-size: 0.62rem;
         }
 
         .masthead-nav-list {
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 0.38rem;
             min-width: 0;
-            width: 100%;
+            width: auto;
             padding-bottom: 0;
         }
 
@@ -521,13 +530,13 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         }
 
         .masthead-nav-link {
-            padding: 0.4rem 0.68rem;
+            padding: 0.35rem 0.6rem;
             border: 1px solid var(--border);
             border-radius: 999px;
-            font-size: 0.66rem;
-            line-height: 1.1;
+            font-size: 0.64rem;
+            line-height: 1;
             background: color-mix(in srgb, var(--card) 82%, var(--surface-soft) 18%);
-            box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--foreground) 5%, transparent);
+            box-shadow: 0 0.3rem 0.8rem color-mix(in srgb, var(--foreground) 4%, transparent);
         }
 
         .masthead-nav-link.is-active {
@@ -543,7 +552,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             background:
                 linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background) 8%), color-mix(in srgb, var(--card) 82%, var(--background) 18%));
             box-shadow:
-                0 0.55rem 1.25rem color-mix(in srgb, black 24%, transparent),
+                0 0.45rem 1rem color-mix(in srgb, black 20%, transparent),
                 inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
         }
 
@@ -552,7 +561,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             background:
                 linear-gradient(180deg, color-mix(in srgb, var(--card) 90%, var(--background) 10%), color-mix(in srgb, var(--card) 80%, var(--background) 20%));
             box-shadow:
-                0 0.5rem 1.1rem color-mix(in srgb, black 22%, transparent),
+                0 0.4rem 0.9rem color-mix(in srgb, black 18%, transparent),
                 inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
         }
 

@@ -42,7 +42,11 @@ class BreakingNewsNotifier:
         if gw_url and gw_token:
             try:
                 html_text = f"🚨 <b>ПРЕСЕК — Важна вест</b>\n\n{message}\n\n🔗 <a href='{link}'>Целосна синтеза тука</a>"
-                endpoint = f"{gw_url.rstrip('/')}/channels/presekmk/message"
+                # Strip any API path (e.g. /v1/chat/completions) to get base URL
+                from urllib.parse import urlparse
+                parsed = urlparse(gw_url)
+                base_url = f"{parsed.scheme}://{parsed.netloc}"
+                endpoint = f"{base_url}/channels/presekmk/message"
 
                 payload = {"text": html_text, "parse_mode": "HTML"}
                 if image_url:

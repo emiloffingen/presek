@@ -2355,7 +2355,8 @@ async def chat_stream(
     async def generate():
         try:
             full_prompt = f"Context:\n{context}\n\nUser Question: {query}"
-            generator = await _call_ai_async(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
+            result = await _call_ai_async(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
+            generator = result[0] if result else None
             if generator:
                 async for chunk in generator:
                     if chunk:

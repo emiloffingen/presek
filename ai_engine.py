@@ -237,6 +237,7 @@ TASK_ROUTING = {
     "summarize":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
     "synthesis":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
     "daily_brief":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
+    "chat":         ["gemini", "mistral", "cloudflare", "local"],
     "default":      ["gemini", "mistral", "cloudflare", "openclaw", "local"],
 }
 
