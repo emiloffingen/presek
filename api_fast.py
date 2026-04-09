@@ -181,6 +181,28 @@ def _looks_macedonian_headline(text: str) -> bool:
     return cyrillic >= (latin * 2)
 
 
+def _preferred_cluster_headline(rows) -> str:
+    preferred_mk = None
+    fallback = ""
+
+    for row in rows or []:
+        title = cleanAndDecode(row.get("title") or "")
+        if not title:
+            continue
+        if not fallback:
+            fallback = title
+
+        original_title = cleanAndDecode(row.get("original_title") or "")
+        is_translated = bool(row.get("is_translated")) or (original_title and title != original_title)
+
+        if is_translated and _looks_macedonian_headline(title):
+            return title
+        if preferred_mk is None and _looks_macedonian_headline(title):
+            preferred_mk = title
+
+    return preferred_mk or fallback or "Вест"
+
+
 def _normalize_delivery_preferences(prefs):
     prefs = prefs or {}
     return {
@@ -739,10 +761,13 @@ async def og_cluster_image(cluster_id: str):
     if not cluster_id or not re.match(r"^[a-f0-9]{6,64}$", cluster_id):
         raise HTTPException(status_code=400, detail="Invalid cluster")
 
-    row = db.execute_one("SELECT title FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
+    rows = db.execute(
+        "SELECT title, original_title, is_translated FROM articles WHERE cluster_id = %s ORDER BY created_at DESC",
+        (cluster_id,),
+    )
     count_row = db.execute_one("SELECT COUNT(*) FROM articles WHERE cluster_id = %s", (cluster_id,))
 
-    title = row["title"] if row else "Вест"
+    title = _preferred_cluster_headline(rows)
     import html
     title = html.unescape(title)
     count = count_row["count"] if count_row and isinstance(count_row, dict) else (count_row[0] if count_row else 1)
@@ -2435,7 +2460,7 @@ async def get_cluster_share_card(cluster_id: str):
 
     # 1. Fetch Data
     articles = db.execute(
-        "SELECT title, source, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", 
+        "SELECT title, original_title, is_translated, source, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", 
         (cluster_id,)
     )
     if not articles:
@@ -2446,7 +2471,7 @@ async def get_cluster_share_card(cluster_id: str):
         (cluster_id,)
     )
     
-    headline = cleanAndDecode(articles[0]["title"])
+    headline = _preferred_cluster_headline(articles)
     category = articles[0]["category"] or "ВЕСТИ"
     source_count = len(articles)
     source_names = []

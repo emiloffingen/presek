@@ -66,6 +66,45 @@ function topicHref(value: string) {
 	return normalized ? `/tema/${encodeURIComponent(normalized)}` : '/';
 }
 
+function looksMacedonianHeadline(text: string) {
+	const value = String(text || '').trim();
+	if (!value) return false;
+
+	let cyrillic = 0;
+	let latin = 0;
+	for (const ch of value) {
+		if (ch >= '\u0400' && ch <= '\u04FF') cyrillic += 1;
+		else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) latin += 1;
+	}
+
+	if (cyrillic < 8) return false;
+	if (latin === 0) return true;
+	return cyrillic >= latin * 2;
+}
+
+function getPreferredClusterHeadline(articles: any[]) {
+	let fallback = '';
+	let preferredMacedonian = '';
+
+	for (const article of articles || []) {
+		const title = cleanAndDecode(article?.title || '');
+		if (!title) continue;
+		if (!fallback) fallback = title;
+
+		const originalTitle = cleanAndDecode(article?.original_title || '');
+		const isTranslated = Boolean(article?.is_translated) || Boolean(originalTitle && title !== originalTitle);
+
+		if (isTranslated && looksMacedonianHeadline(title)) {
+			return title;
+		}
+		if (!preferredMacedonian && looksMacedonianHeadline(title)) {
+			preferredMacedonian = title;
+		}
+	}
+
+	return preferredMacedonian || fallback;
+}
+
 function titleTerms(text: string) {
 	return Array.from(
 		new Set(
@@ -298,6 +337,7 @@ function getLeadVisual(clusterData: any) {
 }
 
 const leadVisual = cluster ? getLeadVisual(cluster) : null;
+const displayHeadline = cluster ? getPreferredClusterHeadline(cluster.articles) : '';
 
 // JSON-LD Schema for Google News / AdSense
 const schema = cluster ? {
@@ -307,7 +347,7 @@ const schema = cluster ? {
 		"@type": "WebPage",
 		"@id": canonicalUrl
 	},
-	"headline": cleanAndDecode(cluster.articles[0].title),
+	"headline": displayHeadline,
 	"description": cleanAndDecode(shareDescription),
 	"image": imageUrl,
 	"datePublished": cluster.articles[0].created_at,
@@ -343,7 +383,7 @@ const schema = cluster ? {
 ---
 
 <Layout
-	title={cluster ? cleanAndDecode(cluster.articles[0].title) : "Детали за вест"}
+	title={cluster ? displayHeadline : "Детали за вест"}
 	description={cluster ? cleanAndDecode(shareDescription) : "Детали за вест од Пресек"}
 	image={shareImage}
 	type={cluster ? "article" : "website"}
@@ -364,7 +404,7 @@ const schema = cluster ? {
 				<ReaderTracker
 					client:load
 					clusterId={cluster.cluster_id}
-					title={cluster.articles[0].title}
+					title={displayHeadline}
 					category={cluster.articles[0].category || ''}
 					topic={cluster.topics?.[0] || cluster.articles[0].topic || ''}
 					primarySource={cluster.articles[0].source || ''}
@@ -379,7 +419,7 @@ const schema = cluster ? {
 								{ label: "Детали за вест" }
 							]} />
 
-							<h1 class="cluster-headline" set:html={cleanAndDecode(cluster.articles[0].title)}>
+							<h1 class="cluster-headline" set:html={displayHeadline}>
 							</h1>
 
 							{leadDescription && <p class="cluster-dek" set:html={cleanAndDecode(leadDescription)}></p>}
@@ -403,7 +443,7 @@ const schema = cluster ? {
 								<span>·</span>
 								<WhatsAppShareIsland
 									client:load
-									title={cleanAndDecode(cluster.articles[0].title)}
+									title={displayHeadline}
 									url={canonicalUrl}
 									shareCardUrl={shareCardUrl}
 									filename={shareFilename}
