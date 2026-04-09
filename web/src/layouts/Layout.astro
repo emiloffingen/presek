@@ -106,6 +106,10 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 </html>
 
 <style is:global>
+	:root {
+		--layout-cache-bust-20260409: 1;
+	}
+
 	/* Broadstreet Aesthetic Adjustments */
 	.dark .site-logo {
 		filter: invert(1) brightness(1.5);

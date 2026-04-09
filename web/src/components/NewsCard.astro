@@ -1,4 +1,5 @@
 ---
+/* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
 import { ShieldCheck } from 'lucide-react';
@@ -166,6 +167,10 @@ function getTimeStr(dateStr: string) {
 </article>
 
 <style>
+	.nyt-article {
+		--news-card-cache-bust-20260409: 1;
+	}
+
 	.nyt-article {
 		display: flex;
 		flex-direction: column-reverse;

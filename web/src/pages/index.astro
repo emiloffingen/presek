@@ -1,4 +1,5 @@
 ---
+/* Cache-bust marker for homepage stylesheet hashing. */
 import Layout from '../layouts/Layout.astro';
 import NewsCard from '../components/NewsCard.astro';
 import NYTHeader from '../components/NYTHeader.astro';
@@ -372,6 +373,10 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 </Layout>
 
 <style>
+	.front-page-grid {
+		--front-page-cache-bust-20260409: 1;
+	}
+
 	.front-page-grid {
 		display: grid;
 		grid-template-columns: 1fr;
