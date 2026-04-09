@@ -14,8 +14,7 @@ from typing import AsyncGenerator
 
 from config import (
     GOOGLE_API_KEY, GEMINI_URL,
-    GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
-    OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
+    MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     OPENCLAW_URL, OPENCLAW_TOKEN,
     POLLINATIONS_API_KEY,
 )
@@ -49,17 +48,19 @@ class GeminiProvider(AIProvider):
         if not GOOGLE_API_KEY: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
         
-        # Standard content structure for Gemini API
+        # Newest valid structure for Gemini 2.0
         payload = {
+            "system_instruction": {
+                "parts": {"text": system}
+            },
             "contents": [
                 {
-                    "role": "user",
-                    "parts": [{"text": f"Instructions: {system}\n\nUser Message: {prompt}"}]
+                    "parts": {"text": prompt}
                 }
             ],
             "generationConfig": {
                 "maxOutputTokens": max_tokens, 
-                "temperature": 0.2
+                "temperature": 0.1
             }
         }
         if json_mode:
@@ -79,12 +80,45 @@ class GeminiProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
+class MistralProvider(AIProvider):
+    """Premium backup provider."""
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+        if not MISTRAL_API_KEY: return None
+        payload = {
+            "model": MISTRAL_MODEL,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {MISTRAL_API_KEY}"
+        }
+        try:
+            data_encoded = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(MISTRAL_API_URL, data=data_encoded, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            log.warning(f"[ai/mistral] Call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 class OpenClawProvider(AIProvider):
     """Local LLM Provider via OpenClaw Gateway."""
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
         if not OPENCLAW_URL: return None
         
-        # Ensure URL is correct
         base_url = OPENCLAW_URL
         if not base_url.endswith("/v1/chat/completions") and "/v1/" not in base_url:
             base_url = base_url.rstrip("/") + "/v1/chat/completions"
@@ -110,7 +144,7 @@ class OpenClawProvider(AIProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"]
         except Exception as e:
-            log.warning(f"[ai/openclaw] Local LLM failed at {base_url}: {e}")
+            log.warning(f"[ai/openclaw] Local LLM failed: {e}")
             return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -157,16 +191,17 @@ class LocalProvider(AIProvider):
 
 PROVIDERS = {
     "gemini": GeminiProvider(),
+    "mistral": MistralProvider(),
     "openclaw": OpenClawProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
     "translation":  ["local"],
-    "summarize":    ["gemini", "openclaw", "local"],
-    "synthesis":    ["gemini", "openclaw", "local"],
-    "daily_brief":  ["gemini", "openclaw", "local"],
-    "default":      ["gemini", "openclaw", "local"],
+    "summarize":    ["gemini", "mistral", "openclaw", "local"],
+    "synthesis":    ["gemini", "mistral", "openclaw", "local"],
+    "daily_brief":  ["gemini", "mistral", "openclaw", "local"],
+    "default":      ["gemini", "mistral", "openclaw", "local"],
 }
 
 # --- Service Methods ---
