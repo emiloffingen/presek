@@ -233,7 +233,7 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["local"],
+    "translation":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
     "summarize":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
     "synthesis":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
     "daily_brief":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
@@ -364,7 +364,53 @@ def auto_summarize_top_clusters():
 
 
 def translate_to_macedonian(text: str) -> str | None:
-    if not text or not text.strip(): return text
+    """Translate text to Macedonian.
+
+    Priority: NLLB (free, self-hosted) → AI API fallback → local rewrite.
+    """
+    if not text or not text.strip():
+        return text
+
+    from language import detect_language
+    lang = detect_language(text)
+
+    # Already Macedonian — just normalize locally
+    if lang == "mk":
+        return rewrite_to_macedonian_locally(text)
+
+    # 1. Try self-hosted NLLB (free, no API cost)
+    try:
+        from nllb_translate import translate as nllb_translate
+        result = nllb_translate(text, lang)
+        if result and result.strip():
+            log.info(f"[translate] {lang}→mk via nllb: {text[:60]}...")
+            return result
+    except Exception as e:
+        log.warning(f"[translate] NLLB failed for {lang} text: {e}")
+
+    # 2. Fallback to AI API (Gemini/Mistral/etc.)
+    try:
+        result, provider = _call_ai(
+            prompt=text,
+            system=TRANSLATION_SYSTEM_PROMPT,
+            task_type="translation",
+            max_tokens=500,
+            json_mode=True,
+        )
+        if result:
+            parsed = clean_json_response(result)
+            if isinstance(parsed, dict) and "summary" in parsed:
+                translated = parsed["summary"].strip()
+                if translated:
+                    log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
+                    return translated
+            elif isinstance(parsed, str) and parsed.strip():
+                log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
+                return parsed.strip()
+    except Exception as e:
+        log.warning(f"[translate] AI translation failed for {lang} text: {e}")
+
+    # 3. Last resort: local rewrite (best-effort)
     return rewrite_to_macedonian_locally(text)
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:

@@ -70,14 +70,60 @@ def _get_model():
 
 
 def _script_heuristic(text: str) -> str:
-    """Simple fallback: classify by dominant script."""
+    """Fallback: classify by script and characteristic markers."""
     if not text:
         return "unk"
     cyr = sum(1 for ch in text if "\u0400" <= ch <= "\u04ff")
     lat = sum(1 for ch in text if ("A" <= ch <= "Z") or ("a" <= ch <= "z"))
     if cyr == 0 and lat == 0:
         return "unk"
-    return "mk" if cyr >= lat else "en"
+    if lat > cyr:
+        return _latin_heuristic(text)
+    return _cyrillic_heuristic(text)
+
+
+def _cyrillic_heuristic(text: str) -> str:
+    """Distinguish Macedonian from Bulgarian and Serbian in Cyrillic text."""
+    lower = text.lower()
+
+    # Bulgarian-only letters: ъ, щ (not used in MK or SR)
+    bg_markers = sum(1 for ch in lower if ch in "ъщ")
+    # Bulgarian function words not used in MK
+    bg_words = sum(1 for w in ("също", "защото", "обаче", "няма", "може",
+                               "трябва", "каза", "която", "който", "което",
+                               "бъде", "ще", "още", "след", "този", "тази")
+                   if f" {w} " in f" {lower} ")
+    if bg_markers >= 1 or bg_words >= 2:
+        return "bg"
+
+    # Serbian: ђ and ћ are not used in Macedonian (MK uses ѓ and ќ instead)
+    sr_letters = sum(1 for ch in lower if ch in "ђћ")
+    sr_words = sum(1 for w in ("такође", "односно", "јер", "ипак", "него",
+                               "већ", "затим", "стога", "међутим", "након",
+                               "саопштио", "изјавио", "наводи", "рекао",
+                               "или", "али", "још", "може")
+                   if f" {w} " in f" {lower} ")
+    if sr_letters >= 1 or sr_words >= 2:
+        return "sr"
+
+    return "mk"
+
+
+def _latin_heuristic(text: str) -> str:
+    """Distinguish between Latin-script Balkan languages and English."""
+    lower = text.lower()
+    # Croatian/Bosnian diacritics: č, ć, đ, š, ž
+    balkan_diacritics = sum(1 for ch in lower if ch in "čćđšž")
+    if balkan_diacritics >= 1:
+        return "hr"
+    # Turkish markers: ğ, ş, ı, ö, ü (check before Albanian since ç is shared)
+    turkish_chars = sum(1 for ch in lower if ch in "ğşı")
+    if turkish_chars >= 1:
+        return "tr"
+    # Albanian markers: ë, ç and common words
+    if "ë" in lower or "ç" in lower:
+        return "sq"
+    return "en"
 
 
 def detect_language(text: str) -> str:

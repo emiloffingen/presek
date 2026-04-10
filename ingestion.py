@@ -24,7 +24,7 @@ from health import record_source_fetch, get_source_statuses
 
 log = logging.getLogger("presek")
 
-_OG_IMAGE_READ_LIMIT = 32 * 1024
+_OG_IMAGE_READ_LIMIT = 64 * 1024
 _OG_IMAGE_CONCURRENCY = 8
 
 _TRACKING_PARAMS = {
@@ -197,6 +197,32 @@ def extract_image_url(entry):
             "height": _to_int(item.get("height")),
             "source_rank": 1.0,
         })
+
+    # Extract <img> from summary/content HTML (many WP sites embed images this way)
+    if not candidates:
+        html_sources = []
+        for content_block in (getattr(entry, "content", None) or entry.get("content", []) or []):
+            html_sources.append(content_block.get("value", ""))
+        html_sources.append(getattr(entry, "summary", None) or entry.get("summary", "") or "")
+        html_sources.append(getattr(entry, "description", None) or entry.get("description", "") or "")
+
+        seen_urls = set()
+        for html in html_sources:
+            for img_match in re.finditer(r'<img[^>]+src=["\']([^"\']+)["\']', str(html)):
+                img_url = img_match.group(1).strip()
+                if img_url in seen_urls or not re.match(r"^https?://", img_url):
+                    continue
+                seen_urls.add(img_url)
+                # Extract width/height attributes if present
+                w_match = re.search(r'width=["\']?(\d+)', img_match.group(0))
+                h_match = re.search(r'height=["\']?(\d+)', img_match.group(0))
+                candidates.append({
+                    "url": img_url,
+                    "mime": "image/",
+                    "width": _to_int(w_match.group(1)) if w_match else 0,
+                    "height": _to_int(h_match.group(1)) if h_match else 0,
+                    "source_rank": 0.5,
+                })
 
     best_url = None
     best_score = -100.0

@@ -55,12 +55,15 @@ ANALYSIS_SYSTEM_PROMPT = (
 )
 
 TRANSLATION_SYSTEM_PROMPT = (
-    "You are a senior Macedonian news editor. "
-    "Translate the following news text (headline or description) into standard literary Macedonian. "
-    "Ensure the tone is professional, neutral, and clear. "
-    "Properly capitalize all names of people, cities, countries, and organizations. "
-    "Return ONLY a valid JSON object: {\"summary\": \"your translation\"}. "
-    "Do NOT use markdown backticks."
+    "Ти си виш уредник на македонска новинска агенција. "
+    "Преведи го следниот новински текст (наслов или опис) на стандарден литературен македонски јазик. "
+    "Текстот може да биде на српски, бугарски, хрватски, албански, босански, англиски, турски или друг јазик. "
+    "ВАЖНО: Не користи српски форми (нпр. 'такође', 'односно', 'јер'), бугарски форми (нпр. 'също', 'защото'), "
+    "или хрватски форми (нпр. 'također', 'zbog'). Користи ИСКЛУЧИВО македонски еквиваленти. "
+    "Тонот мора да биде професионален, неутрален и јасен. "
+    "Правилно пишувај ги сите имиња на луѓе, градови, држави и организации. "
+    "Врати ИСКЛУЧИВО валиден JSON објект: {\"summary\": \"твојот превод\"}. "
+    "Без markdown backticks."
 )
 
 CATEGORIZATION_SYSTEM_PROMPT = (
