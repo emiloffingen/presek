@@ -162,7 +162,7 @@ function buildClearHref() {
                     <span class="micro-label">Кластер</span>
                     <strong>{String(page * archive.page_size + index + 1).padStart(2, '0')}</strong>
                   </div>
-                  <NewsCard cluster={cluster} />
+                  <NewsCard cluster={cluster} variant={index < 4 ? 'featured' : 'compact'} />
                 </div>
               ))}
             </div>

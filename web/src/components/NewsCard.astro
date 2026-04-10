@@ -7,9 +7,10 @@ import { ShieldCheck } from 'lucide-react';
 interface Props {
 	cluster: any;
 	isLead?: boolean;
+	variant?: 'standard' | 'featured' | 'compact' | 'wire';
 }
 
-const { cluster, isLead = false } = Astro.props;
+const { cluster, isLead = false, variant = 'standard' } = Astro.props;
 const main = cluster.articles[0];
 const sourceSignal = main?.source_signal || {};
 const sourceCount = cluster.articles.length;
@@ -86,7 +87,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", { "lead-story": isLead }]}>
+<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]}>
 	<div class="article-body">
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
@@ -139,6 +140,8 @@ function getTimeStr(dateStr: string) {
 					<div class="article-image-placeholder">
 						<p class="article-image-placeholder-label">Пресек Преглед</p>
 						<h3>{cluster.articles[0].category || 'Вести'}</h3>
+						<p class="article-image-placeholder-source">{main.source}</p>
+						<p class="article-image-placeholder-title">{displayTitle}</p>
 					</div>
 				) : (
 					<img
@@ -155,7 +158,8 @@ function getTimeStr(dateStr: string) {
 					/>
 					<div class="article-image-placeholder is-error-fallback" style="display: none;">
 						<p class="article-image-placeholder-label">Сликата не е достапна</p>
-						<span class="text-xs opacity-60 uppercase font-bold tracking-tighter">Пресек</span>
+						<p class="article-image-placeholder-source">{main.source}</p>
+						<p class="article-image-placeholder-title">{displayTitle}</p>
 					</div>
 				)}
 			</a>
@@ -181,6 +185,26 @@ function getTimeStr(dateStr: string) {
 
 	.nyt-article:not(.lead-story) {
 		height: 100%;
+	}
+
+	.nyt-article.variant-featured:not(.lead-story) {
+		padding: 1rem;
+		border: 1px solid var(--border);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 92%, var(--secondary) 8%));
+	}
+
+	.nyt-article.variant-compact:not(.lead-story) {
+		padding-bottom: 1.1rem;
+	}
+
+	.nyt-article.variant-wire:not(.lead-story) {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 0.75rem;
+		padding: 0.9rem 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 0;
 	}
 
 	.article-body {
@@ -242,6 +266,44 @@ function getTimeStr(dateStr: string) {
 
 	.nyt-article:not(.lead-story) .summary {
 		-webkit-line-clamp: 3;
+	}
+
+	.nyt-article.variant-featured:not(.lead-story) .headline-standard {
+		font-size: 1.32rem;
+		line-height: 1.05;
+	}
+
+	.nyt-article.variant-featured:not(.lead-story) .summary {
+		font-size: 0.94rem;
+		line-height: 1.56;
+	}
+
+	.nyt-article.variant-compact:not(.lead-story) .summary {
+		-webkit-line-clamp: 2;
+		font-size: 0.92rem;
+	}
+
+	.nyt-article.variant-wire:not(.lead-story) .article-meta {
+		margin-bottom: 0.35rem;
+	}
+
+	.nyt-article.variant-wire:not(.lead-story) .headline-standard {
+		font-size: 1rem;
+		line-height: 1.12;
+		margin-bottom: 0.25rem;
+	}
+
+	.nyt-article.variant-wire:not(.lead-story) .summary,
+	.nyt-article.variant-wire:not(.lead-story) .why-it-matters {
+		display: none;
+	}
+
+	.nyt-article.variant-wire:not(.lead-story) .footer-meta {
+		margin-top: 0.15rem;
+		font-size: 0.62rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 	}
 
 	.why-it-matters {
@@ -342,6 +404,11 @@ function getTimeStr(dateStr: string) {
         overflow: hidden;
     }
 
+	.nyt-article.variant-wire:not(.lead-story) .image-wrap {
+		width: clamp(5.2rem, 20vw, 6.4rem);
+		aspect-ratio: 1 / 1;
+	}
+
 	.article-image {
 		width: 100%;
         height: 100%;
@@ -382,6 +449,25 @@ function getTimeStr(dateStr: string) {
 		color: var(--foreground);
 		max-width: 12ch;
 		margin: 0;
+	}
+
+	.article-image-placeholder-source {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.54rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.article-image-placeholder-title {
+		margin: 0;
+		max-width: 18ch;
+		font-family: var(--font-serif);
+		font-size: 0.9rem;
+		line-height: 1.18;
+		color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground) 16%);
 	}
 
 	.is-error-fallback {
@@ -531,6 +617,40 @@ function getTimeStr(dateStr: string) {
 			top: 0.45rem;
 			padding: 0.16rem 0.28rem;
 			font-size: 0.46rem;
+		}
+
+		.nyt-article.variant-featured:not(.lead-story) {
+			grid-template-columns: 1fr;
+			gap: 0.7rem;
+			padding: 0.95rem;
+		}
+
+		.nyt-article.variant-featured:not(.lead-story) .image-wrap {
+			grid-column: auto;
+			grid-row: auto;
+			order: -1;
+			aspect-ratio: 16 / 10;
+		}
+
+		.nyt-article.variant-featured:not(.lead-story) .summary {
+			-webkit-line-clamp: 2;
+			margin-bottom: 0.45rem;
+		}
+
+		.nyt-article.variant-wire:not(.lead-story) {
+			grid-template-columns: minmax(0, 1fr) 4.9rem;
+			gap: 0.75rem;
+			padding: 0.75rem 0;
+		}
+
+		.nyt-article.variant-wire:not(.lead-story) .image-wrap {
+			grid-column: 2;
+			grid-row: 1;
+			width: 100%;
+		}
+
+		.nyt-article.variant-wire:not(.lead-story) .headline-standard {
+			font-size: 0.94rem;
 		}
 	}
 

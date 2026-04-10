@@ -11,6 +11,7 @@ import {
   normalizeServerDeliverySettings,
   saveDeliveryPreferences,
   setBrowserPermissionStatus,
+  subscribeToReaderProfile,
   toggleDeliveryPreference,
 } from '../lib/personalization.js';
 
@@ -45,6 +46,8 @@ export default function BriefingDeliveryIsland({
     setPrefs(nextPrefs);
     setProfile(loadReaderProfile());
   }, []);
+
+  useEffect(() => subscribeToReaderProfile(setProfile), []);
 
   useEffect(() => {
     let cancelled = false;

@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test src/lib/**/*.test.mjs"
+    "test": "node --test src/lib/**/*.test.mjs",
+    "eval:recommendations": "node src/lib/recommendationEval.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",

@@ -20,6 +20,25 @@ try {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на статистиките.";
 }
+
+const topSource = stats?.by_source?.[0] ?? null;
+const topCategory = stats?.by_category?.[0] ?? null;
+const editorAnalytics = stats?.editor_analytics ?? {};
+const hasEditorSignals = Boolean(
+	(editorAnalytics.synced_profiles ?? 0) ||
+	(editorAnalytics.active_profiles_7d ?? 0) ||
+	(editorAnalytics.delivery_active ?? 0) ||
+	(editorAnalytics.delivery_targets ?? 0) ||
+	(editorAnalytics.opens_7d ?? 0) ||
+	(editorAnalytics.clicks_7d ?? 0)
+);
+const hasFollowData = Boolean(
+	(editorAnalytics.top_followed_topics ?? []).length ||
+	(editorAnalytics.top_followed_sources ?? []).length
+);
+const hasSurfacePerformance = Boolean((editorAnalytics.suggestion_surface_performance ?? []).length);
+const hasKindPerformance = Boolean((editorAnalytics.suggestion_kind_performance ?? []).length);
+const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performance ?? []).length);
 ---
 
 <Layout title="Статистика">
@@ -39,6 +58,32 @@ try {
 
 			{stats ? (
 				<div class="stats-flow">
+					<section class="stats-overview motion-rise motion-delay-1">
+						<div class="overview-primary editorial-panel editorial-panel-strong">
+							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Главна слика</p>
+							<p class="overview-value">{stats.last_24h.toLocaleString()}</p>
+							<p class="overview-copy">
+								објави во последните 24 часа низ {stats.total_feeds} извори. Денот најсилно го турка {topSource ? topSource.source : 'водечката редакциска група'}.
+							</p>
+							<div class="overview-meta">
+								<span>Сублимат: {stats.summarized_pct}%</span>
+								<span>Вкупно статии: {stats.total_articles.toLocaleString()}</span>
+							</div>
+						</div>
+						<div class="overview-secondary">
+							<div class="metric-card editorial-panel metric-card-accent">
+								<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Најгласен извор</p>
+								<p class="metric-value metric-value-label">{topSource?.source ?? 'Нема податок'}</p>
+								<p class="metric-caption">{topSource ? `${topSource.n} статии денес.` : 'Се уште нема доволно податоци.'}</p>
+							</div>
+							<div class="metric-card editorial-panel">
+								<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Водечка категорија</p>
+								<p class="metric-value metric-value-label">{topCategory?.cat ?? 'Нема податок'}</p>
+								<p class="metric-caption">{topCategory ? `${topCategory.n} објави во оваа категорија.` : 'Се уште нема доволно податоци.'}</p>
+							</div>
+						</div>
+					</section>
+
 					<div class="stats-metrics motion-rise motion-delay-1">
 						<div class="metric-card editorial-panel">
 							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
@@ -61,6 +106,71 @@ try {
 
 					<div class="stats-grid motion-rise motion-delay-2">
 						<div class="stats-main">
+							<section class="stats-module stats-module-priority editorial-panel">
+								<h2 class="stats-section-title editorial-panel-title">Најактивни медиуми</h2>
+								<div class="source-bars">
+									{stats.by_source.slice(0, 10).map((src: any) => (
+										<div class="source-row">
+											<div class="source-row-top">
+												<span>{src.source}</span>
+												<span>{src.n} статии</span>
+											</div>
+											<div class="source-bar-track">
+												<div 
+													class="source-bar-fill" 
+													style={`width: ${Math.min(100, (src.n / stats.last_24h) * 100 * 5)}%`}
+												></div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+
+							<section class="stats-module editorial-panel">
+								<h2 class="stats-section-title editorial-panel-title">Распределба по категории</h2>
+								<div class="category-grid">
+									{stats.by_category.map((cat: any) => (
+										<div class="category-card">
+											<p class="nyt-section-label text-muted-foreground mb-1">{cat.cat}</p>
+											<p class="category-value">{cat.n}</p>
+										</div>
+									))}
+								</div>
+							</section>
+
+							{hasFollowData && (
+							<section class="stats-module editorial-panel">
+								<h2 class="stats-section-title editorial-panel-title">Што следат луѓето</h2>
+								<div class="follow-grid">
+									<div class="follow-card">
+										<h3 class="follow-title">Најследени Теми</h3>
+										<div class="follow-list">
+											{(stats.editor_analytics?.top_followed_topics ?? []).slice(0, 6).map((item: any, idx: number) => (
+												<div class="follow-row">
+													<span class="follow-rank">{idx + 1}.</span>
+													<span class="follow-label">{item.topic}</span>
+													<span class="follow-count">{item.followers}</span>
+												</div>
+											))}
+										</div>
+									</div>
+									<div class="follow-card">
+										<h3 class="follow-title">Најследени Извори</h3>
+										<div class="follow-list">
+											{(stats.editor_analytics?.top_followed_sources ?? []).slice(0, 6).map((item: any, idx: number) => (
+												<div class="follow-row">
+													<span class="follow-rank">{idx + 1}.</span>
+													<span class="follow-label">{item.source}</span>
+													<span class="follow-count">{item.followers}</span>
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
+							</section>
+							)}
+
+							{hasEditorSignals && (
 							<section class="stats-module editorial-panel">
 								<h2 class="stats-section-title editorial-panel-title">Редакциски сигнали</h2>
 								<div class="editor-metrics">
@@ -96,69 +206,9 @@ try {
 									</div>
 								</div>
 							</section>
+							)}
 
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Најактивни медиуми</h2>
-								<div class="source-bars">
-									{stats.by_source.slice(0, 10).map((src: any) => (
-										<div class="source-row">
-											<div class="source-row-top">
-												<span>{src.source}</span>
-												<span>{src.n} статии</span>
-											</div>
-											<div class="source-bar-track">
-												<div 
-													class="source-bar-fill" 
-													style={`width: ${Math.min(100, (src.n / stats.last_24h) * 100 * 5)}%`}
-												></div>
-											</div>
-										</div>
-									))}
-								</div>
-							</section>
-
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Распределба по категории</h2>
-								<div class="category-grid">
-									{stats.by_category.map((cat: any) => (
-										<div class="category-card">
-											<p class="nyt-section-label text-muted-foreground mb-1">{cat.cat}</p>
-											<p class="category-value">{cat.n}</p>
-										</div>
-									))}
-								</div>
-							</section>
-
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Што следат луѓето</h2>
-								<div class="follow-grid">
-									<div class="follow-card">
-										<h3 class="follow-title">Најследени Теми</h3>
-										<div class="follow-list">
-											{(stats.editor_analytics?.top_followed_topics ?? []).slice(0, 6).map((item: any, idx: number) => (
-												<div class="follow-row">
-													<span class="follow-rank">{idx + 1}.</span>
-													<span class="follow-label">{item.topic}</span>
-													<span class="follow-count">{item.followers}</span>
-												</div>
-											))}
-										</div>
-									</div>
-									<div class="follow-card">
-										<h3 class="follow-title">Најследени Извори</h3>
-										<div class="follow-list">
-											{(stats.editor_analytics?.top_followed_sources ?? []).slice(0, 6).map((item: any, idx: number) => (
-												<div class="follow-row">
-													<span class="follow-rank">{idx + 1}.</span>
-													<span class="follow-label">{item.source}</span>
-													<span class="follow-count">{item.followers}</span>
-												</div>
-											))}
-										</div>
-									</div>
-								</div>
-							</section>
-
+							{hasSurfacePerformance && (
 							<section class="stats-module editorial-panel">
 								<h2 class="stats-section-title editorial-panel-title">Конверзија На Површини За Следење</h2>
 								<div class="follow-grid">
@@ -195,7 +245,9 @@ try {
 									))}
 								</div>
 							</section>
+							)}
 
+							{hasKindPerformance && (
 							<section class="stats-module editorial-panel">
 								<h2 class="stats-section-title editorial-panel-title">Конверзија По Вид На Предлог</h2>
 								<div class="follow-grid">
@@ -224,9 +276,11 @@ try {
 									))}
 								</div>
 							</section>
+							)}
 
 							<ReaderSuggestionAnalyticsIsland client:load />
 
+							{hasDeliveryPerformance && (
 							<section class="stats-module editorial-panel">
 								<h2 class="stats-section-title editorial-panel-title">Најуспешни Типови На Достава</h2>
 								<div class="follow-grid">
@@ -259,6 +313,7 @@ try {
 									))}
 								</div>
 							</section>
+							)}
 						</div>
 
 						<aside class="stats-rail">
@@ -397,6 +452,55 @@ try {
 		gap: 1.5rem;
 	}
 
+	.stats-overview {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.overview-primary,
+	.overview-secondary {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.overview-primary {
+		padding: 1.2rem;
+	}
+
+	.overview-value {
+		margin: 0;
+		font-family: var(--font-serif);
+		font-size: clamp(3rem, 2.2rem + 2vw, 5rem);
+		line-height: 0.92;
+	}
+
+	.overview-copy {
+		margin: 0;
+		max-width: 42rem;
+		font-family: var(--font-nyt-body);
+		font-size: 1rem;
+		line-height: 1.55;
+		color: var(--secondary-foreground);
+	}
+
+	.overview-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.65rem;
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.metric-card-accent {
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 90%, #efe6da 10%));
+	}
+
 	.stats-metrics {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -408,6 +512,11 @@ try {
 		font-size: clamp(2rem, 1.45rem + 1vw, 3rem);
 		line-height: 1;
 		margin: 0;
+	}
+
+	.metric-value-label {
+		font-size: clamp(1.3rem, 1rem + 0.7vw, 1.9rem);
+		line-height: 1.08;
 	}
 
 	.metric-caption {
@@ -425,6 +534,11 @@ try {
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 1.5rem;
+	}
+
+	.stats-module-priority {
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 98%, transparent), color-mix(in srgb, var(--background) 90%, #f2eadf 10%));
 	}
 
 	.source-bars,
@@ -597,6 +711,11 @@ try {
 	}
 
 	@media (min-width: 960px) {
+		.stats-overview {
+			grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.95fr);
+			align-items: stretch;
+		}
+
 		.stats-metrics {
 			grid-template-columns: repeat(4, minmax(0, 1fr));
 		}

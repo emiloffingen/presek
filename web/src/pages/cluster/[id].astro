@@ -466,7 +466,8 @@ const schema = cluster ? {
 										<div class="cluster-visual-fallback">
 											<p class="cluster-visual-kicker">Пресек Преглед</p>
 											<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
-											<p>{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+											<p class="cluster-visual-meta">{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+											<p class="cluster-visual-title">{displayHeadline}</p>
 										</div>
 									) : (
 										<img
@@ -983,6 +984,21 @@ const schema = cluster ? {
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--secondary-foreground);
+	}
+
+	.cluster-visual-meta {
+		margin: 0;
+	}
+
+	.cluster-visual-title {
+		margin: 0.2rem 0 0;
+		max-width: 18ch;
+		font-family: var(--font-serif);
+		font-size: 1rem;
+		line-height: 1.18;
+		letter-spacing: -0.01em;
+		text-transform: none;
+		color: color-mix(in srgb, var(--foreground) 86%, var(--muted-foreground) 14%);
 	}
 
 	.cluster-summary-label {

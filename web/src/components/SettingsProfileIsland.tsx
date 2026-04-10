@@ -6,6 +6,7 @@ import {
   recordSuggestionFollow,
   recordSuggestionImpressions,
   sendSuggestionEvents,
+  subscribeToReaderProfile,
   toggleFollowedValue,
 } from '../lib/personalization.js';
 
@@ -23,7 +24,7 @@ export default function SettingsProfileIsland() {
   const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
-    setProfile(loadReaderProfile());
+    return subscribeToReaderProfile(setProfile);
   }, []);
 
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);

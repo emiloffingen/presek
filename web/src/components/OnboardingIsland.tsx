@@ -10,6 +10,7 @@ import {
   recordSuggestionFollow,
   recordSuggestionImpressions,
   sendSuggestionEvents,
+  subscribeToReaderProfile,
   toggleFollowedValue,
 } from '../lib/personalization.js';
 
@@ -19,7 +20,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
 
   useEffect(() => {
     setProgress(getOnboardingProgress());
-    setProfile(loadReaderProfile());
+    return subscribeToReaderProfile(setProfile);
   }, []);
 
   const recommendations = useMemo(

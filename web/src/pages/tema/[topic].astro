@@ -103,6 +103,8 @@ const leadCluster = clusters[0] ?? null;
 const supportingClusters = clusters.slice(1, 4);
 const feedClusters = clusters.slice(4, 16);
 const leadDetail = leadCluster ? detailMap.get(leadCluster.cluster_id) || null : null;
+const featuredFeedClusters = feedClusters.slice(0, 4);
+const compactFeedClusters = feedClusters.slice(4);
 
 const totalReports = clusters.reduce((sum: number, cluster: any) => sum + (cluster?.articles?.length || 0), 0);
 const uniqueSources = new Set(
@@ -253,8 +255,8 @@ function topicIntro() {
 									<p class="section-note">Придружни и следни кластери што ја прошируваат темата.</p>
 								</div>
 								<div class="topic-supporting-grid">
-									{supportingClusters.map((cluster: any) => (
-										<NewsCard cluster={cluster} />
+									{supportingClusters.map((cluster: any, index: number) => (
+										<NewsCard cluster={cluster} variant={index === 0 ? 'featured' : 'compact'} />
 									))}
 								</div>
 							</section>
@@ -266,11 +268,20 @@ function topicIntro() {
 									<h2 class="section-title">Повеќе Од Оваа Тема</h2>
 									<p class="section-note">Останати активни кластери што вреди да останат во видното поле.</p>
 								</div>
-								<div class="topic-feed-grid">
-									{feedClusters.map((cluster: any) => (
-										<NewsCard cluster={cluster} />
-									))}
-								</div>
+								{featuredFeedClusters.length > 0 && (
+									<div class="topic-feed-grid topic-feed-grid-featured">
+										{featuredFeedClusters.map((cluster: any) => (
+											<NewsCard cluster={cluster} variant="featured" />
+										))}
+									</div>
+								)}
+								{compactFeedClusters.length > 0 && (
+									<div class="topic-feed-grid topic-feed-grid-compact">
+										{compactFeedClusters.map((cluster: any) => (
+											<NewsCard cluster={cluster} variant="compact" />
+										))}
+									</div>
+								)}
 							</section>
 						)}
 					</div>
@@ -756,6 +767,10 @@ function topicIntro() {
 		.topic-angle-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
+
+		.topic-feed-grid-compact {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 
 	@media (min-width: 980px) {
@@ -772,6 +787,10 @@ function topicIntro() {
 		.topic-rail {
 			position: sticky;
 			top: 1.5rem;
+		}
+
+		.topic-feed-grid-featured {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 

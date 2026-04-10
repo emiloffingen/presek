@@ -7,6 +7,7 @@ const ONBOARDING_KEY = 'presek_onboarding_v1';
 const SUGGESTION_ANALYTICS_KEY = 'presek_suggestion_analytics_v1';
 const CLIENT_ID_KEY = 'presek_client_id_v1';
 const MAX_SUGGESTION_IMPRESSION_KEYS = 240;
+const PROFILE_UPDATED_EVENT = 'presek:reader-profile-updated';
 
 const SUGGESTION_SURFACE_LABELS = {
   onboarding: 'Почетен водич',
@@ -322,7 +323,28 @@ export function saveReaderProfile(profile, storage = globalThis?.localStorage) {
     followedSources: normalizeList(profile?.followedSources).slice(0, MAX_FOLLOWED),
   };
   storage.setItem(PROFILE_KEY, JSON.stringify(normalized));
+  globalThis?.dispatchEvent?.(new CustomEvent(PROFILE_UPDATED_EVENT, { detail: normalized }));
   return normalized;
+}
+
+export function subscribeToReaderProfile(listener) {
+  if (!globalThis?.addEventListener || typeof listener !== 'function') {
+    return () => {};
+  }
+
+  const onProfileUpdated = () => listener(loadReaderProfile());
+  const onStorage = (event) => {
+    if (event?.key && event.key !== PROFILE_KEY) return;
+    listener(loadReaderProfile());
+  };
+
+  globalThis.addEventListener(PROFILE_UPDATED_EVENT, onProfileUpdated);
+  globalThis.addEventListener('storage', onStorage);
+
+  return () => {
+    globalThis.removeEventListener(PROFILE_UPDATED_EVENT, onProfileUpdated);
+    globalThis.removeEventListener('storage', onStorage);
+  };
 }
 
 export function createDefaultDeliveryPreferences() {
@@ -459,12 +481,50 @@ function topCounts(values) {
   return counts;
 }
 
+function parseViewedAt(value) {
+  const stamp = String(value || '').trim();
+  if (!stamp) return null;
+  const time = Date.parse(stamp);
+  return Number.isFinite(time) ? time : null;
+}
+
+function recencyWeight(viewedAt, now = Date.now()) {
+  const parsed = parseViewedAt(viewedAt);
+  if (!parsed) return 0.7;
+
+  const ageMs = Math.max(0, now - parsed);
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+  if (ageDays <= 2) return 1;
+  if (ageDays <= 7) return 0.82;
+  if (ageDays <= 14) return 0.58;
+  if (ageDays <= 30) return 0.32;
+  return 0.14;
+}
+
+function topWeightedCounts(items, selector, now = Date.now()) {
+  const counts = new Map();
+
+  for (const item of Array.isArray(items) ? items : []) {
+    const weight = recencyWeight(item?.viewedAt, now);
+    const values = Array.isArray(selector(item)) ? selector(item) : [];
+
+    for (const value of values) {
+      const clean = normalizeValue(value);
+      if (!clean) continue;
+      counts.set(clean, Number(((counts.get(clean) || 0) + weight).toFixed(3)));
+    }
+  }
+
+  return counts;
+}
+
 export function buildReaderSignals(profile) {
   const recent = Array.isArray(profile?.recentClusters) ? profile.recentClusters : [];
   return {
-    topicCounts: topCounts(recent.flatMap((item) => [item?.topic, item?.category])),
-    sourceCounts: topCounts(recent.flatMap((item) => item?.sources?.length ? item.sources : [item?.primarySource])),
-    tagCounts: topCounts(recent.flatMap((item) => item?.tags || [])),
+    topicCounts: topWeightedCounts(recent, (item) => [item?.topic, item?.category]),
+    sourceCounts: topWeightedCounts(recent, (item) => item?.sources?.length ? item.sources : [item?.primarySource]),
+    tagCounts: topWeightedCounts(recent, (item) => item?.tags || []),
   };
 }
 
@@ -478,6 +538,45 @@ export function hasPersonalizationSignal(profile) {
 
 function topReason(reasons) {
   return reasons.sort((left, right) => right.weight - left.weight)[0]?.label || '';
+}
+
+function normalizedLabelKey(value) {
+  return normalizeValue(value).toLocaleLowerCase('mk');
+}
+
+function isWeakRecommendationValue(value) {
+  const clean = normalizedLabelKey(value);
+  if (!clean) return true;
+  return [
+    'вести',
+    'македонија',
+    'свет',
+    'балкан',
+    'економија',
+    'спорт',
+    'култура',
+    'технологија',
+    'живот',
+  ].includes(clean);
+}
+
+function isStrongTopicSignal(value) {
+  return !isWeakRecommendationValue(value);
+}
+
+function distinctByValue(items, limit) {
+  const seen = new Set();
+  const next = [];
+
+  for (const item of Array.isArray(items) ? items : []) {
+    const key = normalizedLabelKey(item?.value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    next.push(item);
+    if (next.length >= limit) break;
+  }
+
+  return next;
 }
 
 export function scoreClusterForReader(cluster, profile) {
@@ -504,11 +603,11 @@ export function scoreClusterForReader(cluster, profile) {
 
   for (const topic of clusterTopics) {
     if (followedTopics.has(topic)) {
-      score += 3;
-      reasons.push({ weight: 3, label: `Следена тема: ${topic}` });
+      score += 3.2;
+      reasons.push({ weight: 3.2, label: `Следена тема: ${topic}` });
     }
-    if (signals.topicCounts.has(topic)) {
-      const weight = Math.min(2.2, 0.7 + signals.topicCounts.get(topic) * 0.55);
+    if (isStrongTopicSignal(topic) && signals.topicCounts.has(topic)) {
+      const weight = Math.min(2.7, 0.55 + signals.topicCounts.get(topic) * 0.5);
       score += weight;
       reasons.push({ weight, label: `Често читате ${topic}` });
     }
@@ -516,11 +615,11 @@ export function scoreClusterForReader(cluster, profile) {
 
   for (const source of sources) {
     if (followedSources.has(source)) {
-      score += 2.6;
-      reasons.push({ weight: 2.6, label: `Следен извор: ${source}` });
+      score += 2.9;
+      reasons.push({ weight: 2.9, label: `Следен извор: ${source}` });
     }
     if (signals.sourceCounts.has(source)) {
-      const weight = Math.min(1.8, 0.45 + signals.sourceCounts.get(source) * 0.35);
+      const weight = Math.min(1.65, 0.3 + signals.sourceCounts.get(source) * 0.28);
       score += weight;
       reasons.push({ weight, label: `${source} често се појавува во вашето читање` });
     }
@@ -538,6 +637,9 @@ export function scoreClusterForReader(cluster, profile) {
     score += 0.65;
   }
   score += Math.min(0.9, ((cluster.articles || []).length - 1) * 0.12);
+  if (seenClusterIds.has(cluster.cluster_id)) {
+    score -= 1.2;
+  }
 
   return {
     cluster,
@@ -551,7 +653,7 @@ export function buildPersonalizedClusters(clusters, profile, limit = 4) {
   const scored = (Array.isArray(clusters) ? clusters : [])
     .map((cluster) => scoreClusterForReader(cluster, profile))
     .filter(Boolean)
-    .filter((item) => item.score > 0.75)
+    .filter((item) => item.score > 1.45)
     .sort((left, right) => {
       if (right.score !== left.score) return right.score - left.score;
       return (right.cluster?.homepage_score || 0) - (left.cluster?.homepage_score || 0);
@@ -678,34 +780,41 @@ export function getOnboardingProgress(storage = globalThis?.localStorage) {
 
 export function buildFollowRecommendations(profile, limit = 4) {
   const normalizedProfile = profile || createEmptyProfile();
-  const topicSignals = buildReaderSignals(normalizedProfile).topicCounts;
-  const sourceSignals = buildReaderSignals(normalizedProfile).sourceCounts;
+  const signals = buildReaderSignals(normalizedProfile);
+  const topicSignals = signals.topicCounts;
+  const sourceSignals = signals.sourceCounts;
   const followedTopics = new Set(normalizeList(normalizedProfile.followedTopics));
   const followedSources = new Set(normalizeList(normalizedProfile.followedSources));
 
-  const topicRecommendations = Array.from(topicSignals.entries())
-    .filter(([topic]) => topic && !followedTopics.has(topic))
+  const topicRecommendations = distinctByValue(
+    Array.from(topicSignals.entries())
+    .filter(([topic, count]) => topic && count >= 2 && !followedTopics.has(topic) && !isWeakRecommendationValue(topic))
     .sort((left, right) => {
       if (right[1] !== left[1]) return right[1] - left[1];
       return left[0].localeCompare(right[0], 'mk');
     })
-    .slice(0, limit)
     .map(([topic, count]) => ({
       value: topic,
-      reason: count >= 2 ? `Често читате теми поврзани со ${topic}` : `Се појавува во вашето неодамнешно читање`,
-    }));
+      count,
+      reason: count >= 3 ? `Често читате теми поврзани со ${topic}` : `Оваа тема се повторува во вашето читање`,
+    })),
+    limit
+  );
 
-  const sourceRecommendations = Array.from(sourceSignals.entries())
-    .filter(([source]) => source && !followedSources.has(source))
+  const sourceRecommendations = distinctByValue(
+    Array.from(sourceSignals.entries())
+    .filter(([source, count]) => source && count >= 2 && !followedSources.has(source))
     .sort((left, right) => {
       if (right[1] !== left[1]) return right[1] - left[1];
       return left[0].localeCompare(right[0], 'mk');
     })
-    .slice(0, limit)
     .map(([source, count]) => ({
       value: source,
-      reason: count >= 2 ? `${source} често се појавува во вашето читање` : `Овој извор веќе е дел од кластерите што ги отворате`,
-    }));
+      count,
+      reason: count >= 3 ? `${source} постојано се појавува во вашето читање` : `Овој извор се повторува низ кластерите што ги отворате`,
+    })),
+    limit
+  );
 
   return {
     topics: topicRecommendations,
@@ -719,8 +828,9 @@ export function buildSurfaceFollowSuggestions(profile, surface, options = {}) {
   const topicLimit = Number.isFinite(options.topicLimit) ? Math.max(0, options.topicLimit) : 2;
   const sourceLimit = Number.isFinite(options.sourceLimit) ? Math.max(0, options.sourceLimit) : 1;
   const recommendations = buildFollowRecommendations(normalizedProfile, Math.max(4, topicLimit + sourceLimit + 2));
-  const topicCounts = buildReaderSignals(normalizedProfile).topicCounts;
-  const sourceCounts = buildReaderSignals(normalizedProfile).sourceCounts;
+  const signals = buildReaderSignals(normalizedProfile);
+  const topicCounts = signals.topicCounts;
+  const sourceCounts = signals.sourceCounts;
   const followedCount = (normalizedProfile.followedTopics || []).length + (normalizedProfile.followedSources || []).length;
   const hasSignals = hasPersonalizationSignal(normalizedProfile);
 
@@ -731,17 +841,20 @@ export function buildSurfaceFollowSuggestions(profile, surface, options = {}) {
     topics = topics.slice(0, topicLimit || 2);
     sources = followedCount > 0 ? sources.slice(0, Math.min(1, sourceLimit || 1)) : [];
   } else if (cleanSurface === 'home_rail') {
-    topics = topics.slice(0, topicLimit || 2);
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, hasSignals ? 0 : 1);
+    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 3).slice(0, topicLimit || 2);
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 3).slice(0, hasSignals ? 0 : 1);
   } else if (cleanSurface === 'for_you') {
-    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 2).slice(0, topicLimit || 2);
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, sourceLimit || 1);
+    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 4).slice(0, topicLimit || 2);
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 3).slice(0, sourceLimit || 1);
+    if (topics.length === 0 && sources.length === 0) {
+      sources = recommendations.sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.min(1, sourceLimit || 1));
+    }
   } else if (cleanSurface === 'settings') {
     topics = topics.slice(0, Math.max(2, topicLimit));
     sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.max(1, sourceLimit));
   } else if (cleanSurface === 'cluster' || cleanSurface === 'topic') {
     topics = topics.slice(0, Math.max(2, topicLimit));
-    sources = sources.slice(0, Math.max(1, sourceLimit));
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.max(1, sourceLimit));
   } else {
     topics = topics.slice(0, topicLimit);
     sources = sources.slice(0, sourceLimit);

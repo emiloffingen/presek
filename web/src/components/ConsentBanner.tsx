@@ -1,42 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
+const CONSENT_KEY = 'presek_cookie_consent';
+const DISMISS_COOLDOWN_MS = 1000 * 60 * 60 * 24 * 3;
+
+type ConsentState =
+  | 'accepted'
+  | {
+      status: 'accepted' | 'dismissed';
+      ts: number;
+    };
+
+function readConsentState(): ConsentState | null {
+  const raw = globalThis?.localStorage?.getItem(CONSENT_KEY);
+  if (!raw) return null;
+  if (raw === 'accepted') return 'accepted';
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      (parsed.status === 'accepted' || parsed.status === 'dismissed') &&
+      Number.isFinite(parsed.ts)
+    ) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeConsentState(status: 'accepted' | 'dismissed') {
+  globalThis?.localStorage?.setItem(
+    CONSENT_KEY,
+    JSON.stringify({
+      status,
+      ts: Date.now(),
+    })
+  );
+}
+
 export const ConsentBanner: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('presek_cookie_consent');
-    if (!consent) {
-      // Show after a short delay to not block initial render
-      const timer = setTimeout(() => setVisible(true), 1000);
-      return () => clearTimeout(timer);
+    const consent = readConsentState();
+
+    if (consent === 'accepted') {
+      return;
     }
+
+    if (
+      consent &&
+      typeof consent === 'object' &&
+      consent.status === 'dismissed' &&
+      Date.now() - consent.ts < DISMISS_COOLDOWN_MS
+    ) {
+      return;
+    }
+
+    // Show after a short delay to not block initial render.
+    const timer = setTimeout(() => setVisible(true), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   const accept = () => {
-    localStorage.setItem('presek_cookie_consent', 'accepted');
+    writeConsentState('accepted');
     setVisible(false);
   };
 
   const dismiss = () => {
+    writeConsentState('dismissed');
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] p-3 md:p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="max-w-5xl mx-auto border border-border bg-background/96 backdrop-blur-md shadow-[0_-8px_30px_rgba(17,24,39,0.08)] rounded-2xl px-4 py-3 md:px-5 md:py-3.5">
-        <div className="flex items-start gap-3 md:items-center md:justify-between">
+    <div className="fixed inset-x-0 bottom-0 z-[100] px-2 pb-2 md:p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-border bg-background/94 px-2.5 py-1.5 shadow-[0_-8px_30px_rgba(17,24,39,0.08)] backdrop-blur-md md:px-5 md:py-3.5">
+        <div className="flex items-center gap-2 md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center gap-2">
+            <div className="mb-0.5 flex items-center gap-2">
               <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em] text-foreground">Колачиња и приватност</h3>
               <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
               <span className="hidden md:inline text-xs text-muted-foreground">Кратко известување</span>
             </div>
-            <p className="text-xs md:text-[13px] text-secondary-foreground leading-relaxed md:hidden">
-              Користиме колачиња за персонализација и анализа.
+            <p className="text-[10px] text-secondary-foreground leading-snug md:hidden">
+              Персонализација и анализа.
               {' '}
               <button
                 type="button"
@@ -47,7 +101,7 @@ export const ConsentBanner: React.FC = () => {
               </button>
             </p>
             {expanded && (
-              <p className="mt-1 text-[12px] text-secondary-foreground leading-relaxed md:hidden">
+              <p className="mt-1 text-[11px] text-secondary-foreground leading-snug md:hidden">
                 Користиме колачиња за персонализација, огласи и анализа на сообраќајот.
                 {' '}
                 <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Политика за приватност</a>.
@@ -59,17 +113,17 @@ export const ConsentBanner: React.FC = () => {
               <a href="/privacy" className="underline underline-offset-2 hover:text-nyt-accent">Политика за приватност</a>.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+          <div className="flex shrink-0 items-center gap-1 self-auto">
             <button
               onClick={dismiss}
               aria-label="Затвори"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/80 text-muted-foreground transition-colors hover:text-foreground md:h-9 md:w-9"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
             <button
               onClick={accept}
-              className="px-3.5 py-2 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-[0.14em] hover:bg-nyt-accent hover:text-white transition-colors rounded-full md:px-4 md:text-[11px]"
+              className="rounded-full bg-foreground px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[11px]"
             >
               Прифаќам
             </button>

@@ -8,6 +8,7 @@ import {
   loadReaderProfile,
   recordSuggestionImpressions,
   sendSuggestionEvents,
+  subscribeToReaderProfile,
 } from '../lib/personalization.js';
 import { cleanAndDecode } from '../utils/textUtils';
 
@@ -37,6 +38,16 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
       setLoading(false);
     }, 400);
     return () => clearTimeout(timer);
+  }, [clusters]);
+
+  useEffect(() => {
+    return subscribeToReaderProfile((nextProfile) => {
+      setProfile(nextProfile);
+      const nextHasSignals = hasPersonalizationSignal(nextProfile);
+      setHasSignals(nextHasSignals);
+      setItems(nextHasSignals ? buildPersonalizedClusters(clusters, nextProfile, 4) : []);
+      setLoading(false);
+    });
   }, [clusters]);
 
   const recommendations = useMemo(

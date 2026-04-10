@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
-import { buildSurfaceFollowSuggestions, loadReaderProfile, recordSuggestionImpressions, sendSuggestionEvents } from '../lib/personalization.js';
+import {
+  buildSurfaceFollowSuggestions,
+  loadReaderProfile,
+  recordSuggestionImpressions,
+  sendSuggestionEvents,
+  subscribeToReaderProfile,
+} from '../lib/personalization.js';
 
 type Suggestion = {
   value: string;
@@ -17,12 +23,11 @@ export default function ClusterFollowSuggestionsIsland({
   source?: string;
   adjacentTopic?: string;
 }) {
-  const [refreshKey, setRefreshKey] = useState(0);
   const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
-    setProfile(loadReaderProfile());
-  }, [refreshKey]);
+    return subscribeToReaderProfile(setProfile);
+  }, []);
 
   const suggestions = useMemo(() => {
     const base = buildSurfaceFollowSuggestions(profile, 'cluster', { topicLimit: 2, sourceLimit: 1 });
@@ -99,7 +104,9 @@ export default function ClusterFollowSuggestionsIsland({
               value={item.value}
               label={`тема: ${item.value}`}
               analyticsSurface="cluster"
-              onChanged={() => setRefreshKey((value) => value + 1)}
+              onChanged={(isFollowing) => {
+                if (!isFollowing) setProfile(loadReaderProfile());
+              }}
             />
           </div>
         ))}
@@ -116,7 +123,9 @@ export default function ClusterFollowSuggestionsIsland({
               value={item.value}
               label={`извор: ${item.value}`}
               analyticsSurface="cluster"
-              onChanged={() => setRefreshKey((value) => value + 1)}
+              onChanged={(isFollowing) => {
+                if (!isFollowing) setProfile(loadReaderProfile());
+              }}
             />
           </div>
         ))}

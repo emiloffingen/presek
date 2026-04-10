@@ -7,15 +7,15 @@ import {
   loadReaderProfile,
   recordSuggestionImpressions,
   sendSuggestionEvents,
+  subscribeToReaderProfile,
 } from '../lib/personalization.js';
 
 export default function HomeRailSuggestionsIsland() {
-  const [refreshKey, setRefreshKey] = useState(0);
   const [profile, setProfile] = useState(() => loadReaderProfile());
 
   useEffect(() => {
-    setProfile(loadReaderProfile());
-  }, [refreshKey]);
+    return subscribeToReaderProfile(setProfile);
+  }, []);
 
   const suggestions = useMemo(
     () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 }),
@@ -68,7 +68,9 @@ export default function HomeRailSuggestionsIsland() {
               value={item.value}
               label={`тема: ${item.value}`}
               analyticsSurface="home_rail"
-              onChanged={() => setRefreshKey((value) => value + 1)}
+              onChanged={(isFollowing) => {
+                if (!isFollowing) setProfile(loadReaderProfile());
+              }}
             />
           </div>
         ))}
@@ -85,7 +87,9 @@ export default function HomeRailSuggestionsIsland() {
               value={item.value}
               label={`извор: ${item.value}`}
               analyticsSurface="home_rail"
-              onChanged={() => setRefreshKey((value) => value + 1)}
+              onChanged={(isFollowing) => {
+                if (!isFollowing) setProfile(loadReaderProfile());
+              }}
             />
           </div>
         ))}

@@ -1169,6 +1169,12 @@ h1, h2, h3 {
     background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background) 94%);
 }
 
+.reader-pref-toggle.has-feedback {
+    border-color: color-mix(in srgb, var(--nyt-accent) 54%, var(--border) 46%);
+    background: color-mix(in srgb, var(--nyt-accent) 10%, var(--background) 90%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--nyt-accent) 14%, transparent 86%);
+}
+
 .for-you-module {
     margin-top: 1.35rem;
     padding-top: 1.3rem;

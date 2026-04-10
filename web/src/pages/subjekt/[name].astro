@@ -28,6 +28,8 @@ try {
 }
 
 const clusters = entityData?.clusters || [];
+const featuredClusters = clusters.slice(0, 4);
+const compactClusters = clusters.slice(4);
 ---
 
 <Layout 
@@ -57,13 +59,13 @@ const clusters = entityData?.clusters || [];
                             <h2>Неодамнешни Кластери</h2>
                             <p>Сите свежи стории каде {decodedName} влегува како дел од развојот или контекстот.</p>
                         </div>
-                        <div class="news-feed-grid">
-                            {clusters.map((cluster: any) => {
+                        <div class="news-feed-grid entity-feed-grid entity-feed-grid-featured">
+                            {featuredClusters.map((cluster: any) => {
                                 if (cluster.articles && cluster.articles.length > 0) {
-                                    return <NewsCard cluster={cluster} />;
+                                    return <NewsCard cluster={cluster} variant="featured" />;
                                 }
                                 return (
-                                    <article class="nyt-article">
+                                    <article class="nyt-article variant-featured">
                                         <div class="article-body">
                                             <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
                                                 <h2 class="headline headline-standard" set:html={cleanAndDecode(cluster.title || '')}></h2>
@@ -76,6 +78,27 @@ const clusters = entityData?.clusters || [];
                                 );
                             })}
                         </div>
+                        {compactClusters.length > 0 && (
+                            <div class="news-feed-grid entity-feed-grid entity-feed-grid-compact">
+                                {compactClusters.map((cluster: any) => {
+                                    if (cluster.articles && cluster.articles.length > 0) {
+                                        return <NewsCard cluster={cluster} variant="compact" />;
+                                    }
+                                    return (
+                                        <article class="nyt-article variant-compact">
+                                            <div class="article-body">
+                                                <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
+                                                    <h2 class="headline headline-standard" set:html={cleanAndDecode(cluster.title || '')}></h2>
+                                                </a>
+                                                {cluster.bullets && cluster.bullets.length > 0 && (
+                                                    <p class="summary">{cluster.bullets[0]}</p>
+                                                )}
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        )}
                         {clusters.length === 0 && (
                             <div class="entity-empty">
                                 <p class="text-muted font-bold uppercase tracking-widest text-sm">Нема пронајдени вести за овој субјект.</p>
@@ -123,5 +146,28 @@ const clusters = entityData?.clusters || [];
         border: 1px solid var(--border);
         background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
         text-align: center;
+    }
+
+    .entity-feed-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .entity-feed-grid + .entity-feed-grid {
+        margin-top: 1rem;
+    }
+
+    @media (min-width: 720px) {
+        .entity-feed-grid-compact {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 980px) {
+        .entity-feed-grid-featured,
+        .entity-feed-grid-compact {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 </style>

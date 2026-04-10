@@ -1,6 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BellPlus, BellRing } from 'lucide-react';
-import { isFollowingValue, recordSuggestionFollow, sendSuggestionEvents, toggleFollowedValue } from '../lib/personalization.js';
+import {
+  isFollowingValue,
+  recordSuggestionFollow,
+  sendSuggestionEvents,
+  subscribeToReaderProfile,
+  toggleFollowedValue,
+} from '../lib/personalization.js';
 
 export default function PreferenceToggle({
   kind,
@@ -16,10 +22,22 @@ export default function PreferenceToggle({
   analyticsSurface?: string;
 }) {
   const [isFollowing, setIsFollowing] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const feedbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setIsFollowing(isFollowingValue(kind, value));
   }, [kind, value]);
+
+  useEffect(() => subscribeToReaderProfile(() => {
+    setIsFollowing(isFollowingValue(kind, value));
+  }), [kind, value]);
+
+  useEffect(() => () => {
+    if (feedbackTimerRef.current) {
+      window.clearTimeout(feedbackTimerRef.current);
+    }
+  }, []);
 
   const onToggle = () => {
     const result = toggleFollowedValue(kind, value);
@@ -29,29 +47,44 @@ export default function PreferenceToggle({
         sendSuggestionEvents([{ surface: analyticsSurface, eventType: 'follow', suggestionKind: kind, value }]);
       }
     }
+
+    if (feedbackTimerRef.current) {
+      window.clearTimeout(feedbackTimerRef.current);
+    }
+
+    setFeedback(result.isFollowing ? 'Зачувано' : 'Отстрането');
+    feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
     setIsFollowing(result.isFollowing);
     onChanged?.(result.isFollowing);
   };
 
   const noun = label || (kind === 'topic' ? 'тема' : 'извор');
-  const actionText = isFollowing 
-    ? `Следите ${noun}` 
-    : (label ? `Следи ${noun}` : `Следи ${noun}`);
-  
+  const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
+
   // Custom logic for common Macedonian specific labels to be grammatically correct
   let displayAction = isFollowing ? `Следите ${noun}` : `Следи ${noun}`;
   if (!isFollowing && label === 'ја темата') displayAction = "Следи ја темата";
   if (!isFollowing && label === 'го изворот') displayAction = "Следи го изворот";
+  const buttonLabel = feedback || displayAction;
+  const liveMessage = feedback
+    ? `${feedback}: ${value}`
+    : `${isFollowing ? 'Го следите' : 'Не го следите'} ${value}`;
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`reader-pref-toggle ${isFollowing ? 'is-active' : ''}`}
-      aria-pressed={isFollowing}
-    >
-      {isFollowing ? <BellRing size={14} /> : <BellPlus size={14} />}
-      <span>{displayAction}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`reader-pref-toggle ${isFollowing ? 'is-active' : ''} ${feedback ? 'has-feedback' : ''}`}
+        aria-pressed={isFollowing}
+        aria-describedby={statusId}
+      >
+        {isFollowing ? <BellRing size={14} /> : <BellPlus size={14} />}
+        <span>{buttonLabel}</span>
+      </button>
+      <span id={statusId} className="sr-only" aria-live="polite">
+        {liveMessage}
+      </span>
+    </>
   );
 }
