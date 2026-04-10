@@ -81,16 +81,18 @@ ENTITY_NOISE_WORDS = {
 TAG_NOISE_WORDS = {
     "вести", "вест", "извор", "извори", "кластер", "македонија", "свет", "инфо",
     "фото", "видео", "денес", "утре", "вчера", "сега", "нови", "нова", "ново",
+    "објави", "изјави", "порача", "соопшти", "најави", "тврдат", "вели", "велат",
 }
 
 SOURCE_NOISE_WORDS = {
     "reuters", "ap", "afp", "mia", "mиа", "bbc", "cnn", "dw", "ansa", "tass",
-    "associated", "press",
+    "associated", "press", "makfax", "макфакс", "тв21", "тв24", "телма", "сител", "канал5",
 }
 
 TAG_GENERIC_STARTERS = {
     "ново", "нова", "нови", "нов", "главно", "главниот", "водечки",
     "утрински", "вечерни", "последни", "последно", "последната",
+    "подготвува", "најавува", "повикува", "напади", "напад",
 }
 
 LOCAL_TRANSLATION_PHRASES = [
@@ -241,11 +243,11 @@ def is_valid_focus_entity(name, entity_type=None):
 
     if not clean or len(clean) < 3:
         return False
-    if lowered in TAG_NOISE_WORDS:
+    if lowered in TAG_NOISE_WORDS or lowered in ENTITY_NOISE_WORDS:
         return False
     if lowered in SOURCE_NOISE_WORDS:
         return False
-    if any(word in TAG_NOISE_WORDS for word in words):
+    if any(word in TAG_NOISE_WORDS or word in ENTITY_NOISE_WORDS for word in words):
         return False
     if any(word in SOURCE_NOISE_WORDS for word in words):
         return False

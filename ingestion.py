@@ -254,13 +254,29 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
             async for chunk in resp.aiter_bytes():
                 if not chunk:
                     continue
+                
                 remaining = _OG_IMAGE_READ_LIMIT - len(head_bytes)
                 if remaining <= 0:
                     break
+                
                 head_bytes.extend(chunk[:remaining])
+                
+                # Check if we have enough to find the tag early
+                if b'og:image' in head_bytes:
+                    # We might have the full tag, or just the property name.
+                    # If we can see a closing > after the property, we likely have it.
+                    # To be safe, we decode what we have and check.
+                    try:
+                        temp_text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
+                        if re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', temp_text, re.I) or \
+                           re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', temp_text, re.I):
+                            break
+                    except:
+                        pass
+
                 if len(head_bytes) >= _OG_IMAGE_READ_LIMIT:
                     break
-
+            
             text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
         m = re.search(
             r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
