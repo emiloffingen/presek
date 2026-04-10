@@ -28,8 +28,6 @@ let topEntities = [];
 let stats = null;
 let health = null;
 let error = null;
-let internationalClusters = [];
-
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -41,19 +39,18 @@ async function fetchJson(url: string) {
 // Build the fetch URL with params
 const newsUrl = new URL(`${API_URL}/news`);
 newsUrl.searchParams.set('page_size', '40');
-if (category) newsUrl.searchParams.set('topic', category);
+if (category) newsUrl.searchParams.set('category', category);
 if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
 
 // Fan out every SSR request in parallel — the news call is the only one
 // the page can't usefully render without, so we still surface its failure.
-const [newsResult, trendResult, entityResult, statsResult, healthResult, internationalResult] = await Promise.allSettled([
+const [newsResult, trendResult, entityResult, statsResult, healthResult] = await Promise.allSettled([
     fetchJson(newsUrl.toString()),
     fetchJson(`${API_URL}/trending`),
     fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
     fetchJson(`${API_URL}/stats/summary`),
     fetchJson(`${API_URL}/health`),
-    fetchJson(`${API_URL}/intelligence/international-curated?limit=4`),
 ]);
 
 if (newsResult.status === 'fulfilled') {
@@ -71,10 +68,6 @@ topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.
     : [];
 stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
 health = healthResult.status === 'fulfilled' ? healthResult.value : null;
-internationalClusters =
-    internationalResult.status === 'fulfilled' && Array.isArray(internationalResult.value?.clusters)
-        ? internationalResult.value.clusters
-        : [];
 
 function normalizeFocusName(name: string) {
     const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
@@ -137,8 +130,8 @@ function getLeadSummary(cluster: any) {
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const leadSummary = leadCluster ? getLeadSummary(leadCluster) : '';
 const leadTitle = leadCluster ? cleanAndDecode(leadCluster.articles[0].title) : '';
+const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 const freshness = health?.freshness || null;
-const showInternationalRail = !q && !category && !topic && internationalClusters.length > 0;
 
 function getTimeStr(dateStr: string) {
     try {
@@ -154,10 +147,10 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 ---
 
 <Layout
-	title={q || category || topic || "Пресек | Македонски информативен агрегатор"}
+	title={q || category || topic || "Пресек | Повеќе од вести"}
 	description={q || category || topic
-		? "Пресек ги групира поврзаните вести, ги споредува изворите и ви дава побрз преглед на темата."
-		: "Пресек е македонски информативен агрегатор што ги собира главните вести, ги групира по тема и покажува како различни извори известуваат за истиот настан."}
+		? "Пресек ги групира поврзаните вести, ги споредува изворите и ви овозможува побрз преглед на контекстот."
+		: "Пресек е македонски информативен агрегатор што ги собира вестите од сите медиуми, ги групира по тема и покажува како различните извори известуваат за ист настан."}
 >
     <NYTHeader q={q} category={category} topic={topic} />
 
@@ -172,11 +165,11 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 					{q && (
 						<div class="flex items-center gap-1.5 text-nyt-accent">
 							<Sparkles size={12} />
-							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Сензорно пребарување активно</span>
+							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Семантичко пребарување активно</span>
 						</div>
 					)}
 				</div>
-				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red transition-colors">Прикажи ги сите вести</a>
+				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red transition-colors">Сите вести</a>
 			</div>
 		)}
 
@@ -191,9 +184,9 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 					{!error && clusters.length === 0 && (
 						<div class="empty-feed">
 							<p class="empty-feed-kicker">Тивко на лентата</p>
-							<h2 class="empty-feed-title">Денеска нема нови приказни што се истакнуваат.</h2>
+							<h2 class="empty-feed-title">Моментално нема нови вести што се истакнуваат.</h2>
 							<p class="empty-feed-copy">
-								Сè уште ги собираме објавите од медиумите. Освежете ја страницата за неколку минути или прелистајте ја <a href="/archive">архивата</a> за да видите што се случуваше претходните денови.
+								Сè уште ги собираме објавите од сите медиуми. Освежете ја страницата за неколку минути или прелистајте ја <a href="/archive">архивата</a> за претходните денови.
 							</p>
 						</div>
 					)}
@@ -229,19 +222,37 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 							)}
 						</div>
 
-						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media" aria-hidden="true" tabindex="-1">
-							<img
-								src={getThumb(leadCluster, 'hero')}
-								alt=""
-								width="1200"
-								height="1000"
-								loading="eager"
-								fetchpriority="high"
-								decoding="async"
-							/>
-						</a>
-					</section>
-				)}
+							<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media" aria-hidden="true" tabindex="-1">
+								<div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
+									{leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+										<>
+											<img
+												src={leadVisual.proxiedUrl}
+												alt=""
+												width="1200"
+												height="1000"
+												loading="eager"
+												fetchpriority="high"
+												decoding="async"
+												class="lead-media-image"
+												onload="this.classList.add('is-loaded')"
+												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+											/>
+											<div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
+												<p class="lead-media-kicker">Сликата не е достапна</p>
+												<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+											</div>
+										</>
+									) : (
+										<div class="lead-media-placeholder">
+											<p class="lead-media-kicker">Пресек Преглед</p>
+											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+										</div>
+									)}
+								</div>
+							</a>
+						</section>
+					)}
 
 					{supportingClusters.length > 0 && (
 						<section class="supporting-grid motion-rise motion-delay-1">
@@ -257,25 +268,11 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 					<OnboardingIsland client:load compact />
 
-					{showInternationalRail && (
-						<section class="international-section motion-rise motion-delay-2">
-							<div class="section-heading-row">
-								<h2 class="section-title">Од регионот и светот</h2>
-								<p class="section-note">Куриран избор од странски извори со веќе преведени наслови на македонски.</p>
-							</div>
-							<div class="news-feed-grid">
-								{internationalClusters.map((cluster) => (
-									<NewsCard cluster={cluster} />
-								))}
-							</div>
-						</section>
-					)}
-
 					{feedClusters.length > 0 && (
 						<section class="feed-section motion-rise motion-delay-3">
 						<div class="section-heading-row">
-							<h2 class="section-title">Понатаму во денот</h2>
-							<p class="section-note">Развојни приказни што веќе имаат повеќе од еден извор и вреди да останат во видното поле.</p>
+							<h2 class="section-title">Теми во развој</h2>
+							<p class="section-note">Приказни за кои веќе известуваат повеќе медиуми и кои вреди да се следат.</p>
 						</div>
 						<div class="news-feed-grid">
 							{continuingClusters.map((cluster) => (
@@ -288,8 +285,8 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 					{wireClusters.length > 0 && (
 						<section class="feed-section feed-section-wire motion-rise motion-delay-3">
 							<div class="section-heading-row">
-								<h2 class="section-title">Само објавено</h2>
-								<p class="section-note">Свежи единечни објави што сè уште чекаат потврда или пошироко покривање.</p>
+								<h2 class="section-title">Најнови вести</h2>
+								<p class="section-note">Свежи поединечни објави што сè уште чекаат пошироко покривање од други извори.</p>
 							</div>
 							<div class="news-feed-grid">
 								{wireClusters.map((cluster) => (
@@ -301,8 +298,6 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 			</div>
 
 			<aside class="front-rail">
-				<NewsletterIsland client:load />
-
 				<section class="rail-module rail-pulse motion-rise-fast motion-delay-1">
 					<p class="rail-kicker">Редакциски сигнал</p>
 					<h3 class="rail-title">
@@ -328,6 +323,8 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 				</section>
 
 				<HomeRailSuggestionsIsland client:load />
+
+				<NewsletterIsland client:load />
 
 				<SourceMapIsland client:visible />
 
@@ -617,13 +614,68 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		color: var(--nyt-accent);
 	}
 
-	.lead-media img {
+	.lead-media-frame {
+		position: relative;
+		aspect-ratio: 1.18 / 1;
+		border: 1px solid var(--border);
+		overflow: hidden;
+		background:
+			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
+			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
+	}
+
+	.lead-media-frame-fallback {
+		padding: 0.4rem;
+		border-color: color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
+	}
+
+	.lead-media-image {
 		display: block;
 		width: 100%;
-		aspect-ratio: 1.18 / 1;
+		height: 100%;
 		object-fit: cover;
 		object-position: center top;
-		border: 1px solid var(--border);
+		opacity: 0;
+		transition: opacity 0.45s ease-out;
+	}
+
+	.lead-media-image.is-loaded {
+		opacity: 1;
+	}
+
+	.lead-media-placeholder {
+		width: 100%;
+		height: 100%;
+		display: grid;
+		align-content: end;
+		gap: 0.55rem;
+		padding: 1.25rem;
+		background:
+			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent), transparent 45%),
+			linear-gradient(160deg, color-mix(in srgb, var(--background) 88%, #f4ede3 12%), color-mix(in srgb, var(--background) 78%, var(--secondary) 22%));
+	}
+
+	.lead-media-placeholder-error {
+		align-content: center;
+		text-align: center;
+	}
+
+	.lead-media-kicker {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 900;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.lead-media-placeholder h2 {
+		margin: 0;
+		font-size: clamp(1.4rem, 1.05rem + 1vw, 2rem);
+		line-height: 1.04;
+		max-width: 10ch;
+		color: var(--foreground);
 	}
 
 	.supporting-grid {
@@ -636,11 +688,6 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 	.feed-section {
 		padding-top: 1.4rem;
-	}
-
-	.international-section {
-		padding-top: 1.4rem;
-		border-top: 1px solid var(--border);
 	}
 
 	@media (max-width: 640px) {
@@ -669,11 +716,17 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 			max-width: none;
 		}
 
-		.lead-media img {
+		.lead-media-frame {
 			aspect-ratio: 16 / 10;
 			max-height: 13.5rem;
-			object-fit: cover;
-			object-position: center;
+		}
+
+		.lead-media-placeholder {
+			padding: 0.9rem;
+		}
+
+		.lead-media-placeholder h2 {
+			font-size: 1.2rem;
 		}
 
 		.lead-summary {
@@ -736,16 +789,16 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	.front-rail {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 0.85rem;
+		gap: 1rem;
 		align-content: start;
 	}
 
 	.rail-module {
-		padding: 1rem;
+		padding: 0.9rem;
 		border: 1px solid var(--border);
 		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 92%, var(--secondary) 8%), color-mix(in srgb, var(--background) 84%, var(--secondary) 16%));
-		box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 78%, transparent);
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, var(--secondary) 5%), color-mix(in srgb, var(--background) 89%, var(--secondary) 11%));
+		box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
 	}
 
 	.rail-kicker {
@@ -770,6 +823,30 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		padding-bottom: 0.7rem;
 		margin: 0 0 0.75rem;
 		border-bottom: 1px solid var(--border);
+	}
+
+	@media (min-width: 960px) {
+		.front-rail {
+			gap: 0.8rem;
+		}
+
+		.rail-module {
+			padding: 0.85rem;
+			background:
+				linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 92%, var(--secondary) 8%));
+			box-shadow: none;
+		}
+
+		.rail-kicker {
+			font-size: 0.56rem;
+			margin-bottom: 0.45rem;
+		}
+
+		.rail-title {
+			padding-bottom: 0.55rem;
+			margin-bottom: 0.65rem;
+			font-size: 0.68rem;
+		}
 	}
 
 	.rail-list {

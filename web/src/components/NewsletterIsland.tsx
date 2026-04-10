@@ -35,11 +35,11 @@ export default function NewsletterIsland() {
 
   if (status === 'success') {
     return (
-      <section className="rail-module bg-nyt-accent/5 border-nyt-accent/20 border p-6 rounded-lg animate-in fade-in duration-500">
+      <section className="rail-module border border-nyt-accent/20 bg-nyt-accent/4 p-5 animate-in fade-in duration-500">
         <div className="flex flex-col items-center text-center">
-          <CheckCircle2 className="text-nyt-accent mb-3" size={32} />
-          <h3 className="font-serif font-bold text-lg mb-2">Успешно се пријавивте!</h3>
-          <p className="text-sm text-secondary-foreground leading-relaxed">
+          <CheckCircle2 className="text-nyt-accent mb-3" size={26} />
+          <h3 className="font-serif font-bold text-base mb-2">Успешно се пријавивте!</h3>
+          <p className="text-[13px] text-secondary-foreground leading-relaxed">
             Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.
           </p>
         </div>
@@ -48,16 +48,16 @@ export default function NewsletterIsland() {
   }
 
   return (
-    <section className="rail-module border border-border p-6 rounded-lg bg-card">
-      <p className="mb-2 font-sans text-[9px] font-black uppercase tracking-[0.22em] text-nyt-accent">Секое утро во едно писмо</p>
-      <div className="flex items-center gap-2 mb-3">
-        <Mail size={16} className="text-nyt-accent" />
-        <h3 className="font-sans text-[11px] font-black uppercase tracking-widest">Утрински Брифинг</h3>
+    <section className="rail-module border border-border/90 bg-card/88 p-5">
+      <p className="mb-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">Секое утро во едно писмо</p>
+      <div className="flex items-center gap-2 mb-2.5">
+        <Mail size={15} className="text-nyt-accent" />
+        <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em]">Утрински Брифинг</h3>
       </div>
-      <p className="font-serif text-[1.05rem] leading-snug mb-2">
+      <p className="font-serif text-[1rem] leading-snug mb-2">
         Најважните теми, собрани и подредени пред да почне денот.
       </p>
-      <p className="text-sm leading-relaxed text-secondary-foreground mb-4">
+      <p className="text-[13px] leading-relaxed text-secondary-foreground mb-4">
         Испраќаме краток избор од приказните што добиле најмногу потврди, внимание и контекст.
       </p>
       
@@ -69,7 +69,7 @@ export default function NewsletterIsland() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Вашата е-пошта"
             required
-            className="w-full px-4 py-2.5 bg-secondary/30 border border-border rounded-lg text-sm focus:outline-none focus:border-nyt-accent transition-colors"
+            className="w-full px-3.5 py-2.5 bg-secondary/22 border border-border text-sm focus:outline-none focus:border-nyt-accent transition-colors"
           />
         </div>
         
@@ -80,7 +80,7 @@ export default function NewsletterIsland() {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="w-full py-2.5 bg-foreground text-background font-sans text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
+          className="w-full py-2.5 bg-foreground text-background font-sans text-[11px] font-black uppercase tracking-[0.14em] hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
         >
           {status === 'loading' ? (
             <Loader2 size={14} className="animate-spin" />
@@ -89,7 +89,7 @@ export default function NewsletterIsland() {
           )}
         </button>
       </form>
-      <p className="text-[9px] text-muted-foreground mt-4 leading-relaxed italic">
+      <p className="text-[9px] text-muted-foreground mt-3 leading-relaxed italic">
         * Со пријавувањето се согласувате со нашите услови за користење и политика за приватност. Можете да се одјавите во секое време.
       </p>
     </section>

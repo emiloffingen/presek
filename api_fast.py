@@ -34,7 +34,6 @@ from config import (
     BREAKING_SCORE_THRESHOLD,
     API_MAX_PAGE,
     API_MAX_Q_LEN,
-    CURATED_INTERNATIONAL_SOURCES,
     SOURCE_CREDIBILITY,
     DEFAULT_CREDIBILITY,
     validate_required_env,
@@ -87,7 +86,7 @@ app = FastAPI(title="Presek API 6.0", version="6.0.0")
 _start_time = datetime.datetime.now(datetime.timezone.utc)
 _APP_ROOT = Path(__file__).resolve().parent
 _STATIC_ROOT = _APP_ROOT / "static"
-_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
+_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024
 _WMO_ICON = {
     0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
@@ -306,6 +305,47 @@ def _parse_ip_literal(value: str) -> str:
         return str(ipaddress.ip_address(str(value or "").strip()))
     except ValueError:
         return ""
+
+
+def _extract_sync_token(request: Request) -> str:
+    token = str(request.headers.get("X-Sync-Token") or "").strip()
+    if token:
+        return token
+
+    auth = str(request.headers.get("Authorization") or "").strip()
+    if auth.lower().startswith("bearer "):
+        return auth[7:].strip()
+    return ""
+
+
+def _row_int_value(row, key: str = "count", default: int = 0) -> int:
+    if row is None:
+        return default
+    if isinstance(row, dict):
+        value = row.get(key)
+        if value is None:
+            for candidate in row.values():
+                if isinstance(candidate, (int, float)) and not isinstance(candidate, bool):
+                    value = candidate
+                    break
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+    if isinstance(row, (list, tuple)) and row:
+        try:
+            return int(row[0])
+        except (TypeError, ValueError):
+            return default
+    return default
+
+
+def _news_row_limit(page: int, page_size: int) -> int:
+    # Fetch enough article rows to rank cluster pages beyond the first page
+    # instead of truncating every request to the same shallow window.
+    return min(max((page + 1) * page_size * 12, 200), 5000)
 
 
 def _client_ip_for_request(request: Request) -> str:
@@ -765,12 +805,18 @@ async def og_cluster_image(cluster_id: str):
         "SELECT title, original_title, is_translated FROM articles WHERE cluster_id = %s ORDER BY created_at DESC",
         (cluster_id,),
     )
+    if not isinstance(rows, list):
+        lead_row = db.execute_one(
+            "SELECT title, original_title, is_translated FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 1",
+            (cluster_id,),
+        )
+        rows = [lead_row] if lead_row else []
     count_row = db.execute_one("SELECT COUNT(*) FROM articles WHERE cluster_id = %s", (cluster_id,))
 
     title = _preferred_cluster_headline(rows)
     import html
     title = html.unescape(title)
-    count = count_row["count"] if count_row and isinstance(count_row, dict) else (count_row[0] if count_row else 1)
+    count = _row_int_value(count_row, default=1)
     safe_title = html.escape(title)
     if len(safe_title) > 65:
         line1 = safe_title[:65]
@@ -794,7 +840,7 @@ async def og_cluster_image(cluster_id: str):
 @app.get("/og-image.svg")
 async def og_image():
     row = db.execute_one("SELECT COUNT(*) FROM articles")
-    count = row["count"] if row and isinstance(row, dict) else (row[0] if row else 0)
+    count = _row_int_value(row, default=0)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#1a1a2e"/>
   <text x="600" y="280" font-family="sans-serif" font-size="72" font-weight="bold" fill="#ffffff" text-anchor="middle">Пресек</text>
@@ -838,7 +884,10 @@ async def init_profile_sync():
 
 
 @app.get("/api/profile/sync")
-async def get_profile_sync(token: str = Query(..., min_length=12, max_length=128)):
+async def get_profile_sync(request: Request):
+    token = _extract_sync_token(request)
+    if not token or len(token) < 12 or len(token) > 128:
+        raise HTTPException(status_code=400, detail="Missing sync token")
     row = db.execute_one(
         "SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s",
         (token,),
@@ -847,7 +896,6 @@ async def get_profile_sync(token: str = Query(..., min_length=12, max_length=128
         raise HTTPException(status_code=404, detail="Synced profile not found")
     return {
         "status": "success",
-        "token": token,
         "profile": _normalize_synced_profile(row.get("profile_data") or {}),
         "updated_at": row.get("updated_at"),
     }
@@ -876,13 +924,15 @@ async def save_profile_sync(request: Request):
     )
     return {
         "status": "success",
-        "token": token,
         "profile": merged,
     }
 
 
 @app.get("/api/profile/delivery")
-async def get_profile_delivery(token: str = Query(..., min_length=12, max_length=128)):
+async def get_profile_delivery(request: Request):
+    token = _extract_sync_token(request)
+    if not token or len(token) < 12 or len(token) > 128:
+        raise HTTPException(status_code=400, detail="Missing sync token")
     profile = db.execute_one(
         "SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s",
         (token,),
@@ -897,7 +947,6 @@ async def get_profile_delivery(token: str = Query(..., min_length=12, max_length
     )
     return {
         "status": "success",
-        "token": token,
         "subscription": _normalize_server_delivery_row(row),
         "updated_at": row.get("updated_at") if row else None,
     }
@@ -945,7 +994,6 @@ async def save_profile_delivery(request: Request):
     )
     return {
         "status": "success",
-        "token": token,
         "subscription": subscription,
     }
 
@@ -1245,80 +1293,6 @@ async def compare_sources(s1: str, s2: str):
         log.error(f"Source Comparison Error: {e}")
         return {"status": "error", "data": []}
 
-@app.get("/api/intelligence/international-curated")
-async def get_international_curated(limit: int = 6):
-    try:
-        limit = min(12, max(1, int(limit)))
-        cache_key = f"intl:curated:{limit}"
-        cached = cached_response(cache_key, ttl=60)
-        if cached:
-            return cached
-
-        rows = db.execute(
-            """
-            SELECT *
-            FROM articles
-            WHERE country != %s
-              AND source = ANY(%s)
-              AND created_at >= NOW() - INTERVAL '72 hours'
-              AND (
-                    is_translated = 1
-                    OR (
-                        COALESCE(original_title, '') <> ''
-                        AND title <> original_title
-                    )
-                  )
-            ORDER BY created_at DESC
-            LIMIT 400
-            """,
-            ("🇲🇰", list(CURATED_INTERNATIONAL_SOURCES)),
-        )
-
-        clusters = defaultdict(list)
-        for row in rows:
-            if not _looks_macedonian_headline(row.get("title")):
-                continue
-            row["reading_time"] = calculate_reading_time(row.get("description", ""))
-            clusters[row["cluster_id"]].append(row)
-
-        ranked_clusters = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        ranked_clusters.sort(key=score_cluster, reverse=True)
-        paged_clusters = ranked_clusters[:limit]
-
-        cluster_ids = [cluster[0]["cluster_id"] for cluster in paged_clusters]
-        synthesis_ids = db.get_synthesis_ids(cluster_ids) if cluster_ids else []
-        metadata_rows = db.execute(
-            "SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)",
-            (cluster_ids,),
-        ) if cluster_ids else []
-        rep_images = {row["cluster_id"]: row["representative_image"] for row in metadata_rows}
-
-        result = []
-        for arts in paged_clusters:
-            cluster_score = score_cluster(arts)
-            cid = arts[0]["cluster_id"]
-            result.append({
-                "cluster_id": cid,
-                "articles": arts,
-                "representative_image": rep_images.get(cid),
-                "reading_time": arts[0].get("reading_time", 1),
-                "score": round(cluster_score, 3),
-                "is_breaking": cluster_score >= BREAKING_SCORE_THRESHOLD,
-                "has_synthesis": cid in synthesis_ids,
-                "has_balanced": is_balanced(arts),
-            })
-
-        payload = {
-            "status": "success",
-            "clusters": result,
-            "total_clusters": len(ranked_clusters),
-        }
-        set_cache(cache_key, payload, ttl=60)
-        return payload
-    except Exception as e:
-        log.error(f"[fastapi/intelligence/international-curated] {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch curated international stories")
-
 @app.get("/api/news")
 async def get_news(
     q: Optional[str] = None,
@@ -1333,6 +1307,7 @@ async def get_news(
         # Clamp pagination + query length to prevent abuse
         page = max(0, min(int(page or 0), API_MAX_PAGE))
         page_size = max(1, min(int(page_size or 24), 50))
+        row_limit = _news_row_limit(page, page_size)
         if q:
             q = q.strip()[:API_MAX_Q_LEN]
 
@@ -1341,30 +1316,30 @@ async def get_news(
             from embeddings import generate_query_embedding
             query_vec = generate_query_embedding(q)
             if query_vec:
-                rows = db.hybrid_search(q, query_vec, limit=100)
+                rows = db.hybrid_search(q, query_vec, limit=row_limit)
             else:
                 # Fallback to simple FTS if embedding fails
-                rows = db.search_articles(q, limit=100)
+                rows = db.search_articles(q, limit=row_limit)
         elif entity:
             sql = """
                 SELECT a.* FROM articles a
                 JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id
                 WHERE ce.entity_name = %s
-                ORDER BY a.created_at DESC LIMIT 100
+                ORDER BY a.created_at DESC LIMIT %s
             """
-            params = [entity]
+            params = [entity, row_limit]
             rows = db.execute(sql, tuple(params))
         elif topic:
-            sql = "SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT 100"
-            params = [topic]
+            sql = "SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT %s"
+            params = [topic, row_limit]
             rows = db.execute(sql, tuple(params))
         elif category:
-            sql = "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT 100"
-            params = [category]
+            sql = "SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT %s"
+            params = [category, row_limit]
             rows = db.execute(sql, tuple(params))
         else:
-            sql = "SELECT * FROM articles WHERE country = '🇲🇰' ORDER BY created_at DESC LIMIT 200"
-            rows = db.execute(sql)
+            sql = "SELECT * FROM articles ORDER BY created_at DESC LIMIT %s"
+            rows = db.execute(sql, (row_limit,))
 
         clusters = defaultdict(list)
         for r in rows:
@@ -1987,7 +1962,6 @@ async def get_stats_full(request: Request):
 
         by_source = db.execute(
             "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' "
-            "AND (country = '🇲🇰' OR country IS NULL OR country = '') "
             "GROUP BY source ORDER BY n DESC LIMIT 10"
         )
 
@@ -2009,7 +1983,6 @@ async def get_stats_full(request: Request):
             "SELECT source, COUNT(*) AS first_count FROM ("
             "  SELECT DISTINCT ON (cluster_id) cluster_id, source "
             "  FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' "
-            "  AND (country = '🇲🇰' OR country IS NULL OR country = '') "
             "  ORDER BY cluster_id, created_at ASC"
             ") first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
         )
@@ -2261,7 +2234,6 @@ async def get_sources_pulse():
         rows = db.execute(
             "SELECT source, COUNT(*) as n FROM articles "
             "WHERE created_at >= NOW() - INTERVAL '24 hours' "
-            "AND (country = '🇲🇰' OR country IS NULL OR country = '') "
             "GROUP BY source ORDER BY n DESC LIMIT 10"
         )
         return [{"source": r["source"], "count": r["n"]} for r in rows]

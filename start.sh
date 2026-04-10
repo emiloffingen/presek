@@ -15,6 +15,7 @@ ROOT_PYTHON="${ROOT_PYTHON:-python3}"
 BOOTSTRAP="${BOOTSTRAP:-1}"
 FORCE_PY_DEPS="${FORCE_PY_DEPS:-0}"
 FORCE_WEB_BUILD="${FORCE_WEB_BUILD:-0}"
+ENSURE_ASTRO_BUILD="$APP_DIR/deploy/ensure_astro_build.sh"
 
 WEB_LOG="$LOG_DIR/web.log"
 WORKER_LOG="$LOG_DIR/worker.log"
@@ -60,6 +61,15 @@ maybe_npm_install() {
   fi
 }
 
+ensure_astro_build() {
+  if [ "$ENABLE_ASTRO" != "1" ]; then
+    return
+  fi
+
+  [ -x "$ENSURE_ASTRO_BUILD" ] || chmod 755 "$ENSURE_ASTRO_BUILD"
+  APP_ROOT="$APP_DIR" WEB_DIR="$WEB_DIR" FORCE_WEB_BUILD="$FORCE_WEB_BUILD" "$ENSURE_ASTRO_BUILD"
+}
+
 bootstrap_runtime() {
   if [ "$BOOTSTRAP" != "1" ]; then
     return
@@ -94,10 +104,7 @@ bootstrap_runtime() {
       maybe_npm_install
     fi
 
-    if [ "$FORCE_WEB_BUILD" = "1" ] || [ ! -f "$WEB_DIR/dist/server/entry.mjs" ]; then
-      info "Building Astro frontend"
-      (cd "$WEB_DIR" && npm run build)
-    fi
+    ensure_astro_build
   fi
 
   ok "Bootstrap complete"
@@ -380,7 +387,8 @@ if [ "$ENABLE_ASTRO" = "1" ]; then
   require_cmd node
   require_cmd npm
   [ -f "$WEB_DIR/package.json" ] || fail "Missing Astro package.json in $WEB_DIR"
-  [ -f "$WEB_DIR/dist/server/entry.mjs" ] || fail "Missing Astro server build. Run: ./start.sh --build"
+  ensure_astro_build
+  [ -f "$WEB_DIR/dist/server/entry.mjs" ] || fail "Missing Astro server build after ensure step"
   touch "$ASTRO_LOG"
 fi
 

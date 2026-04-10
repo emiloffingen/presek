@@ -45,7 +45,7 @@ const MediaPulseRadar: React.FC<MediaPulseRadarProps> = ({ data }) => {
     score: clamp(parseFiniteNumber(rawSentiment.score, 0), -1, 1),
     label: rawSentiment.tone || rawSentiment.label || 'неутрален',
   };
-  const rawTone = data.tone_analysis || {};
+  const rawTone: any = data.tone_analysis || {};
   const tone = {
     sensationalism: clamp(parseFiniteNumber(rawTone.sensationalism, 0), 0, 1),
     objectivity: clamp(parseFiniteNumber(rawTone.objectivity, 0.5), 0, 1),

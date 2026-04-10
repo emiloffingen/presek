@@ -19,7 +19,7 @@ All services restart automatically and log to the systemd journal.
 - Repo path: `/home/emiloffingen/presek`
 - Service user: `emiloffingen`
 - Python virtualenv: `/home/emiloffingen/presek/venv`
-- Astro build already exists at `web/dist/server/entry.mjs`
+- Astro dependencies are installed in `web/node_modules`
 - `.env` is a shell-compatible file and is sourced with `bash`
 
 If your production server uses a different Unix user or checkout path, edit the unit files before installing them.
@@ -51,7 +51,7 @@ bash deploy/backup_postgres.sh
 ## Notes
 
 - `presek-fastapi.service` is the public API service.
-- `presek-astro.service` refuses to start if the Astro server build is missing.
+- `presek-astro.service` rebuilds Astro automatically when `web/dist` is missing or stale.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.
 - After install or restart, run `deploy/smoke_check.sh` to verify the API and Astro locally before trusting the release.
 - Keep a regular backup cadence with `deploy/backup_postgres.sh` or a system cron/timer wrapper around it.

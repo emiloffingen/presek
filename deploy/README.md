@@ -34,7 +34,7 @@ Before running it on the server, make sure:
 
 - nginx is installed
 - the Python virtualenv exists at the app root
-- `web/dist/server/entry.mjs` exists
+- `web/node_modules` is installed
 - your Cloudflare origin certificate files are already on disk
 
 ## Operational helpers

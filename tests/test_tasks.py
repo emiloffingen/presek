@@ -8,9 +8,9 @@ class TestBackfillCoverArtTask:
         import tasks
 
         rows = [
-            {"cluster_id": "a1", "title": "A"},
-            {"cluster_id": "b2", "title": "B"},
-            {"cluster_id": "c3", "title": "C"},
+            {"cluster_id": "a1", "title": "A", "summary": ""},
+            {"cluster_id": "b2", "title": "B", "summary": ""},
+            {"cluster_id": "c3", "title": "C", "summary": ""},
         ]
 
         with patch.object(tasks, "db") as mock_db, \
@@ -21,7 +21,7 @@ class TestBackfillCoverArtTask:
         assert mock_apply.call_count == 3
         countdowns = [call.kwargs["countdown"] for call in mock_apply.call_args_list]
         args = [call.kwargs["args"] for call in mock_apply.call_args_list]
-        assert countdowns == [0, 4, 8]
+        assert countdowns == [0, 12, 24]
         assert args == [("a1", "A"), ("b2", "B"), ("c3", "C")]
 
 

@@ -225,6 +225,20 @@ def test_fastapi_security_headers_helper_sets_expected_headers():
     assert "default-src 'self'" in updated.headers["Content-Security-Policy"]
 
 
+def test_fastapi_news_scales_query_fetch_limit_with_page_depth():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.hybrid_search.return_value = []
+    mock_db.get_synthesis_ids.return_value = []
+
+    with patch.object(api_fast, "db", mock_db), \
+         patch.dict(sys.modules, {"embeddings": types.SimpleNamespace(generate_query_embedding=lambda _q: [0.1, 0.2])}):
+        data = asyncio.run(api_fast.get_news(q="економија", page=3, page_size=25))
+
+    assert data["status"] == "success"
+    assert mock_db.hybrid_search.call_args.kwargs["limit"] == 1200
+
+
 def test_fastapi_profile_sync_init_creates_token():
     api_fast = _load_api_fast()
     mock_db = MagicMock()
@@ -237,6 +251,38 @@ def test_fastapi_profile_sync_init_creates_token():
     assert data["token"] == "sync-token-123"
     assert data["profile"]["followedTopics"] == []
     mock_db.execute.assert_called_once()
+
+
+def test_fastapi_profile_sync_reads_token_from_header():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.return_value = {
+        "profile_data": {"followedTopics": ["Политика"]},
+        "updated_at": "2026-04-10T00:00:00Z",
+    }
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.get_profile_sync(_FakeRequest({}, headers={"X-Sync-Token": "sync-token-123"})))
+
+    assert data["status"] == "success"
+    assert "token" not in data
+    assert data["profile"]["followedTopics"] == ["Политика"]
+
+
+def test_fastapi_profile_delivery_reads_bearer_token_from_header():
+    api_fast = _load_api_fast()
+    mock_db = MagicMock()
+    mock_db.execute_one.side_effect = [
+        {"exists": 1},
+        {"channel": "ntfy", "target": "reader-feed", "morning_briefing": True, "weekly_digest": False, "breaking_topics": True, "breaking_sources": False, "is_active": True, "updated_at": "2026-04-10T00:00:00Z"},
+    ]
+
+    with patch.object(api_fast, "db", mock_db):
+        data = asyncio.run(api_fast.get_profile_delivery(_FakeRequest({}, headers={"Authorization": "Bearer sync-token-123"})))
+
+    assert data["status"] == "success"
+    assert "token" not in data
+    assert data["subscription"]["channel"] == "ntfy"
 
 
 def test_fastapi_client_ip_uses_trusted_x_real_ip_from_local_proxy():
@@ -301,7 +347,7 @@ def test_fastapi_profile_sync_get_returns_normalized_profile():
     }
 
     with patch.object(api_fast, "db", mock_db):
-        data = asyncio.run(api_fast.get_profile_sync("sync-token-123"))
+        data = asyncio.run(api_fast.get_profile_sync(_FakeRequest({}, headers={"X-Sync-Token": "sync-token-123"})))
 
     assert data["status"] == "success"
     assert data["profile"]["followedTopics"] == ["Политика"]
@@ -358,7 +404,7 @@ def test_fastapi_profile_delivery_get_returns_subscription():
     ]
 
     with patch.object(api_fast, "db", mock_db):
-        data = asyncio.run(api_fast.get_profile_delivery("sync-token-123"))
+        data = asyncio.run(api_fast.get_profile_delivery(_FakeRequest({}, headers={"X-Sync-Token": "sync-token-123"})))
 
     assert data["status"] == "success"
     assert data["subscription"]["target"] == "reader-feed"
@@ -527,66 +573,6 @@ def test_fastapi_delivery_track_records_event_and_redirects():
     mock_db.execute.assert_called_once()
 
 
-def test_fastapi_international_curated_returns_ranked_clusters():
-    api_fast = _load_api_fast()
-    mock_db = MagicMock()
-    mock_db.execute.side_effect = [
-        [
-            {"cluster_id": "aaa111", "title": "Прва меѓународна приказна со преведен наслов", "description": "D1", "source": "Reuters"},
-            {"cluster_id": "bbb222", "title": "Втора светска приказна со јасен македонски наслов", "description": "D2", "source": "BBC"},
-        ],
-        [{"cluster_id": "aaa111", "representative_image": "https://img/1.webp"}],
-    ]
-    mock_db.get_synthesis_ids.return_value = ["aaa111"]
-
-    with patch.object(api_fast, "db", mock_db), \
-         patch.object(api_fast, "cached_response", return_value=None), \
-         patch.object(api_fast, "rank_articles_in_cluster", side_effect=lambda arts: arts), \
-         patch.object(api_fast, "score_cluster", side_effect=lambda arts: 2 if arts[0]["cluster_id"] == "aaa111" else 1), \
-         patch.object(api_fast, "calculate_reading_time", return_value=1), \
-         patch.object(api_fast, "set_cache"):
-        data = asyncio.run(api_fast.get_international_curated(limit=2))
-
-    assert data["status"] == "success"
-    assert len(data["clusters"]) == 2
-    assert data["clusters"][0]["cluster_id"] == "aaa111"
-    assert data["clusters"][0]["has_synthesis"] is True
-
-
-def test_fastapi_international_curated_filters_non_macedonian_titles():
-    api_fast = _load_api_fast()
-    mock_db = MagicMock()
-    mock_db.execute.side_effect = [
-        [
-            {
-                "cluster_id": "bad111",
-                "title": "Potresna objava u Денес Showu: Imam Parkinsonovu bolest.",
-                "description": "Mixed language",
-                "source": "Jutarnji",
-            },
-            {
-                "cluster_id": "good222",
-                "title": "Алкохолизмот во литературата: Кога нивото на алкохолот во крвта се намалува",
-                "description": "Translated",
-                "source": "FAZ",
-            },
-        ],
-        [{"cluster_id": "good222", "representative_image": "https://img/2.webp"}],
-    ]
-    mock_db.get_synthesis_ids.return_value = []
-
-    with patch.object(api_fast, "db", mock_db), \
-         patch.object(api_fast, "cached_response", return_value=None), \
-         patch.object(api_fast, "rank_articles_in_cluster", side_effect=lambda arts: arts), \
-         patch.object(api_fast, "score_cluster", return_value=1), \
-         patch.object(api_fast, "calculate_reading_time", return_value=1), \
-         patch.object(api_fast, "set_cache"):
-        data = asyncio.run(api_fast.get_international_curated(limit=4))
-
-    assert data["status"] == "success"
-    assert [cluster["cluster_id"] for cluster in data["clusters"]] == ["good222"]
-
-
 def test_fastapi_chat_cluster_reuses_cluster_answer_payload():
     api_fast = _load_api_fast()
 
@@ -661,6 +647,25 @@ def test_fastapi_proxy_serves_local_static_files():
     assert response.status_code == 200
     assert response.media_type == "image/svg+xml"
     assert str(response.path).endswith("static/example.svg")
+
+
+def test_fastapi_proxy_rejects_remote_svg_content():
+    api_fast = _load_api_fast()
+    fake_response = MagicMock()
+    fake_response.status_code = 200
+    fake_response.headers = {"Content-Type": "image/svg+xml"}
+    fake_response.close = MagicMock()
+
+    fake_session = MagicMock()
+    fake_session.get.return_value = fake_response
+
+    with patch.object(api_fast, "_resolve_public_ips", return_value=["198.51.100.24"]), \
+         patch.object(api_fast, "_peer_ip", return_value="198.51.100.24"), \
+         patch.object(api_fast.requests, "Session", return_value=fake_session):
+        response = asyncio.run(api_fast.proxy_image("https://cdn.example.com/image.svg", None))
+
+    assert response.status_code == 415
+    assert response.content["message"] == "Unsupported content type"
 
 
 def test_fastapi_serves_sw_and_manifest_as_files():

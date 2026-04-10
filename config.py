@@ -1,5 +1,13 @@
 import os
 import sys
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:  # Optional in pre-provisioned environments.
+    def load_dotenv():
+        return False
+
+# Load environment variables from .env file
+load_dotenv()
 
 REQUIRED_RUNTIME_ENV_KEYS = ("DATABASE_URL", "SECRET_KEY")
 
@@ -63,7 +71,7 @@ RSS_FEEDS = [
     ("Republika",       "https://republika.mk/feed/"),
     ("Fokus",           "https://fokus.mk/feed/"),
     ("Nezavisen",       "https://nezavisen.mk/feed/"),
-    ("Faktor",          "https://faktor.mk/rss"),
+    ("Faktor",          "https://faktor.mk/feed/"),
     ("Vecer",           "https://vecer.mk/feed/"),
     ("Meta",            "https://meta.mk/feed/"),
     ("360 Stepeni",     "https://360stepeni.mk/feed/"),
@@ -87,21 +95,15 @@ RSS_FEEDS = [
     ("Tetovo Info",     "https://tetovoinfo.mk/feed/"),
     ("A1on",            "https://a1on.mk/feed/"),
     ("SportSport",      "https://sportsport.mk/feed/"),
-    ("Strumica Info",   "https://strumicainfo.mk/feed/"),
-    ("24 Вести",        "https://24.mk/feed/"),
+    ("24 Вести",        "https://admin.24.mk/api/rss.xml"),
     ("TV21",            "https://tv21.mk/feed/"),
-    ("Слободна Европа", "https://www.slobodnaevropa.mk/api/zryoyqpmou"),
+    ("Слободна Европа", "https://www.slobodnaevropa.mk/api/z_poml-vomx-tpevjpy"),
     ("Deutsche Welle",  "http://rss.dw-world.de/syndication/feeds/dwworld.maz.xml"),
     ("Civil Media",     "https://civilmedia.mk/feed/"),
     ("Радио МОФ",       "https://radiomof.mk/feed/"),
-    ("Сакам да кажам",  "https://sdk.mk/feed/"),
+    ("Сакам да кажам",  "https://sdk.mk/index.php/mk/feed/"),
     ("Бизнис Вести",    "https://biznisvesti.mk/feed/"),
-    ("Ohrid News",      "https://ohridnews.mk/feed/"),
-    ("Vecer Sport",     "https://sport.vecer.mk/feed/"),
-    ("Ekonomija",       "https://ekonomija.com.mk/feed/"),
-    ("Zdravje",         "https://zdravje.com.mk/feed/"),
-    ("MRT",             "https://mrt.com.mk/rss"),
-    ("Kolumna",         "https://kolumna.mk/feed/"),
+    ("MRT",             "https://mrt.com.mk/rss.xml"),
     ("Okno",            "https://okno.mk/feed/"),
     ("Alfa TV",         "https://alfa.mk/feed/"),
     ("Tocka",           "https://tocka.com.mk/rss"),
@@ -111,35 +113,36 @@ RSS_FEEDS = [
     ("Racin",           "https://racin.mk/feed/"),
     ("Kajgana",         "https://kajgana.com/rss.xml"),
     ("Pari.com.mk",     "https://pari.com.mk/feed/"),
-    ("Bloomberg Adria", "https://mk.bloombergadria.com/rss"),
     ("E-Magazin",       "https://emagazin.mk/feed/"),
     ("IT.mk",           "https://it.mk/feed/"),
     ("Sportmanija",     "https://sportmanija.mk/feed/"),
-    ("Fakulteti",       "https://fakulteti.mk/rss"),
     ("Magazin",         "https://magazin.mk/feed/"),
     ("Portalb",         "https://portalb.mk/feed/"),
+    ("Reporter",        "https://reporter.mk/feed/"),
+    ("Alsat-M",         "https://alsat.mk/feed/"),
+    ("Off.net.mk",      "https://off.net.mk/feed/"),
+    ("Denesen",         "https://denesen.mk/feed/"),
+    ("24info",          "https://24info.mk/feed/"),
+    ("Vreme",           "https://vreme.mk/feed/"),
+    ("Frontline",       "https://frontline.mk/feed/"),
+    ("Nacional",        "https://nacionalno.mk/feed/"),
+    ("Antropol",        "https://antropol.mk/feed/"),
+    ("Brif",            "https://brif.mk/feed/"),
+    ("Pressing TV",     "https://pressingtv.mk/feed/"),
+    ("Inbox7",          "https://inbox7.mk/feed/"),
+    ("Kanal77",         "https://kanal77.mk/feed/"),
+    ("Glas",            "https://glas.mk/feed/"),
+    ("Vistina",         "https://vistina.mk/feed/"),
+    ("Almakos",         "https://almakos.com/feed/"),
+    ("Vesnik",          "https://vesnik.com/feed/"),
+    ("Sloboden Svet",   "https://slobodensvet.com.mk/feed/"),
+    ("BiznisInfo",      "https://biznisinfo.mk/feed/"),
+    ("Bitola News",     "https://bitolanews.mk/feed/"),
+    ("Lajm",            "https://lajm.mk/feed/"),
+    ("Koha",            "https://koha.mk/feed/"),
 ]
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
-
-CURATED_INTERNATIONAL_SOURCES = (
-    "N1 Info",
-    "Klix.ba",
-    "Index.hr",
-    "Jutarnji",
-    "Vijesti.me",
-    "Kurir.rs",
-    "Dnevnik.bg",
-    "Balkan Insight",
-    "Daily Sabah",
-    "Exit News",
-    "Danas.rs",
-    "24 Chasa BG",
-    "Capital.bg",
-    "Telegrafi KS",
-    "RTCG",
-    "Anadolu Agency",
-)
 
 # Specific per-source limits to prevent low-quality aggregators from flooding the system
 SOURCE_LIMITS = {
@@ -157,13 +160,16 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
     "Lider", "MKD", "Akademik", "Skopje Info",
     "Prizma", "Expres", "Tetovo Info", "A1on", "SportSport",
-    "Strumica Info", "24 Вести", "TV21", "Слободна Европа",
+    "24 Вести", "TV21", "Слободна Европа",
     "Deutsche Welle", "Civil Media", "Радио МОФ",
-    "Сакам да кажам", "Бизнис Вести", "Ohrid News", "Vecer Sport",
-    "Ekonomija", "Zdravje", "MRT", "Time.mk", "Kolumna", "Okno",
+    "Сакам да кажам", "Бизнис Вести", "MRT", "Okno",
     "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
-    "Kajgana", "Pari.com.mk", "Bloomberg Adria", "E-Magazin",
-    "IT.mk", "Sportmanija", "Fakulteti", "Magazin", "Portalb",
+    "Kajgana", "Pari.com.mk", "E-Magazin",
+    "IT.mk", "Sportmanija", "Magazin", "Portalb",
+    "Reporter", "Alsat-M", "Off.net.mk", "Denesen", "24info",
+    "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
+    "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
+    "Almakos", "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
 })
 
 DIASPORA_FEEDS = [
@@ -185,6 +191,7 @@ DIASPORA_FEEDS = [
 ]
 
 SOURCE_CREDIBILITY = {
+    # MK sources
     "MIA": 2.0, "MRT": 1.8, "Sitel": 1.7, "Kanal 5": 1.7, "Telma": 1.6, "Alfa TV": 1.5,
     "Sloboden Pecat": 1.5, "Nova Makedonija": 1.5, "Republika": 1.4, "Makfax": 1.4,
     "Fokus": 1.3, "Nezavisen": 1.3, "Kurir": 1.2, "Faktor": 1.2, "Vecer": 1.2, "Meta": 1.2,
@@ -192,25 +199,23 @@ SOURCE_CREDIBILITY = {
     "Akademik": 1.1, "NetPress": 1.0, "MKD": 1.0, "Press24": 0.9,
     "Skopje1": 0.9, "Plusinfo": 0.9, "Lokalno": 0.9, "4News": 0.9, "Makpress": 0.9,
     "Skopje Info": 0.8, "Prizma": 0.8, "Expres": 0.8, "Tetovo Info": 0.8,
-    "A1on": 0.8, "SportSport": 0.8, "Strumica Info": 0.8, "24 Вести": 1.6, "TV21": 1.6,
+    "A1on": 0.8, "SportSport": 0.8, "24 Вести": 1.6, "TV21": 1.6,
     "Слободна Европа": 1.8, "Deutsche Welle": 1.7, "Civil Media": 1.3,
-    "Радио МОФ": 1.1, "Сакам да кажам": 1.1, "Бизнис Вести": 1.0, "Ohrid News": 0.8,
-    "Vecer Sport": 1.0, "Ekonomija": 0.9, "Zdravje": 0.8, "Time.mk": 1.1, "Kolumna": 0.9,
+    "Радио МОФ": 1.1, "Сакам да кажам": 1.1, "Бизнис Вести": 1.0,
     "Okno": 1.0, "Tocka": 1.1, "IRL": 1.8, "Nova TV": 1.3, "Libertas": 1.1, "Racin": 1.3,
-    "Kajgana": 1.0, "Pari.com.mk": 1.2, "Bloomberg Adria": 1.4, "E-Magazin": 1.1,
-    "IT.mk": 1.1, "Sportmanija": 0.8, "Fakulteti": 1.1, "Magazin": 0.8,
-    "Tagesschau": 1.8, "Der Spiegel": 1.7, "SRF News": 1.7, "20 Minuten": 1.2,
-    "CNN": 1.6, "NPR": 1.6, "Reuters": 1.9, "CBC News": 1.7, "BBC News": 1.8,
-    "The Guardian": 1.7, "ABC Australia": 1.6, "ANSA": 1.6, "RTVSLO": 1.7,
-    "ORF": 1.7, "SVT News": 1.7, "Top Channel": 1.6, "N1 Info": 1.5, "B92": 1.4,
-    "Novinite": 1.2, "Kathimerini": 1.5, "Exit News": 1.3,
-    "FAZ": 1.8, "Swissinfo": 1.8, "AP News": 1.9, "RTS": 1.6, "Dnevnik.bg": 1.5,
-    "The Verge": 1.4, "TechCrunch": 1.4, "Axios": 1.7, "Ars Technica": 1.6, "ESPN": 1.6,
-    "Слободна Европа Balkan": 1.7,
-    "Daily Sabah": 1.4, "TRT World": 1.6, "Balkan Insight": 1.7, "Kurir.rs": 1.2,
-    "Blic.rs": 1.3, "Index.hr": 1.5, "Jutarnji": 1.4, "Klix.ba": 1.4, "Vijesti.me": 1.3,
+    "Kajgana": 1.0, "Pari.com.mk": 1.2, "E-Magazin": 1.1,
+    "IT.mk": 1.1, "Sportmanija": 0.8, "Magazin": 0.8, "Portalb": 1.2,
+    "Reporter": 1.0, "Alsat-M": 1.5, "Off.net.mk": 1.0, "Denesen": 0.9,
+    "24info": 0.9, "Vreme": 0.9, "Frontline": 0.9, "Nacional": 0.8,
+    "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
+    "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
+    "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
+    "Lajm": 1.0, "Koha": 1.0,
+    # Balkan sources
+    "N1 Info": 1.5, "Kurir.rs": 1.2, "Dnevnik.bg": 1.5, "Balkan Insight": 1.7,
+    "Daily Sabah": 1.4, "Index.hr": 1.5, "Jutarnji": 1.4, "Klix.ba": 1.4, "Vijesti.me": 1.3,
     "Danas.rs": 1.5, "24 Chasa BG": 1.3, "Capital.bg": 1.4, "Telegrafi KS": 1.3,
-    "RTCG": 1.6, "Anadolu Agency": 1.5, "Portalb": 1.2,
+    "RTCG": 1.6, "Anadolu Agency": 1.5,
 }
 DEFAULT_CREDIBILITY = 0.8
 
@@ -221,9 +226,13 @@ SOURCE_CATEGORIES = {
     "Meta": "Независни", "360 Stepeni": "Независни", "IRL": "Истражувачки",
     "Makfax": "Агенциски", "NetPress": "Алтернативни", "Kurir": "Алтернативни",
     "Republika": "Алтернативни", "Infomax": "Алтернативни",
+    "Alsat-M": "Главни", "Pressing TV": "Главни", "Antropol": "Независни",
     "Deutsche Welle": "Меѓународни", "Слободна Европа": "Меѓународни",
-    "CNN": "Меѓународни", "BBC News": "Меѓународни", "Reuters": "Меѓународни",
-    "The Guardian": "Меѓународни", "Al Jazeera": "Меѓународни"
+    "N1 Info": "Балкан", "Kurir.rs": "Балкан", "Dnevnik.bg": "Балкан",
+    "Balkan Insight": "Балкан", "Daily Sabah": "Балкан", "Index.hr": "Балкан",
+    "Jutarnji": "Балкан", "Klix.ba": "Балкан", "Vijesti.me": "Балкан",
+    "Danas.rs": "Балкан", "24 Chasa BG": "Балкан", "Capital.bg": "Балкан",
+    "Telegrafi KS": "Балкан", "RTCG": "Балкан", "Anadolu Agency": "Балкан",
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 

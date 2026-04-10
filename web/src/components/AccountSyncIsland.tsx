@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Copy, Download, KeyRound, RefreshCw, Upload } from 'lucide-react';
 import {
+  buildSyncTokenHeaders,
   exportSyncPayload,
   loadSyncToken,
   mergeSyncPayload,
@@ -74,7 +75,9 @@ export default function AccountSyncIsland({
     setStatus('working');
     setMessage('');
     try {
-      const res = await fetch(`/api/profile/sync?token=${encodeURIComponent(nextToken)}`);
+      const res = await fetch('/api/profile/sync', {
+        headers: buildSyncTokenHeaders(nextToken) as Record<string, string>,
+      });
       if (!res.ok) throw new Error('pull failed');
       const data = await res.json();
       mergeSyncPayload(data.profile);

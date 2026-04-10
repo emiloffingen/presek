@@ -101,15 +101,15 @@ function formatBriefing(content: string) {
 	<main class="site-layout py-12">
 		<div class="briefing-shell">
 			<header class="briefing-header">
-					<span class="page-kicker">Дневен Преглед</span>
+					<span class="page-kicker">Дневен Брифинг</span>
 				<h1 class="briefing-headline">
-					Дневен Брифинг
+					Брифинг
 				</h1>
 
 				<div class="briefing-meta">
 					<span class="flex items-center gap-1"><Clock size={12}/> {currentDate}</span>
 					<span>·</span>
-					<span class="flex items-center gap-1"><Sparkles size={12}/> ПРЕСЕК СУБЛИМАТ</span>
+					<span class="flex items-center gap-1"><Sparkles size={12}/> БРИФИНГ ПРЕСЕК</span>
 				</div>
 			</header>
 
@@ -120,10 +120,10 @@ function formatBriefing(content: string) {
 					) : (
 						<div class="briefing-empty">
 							<p class="text-4xl mb-4">📋</p>
-							<h3 class="font-black text-foreground mb-2 uppercase tracking-widest text-sm">Брифингот сè уште не е подготвен</h3>
+							<h3 class="font-black text-foreground mb-2 uppercase tracking-widest text-sm">Брифингот се подготвува</h3>
 								<p class="text-muted-foreground text-xs leading-relaxed font-serif italic">
 									Обидете се подоцна за денешниот преглед. <br/>
-									Сè уште ги подредуваме темите што најсилно го отвораат денот.
+									Ги анализираме најважните настани што го отвораат денот.
 								</p>
 						</div>
 					)}
@@ -133,14 +133,14 @@ function formatBriefing(content: string) {
 					<div class="rail-card">
 							<h3 class="rail-card-title flex items-center gap-2"><BookOpen size={14}/> Зошто Брифинг?</h3>
 							<p class="rail-copy">
-								Брифингот е наменет за брз прв преглед: што е големата тема, што е новото и каде се насобира најмногу медиумско внимание.
+								Брифингот е наменет за брз прв преглед: кои се главните теми, што е ново и каде е насочено најголемото медиумско внимание.
 							</p>
 					</div>
 
 					<div class="rail-card rail-card-accent">
 							<h4 class="rail-card-title">Како Се Генерира?</h4>
 							<p class="rail-copy">
-								Системот ги групира сродните објави, ги споредува главните тврдења и составува синтетизиран преглед што можете брзо да го проверите преку изворите.
+								Системот ги групира сродните објави, ги споредува клучните информации и составува синтетизиран преглед со директни врски до изворите.
 							</p>
 					</div>
 

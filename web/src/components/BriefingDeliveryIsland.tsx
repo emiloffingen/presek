@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, BellRing, Copy, Mail, Send, Radio, Save } from 'lucide-react';
 import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
+  buildSyncTokenHeaders,
   buildDeliveryDigest,
   createDefaultServerDeliverySettings,
   loadDeliveryPreferences,
@@ -56,7 +57,9 @@ export default function BriefingDeliveryIsland({
       setServerStatus('working');
       setServerMessage('');
       try {
-        const res = await fetch(`/api/profile/delivery?token=${encodeURIComponent(syncToken)}`);
+        const res = await fetch('/api/profile/delivery', {
+          headers: buildSyncTokenHeaders(syncToken) as Record<string, string>,
+        });
         if (!res.ok) throw new Error('load failed');
         const data = await res.json();
         if (!cancelled) {

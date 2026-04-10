@@ -17,7 +17,7 @@ class TestAstroFrontendIntegrity:
             "web/src/pages/izvori.astro",
             "web/src/pages/stats.astro",
             "web/src/pages/cluster/[id].astro",
-            "web/src/pages/entity/[name].astro",
+            "web/src/pages/subjekt/[name].astro",
         ):
             assert (ROOT / rel_path).is_file(), f"Missing Astro route: {rel_path}"
 
@@ -37,7 +37,7 @@ class TestAstroFrontendIntegrity:
             "web/src/pages/briefing.astro",
             "web/src/pages/stats.astro",
             "web/src/pages/cluster/[id].astro",
-            "web/src/pages/entity/[name].astro",
+            "web/src/pages/subjekt/[name].astro",
             "web/src/pages/archive.astro",
         ):
             content = _read(rel_path)
@@ -63,6 +63,22 @@ class TestAstroFrontendIntegrity:
         assert "fetch(`${API_URL}/health`)" in status_page
         assert "Состојба На Системот" in status_page
 
+    def test_homepage_maps_category_filter_to_api_category_param(self):
+        homepage = _read("web/src/pages/index.astro")
+        assert "newsUrl.searchParams.set('category', category);" in homepage
+        assert "newsUrl.searchParams.set('topic', category);" not in homepage
+
+    def test_sync_token_is_not_sent_in_query_strings(self):
+        account_sync = _read("web/src/components/AccountSyncIsland.tsx")
+        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
+        personalization = _read("web/src/lib/personalization.js")
+
+        assert "?token=" not in account_sync
+        assert "?token=" not in delivery
+        assert "buildSyncTokenHeaders" in account_sync
+        assert "buildSyncTokenHeaders" in delivery
+        assert "X-Sync-Token" in personalization
+
 
 class TestDeploymentIntegrity:
     def test_systemd_targets_fastapi_and_astro_runtime(self):
@@ -71,6 +87,7 @@ class TestDeploymentIntegrity:
 
         assert "uvicorn api_fast:app" in fastapi_service
         assert "--port 5001" in fastapi_service
+        assert "ensure_astro_build.sh" in astro_service
         assert "node ./dist/server/entry.mjs" in astro_service
         assert "PORT=3000" in astro_service
 

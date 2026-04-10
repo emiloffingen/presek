@@ -111,39 +111,90 @@ Used for navigation and utility labels:
 
 ## Surfaces and Shape
 
-- Default radii are square: `0px`
-- Borders are thin and structural
-- Surfaces rely on subtle contrast rather than shadows
-- Cards should feel editorial and restrained, not soft and app-like
+- Default radii are square: `0px`.
+- Borders are thin and structural.
+- Surfaces rely on subtle contrast rather than shadows.
+- Cards should feel editorial and restrained, not soft and app-like.
 
-## Layout
+## Grid and Layout Spacing
 
-- Main content width is capped at `1280px`
-- Standard page container uses `.site-layout`
-- The visual rhythm relies on rules, rails, cards, and strong section dividers
+- **Base Grid:** Uses an 8px (`0.5rem`) increments for all padding, margins, and structural offsets.
+- **Container:** Main content width is capped at `1280px` (`max-w-7xl`).
+- **Standard Gutter:** `1.5rem` (24px) for desktop; `1rem` (16px) for mobile.
+- **Column Logic:** 12-column grid on desktop. Rail/Sidebar typically occupies 4 columns (`col-span-4`) while the main feed occupies 8 (`col-span-8`).
+
+## Editorial Components (Broadsheet Patterns)
+
+- **The "Kicker":** A short label above the headline. Font: `Manrope`, uppercase, heavy weight, wide tracking. Color: `--nyt-accent` or `--nyt-red`.
+- **The "Rule" (Borders):**
+    - *Single (1px):* Standard structural separation.
+    - *Double (4px double):* Reserved for the Masthead and major section breaks.
+- **The "Rail":** Sticky sidebar for high-density utility modules (Pulse, Newsletter, Trending).
+- **Pull Quotes:** `Noto Serif` italic, larger size (`text-xl`), with a subtle border-left.
+
+## Iconography and Semantics
+
+- **Library:** Lucide React.
+- **Stroke Weight:** `1.5px` (thin and structural, matching the "Rule" aesthetic).
+- **Sizing Tiers:**
+    - `12px`: Micro-labels and utility signals.
+    - `16px`: Standard card actions.
+    - `24px`: Section headers and major landing points.
+- **Semantic Mapping:**
+    - `Sparkles`: AI Synthesis / Intelligence.
+    - `Zap`: Breaking News / Real-time events.
+    - `Quote`: Citations and direct statements.
+    - `Clock`: Freshness and temporal signals.
+    - `BarChart3`: Analytics and "Media Pulse" data.
+
+## Motion and Easing (The "Rise" System)
+
+- **The "Editorial Glide":** `cubic-bezier(0.16, 1, 0.3, 1)`. Motion should feel purposeful and expensive, not bouncy.
+- **Entry Pattern (`motion-rise`):** Elements should enter with a slight upward translate (`10px`) and opacity fade.
+- **Orchestration (Staggering):**
+    - *Level 1 (0ms):* Lead Hero and Masthead.
+    - *Level 2 (100ms):* Supporting News Grid.
+    - *Level 3 (200ms):* Front Rail and Sidebar modules.
+    - *Level 4 (300ms):* Secondary Feeds and Footer.
+
+## Image Treatment
+
+- **Aspect Ratios:**
+    - *Hero:* `1.26:1` (Desktop) / `16:10` (Mobile).
+    - *Card:* `3:2` or `16:9`.
+- **Styling:** `object-fit: cover` with a thin `1px` border. No rounded corners.
+- **Placeholders:** When an image fails, use the brand "П" emblem with a desaturated background from the gray scale.
+
+## Accessibility and Inclusive Design
+
+- **Contrast:** Aim for WCAG AA compliance (4.5:1) for all body text.
+- **Focus States:** Use a `2px` solid `--nyt-accent` outline with `2px` offset. Do not round focus rings.
+- **Aria Labels:** Mandatory for all icon-only buttons (Search, Theme Toggle, Share).
 
 ## Usage Guidance
 
 ### Do
 
-- Keep the serif/sans split intact
-- Use blue for trust, navigation emphasis, and key actions
-- Use red sparingly for urgency and live states
-- Prefer off-white and gray surfaces over pure white / pure black extremes
-- Preserve the newspaper tone with compact labels and strong headline hierarchy
+- Keep the serif/sans split intact.
+- Use blue for trust, navigation emphasis, and key actions.
+- Use red sparingly for urgency and live states.
+- Prefer off-white and gray surfaces over pure white / pure black extremes.
+- Preserve the newspaper tone with compact labels and strong headline hierarchy.
+- Use square corners for everything.
 
 ### Don’t
 
-- Introduce random additional font families
-- Replace serif headlines with generic sans defaults
-- Overuse bright accent colors
-- Add oversized rounded corners everywhere
-- Lean on heavy shadows or glossy UI effects
-- Drift into generic SaaS styling
+- Introduce random additional font families.
+- Replace serif headlines with generic sans defaults.
+- Overuse bright accent colors.
+- Add oversized rounded corners.
+- Lean on heavy shadows or glossy UI effects.
+- Drift into generic SaaS styling.
 
 ## Implementation Notes
 
 - Global tokens live in [web/src/styles/global.css](/home/emiloffingen/presek/web/src/styles/global.css)
 - The global theme is imported in [web/src/layouts/Layout.astro](/home/emiloffingen/presek/web/src/layouts/Layout.astro)
-- Theme switching is controlled by toggling `.dark` on the document root
+- Theme switching is controlled by toggling `.dark` on the document root.
+- Motion classes are defined in [web/src/styles/motion.css](/home/emiloffingen/presek/web/src/styles/motion.css) (if available).
 

@@ -299,6 +299,11 @@ export function saveSyncToken(token, storage = globalThis?.localStorage) {
   return clean;
 }
 
+export function buildSyncTokenHeaders(token) {
+  const clean = normalizeValue(token);
+  return clean ? { 'X-Sync-Token': clean } : {};
+}
+
 export function loadReaderProfile(storage = globalThis?.localStorage) {
   if (!storage) return createEmptyProfile();
   const parsed = safeParse(storage.getItem(PROFILE_KEY));

@@ -307,9 +307,11 @@ class DatabaseManager:
                     clicks INTEGER DEFAULT 0, 
                     original_description TEXT DEFAULT '',
                     is_translated INTEGER DEFAULT 0, 
+                    is_fact_check BOOLEAN DEFAULT FALSE,
                     embedding vector(384),
                     search_vector tsvector
                 )""")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE")
 
                 # Table for cluster summaries with FK to articles (via cluster_id)
                 # Note: cluster_id is not unique in articles, so we use it as a logical link
@@ -323,6 +325,8 @@ class DatabaseManager:
                 )""")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS generated_article TEXT")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
                     cluster_id TEXT PRIMARY KEY, 
@@ -331,6 +335,7 @@ class DatabaseManager:
                     representative_image TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
+                cur.execute("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS topics TEXT[]")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (
                     cluster_id TEXT, 

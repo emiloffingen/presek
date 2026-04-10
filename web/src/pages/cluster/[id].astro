@@ -304,11 +304,8 @@ const shareDescription = (
 	leadDescription ||
 	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
 ).replace(/\s+/g, ' ').trim().slice(0, 220);
-const shareCardPath = cluster ? `/api/cluster/${cluster.cluster_id}/share-card` : '/og-image.svg';
 const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
 const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${shareImage.startsWith("/") ? shareImage : `/${shareImage}`}`;
-const shareCardUrl = cluster ? `${siteUrl}${shareCardPath}` : `${siteUrl}/og-image.svg`;
-const shareFilename = cluster ? `presek-${cluster.cluster_id}.png` : 'presek-share.png';
 
 const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
 
@@ -445,8 +442,6 @@ const schema = cluster ? {
 									client:load
 									title={displayHeadline}
 									url={canonicalUrl}
-									shareCardUrl={shareCardUrl}
-									filename={shareFilename}
 								/>
 								{synthesisUpdatedAt && (
 									<>
@@ -619,7 +614,7 @@ const schema = cluster ? {
 									)}
 								</div>
 
-								{verificationReport.context && (
+								{verificationReport.context && typeof verificationReport.context === 'string' && (
 									<div class="factcheck-footer">
 										<p><strong>Контекст:</strong> <span set:html={cleanAndDecode(verificationReport.context)}></span></p>
 									</div>
@@ -860,32 +855,35 @@ const schema = cluster ? {
 		margin-top: 0.8rem;
 	}
 
-	.cluster-share-link {
+	.cluster-header-meta astro-island {
+		display: contents;
+	}
+
+	:global(.share-icons) {
+		display: inline-flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	:global(.share-icon) {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.45rem;
-		padding: 0.36rem 0.62rem;
-		border: 1px solid color-mix(in srgb, var(--nyt-accent) 32%, var(--border) 68%);
-		background: color-mix(in srgb, var(--nyt-accent) 8%, var(--card) 92%);
-		color: var(--nyt-accent);
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		justify-content: center;
+		color: var(--text-secondary, #888);
+		opacity: 0.6;
+		transition: opacity 0.15s, color 0.15s;
 		text-decoration: none;
 	}
 
-	.cluster-share-link:hover {
-		color: var(--link-hover);
-		border-color: color-mix(in srgb, var(--link-hover) 42%, var(--border) 58%);
-		background: color-mix(in srgb, var(--link-hover) 10%, var(--card) 90%);
+	:global(.share-icon:hover) {
+		opacity: 1;
 	}
 
-	.cluster-share-link:disabled {
-		opacity: 0.7;
-		cursor: wait;
-	}
+	:global(.share-icon-facebook:hover) { color: #1877f2; }
+	:global(.share-icon-whatsapp:hover) { color: #25d366; }
+	:global(.share-icon-twitter:hover) { color: var(--text-primary, #000); }
+	:global(.share-icon-reddit:hover) { color: #ff4500; }
 
 	.cluster-refresh-badge {
 		display: inline-flex;

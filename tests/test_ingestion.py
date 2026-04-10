@@ -1,6 +1,9 @@
 import pytest
 import datetime
 import time
+import asyncio
+import types
+from unittest.mock import patch, MagicMock
 from ingestion import (
     normalize_headline,
     clean_rss_footer,
@@ -8,6 +11,8 @@ from ingestion import (
     normalize_candidate_title,
     parse_entry_timestamp,
     extract_image_url,
+    fetch_og_image,
+    fill_missing_og_images,
 )
 
 def test_normalize_headline():
@@ -127,3 +132,129 @@ def test_extract_image_url_rejects_non_http_candidates():
         ],
     }
     assert extract_image_url(entry) == "https://cdn.example.com/story.jpg"
+
+
+def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
+    import ingestion
+
+    recent_rows = [
+        {"link": "https://example.com/story", "source": "MIA", "title": "Вест"},
+    ]
+
+    class _Result:
+        def __init__(self, rows):
+            self._rows = rows
+
+        def fetchall(self):
+            return self._rows
+
+    class _Conn:
+        def __init__(self):
+            self.executed = []
+            self.commits = 0
+
+        def execute(self, sql, params=None):
+            self.executed.append((sql, params))
+            if "SELECT link, source, title FROM articles" in sql:
+                return _Result(recent_rows)
+            return _Result([])
+
+        def commit(self):
+            self.commits += 1
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class _AsyncClient:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    async def _fake_fetch_feed_async(_client, source):
+        return source["name"], [{"title": "Вест", "link": "https://example.com/story", "summary": ""}], None
+
+    conn = _Conn()
+
+    with patch.object(ingestion, "get_active_sources", return_value=[{"name": "MIA", "url": "https://feed.example.com", "country": "🇲🇰", "category": "Главни"}]), \
+         patch.object(ingestion, "get_db", return_value=conn), \
+         patch.object(ingestion, "httpx", types.SimpleNamespace(AsyncClient=lambda **_kwargs: _AsyncClient())), \
+         patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async), \
+         patch.object(ingestion, "record_source_fetch"):
+        new_count, errors = asyncio.run(ingestion.ingest_all_sources_async())
+
+    assert new_count == 0
+    assert errors == []
+    assert any("UPDATE sources SET last_fetched = NOW()" in sql for sql, _params in conn.executed)
+
+
+def test_fetch_og_image_reads_only_limited_head_and_resolves_relative_url():
+    html = (
+        b"<html><head>"
+        b"<meta property='og:image' content='/images/story.jpg'>"
+        b"</head><body>" + (b"x" * 100000) + b"</body></html>"
+    )
+
+    class _Resp:
+        def __init__(self):
+            self.headers = {"content-type": "text/html; charset=utf-8"}
+            self.encoding = "utf-8"
+            self.url = "https://example.com/news/story"
+            self.read_bytes = 0
+
+        def raise_for_status(self):
+            return None
+
+        async def aiter_bytes(self):
+            for idx in range(0, len(html), 4096):
+                chunk = html[idx:idx + 4096]
+                self.read_bytes += len(chunk)
+                yield chunk
+
+    class _StreamCtx:
+        def __init__(self, resp):
+            self.resp = resp
+
+        async def __aenter__(self):
+            return self.resp
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    class _Client:
+        def __init__(self):
+            self.response = _Resp()
+
+        def stream(self, method, url, timeout=None, follow_redirects=None):
+            assert method == "GET"
+            assert url == "https://example.com/news/story"
+            return _StreamCtx(self.response)
+
+    client = _Client()
+    result = asyncio.run(fetch_og_image(client, "https://example.com/news/story"))
+
+    assert result == "https://example.com/images/story.jpg"
+    assert client.response.read_bytes <= 32768 + 4096
+
+
+def test_fill_missing_og_images_only_updates_missing_candidates():
+    candidates = [
+        {"link": "https://example.com/1", "image_url": None},
+        {"link": "https://example.com/2", "image_url": "https://cdn.example.com/existing.jpg"},
+        {"link": "https://example.com/3", "image_url": None},
+    ]
+
+    async def _fake_fetch(_client, url):
+        return f"{url}/og.jpg" if url.endswith("/3") else None
+
+    with patch("ingestion.fetch_og_image", side_effect=_fake_fetch):
+        filled = asyncio.run(fill_missing_og_images(object(), candidates))
+
+    assert filled == 1
+    assert candidates[0]["image_url"] is None
+    assert candidates[1]["image_url"] == "https://cdn.example.com/existing.jpg"
+    assert candidates[2]["image_url"] == "https://example.com/3/og.jpg"

@@ -4,7 +4,6 @@ import json
 import os
 import urllib.request
 from celery_app import celery_app
-from ingestion import ingest_feeds
 from database import db_manager as db, prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
@@ -1168,6 +1167,7 @@ def translate_article_task(article_id, title, description):
             log.info(f"Translated article {article_id}")
     except Exception as e:
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
+        raise
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
@@ -1356,6 +1356,7 @@ def run_ingestion():
         log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
     try:
+        from ingestion import ingest_feeds
         log.info("Presek 4.0: Starting unified ingestion cycle...")
         new_count, errors = ingest_feeds()
 

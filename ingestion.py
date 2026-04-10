@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 import re
 import html
 import datetime
 import asyncio
 import feedparser
-import httpx
 import logging
 from collections import defaultdict
 from typing import List, Dict, Any, Tuple
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
+try:
+    import httpx
+except ModuleNotFoundError:
+    httpx = None
 
 import clustering
 from ai_engine import translate_to_macedonian
@@ -18,6 +23,9 @@ from embeddings import generate_embeddings_batch
 from health import record_source_fetch, get_source_statuses
 
 log = logging.getLogger("presek")
+
+_OG_IMAGE_READ_LIMIT = 32 * 1024
+_OG_IMAGE_CONCURRENCY = 8
 
 _TRACKING_PARAMS = {
     "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
@@ -206,6 +214,70 @@ def extract_image_url(entry):
 
     return best_url
 
+async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
+    """Fetch only the head of an article page and extract the og:image meta tag."""
+    try:
+        async with client.stream("GET", url, timeout=8.0, follow_redirects=True) as resp:
+            resp.raise_for_status()
+
+            content_type = str(resp.headers.get("content-type", "")).lower()
+            if content_type and "html" not in content_type and "xml" not in content_type:
+                return None
+
+            head_bytes = bytearray()
+            async for chunk in resp.aiter_bytes():
+                if not chunk:
+                    continue
+                remaining = _OG_IMAGE_READ_LIMIT - len(head_bytes)
+                if remaining <= 0:
+                    break
+                head_bytes.extend(chunk[:remaining])
+                if len(head_bytes) >= _OG_IMAGE_READ_LIMIT:
+                    break
+
+            text = head_bytes.decode(resp.encoding or "utf-8", errors="ignore")
+        m = re.search(
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+            text, re.IGNORECASE,
+        ) or re.search(
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+            text, re.IGNORECASE,
+        )
+        if m:
+            img_url = m.group(1).strip()
+            if img_url:
+                resolved = urljoin(str(resp.url), img_url)
+                if re.match(r"^https?://", resolved, flags=re.IGNORECASE):
+                    return resolved
+    except Exception:
+        pass
+    return None
+
+
+async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dict[str, Any]]) -> int:
+    """Backfill missing article images using og:image with bounded concurrency."""
+    no_image = [c for c in candidates if not c["image_url"]]
+    if not no_image:
+        return 0
+
+    log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
+    semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
+
+    async def _fetch(candidate: Dict[str, Any]) -> str | None:
+        async with semaphore:
+            return await fetch_og_image(client, candidate["link"])
+
+    og_results = await asyncio.gather(*(_fetch(candidate) for candidate in no_image))
+    filled = 0
+    for candidate, og_url in zip(no_image, og_results):
+        if og_url:
+            candidate["image_url"] = og_url
+            filled += 1
+    if filled:
+        log.info(f"[ingest] og:image filled {filled}/{len(no_image)} missing images")
+    return filled
+
+
 async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed."""
     name = source['name']
@@ -250,6 +322,8 @@ async def ingest_all_sources_async():
     if not sources:
         log.warning("No active sources found.")
         return 0, []
+    if httpx is None:
+        raise RuntimeError("httpx is required for feed ingestion")
 
     # 1. Duplicate detection setup
     known_links = set()
@@ -327,6 +401,17 @@ async def ingest_all_sources_async():
 
             if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
                 source_stats[source_name]["status"] = "warning"
+
+        await fill_missing_og_images(client, candidates)
+
+    successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
+    if successful_sources:
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
+                (successful_sources,),
+            )
+            conn.commit()
 
     if not candidates:
         for source_name, stats in source_stats.items():
@@ -420,14 +505,6 @@ async def ingest_all_sources_async():
             results = cur.fetchall()
             new_count = len(results)
             conn.commit()
-
-            successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
-            if successful_sources:
-                conn.execute(
-                    "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
-                    (successful_sources,),
-                )
-                conn.commit()
             
             # Post-ingestion tasks
             if new_count > 0:
