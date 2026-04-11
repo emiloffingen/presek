@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import datetime
+import time
 import re
 from typing import Optional, List
 from collections import defaultdict
@@ -59,6 +60,7 @@ from api_helpers import (
 )
 
 log = logging.getLogger("presek")
+log.setLevel(logging.INFO)
 
 _CLEAN_ARTIFACTS = [
     re.compile(r'Read\s+More\s*[»\>\-]*\s*$', re.I),
@@ -741,15 +743,16 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
 
 @app.middleware("http")
 async def apply_runtime_policies(request: Request, call_next):
-
+    start_time = time.time()
     if _is_rate_limited_path(request.url.path):
         client_host = _client_ip_for_request(request)
 
         if not check_rate_limit(client_host):
-
             return _apply_security_headers(JSONResponse(status_code=429, content=_rate_limit_error_payload()))
 
     response = await call_next(request)
+    duration = time.time() - start_time
+    log.info(f"API {request.method} {request.url.path} took {duration:.4f}s")
     return _apply_security_headers(response)
 
 @app.get("/api/health")
@@ -1208,6 +1211,11 @@ async def get_entity_profile(name: str):
 @app.get("/api/intelligence/top-entities")
 async def get_top_entities(limit: int = 10):
     """Returns the most mentioned entities."""
+    cache_key = f"api:top-entities:{limit}"
+    cached = cached_response(cache_key)
+    if cached:
+        return cached
+
     fetch_limit = max(limit * 4, 24)
     rows = db.execute("""
         SELECT name, type, total_mentions 
@@ -1232,7 +1240,8 @@ async def get_top_entities(limit: int = 10):
         })
         if len(filtered) >= limit:
             break
-
+            
+    set_cache(cache_key, filtered, ttl=600)  # 10 minutes
     return filtered
 
 
@@ -1303,6 +1312,12 @@ async def get_news(
     page: int = 0,
     page_size: int = 24
 ):
+    # Cache key based on all parameters
+    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{sort}:{page}:{page_size}"
+    cached = cached_response(cache_key)
+    if cached:
+        return cached
+
     try:
         # Clamp pagination + query length to prevent abuse
         page = max(0, min(int(page or 0), API_MAX_PAGE))
@@ -1390,12 +1405,14 @@ async def get_news(
                 "entities": main.get("entity_names", [])
             })
 
-        return {
+        final_response = {
             "status": "success",
             "clusters": result,
             "page": page,
             "has_more": len(ranked_clusters) > start + page_size
         }
+        set_cache(cache_key, final_response, ttl=180)  # 3 minutes
+        return final_response
     except Exception as e:
         log.error(f"FastAPI News Error: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
@@ -1880,6 +1897,11 @@ async def get_stats():
 @app.get("/api/stats/summary")
 async def get_stats_summary():
     """Public stats for the homepage including quote of the day."""
+    cache_key = "api:stats:summary"
+    cached = cached_response(cache_key)
+    if cached:
+        return cached
+
     try:
         last_24h = db.execute_one(
             "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
@@ -1897,11 +1919,13 @@ async def get_stats_summary():
             ORDER BY RANDOM() LIMIT 1
         """)
         
-        return {
+        result = {
             "last_24h": last_24h,
             "total_feeds": total_feeds,
             "quote_of_the_day": quote_row
         }
+        set_cache(cache_key, result, ttl=300)  # 5 minutes
+        return result
     except Exception as e:
         log.error(f"Stats Summary Error: {e}")
         return {"last_24h": 0, "total_feeds": 0, "quote_of_the_day": None}
@@ -2418,8 +2442,14 @@ async def chat_stream(
 
 @app.get("/api/trending")
 async def get_trending():
+    cache_key = "api:trending"
+    cached = cached_response(cache_key)
+    if cached:
+        return cached
+        
     from trending import get_trending
     words = get_trending(limit=20)
+    set_cache(cache_key, words, ttl=300)  # 5 minutes
     return words
 
 @app.get("/api/cluster/{cluster_id}/share-card")

@@ -30,40 +30,13 @@ class BreakingNewsNotifier:
     def send_telegram(self, message, cluster_id=None, image_url=None):
         token = os.environ.get("TELEGRAM_TOKEN")
         chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-        gw_url = os.environ.get("OPENCLAW_GATEWAY_URL")
-        gw_token = os.environ.get("OPENCLAW_GATEWAY_TOKEN")
 
         if not token or not chat_id:
             return
 
         link = f"https://presek.mk/cluster/{cluster_id}" if cluster_id else "https://presek.mk"
 
-        # 1. Try OpenClaw Gateway First
-        if gw_url and gw_token:
-            try:
-                html_text = f"🚨 <b>ПРЕСЕК — Важна вест</b>\n\n{message}\n\n🔗 <a href='{link}'>Целосна синтеза тука</a>"
-                # Strip any API path (e.g. /v1/chat/completions) to get base URL
-                from urllib.parse import urlparse
-                parsed = urlparse(gw_url)
-                base_url = f"{parsed.scheme}://{parsed.netloc}"
-                endpoint = f"{base_url}/channels/presekmk/message"
-
-                payload = {"text": html_text, "parse_mode": "HTML"}
-                if image_url:
-                    payload["photo"] = image_url
-
-                data = json.dumps(payload).encode("utf-8")
-                req = urllib.request.Request(
-                    endpoint, data=data,
-                    headers={"Authorization": f"Bearer {gw_token}", "Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    if resp.status == 200:
-                        return
-            except Exception as e:
-                log.warning(f"[notifier] openclaw error: {e}, falling back to Bot API")
-
-        # 2. Fallback: Direct Telegram Bot API
+        # Send directly via Telegram Bot API.
         try:
             html_text = f"🚨 <b>ПРЕСЕК — Важна вест</b>\n\n{message}\n\n🔗 <a href='{link}'>Целосна синтеза тука</a>"
 

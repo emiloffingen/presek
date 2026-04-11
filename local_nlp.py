@@ -2,16 +2,67 @@ import re
 import math
 import logging
 import threading
-from collections import Counter
+from collections import Counter, OrderedDict
 
 # Reuse stopwords from your trending logic
 from trending import STOPWORDS
+from utils import record_runtime_event
 
 log = logging.getLogger("presek")
 
 _keybert_model = None
 _keybert_lock = threading.Lock()
 _keybert_unavailable = False
+_local_cache_lock = threading.Lock()
+_LOCAL_CACHE_MAXSIZE = 256
+_comparison_cache = OrderedDict()
+_question_evidence_cache = OrderedDict()
+
+
+def _freeze_cache_value(value):
+    if isinstance(value, dict):
+        return tuple((key, _freeze_cache_value(val)) for key, val in value.items())
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_cache_value(item) for item in value)
+    return value
+
+
+def _thaw_cache_value(value):
+    if isinstance(value, tuple):
+        if value and all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) for item in value):
+            return {key: _thaw_cache_value(val) for key, val in value}
+        return [_thaw_cache_value(item) for item in value]
+    return value
+
+
+def _cache_get(store, key):
+    with _local_cache_lock:
+        if key not in store:
+            return None
+        frozen = store.pop(key)
+        store[key] = frozen
+    return _thaw_cache_value(frozen)
+
+
+def _cache_set(store, key, value):
+    with _local_cache_lock:
+        if key in store:
+            store.pop(key)
+        store[key] = _freeze_cache_value(value)
+        while len(store) > _LOCAL_CACHE_MAXSIZE:
+            store.popitem(last=False)
+
+
+def _articles_cache_key(articles):
+    normalized = _normalize_articles_for_local_use(articles)
+    return tuple(
+        (
+            str(article.get("source") or "").strip(),
+            str(article.get("title") or "").strip(),
+            str(article.get("description") or "").strip(),
+        )
+        for article in normalized
+    )
 
 
 def _get_keybert():
@@ -882,6 +933,19 @@ def _join_fragments(parts):
     return "; ".join(clean)
 
 
+def _extract_comparison_entities(text):
+    entities = []
+    for phrase in _extract_capitalized_phrases(text):
+        clean = normalize_tag_name(phrase)
+        if not clean:
+            continue
+        lowered = clean.casefold()
+        if lowered in SOURCE_NOISE_WORDS or lowered in TAG_NOISE_WORDS:
+            continue
+        entities.append(clean)
+    return entities
+
+
 def _source_list(articles, limit=3):
     names = [str(article.get("source") or "Извор").strip() for article in articles[:limit]]
     return ", ".join(name for name in names if name)
@@ -891,6 +955,13 @@ def compare_cluster_sources(articles):
     articles = _normalize_articles_for_local_use(articles)
     if not articles:
         return {"common_line": "", "difference_points": [], "open_points": []}
+
+    cache_key = _articles_cache_key(articles)
+    cached = _cache_get(_comparison_cache, cache_key)
+    if cached is not None:
+        record_runtime_event("local_compare_cache", mode="hit")
+        return cached
+    record_runtime_event("local_compare_cache", mode="miss")
 
     uncertainty_markers = (
         "тврди", "според", "непотвр", "навод", "се очекува", "може",
@@ -902,7 +973,9 @@ def compare_cluster_sources(articles):
     article_texts_lower = []
     title_pairs = []
     number_map = {}
+    entity_map = {}
     uncertain_sources = []
+    article_fact_profiles = []
 
     for article in articles:
         combined = " ".join([article["title"], article["description"]]).strip()
@@ -915,12 +988,26 @@ def compare_cluster_sources(articles):
         if title:
             title_pairs.append((article["source"], title))
 
-        for number in _extract_number_tokens(combined):
+        numbers = set(_extract_number_tokens(combined))
+        for number in numbers:
             number_map.setdefault(number, set()).add(article["source"])
 
+        entities = set(_extract_comparison_entities(combined))
+        for entity in entities:
+            entity_map.setdefault(entity, set()).add(article["source"])
+
         lowered = combined.lower()
-        if any(marker in lowered for marker in uncertainty_markers):
+        has_uncertainty = any(marker in lowered for marker in uncertainty_markers)
+        if has_uncertainty:
             uncertain_sources.append(article["source"])
+
+        article_fact_profiles.append({
+            "source": article["source"],
+            "terms": terms,
+            "numbers": numbers,
+            "entities": entities,
+            "uncertain": has_uncertainty,
+        })
 
     threshold = max(2, math.ceil(len(articles) / 2))
     common_terms = [term for term, count in all_terms.most_common(8) if count >= threshold and term not in SOURCE_NOISE_WORDS]
@@ -961,11 +1048,11 @@ def compare_cluster_sources(articles):
             f"{lead_source} најдиректно го формулира развојот како „{lead_title}“, додека {second_source} повеќе нагласува „{second_title}“."
         )
 
-    conflicting_numbers = []
-    for number, sources in number_map.items():
-        if len(sources) >= 1:
-            conflicting_numbers.append((number, sorted(sources)))
-    distinct_numbers = [item for item in conflicting_numbers if len(item[1]) >= 1]
+    distinct_numbers = [
+        (number, sorted(sources))
+        for number, sources in number_map.items()
+        if len(sources) >= 1
+    ]
     if len(distinct_numbers) >= 2:
         top_numbers = []
         for number, sources in distinct_numbers[:3]:
@@ -973,6 +1060,14 @@ def compare_cluster_sources(articles):
         difference_points.append(
             "Изворите не ги нагласуваат истите бројки или рокови: " + ", ".join(top_numbers) + "."
         )
+
+    exclusive_entity_parts = []
+    for entity, sources in entity_map.items():
+        if len(sources) == 1:
+            source = sorted(sources)[0]
+            exclusive_entity_parts.append(f"{source} дополнително го отвора фокусот кон {entity}")
+    if exclusive_entity_parts:
+        difference_points.append(_join_fragments(exclusive_entity_parts[:2]) + ".")
 
     if len(articles) >= 2 and article_term_sets:
         exclusive_parts = []
@@ -988,12 +1083,55 @@ def compare_cluster_sources(articles):
         if exclusive_parts:
             difference_points.append(_join_fragments(exclusive_parts) + ".")
 
+    divergent_fact_parts = []
+    for profile in article_fact_profiles[:3]:
+        unique_numbers = [
+            number for number in profile["numbers"]
+            if len(number_map.get(number, set())) == 1
+        ][:2]
+        unique_entities = [
+            entity for entity in profile["entities"]
+            if len(entity_map.get(entity, set())) == 1
+        ][:2]
+        details = []
+        if unique_numbers:
+            details.append("бројките " + ", ".join(unique_numbers))
+        if unique_entities:
+            details.append("актерите " + ", ".join(unique_entities))
+        if details:
+            divergent_fact_parts.append(f"{profile['source']} посебно ги истакнува {' и '.join(details)}")
+    if divergent_fact_parts:
+        difference_points.append(_join_fragments(divergent_fact_parts[:2]) + ".")
+
     open_points = []
     if uncertain_sources:
         source_list = ", ".join(dict.fromkeys(uncertain_sources))
         open_points.append(
             f"Дел од тврдењата и понатаму се формулирани како развој во тек или непотврдена најава, особено кај {source_list}."
         )
+    uncertainty_details = []
+    for profile in article_fact_profiles:
+        if not profile["uncertain"]:
+            continue
+        open_entities = [
+            entity for entity in profile["entities"]
+            if len(entity_map.get(entity, set())) == 1
+        ][:2]
+        open_numbers = [
+            number for number in profile["numbers"]
+            if len(number_map.get(number, set())) == 1
+        ][:2]
+        details = []
+        if open_entities:
+            details.append(", ".join(open_entities))
+        if open_numbers:
+            details.append(", ".join(open_numbers))
+        if details:
+            uncertainty_details.append(
+                f"{profile['source']} го остава отворено прашањето околу {' и '.join(details)}"
+            )
+    if uncertainty_details:
+        open_points.append(_join_fragments(uncertainty_details[:2]) + ".")
     if len(number_map) >= 2:
         open_points.append("Не е целосно јасно кои бројки, рокови или размери ќе останат конечни по следните потврди.")
     if not open_points and len(articles) >= 2:
@@ -1017,11 +1155,13 @@ def compare_cluster_sources(articles):
         seen.add(key)
         deduped_open.append(item)
 
-    return {
+    result = {
         "common_line": common_line,
         "difference_points": deduped_differences[:3],
         "open_points": deduped_open[:2],
     }
+    _cache_set(_comparison_cache, cache_key, result)
+    return result
 
 
 def synthesize_cluster_fallback(articles):
@@ -1034,27 +1174,36 @@ def synthesize_cluster_fallback(articles):
     combined_text = " ".join([lead["title"], *descriptions[:4]])
     context_summary = summarize_locally(combined_text, sentence_count=3).strip()
     comparison = compare_cluster_sources(articles)
+    common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
+    compact_context = " ".join(
+        _coerce_grounded_snippet(line).rstrip(".")
+        for line in context_summary.splitlines()[:2]
+        if _coerce_grounded_snippet(line)
+    )
 
     summary_lines = [f"• Што се случува: {lead['title']}"]
-    if comparison["common_line"]:
-        common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
+    if common_line:
+        summary_lines.append(f"• Што е потврдено: {common_line}")
         summary_lines.append(f"• Заедничка линија: {common_line}")
+    elif compact_context:
+        summary_lines.append(f"• Што е потврдено: {compact_context}.")
+
     summary_lines.append(
         f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}."
     )
-    follow_line = ""
-    if context_summary:
-        summary_lines.append(f"• Контекст: {context_summary}")
+
+    if comparison["difference_points"]:
+        summary_lines.append(f"• Каде се разликуваат изворите: {comparison['difference_points'][0]}")
+    elif compact_context:
+        summary_lines.append(f"• Контекст: {compact_context}.")
+
     if comparison["open_points"]:
-        follow_line = f"• Што останува отворено: {' '.join(comparison['open_points'][:1])}"
+        summary_lines.append(f"• Што останува отворено: {comparison['open_points'][0]}")
     elif descriptions:
         next_line = summarize_locally(descriptions[0], sentence_count=1).strip() or descriptions[0][:220].rstrip(" .,;:")
-        follow_line = f"• Следно за следење: {next_line}."
-
-    if follow_line:
-        if len(summary_lines) >= 4:
-            summary_lines = summary_lines[:3]
-        summary_lines.append(follow_line)
+        next_line = _coerce_grounded_snippet(next_line)
+        if next_line:
+            summary_lines.append(f"• Следно за следење: {next_line}")
 
     perspectives = []
     if comparison["common_line"]:
@@ -1075,8 +1224,15 @@ def synthesize_cluster_fallback(articles):
             "content": " ".join(comparison["open_points"]),
         })
 
+    summary = "\n".join(summary_lines[:6])
+    if _is_low_quality_local_text(summary):
+        summary = _build_minimum_cluster_summary(articles, comparison=comparison)
+        record_runtime_event("local_synthesis_path", mode="minimum")
+    else:
+        record_runtime_event("local_synthesis_path", mode="full")
+
     return {
-        "summary": "\n".join(summary_lines[:4]),
+        "summary": summary,
         "perspectives": perspectives[:3],
     }
 
@@ -1132,6 +1288,279 @@ def generate_daily_brief_fallback(clusters):
     return "\n".join(lines).strip()
 
 
+def _article_context_text(article):
+    article = article or {}
+    return " ".join(
+        part.strip()
+        for part in [
+            str(article.get("title") or ""),
+            str(article.get("description") or ""),
+        ]
+        if str(part or "").strip()
+    ).strip()
+
+
+def _article_candidate_snippets(article):
+    article = article or {}
+    title = str(article.get("title") or "").strip()
+    description = str(article.get("description") or "").strip()
+
+    snippets = []
+    if title:
+        snippets.append((title, "title"))
+
+    raw_sentences = [
+        _normalize_summary_sentence(sentence)
+        for sentence in re.split(r'(?<=[.!?])\s+', description)
+        if _normalize_summary_sentence(sentence)
+    ]
+    for sentence in raw_sentences[:3]:
+        if _is_noisy_summary_sentence(sentence):
+            continue
+        snippets.append((sentence, "description"))
+
+    if not snippets and description:
+        clean = summarize_locally(description, sentence_count=1).strip()
+        if clean:
+            snippets.append((clean, "summary"))
+
+    return snippets[:4]
+
+
+def _score_question_snippet(question_terms, question_entities, question_numbers, snippet, kind, article_rank):
+    text = str(snippet or "").strip()
+    if not text:
+        return 0.0
+
+    lowered = text.lower()
+    snippet_terms = set(_extract_terms(text))
+    snippet_numbers = set(_extract_number_tokens(text))
+    snippet_entities = {entity.casefold() for entity in _extract_capitalized_phrases(text)}
+
+    term_hits = len(question_terms & snippet_terms)
+    entity_hits = sum(1 for entity in question_entities if entity in lowered or entity in snippet_entities)
+    number_hits = len(question_numbers & snippet_numbers)
+
+    score = term_hits * 2.4
+    score += entity_hits * 2.1
+    score += number_hits * 2.8
+
+    if kind == "title":
+        score += 1.1
+    elif kind == "description":
+        score += 0.7
+    else:
+        score += 0.4
+
+    if any(marker in lowered for marker in ["според", "потврди", "најави", "се очекува", "не е потврдено"]):
+        score += 0.35
+    if _extract_number_tokens(text):
+        score += 0.25
+
+    score += max(0, 0.55 - (article_rank * 0.1))
+    return score
+
+
+def _rank_cluster_question_evidence(question, articles, synthesis=""):
+    articles = _normalize_articles_for_local_use(articles)
+    question = str(question or "").strip()
+    if not question or not articles:
+        return []
+
+    cache_key = (question.casefold(), _articles_cache_key(articles), str(synthesis or "").strip())
+    cached = _cache_get(_question_evidence_cache, cache_key)
+    if cached is not None:
+        record_runtime_event("local_question_cache", mode="hit")
+        return cached
+    record_runtime_event("local_question_cache", mode="miss")
+
+    question_terms = set(_extract_terms(question))
+    question_entities = {entity.casefold() for entity in _extract_capitalized_phrases(question)}
+    question_numbers = set(_extract_number_tokens(question))
+    generic_question = not (question_terms or question_entities or question_numbers)
+
+    ranked = []
+    for article_rank, article in enumerate(articles):
+        snippets = _article_candidate_snippets(article)
+        best = None
+        context_text = _article_context_text(article)
+        context_terms = set(_extract_terms(context_text))
+        context_score = len(question_terms & context_terms) * 0.9
+        context_score += len(question_numbers & set(_extract_number_tokens(context_text))) * 1.2
+        context_score += max(0, 0.45 - (article_rank * 0.08))
+
+        for snippet, kind in snippets:
+            score = _score_question_snippet(
+                question_terms,
+                question_entities,
+                question_numbers,
+                snippet,
+                kind,
+                article_rank,
+            )
+            score += context_score
+            if generic_question and kind == "title":
+                score += 1.25
+            if best is None or score > best["score"]:
+                best = {
+                    "article": article,
+                    "snippet": snippet,
+                    "kind": kind,
+                    "score": score,
+                }
+
+        if best and (best["score"] > 0 or generic_question):
+            ranked.append(best)
+
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+
+    deduped = []
+    seen = set()
+    for item in ranked:
+        snippet_key = str(item["snippet"]).casefold()
+        article_key = (
+            str(item["article"].get("source") or "").casefold(),
+            str(item["article"].get("title") or "").casefold(),
+        )
+        if snippet_key in seen or article_key in seen:
+            continue
+        seen.add(snippet_key)
+        seen.add(article_key)
+        deduped.append(item)
+        if len(deduped) >= 4:
+            break
+
+    if deduped:
+        _cache_set(_question_evidence_cache, cache_key, deduped)
+        return deduped
+
+    if synthesis:
+        result = [{
+            "article": articles[0],
+            "snippet": summarize_locally(synthesis, sentence_count=1).strip() or synthesis[:240],
+            "kind": "synthesis",
+            "score": 0.5,
+        }]
+        _cache_set(_question_evidence_cache, cache_key, result)
+        return result
+
+    return []
+
+
+def _coerce_grounded_snippet(snippet):
+    text = str(snippet or "").strip().strip("•")
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return ""
+    if not re.search(r"[.!?]$", text):
+        text += "."
+    return text
+
+
+def _is_low_information_fragment(text):
+    clean = str(text or "").strip().strip("•").strip()
+    if not clean:
+        return True
+    terms = _extract_terms(clean)
+    if len(clean) < 18:
+        return True
+    if len(terms) <= 1:
+        return True
+    if re.fullmatch(r"[А-Яа-яЀ-ӿA-Za-z0-9\s]+[.!?]?", clean) and len(clean.split()) <= 2:
+        return True
+    return False
+
+
+def _is_low_quality_local_text(text, evidence=None):
+    clean = str(text or "").strip()
+    if not clean:
+        return True
+
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r'(?<=[.!?])\s+', clean)
+        if sentence.strip()
+    ]
+    if not sentences:
+        return True
+
+    normalized = [re.sub(r"\s+", " ", sentence.casefold()) for sentence in sentences]
+    if len(set(normalized)) < len(normalized):
+        return True
+
+    low_info_count = sum(1 for sentence in sentences if _is_low_information_fragment(sentence))
+    if low_info_count >= max(1, len(sentences) - 1):
+        return True
+
+    if evidence:
+        evidence_terms = set()
+        for item in evidence[:2]:
+            evidence_terms.update(_extract_terms(str(item.get("snippet") or "")))
+        answer_terms = set(_extract_terms(clean))
+        if evidence_terms and len(answer_terms & evidence_terms) < min(2, len(evidence_terms)):
+            return True
+
+    return False
+
+
+def _build_grounded_answer_from_evidence(evidence, comparison=None):
+    comparison = comparison or {}
+    if not evidence:
+        return ""
+
+    primary = evidence[0]
+    primary_snippet = _coerce_grounded_snippet(primary.get("snippet") or "")
+    primary_article = primary.get("article") or {}
+    if not primary_snippet:
+        primary_snippet = _coerce_grounded_snippet(primary_article.get("title") or "")
+    if _is_low_information_fragment(primary_snippet):
+        detail = summarize_locally(str(primary_article.get("description") or ""), sentence_count=1).strip()
+        detail = _coerce_grounded_snippet(detail)
+        if detail:
+            primary_snippet = detail
+
+    answer = f"Најдиректно од достапните извори: {primary_snippet}"
+    if primary.get("kind") == "title":
+        detail = summarize_locally(str(primary_article.get("description") or ""), sentence_count=1).strip()
+        detail = _coerce_grounded_snippet(detail)
+        if detail and detail.casefold() != primary_snippet.casefold():
+            answer += f" Дополнително: {detail}"
+
+    if len(evidence) > 1:
+        secondary = evidence[1]
+        secondary_snippet = _coerce_grounded_snippet(secondary.get("snippet") or "")
+        secondary_article = secondary.get("article") or {}
+        if _is_low_information_fragment(secondary_snippet):
+            detail = summarize_locally(str(secondary_article.get("description") or ""), sentence_count=1).strip()
+            detail = _coerce_grounded_snippet(detail)
+            if detail:
+                secondary_snippet = detail
+        if secondary_snippet and secondary["article"]["source"] != primary["article"]["source"]:
+            answer += f" {secondary['article']['source']} дополнува: {secondary_snippet}"
+
+    if comparison.get("open_points"):
+        answer += f" Отворено останува: {comparison['open_points'][0]}"
+
+    return answer.strip()
+
+
+def _build_minimum_cluster_summary(articles, comparison=None):
+    articles = _normalize_articles_for_local_use(articles)
+    comparison = comparison or {}
+    if not articles:
+        return ""
+
+    lines = [f"• Што се случува: {articles[0]['title']}"]
+    lines.append(
+        f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}."
+    )
+    if comparison.get("difference_points"):
+        lines.append(f"• Каде се разликуваат изворите: {comparison['difference_points'][0]}")
+    if comparison.get("open_points"):
+        lines.append(f"• Што останува отворено: {comparison['open_points'][0]}")
+    return "\n".join(lines[:4])
+
+
 def answer_cluster_question_locally(question, articles, synthesis="", perspectives=None):
     articles = _normalize_articles_for_local_use(articles)
     if not question or not articles:
@@ -1139,8 +1568,11 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
 
     lowered = question.lower()
     lead = articles[0]
-    citations = articles[:2]
     comparison = compare_cluster_sources(articles)
+    evidence = _rank_cluster_question_evidence(question, articles, synthesis=synthesis)
+    evidence_articles = [item["article"] for item in evidence[:2]] or articles[:2]
+    primary_evidence = evidence[0] if evidence else None
+    secondary_evidence = evidence[1] if len(evidence) > 1 else None
     related_questions = [
         "Како се разликуваат изворите во известувањето?",
         "Што сè уште не е потврдено?",
@@ -1149,9 +1581,15 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
 
     if any(token in lowered for token in ["разлику", "извори", "перспектив"]):
         emphasis = comparison["difference_points"] or [f"{article['source']} го истакнува „{article['title']}“" for article in articles[:3]]
+        answer = "Изворите најмногу се разликуваат во акцентот и формулацијата. " + " ".join(emphasis[:2])
+        mode = "difference"
+        if _is_low_quality_local_text(answer, evidence=evidence):
+            answer = _build_grounded_answer_from_evidence(evidence, comparison=comparison)
+            mode = "grounded_fallback"
+        record_runtime_event("local_answer_path", mode=mode, question_type="difference")
         return {
-            "answer": "Изворите најмногу се разликуваат во акцентот и формулацијата. " + " ".join(emphasis[:2]),
-            "citations": citations,
+            "answer": answer,
+            "citations": evidence_articles,
             "related_questions": related_questions,
             "confidence": "medium",
         }
@@ -1163,9 +1601,10 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
             answer = f"{answer}{open_line} Тековниот преглед сугерира: {summarize_locally(synthesis, sentence_count=1)}"
         else:
             answer = f"{answer}{open_line}"
+        record_runtime_event("local_answer_path", mode="open_points", question_type="uncertainty")
         return {
             "answer": answer,
-            "citations": citations,
+            "citations": evidence_articles,
             "related_questions": related_questions,
             "confidence": "medium",
         }
@@ -1176,33 +1615,52 @@ def answer_cluster_question_locally(question, articles, synthesis="", perspectiv
             answer += f" {summarize_locally(lead['description'], sentence_count=1)}"
         if comparison["common_line"]:
             common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
+            if _is_low_information_fragment(common_line):
+                answer = _build_grounded_answer_from_evidence(evidence, comparison=comparison)
+                record_runtime_event("local_answer_path", mode="grounded_fallback", question_type="main")
+                return {
+                    "answer": answer,
+                    "citations": evidence_articles,
+                    "related_questions": related_questions,
+                    "confidence": "high",
+                }
             answer += f" Заедничката линија е: {common_line}"
         answer += f" Темата во моментов е покриена од {len(articles)} извори."
+        mode = "main_development"
+        if _is_low_quality_local_text(answer, evidence=evidence):
+            answer = _build_grounded_answer_from_evidence(evidence, comparison=comparison)
+            mode = "grounded_fallback"
+        record_runtime_event("local_answer_path", mode=mode, question_type="main")
         return {
             "answer": answer,
-            "citations": citations,
+            "citations": evidence_articles,
             "related_questions": related_questions,
             "confidence": "high",
         }
 
-    terms = set(_extract_terms(question))
-    if terms:
-        scored = []
-        for article in articles:
-            haystack_terms = set(_extract_terms(" ".join([article["title"], article["description"]])))
-            scored.append((len(terms & haystack_terms), article))
-        scored.sort(key=lambda item: item[0], reverse=True)
-        top = [article for score, article in scored if score > 0][:2]
-        if top:
-            answer = f"Најрелевантно за вашето прашање е: {top[0]['title']}."
-            if top[0]["description"]:
-                answer += f" {summarize_locally(top[0]['description'], sentence_count=1)}"
-            return {
-                "answer": answer,
-                "citations": top,
-                "related_questions": related_questions,
-                "confidence": "medium",
-            }
+    if primary_evidence:
+        primary_snippet = _coerce_grounded_snippet(primary_evidence["snippet"])
+        answer = f"Најдиректно од достапните извори: {primary_snippet}"
+        if secondary_evidence and secondary_evidence["article"]["source"] != primary_evidence["article"]["source"]:
+            secondary_snippet = _coerce_grounded_snippet(secondary_evidence["snippet"])
+            answer += f" {secondary_evidence['article']['source']} дополнува: {secondary_snippet}"
+        elif primary_evidence["article"].get("description"):
+            detail = summarize_locally(primary_evidence["article"]["description"], sentence_count=1).strip()
+            detail = _coerce_grounded_snippet(detail)
+            if detail and detail.casefold() != primary_snippet.casefold():
+                answer += f" Дополнително: {detail}"
+        if _is_low_quality_local_text(answer, evidence=evidence):
+            answer = _build_grounded_answer_from_evidence(evidence, comparison=comparison)
+            mode = "grounded_fallback"
+        else:
+            mode = "grounded"
+        record_runtime_event("local_answer_path", mode=mode, question_type="generic")
+        return {
+            "answer": answer,
+            "citations": evidence_articles,
+            "related_questions": related_questions,
+            "confidence": "medium" if len(evidence_articles) == 1 else "high",
+        }
 
     return None
 

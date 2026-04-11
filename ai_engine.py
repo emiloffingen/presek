@@ -15,7 +15,6 @@ from typing import AsyncGenerator
 from config import (
     GOOGLE_API_KEY, GEMINI_URL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
-    OPENCLAW_URL, OPENCLAW_TOKEN,
     CF_AI_URL, CF_AI_TOKEN,
     POLLINATIONS_API_KEY,
 )
@@ -26,7 +25,7 @@ from prompts import (
 
 log = logging.getLogger("presek")
 
-from utils import redis_client
+from utils import redis_client, record_runtime_event
 from database import db_manager as db
 import local_nlp
 from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
@@ -96,18 +95,62 @@ class MistralProvider(AIProvider):
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
+        # Use AI Gateway if configured, else direct Mistral URL
+        url = f"{CF_AI_URL}/mistral/chat/completions" if CF_AI_URL else MISTRAL_API_URL
+        
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {MISTRAL_API_KEY}"
+            "Authorization": f"Bearer {MISTRAL_API_KEY}",
         }
         try:
             data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(MISTRAL_API_URL, data=data_encoded, headers=headers)
+            req = urllib.request.Request(url, data=data_encoded, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"]
         except Exception as e:
-            log.warning(f"[ai/mistral] Call failed: {e}")
+            log.warning(f"[ai/mistral] Call failed (URL: {url}): {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
+class OpenAICompatibleProvider(AIProvider):
+    def __init__(self, provider_name: str, api_key: str, api_url: str, model: str):
+        self.provider_name = provider_name
+        self.api_key = api_key
+        self.api_url = api_url
+        self.model = model
+
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+        if not self.api_key or not self.api_url:
+            return None
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2,
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        try:
+            data_encoded = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(self.api_url, data=data_encoded, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            log.warning(f"[ai/{self.provider_name}] Call failed: {e}")
             return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -122,7 +165,11 @@ class CloudflareAIProvider(AIProvider):
         # Hardcoded account ID from your gateway URL
         account_id = "f368eacc80be4ddcfa1d6ff49717275b"
         model = "@cf/meta/llama-3-8b-instruct"
-        url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
+        
+        if CF_AI_URL:
+            url = f"{CF_AI_URL}/workers-ai/run/{model}"
+        else:
+            url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}"
 
         payload = {
             "messages": [
@@ -143,43 +190,7 @@ class CloudflareAIProvider(AIProvider):
                     return data["result"]["response"]
                 return None
         except Exception as e:
-            log.warning(f"[ai/cloudflare] Direct AI call failed: {e}")
-            return None
-
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res: yield res
-
-class OpenClawProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
-        if not OPENCLAW_URL: return None
-        
-        base_url = OPENCLAW_URL
-        if not base_url.endswith("/v1/chat/completions") and "/v1/" not in base_url:
-            base_url = base_url.rstrip("/") + "/v1/chat/completions"
-
-        payload = {
-            "model": "llama3", 
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0.2,
-            "stream": False
-        }
-        headers = {"Content-Type": "application/json"}
-        if OPENCLAW_TOKEN:
-            headers["Authorization"] = f"Bearer {OPENCLAW_TOKEN}"
-            
-        try:
-            data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(base_url, data=data_encoded, headers=headers)
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["choices"][0]["message"]["content"]
-        except Exception as e:
-            log.warning(f"[ai/openclaw] Local LLM failed: {e}")
+            log.warning(f"[ai/cloudflare] AI call failed (URL: {url}): {e}")
             return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
@@ -225,20 +236,18 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
-    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
     "cloudflare": CloudflareAIProvider(),
-    "openclaw": OpenClawProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
-    "summarize":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
-    "synthesis":    ["gemini", "mistral", "cloudflare", "openclaw", "local"],
-    "daily_brief":  ["gemini", "mistral", "cloudflare", "openclaw", "local"],
-    "chat":         ["gemini", "mistral", "cloudflare", "local"],
-    "default":      ["gemini", "mistral", "cloudflare", "openclaw", "local"],
+    "translation":  ["mistral", "cloudflare", "local"],
+    "summarize":    ["mistral", "cloudflare", "local"],
+    "synthesis":    ["mistral", "cloudflare", "local"],
+    "daily_brief":  ["mistral", "cloudflare", "local"],
+    "chat":         ["mistral", "cloudflare", "local"],
+    "default":      ["mistral", "cloudflare", "local"],
 }
 
 # --- Service Methods ---
@@ -260,7 +269,7 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
             
-    return None, "none"
+    return None, None
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Synchronous AI entrypoint with cascading failover."""
@@ -276,7 +285,7 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
             log.warning(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
             
-    return None, "none"
+    return None, None
 
 def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
@@ -376,15 +385,46 @@ def translate_to_macedonian(text: str) -> str | None:
 
     # Already Macedonian — just normalize locally
     if lang == "mk":
+        record_runtime_event("translation_path", source_lang=lang, mode="already_mk")
         return rewrite_to_macedonian_locally(text)
+
+    def _is_usable_macedonian_translation(candidate: str | None) -> bool:
+        candidate = str(candidate or "").strip()
+        if not candidate:
+            return False
+        if candidate.casefold() == text.strip().casefold():
+            return False
+
+        candidate_cyrillic = len(re.findall(r"[А-Яа-яЀ-ӿ]", candidate))
+        candidate_latin = len(re.findall(r"[A-Za-z]", candidate))
+        if candidate_cyrillic >= max(6, candidate_latin):
+            return True
+
+        rewritten = rewrite_to_macedonian_locally(candidate)
+        rewritten_cyrillic = len(re.findall(r"[А-Яа-яЀ-ӿ]", rewritten))
+        if rewritten and rewritten.casefold() != text.strip().casefold() and rewritten_cyrillic >= max(6, candidate_cyrillic):
+            return True
+        return False
+
+    def _normalize_translation_candidate(candidate: str | None) -> str | None:
+        candidate = str(candidate or "").strip()
+        if not candidate:
+            return None
+        if _is_usable_macedonian_translation(candidate):
+            normalized = rewrite_to_macedonian_locally(candidate)
+            normalized = str(normalized or "").strip()
+            return normalized or candidate
+        return None
 
     # 1. Try self-hosted NLLB (free, no API cost)
     try:
         from nllb_translate import translate as nllb_translate
         result = nllb_translate(text, lang)
-        if result and result.strip():
+        translated = _normalize_translation_candidate(result)
+        if translated:
+            record_runtime_event("translation_path", source_lang=lang, mode="nllb")
             log.info(f"[translate] {lang}→mk via nllb: {text[:60]}...")
-            return result
+            return translated
     except Exception as e:
         log.warning(f"[translate] NLLB failed for {lang} text: {e}")
 
@@ -400,18 +440,28 @@ def translate_to_macedonian(text: str) -> str | None:
         if result:
             parsed = clean_json_response(result)
             if isinstance(parsed, dict) and "summary" in parsed:
-                translated = parsed["summary"].strip()
+                translated = _normalize_translation_candidate(parsed["summary"])
                 if translated:
+                    record_runtime_event("translation_path", source_lang=lang, mode="ai", provider=provider or "unknown")
                     log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
                     return translated
-            elif isinstance(parsed, str) and parsed.strip():
-                log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
-                return parsed.strip()
+            elif isinstance(parsed, str):
+                translated = _normalize_translation_candidate(parsed)
+                if translated:
+                    record_runtime_event("translation_path", source_lang=lang, mode="ai", provider=provider or "unknown")
+                    log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
+                    return translated
     except Exception as e:
         log.warning(f"[translate] AI translation failed for {lang} text: {e}")
 
     # 3. Last resort: local rewrite (best-effort)
-    return rewrite_to_macedonian_locally(text)
+    rewritten = rewrite_to_macedonian_locally(text)
+    if rewritten and str(rewritten).strip() and str(rewritten).strip().casefold() != text.strip().casefold():
+        record_runtime_event("translation_path", source_lang=lang, mode="local_rewrite")
+        return rewritten
+
+    record_runtime_event("translation_path", source_lang=lang, mode="original_return")
+    return text
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     """Generate a stylized placeholder (Local) or AI cover image (Pollinations)."""

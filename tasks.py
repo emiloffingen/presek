@@ -5,7 +5,7 @@ import os
 import urllib.request
 from celery_app import celery_app
 from database import db_manager as db, prune_db
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, OPENCLAW_URL, OPENCLAW_TOKEN, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
+from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
 from ai_engine import (
     translate_to_macedonian,
     sync_call_ai as _call_ai, clean_json_response, generate_cover_art
@@ -1173,8 +1173,17 @@ def translate_article_task(article_id, title, description):
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
     desc_row = db.execute_one("SELECT description, topic FROM articles WHERE id = %s", (article_id,))
-    description = (desc_row or {}).get("description")
+    description = (desc_row or {}).get("description") or ""
     topic = (desc_row or {}).get("topic")
+    
+    # Save tokens: Don't use AI for very short content, use local fallback
+    if len(description) < 200:
+        fallback = summarize_article_fallback(title, description, topic=topic)
+        if fallback:
+            db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+            invalidate_public_data_caches()
+            return
+
     prompt_parts = [str(title or "").strip()]
     if description:
         prompt_parts.append(f"Опис: {str(description).strip()}")
@@ -1252,7 +1261,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         raw, _ = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         
         verification_report = None
-        if len(article_rows) >= 3:
+        # Save tokens: only fact-check larger clusters (5+ sources)
+        if len(article_rows) >= 5:
             v_raw, _ = _call_ai(f"Статии за споредба:\n{content}", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck")
             if v_raw:
                 verification_report = clean_json_response(v_raw)

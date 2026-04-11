@@ -2,7 +2,11 @@
 import os
 import json
 import logging
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    def load_dotenv():
+        return False
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)

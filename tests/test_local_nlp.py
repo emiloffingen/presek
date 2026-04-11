@@ -12,6 +12,7 @@ from local_nlp import (
     synthesize_cluster_fallback,
     answer_cluster_question_locally,
 )
+import local_nlp
 
 
 class TestTagFiltering:
@@ -174,6 +175,71 @@ class TestClusterComparison:
         assert "во фокус" in result["common_line"].lower()
         assert "енергетска поддршка" in result["common_line"].lower()
 
+    def test_compare_cluster_sources_surfaces_unique_entities_by_source(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Средба меѓу Владата и Синдикатот за нов пакет",
+                "description": "Владата и Синдикатот разговарале за почетокот на мерките.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters јавува за реакција од Стопанската комора",
+                "description": "Стопанската комора бара дополнителни гаранции за пакетот.",
+            },
+        ]
+
+        result = compare_cluster_sources(articles)
+
+        assert any("Стопанската комора" in item for item in result["difference_points"])
+
+    def test_compare_cluster_sources_open_points_include_uncertain_unique_details(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата најави пакет од 100 милиони евра",
+                "description": "Мерките почнуваат во вторник.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters наведува можен поширок опфат",
+                "description": "Се очекува пакетот да достигне 120 милиони евра и да вклучи Стопанската комора во консултациите.",
+            },
+        ]
+
+        result = compare_cluster_sources(articles)
+
+        assert any("120" in item or "Стопанската комора" in item for item in result["open_points"])
+
+    def test_compare_cluster_sources_reuses_cached_result_for_same_articles(self, monkeypatch):
+        local_nlp._comparison_cache.clear()
+        calls = {"count": 0}
+        original = local_nlp.extract_keyphrases_locally
+
+        def counting_extract(*args, **kwargs):
+            calls["count"] += 1
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(local_nlp, "extract_keyphrases_locally", counting_extract)
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата усвои пакет за енергетска поддршка",
+                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
+                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+            },
+        ]
+
+        first = compare_cluster_sources(articles)
+        second = compare_cluster_sources(articles)
+
+        assert first == second
+        assert calls["count"] == 1
+
     def test_synthesize_cluster_fallback_uses_comparison_output(self):
         articles = [
             {
@@ -192,6 +258,71 @@ class TestClusterComparison:
 
         assert any(item["angle"] == "Различни акценти" for item in result["perspectives"])
         assert any(item["angle"] == "Што останува отворено" for item in result["perspectives"])
+        assert "Каде се разликуваат изворите" in result["summary"]
+        assert "Што останува отворено" in result["summary"]
+
+    def test_synthesize_cluster_fallback_uses_confirmed_section(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата усвои пакет за енергетска поддршка",
+                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
+                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles)
+
+        assert "Што е потврдено" in result["summary"]
+        assert "енергетска поддршка" in result["summary"].lower()
+
+    def test_synthesize_cluster_fallback_quality_gate_keeps_grounded_structure(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Пакетот",
+                "description": "",
+            },
+            {
+                "source": "Reuters",
+                "title": "Пакетот",
+                "description": "",
+            },
+        ]
+
+        result = synthesize_cluster_fallback(articles)
+
+        assert "Што се случува" in result["summary"]
+        assert "Покриеност" in result["summary"]
+        assert "Пакетот" in result["summary"]
+
+    def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
+        events = []
+
+        def record(event, **fields):
+            events.append((event, fields))
+
+        monkeypatch.setattr(local_nlp, "record_runtime_event", record)
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата усвои пакет за енергетска поддршка",
+                "description": "Пакетот за енергетска поддршка стартува во вторник со 120 милиони евра.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Реакциите се врзуваат за пакетот за енергетска поддршка",
+                "description": "Reuters наведува дека пакетот за енергетска поддршка носи мерки за домаќинствата.",
+            },
+        ]
+
+        synthesize_cluster_fallback(articles)
+
+        assert ("local_synthesis_path", {"mode": "full"}) in events
 
     def test_local_answers_use_comparison_for_differences_and_open_points(self):
         articles = [
@@ -232,6 +363,123 @@ class TestClusterComparison:
         answer = answer_cluster_question_locally("Што е најважното ново?", articles)
 
         assert answer["answer"].startswith("Во овој момент, главниот развој е:")
+
+    def test_local_answers_use_best_matching_snippet_for_specific_question(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата го претстави пакетот",
+                "description": "Мерките влегуваат во процедура оваа недела.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters пишува за бројките и рокот",
+                "description": "Пакетот вреди 120 милиони евра и според планот почнува во вторник.",
+            },
+        ]
+
+        answer = answer_cluster_question_locally("Колку вреди пакетот и кога почнува?", articles)
+
+        assert "120 милиони евра" in answer["answer"]
+        assert "вторник" in answer["answer"].lower()
+        assert answer["citations"][0]["source"] == "Reuters"
+
+    def test_local_answers_rank_later_relevant_source_above_earlier_generic_one(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Се следат реакциите по владината одлука",
+                "description": "Темата е во фокус на повеќе извори.",
+            },
+            {
+                "source": "AP",
+                "title": "Опозицијата бара дополнителни објаснувања",
+                "description": "Нема нови детали за бројките.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters објави дека пакетот почнува во вторник",
+                "description": "Пакетот вреди 120 милиони евра и стапува во сила по објавата.",
+            },
+        ]
+
+        answer = answer_cluster_question_locally("Кога почнува пакетот?", articles)
+
+        assert answer["citations"][0]["source"] == "Reuters"
+        assert "вторник" in answer["answer"].lower()
+
+    def test_question_evidence_reuses_cached_ranking(self, monkeypatch):
+        local_nlp._question_evidence_cache.clear()
+        calls = {"count": 0}
+        original = local_nlp._article_candidate_snippets
+
+        def counting_snippets(article):
+            calls["count"] += 1
+            return original(article)
+
+        monkeypatch.setattr(local_nlp, "_article_candidate_snippets", counting_snippets)
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата го претстави пакетот",
+                "description": "Мерките влегуваат во процедура оваа недела.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters пишува за бројките и рокот",
+                "description": "Пакетот вреди 120 милиони евра и според планот почнува во вторник.",
+            },
+        ]
+
+        first = answer_cluster_question_locally("Колку вреди пакетот и кога почнува?", articles)
+        second = answer_cluster_question_locally("Колку вреди пакетот и кога почнува?", articles)
+
+        assert first["citations"] == second["citations"]
+        assert calls["count"] == len(articles)
+
+    def test_local_answer_quality_gate_prefers_grounded_snippet_over_generic_common_line(self):
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Пакетот влегува во владина процедура",
+                "description": "Според Владата, мерките почнуваат во среда.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters акцентира на рокот и реакциите",
+                "description": "Се уште не е потврдено кога точно ќе стартува пакетот.",
+            },
+        ]
+
+        answer = answer_cluster_question_locally("Што е најважното ново?", articles)
+
+        assert "Најдиректно од достапните извори" in answer["answer"]
+        assert "среда" in answer["answer"].lower()
+        assert "Заедничката линија е: пакетот" not in answer["answer"]
+
+    def test_local_answer_records_mode(self, monkeypatch):
+        events = []
+
+        def record(event, **fields):
+            events.append((event, fields))
+
+        monkeypatch.setattr(local_nlp, "record_runtime_event", record)
+        articles = [
+            {
+                "source": "МИА",
+                "title": "Владата го претстави пакетот",
+                "description": "Мерките влегуваат во процедура оваа недела.",
+            },
+            {
+                "source": "Reuters",
+                "title": "Reuters пишува за бројките и рокот",
+                "description": "Пакетот вреди 120 милиони евра и според планот почнува во вторник.",
+            },
+        ]
+
+        answer_cluster_question_locally("Колку вреди пакетот и кога почнува?", articles)
+
+        assert ("local_answer_path", {"mode": "grounded", "question_type": "generic"}) in events
 
 
 class TestArticleSummaryFallback:

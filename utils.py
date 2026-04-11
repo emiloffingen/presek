@@ -5,7 +5,11 @@ import redis
 import json
 import os
 import time
-from config import SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
+import urllib.request
+from config import (
+    SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES,
+    CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE
+)
 
 log = logging.getLogger("presek")
 redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
@@ -18,22 +22,65 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+def _get_kv(key: str):
+    if not all([CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE]):
+        return None
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/storage/kv/namespaces/{CF_KV_NAMESPACE}/values/{key}"
+    headers = {"Authorization": f"Bearer {CF_KV_TOKEN}"}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read().decode("utf-8")
+    except Exception:
+        return None
+
+def _set_kv(key: str, val: str):
+    if not all([CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE]):
+        return
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/storage/kv/namespaces/{CF_KV_NAMESPACE}/values/{key}"
+    headers = {
+        "Authorization": f"Bearer {CF_KV_TOKEN}",
+        "Content-Type": "text/plain" # KV values are strings
+    }
+    try:
+        req = urllib.request.Request(url, data=val.encode("utf-8"), headers=headers, method="PUT")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            pass
+    except Exception as e:
+        log.warning(f"[kv] write error on {key}: {e}")
+
 def cached_response(key: str, ttl: int = 60):
-    """Read a cached JSON value. ``ttl`` is accepted for call-site symmetry
-    with set_cache but is unused — Redis enforces the existing TTL set on
-    write."""
-    del ttl  # accepted for symmetry with set_cache, not used on read
+    """Read a cached JSON value. Checks Redis first, then Cloudflare KV for persistent keys."""
     try:
         val = redis_client.get(key)
         if val:
             return json.loads(val)
     except Exception as e:
-        log.warning(f"[cache] read error on {key}: {e}")
+        log.warning(f"[cache] redis read error on {key}: {e}")
+    
+    # Persistent keys (API results, proxies) check KV on Redis miss
+    if key.startswith(("api:", "proxy:")):
+        kv_val = _get_kv(key)
+        if kv_val:
+            try:
+                data = json.loads(kv_val)
+                # Backfill redis
+                redis_client.setex(key, ttl, kv_val)
+                return data
+            except:
+                return None
+                
     return None
 
 def set_cache(key: str, val, ttl: int = 60):
     try:
-        redis_client.setex(key, ttl, json.dumps(val, cls=DateTimeEncoder))
+        json_val = json.dumps(val, cls=DateTimeEncoder)
+        redis_client.setex(key, ttl, json_val)
+        
+        # Persistent keys (API results, proxies) with long TTL (1h+) go to KV
+        if key.startswith(("api:", "proxy:")) and ttl >= 300:
+            _set_kv(key, json_val)
+            
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 
@@ -55,6 +102,36 @@ def delete_cache_prefix(prefix: str):
                 break
     except Exception as e:
         log.warning(f"[cache] prefix delete error on {prefix}: {e}")
+
+
+def record_runtime_event(event: str, **fields):
+    event = str(event or "").strip()
+    if not event:
+        return
+
+    normalized_fields = {
+        str(key): str(value)
+        for key, value in fields.items()
+        if value is not None and str(value) != ""
+    }
+    field_suffix = "|".join(
+        f"{key}={normalized_fields[key]}"
+        for key in sorted(normalized_fields)
+    )
+    bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    counter_key = f"presek:runtime_events:{bucket}"
+    counter_field = event if not field_suffix else f"{event}|{field_suffix}"
+
+    try:
+        redis_client.hincrby(counter_key, counter_field, 1)
+        redis_client.expire(counter_key, 60 * 60 * 24 * 14)
+    except Exception as e:
+        log.warning(f"[runtime_event] Redis unavailable for {counter_field}: {e}")
+
+    if normalized_fields:
+        log.info(f"[runtime_event] {event} {json.dumps(normalized_fields, ensure_ascii=False, sort_keys=True)}")
+    else:
+        log.info(f"[runtime_event] {event}")
 
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window
@@ -894,8 +971,11 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
         reasons.append("high_priority_cluster")
 
     age_minutes = max(0.0, ((latest_article_at or synthesis_dt) - synthesis_dt).total_seconds() / 60.0)
-    cooldown_active = age_minutes < 20 and len(newer_articles) == 1 and not net_new_sources and not (newer_numbers - older_numbers)
-    refresh_needed = score >= 1.2 and not cooldown_active
+    # Stricter cooldown: 45 minutes, or less than 2 new articles unless high score
+    cooldown_active = age_minutes < 45 and (len(newer_articles) < 2 and not net_new_sources)
+    
+    # Only refresh if score is substantial (1.8+) or many new articles
+    refresh_needed = (score >= 1.8 or len(newer_articles) >= 3) and not cooldown_active
 
     return {
         "has_synthesis": True,
