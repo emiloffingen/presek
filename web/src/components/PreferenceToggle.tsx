@@ -63,12 +63,20 @@ export default function PreferenceToggle({
 
   // Custom logic for common Macedonian specific labels to be grammatically correct
   let displayAction = isFollowing ? `Следите ${noun}` : `Следи ${noun}`;
-  if (!isFollowing && label === 'ја темата') displayAction = "Следи ја темата";
-  if (!isFollowing && label === 'го изворот') displayAction = "Следи го изворот";
+  if (label === 'ја темата') {
+    displayAction = isFollowing ? "Ја следите темата" : "Следи ја темата";
+  } else if (label === 'го изворот') {
+    displayAction = isFollowing ? "Го следите изворот" : "Следи го изворот";
+  } else if (kind === 'topic') {
+    displayAction = isFollowing ? "Ја следите темата" : "Следи ја темата";
+  } else if (kind === 'source') {
+    displayAction = isFollowing ? "Го следите изворот" : "Следи го изворот";
+  }
+  const clitic = kind === 'topic' ? 'Ја' : 'Го';
   const buttonLabel = feedback || displayAction;
   const liveMessage = feedback
     ? `${feedback}: ${value}`
-    : `${isFollowing ? 'Го следите' : 'Не го следите'} ${value}`;
+    : `${isFollowing ? clitic + ' следите' : 'Не ' + clitic.toLowerCase() + ' следите'} ${value}`;
 
   return (
     <>
