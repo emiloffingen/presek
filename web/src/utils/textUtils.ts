@@ -42,3 +42,22 @@ export function cleanAndDecode(text: any): string {
         .replace(/\s+/g, ' ')         // Collapse whitespace
         .trim();
 }
+
+export function isMostlyCyrillic(text: any): boolean {
+    if (!text) return false;
+
+    const value = cleanAndDecode(text);
+    if (!value) return false;
+
+    let cyrillic = 0;
+    let latin = 0;
+
+    for (const ch of value) {
+        if (ch >= '\u0400' && ch <= '\u04FF') cyrillic += 1;
+        else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) latin += 1;
+    }
+
+    if (cyrillic < 6) return false;
+    if (latin === 0) return true;
+    return cyrillic >= latin * 1.6;
+}

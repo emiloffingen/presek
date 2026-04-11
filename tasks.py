@@ -19,7 +19,7 @@ from prompts import (
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
 from health import record_refresh, record_task_event
-from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness
+from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness, record_runtime_event
 from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
@@ -1184,6 +1184,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
             invalidate_public_data_caches()
+            record_runtime_event("summary_path", mode="local_short", topic=topic or "unknown")
             return
 
     prompt_parts = [str(title or "").strip()]
@@ -1192,12 +1193,13 @@ def summarize_article_task(article_id, title, retry_attempt=0):
     prompt = "\n".join(part for part in prompt_parts if part)
 
     try:
-        summary, _ = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic)
+        summary, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic)
         if summary:
             clean = clean_json_response(summary)
             final = clean.get('summary', str(clean)) if isinstance(clean, dict) else clean
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final, article_id), fetch=False)
             invalidate_public_data_caches()
+            record_runtime_event("summary_path", mode=provider or "unknown", topic=topic or "unknown")
             record_task_event("summarize_article", "ok", f"article:{article_id}")
             log.info(f"Successfully summarized article {article_id}")
         else:
@@ -1205,6 +1207,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             if fallback:
                 db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
                 invalidate_public_data_caches()
+                record_runtime_event("summary_path", mode="local_fallback", topic=topic or "unknown")
                 record_task_event("summarize_article", "fallback", f"article:{article_id}")
                 log.info(f"Stored local fallback summary for article {article_id}")
                 if retry_attempt < 2:
@@ -1216,6 +1219,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
             invalidate_public_data_caches()
+            record_runtime_event("summary_path", mode="local_exception_fallback", topic=topic or "unknown")
             record_task_event("summarize_article", "fallback", f"article:{article_id}")
             log.warning(f"[tasks] Summarize failed for {article_id}; stored local fallback")
             if retry_attempt < 2:
@@ -1260,7 +1264,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
     try:
         full_prompt = f"{history_context}\n\nНОВИ СТАТИИ ОД ДЕНЕС:\n{content}"
-        raw, _ = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
+        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         
         verification_report = None
         # Save tokens: only fact-check larger clusters (5+ sources)
@@ -1282,6 +1286,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             }
 
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
+            record_runtime_event("synthesis_path", mode=provider or "unknown")
         else:
             fallback = synthesize_cluster_fallback(article_rows)
             sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
@@ -1292,10 +1297,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             )
             generated_article = ""
             quote = ""
+            record_runtime_event("synthesis_path", mode="local_fallback")
             if (summary or perspectives) and retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
         if summary or perspectives:
+            record_runtime_event("synthesis_path", mode="local_exception_fallback")
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)

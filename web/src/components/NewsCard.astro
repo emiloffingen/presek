@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode } from '../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { ShieldCheck } from 'lucide-react';
 
 interface Props {
@@ -27,6 +27,7 @@ const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 
 const displayTitle = cleanAndDecode(main.title);
+const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 function getCardSummary(article: any, lead = false) {
 	let text = article?.summary || article?.description || '';
@@ -54,6 +55,7 @@ function getCardSummary(article: any, lead = false) {
 }
 
 const displaySummary = getCardSummary(main, isLead);
+const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 function getWhyItMatters() {
 	if (sourceSignal.role_label && sourceCount >= 4) {
@@ -102,7 +104,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard"]} set:html={displayTitle}>
+			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={displayTitle}>
 			</h2>
 		</a>
 
@@ -111,7 +113,7 @@ function getTimeStr(dateStr: string) {
 		</p>
 
 		{displaySummary && (
-			<p class="summary" set:html={displaySummary}>
+			<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={displaySummary}>
 			</p>
 		)}
 
@@ -138,10 +140,13 @@ function getTimeStr(dateStr: string) {
 			<a href={`/cluster/${cluster.cluster_id}`} class="block h-full">
 				{isFallbackArt ? (
 					<div class="article-image-placeholder">
-						<p class="article-image-placeholder-label">Пресек Преглед</p>
+						<div class="article-image-placeholder-topline">
+							<p class="article-image-placeholder-label">Пресек Избор</p>
+							<p class="article-image-placeholder-chip">{cluster.articles.length} извори</p>
+						</div>
 						<h3>{cluster.articles[0].category || 'Вести'}</h3>
 						<p class="article-image-placeholder-source">{main.source}</p>
-						<p class="article-image-placeholder-title">{displayTitle}</p>
+						<p class:list={["article-image-placeholder-title", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]}>{displayTitle}</p>
 					</div>
 				) : (
 					<img
@@ -157,9 +162,12 @@ function getTimeStr(dateStr: string) {
 						onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
 					/>
 					<div class="article-image-placeholder is-error-fallback" style="display: none;">
-						<p class="article-image-placeholder-label">Сликата не е достапна</p>
+						<div class="article-image-placeholder-topline">
+							<p class="article-image-placeholder-label">Пресек Избор</p>
+							<p class="article-image-placeholder-chip">Без визуел</p>
+						</div>
 						<p class="article-image-placeholder-source">{main.source}</p>
-						<p class="article-image-placeholder-title">{displayTitle}</p>
+						<p class:list={["article-image-placeholder-title", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]}>{displayTitle}</p>
 					</div>
 				)}
 			</a>
@@ -242,6 +250,20 @@ function getTimeStr(dateStr: string) {
 		line-height: 1.02;
 	}
 
+	.headline-cyrillic {
+		letter-spacing: -0.018em;
+		text-wrap: pretty;
+	}
+
+	.headline-lead.headline-cyrillic {
+		line-height: 1.05;
+		max-width: 15ch;
+	}
+
+	.headline-standard.headline-cyrillic {
+		line-height: 1.11;
+	}
+
 	.headline-standard {
 		font-size: 1.18rem;
 		line-height: 1.08;
@@ -262,6 +284,10 @@ function getTimeStr(dateStr: string) {
 		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+
+	.summary-cyrillic {
+		line-height: 1.66;
 	}
 
 	.nyt-article:not(.lead-story) .summary {
@@ -422,65 +448,141 @@ function getTimeStr(dateStr: string) {
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		text-align: center;
-		padding: 1rem;
+		justify-content: flex-end;
+		align-items: flex-start;
+		text-align: left;
+		padding: 1.1rem;
+		position: relative;
+		overflow: hidden;
 		background: 
-			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
-			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 80%, var(--secondary) 20%) 100%);
-		border: 1px solid var(--border);
+			linear-gradient(145deg, rgba(8, 14, 28, 0.96), rgba(20, 45, 84, 0.92) 54%, rgba(198, 133, 64, 0.78) 130%);
+		border: 1px solid color-mix(in srgb, var(--border) 68%, rgba(255,255,255,0.2) 32%);
+		box-shadow:
+			inset 0 1px 0 rgba(255,255,255,0.1),
+			0 18px 40px rgba(8, 14, 28, 0.18);
+	}
+
+	.article-image-placeholder::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 32%),
+			linear-gradient(180deg, transparent 0%, rgba(7, 12, 22, 0.06) 42%, rgba(7, 12, 22, 0.34) 100%);
+		pointer-events: none;
+	}
+
+	.article-image-placeholder::after {
+		content: "";
+		position: absolute;
+		inset: auto 0 0 auto;
+		width: 72%;
+		height: 72%;
+		background:
+			repeating-linear-gradient(
+				135deg,
+				rgba(255,255,255,0.08) 0,
+				rgba(255,255,255,0.08) 1px,
+				transparent 1px,
+				transparent 12px
+			);
+		opacity: 0.42;
+		mask-image: linear-gradient(180deg, transparent, rgba(0,0,0,0.9));
+		pointer-events: none;
+	}
+
+	.article-image-placeholder-topline {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.85rem;
 	}
 
 	.article-image-placeholder-label {
 		font-family: var(--font-sans);
 		font-size: 0.58rem;
 		font-weight: 900;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.16em;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
-		margin-bottom: 0.4rem;
+		color: rgba(255,255,255,0.82);
+		margin: 0;
+	}
+
+	.article-image-placeholder-chip {
+		margin: 0;
+		padding: 0.28rem 0.5rem 0.24rem;
+		border-radius: 999px;
+		font-family: var(--font-sans);
+		font-size: 0.54rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(255,255,255,0.88);
+		background: rgba(255,255,255,0.12);
+		border: 1px solid rgba(255,255,255,0.14);
+		backdrop-filter: blur(8px);
 	}
 
 	.article-image-placeholder h3 {
+		position: relative;
+		z-index: 1;
 		font-family: var(--font-serif);
-		font-size: 1.1rem;
-		line-height: 1.1;
-		color: var(--foreground);
-		max-width: 12ch;
-		margin: 0;
+		font-size: 1.32rem;
+		line-height: 1.02;
+		color: white;
+		max-width: 11ch;
+		margin: 0 0 0.55rem;
+		text-wrap: balance;
+	}
+
+	.article-image-placeholder-title-cyrillic {
+		line-height: 1.2;
+		letter-spacing: -0.008em;
 	}
 
 	.article-image-placeholder-source {
 		margin: 0;
+		position: relative;
+		z-index: 1;
 		font-family: var(--font-sans);
-		font-size: 0.54rem;
+		font-size: 0.56rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
+		color: rgba(255,255,255,0.72);
 	}
 
 	.article-image-placeholder-title {
-		margin: 0;
+		margin: 0.32rem 0 0;
+		position: relative;
+		z-index: 1;
 		max-width: 18ch;
 		font-family: var(--font-serif);
-		font-size: 0.9rem;
-		line-height: 1.18;
-		color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground) 16%);
+		font-size: 0.95rem;
+		line-height: 1.16;
+		color: rgba(255,255,255,0.92);
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.is-error-fallback {
-		background: var(--muted);
+		background:
+			linear-gradient(145deg, rgba(34, 16, 18, 0.96), rgba(96, 36, 43, 0.94) 54%, rgba(181, 90, 79, 0.82) 130%);
 	}
 
 	.image-wrap-fallback {
         aspect-ratio: 1.4 / 1;
-		padding: 0.35rem;
+		padding: 0.4rem;
 		border: 1px solid color-mix(in srgb, var(--border) 78%, var(--foreground) 22%);
 		background:
-			radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 36%, transparent 64%), transparent 34%),
-			linear-gradient(160deg, color-mix(in srgb, var(--background) 90%, #f6eee5 10%), color-mix(in srgb, var(--background) 80%, var(--secondary) 20%));
+			radial-gradient(circle at top right, color-mix(in srgb, var(--secondary) 30%, transparent 70%), transparent 34%),
+			linear-gradient(160deg, color-mix(in srgb, var(--background) 88%, #efe5d8 12%), color-mix(in srgb, var(--background) 76%, var(--secondary) 24%));
 	}
 
 	.article-image-fallback {

@@ -23,6 +23,14 @@ const topic = (() => {
 	.trim();
 
 const API_URL = apiBaseUrl();
+const topicQueryMap: Record<string, { primary: 'topic' | 'category'; secondary?: 'topic' | 'category' }> = {
+	'Политика': { primary: 'topic', secondary: 'category' },
+	'Економија': { primary: 'topic', secondary: 'category' },
+	'Свет': { primary: 'category', secondary: 'topic' },
+	'Спорт': { primary: 'topic', secondary: 'category' },
+	'Технологија': { primary: 'topic', secondary: 'category' },
+	'Забава': { primary: 'topic', secondary: 'category' },
+};
 
 let clusters: any[] = [];
 let detailMap = new Map<string, any>();
@@ -85,13 +93,12 @@ function buildNewsUrl(params: Record<string, string>) {
 }
 
 try {
-	const newsData = await fetchJson(buildNewsUrl({ topic }));
-	clusters = Array.isArray(newsData?.clusters) ? newsData.clusters : [];
+	const queryPlan = topicQueryMap[topic] || { primary: 'topic', secondary: 'category' };
+	const primaryData = await fetchJson(buildNewsUrl({ [queryPlan.primary]: topic }));
+	clusters = Array.isArray(primaryData?.clusters) ? primaryData.clusters : [];
 
-	// Some curated labels (e.g. "Свет") are stored as categories, not topics.
-	// Fall back to a category query so those nav entries don't render empty.
-	if (clusters.length === 0) {
-		const fallbackData = await fetchJson(buildNewsUrl({ category: topic }));
+	if (clusters.length === 0 && queryPlan.secondary && queryPlan.secondary !== queryPlan.primary) {
+		const fallbackData = await fetchJson(buildNewsUrl({ [queryPlan.secondary]: topic }));
 		clusters = Array.isArray(fallbackData?.clusters) ? fallbackData.clusters : [];
 	}
 

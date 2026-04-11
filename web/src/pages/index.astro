@@ -10,7 +10,7 @@ import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.t
 import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode } from '../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { apiBaseUrl } from '../lib/apiBase';
 import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
 import type { NewsCluster } from '../types';
@@ -135,6 +135,8 @@ function getLeadSummary(cluster: any) {
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const leadSummary = leadCluster ? getLeadSummary(leadCluster) : '';
 const leadTitle = leadCluster ? cleanAndDecode(leadCluster.articles[0].title) : '';
+const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
+const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 const freshness = health?.freshness || null;
 
@@ -198,17 +200,54 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 				{leadCluster && (
 					<section class="lead-hero motion-rise">
+						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
+							<div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
+								{leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+									<>
+										<img
+											src={leadVisual.proxiedUrl}
+											alt=""
+											width="1200"
+											height="1000"
+											loading="eager"
+											fetchpriority="high"
+											decoding="async"
+											class="lead-media-image"
+											onload="this.classList.add('is-loaded')"
+											onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+										/>
+										<div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
+											<div class="lead-media-topline">
+												<p class="lead-media-kicker">Пресек Преглед</p>
+												<p class="lead-media-chip">Без визуел</p>
+											</div>
+											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+										</div>
+									</>
+								) : (
+									<div class="lead-media-placeholder">
+										<div class="lead-media-topline">
+											<p class="lead-media-kicker">Пресек Преглед</p>
+											<p class="lead-media-chip">{leadCluster.articles.length} извори</p>
+										</div>
+										<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+										<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
+										<p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
+									</div>
+								)}
+							</div>
+						</a>
 						<div class="lead-copy">
 							<div class="lead-kicker">
 								<span class="source-label">{leadCluster.articles[0].source}</span>
 								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
 							</div>
 							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-								<h1 class="lead-headline" set:html={leadTitle}></h1>
+								<h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={leadTitle}></h1>
 							</a>
 							<p class="lead-signal">{leadSignal}</p>
 							{leadSummary && (
-								<p class="lead-summary" set:html={leadSummary}></p>
+								<p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={leadSummary}></p>
 							)}
 							<div class="lead-meta">
 								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
@@ -227,7 +266,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 							)}
 						</div>
 
-							<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media" aria-hidden="true" tabindex="-1">
+							<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
 								<div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
 									{leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
 										<>
@@ -244,16 +283,22 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
 											/>
 											<div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
-												<p class="lead-media-kicker">Сликата не е достапна</p>
+												<div class="lead-media-topline">
+													<p class="lead-media-kicker">Пресек Преглед</p>
+													<p class="lead-media-chip">Без визуел</p>
+												</div>
 												<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
 											</div>
 										</>
 									) : (
 										<div class="lead-media-placeholder">
-											<p class="lead-media-kicker">Пресек Преглед</p>
+											<div class="lead-media-topline">
+												<p class="lead-media-kicker">Пресек Преглед</p>
+												<p class="lead-media-chip">{leadCluster.articles.length} извори</p>
+											</div>
 											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
 											<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
-											<p class="lead-media-fallback-title">{leadTitle}</p>
+											<p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
 										</div>
 									)}
 								</div>
@@ -509,7 +554,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	.editor-brief-card {
 		padding: 0.9rem 1rem;
 		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 96%, var(--secondary) 4%);
+		background: color-mix(in srgb, var(--background) 93%, var(--secondary) 7%);
 	}
 
 	.editor-brief-card strong {
@@ -531,9 +576,17 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	.lead-hero {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 0.95rem;
-		padding-bottom: 1.35rem;
+		gap: 0.8rem;
+		padding-bottom: 1.2rem;
 		border-bottom: 1px solid var(--border);
+	}
+
+	.lead-media-mobile {
+		display: block;
+	}
+
+	.lead-media-desktop {
+		display: none;
 	}
 
 	.empty-feed {
@@ -607,20 +660,27 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 	.lead-headline {
 		font-size: clamp(2rem, 1.55rem + 1.1vw, 3rem);
-		line-height: 0.98;
+		line-height: 0.95;
 		letter-spacing: -0.024em;
-		margin: 0.35rem 0 0.65rem;
-		max-width: 16ch;
+		margin: 0.2rem 0 0.42rem;
+		max-width: 15.5ch;
 		text-wrap: balance;
 		overflow-wrap: break-word;
 		word-break: break-word;
 		hyphens: auto;
 	}
 
+	.lead-headline-cyrillic {
+		line-height: 1.03;
+		letter-spacing: -0.018em;
+		max-width: 14.5ch;
+		text-wrap: pretty;
+	}
+
 	.lead-summary {
 		font-family: var(--font-nyt-body);
-		font-size: 1.02rem;
-		line-height: 1.56;
+		font-size: 0.98rem;
+		line-height: 1.5;
 		color: var(--secondary-foreground);
 		max-width: 50ch;
 		text-wrap: pretty;
@@ -631,6 +691,11 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		overflow: hidden;
 	}
 
+	.lead-summary-cyrillic {
+		line-height: 1.64;
+		max-width: 56ch;
+	}
+
 	.lead-signal,
 	.rail-note {
 		margin: 0;
@@ -638,7 +703,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		font-size: 0.9rem;
 		font-weight: 500;
 		line-height: 1.5;
-		color: var(--muted-foreground);
+		color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground) 10%);
 	}
 
 	.lead-signal {
@@ -685,19 +750,19 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	}
 
 	.lead-meta {
-		margin-top: 0.75rem;
+		margin-top: 0.45rem;
 		font-family: var(--font-sans);
 		font-size: 0.72rem;
 		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
+		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground) 12%);
 	}
 
 	.lead-related {
 		list-style: none;
 		padding: 0;
-		margin: 0.9rem 0 0;
+		margin: 0.65rem 0 0;
 		border-top: 1px solid var(--border);
 	}
 
@@ -722,7 +787,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 
 	.lead-media-frame {
 		position: relative;
-		aspect-ratio: 1.18 / 1;
+		aspect-ratio: 1.28 / 1;
 		border: 1px solid var(--border);
 		overflow: hidden;
 		background:
@@ -756,9 +821,43 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		align-content: end;
 		gap: 0.55rem;
 		padding: 1.25rem;
+		position: relative;
+		overflow: hidden;
 		background:
-			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent), transparent 45%),
-			linear-gradient(160deg, color-mix(in srgb, var(--background) 88%, #f4ede3 12%), color-mix(in srgb, var(--background) 78%, var(--secondary) 22%));
+			linear-gradient(155deg, rgba(7, 12, 22, 0.98), rgba(19, 42, 79, 0.94) 56%, rgba(203, 138, 70, 0.8) 128%);
+		box-shadow:
+			inset 0 1px 0 rgba(255,255,255,0.1),
+			0 22px 48px rgba(8, 14, 28, 0.16);
+	}
+
+	.lead-media-placeholder::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 32%),
+			linear-gradient(180deg, transparent 0%, rgba(7, 12, 22, 0.08) 45%, rgba(7, 12, 22, 0.34) 100%);
+		pointer-events: none;
+	}
+
+	.lead-media-placeholder::after {
+		content: "";
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		width: 68%;
+		height: 68%;
+		background:
+			repeating-linear-gradient(
+				135deg,
+				rgba(255,255,255,0.08) 0,
+				rgba(255,255,255,0.08) 1px,
+				transparent 1px,
+				transparent 14px
+			);
+		opacity: 0.42;
+		mask-image: linear-gradient(180deg, transparent, rgba(0,0,0,0.88));
+		pointer-events: none;
 	}
 
 	.lead-media-placeholder-error {
@@ -766,41 +865,78 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		text-align: center;
 	}
 
+	.lead-media-topline {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
 	.lead-media-kicker {
 		margin: 0;
 		font-family: var(--font-sans);
 		font-size: 0.6rem;
 		font-weight: 900;
-		letter-spacing: 0.12em;
+		letter-spacing: 0.16em;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
+		color: rgba(255,255,255,0.82);
+	}
+
+	.lead-media-chip {
+		position: relative;
+		z-index: 1;
+		margin: 0;
+		padding: 0.32rem 0.58rem 0.28rem;
+		border-radius: 999px;
+		font-family: var(--font-sans);
+		font-size: 0.56rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(255,255,255,0.88);
+		background: rgba(255,255,255,0.12);
+		border: 1px solid rgba(255,255,255,0.14);
+		backdrop-filter: blur(8px);
 	}
 
 	.lead-media-placeholder h2 {
+		position: relative;
+		z-index: 1;
 		margin: 0;
 		font-size: clamp(1.4rem, 1.05rem + 1vw, 2rem);
 		line-height: 1.04;
 		max-width: 10ch;
-		color: var(--foreground);
+		color: white;
 	}
 
 	.lead-media-fallback-source {
+		position: relative;
+		z-index: 1;
 		margin: 0.1rem 0 0;
 		font-family: var(--font-sans);
 		font-size: 0.62rem;
 		font-weight: 900;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
+		color: rgba(255,255,255,0.72);
 	}
 
 	.lead-media-fallback-title {
+		position: relative;
+		z-index: 1;
 		margin: 0;
 		max-width: 18ch;
 		font-family: var(--font-serif);
 		font-size: 1rem;
 		line-height: 1.18;
-		color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground) 18%);
+		color: rgba(255,255,255,0.92);
+	}
+
+	.lead-media-fallback-title-cyrillic {
+		line-height: 1.22;
+		letter-spacing: -0.008em;
 	}
 
 	.supporting-band {
@@ -842,7 +978,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		}
 
 		.lead-hero {
-			gap: 0.8rem;
+			gap: 0.62rem;
 		}
 
 		.lead-copy {
@@ -853,13 +989,17 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		.lead-headline {
 			font-size: clamp(1.68rem, 1.32rem + 0.86vw, 2.16rem);
 			line-height: 0.96;
-			margin: 0.1rem 0 0.3rem;
+			margin: 0.06rem 0 0.14rem;
 			max-width: none;
+		}
+
+		.lead-headline-cyrillic {
+			line-height: 1.01;
 		}
 
 		.lead-media-frame {
 			aspect-ratio: 16 / 9;
-			max-height: 10.5rem;
+			max-height: 11.75rem;
 		}
 
 		.lead-media-placeholder {
@@ -878,7 +1018,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		.lead-summary {
 			font-size: 0.9rem;
 			line-height: 1.4;
-			-webkit-line-clamp: 2;
+			-webkit-line-clamp: 3;
 		}
 
 		.lead-signal {
@@ -891,7 +1031,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		}
 
 		.lead-related {
-			margin-top: 0.35rem;
+			margin-top: 0.15rem;
 		}
 
 		.lead-related a {
@@ -1138,6 +1278,20 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		.front-page-grid {
 			grid-template-columns: minmax(0, 1.56fr) minmax(16.5rem, 0.62fr);
 			gap: 1.85rem;
+		}
+
+		.lead-hero {
+			grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+			gap: 1.35rem;
+			align-items: start;
+		}
+
+		.lead-media-mobile {
+			display: none;
+		}
+
+		.lead-media-desktop {
+			display: block;
 		}
 
 		.news-feed-grid-featured {

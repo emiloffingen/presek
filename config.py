@@ -97,8 +97,6 @@ RSS_FEEDS = [
     ("SportSport",      "https://sportsport.mk/feed/"),
     ("24 Вести",        "https://admin.24.mk/api/rss.xml"),
     ("TV21",            "https://tv21.mk/feed/"),
-    ("Слободна Европа", "https://www.slobodnaevropa.mk/api/z_poml-vomx-tpevjpy"),
-    ("Deutsche Welle",  "http://rss.dw-world.de/syndication/feeds/dwworld.maz.xml"),
     ("Civil Media",     "https://civilmedia.mk/feed/"),
     ("Радио МОФ",       "https://radiomof.mk/feed/"),
     ("Сакам да кажам",  "https://sdk.mk/index.php/mk/feed/"),
@@ -116,7 +114,6 @@ RSS_FEEDS = [
     ("E-Magazin",       "https://emagazin.mk/feed/"),
     ("IT.mk",           "https://it.mk/feed/"),
     ("Sportmanija",     "https://sportmanija.mk/feed/"),
-    ("Magazin",         "https://magazin.mk/feed/"),
     ("Portalb",         "https://portalb.mk/feed/"),
     ("Reporter",        "https://reporter.mk/feed/"),
     ("Alsat-M",         "https://alsat.mk/feed/"),
@@ -137,21 +134,14 @@ RSS_FEEDS = [
     ("Vesnik",          "https://vesnik.com/feed/"),
     ("Sloboden Svet",   "https://slobodensvet.com.mk/feed/"),
     ("BiznisInfo",      "https://biznisinfo.mk/feed/"),
-    ("Bitola News",     "https://bitolanews.mk/feed/"),
     ("Lajm",            "https://lajm.mk/feed/"),
     ("Koha",            "https://koha.mk/feed/"),
     # Regional Additions
-    ("OhridNews",       "https://www.ohridnews.com/feed/"),
     ("Bitola News",     "https://bitolanews.mk/feed/"),
-    ("KumanovoNews",    "https://kumanovonews.mk/rss"),
-    ("Veles365",        "https://veles365.mk/feed/"),
-    ("MMS",             "https://mms.mk/feed/"),
     # Culture & Lifestyle Additions
     ("PopUp",           "https://popup.mk/feed/"),
-    ("Crnobelo",        "https://www.crnobelo.com/feed"),
     ("Kultura.mk",      "https://www.kultura.mk/feed"),
-    ("Reper",           "https://reper.mk/feed"),
-    ("Diva",            "https://diva.mk/feed"),
+    ("Reper",           "https://reper.net.mk/feed/"),
 ]
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
@@ -172,18 +162,16 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
     "Lider", "MKD", "Akademik", "Skopje Info",
     "Prizma", "Expres", "Tetovo Info", "A1on", "SportSport",
-    "24 Вести", "TV21", "Слободна Европа",
-    "Deutsche Welle", "Civil Media", "Радио МОФ",
+    "24 Вести", "TV21", "Civil Media", "Радио МОФ",
     "Сакам да кажам", "Бизнис Вести", "MRT", "Okno",
     "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
     "Kajgana", "Pari.com.mk", "E-Magazin",
-    "IT.mk", "Sportmanija", "Magazin", "Portalb",
+    "IT.mk", "Sportmanija", "Portalb",
     "Reporter", "Alsat-M", "Off.net.mk", "Denesen", "24info",
     "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
     "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
     "Almakos", "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
-    "OhridNews", "KumanovoNews", "Veles365", "MMS",
-    "PopUp", "Crnobelo", "Kultura.mk", "Reper", "Diva",
+    "PopUp", "Kultura.mk", "Reper",
 })
 
 DIASPORA_FEEDS = []
@@ -198,19 +186,19 @@ SOURCE_CREDIBILITY = {
     "Skopje1": 0.9, "Plusinfo": 0.9, "Lokalno": 0.9, "4News": 0.9, "Makpress": 0.9,
     "Skopje Info": 0.8, "Prizma": 0.8, "Expres": 0.8, "Tetovo Info": 0.8,
     "A1on": 0.8, "SportSport": 0.8, "24 Вести": 1.6, "TV21": 1.6,
-    "Слободна Европа": 1.8, "Deutsche Welle": 1.7, "Civil Media": 1.3,
+    "Civil Media": 1.3,
     "Радио МОФ": 1.1, "Сакам да кажам": 1.1, "Бизнис Вести": 1.0,
     "Okno": 1.0, "Tocka": 1.1, "IRL": 1.8, "Nova TV": 1.3, "Libertas": 1.1, "Racin": 1.3,
     "Kajgana": 1.0, "Pari.com.mk": 1.2, "E-Magazin": 1.1,
-    "IT.mk": 1.1, "Sportmanija": 0.8, "Magazin": 0.8, "Portalb": 1.2,
+    "IT.mk": 1.1, "Sportmanija": 0.8, "Portalb": 1.2,
     "Reporter": 1.0, "Alsat-M": 1.5, "Off.net.mk": 1.0, "Denesen": 0.9,
     "24info": 0.9, "Vreme": 0.9, "Frontline": 0.9, "Nacional": 0.8,
     "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
     "Lajm": 1.0, "Koha": 1.0,
-    "OhridNews": 1.0, "Bitola News": 1.0, "KumanovoNews": 0.9, "Veles365": 0.9, "MMS": 0.9,
-    "PopUp": 1.1, "Crnobelo": 1.0, "Kultura.mk": 1.2, "Reper": 1.1, "Diva": 1.0,
+    "Bitola News": 1.0,
+    "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1,
 }
 DEFAULT_CREDIBILITY = 0.8
 
@@ -222,11 +210,9 @@ SOURCE_CATEGORIES = {
     "Makfax": "Агенциски", "NetPress": "Алтернативни", "Kurir": "Алтернативни",
     "Republika": "Алтернативни", "Infomax": "Алтернативни",
     "Alsat-M": "Главни", "Pressing TV": "Главни", "Antropol": "Независни",
-    "Deutsche Welle": "Меѓународни", "Слободна Европа": "Меѓународни",
-    "OhridNews": "Регионални", "Bitola News": "Регионални", "KumanovoNews": "Регионални",
-    "Veles365": "Регионални", "MMS": "Регионални",
-    "PopUp": "Култура", "Crnobelo": "Lifestyle", "Kultura.mk": "Култура",
-    "Reper": "Култура", "Diva": "Lifestyle",
+    "Bitola News": "Регионални",
+    "PopUp": "Култура", "Kultura.mk": "Култура",
+    "Reper": "Култура",
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 

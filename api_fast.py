@@ -27,7 +27,7 @@ from utils import (
     cached_response, set_cache, delete_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
     build_source_reputation_rows, build_editor_analytics_payload,
-    event_stream, check_rate_limit,
+    event_stream, check_rate_limit, record_runtime_event,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
@@ -631,7 +631,7 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
         )
 
         try:
-            response_text, _provider = await _call_ai_async(
+            response_text, provider = await _call_ai_async(
                 prompt,
                 system,
                 task_type="chat",
@@ -643,7 +643,9 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
             return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
 
         if not response_text:
+            record_runtime_event("chat_path", mode="local_fallback", surface="cluster_answer")
             return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
+        record_runtime_event("chat_path", mode=provider or "unknown", surface="cluster_answer")
 
         try:
             parsed = clean_json_response(response_text)
@@ -2441,10 +2443,14 @@ async def chat_stream(
             full_prompt = f"Context:\n{context}\n\nUser Question: {query}"
             result = await _call_ai_async(full_prompt, SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
             generator = result[0] if result else None
+            provider = result[1] if result else None
             if generator:
+                record_runtime_event("chat_path", mode=provider or "unknown", surface="chat_stream")
                 async for chunk in generator:
                     if chunk:
                         yield f"data: {json.dumps({'token': chunk})}\n\n"
+            else:
+                record_runtime_event("chat_path", mode="local_fallback", surface="chat_stream")
             yield "data: [DONE]\n\n"
         except Exception as e:
             log.warning(f"[fastapi/chat_stream] generation failed for {cluster_id}: {e}", exc_info=True)

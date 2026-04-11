@@ -16,6 +16,15 @@ const WEAK_VISUAL_TOKENS = [
   'emblem',
   'avatar',
   'icon',
+  'watermark',
+  'republika',
+  'online',
+  'screenshot',
+  'thumb',
+  'thumbnail',
+  'small',
+  'banner',
+  'sprite',
 ];
 
 export function isWeakVisual(url?: string | null) {

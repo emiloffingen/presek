@@ -35,10 +35,22 @@ try {
     trendingItems = [];
 }
 
-const headerItems = trendingItems;
+const headerItems = trendingItems.slice(0, 4);
 const trendingWordSet = new Set(headerItems.map((item: any) => item.word));
-const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Забава']
-    .filter((topic) => !trendingWordSet.has(topic));
+const curatedTopics = ['Политика', 'Свет']
+    .filter((item) => !trendingWordSet.has(item));
+const navItems = [
+    ...headerItems.map((item: any) => ({
+        label: item.word,
+        href: `/?${new URLSearchParams({ q: item.word }).toString()}`,
+        isActive: q === item.word,
+    })),
+    ...curatedTopics.map((item: string) => ({
+        label: item,
+        href: `/tema/${encodeURIComponent(item)}`,
+        isActive: topic === item || category === item,
+    })),
+].slice(0, 6);
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
@@ -89,46 +101,27 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 </a>
             </div>
             <div class="masthead-copy">
-                <p class="masthead-sub">Ги групираме поврзаните вести од сите медиуми за да ви овозможиме брза споредба на изворите, различните агли и контекстот на секој настан.</p>
+                <p class="masthead-sub">Вестите, групирани за побрз контекст.</p>
             </div>
         </div>
     </div>
 
     <nav class="site-layout masthead-nav" aria-label="Популарно сега">
         <div class="masthead-nav-shell flex overflow-x-auto whitespace-nowrap hide-scrollbar md:flex-wrap items-center">
-            {headerItems.length > 0 && (
+            {navItems.length > 0 && (
                 <>
                     <span class="masthead-nav-kicker">Актуелно</span>
                     <ul class="masthead-nav-list flex-nowrap">
-                        {headerItems.map((item: any) => {
-                            const searchStr = new URLSearchParams({ q: item.word }).toString();
-                            const isActive = q === item.word;
-
-                            return (
-                                <li>
-                                    <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                                        {item.word}
-                                    </a>
-                                </li>
-                            );
-                        })}
+                        {navItems.map((item) => (
+                            <li>
+                                <a href={item.href} class={`masthead-nav-link ${item.isActive ? 'is-active' : ''}`}>
+                                    {item.label}
+                                </a>
+                            </li>
+                        ))}
                     </ul>
                 </>
             )}
-            <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
-            <ul class="masthead-nav-list masthead-nav-list-topics flex-nowrap">
-                {curatedTopics.map((item: string) => {
-                    const isActive = topic === item || category === item;
-
-                    return (
-                        <li>
-                            <a href={`/tema/${encodeURIComponent(item)}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                                {item}
-                            </a>
-                        </li>
-                    );
-                })}
-            </ul>
         </div>
     </nav>
 </div>

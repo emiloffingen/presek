@@ -13,7 +13,6 @@ from collections import defaultdict
 from typing import AsyncGenerator
 
 from config import (
-    GOOGLE_API_KEY, GEMINI_URL,
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     POLLINATIONS_API_KEY,
 )
@@ -200,7 +199,7 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["local", "mistral"],
+    "translation":  ["mistral", "local"],
     "summarize":    ["local", "mistral"],
     "synthesis":    ["mistral", "local"],
     "daily_brief":  ["mistral", "local"],
@@ -210,6 +209,11 @@ TASK_ROUTING = {
 
 # --- Service Methods ---
 
+async def _stream_with_initial_chunk(generator: AsyncGenerator[str, None], first_chunk: str) -> AsyncGenerator[str, None]:
+    yield first_chunk
+    async for chunk in generator:
+        yield chunk
+
 async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False, topic: str = None):
     """Entrypoint with cascading failover."""
     route = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
@@ -218,7 +222,14 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
         provider = PROVIDERS[provider_name]
         try:
             if stream:
-                return provider.stream_call(prompt, system, max_tokens), provider_name
+                generator = provider.stream_call(prompt, system, max_tokens)
+                try:
+                    first_chunk = await anext(generator)
+                except StopAsyncIteration:
+                    continue
+                if first_chunk:
+                    return _stream_with_initial_chunk(generator, first_chunk), provider_name
+                continue
             
             res = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
             if res:

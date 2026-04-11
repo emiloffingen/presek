@@ -151,6 +151,94 @@ html {
     @apply w-full aspect-[16/9] object-cover rounded-sm grayscale-[30%] hover:grayscale-0 transition-all duration-500;
   }
 
+  .cluster-thumb-fallback {
+    @apply w-full aspect-[16/9] rounded-sm p-4 flex flex-col justify-end gap-1;
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, rgba(8, 14, 28, 0.96), rgba(20, 45, 84, 0.92) 54%, rgba(198, 133, 64, 0.78) 130%);
+    color: white;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.1),
+      0 18px 40px rgba(8, 14, 28, 0.18);
+  }
+
+  .cluster-thumb-fallback::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 32%),
+      linear-gradient(180deg, transparent 0%, rgba(7, 12, 22, 0.06) 42%, rgba(7, 12, 22, 0.34) 100%);
+    pointer-events: none;
+  }
+
+  .cluster-thumb-fallback::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 72%;
+    height: 72%;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.08) 0,
+        rgba(255,255,255,0.08) 1px,
+        transparent 1px,
+        transparent 12px
+      );
+    opacity: 0.42;
+    mask-image: linear-gradient(180deg, transparent, rgba(0,0,0,0.9));
+    pointer-events: none;
+  }
+
+  .cluster-thumb-fallback-topline {
+    @apply w-full flex items-center justify-between gap-2;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cluster-thumb-fallback-label {
+    @apply text-[10px] font-black uppercase tracking-[0.22em];
+    position: relative;
+    z-index: 1;
+    opacity: 0.82;
+  }
+
+  .cluster-thumb-fallback-chip {
+    position: relative;
+    z-index: 1;
+    padding: 0.28rem 0.5rem 0.24rem;
+    border-radius: 999px;
+    font-size: 0.54rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.88);
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(8px);
+  }
+
+  .cluster-thumb-fallback-source {
+    @apply text-[11px] font-bold uppercase;
+    position: relative;
+    z-index: 1;
+    opacity: 0.74;
+  }
+
+  .cluster-thumb-fallback-title {
+    @apply text-sm font-bold leading-tight;
+    font-family: var(--nyt-font-serif);
+    position: relative;
+    z-index: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   /* ── Sidebars ── */
   .rail-widget {
     @apply pt-4 mb-8;

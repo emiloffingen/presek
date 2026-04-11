@@ -231,11 +231,19 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth():
     mock_db.hybrid_search.return_value = []
     mock_db.get_synthesis_ids.return_value = []
 
-    with patch.object(api_fast, "db", mock_db), \
-         patch.dict(sys.modules, {"embeddings": types.SimpleNamespace(generate_query_embedding=lambda _q: [0.1, 0.2])}):
+    mock_embeddings = types.ModuleType("embeddings")
+    mock_embeddings.generate_query_embedding = MagicMock(return_value=[0.1, 0.2])
+
+    api_fast.db = mock_db
+    api_fast.API_MAX_PAGE = 100
+    api_fast.API_MAX_Q_LEN = 100
+    with patch.dict(sys.modules, {"embeddings": mock_embeddings}), \
+         patch.object(api_fast, "cached_response", return_value=None):
         data = asyncio.run(api_fast.get_news(q="економија", page=3, page_size=25))
 
     assert data["status"] == "success"
+    # (3+1) * 25 * 12 = 1200
+    assert mock_db.hybrid_search.called
     assert mock_db.hybrid_search.call_args.kwargs["limit"] == 1200
 
 

@@ -1,64 +1,11 @@
 """Tests for AI engine API call functions with mocked HTTP requests."""
+import asyncio
 import pytest
 import json
 import sys
 import types
 from unittest.mock import patch, MagicMock
 from io import BytesIO
-
-
-class TestGeminiProvider:
-    @patch('ai_engine.GOOGLE_API_KEY', 'test-key')
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_successful_call(self, mock_urlopen):
-        from ai_engine import GeminiProvider
-
-        response_body = json.dumps({
-            "candidates": [{"content": {"parts": [{"text": "Резиме на вестта."}]}}]
-        }).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_body
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        provider = GeminiProvider()
-        result = provider.call("Test prompt", "System prompt", max_tokens=200, json_mode=False)
-        assert result == "Резиме на вестта."
-        request = mock_urlopen.call_args[0][0]
-        assert "gemini-2.0-flash" in request.full_url
-
-    @patch('ai_engine.GOOGLE_API_KEY', '')
-    def test_no_api_key(self):
-        from ai_engine import GeminiProvider
-        provider = GeminiProvider()
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result is None
-
-    @patch('ai_engine.GOOGLE_API_KEY', 'test-key')
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_empty_candidates(self, mock_urlopen):
-        from ai_engine import GeminiProvider
-
-        response_body = json.dumps({"candidates": []}).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = response_body
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
-
-        provider = GeminiProvider()
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result is None
-
-    @patch('ai_engine.GOOGLE_API_KEY', 'test-key')
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_network_error(self, mock_urlopen):
-        from ai_engine import GeminiProvider
-        mock_urlopen.side_effect = Exception("Network error")
-        provider = GeminiProvider()
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result is None
 
 
 class TestOpenAICompatibleProvider:
@@ -95,35 +42,32 @@ class TestOpenAICompatibleProvider:
 
 
 class TestCallAI:
-    def _mock_providers(self, gemini=None, groq=None, cerebras=None, mistral=None, openrouter=None, openai=None, local=None):
-        """Return a PROVIDERS dict with mocked .call() results."""
+    def _mock_providers(self, mistral=None, local=None):
+        """Return the active PROVIDERS dict with mocked .call() results."""
         def make_provider(return_value):
             p = MagicMock()
             p.call.return_value = return_value
             return p
 
         return {
-            "gemini":     make_provider(gemini),
-            "openai":     make_provider(openai),
-            "groq":       make_provider(groq),
-            "cerebras":   make_provider(cerebras),
             "mistral":    make_provider(mistral),
-            "openrouter": make_provider(openrouter),
             "local":      make_provider(local),
         }
 
     @patch('utils.redis_client')
-    def test_local_first(self, mock_redis):
+    def test_default_uses_remote_before_local(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(local="Local result")
+        providers = self._mock_providers(mistral="Remote result", local="Local result")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
-        assert result == "Local result"
-        assert tier == "local"
+        assert result == "Remote result"
+        assert tier == "mistral"
+        providers["mistral"].call.assert_called_once()
+        providers["local"].call.assert_not_called()
 
     @patch('utils.redis_client')
     def test_all_fail_returns_none(self, mock_redis):
@@ -166,18 +110,56 @@ class TestCallAI:
         assert tier == "local"
 
     @patch('utils.redis_client')
-    def test_task_routing_translation(self, mock_redis):
-        """Translation task now uses the local chain."""
+    def test_task_routing_translation_prefers_remote_before_local(self, mock_redis):
+        """Translation should try remote providers before the local rewrite fallback."""
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(local="Translated")
+        providers = self._mock_providers(mistral="Translated", local="Local translated")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Text", "System", task_type="translation")
         assert result == "Translated"
-        assert tier == "local"
+        assert tier == "mistral"
+        providers["local"].call.assert_not_called()
+
+    @patch('utils.redis_client')
+    def test_stream_falls_back_when_first_provider_yields_nothing(self, mock_redis):
+        mock_redis.incr.return_value = 1
+        mock_redis.expire.return_value = True
+
+        class EmptyStreamProvider:
+            async def stream_call(self, prompt, system, max_tokens):
+                if False:
+                    yield ""
+
+            def call(self, prompt, system, max_tokens, json_mode, topic=None):
+                return None
+
+        class LocalStreamProvider:
+            async def stream_call(self, prompt, system, max_tokens):
+                yield "локален"
+
+            def call(self, prompt, system, max_tokens, json_mode, topic=None):
+                return "локален"
+
+        providers = {
+            "mistral": EmptyStreamProvider(),
+            "local": LocalStreamProvider(),
+        }
+
+        async def run_check():
+            with patch.dict('ai_engine.PROVIDERS', providers), \
+                 patch('ai_engine.redis_client', mock_redis):
+                from ai_engine import _call_ai_async
+                stream, provider = await _call_ai_async("Text", "System", stream=True, task_type="chat")
+                chunks = [chunk async for chunk in stream]
+            return provider, chunks
+
+        provider, chunks = asyncio.run(run_check())
+        assert provider == "local"
+        assert chunks == ["локален"]
 
 
 class TestLocalProvider:

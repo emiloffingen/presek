@@ -86,7 +86,9 @@ class TestSummarizeArticleTaskQuality:
              patch.object(tasks, "clean_json_response", side_effect=lambda value: value), \
              patch.object(tasks, "invalidate_public_data_caches"), \
              patch.object(tasks, "record_task_event"):
-            mock_db.execute_one.return_value = {"description": "Опис со повеќе детали за настанот."}
+            # Use a description > 200 chars to trigger AI path
+            long_desc = "Опис со повеќе детали за настанот. " * 10
+            mock_db.execute_one.return_value = {"description": long_desc}
 
             tasks.summarize_article_task("article-1", "Наслов на веста")
 

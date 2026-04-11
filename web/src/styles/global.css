@@ -63,12 +63,12 @@
         /* 30% Secondary: Structural Elements */
         --card: #ffffff;
         --secondary: #f3f4f6;
-        --secondary-foreground: #374151;
+        --secondary-foreground: #2f3b4c;
         --border: #e5e7eb;
         --muted: #f9fafb;
-        --muted-foreground: #6b7280;
-        --surface-soft: #f6f6f4;
-        --surface-strong: #eceeea;
+        --muted-foreground: #596273;
+        --surface-soft: #f3f4f2;
+        --surface-strong: #e7e9e4;
 
         /* 10% Accent: Trust Blue (Primary Brand) */
         --nyt-accent: #1e40af; /* Deep Trust Blue */
@@ -106,13 +106,13 @@
         --primary: #f2ece2;
         --primary-foreground: #1a1715;
         --secondary: #231f1c;
-        --secondary-foreground: #d1c7b7;
+        --secondary-foreground: #ddd4c6;
         --muted: #1a1715;
-        --muted-foreground: #9a8f82;
+        --muted-foreground: #a99f93;
         --accent: #f2ece2;
         --accent-foreground: #1a1715;
-        --border: #332d29;
-        --input: #332d29;
+        --border: #3b3430;
+        --input: #3b3430;
         --ring: #a5c5ff;
         --surface-soft: #161311;
         --surface-strong: #1e1a17;
@@ -236,8 +236,9 @@
     font-size: 0.62rem;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.14em; /* Increased for Cyrillic clarity at small sizes */
+    letter-spacing: 0.12em;
     line-height: 1.15;
+    color: var(--muted-foreground);
 }
 
 /* Micro-interactions */
@@ -401,7 +402,7 @@ h1, h2, h3 {
     font-weight: 900;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
+    color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground) 8%);
 }
 
 .rail-suggestion-card strong {
@@ -455,7 +456,7 @@ h1, h2, h3 {
     font-weight: 900;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
+    color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground) 8%);
 }
 
 .for-you-follow-card strong {

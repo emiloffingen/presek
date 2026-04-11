@@ -38,6 +38,17 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
   const cardClass = isLead ? 'lead-story' : '';
   const thumbRight = !isLead && !compact; // Simplified logic for React version
 
+  const imageFallback = (
+    <div className="cluster-thumb-fallback" aria-hidden="true">
+      <div className="cluster-thumb-fallback-topline">
+        <span className="cluster-thumb-fallback-label">Пресек Избор</span>
+        <span className="cluster-thumb-fallback-chip">{cluster.articles.length} извори</span>
+      </div>
+      <span className="cluster-thumb-fallback-source">{main.source}</span>
+      <span className="cluster-thumb-fallback-title">{main.title}</span>
+    </div>
+  );
+
   if (compact) {
     return (
       <article 
@@ -71,6 +82,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
           <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading={isLead ? 'eager' : 'lazy'} onError={() => setImgFailed(true)} />
         </div>
       )}
+      {!thumbSrc && !thumbRight && imageFallback}
       
       <div className="cluster-main">
         <div className="cluster-meta">
@@ -120,9 +132,10 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
 
       {thumbSrc && thumbRight && (
         <div className="cluster-thumb-wrap">
-          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading="lazy" />
+          <img src={thumbSrc} alt={main.title} className="cluster-thumb" loading="lazy" onError={() => setImgFailed(true)} />
         </div>
       )}
+      {!thumbSrc && thumbRight && imageFallback}
     </article>
   );
 };

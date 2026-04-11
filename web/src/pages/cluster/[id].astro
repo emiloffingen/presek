@@ -11,7 +11,7 @@ import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ShareIsland from '../../components/ShareIsland.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
-import { cleanAndDecode } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2, Zap } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
@@ -240,6 +240,9 @@ function extractSafeText(text?: string) {
 }
 
 const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
+const headerBriefItems = synthesisItems.length > 0
+	? synthesisItems.slice(0, 3).map((item) => item.content)
+	: (cluster?.ai_summary_bullets || []).slice(0, 3).map((line: string) => cleanAndDecode(line));
 const leadArticle = cluster?.articles?.[0];
 const articleRows = cluster
 	? cluster.articles.map((article: any, index: number) => ({
@@ -335,6 +338,8 @@ function getLeadVisual(clusterData: any) {
 
 const leadVisual = cluster ? getLeadVisual(cluster) : null;
 const displayHeadline = cluster ? getPreferredClusterHeadline(cluster.articles) : '';
+const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
+const leadDescriptionIsCyrillic = isMostlyCyrillic(leadDescription);
 
 // JSON-LD Schema for Google News / AdSense
 const schema = cluster ? {
@@ -416,10 +421,10 @@ const schema = cluster ? {
 								{ label: "Детали за вест" }
 							]} />
 
-							<h1 class="cluster-headline" set:html={displayHeadline}>
+							<h1 class:list={["cluster-headline", { "cluster-headline-cyrillic": headlineIsCyrillic }]} set:html={displayHeadline}>
 							</h1>
 
-							{leadDescription && <p class="cluster-dek" set:html={cleanAndDecode(leadDescription)}></p>}
+							{leadDescription && <p class:list={["cluster-dek", { "cluster-dek-cyrillic": leadDescriptionIsCyrillic }]} set:html={cleanAndDecode(leadDescription)}></p>}
 
 							<div class="cluster-header-meta">
 								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
@@ -457,6 +462,16 @@ const schema = cluster ? {
 							<div class="cluster-preference-actions">
 								<PreferenceToggle client:load kind="topic" value={cluster.topics?.[0] || cluster.articles[0].topic || cluster.articles[0].category || ''} label="ја темата" />
 							</div>
+
+							<div class="cluster-brief-grid">
+								{comparisonHighlights.map((item) => (
+									<div class="cluster-brief-card">
+										<p class="cluster-brief-label">{item.label}</p>
+										<p class="cluster-brief-value">{item.value}</p>
+										<p class="cluster-brief-copy">{item.copy}</p>
+									</div>
+								))}
+							</div>
 						</div>
 
 						<div class="cluster-header-side">
@@ -467,24 +482,33 @@ const schema = cluster ? {
 											<p class="cluster-visual-kicker">Пресек Преглед</p>
 											<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
 											<p class="cluster-visual-meta">{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
-											<p class="cluster-visual-title">{displayHeadline}</p>
+											<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
 										</div>
 									) : (
-										<img
-											src={leadVisual.src}
-											alt={cleanAndDecode(cluster.articles[0].title)}
-											class="cluster-visual-image"
-											loading="eager"
-											onload="this.classList.add('is-loaded')"
-										/>
+										<>
+											<img
+												src={leadVisual.src}
+												alt={cleanAndDecode(cluster.articles[0].title)}
+												class="cluster-visual-image"
+												loading="eager"
+												onload="this.classList.add('is-loaded')"
+												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+											/>
+											<div class="cluster-visual-fallback cluster-visual-fallback-error" style="display: none;">
+												<p class="cluster-visual-kicker">Пресек Преглед</p>
+												<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
+												<p class="cluster-visual-meta">{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+												<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
+											</div>
+										</>
 									)}
 								</div>
 							)}
-							{ai_summary_bullets.length > 0 && !cluster.synthesis && (
+							{headerBriefItems.length > 0 && (
 								<div class="cluster-summary-card">
-									<p class="cluster-summary-label">Во кратки црти</p>
+									<p class="cluster-summary-label">Што носи кластерот</p>
 									<div class="cluster-summary-copy">
-										{ai_summary_bullets.map((line: string) => (
+										{headerBriefItems.map((line: string) => (
 											<p class="mb-2 last:mb-0" set:html={cleanAndDecode(line)}></p>
 										))}
 									</div>
@@ -771,20 +795,20 @@ const schema = cluster ? {
 
 <style>
 	.cluster-shell {
-		max-width: 76rem;
+		max-width: 78rem;
 		margin: 0 auto;
 	}
 
 	.cluster-header {
-		padding-bottom: 0.9rem;
-		margin-bottom: 1.1rem;
+		padding-bottom: 1rem;
+		margin-bottom: 1.2rem;
 		border-bottom: 1px solid var(--border);
 	}
 
 	.cluster-header-grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1rem;
+		gap: 1.15rem;
 	}
 
 	.cluster-header-top {
@@ -796,22 +820,32 @@ const schema = cluster ? {
 	}
 
 	.cluster-headline {
-		font-size: clamp(1.76rem, 1.3rem + 1vw, 3.35rem);
-		line-height: 1.12;
+		font-size: clamp(1.88rem, 1.34rem + 1.18vw, 3.55rem);
+		line-height: 1.06;
 		letter-spacing: -0.028em;
-		margin: 0 0 0.55rem;
-		max-width: 15ch;
+		margin: 0 0 0.6rem;
+		max-width: 18ch;
 		text-wrap: balance;
+	}
+
+	.cluster-headline-cyrillic {
+		line-height: 1.09;
+		letter-spacing: -0.02em;
+		text-wrap: pretty;
 	}
 
 	.cluster-dek {
 		margin: 0;
-		max-width: 58ch;
+		max-width: 64ch;
 		font-family: var(--font-nyt-body);
-		font-size: 1rem;
-		line-height: 1.58;
+		font-size: 1.03rem;
+		line-height: 1.62;
 		color: var(--secondary-foreground);
 		text-wrap: pretty;
+	}
+
+	.cluster-dek-cyrillic {
+		line-height: 1.66;
 	}
 
 	.drop-cap::first-letter {
@@ -831,20 +865,68 @@ const schema = cluster ? {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.7rem;
-		padding-top: 0.7rem;
-		margin-top: 0.7rem;
+		column-gap: 0.7rem;
+		row-gap: 0.35rem;
+		padding-top: 0.72rem;
+		margin-top: 0.72rem;
 		border-top: 1px solid var(--border);
 		font-family: var(--font-sans);
 		font-size: 0.68rem;
 		font-weight: 800;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
+		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground) 12%);
 	}
 
 	.cluster-preference-actions {
-		margin-top: 0.8rem;
+		margin-top: 0.75rem;
+	}
+
+	.cluster-brief-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.72rem;
+		margin-top: 1rem;
+	}
+
+	.cluster-brief-card {
+		padding: 0.82rem 0.9rem;
+		border: 1px solid var(--border);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%), color-mix(in srgb, var(--card) 72%, var(--surface-soft) 28%));
+	}
+
+	.cluster-brief-label {
+		margin: 0 0 0.28rem;
+		font-family: var(--font-sans);
+		font-size: 0.56rem;
+		font-weight: 900;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.cluster-brief-value {
+		margin: 0 0 0.3rem;
+		font-family: var(--font-serif);
+		font-size: 1.06rem;
+		line-height: 1.02;
+		color: var(--foreground);
+	}
+
+	.cluster-brief-copy {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.48;
+		color: var(--secondary-foreground);
+		text-wrap: pretty;
+	}
+
+	.cluster-header-side {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8rem;
 	}
 
 	.cluster-header-meta astro-island {
@@ -925,13 +1007,13 @@ const schema = cluster ? {
 	}
 
 	.cluster-summary-card {
-		padding: 0.95rem 1rem;
+		padding: 0.9rem 1rem;
 		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%), color-mix(in srgb, var(--card) 74%, var(--surface-soft) 26%));
 	}
 
 	.cluster-visual-card {
-		margin-bottom: 0.9rem;
 		border: 1px solid var(--border);
 		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
 		overflow: hidden;
@@ -940,7 +1022,7 @@ const schema = cluster ? {
 	.cluster-visual-image {
 		display: block;
 		width: 100%;
-		aspect-ratio: 16 / 10;
+		aspect-ratio: 5 / 4;
 		object-fit: cover;
 		object-position: center;
 	}
@@ -953,35 +1035,35 @@ const schema = cluster ? {
 
 	.cluster-visual-fallback {
 		display: grid;
-		gap: 0.55rem;
-		padding: 1.2rem;
-		min-height: 14rem;
+		gap: 0.45rem;
+		padding: 1.1rem;
+		min-height: 12rem;
 		align-content: end;
 	}
 
 	.cluster-visual-kicker {
 		margin: 0;
 		font-family: var(--font-sans);
-		font-size: 0.66rem;
+		font-size: 0.62rem;
 		font-weight: 900;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--nyt-accent);
 	}
 
 	.cluster-visual-fallback h2 {
 		margin: 0;
-		font-size: clamp(1.5rem, 1.2rem + 0.8vw, 2.2rem);
-		line-height: 0.98;
-		max-width: 9ch;
+		font-size: clamp(1.34rem, 1.14rem + 0.65vw, 1.9rem);
+		line-height: 1;
+		max-width: 11ch;
 	}
 
 	.cluster-visual-fallback p {
 		margin: 0;
 		font-family: var(--font-sans);
-		font-size: 0.72rem;
+		font-size: 0.68rem;
 		font-weight: 800;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.07em;
 		text-transform: uppercase;
 		color: var(--secondary-foreground);
 	}
@@ -991,14 +1073,23 @@ const schema = cluster ? {
 	}
 
 	.cluster-visual-title {
-		margin: 0.2rem 0 0;
-		max-width: 18ch;
+		margin: 0.28rem 0 0;
+		max-width: 22ch;
 		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.18;
+		font-size: 0.88rem;
+		line-height: 1.16;
 		letter-spacing: -0.01em;
 		text-transform: none;
 		color: color-mix(in srgb, var(--foreground) 86%, var(--muted-foreground) 14%);
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.cluster-visual-title-cyrillic {
+		line-height: 1.2;
+		letter-spacing: -0.008em;
 	}
 
 	.cluster-summary-label {
@@ -1028,7 +1119,7 @@ const schema = cluster ? {
 		font-weight: 800;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color: var(--muted-foreground);
+		color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground) 10%);
 	}
 
 	.cluster-summary-sources span {
@@ -1454,19 +1545,23 @@ const schema = cluster ? {
 
 	@media (min-width: 960px) {
 		.cluster-header-grid {
-			grid-template-columns: minmax(0, 1.28fr) minmax(15rem, 0.72fr);
+			grid-template-columns: minmax(0, 1.42fr) minmax(17rem, 0.58fr);
 			align-items: start;
-			gap: 1.4rem;
+			gap: 1.2rem;
 		}
 
 		.cluster-grid {
-			grid-template-columns: minmax(0, 1.5fr) minmax(15.5rem, 0.68fr);
-			gap: 1.45rem;
+			grid-template-columns: minmax(0, 1.58fr) minmax(15.25rem, 0.62fr);
+			gap: 1.25rem;
 		}
 
 		.cluster-main,
 		.cluster-rail {
 			gap: 0.95rem;
+		}
+
+		.cluster-brief-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
 
 		.perspective-grid {
@@ -1478,11 +1573,52 @@ const schema = cluster ? {
 		}
 
 		.cluster-headline {
-			max-width: 13.8ch;
+			max-width: 15.8ch;
+		}
+
+		.cluster-headline-cyrillic {
+			max-width: 16.6ch;
+		}
+
+		.cluster-visual-fallback {
+			padding: 1.2rem 1.15rem;
+			min-height: 13rem;
+		}
+
+		.cluster-visual-title {
+			font-size: 0.84rem;
+			max-width: 24ch;
+			-webkit-line-clamp: 5;
 		}
 	}
 
 	@media (max-width: 40rem) {
+		.cluster-header {
+			padding-bottom: 0.9rem;
+			margin-bottom: 1rem;
+		}
+
+		.cluster-headline {
+			font-size: clamp(1.8rem, 1.42rem + 1vw, 2.45rem);
+			max-width: 100%;
+		}
+
+		.cluster-headline-cyrillic {
+			line-height: 1.06;
+		}
+
+		.cluster-dek {
+			font-size: 0.98rem;
+		}
+
+		.cluster-brief-card {
+			padding: 0.78rem 0.84rem;
+		}
+
+		.cluster-visual-image {
+			aspect-ratio: 16 / 10;
+		}
+
 		.article-row-top {
 			flex-direction: column;
 		}
