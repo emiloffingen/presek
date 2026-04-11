@@ -7,8 +7,7 @@ import os
 import time
 import urllib.request
 from config import (
-    SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES,
-    CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE
+    SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
 )
 
 log = logging.getLogger("presek")
@@ -22,65 +21,20 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-def _get_kv(key: str):
-    if not all([CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE]):
-        return None
-    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/storage/kv/namespaces/{CF_KV_NAMESPACE}/values/{key}"
-    headers = {"Authorization": f"Bearer {CF_KV_TOKEN}"}
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return resp.read().decode("utf-8")
-    except Exception:
-        return None
-
-def _set_kv(key: str, val: str):
-    if not all([CF_ACCOUNT_ID, CF_KV_TOKEN, CF_KV_NAMESPACE]):
-        return
-    url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/storage/kv/namespaces/{CF_KV_NAMESPACE}/values/{key}"
-    headers = {
-        "Authorization": f"Bearer {CF_KV_TOKEN}",
-        "Content-Type": "text/plain" # KV values are strings
-    }
-    try:
-        req = urllib.request.Request(url, data=val.encode("utf-8"), headers=headers, method="PUT")
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            pass
-    except Exception as e:
-        log.warning(f"[kv] write error on {key}: {e}")
-
 def cached_response(key: str, ttl: int = 60):
-    """Read a cached JSON value. Checks Redis first, then Cloudflare KV for persistent keys."""
+    """Read a cached JSON value from Redis."""
     try:
         val = redis_client.get(key)
         if val:
             return json.loads(val)
     except Exception as e:
         log.warning(f"[cache] redis read error on {key}: {e}")
-    
-    # Persistent keys (API results, proxies) check KV on Redis miss
-    if key.startswith(("api:", "proxy:")):
-        kv_val = _get_kv(key)
-        if kv_val:
-            try:
-                data = json.loads(kv_val)
-                # Backfill redis
-                redis_client.setex(key, ttl, kv_val)
-                return data
-            except:
-                return None
-                
     return None
 
 def set_cache(key: str, val, ttl: int = 60):
     try:
         json_val = json.dumps(val, cls=DateTimeEncoder)
         redis_client.setex(key, ttl, json_val)
-        
-        # Persistent keys (API results, proxies) with long TTL (1h+) go to KV
-        if key.startswith(("api:", "proxy:")) and ttl >= 3600:
-            _set_kv(key, json_val)
-            
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 

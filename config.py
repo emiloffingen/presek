@@ -224,16 +224,5 @@ BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
 
-# ── Cloudflare KV Configuration ──────────────────────────────────
-CF_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
-CF_KV_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
-CF_KV_NAMESPACE = os.environ.get("CLOUDFLARE_KV_NAMESPACE_ID", "")
-
-# ── Cloudflare R2 Configuration ──────────────────────────────────
-R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
-R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
-R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
-R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "presek-cache")
-
 # ── Image Generation Configuration ──────────────────────────────
 POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
