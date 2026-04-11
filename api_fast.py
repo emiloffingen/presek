@@ -1218,18 +1218,27 @@ async def get_top_entities(limit: int = 10):
     if cached:
         return cached
 
-    fetch_limit = max(limit * 4, 24)
+    fetch_limit = max(limit * 6, 40)
     rows = db.execute("""
-        SELECT name, type, total_mentions 
-        FROM knowledge_entities 
-        ORDER BY total_mentions DESC LIMIT %s
+        SELECT tag AS name, COUNT(*) AS total_mentions
+        FROM (
+            SELECT cm.cluster_id, UNNEST(cm.tags) AS tag
+            FROM cluster_metadata cm
+            JOIN articles a ON a.cluster_id = cm.cluster_id
+            WHERE a.created_at >= NOW() - INTERVAL '48 hours'
+              AND cm.tags IS NOT NULL
+            GROUP BY cm.cluster_id, tag
+        ) t
+        GROUP BY tag
+        ORDER BY total_mentions DESC
+        LIMIT %s
     """, (fetch_limit,))
 
     filtered = []
     seen = set()
     for row in rows:
         normalized_name = normalize_tag_name(row["name"])
-        if not _is_valid_focus_entity(normalized_name, row.get("type")):
+        if not _is_valid_focus_entity(normalized_name, None):
             continue
         dedupe_key = normalized_name.casefold()
         if dedupe_key in seen:
@@ -1237,7 +1246,7 @@ async def get_top_entities(limit: int = 10):
         seen.add(dedupe_key)
         filtered.append({
             "name": normalized_name,
-            "type": row.get("type"),
+            "type": None,
             "total_mentions": row.get("total_mentions"),
         })
         if len(filtered) >= limit:
