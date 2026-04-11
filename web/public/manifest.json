@@ -5,7 +5,7 @@
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#1a1715",
-  "theme_color": "#1e40af",
+  "theme_color": "#1a1715",
   "orientation": "portrait",
   "icons": [
     {
@@ -39,6 +39,12 @@
       "name": "Дневен Брифинг",
       "short_name": "Брифинг",
       "url": "/briefing",
+      "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Медиумски Пулс",
+      "short_name": "Пулс",
+      "url": "/stats",
       "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     },
     {

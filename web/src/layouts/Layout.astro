@@ -102,6 +102,15 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
 		<slot />
 		<ConsentBanner client:load />
+		<script is:inline>
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('/sw.js').catch(err => {
+						console.warn('Service Worker registration failed:', err);
+					});
+				});
+			}
+		</script>
 	</body>
 </html>
 
