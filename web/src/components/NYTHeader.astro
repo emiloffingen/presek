@@ -44,11 +44,15 @@ const navItems = [
         label: item.word,
         href: `/?${new URLSearchParams({ q: item.word }).toString()}`,
         isActive: q === item.word,
+        trend: item.trend,
+        isBreaking: item.is_breaking,
     })),
     ...curatedTopics.map((item: string) => ({
         label: item,
         href: `/tema/${encodeURIComponent(item)}`,
         isActive: topic === item || category === item,
+        trend: '→',
+        isBreaking: false,
     })),
 ].slice(0, 6);
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
@@ -115,7 +119,9 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                         {navItems.map((item) => (
                             <li>
                                 <a href={item.href} class={`masthead-nav-link ${item.isActive ? 'is-active' : ''}`}>
+                                    {item.isBreaking && <span class="breaking-dot"></span>}
                                     {item.label}
+                                    {item.trend !== '→' && <span class={`trend-indicator is-${item.trend === '↑' ? 'up' : 'down'}`}>{item.trend}</span>}
                                 </a>
                             </li>
                         ))}
@@ -127,6 +133,37 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 </div>
 
 <style>
+    .breaking-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--nyt-red);
+        border-radius: 50%;
+        margin-right: 6px;
+        display: inline-block;
+        animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(185, 28, 28, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0); }
+    }
+
+    .trend-indicator {
+        font-size: 0.65rem;
+        margin-left: 2px;
+        font-weight: 900;
+    }
+
+    .trend-indicator.is-up {
+        color: var(--nyt-red);
+    }
+
+    .trend-indicator.is-down {
+        color: var(--muted-foreground);
+        opacity: 0.6;
+    }
+
     .header-sticky-wrapper {
         position: sticky;
         top: 0;

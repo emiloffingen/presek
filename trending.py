@@ -109,18 +109,16 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
     return results
 
 
-def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[dict]:
+def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
     """
-    Count word frequency in recent article titles.
-    Weights: recency (last 6h = 2×, last 12h = 1.5×, else 1×)
-             × proper-noun bonus (4× if capitalised mid-sentence).
-    Returns list of {word, count} dicts sorted by weighted score.
+    Count word frequency in recent article titles with momentum calculation.
     """
     try:
         conn = database.get_db()
         cutoff = datetime.now() - timedelta(hours=hours)
+        # Fetch cluster_id and score potential if possible, but keep it simple
         rows = conn.execute(
-            "SELECT title, created_at FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
+            "SELECT title, created_at, cluster_id FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
             (cutoff,)
         ).fetchall()
         conn.close()
@@ -132,13 +130,20 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
         return []
 
     now = datetime.now()
-    weighted: Counter = Counter()
+    current_weighted: Counter = Counter()
+    previous_weighted: Counter = Counter()
     raw: Counter      = Counter()
+    
+    # Track which words appear in potentially breaking clusters
+    # We'll use a simple "breaking" heuristic: cluster has 4+ sources or is very recent
+    breaking_words = set()
+    cluster_source_counts = Counter()
+    for row in rows:
+        cluster_source_counts[row["cluster_id"]] += 1
 
     for row in rows:
         pairs = extract_words_with_flags(row["title"] or "")
         try:
-            # PostgreSQL returns datetime objects for TIMESTAMP
             if isinstance(row["created_at"], datetime):
                 age_h = (now - row["created_at"].replace(tzinfo=None)).total_seconds() / 3600
             else:
@@ -146,13 +151,13 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
         except Exception:
             age_h = 12
 
-        # Recency weight
-        if   age_h <  6: recency = 2.0
-        elif age_h < 12: recency = 1.5
-        else:            recency = 1.0
+        # Momentum Windows
+        is_current = age_h <= 4
+        recency = 2.0 if age_h < 6 else 1.5 if age_h < 12 else 1.0
+        
+        is_high_volume_cluster = cluster_source_counts[row["cluster_id"]] >= 4
 
         for word, is_proper in pairs:
-            # Simple normalization for very common dual-script or variations
             normalization = {
                 'iran': 'иран', 'iranski': 'иран',
                 'trump': 'трамп', 'trampa': 'трамп',
@@ -168,17 +173,50 @@ def get_trending(hours: int = LOOKBACK_HOURS, limit: int = MAX_RESULTS) -> list[
             word = normalization.get(word, word)
             
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
-            weighted[word] += recency * noun_bonus
-            raw[word]       += 1
+            score = recency * noun_bonus
+            
+            if is_current:
+                current_weighted[word] += score
+            else:
+                previous_weighted[word] += score
+                
+            raw[word] += 1
+            if is_current and is_high_volume_cluster:
+                breaking_words.add(word)
 
-    # Filter: must appear at least MIN_COUNT times in raw count
-    results = [
-        {"word": word.capitalize(), "count": raw[word]}
-        for word, score in weighted.most_common(limit * 3)
-        if raw[word] >= MIN_COUNT
-    ]
+    # Calculate final scores and trends
+    results = []
+    # Combined view for ranking
+    all_words = set(current_weighted.keys()) | set(previous_weighted.keys())
+    
+    scored_items = []
+    for word in all_words:
+        if raw[word] < MIN_COUNT:
+            continue
+            
+        cur = current_weighted[word]
+        prev = previous_weighted[word]
+        
+        # Trend logic
+        if cur > prev * 1.5 and cur > 5:
+            trend = "↑"
+        elif prev > cur * 1.5 and prev > 5:
+            trend = "↓"
+        else:
+            trend = "→"
+            
+        total_score = cur + prev
+        scored_items.append({
+            "word": word.capitalize(),
+            "count": raw[word],
+            "score": total_score,
+            "trend": trend,
+            "is_breaking": word in breaking_words
+        })
 
-    return results[:limit]
+    # Sort by total weighted score
+    scored_items.sort(key=lambda x: x["score"], reverse=True)
+    return scored_items[:limit]
 
 
 def register_trending_route(app):
