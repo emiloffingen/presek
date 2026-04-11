@@ -164,19 +164,23 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	<main class="site-layout">
 		{/* Filtering Status */}
 		{(q || category || topic) && (
-			<div class="mb-10 py-4 border-y border-nyt-gray-300 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div class="flex flex-col gap-1">
-					<h2 class="font-serif text-2xl font-black italic">
-						{q ? `Резултати за: "${q}"` : `${category || topic}`}
+			<div class="mb-10 py-6 border-y border-nyt-gray-300 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-secondary/30 px-4 -mx-4 sm:mx-0 sm:px-0">
+				<div class="flex flex-col gap-1.5">
+					<p class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Резултати од пребарување</p>
+					<h2 class="font-serif text-3xl font-black italic leading-none">
+						{q ? `"${q}"` : `${category || topic}`}
 					</h2>
 					{q && (
-						<div class="flex items-center gap-1.5 text-nyt-accent">
-							<Sparkles size={12} />
-							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Семантичко пребарување активно</span>
+						<div class="flex items-center gap-2 text-nyt-accent mt-1">
+							<Sparkles size={12} strokeWidth={2.5} />
+							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Семантичка интелигенција активна</span>
+							<span class="text-[9px] text-muted-foreground lowercase opacity-70 italic hidden md:inline">— ги наоѓаме и поврзаните концепти</span>
 						</div>
 					)}
 				</div>
-				<a href="/" class="nyt-section-label text-muted hover:text-nyt-red transition-colors">Сите вести</a>
+				<a href="/" class="nyt-section-label inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full hover:bg-foreground hover:text-background transition-all">
+					Сите главни вести <TrendingUp size={12} />
+				</a>
 			</div>
 		)}
 
@@ -189,12 +193,22 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 					)}
 
 					{!error && clusters.length === 0 && (
-						<div class="empty-feed">
+						<div class="empty-feed py-16 px-8 rounded-sm bg-gradient-to-b from-secondary/40 to-background border-dashed">
 							<p class="empty-feed-kicker">Тивко на лентата</p>
-							<h2 class="empty-feed-title">Моментално нема нови вести што се истакнуваат.</h2>
-							<p class="empty-feed-copy">
-								Сè уште ги собираме објавите од сите медиуми. Освежете ја страницата за неколку минути или прелистајте ја <a href="/archive">архивата</a> за претходните денови.
+							<h2 class="empty-feed-title mb-4">Нема нови вести за "{q || category || topic}".</h2>
+							<p class="empty-feed-copy mb-10 text-balance">
+								Нашите алгоритми сè уште не откриле нови групирани објави за оваа специфична тема. Пробајте со поопшт поим или пребарајте нешто што е актуелно:
 							</p>
+							
+							{trending.length > 0 && (
+								<div class="flex flex-wrap justify-center gap-3 max-w-2xl">
+									{trending.slice(0, 8).map((t: any) => (
+										<a href={`/?q=${encodeURIComponent(t.word)}`} class="px-4 py-2 bg-background border border-border hover:border-nyt-accent hover:text-nyt-accent transition-all font-serif font-bold italic text-lg shadow-sm">
+											{t.word} {t.trend === '↑' && <span class="text-nyt-red text-xs">↑</span>}
+										</a>
+									))}
+								</div>
+							)}
 						</div>
 					)}
 

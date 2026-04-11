@@ -159,7 +159,11 @@ def fetch_top_stories(days: int = 7,
 def render_html(stories_by_cat: dict[str, list[dict]],
                 period_start: datetime,
                 period_end: datetime) -> str:
-    """Render the full HTML digest email."""
+    """Render the full HTML digest email with a premium editorial design."""
+
+    # 1. Calculate Pulse Stats for the header
+    total_stories = sum(len(v) for v in stories_by_cat.values())
+    total_sources = len({a.get("source") for articles in stories_by_cat.values() for a in articles if a.get("source")})
 
     cat_blocks = ""
     for cat, articles in stories_by_cat.items():
@@ -167,41 +171,49 @@ def render_html(stories_by_cat: dict[str, list[dict]],
         for a in articles:
             summary_html = ""
             if a.get("summary"):
-                # Strip emoji lines for email cleanliness
+                # Clean up summary: remove emoji markers and truncate
                 clean = " ".join(
                     l for l in a["summary"].split("\n")
                     if l.strip() and not l.strip().startswith("#")
                 )
-                summary_html = f'<p style="margin:6px 0 0;color:#555;font-size:13px;line-height:1.5">{clean[:200]}…</p>'
+                summary_html = f'<p style="margin:8px 0 0;color:#4a4a4a;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em">{clean[:220]}…</p>'
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
-                sources_badge = f'<span style="background:#c0392b;color:#fff;font-size:10px;padding:2px 6px;border-radius:2px;margin-left:8px">{a["source_count"]} извори</span>'
+                sources_badge = f'<span style="background:#b91c1c;color:#ffffff;font-family:sans-serif;font-size:10px;font-weight:bold;padding:2px 6px;text-transform:uppercase;letter-spacing:0.05em;border-radius:2px;margin-left:8px;vertical-align:middle">{a["source_count"]} извора</span>'
 
             items += f"""
             <tr>
-              <td style="padding:14px 0;border-bottom:1px solid #e8e0d0">
-                <a href="{a['link']}" style="font-family:Georgia,serif;font-size:16px;font-weight:bold;color:#0d0d0d;text-decoration:none;line-height:1.3">
+              <td style="padding:20px 0;border-bottom:1px solid #e5e7eb">
+                <p style="margin:0 0 6px;font-family:sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'ИЗВОР'}</p>
+                <a href="{a['link']}" style="font-family:Georgia,\'Times New Roman\',serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
                   {a['title']}
-                </a>{sources_badge}
-                <p style="margin:4px 0 0;font-family:monospace;font-size:11px;color:#999">
-                  {a.get('source','') or ''}
-                </p>
+                </a>
                 {summary_html}
+                <div style="margin-top:12px">
+                    <a href="{a['link']}" style="font-family:sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">Прочитај ја веста →</a>
+                    {sources_badge}
+                </div>
               </td>
             </tr>"""
 
         cat_blocks += f"""
         <tr>
-          <td style="padding:24px 0 8px">
-            <p style="margin:0;font-family:monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c0392b">{cat}</p>
-            <hr style="border:none;border-top:2px solid #0d0d0d;margin:6px 0 0">
+          <td style="padding:48px 0 12px">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="font-family:sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827;padding-bottom:8px">{cat}</td>
+                </tr>
+                <tr>
+                    <td style="height:2px;background:#111827"></td>
+                </tr>
+            </table>
           </td>
         </tr>
         {items}"""
 
     period_str = f"{mk_date(period_start)} — {mk_date(period_end)}"
-
+    
     return f"""<!DOCTYPE html>
 <html lang="mk">
 <head>
@@ -209,54 +221,83 @@ def render_html(stories_by_cat: dict[str, list[dict]],
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Пресек — Дневен преглед</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f0e8;font-family:Georgia,serif">
+<body style="margin:0;padding:0;background-color:#f9fafb;font-family:Georgia,serif;-webkit-font-smoothing:antialiased">
 
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:40px 20px">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
 
-        <!-- Header -->
+        <!-- Masthead -->
         <tr>
-          <td style="background:#0d0d0d;padding:28px 32px;text-align:center">
-            <h1 style="margin:0;font-family:Georgia,serif;font-size:36px;font-weight:900;color:#f5f0e8;letter-spacing:-1px">
+          <td style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
+            <h1 style="margin:0;font-family:Georgia,\'Times New Roman\',serif;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
               ПРЕСЕК
             </h1>
-            <p style="margin:8px 0 0;font-family:monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#7a7068">
-              Дневен преглед · {period_str}
+            <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
+              Повеќе од вести
             </p>
           </td>
         </tr>
 
-        <!-- Intro -->
+        <!-- Media Pulse Bar -->
         <tr>
-          <td style="background:#ece5d8;padding:16px 32px;border-bottom:2px solid #0d0d0d">
-            <p style="margin:0;font-size:13px;color:#555;line-height:1.6">
-              Најважните приказни од македонските медиуми оваа недела, групирани и резимирани автоматски.
+          <td style="background-color:#111827;padding:12px 40px;text-align:center">
+            <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
+              <span style="color:#ffffff">МЕДИУМСКИ ПУЛС:</span> &nbsp; {total_stories} теми во фокус &nbsp; • &nbsp; {total_sources} извори анализирани
             </p>
           </td>
         </tr>
 
-        <!-- Stories -->
+        <!-- Edition Info -->
         <tr>
-          <td style="background:#fff;padding:8px 32px 24px">
+          <td style="padding:24px 40px 0;text-align:center">
+            <p style="margin:0;font-family:sans-serif;font-size:12px;color:#6b7280;letter-spacing:0.05em">
+              {period_str}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Stories Content -->
+        <tr>
+          <td style="padding:0 40px 40px">
             <table width="100%" cellpadding="0" cellspacing="0">
               {cat_blocks}
             </table>
           </td>
         </tr>
 
+        <!-- Bottom CTA -->
+        <tr>
+            <td style="padding:0 40px 40px;text-align:center">
+                <a href="https://presek.live" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                    Отвори го целосното издание
+                </a>
+            </td>
+        </tr>
+
         <!-- Footer -->
         <tr>
-          <td style="padding:20px 32px;text-align:center">
-            <p style="margin:0;font-family:monospace;font-size:10px;color:#999;letter-spacing:1px">
+          <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
+            <p style="margin:0;font-family:sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
               Пресек · Македонски вести · Паметен агрегатор
             </p>
-            <p style="margin:6px 0 0;font-family:monospace;font-size:10px;color:#bbb">
-              Генерирано автоматски · {datetime.now().strftime('%d.%m.%Y %H:%M')}
+            <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
+              Овој преглед е генериран автоматски од нашите алгоритми за групирање.<br>
+              Доколку сакате да се одјавите, променете ги вашите <a href="https://presek.live/settings" style="color:#6b7280;text-decoration:underline">поставки</a>.
             </p>
           </td>
         </tr>
 
+      </table>
+      
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+        <tr>
+            <td style="padding:20px 0;text-align:center">
+                <p style="margin:0;font-family:sans-serif;font-size:10px;color:#9ca3af">
+                    © {datetime.now().year} Пресек. Сите права се задржани.
+                </p>
+            </td>
+        </tr>
       </table>
     </td></tr>
   </table>

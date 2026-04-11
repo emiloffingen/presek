@@ -28,6 +28,7 @@ from utils import (
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
     build_source_reputation_rows, build_editor_analytics_payload,
     event_stream, check_rate_limit, record_runtime_event,
+    redis_client,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from prompts import SYNTHESIS_SYSTEM_PROMPT
@@ -42,6 +43,7 @@ from config import (
 from local_nlp import (
     answer_cluster_question_locally,
     generate_daily_brief_fallback,
+    generate_local_placeholder,
     normalize_tag_name,
     filter_cluster_tags,
     is_valid_focus_entity,
@@ -2290,7 +2292,13 @@ async def get_sources_pulse():
 
 
 @app.get("/proxy")
-async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
+async def proxy_image(
+    url: str = Query(""), 
+    w: Optional[str] = Query(None),
+    cid: Optional[str] = Query(None),
+    t: Optional[str] = Query(None),
+    cat: Optional[str] = Query(None)
+):
     if not url:
         return _error_json("Missing url parameter", 400)
 
@@ -2327,13 +2335,31 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
     except ValueError:
         target_width = 600
 
-    cache_key = f"proxy:webp:v2:{target_width}:{url}"
-    cached = cached_response(cache_key, ttl=86400)
-    if cached:
+    # V3 cache uses binary storage for speed and efficiency
+    cache_key = f"proxy:bin:v3:{target_width}:{url}"
+    try:
+        cached_bin = redis_client.get(cache_key)
+        if cached_bin:
+            return Response(
+                cached_bin,
+                media_type="image/webp",
+                headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"},
+            )
+    except Exception as e:
+        log.warning(f"[proxy/cache] Redis error: {e}")
+
+    def serve_fallback(reason="fetch_failed"):
+        """Generates and serves a local placeholder if remote fetch or processing fails."""
+        placeholder_svg = generate_local_placeholder(
+            cid or "px", 
+            t or "Вест", 
+            cat or "Вести"
+        )
+        log.info(f"[proxy/fallback] Serving SVG for {url} (Reason: {reason})")
         return Response(
-            bytes.fromhex(cached["data"]),
-            media_type="image/webp",
-            headers={"Cache-Control": "public, max-age=86400"},
+            placeholder_svg, 
+            media_type="image/svg+xml", 
+            headers={"Cache-Control": "public, max-age=3600", "X-Proxy-Fallback": reason}
         )
 
     fetch_start = time.perf_counter()
@@ -2345,12 +2371,13 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
         current_url = url
         response = None
 
-        for _ in range(4):
+        # Reduced redirects and tighter timeout for better responsiveness
+        for _ in range(3):
             safe_ips = _resolve_public_ips(current_url)
             response = session.get(
                 current_url,
                 headers=headers,
-                timeout=10,
+                timeout=5,
                 stream=True,
                 verify=True,
                 allow_redirects=False,
@@ -2359,39 +2386,39 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
             if not peer_ip or peer_ip not in safe_ips:
                 response.close()
                 log.warning(f"[proxy/security] Blocked unsafe peer IP {peer_ip} for {url}")
-                return _error_json("Blocked upstream target", 403)
+                return serve_fallback("security_block")
             if 300 <= response.status_code < 400:
                 location = response.headers.get("Location")
                 response.close()
                 if not location:
-                    return _error_json("Invalid upstream redirect", 502)
+                    return serve_fallback("bad_redirect")
                 current_url = urllib.parse.urljoin(current_url, location)
                 if not re.match(r'^https?://', current_url):
-                    return _error_json("Invalid upstream redirect", 502)
+                    return serve_fallback("bad_redirect_scheme")
                 continue
             break
         else:
-            return _error_json("Too many upstream redirects", 502)
+            return serve_fallback("too_many_redirects")
 
         if response.status_code != 200:
             log.warning(f"[proxy/fetch] Upstream {url} returned {response.status_code}")
-            return _error_json("Failed to fetch image", response.status_code)
+            return serve_fallback(f"http_{response.status_code}")
 
         content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
         if content_type not in _PROXY_ALLOWED_TYPES:
             log.warning(f"[proxy/type] Unsupported content type {content_type} for {url}")
-            return _error_json("Unsupported content type", 415)
+            return serve_fallback("unsupported_type")
 
         image_chunks = []
         total_bytes = 0
-        for chunk in response.iter_content(chunk_size=8192):
+        for chunk in response.iter_content(chunk_size=16384):
             if not chunk:
                 continue
             total_bytes += len(chunk)
             if total_bytes > _PROXY_MAX_BYTES:
                 response.close()
                 log.warning(f"[proxy/size] Image too large ({total_bytes} bytes) for {url}")
-                return _error_json("Image too large", 413)
+                return serve_fallback("size_limit")
             image_chunks.append(chunk)
         image_data = b"".join(image_chunks)
         fetch_duration = time.perf_counter() - fetch_start
@@ -2402,19 +2429,27 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
 
         img = Image.open(BytesIO(image_data))
         orig_w, orig_h = img.size
+        
+        # Performance: Use faster resampling for thumbnails
+        resample_filter = Image.Resampling.BILINEAR if target_width < 300 else Image.Resampling.LANCZOS
+
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
         if img.width > target_width:
             ratio = target_width / float(img.width)
-            img = img.resize((target_width, int(float(img.height) * ratio)), Image.Resampling.LANCZOS)
+            img = img.resize((target_width, int(float(img.height) * ratio)), resample_filter)
 
         webp_io = BytesIO()
-        quality = 20 if target_width <= 50 else 80
-        img.save(webp_io, "WEBP", quality=quality, method=6)
+        # Quality scale: smaller images get lower quality to save space
+        quality = 30 if target_width <= 80 else 75
+        img.save(webp_io, "WEBP", quality=quality, method=4) # Method 4 is a good balance of speed/size
         optimized_data = webp_io.getvalue()
         optimize_duration = time.perf_counter() - optimize_start
 
-        set_cache(cache_key, {"data": optimized_data.hex(), "content_type": "image/webp"}, ttl=86400)
+        try:
+            redis_client.setex(cache_key, 86400, optimized_data)
+        except:
+            pass
         
         total_duration = time.perf_counter() - start_time
         log.info(
@@ -2422,16 +2457,10 @@ async def proxy_image(url: str = Query(""), w: Optional[str] = Query(None)):
             f"Total: {total_duration:.3f}s, Fetch: {fetch_duration:.3f}s, Optimize: {optimize_duration:.3f}s. "
             f"Original: {orig_w}x{orig_h}, Target: {target_width}w"
         )
-        return Response(optimized_data, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
-    except socket.gaierror:
-        return _error_json("Could not resolve hostname", 404)
-    except PermissionError as e:
-        return _error_json(str(e), 403)
-    except ValueError as e:
-        return _error_json(str(e), 403)
+        return Response(optimized_data, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"})
     except Exception as e:
-        log.warning(f"[fastapi/proxy] Optimization error for {url}: {e}")
-        return _error_json("Failed to process image", 502)
+        log.warning(f"[fastapi/proxy] Error for {url}: {e}")
+        return serve_fallback("exception")
 
 @app.get("/api/chat/stream")
 async def chat_stream(
