@@ -681,7 +681,7 @@ const schema = cluster ? {
 											{' · '}
 											{a.sourceSignal?.role_note || a.relationship.description}
 										</p>
-										<p class="article-row-summary">{a.description}</p>
+										<p class="article-row-summary">{a.summary || a.description}</p>
 										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
 											<Link2 size={12} /> Отвори го оригиналот
 										</a>
