@@ -14,6 +14,11 @@ from typing import AsyncGenerator
 
 from config import (
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
+    GOOGLE_API_KEY, GEMINI_URL,
+    GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
+    CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
+    OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
+    OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
     POLLINATIONS_API_KEY,
 )
 from prompts import (
@@ -194,17 +199,22 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
+    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
+    "groq": OpenAICompatibleProvider("groq", GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL),
+    "cerebras": OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
+    "openrouter": OpenAICompatibleProvider("openrouter", OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL),
+    "openai": OpenAICompatibleProvider("openai", OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["mistral", "local"],
-    "summarize":    ["local", "mistral"],
-    "synthesis":    ["mistral", "local"],
-    "daily_brief":  ["mistral", "local"],
-    "chat":         ["mistral", "local"],
-    "default":      ["mistral", "local"],
+    "translation":  ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
+    "summarize":    ["local", "gemini", "mistral", "groq", "openai"],
+    "synthesis":    ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
+    "daily_brief":  ["gemini", "mistral", "groq", "openai", "local"],
+    "chat":         ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
+    "default":      ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
 }
 
 # --- Service Methods ---

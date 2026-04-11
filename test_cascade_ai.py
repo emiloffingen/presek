@@ -25,32 +25,28 @@ from prompts import SUMMARY_SYSTEM_PROMPT
 def test_cascade():
     test_prompt = "Тест на системот: Напиши една реченица за времето во Скопје."
     
-    print("\n--- PHASE 1: Testing Primary (Gemini) ---")
+    print("\n--- PHASE 1: Testing Primary ---")
     res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
     print(f"Result from {provider}: {res[:100]}...")
 
-    # Force fail Gemini to test next fallback
-    print("\n--- PHASE 2: Testing Failover Beyond Gemini (Simulated Gemini failure) ---")
-    original_gemini_call = PROVIDERS["gemini"].call
-    PROVIDERS["gemini"].call = lambda *args, **kwargs: None # Simulate failure
+    # Force fail all hosted providers to test final local fallback
+    print("\n--- PHASE 2: Testing Final Fallback to Local NLP ---")
     
-    res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
-    print(f"Result from {provider}: {res[:100]}...")
-
-    # Force fail the remaining hosted providers to test final local fallback
-    print("\n--- PHASE 3: Testing Final Fallback to Local NLP (Simulated hosted-provider failure) ---")
-    original_mistral_call = PROVIDERS["mistral"].call
-    original_cf_call = PROVIDERS["cloudflare"].call
-    PROVIDERS["mistral"].call = lambda *args, **kwargs: None
-    PROVIDERS["cloudflare"].call = lambda *args, **kwargs: None
+    # Save original methods
+    original_calls = {}
+    for name, p in PROVIDERS.items():
+        if name != "local":
+            original_calls[name] = p.call
+            p.call = lambda *args, **kwargs: None # Simulate failure
     
-    res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
-    print(f"Result from {provider}: {res[:100]}...")
-
-    # Restore original methods
-    PROVIDERS["gemini"].call = original_gemini_call
-    PROVIDERS["mistral"].call = original_mistral_call
-    PROVIDERS["cloudflare"].call = original_cf_call
+    try:
+        res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
+        print(f"Result from {provider}: {res[:100]}...")
+        assert provider == "local"
+    finally:
+        # Restore original methods
+        for name, original_call in original_calls.items():
+            PROVIDERS[name].call = original_call
 
 if __name__ == "__main__":
     test_cascade()

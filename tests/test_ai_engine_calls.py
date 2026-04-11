@@ -220,10 +220,12 @@ class TestTranslateToMacedonian:
 
         assert "Владата" in result
 
+    @patch('nllb_translate.translate')
     @patch('ai_engine._call_ai')
-    def test_successful_translation(self, mock_call_ai):
+    def test_successful_translation(self, mock_call_ai, mock_nllb_translate):
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ("Преведен текст", "gemini")
+        mock_nllb_translate.return_value = None
+        mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "gemini")
         result = translate_to_macedonian("English text to translate")
         assert result == "Преведен текст"
 

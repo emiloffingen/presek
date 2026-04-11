@@ -1462,11 +1462,9 @@ def _is_low_information_fragment(text):
     if not clean:
         return True
     terms = _extract_terms(clean)
-    if len(clean) < 18:
+    if len(clean) < 12:
         return True
-    if len(terms) <= 1:
-        return True
-    if re.fullmatch(r"[А-Яа-яЀ-ӿA-Za-z0-9\s]+[.!?]?", clean) and len(clean.split()) <= 2:
+    if not terms:
         return True
     return False
 
@@ -1489,16 +1487,8 @@ def _is_low_quality_local_text(text, evidence=None):
         return True
 
     low_info_count = sum(1 for sentence in sentences if _is_low_information_fragment(sentence))
-    if low_info_count >= max(1, len(sentences) - 1):
+    if low_info_count > len(sentences) / 2:
         return True
-
-    if evidence:
-        evidence_terms = set()
-        for item in evidence[:2]:
-            evidence_terms.update(_extract_terms(str(item.get("snippet") or "")))
-        answer_terms = set(_extract_terms(clean))
-        if evidence_terms and len(answer_terms & evidence_terms) < min(2, len(evidence_terms)):
-            return True
 
     return False
 
