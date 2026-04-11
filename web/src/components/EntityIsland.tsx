@@ -49,7 +49,36 @@ interface EntityPayload {
   clusters: any[];
 }
 
-... (formatting utils unchanged) ...
+function formatDate(value?: string) {
+  if (!value) return 'Непознато';
+  try {
+    return new Date(value).toLocaleDateString('mk-MK', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return 'Непознато';
+  }
+}
+
+function formatRelative(value?: string) {
+  if (!value) return 'неодамна';
+  const now = new Date();
+  const date = new Date(value);
+  const diff = now.getTime() - date.getTime();
+  const days = Math.max(0, Math.floor(diff / 86400000));
+  if (days === 0) return 'денес';
+  if (days === 1) return 'вчера';
+  if (days < 7) return `пред ${days} дена`;
+  return formatDate(value);
+}
+
+function sentimentLabel(score: number) {
+  if (score >= 0.2) return 'Претежно позитивен';
+  if (score <= -0.2) return 'Претежно критичен';
+  return 'Главно неутрален';
+}
 
 function buildTimeline(history: SentimentPoint[]) {
   if (!history || !history.length) return [];
@@ -67,7 +96,7 @@ function buildTimeline(history: SentimentPoint[]) {
 }
 
 function getSentimentTrend(history: SentimentPoint[]) {
-  if (history.length < 2) return 'stable';
+  if (!history || history.length < 2) return 'stable';
   const recent = history.slice(-3);
   const avg = recent.reduce((sum, item) => sum + item.avg_sentiment, 0) / recent.length;
   const prev = history.slice(-6, -3);
@@ -80,7 +109,6 @@ function getSentimentTrend(history: SentimentPoint[]) {
 }
 
 function splitRelated(related: Relationship[]) {
-...
   if (!related.length) {
     return { strongest: [] as Relationship[], broader: [] as Relationship[] };
   }
@@ -102,13 +130,27 @@ function buildWhyItMatters(profile: EntityProfile, clusters: any[], related: Rel
   return `Присуството на ${profile.name} во медиумите се следи преку анализа на тонот и фреквенцијата на споменување во реално време.`;
 }
 
+function coMentionedEntities(clusters: any[], currentName: string) {
+  const counts = new Map<string, number>();
+  const current = currentName.toLowerCase();
+  for (const cluster of clusters) {
+    const ents = cluster.entities || []; 
+    for (const entity of ents) {
+      const clean = String(entity || '').trim();
+      if (!clean || clean.toLowerCase() === current) continue;
+      counts.set(clean, (counts.get(clean) || 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12);
+}
+
 export default function EntityIsland({
   name,
-  initialClusters = [],
   initialData = null,
 }: {
   name: string;
-  initialClusters?: any[];
   initialData?: EntityPayload | null;
 }) {
   const [data, setData] = useState<EntityPayload | null>(initialData);
@@ -249,7 +291,6 @@ export default function EntityIsland({
           </div>
 
           <section className="entity-summary">
-... (rest of component unchanged) ...
             <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Истиот Контекст</h2>
             <div className="entity-chip-list">
               {coMentionedEntities(clusters, profile.name).map(([entity, count]) => (
@@ -302,20 +343,4 @@ export default function EntityIsland({
       </div>
     </div>
   );
-}
-
-function coMentionedEntities(clusters: any[], currentName: string) {
-  const counts = new Map<string, number>();
-  const current = currentName.toLowerCase();
-  for (const cluster of clusters) {
-    const ents = cluster.entities || []; 
-    for (const entity of ents) {
-      const clean = String(entity || '').trim();
-      if (!clean || clean.toLowerCase() === current) continue;
-      counts.set(clean, (counts.get(clean) || 0) + 1);
-    }
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 12);
 }
