@@ -172,26 +172,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Almakos", "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
 })
 
-DIASPORA_FEEDS = [
-    ("N1 Info",     "https://n1info.rs/feed/",                                                   "BALKAN"),
-    ("Kurir.rs",     "https://www.kurir.rs/rss",                                                 "BALKAN"),
-    ("Dnevnik.bg",  "https://www.dnevnik.bg/rss/",                                              "BALKAN"),
-    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "BALKAN"),
-    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "BALKAN"),
-    # Index.hr and Jutarnji disabled (is_active=FALSE in sources table).
-    # Croatian-language feeds outrun NLLB's 10/min translation rate limit, so
-    # most articles leak through untranslated. Re-enable if capacity grows.
-    # ("Index.hr",     "https://index.hr/rss",                                                     "BALKAN"),
-    # ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "BALKAN"),
-    ("Klix.ba",      "https://www.klix.ba/rss",                                                  "BALKAN"),
-    ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "BALKAN"),
-    ("Danas.rs",     "https://www.danas.rs/feed/",                                               "BALKAN"),
-    ("24 Chasa BG",  "https://www.24chasa.bg/rss",                                              "BALKAN"),
-    ("Capital.bg",   "https://www.capital.bg/rss/",                                              "BALKAN"),
-    ("Telegrafi KS", "https://telegrafi.com/feed/",                                              "BALKAN"),
-    ("RTCG",         "https://www.rtcg.me/rss.html",                                            "BALKAN"),
-    ("Anadolu Agency", "https://www.aa.com.tr/en/rss/default?cat=world",                        "BALKAN"),
-]
+DIASPORA_FEEDS = []
 
 SOURCE_CREDIBILITY = {
     # MK sources
@@ -214,11 +195,6 @@ SOURCE_CREDIBILITY = {
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
     "Lajm": 1.0, "Koha": 1.0,
-    # Balkan sources
-    "N1 Info": 1.5, "Kurir.rs": 1.2, "Dnevnik.bg": 1.5, "Balkan Insight": 1.7,
-    "Daily Sabah": 1.4, "Index.hr": 1.5, "Jutarnji": 1.4, "Klix.ba": 1.4, "Vijesti.me": 1.3,
-    "Danas.rs": 1.5, "24 Chasa BG": 1.3, "Capital.bg": 1.4, "Telegrafi KS": 1.3,
-    "RTCG": 1.6, "Anadolu Agency": 1.5,
 }
 DEFAULT_CREDIBILITY = 0.8
 
@@ -231,11 +207,6 @@ SOURCE_CATEGORIES = {
     "Republika": "Алтернативни", "Infomax": "Алтернативни",
     "Alsat-M": "Главни", "Pressing TV": "Главни", "Antropol": "Независни",
     "Deutsche Welle": "Меѓународни", "Слободна Европа": "Меѓународни",
-    "N1 Info": "Балкан", "Kurir.rs": "Балкан", "Dnevnik.bg": "Балкан",
-    "Balkan Insight": "Балкан", "Daily Sabah": "Балкан", "Index.hr": "Балкан",
-    "Jutarnji": "Балкан", "Klix.ba": "Балкан", "Vijesti.me": "Балкан",
-    "Danas.rs": "Балкан", "24 Chasa BG": "Балкан", "Capital.bg": "Балкан",
-    "Telegrafi KS": "Балкан", "RTCG": "Балкан", "Anadolu Agency": "Балкан",
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 
