@@ -224,10 +224,6 @@ BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
 
-# ── Cloudflare AI Gateway ────────────────────────────────────────
-CF_AI_URL = os.environ.get("CF_AI_GATEWAY_URL", "")
-CF_AI_TOKEN = os.environ.get("CF_AI_GATEWAY_TOKEN", "")
-
 # ── Cloudflare KV Configuration ──────────────────────────────────
 CF_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
 CF_KV_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
