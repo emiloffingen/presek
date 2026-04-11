@@ -16,10 +16,6 @@ const WEAK_VISUAL_TOKENS = [
   'emblem',
   'avatar',
   'icon',
-  'ogimage',
-  'opengraph',
-  'share-image',
-  'site-share',
 ];
 
 export function isWeakVisual(url?: string | null) {

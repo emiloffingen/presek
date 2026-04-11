@@ -74,13 +74,25 @@ function countValues(values: string[]) {
 	return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
 }
 
-const newsUrl = new URL(`${API_URL}/news`);
-newsUrl.searchParams.set('page_size', '24');
-newsUrl.searchParams.set('topic', topic);
+function buildNewsUrl(params: Record<string, string>) {
+	const url = new URL(`${API_URL}/news`);
+	url.searchParams.set('page_size', '24');
+	for (const [key, value] of Object.entries(params)) {
+		url.searchParams.set(key, value);
+	}
+	return url.toString();
+}
 
 try {
-	const newsData = await fetchJson(newsUrl.toString());
+	const newsData = await fetchJson(buildNewsUrl({ topic }));
 	clusters = Array.isArray(newsData?.clusters) ? newsData.clusters : [];
+
+	// Some curated labels (e.g. "Свет") are stored as categories, not topics.
+	// Fall back to a category query so those nav entries don't render empty.
+	if (clusters.length === 0) {
+		const fallbackData = await fetchJson(buildNewsUrl({ category: topic }));
+		clusters = Array.isArray(fallbackData?.clusters) ? fallbackData.clusters : [];
+	}
 
 	if (clusters.length > 0) {
 		const ids = clusters.slice(0, 6).map((cluster: any) => cluster.cluster_id);

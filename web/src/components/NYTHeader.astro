@@ -35,17 +35,10 @@ try {
     trendingItems = [];
 }
 
-const fallbackItems = [
-    { word: "Македонија" },
-    { word: "Балкан" },
-    { word: "Европа" },
-    { word: "Свет" },
-    { word: "Економија" },
-    { word: "Спорт" },
-];
-
-const headerItems = trendingItems.length > 0 ? trendingItems : fallbackItems;
-const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Култура'];
+const headerItems = trendingItems;
+const trendingWordSet = new Set(headerItems.map((item: any) => item.word));
+const curatedTopics = ['Политика', 'Економија', 'Свет', 'Спорт', 'Технологија', 'Забава']
+    .filter((topic) => !trendingWordSet.has(topic));
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
@@ -101,21 +94,25 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
     <nav class="site-layout masthead-nav" aria-label="Популарно сега">
         <div class="masthead-nav-shell flex overflow-x-auto whitespace-nowrap hide-scrollbar md:flex-wrap items-center">
-            <span class="masthead-nav-kicker">Актуелно</span>
-            <ul class="masthead-nav-list flex-nowrap">
-                {headerItems.map((item: any) => {
-                    const searchStr = new URLSearchParams({ q: item.word }).toString();
-                    const isActive = q === item.word;
+            {headerItems.length > 0 && (
+                <>
+                    <span class="masthead-nav-kicker">Актуелно</span>
+                    <ul class="masthead-nav-list flex-nowrap">
+                        {headerItems.map((item: any) => {
+                            const searchStr = new URLSearchParams({ q: item.word }).toString();
+                            const isActive = q === item.word;
 
-                    return (
-                        <li>
-                            <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                                {item.word}
-                            </a>
-                        </li>
-                    );
-                })}
-            </ul>
+                            return (
+                                <li>
+                                    <a href={`/?${searchStr}`} class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                                        {item.word}
+                                    </a>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </>
+            )}
             <span class="masthead-nav-kicker masthead-nav-kicker-secondary">Теми</span>
             <ul class="masthead-nav-list masthead-nav-list-topics flex-nowrap">
                 {curatedTopics.map((item: string) => {

@@ -605,12 +605,15 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	}
 
 	.lead-headline {
-		font-size: clamp(2.2rem, 1.7rem + 1.55vw, 4.2rem);
-		line-height: 0.94;
-		letter-spacing: -0.028em;
+		font-size: clamp(2rem, 1.55rem + 1.1vw, 3rem);
+		line-height: 0.98;
+		letter-spacing: -0.024em;
 		margin: 0.35rem 0 0.65rem;
-		max-width: 14ch;
+		max-width: 16ch;
 		text-wrap: balance;
+		overflow-wrap: break-word;
+		word-break: break-word;
+		hyphens: auto;
 	}
 
 	.lead-summary {
@@ -1147,8 +1150,8 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		}
 
 		.lead-headline {
-			font-size: clamp(2.35rem, 1.9rem + 1vw, 3.3rem);
-			max-width: 12.75ch;
+			font-size: clamp(2.05rem, 1.65rem + 0.85vw, 2.7rem);
+			max-width: 14.5ch;
 		}
 
 		.lead-media img {

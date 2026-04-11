@@ -178,8 +178,11 @@ DIASPORA_FEEDS = [
     ("Dnevnik.bg",  "https://www.dnevnik.bg/rss/",                                              "Балкан"),
     ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Балкан"),
     ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Балкан"),
-    ("Index.hr",     "https://index.hr/rss",                                                     "Балкан"),
-    ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "Балкан"),
+    # Index.hr and Jutarnji disabled (is_active=FALSE in sources table).
+    # Croatian-language feeds outrun NLLB's 10/min translation rate limit, so
+    # most articles leak through untranslated. Re-enable if capacity grows.
+    # ("Index.hr",     "https://index.hr/rss",                                                     "Балкан"),
+    # ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "Балкан"),
     ("Klix.ba",      "https://www.klix.ba/rss",                                                  "Балкан"),
     ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "Балкан"),
     ("Danas.rs",     "https://www.danas.rs/feed/",                                               "Балкан"),

@@ -7,6 +7,7 @@ PartOf=presek.target
 [Service]
 Type=simple
 User=emiloffingen
+Environment=PYTHONPATH=/home/emiloffingen/presek
 WorkingDirectory=/home/emiloffingen/presek
 ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek && set -a && source ./.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=2'
 Restart=always
