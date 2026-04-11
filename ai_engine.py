@@ -200,8 +200,8 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["mistral", "local"],
-    "summarize":    ["mistral", "local"],
+    "translation":  ["local", "mistral"],
+    "summarize":    ["local", "mistral"],
     "synthesis":    ["mistral", "local"],
     "daily_brief":  ["mistral", "local"],
     "chat":         ["mistral", "local"],
