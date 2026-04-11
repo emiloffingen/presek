@@ -95,8 +95,8 @@ class MistralProvider(AIProvider):
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
-        # Use Mistral API directly
-        url = MISTRAL_API_URL
+        # Use AI Gateway if configured, else direct Mistral URL
+        url = f"{CF_AI_URL}/mistral/chat/completions" if CF_AI_URL else MISTRAL_API_URL
         
         headers = {
             "Content-Type": "application/json",
@@ -238,15 +238,16 @@ class LocalProvider(AIProvider):
 PROVIDERS = {
     "mistral": MistralProvider(),
     "cloudflare": CloudflareAIProvider(),
+    "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["mistral", "cloudflare"],
-    "summarize":    ["mistral", "cloudflare"],
-    "synthesis":    ["mistral", "cloudflare"],
-    "daily_brief":  ["mistral", "cloudflare"],
-    "chat":         ["mistral", "cloudflare"],
-    "default":      ["mistral", "cloudflare"],
+    "translation":  ["mistral", "cloudflare", "local"],
+    "summarize":    ["mistral", "cloudflare", "local"],
+    "synthesis":    ["mistral", "cloudflare", "local"],
+    "daily_brief":  ["mistral", "cloudflare", "local"],
+    "chat":         ["mistral", "cloudflare", "local"],
+    "default":      ["mistral", "cloudflare", "local"],
 }
 
 # --- Service Methods ---

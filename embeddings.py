@@ -1,104 +1,125 @@
 """
 embeddings.py — Vector embedding generation for semantic search in Presek.
 
-Uses Cloud API (Mistral) for embedding generation to save local RAM.
-Replaces the previous local sentence-transformers model.
+Uses a local sentence-transformers model (paraphrase-multilingual-MiniLM-L12-v2,
+384 dims, 50+ languages including Macedonian/Cyrillic). Runs entirely offline
+on CPU after the model is downloaded once to ~/.cache/huggingface.
+
+No API key, no quota, no network at runtime.
 """
 import logging
-import json
-import urllib.request
-import urllib.error
-from config import MISTRAL_API_KEY, CF_AI_URL
+import threading
 
 log = logging.getLogger("presek")
 
-# Mistral Embedding Configuration
-EMBEDDING_MODEL = "mistral-embed"
-EMBEDDING_DIM = 1024  # Mistral embed is 1024 dims
-MISTRAL_EMBED_URL = "https://api.mistral.ai/v1/embeddings"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_DIM = 384
 
-def generate_embeddings_batch(texts: list[str]) -> list[list[float] | None]:
-    """Generate embeddings for a list of texts using the Mistral Cloud API."""
-    if not texts or not MISTRAL_API_KEY:
-        return [None] * len(texts)
+# Batch size for encode() — MiniLM is small enough that 64 is comfortable on CPU
+BATCH_SIZE = 64
 
-    # Truncate and clean texts
-    cleaned = [str(t or "").strip()[:4000] for t in texts]
-    if not any(cleaned):
-        return [None] * len(texts)
+_model = None
+_model_lock = threading.Lock()
 
-    payload = {
-        "model": EMBEDDING_MODEL,
-        "input": cleaned
-    }
 
-    # Call Mistral API directly (Gateway seems to have 403 issues)
-    url = MISTRAL_EMBED_URL
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {MISTRAL_API_KEY}"
-    }
+def get_shared_model():
+    """Public accessor: returns the loaded SentenceTransformer, or None.
+    Other modules (e.g. KeyBERT) can reuse this to avoid double-loading."""
+    return _get_model()
 
-    try:
-        data_encoded = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data_encoded, headers=headers)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            # Mistral returns data in order of input
-            vectors = [item["embedding"] for item in data["data"]]
-            return vectors
-    except Exception as e:
-        log.warning(f"[embeddings] Mistral Cloud API error: {e}")
-        return [None] * len(texts)
+
+def _get_model():
+    """Lazy-load the sentence-transformers model on first use."""
+    global _model
+    if _model is not None:
+        return _model
+    with _model_lock:
+        if _model is not None:
+            return _model
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            log.error("[embeddings] sentence-transformers is not installed. Run: pip install sentence-transformers")
+            return None
+        try:
+            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' (first run downloads ~120 MB)")
+            _model = SentenceTransformer(EMBEDDING_MODEL)
+            log.info(f"[embeddings] Model loaded, dim={_model.get_sentence_embedding_dimension()}")
+        except Exception as e:
+            log.error(f"[embeddings] Failed to load model: {e}")
+            _model = None
+        return _model
+
 
 def generate_embedding(text: str) -> list[float] | None:
-    """Generate a single embedding vector."""
+    """Generate a single embedding vector for the given text."""
     results = generate_embeddings_batch([text])
-    return results[0] if results else None
+    if results and results[0] is not None:
+        return results[0]
+    return None
 
-def generate_query_embedding(text: str) -> list[float] | None:
-    """Generate an embedding for a search query with Redis caching."""
-    if not text: return None
-    clean_text = text.strip().lower()
-    if not clean_text: return None
 
-    from utils import redis_client
-    cache_key = f"emb:v2:query:{clean_text}" # v2 for 1024 dim
-    
+def generate_embeddings_batch(texts: list[str]) -> list[list[float] | None]:
+    """Generate embeddings for a list of texts using the local MiniLM model."""
+    if not texts:
+        return []
+
+    model = _get_model()
+    if model is None:
+        return [None] * len(texts)
+
+    # Truncate each text defensively — MiniLM has a 512 token cap but we slice
+    # characters upstream to match the old pipeline's behaviour.
+    cleaned = [str(t or "")[:2000] for t in texts]
+
     try:
-        cached = redis_client.get(cache_key)
-        if cached: return json.loads(cached)
-    except: pass
+        vectors = model.encode(
+            cleaned,
+            batch_size=BATCH_SIZE,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        )
+        return [vec.tolist() for vec in vectors]
+    except Exception as e:
+        log.warning(f"[embeddings] Local encode error: {e}")
+        return [None] * len(texts)
 
-    vector = generate_embedding(text)
-    if vector:
-        try:
-            redis_client.setex(cache_key, 86400, json.dumps(vector))
-        except: pass
-    return vector
 
-def embed_recent_articles(hours: int = 24, limit: int = 50) -> int:
-    """Generate and store embeddings for recent articles using Mistral API."""
+def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
+    """
+    Generate and store embeddings for recent articles that don't have one yet.
+    Returns the count of articles embedded.
+    """
     from database import db_manager as db
 
-    rows = db.execute(
-        """SELECT id, title, description FROM articles
-           WHERE (embedding IS NULL OR vector_dims(embedding) != 1024)
-             AND created_at >= NOW() - (%s * INTERVAL '1 hour')
-           ORDER BY created_at DESC
-           LIMIT %s""",
-        (hours, limit)
-    )
-    if not rows: return 0
+    try:
+        rows = db.execute(
+            """SELECT id, title, description FROM articles
+               WHERE embedding IS NULL
+                 AND created_at >= NOW() - (%s * INTERVAL '1 hour')
+               ORDER BY created_at DESC
+               LIMIT %s""",
+            (hours, limit)
+        )
+    except Exception as e:
+        log.error(f"[embeddings] Failed to fetch articles for embedding: {e}")
+        return 0
+
+    if not rows:
+        return 0
 
     texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
     vectors = generate_embeddings_batch(texts)
 
     embedded = 0
     for row, vec in zip(rows, vectors):
-        if not vec: continue
+        if vec is None:
+            continue
         try:
+            # pgvector accepts the textual "[v1,v2,...]" form. We don't register
+            # a typecaster, so format the list explicitly here (matches the
+            # pattern used by database.search_semantic / hybrid_search).
             vec_str = "[" + ",".join(map(str, vec)) + "]"
             db.execute(
                 "UPDATE articles SET embedding = %s::vector WHERE id = %s",
@@ -107,11 +128,42 @@ def embed_recent_articles(hours: int = 24, limit: int = 50) -> int:
             )
             embedded += 1
         except Exception as e:
-            log.warning(f"[embeddings] Failed to store embedding for {row['id']}: {e}")
+            log.warning(f"[embeddings] Failed to store embedding for article {row['id']}: {e}")
 
-    log.info(f"[embeddings] Cloud Embedded {embedded}/{len(rows)} articles")
+    log.info(f"[embeddings] Embedded {embedded}/{len(rows)} recent articles")
     return embedded
 
-def get_shared_model():
-    """No local model anymore."""
-    return None
+
+def generate_query_embedding(text: str) -> list[float] | None:
+    """Generate an embedding for a search query. Same model as documents —
+    MiniLM is symmetric, no separate query/document task type needed.
+    Includes Redis caching to avoid CPU-heavy re-generation."""
+    if not text:
+        return None
+
+    clean_text = text.strip().lower()
+    if not clean_text:
+        return None
+
+    from utils import redis_client
+    import json
+
+    cache_key = f"emb:query:{clean_text}"
+    try:
+        cached = redis_client.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception as e:
+        log.warning(f"[embeddings] Cache read error for query '{clean_text}': {e}")
+
+    vector = generate_embedding(text)
+
+    if vector:
+        try:
+            # Cache query embeddings for 24 hours
+            redis_client.setex(cache_key, 86400, json.dumps(vector))
+        except Exception as e:
+            log.warning(f"[embeddings] Cache write error for query '{clean_text}': {e}")
+
+    return vector
+

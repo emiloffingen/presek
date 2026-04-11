@@ -70,13 +70,14 @@ class DatabaseManager:
         """Standardized query execution with automatic connection release."""
         conn = self.get_conn()
         try:
-            with conn: # This handles transaction commit/rollback
-                with conn.cursor(cursor_factory=DictCursor) as cur:
-                    cur.execute(sql, params)
-                    if fetch:
-                        return [dict(r) for r in cur.fetchall()]
-                    return cur.rowcount
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(sql, params)
+                if fetch:
+                    return [dict(r) for r in cur.fetchall()]
+                conn.commit()
+                return cur.rowcount
         except Exception as e:
+            conn.rollback()
             log.error(f"Presek 4.0 DB Error: {e}")
             raise
         finally:
@@ -278,9 +279,9 @@ class DatabaseManager:
                         ) THEN
                             -- Check if we need to change dimension
                             IF (SELECT atttypmod FROM pg_attribute 
-                                WHERE attrelid = 'articles'::regclass AND attname = 'embedding') != 1024 THEN
-                                -- We already did this manually, but keeping logic sane
-                                NULL;
+                                WHERE attrelid = 'articles'::regclass AND attname = 'embedding') != 384 THEN
+                                ALTER TABLE articles DROP COLUMN embedding;
+                                ALTER TABLE articles ADD COLUMN embedding vector(384);
                             END IF;
                         END IF;
                     END $$;
@@ -305,7 +306,7 @@ class DatabaseManager:
                     original_description TEXT DEFAULT '',
                     is_translated INTEGER DEFAULT 0, 
                     is_fact_check BOOLEAN DEFAULT FALSE,
-                    embedding vector(1024),
+                    embedding vector(384),
                     search_vector tsvector
                 )""")
                 cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE")

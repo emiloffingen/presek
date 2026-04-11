@@ -66,8 +66,30 @@ def _articles_cache_key(articles):
 
 
 def _get_keybert():
-    """KeyBERT disabled to save memory. Use Cloud APIs or legacy logic."""
-    return None
+    """Lazy-load KeyBERT once, reusing the shared sentence-transformers model.
+    Returns None if KeyBERT or the embedding model is unavailable."""
+    global _keybert_model, _keybert_unavailable
+    if _keybert_unavailable:
+        return None
+    if _keybert_model is not None:
+        return _keybert_model
+    with _keybert_lock:
+        if _keybert_model is not None:
+            return _keybert_model
+        try:
+            from keybert import KeyBERT
+            from embeddings import get_shared_model
+            st_model = get_shared_model()
+            if st_model is None:
+                _keybert_unavailable = True
+                return None
+            _keybert_model = KeyBERT(model=st_model)
+            log.info("[local_nlp] KeyBERT ready (sharing MiniLM embedding model)")
+        except Exception as e:
+            log.warning(f"[local_nlp] KeyBERT unavailable, using legacy keyphrases: {e}")
+            _keybert_unavailable = True
+            return None
+        return _keybert_model
 
 # Simple Macedonian Lexicon for Sentiment (Positive / Negative)
 # This is a starter list that can be expanded.
