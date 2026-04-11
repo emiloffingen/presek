@@ -69,7 +69,7 @@ celery_app.conf.update(
         },
         'send-profile-breaking-alerts': {
             'task': 'tasks.send_profile_breaking_alerts_task',
-            'schedule': 900.0,
+            'schedule': 180.0,
         },
         'backfill-cover-art': {
             'task': 'tasks.backfill_cover_art_task',
