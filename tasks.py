@@ -1165,6 +1165,8 @@ def translate_article_task(article_id, title, description):
             )
             invalidate_public_data_caches()
             log.info(f"Translated article {article_id}")
+            # Trigger summarization after translation
+            summarize_article_task.delay(article_id, translated_title)
     except Exception as e:
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
         raise

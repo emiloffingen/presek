@@ -553,13 +553,18 @@ async def ingest_all_sources_async():
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles", "count": new_count, "time": cycle_now})
                 
-                # Translation triggers (async via Celery as before)
-                from tasks import translate_article_task
+                # Translation & Summarization triggers
+                from tasks import translate_article_task, summarize_article_task
                 for r_id, r_country in results:
+                    art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (r_id,))
+                    if not art: continue
+
                     if r_country != 'MK':
-                        art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (r_id,))
-                        if art:
-                            translate_article_task.delay(r_id, art["title"], art["description"])
+                        # International: Translate first, then summarize (handled inside translate_article_task)
+                        translate_article_task.delay(r_id, art["title"], art["description"])
+                    else:
+                        # Macedonian: Summarize immediately
+                        summarize_article_task.delay(r_id, art["title"])
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

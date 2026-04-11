@@ -16,8 +16,8 @@ TimeoutStartSec=90
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-fastapi
-MemoryHigh=512M
-MemoryMax=768M
+MemoryHigh=640M
+MemoryMax=896M
 CPUWeight=100
 
 [Install]
