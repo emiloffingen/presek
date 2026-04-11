@@ -78,7 +78,7 @@ def set_cache(key: str, val, ttl: int = 60):
         redis_client.setex(key, ttl, json_val)
         
         # Persistent keys (API results, proxies) with long TTL (1h+) go to KV
-        if key.startswith(("api:", "proxy:")) and ttl >= 300:
+        if key.startswith(("api:", "proxy:")) and ttl >= 3600:
             _set_kv(key, json_val)
             
     except Exception as e:

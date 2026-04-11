@@ -1445,11 +1445,19 @@ async def get_cluster_detail(cluster_id: str):
         generated_article = s_row["generated_article"] if s_row else None
         sentiment = s_row["sentiment"] if s_row and s_row["sentiment"] else None
         if isinstance(sentiment, str):
-            sentiment = json.loads(sentiment)
+            try:
+                sentiment = json.loads(sentiment)
+            except json.JSONDecodeError:
+                log.warning(f"Malformed JSON in sentiment for cluster {cluster_id}")
+                sentiment = None
 
         verification_report = s_row["verification_report"] if s_row and s_row["verification_report"] else None
         if isinstance(verification_report, str):
-            verification_report = json.loads(verification_report)
+            try:
+                verification_report = json.loads(verification_report)
+            except json.JSONDecodeError:
+                log.warning(f"Malformed JSON in verification_report for cluster {cluster_id}")
+                verification_report = None
         # Parse synthesis into bullets for the 'ai_summary_bullets' field
         ai_summary_bullets = []
         if synthesis:
@@ -1461,7 +1469,11 @@ async def get_cluster_detail(cluster_id: str):
             
         perspectives = s_row["perspectives"] if s_row and s_row["perspectives"] else []
         if isinstance(perspectives, str):
-            perspectives = json.loads(perspectives)
+            try:
+                perspectives = json.loads(perspectives)
+            except json.JSONDecodeError:
+                log.warning(f"Malformed JSON in perspectives for cluster {cluster_id}")
+                perspectives = []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         # 3. Fetch metadata (tags, etc)
