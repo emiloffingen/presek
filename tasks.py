@@ -757,6 +757,30 @@ def _tracked_delivery_url(event_id, event_type, path):
     return f"{_PUBLIC_SITE_URL}/api/delivery/track/{urllib.parse.quote(str(event_type or 'click'), safe='')}?{query}"
 
 
+def _send_web_push_message(subscription_json_str, title, message, click_url=None):
+    from config import VAPID_PRIVATE_KEY, VAPID_CLAIMS
+    try:
+        import pywebpush
+        import json
+        sub_info = json.loads(subscription_json_str)
+        payload = json.dumps({
+            "title": str(title or "Пресек")[:120],
+            "message": str(message or "")[:500],
+            "click_url": str(click_url or "")[:500]
+        })
+        pywebpush.webpush(
+            subscription_info=sub_info,
+            data=payload,
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims=VAPID_CLAIMS,
+            ttl=86400
+        )
+        return True
+    except Exception as e:
+        log.warning(f"[tasks] web_push error: {e}")
+        return False
+
+
 def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     clean_topic = str(topic or "").strip()
     # Sanitize topic: only allow alphanumeric, underscores, and dashes, limit to 64 chars
@@ -1799,13 +1823,27 @@ def send_profile_breaking_alerts_task():
             message_text = "\n".join(message_lines)
             if click_track_url:
                 message_text = f"{message_text}\nОтвори кластер: {click_track_url}"
-            if _send_ntfy_message(
-                target,
-                title,
-                message_text,
-                tags=candidate.get("alert_tags") or "newspaper",
-                click_url=open_url,
-            ):
+                
+            delivery_channel = str(row.get("channel") or "ntfy").strip().lower()
+            sent_success = False
+            
+            if delivery_channel == "webpush":
+                sent_success = _send_web_push_message(
+                    target,
+                    title,
+                    message_text,
+                    click_url=open_url,
+                )
+            else:
+                sent_success = _send_ntfy_message(
+                    target,
+                    title,
+                    message_text,
+                    tags=candidate.get("alert_tags") or "newspaper",
+                    click_url=open_url,
+                )
+                
+            if sent_success:
                 next_ids = [str(candidate.get("cluster_id") or "").strip()]
                 next_ids.extend(
                     str(item or "").strip()

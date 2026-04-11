@@ -178,12 +178,16 @@ def related_questions_from_context(
 
 def normalize_server_delivery_subscription(payload) -> dict:
     payload = payload or {}
-    channel = str(payload.get("channel") or "ntfy").strip().lower() or "ntfy"
-    if channel != "ntfy":
-        channel = "ntfy"
-
+    raw_channel = str(payload.get("channel") or "ntfy").strip().lower()
+    channel = raw_channel if raw_channel == "webpush" else "ntfy"
+    
     raw_target = str(payload.get("target") or "").strip()
-    target = _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
+    
+    if channel == "ntfy":
+        target = _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
+    else:
+        # WebPush target is a JSON string of the PushSubscription object
+        target = raw_target[:2048]
 
     is_active = bool(payload.get("isActive")) and bool(target)
 

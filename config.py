@@ -22,6 +22,9 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgrHKcVhuDtMQkOa3hRFd1hjOMCeXYr3SNXttf2kCFH0WhRANCAAStJXagEMl2Udqb5O4MtqAZ8sXqxllnVzL5Ptq+0SpkGprcnLhv3osfL4M2A9dRgY71pKS1/JzHUoqnzXEFFFZA")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErSV2oBDJdlHam+TuDLagGfLF6sZZZ1cy+T7avtEqZBqa3Jy4b96LHy+DNgPXUYGO9aSktfycx1KKp81xBRRWQA==")
+VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
@@ -50,7 +53,7 @@ FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000 # Unlimited (paid Gemini fallback tier)
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 BREAKING_SCORE_THRESHOLD = 4.5
-DB_RETAIN_DAYS = 14  # articles older than this are pruned daily
+DB_RETAIN_DAYS = 90  # articles older than this are pruned daily
 
 # ── Auto-summarization settings ──────────────────────────────────
 AUTO_SUMMARIZE_TOP_N   = 25   # summarize the top N clusters each cycle

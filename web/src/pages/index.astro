@@ -495,6 +495,53 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 	<Footer />
 </Layout>
 
+<script>
+	// Personalization 2.0: Implicit "Click-Stream" Re-ranking
+	import { scoreClusterForReader, loadReaderProfile, hasPersonalizationSignal } from '../lib/personalization.js';
+
+	document.addEventListener('astro:page-load', () => {
+		const profile = loadReaderProfile();
+		if (!hasPersonalizationSignal(profile)) return;
+
+		const grids = document.querySelectorAll('.news-feed-grid');
+		grids.forEach(grid => {
+			const cards = Array.from(grid.querySelectorAll('.news-card'));
+			if (cards.length < 2) return;
+
+			const scoredCards = cards.map(card => {
+				const clusterDataStr = card.getAttribute('data-cluster');
+				if (!clusterDataStr) return { card, score: 0 };
+				try {
+					const cluster = JSON.parse(clusterDataStr);
+					const result = scoreClusterForReader(cluster, profile);
+					// Base score + implicit bonus
+					const finalScore = (cluster.homepage_score || 0) + (result?.score || 0) * 2;
+					
+					// Add visual indicator if strongly personalized
+					if (result && result.score > 1.5 && !card.querySelector('.personalized-badge')) {
+						const metaRow = card.querySelector('.footer-meta');
+						if (metaRow) {
+							const badge = document.createElement('span');
+							badge.className = 'personalized-badge text-[9px] font-black text-nyt-accent uppercase tracking-widest ml-auto opacity-80 flex items-center gap-1';
+							badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> ${result.reason}`;
+							metaRow.appendChild(badge);
+						}
+					}
+					
+					return { card, score: finalScore };
+				} catch (e) {
+					return { card, score: 0 };
+				}
+			});
+
+			scoredCards.sort((a, b) => b.score - a.score);
+			
+			// Re-append in new order
+			scoredCards.forEach(({ card }) => grid.appendChild(card));
+		});
+	});
+</script>
+
 <style>
 	.front-page-grid {
 		--front-page-cache-bust-20260409: 1;

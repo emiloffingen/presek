@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
+import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
 import { CalendarDays, Info } from 'lucide-react';
 
@@ -110,6 +111,8 @@ function buildClearHref() {
 
     <div class="archive-grid editorial-page-grid">
       <section class="archive-main motion-rise motion-delay-1">
+        <ArchiveHeatmapIsland client:load />
+        
         {!error && (
           <div class="archive-summary editorial-panel">
             <div>

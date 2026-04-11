@@ -1002,6 +1002,13 @@ async def save_profile_sync(request: Request):
     }
 
 
+@app.get("/api/profile/vapid-key")
+async def get_vapid_key():
+    from config import VAPID_PUBLIC_KEY
+    if not VAPID_PUBLIC_KEY:
+        raise HTTPException(status_code=404, detail="Web Push not configured")
+    return {"status": "success", "key": VAPID_PUBLIC_KEY}
+
 @app.get("/api/profile/delivery")
 async def get_profile_delivery(request: Request):
     token = _extract_sync_token(request)
@@ -1927,6 +1934,45 @@ async def get_briefing():
     except Exception as e:
         log.error(f"FastAPI Briefing Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch briefing")
+
+@app.get("/api/archive/heatmap")
+async def get_archive_heatmap():
+    """Return historical volume and breaking counts over the last 90 days."""
+    try:
+        cache_key = "archive:heatmap:v1"
+        cached = cached_response(cache_key, ttl=3600)  # cache for 1 hour
+        if cached:
+            return {"status": "success", "data": cached}
+
+        sql = """
+            SELECT 
+                DATE(created_at) as day, 
+                COUNT(DISTINCT cluster_id) as total_clusters,
+                COUNT(DISTINCT cluster_id) FILTER (
+                    WHERE (SELECT count(*) FROM articles WHERE cluster_id = cluster_metadata.cluster_id) >= 5
+                ) as breaking_clusters
+            FROM cluster_metadata
+            WHERE created_at >= NOW() - INTERVAL '90 days'
+            GROUP BY day
+            ORDER BY day ASC
+        """
+        rows = db.execute(sql)
+        
+        # Format dates properly
+        formatted_rows = [
+            {
+                "day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
+                "total_clusters": r["total_clusters"],
+                "breaking_clusters": r["breaking_clusters"]
+            }
+            for r in rows
+        ]
+        
+        set_cache(cache_key, formatted_rows, ttl=3600)
+        return {"status": "success", "data": formatted_rows}
+    except Exception as e:
+        log.error(f"FastAPI Archive Heatmap Error: {e}")
+        return {"status": "error", "data": []}
 
 @app.get("/api/archive")
 async def get_archive(

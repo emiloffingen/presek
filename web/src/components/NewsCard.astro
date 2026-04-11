@@ -89,7 +89,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]}>
+<article class:list={["nyt-article", "news-card", `variant-${variant}`, { "lead-story": isLead }]} data-cluster={JSON.stringify(cluster)}>
 	<div class="article-body">
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>

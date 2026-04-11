@@ -105,6 +105,41 @@ export default function BriefingDeliveryIsland({
     const status = await Notification.requestPermission();
     const next = setBrowserPermissionStatus(status);
     setPrefs(next);
+
+    if (status === 'granted' && 'serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+            const vapidRes = await fetch('/api/profile/vapid-key');
+            if (vapidRes.ok) {
+                const vapidData = await vapidRes.json();
+                const pubKey = vapidData.key;
+                
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                await navigator.serviceWorker.ready;
+                
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: pubKey
+                });
+                
+                if (syncToken) {
+                    const payload = {
+                        ...serverDelivery,
+                        channel: 'webpush',
+                        target: JSON.stringify(sub)
+                    };
+                    updateServerDelivery(payload);
+                    
+                    await fetch('/api/profile/delivery', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: syncToken, subscription: payload })
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Web Push setup failed', e);
+        }
+    }
   };
 
   const togglePref = (field: 'morningBriefing' | 'breakingAlerts') => {
