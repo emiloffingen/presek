@@ -511,8 +511,8 @@ class TestSourceReputationRows:
     @patch("utils.get_source_health_map", return_value={})
     def test_build_source_reputation_rows_enriches_sources(self, _mock_health):
         source_rows = [
-            {"name": "MIA", "country": "🇲🇰", "category": "Локални", "credibility": 2.0, "is_active": True},
-            {"name": "Press24", "country": "🇲🇰", "category": "Локални", "credibility": 0.9, "is_active": True},
+            {"name": "MIA", "country": "MK", "category": "Локални", "credibility": 2.0, "is_active": True},
+            {"name": "Press24", "country": "MK", "category": "Локални", "credibility": 0.9, "is_active": True},
         ]
         pulse_rows = [{"source": "MIA", "count": 9}, {"source": "Press24", "count": 2}]
         speed_rows = [{"source": "MIA", "first_count": 12}, {"source": "Press24", "first_count": 1}]

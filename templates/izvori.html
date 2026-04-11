@@ -20,7 +20,7 @@
                 <section class="mb-12">
                     <h2 class="rail-label mb-6">МАКЕДОНСКИ МЕДИУМИ</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
-                        {% for s in sources if s.country == '🇲🇰' %}
+                        {% for s in sources if s.country == 'MK' %}
                         <a href="/?q={{ s.name | urlencode }}" class="text-xs font-bold text-primary no-underline hover:text-accent flex items-center gap-2 py-1 border-b border-color">
                             {{ s.name }}
                             {% if s.name in hot_sources %}
@@ -34,7 +34,7 @@
                 <section>
                     <h2 class="rail-label mb-6">МЕЃУНАРОДНИ МЕДИУМИ</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
-                        {% for s in sources if s.country != '🇲🇰' %}
+                        {% for s in sources if s.country != 'MK' %}
                         <a href="/?q={{ s.name | urlencode }}" class="text-xs font-bold text-primary no-underline hover:text-accent flex items-center gap-2 py-1 border-b border-color">
                             {{ s.name }}
                             <span class="opacity-50 grayscale">{{ s.country }}</span>

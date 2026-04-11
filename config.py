@@ -53,7 +53,7 @@ BREAKING_SCORE_THRESHOLD = 3.0
 DB_RETAIN_DAYS = 14  # articles older than this are pruned daily
 
 # ── Auto-summarization settings ──────────────────────────────────
-AUTO_SUMMARIZE_TOP_N   = 5    # summarize the top N clusters each cycle
+AUTO_SUMMARIZE_TOP_N   = 25   # summarize the top N clusters each cycle
 AUTO_SUMMARIZE_MIN_SRC = 2    # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY   = 1.5  # seconds between API calls (rate limit protection)
 
@@ -173,24 +173,24 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
 })
 
 DIASPORA_FEEDS = [
-    ("N1 Info",     "https://n1info.rs/feed/",                                                   "Балкан"),
-    ("Kurir.rs",     "https://www.kurir.rs/rss",                                                 "Балкан"),
-    ("Dnevnik.bg",  "https://www.dnevnik.bg/rss/",                                              "Балкан"),
-    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "Балкан"),
-    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "Балкан"),
+    ("N1 Info",     "https://n1info.rs/feed/",                                                   "BALKAN"),
+    ("Kurir.rs",     "https://www.kurir.rs/rss",                                                 "BALKAN"),
+    ("Dnevnik.bg",  "https://www.dnevnik.bg/rss/",                                              "BALKAN"),
+    ("Balkan Insight", "https://balkaninsight.com/feed/",                                        "BALKAN"),
+    ("Daily Sabah",  "https://www.dailysabah.com/rssFeed/politics",                              "BALKAN"),
     # Index.hr and Jutarnji disabled (is_active=FALSE in sources table).
     # Croatian-language feeds outrun NLLB's 10/min translation rate limit, so
     # most articles leak through untranslated. Re-enable if capacity grows.
-    # ("Index.hr",     "https://index.hr/rss",                                                     "Балкан"),
-    # ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "Балкан"),
-    ("Klix.ba",      "https://www.klix.ba/rss",                                                  "Балкан"),
-    ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "Балкан"),
-    ("Danas.rs",     "https://www.danas.rs/feed/",                                               "Балкан"),
-    ("24 Chasa BG",  "https://www.24chasa.bg/rss",                                              "Балкан"),
-    ("Capital.bg",   "https://www.capital.bg/rss/",                                              "Балкан"),
-    ("Telegrafi KS", "https://telegrafi.com/feed/",                                              "Балкан"),
-    ("RTCG",         "https://www.rtcg.me/rss.html",                                            "Балкан"),
-    ("Anadolu Agency", "https://www.aa.com.tr/en/rss/default?cat=world",                        "Балкан"),
+    # ("Index.hr",     "https://index.hr/rss",                                                     "BALKAN"),
+    # ("Jutarnji",     "https://www.jutarnji.hr/feed",                                             "BALKAN"),
+    ("Klix.ba",      "https://www.klix.ba/rss",                                                  "BALKAN"),
+    ("Vijesti.me",   "https://www.vijesti.me/rss",                                               "BALKAN"),
+    ("Danas.rs",     "https://www.danas.rs/feed/",                                               "BALKAN"),
+    ("24 Chasa BG",  "https://www.24chasa.bg/rss",                                              "BALKAN"),
+    ("Capital.bg",   "https://www.capital.bg/rss/",                                              "BALKAN"),
+    ("Telegrafi KS", "https://telegrafi.com/feed/",                                              "BALKAN"),
+    ("RTCG",         "https://www.rtcg.me/rss.html",                                            "BALKAN"),
+    ("Anadolu Agency", "https://www.aa.com.tr/en/rss/default?cat=world",                        "BALKAN"),
 ]
 
 SOURCE_CREDIBILITY = {
@@ -253,13 +253,14 @@ BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
 
-# ── OpenClaw Gateway Configuration ──────────────────────────────
-OPENCLAW_URL = os.environ.get("OPENCLAW_GATEWAY_URL", "http://127.0.0.1:18791/v1/chat/completions")
-OPENCLAW_TOKEN = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
-
 # ── Cloudflare AI Gateway ────────────────────────────────────────
 CF_AI_URL = os.environ.get("CF_AI_GATEWAY_URL", "")
 CF_AI_TOKEN = os.environ.get("CF_AI_GATEWAY_TOKEN", "")
+
+# ── Cloudflare KV Configuration ──────────────────────────────────
+CF_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+CF_KV_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+CF_KV_NAMESPACE = os.environ.get("CLOUDFLARE_KV_NAMESPACE_ID", "")
 
 # ── Cloudflare R2 Configuration ──────────────────────────────────
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")

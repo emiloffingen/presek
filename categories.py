@@ -188,24 +188,30 @@ def detect_subcategory(title: str, description: str = "") -> str | None:
     return None
 
 
-# ── Source country flag map ────────────────────────────────────────
+# ── Source country code map ────────────────────────────────────────
+# ISO 3166-1 alpha-2 codes where applicable; region sentinels for aggregates.
 _COUNTRY_MAP: dict[str, str] = {
     # Balkan sources
-    "N1 Info":        "🇷🇸",
-    "Kurir.rs":       "🇷🇸",
-    "Danas.rs":       "🇷🇸",
-    "Dnevnik.bg":     "🇧🇬",
-    "24 Chasa BG":    "🇧🇬",
-    "Capital.bg":     "🇧🇬",
-    "Index.hr":       "🇭🇷",
-    "Jutarnji":       "🇭🇷",
-    "Klix.ba":        "🇧🇦",
-    "Vijesti.me":     "🇲🇪",
-    "RTCG":           "🇲🇪",
-    "Telegrafi KS":   "🇽🇰",
-    "Daily Sabah":    "🇹🇷",
-    "Anadolu Agency": "🇹🇷",
-    "Balkan Insight":  "🌍",
+    "N1 Info":        "RS",
+    "Kurir.rs":       "RS",
+    "Danas.rs":       "RS",
+    "Dnevnik.bg":     "BG",
+    "24 Chasa BG":    "BG",
+    "Capital.bg":     "BG",
+    "Index.hr":       "HR",
+    "Jutarnji":       "HR",
+    "Klix.ba":        "BA",
+    "Vijesti.me":     "ME",
+    "RTCG":           "ME",
+    "Telegrafi KS":   "XK",
+    "Daily Sabah":    "TR",
+    "Anadolu Agency": "TR",
+    "Balkan Insight": "BALKAN",
+    # International sources
+    "Tagesschau":     "DE",
+    "CNN":            "US",
+    "BBC News":       "GB",
+    "Reuters":        "GB",
 }
 
 
@@ -291,8 +297,8 @@ def detect_topic(title: str, description: str = "") -> str:
 
 
 def detect_country(source_name: str) -> str:
-    """Return the country flag emoji for a given source name. Defaults to 🇲🇰."""
-    return _COUNTRY_MAP.get(source_name, "🇲🇰")
+    """Return the ISO country code for a given source name. Defaults to MK."""
+    return _COUNTRY_MAP.get(source_name, "MK")
 
 
 def normalize_headline(title: str) -> str:

@@ -147,12 +147,10 @@ class DatabaseManager:
         
         if category:
             sql += " AND category = %s"; params.append(category)
-        elif country and country != '🇲🇰':
+        elif country and country != 'MK':
             sql += " AND country = %s"; params.append(country)
-        # If country is 🇲🇰, we show everything that isn't another country flag
-        # but for simplicity, we allow 🇲🇰 to match directly too
-        elif country == '🇲🇰':
-            sql += " AND (country = '🇲🇰' OR country IS NULL OR country = '')"
+        elif country == 'MK':
+            sql += " AND (country = 'MK' OR country IS NULL OR country = '')"
             
         if sub:
             sql += " AND subcategory = %s"; params.append(sub)
@@ -300,9 +298,9 @@ class DatabaseManager:
                     summary TEXT,
                     category TEXT, 
                     subcategory TEXT DEFAULT '', 
-                    topic TEXT DEFAULT 'Вести', 
-                    country TEXT DEFAULT '🇲🇰',
-                    created_at TIMESTAMP NOT NULL, 
+                    topic TEXT DEFAULT 'Вести',
+                    country TEXT DEFAULT 'MK',
+                    created_at TIMESTAMP NOT NULL,
                     image_url TEXT, 
                     clicks INTEGER DEFAULT 0, 
                     original_description TEXT DEFAULT '',
@@ -424,7 +422,7 @@ class DatabaseManager:
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,
                     url TEXT NOT NULL,
-                    country TEXT DEFAULT '🇲🇰',
+                    country TEXT DEFAULT 'MK',
                     category TEXT DEFAULT 'Локални',
                     credibility FLOAT DEFAULT 1.0,
                     is_active BOOLEAN DEFAULT TRUE,

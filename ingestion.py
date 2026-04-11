@@ -497,7 +497,7 @@ async def ingest_all_sources_async():
                 subcategory = detect_subcategory(c['title'], description=c['desc']) or ""
                 topic = detect_topic(c['title'], description=c['desc'])
                 
-                is_intl = c['country'] != '🇲🇰'
+                is_intl = c['country'] != 'MK'
                 display_title = normalize_headline(c['title']) if is_intl else c['title']
                 
                 cluster_id = None
@@ -556,7 +556,7 @@ async def ingest_all_sources_async():
                 # Translation triggers (async via Celery as before)
                 from tasks import translate_article_task
                 for r_id, r_country in results:
-                    if r_country != '🇲🇰':
+                    if r_country != 'MK':
                         art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (r_id,))
                         if art:
                             translate_article_task.delay(r_id, art["title"], art["description"])

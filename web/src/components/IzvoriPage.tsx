@@ -89,8 +89,8 @@ export const IzvoriPage: React.FC = () => {
     return sources.filter((source) => source.source?.toLowerCase().includes(q));
   }, [sources, searchTerm]);
 
-  const mkSources = filtered.filter((s) => s.country === '🇲🇰' || !s.country || s.country === 'Македонија');
-  const intSources = filtered.filter((s) => s.country && s.country !== '🇲🇰' && s.country !== 'Македонија');
+  const mkSources = filtered.filter((s) => s.country === 'MK' || !s.country);
+  const intSources = filtered.filter((s) => s.country && s.country !== 'MK');
   const highTrust = filtered.filter((s) => s.trust_tier === 'Висока доверба').length;
   const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 5);
   const bestCorroborated = [...filtered]

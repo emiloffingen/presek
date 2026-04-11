@@ -620,8 +620,8 @@ def test_fastapi_get_sources_includes_paused_sources():
     mock_db = MagicMock()
     mock_db.execute.side_effect = [
         [
-            {"name": "MIA", "country": "🇲🇰", "category": "Главни", "credibility": 1.5, "is_active": True, "pause_mode": None, "pause_reason": None, "paused_at": None, "last_fetched": None},
-            {"name": "Paused Feed", "country": "🇲🇰", "category": "Независни", "credibility": 0.8, "is_active": False, "pause_mode": "manual", "pause_reason": "Manual pause", "paused_at": "2026-04-06T00:00:00+00:00", "last_fetched": None},
+            {"name": "MIA", "country": "MK", "category": "Главни", "credibility": 1.5, "is_active": True, "pause_mode": None, "pause_reason": None, "paused_at": None, "last_fetched": None},
+            {"name": "Paused Feed", "country": "MK", "category": "Независни", "credibility": 0.8, "is_active": False, "pause_mode": "manual", "pause_reason": "Manual pause", "paused_at": "2026-04-06T00:00:00+00:00", "last_fetched": None},
         ],
         [{"source": "MIA", "count": 5}],
         [{"source": "MIA", "first_count": 2}],

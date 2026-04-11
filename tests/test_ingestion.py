@@ -180,7 +180,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
 
     conn = _Conn()
 
-    with patch.object(ingestion, "get_active_sources", return_value=[{"name": "MIA", "url": "https://feed.example.com", "country": "🇲🇰", "category": "Главни"}]), \
+    with patch.object(ingestion, "get_active_sources", return_value=[{"name": "MIA", "url": "https://feed.example.com", "country": "MK", "category": "Главни"}]), \
          patch.object(ingestion, "get_db", return_value=conn), \
          patch.object(ingestion, "httpx", types.SimpleNamespace(AsyncClient=lambda **_kwargs: _AsyncClient())), \
          patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async), \

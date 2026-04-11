@@ -123,15 +123,15 @@ class TestDetectSubcategory:
 
 class TestDetectCountry:
     def test_known_sources(self):
-        assert detect_country("Tagesschau") == "🇩🇪"
-        assert detect_country("CNN") == "🇺🇸"
-        assert detect_country("BBC News") == "🇬🇧"
-        assert detect_country("Reuters") == "🇬🇧"
-        assert detect_country("N1 Info") == "🇷🇸"
+        assert detect_country("Tagesschau") == "DE"
+        assert detect_country("CNN") == "US"
+        assert detect_country("BBC News") == "GB"
+        assert detect_country("Reuters") == "GB"
+        assert detect_country("N1 Info") == "RS"
 
     def test_unknown_default(self):
-        assert detect_country("Unknown Source") == "🇲🇰"
-        assert detect_country("") == "🇲🇰"
+        assert detect_country("Unknown Source") == "MK"
+        assert detect_country("") == "MK"
 
 
 class TestDetectTopic:

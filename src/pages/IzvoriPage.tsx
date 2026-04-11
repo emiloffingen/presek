@@ -54,8 +54,8 @@ export const IzvoriPage: React.FC = () => {
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const mkSources = filtered.filter(s => s.country === '🇲🇰');
-  const intSources = filtered.filter(s => s.country !== '🇲🇰');
+  const mkSources = filtered.filter(s => s.country === 'MK' || !s.country);
+  const intSources = filtered.filter(s => s.country && s.country !== 'MK');
 
   return (
     <div className="min-h-screen bg-primary">
