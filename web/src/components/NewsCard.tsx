@@ -70,7 +70,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       return `${sourceSignal.role_label}. Следете ја за нови потврди и реакции.`;
     }
     if (sourceCount >= 6) {
-      return `Развој со широко медиумско покривање од ${sourceCount} извори.`;
+      return `Развој со широко медиумско покривање од ${sourceCount} извора.`;
     }
     if (sourceCount >= 4) {
       return 'Повеќе редакции веќе додаваат нови детали.';
@@ -153,7 +153,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="footer-meta">
           <span>{getTimeStr(main.created_at)}</span>
           <span className="dot">·</span>
-          <span>{cluster.articles.length} извори</span>
+          <span>{cluster.articles.length} извора</span>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="article-image-placeholder">
                 <div className="article-image-placeholder-topline">
                   <p className="article-image-placeholder-label">Пресек Избор</p>
-                  <p className="article-image-placeholder-chip">{cluster.articles.length} извори</p>
+                  <p className="article-image-placeholder-chip">{cluster.articles.length} извора</p>
                 </div>
                 <h3>{cluster.articles[0].category || 'Вести'}</h3>
                 <p className="article-image-placeholder-source">{main.source}</p>

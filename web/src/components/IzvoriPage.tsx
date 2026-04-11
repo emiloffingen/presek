@@ -166,7 +166,7 @@ export const IzvoriPage: React.FC = () => {
           <span className="sources-kicker">Репутација</span>
           <h1 className="sources-headline">Медиумски Извори</h1>
           <p className="sources-intro">
-            Преглед на изворите што Пресек ги следи, со довербен tier, дневен ритам, сигнал за брзина и присуство во покривањето.
+            Преглед на изворите што Пресек ги следи, со ниво на доверба, дневен ритам, сигнал за брзина и присуство во покривањето.
           </p>
           <div className="max-w-md mt-6 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
@@ -259,7 +259,7 @@ export const IzvoriPage: React.FC = () => {
             <div className="rail-card">
               <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldCheck size={14} /> Доверба</h3>
               <p className="rail-copy">
-                Репутациските tiers ги комбинираат основната credibility оценка, моменталниот quality сигнал и реалното присуство во покривањето.
+                Нивоата на репутација ги комбинираат основната credibility оценка, моменталниот quality сигнал и реалното присуство во покривањето.
               </p>
               <div className="source-mini-stats">
                 <div><span>Висока доверба</span><strong>{highTrust}</strong></div>

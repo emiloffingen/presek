@@ -261,7 +261,7 @@ const contrastRows = articleRows.filter((article: any) => article.relationship?.
 const comparisonHighlights = [
 	{
 		label: 'Заедничка линија',
-		value: confirmRows.length > 0 ? `${confirmRows.length + 1} извори` : `${articleRows.length} извори`,
+		value: confirmRows.length > 0 ? `${confirmRows.length + 1} извора` : `${articleRows.length} извора`,
 		copy:
 			confirmRows.length > 0
 				? `Главниот развој најјасно се повторува кај ${[leadArticle?.source, ...confirmRows.slice(0, 2).map((item: any) => item.source)].filter(Boolean).join(' · ')}.`
@@ -269,7 +269,7 @@ const comparisonHighlights = [
 	},
 	{
 		label: 'Нов агол',
-		value: contrastRows.length > 0 ? `${contrastRows.length} извори` : contextRows.length > 0 ? `${contextRows.length} извори` : 'Слична рамка',
+		value: contrastRows.length > 0 ? `${contrastRows.length} извора` : contextRows.length > 0 ? `${contextRows.length} извора` : 'Слична рамка',
 		copy:
 			contrastRows.length > 0
 				? `${contrastRows.slice(0, 2).map((item: any) => item.source).join(' · ')} носат поинаков акцент или отвораат друг аспект.`
@@ -439,7 +439,7 @@ const schema = cluster ? {
 									</>
 								)}
 								<span>·</span>
-								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извори</span>
+								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извора</span>
 								<span>·</span>
 								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
 								<span>·</span>
@@ -481,7 +481,7 @@ const schema = cluster ? {
 										<div class="cluster-visual-fallback">
 											<p class="cluster-visual-kicker">Пресек Преглед</p>
 											<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
-											<p class="cluster-visual-meta">{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+											<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 											<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
 										</div>
 									) : (
@@ -497,7 +497,7 @@ const schema = cluster ? {
 											<div class="cluster-visual-fallback cluster-visual-fallback-error" style="display: none;">
 												<p class="cluster-visual-kicker">Пресек Преглед</p>
 												<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
-												<p class="cluster-visual-meta">{cluster.articles.length} извори · {sourcePreview.slice(0, 2).join(' · ')}</p>
+												<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 												<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
 											</div>
 										</>

@@ -115,7 +115,7 @@ export const ClusterDetailPage: React.FC = () => {
                 <span>·</span>
                 <span>{cluster.total_reading_time || 1} мин читање</span>
                 <span>·</span>
-                <span>{cluster.articles.length} извори</span>
+                <span>{cluster.articles.length} извора</span>
             </div>
         </header>
 

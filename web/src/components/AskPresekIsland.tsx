@@ -237,7 +237,7 @@ export default function AskPresekIsland({
 
           {result.related_questions.length > 0 && (
             <div className="ask-followups">
-              <p className="nyt-section-label text-muted-foreground">Побарај и</p>
+              <p className="nyt-section-label text-muted-foreground">Прашај и...</p>
               <div className="ask-suggestions">
                 {result.related_questions.map((item) => (
                   <button

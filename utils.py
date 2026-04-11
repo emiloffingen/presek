@@ -210,7 +210,7 @@ def build_cluster_source_signals(arts):
         corroborated_by = corroboration_scores[index]
 
         if index == 0 and corroborated_by >= 2:
-            role_label = "Најпотврден извор"
+            role_label = "Примарен извор"
             role_note = "Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции."
             role_tone = "confirm"
         elif index == 0 and effective_weight >= 1.6:

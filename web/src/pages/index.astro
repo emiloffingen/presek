@@ -228,7 +228,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 									<div class="lead-media-placeholder">
 										<div class="lead-media-topline">
 											<p class="lead-media-kicker">Пресек Преглед</p>
-											<p class="lead-media-chip">{leadCluster.articles.length} извори</p>
+											<p class="lead-media-chip">{leadCluster.articles.length} извора</p>
 										</div>
 										<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
 										<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
@@ -252,7 +252,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 							<div class="lead-meta">
 								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
 								<span>·</span>
-								<span>{leadCluster.articles.length} извори</span>
+								<span>{leadCluster.articles.length} извора</span>
 							</div>
 
 							{leadCluster.articles.length > 1 && (
@@ -294,7 +294,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 										<div class="lead-media-placeholder">
 											<div class="lead-media-topline">
 												<p class="lead-media-kicker">Пресек Преглед</p>
-												<p class="lead-media-chip">{leadCluster.articles.length} извори</p>
+												<p class="lead-media-chip">{leadCluster.articles.length} извора</p>
 											</div>
 											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
 											<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>

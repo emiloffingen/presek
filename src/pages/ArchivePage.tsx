@@ -54,7 +54,7 @@ export const ArchivePage: React.FC = () => {
                 <div className="flex items-center gap-4 text-[10px] font-black uppercase text-muted">
                     <span>{data.total} вести</span>
                     <span>·</span>
-                    <span>{data.sources} извори</span>
+                    <span>{data.sources} извора</span>
                 </div>
                 )}
             </div>

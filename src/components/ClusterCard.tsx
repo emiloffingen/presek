@@ -42,7 +42,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
     <div className="cluster-thumb-fallback" aria-hidden="true">
       <div className="cluster-thumb-fallback-topline">
         <span className="cluster-thumb-fallback-label">Пресек Избор</span>
-        <span className="cluster-thumb-fallback-chip">{cluster.articles.length} извори</span>
+        <span className="cluster-thumb-fallback-chip">{cluster.articles.length} извора</span>
       </div>
       <span className="cluster-thumb-fallback-source">{main.source}</span>
       <span className="cluster-thumb-fallback-title">{main.title}</span>
@@ -126,7 +126,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isLead, compa
         )}
 
         <div className="cluster-meta mt-auto pt-2">
-          <span>{cluster.articles.length} извори анализирани</span>
+          <span>{cluster.articles.length} извора анализирани</span>
         </div>
       </div>
 
