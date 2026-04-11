@@ -10,10 +10,17 @@ interface SourceMetrics {
   cluster_count: number;
 }
 
+interface OverlapMetrics {
+  shared_clusters: number;
+  s1_exclusive: number;
+  s2_exclusive: number;
+}
+
 export default function SourceComparisonIsland({ allSources }: { allSources: string[] }) {
   const [s1, setS1] = useState(allSources[0] || '');
   const [s2, setS2] = useState(allSources[1] || '');
   const [metrics, setMetrics] = useState<SourceMetrics[]>([]);
+  const [overlap, setOverlap] = useState<OverlapMetrics | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -25,6 +32,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
       const json = await res.json();
       if (json.status === 'success') {
         setMetrics(json.data);
+        setOverlap(json.overlap);
       }
     } catch (err) {
       console.error(err);
@@ -98,6 +106,45 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
           {renderMetric("Индекс на Објективност", m1.avg_objectivity, m2.avg_objectivity)}
           {renderMetric("Сензационализам (Clickbait)", m1.avg_sensationalism, m2.avg_sensationalism, true)}
           
+          {overlap && (
+            <div className="space-y-3 pt-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center mb-4">Тематско Преклопување</p>
+              
+              <div className="flex w-full h-8 rounded-lg overflow-hidden border border-border">
+                {/* s1 exclusive */}
+                <div 
+                  className="h-full bg-nyt-accent/80 flex items-center justify-center text-xs font-bold text-white transition-all"
+                  style={{ width: `${Math.max((overlap.s1_exclusive / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 10)}%` }}
+                  title={`${s1} ексклузивно: ${overlap.s1_exclusive} теми`}
+                >
+                  {overlap.s1_exclusive}
+                </div>
+                {/* shared */}
+                <div 
+                  className="h-full bg-secondary flex items-center justify-center text-xs font-bold text-foreground transition-all border-x border-background/20"
+                  style={{ width: `${Math.max((overlap.shared_clusters / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 15)}%` }}
+                  title={`Заеднички: ${overlap.shared_clusters} теми`}
+                >
+                  {overlap.shared_clusters} заеднички
+                </div>
+                {/* s2 exclusive */}
+                <div 
+                  className="h-full bg-nyt-red/80 flex items-center justify-center text-xs font-bold text-white transition-all"
+                  style={{ width: `${Math.max((overlap.s2_exclusive / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 10)}%` }}
+                  title={`${s2} ексклузивно: ${overlap.s2_exclusive} теми`}
+                >
+                  {overlap.s2_exclusive}
+                </div>
+              </div>
+              
+              <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter text-muted-foreground">
+                  <span className="w-1/3 truncate" title={s1}>{s1} сам</span>
+                  <span className="w-1/3 text-center">Споделен интерес</span>
+                  <span className="w-1/3 text-right truncate" title={s2}>{s2} сам</span>
+              </div>
+            </div>
+          )}
+
           <div className="pt-6 border-t border-border flex justify-between gap-4">
             <div className="text-center flex-1">
                 <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground mb-1">{s1}</p>

@@ -1003,3 +1003,116 @@ def event_stream(channel: str):
     finally:
         pubsub.unsubscribe(channel)
         pubsub.close()
+
+def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None):
+    pulse_map = {
+        str(item.get("source") or ""): int(item.get("count") or item.get("n") or 0)
+        for item in (pulse_rows or [])
+    }
+    speed_map = {
+        str(item.get("source") or ""): int(item.get("first_count") or 0)
+        for item in (speed_rows or [])
+    }
+    history_map = {
+        str(item.get("source") or ""): {
+            "lead_count_30d": int(item.get("lead_count_30d") or 0),
+            "corroborated_lead_count_30d": int(item.get("corroborated_lead_count_30d") or 0),
+            "solo_lead_count_30d": int(item.get("solo_lead_count_30d") or 0),
+            "recent_7d_volume": int(item.get("recent_7d_volume") or 0),
+            "previous_7d_volume": int(item.get("previous_7d_volume") or 0),
+        }
+        for item in (history_rows or [])
+    }
+    
+    # Process category dominance
+    from collections import defaultdict
+    category_map = defaultdict(list)
+    for crow in (category_rows or []):
+        src = str(crow.get("source") or "")
+        if src and len(category_map[src]) < 3:
+            category_map[src].append(crow["category"])
+
+    results = []
+    for row in source_rows or []:
+        name = str(row.get("name") or row.get("source") or "").strip()
+        if not name:
+            continue
+        credibility = float(row.get("credibility") or SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY))
+        effective_weight = get_source_effective_weight(name)
+        recent_volume = pulse_map.get(name, 0)
+        speed_count = speed_map.get(name, 0)
+        history = history_map.get(name, {})
+        lead_count_30d = int(history.get("lead_count_30d") or 0)
+        corroborated_lead_count_30d = int(history.get("corroborated_lead_count_30d") or 0)
+        solo_lead_count_30d = int(history.get("solo_lead_count_30d") or 0)
+        recent_7d_volume = int(history.get("recent_7d_volume") or 0)
+        previous_7d_volume = int(history.get("previous_7d_volume") or 0)
+        
+        corroboration_rate = (
+            round(corroborated_lead_count_30d / lead_count_30d, 2)
+            if lead_count_30d > 0
+            else 0.0
+        )
+        lone_lead_rate = (
+            round(solo_lead_count_30d / lead_count_30d, 2)
+            if lead_count_30d > 0
+            else 0.0
+        )
+        trend_delta = recent_7d_volume - previous_7d_volume
+
+        if trend_delta >= 4:
+            trend_label = "Расте"
+        elif trend_delta <= -4:
+            trend_label = "Слабее"
+        else:
+            trend_label = "Стабилен ритам"
+
+        if effective_weight >= 1.75:
+            tier = "Висока доверба"
+        elif effective_weight >= 1.3:
+            tier = "Потврден извор"
+        else:
+            tier = "Следен извор"
+
+        if speed_count >= 10:
+            tendency = "Често прв на приказната"
+        elif corroboration_rate >= 0.7 and lead_count_30d >= 4:
+            tendency = "Често води и подоцна се потврдува"
+        elif lone_lead_rate >= 0.55 and lead_count_30d >= 4:
+            tendency = "Често води сам без брза потврда"
+        elif recent_volume >= 8:
+            tendency = "Силен дневен ритам"
+        elif recent_volume >= 3:
+            tendency = "Постојано присуство"
+        else:
+            tendency = "Поретки, но следени објави"
+
+        results.append({
+            "source": name,
+            "country": row.get("country") or "",
+            "category": row.get("category") or "",
+            "top_categories": category_map.get(name, []),
+            "credibility": round(credibility, 2),
+            "effective_weight": round(effective_weight, 2),
+            "trust_tier": tier,
+            "recent_volume": recent_volume,
+            "speed_first_count": speed_count,
+            "corroboration_rate": corroboration_rate,
+            "lone_lead_rate": lone_lead_rate,
+            "lead_count_30d": lead_count_30d,
+            "tendency": tendency,
+            "trend_label": trend_label,
+            "trend_delta": trend_delta,
+            "is_active": row.get("is_active", True)
+        })
+
+    results.sort(
+        key=lambda item: (
+            item["effective_weight"],
+            item["recent_volume"],
+            item["speed_first_count"],
+            item["source"].lower(),
+        ),
+        reverse=True,
+    )
+    return results

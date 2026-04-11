@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, Loader2, Info, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
+import { Search, Loader2, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
 
 interface SourceRow {
   source: string;
   country: string;
   category: string;
+  top_categories: string[];
   credibility: number;
   effective_weight: number;
   trust_tier: string;
@@ -107,12 +108,38 @@ export const IzvoriPage: React.FC = () => {
       <div className="source-reputation-top">
         <div>
           <h3 className="source-reputation-name">{source.source}</h3>
-          <p className="source-reputation-meta">{source.category || 'Општо'} · {source.country || 'МК'}</p>
+          <div className="flex flex-wrap gap-1 mt-1">
+              <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-bold uppercase">{source.country || 'MK'}</span>
+              {source.top_categories?.map(cat => (
+                  <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-bold uppercase opacity-70">{cat}</span>
+              ))}
+          </div>
         </div>
         <span className={`source-tier ${tierClass(source.trust_tier)}`}>{source.trust_tier}</span>
       </div>
 
       <p className="source-reputation-copy">{source.tendency}</p>
+      
+      {/* Reliability Mini-Chart */}
+      <div className="mt-4 mb-2">
+          <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter mb-1 opacity-60">
+              <span>Сигурност на водство</span>
+              <span>{formatPercent(source.corroboration_rate)}</span>
+          </div>
+          <div className="flex h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-green-500" 
+                title="Води и е потврден"
+                style={{ width: `${(source.corroboration_rate || 0) * 100}%` }} 
+              />
+              <div 
+                className="h-full bg-orange-400" 
+                title="Води сам"
+                style={{ width: `${(source.lone_lead_rate || 0) * 100}%` }} 
+              />
+          </div>
+      </div>
+
       <p className={`source-trend-note ${trendClass(source.trend_label)}`}>
         <span>{source.trend_label}</span>
         <strong>{source.trend_delta >= 0 ? `+${source.trend_delta}` : source.trend_delta} во 7 дена</strong>
@@ -130,25 +157,6 @@ export const IzvoriPage: React.FC = () => {
         <div>
           <span>Тежина</span>
           <strong>{source.effective_weight.toFixed(2)}</strong>
-        </div>
-      </div>
-
-      <div className="source-history-grid">
-        <div>
-          <span>Потврдени водства</span>
-          <strong>{formatPercent(source.corroboration_rate)}</strong>
-        </div>
-        <div>
-          <span>Соло водства</span>
-          <strong>{formatPercent(source.lone_lead_rate)}</strong>
-        </div>
-        <div>
-          <span>Водства 30д</span>
-          <strong>{source.lead_count_30d}</strong>
-        </div>
-        <div>
-          <span>7д тренд</span>
-          <strong>{source.recent_7d_volume}</strong>
         </div>
       </div>
 

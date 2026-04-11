@@ -1321,9 +1321,10 @@ async def get_live_map():
 
 @app.get("/api/intelligence/compare-sources")
 async def compare_sources(s1: str, s2: str):
-    """Side-by-side comparison of two media outlets."""
+    """Side-by-side comparison of two media outlets, including sentiment and topic overlap."""
     try:
-        sql = """
+        # 1. Base Sentiment & Tone
+        sql_base = """
             SELECT 
                 a.source,
                 AVG(CAST(s.sentiment->>'score' AS REAL)) as avg_sentiment,
@@ -1337,8 +1338,31 @@ async def compare_sources(s1: str, s2: str):
               AND s.created_at >= NOW() - INTERVAL '30 days'
             GROUP BY a.source
         """
-        rows = db.execute(sql, ([s1, s2],))
-        return {"status": "success", "data": rows}
+        rows = db.execute(sql_base, ([s1, s2],))
+        
+        # 2. Topic Overlap (Clusters they both covered vs exclusive)
+        sql_overlap = """
+            WITH source_clusters AS (
+                SELECT source, cluster_id
+                FROM articles
+                WHERE source = ANY(%s) AND created_at >= NOW() - INTERVAL '30 days'
+                GROUP BY source, cluster_id
+            )
+            SELECT 
+                COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NOT NULL) as shared_clusters,
+                COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NULL) as s1_exclusive,
+                COUNT(*) FILTER (WHERE s1.cluster_id IS NULL AND s2.cluster_id IS NOT NULL) as s2_exclusive
+            FROM (SELECT DISTINCT cluster_id FROM source_clusters WHERE source = %s) s1
+            FULL OUTER JOIN (SELECT DISTINCT cluster_id FROM source_clusters WHERE source = %s) s2 
+            ON s1.cluster_id = s2.cluster_id
+        """
+        overlap = db.execute_one(sql_overlap, ([s1, s2], s1, s2))
+        
+        return {
+            "status": "success", 
+            "data": rows,
+            "overlap": overlap
+        }
     except Exception as e:
         log.error(f"Source Comparison Error: {e}")
         return {"status": "error", "data": []}
@@ -2232,7 +2256,12 @@ async def get_sources():
             "LEFT JOIN source_weeks sw ON sw.source = cf.source "
             "GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
         )
-        return build_source_reputation_rows(rows, pulse_rows, speed_rows, history_rows)
+        category_dominance = db.execute(
+            "SELECT source, category, COUNT(*) as count FROM articles "
+            "WHERE created_at >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' "
+            "GROUP BY source, category ORDER BY source, count DESC"
+        )
+        return build_source_reputation_rows(rows, pulse_rows, speed_rows, history_rows, category_dominance)
     except Exception as e:
         log.warning(f"FastAPI Sources Error: {e}")
         return []
