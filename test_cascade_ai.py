@@ -25,28 +25,23 @@ from prompts import SUMMARY_SYSTEM_PROMPT
 def test_cascade():
     test_prompt = "Тест на системот: Напиши една реченица за времето во Скопје."
     
-    print("\n--- PHASE 1: Testing Primary ---")
-    res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
-    print(f"Result from {provider}: {res[:100]}...")
+    print("\n--- PHASE 1: Testing Primary (Mistral) ---")
+    res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="synthesis")
+    print(f"Result from {provider}: {res[:100] if res else 'None'}...")
 
-    # Force fail all hosted providers to test final local fallback
+    # Force fail hosted providers to test final local fallback
     print("\n--- PHASE 2: Testing Final Fallback to Local NLP ---")
     
-    # Save original methods
-    original_calls = {}
-    for name, p in PROVIDERS.items():
-        if name != "local":
-            original_calls[name] = p.call
-            p.call = lambda *args, **kwargs: None # Simulate failure
+    original_mistral_call = PROVIDERS["mistral"].call
+    PROVIDERS["mistral"].call = lambda *args, **kwargs: None # Simulate failure
     
     try:
-        res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize")
-        print(f"Result from {provider}: {res[:100]}...")
+        res, provider = sync_call_ai(test_prompt, SUMMARY_SYSTEM_PROMPT, task_type="synthesis")
+        print(f"Result from {provider}: {res[:100] if res else 'None'}...")
         assert provider == "local"
     finally:
         # Restore original methods
-        for name, original_call in original_calls.items():
-            PROVIDERS[name].call = original_call
+        PROVIDERS["mistral"].call = original_mistral_call
 
 if __name__ == "__main__":
     test_cascade()

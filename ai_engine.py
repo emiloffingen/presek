@@ -199,22 +199,17 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
-    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
-    "groq": OpenAICompatibleProvider("groq", GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL),
-    "cerebras": OpenAICompatibleProvider("cerebras", CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL),
-    "openrouter": OpenAICompatibleProvider("openrouter", OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL),
-    "openai": OpenAICompatibleProvider("openai", OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
-    "summarize":    ["local", "gemini", "mistral", "groq", "openai"],
-    "synthesis":    ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
-    "daily_brief":  ["gemini", "mistral", "groq", "openai", "local"],
-    "chat":         ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
-    "default":      ["gemini", "mistral", "groq", "openrouter", "openai", "local"],
+    "translation":  ["mistral", "local"],
+    "summarize":    ["local", "mistral"],
+    "synthesis":    ["mistral", "local"],
+    "daily_brief":  ["mistral", "local"],
+    "chat":         ["mistral", "local"],
+    "default":      ["mistral", "local"],
 }
 
 # --- Service Methods ---

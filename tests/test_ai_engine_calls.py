@@ -225,7 +225,7 @@ class TestTranslateToMacedonian:
     def test_successful_translation(self, mock_call_ai, mock_nllb_translate):
         from ai_engine import translate_to_macedonian
         mock_nllb_translate.return_value = None
-        mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "gemini")
+        mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "mistral")
         result = translate_to_macedonian("English text to translate")
         assert result == "Преведен текст"
 
@@ -248,7 +248,7 @@ class TestTranslateToMacedonian:
     def test_json_response_unwrapped(self, mock_call_ai):
         """If AI returns JSON with a 'summary' key, translation should unwrap it."""
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ('{"summary": "Преведено"}', "gemini")
+        mock_call_ai.return_value = ('{"summary": "Преведено"}', "mistral")
         result = translate_to_macedonian("Text")
         assert result == "Преведено"
 
