@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly refresh of Cloudflare IP ranges
+
+[Timer]
+OnCalendar=Mon 04:30
+RandomizedDelaySec=30m
+Persistent=true
+Unit=cloudflare-realip-update.service
+
+[Install]
+WantedBy=timers.target
