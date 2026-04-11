@@ -3,12 +3,14 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import NewsCard from '../components/NewsCard.astro';
+import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
 import { CalendarDays, Info } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const source = Astro.url.searchParams.get('source') || '';
 const topic = Astro.url.searchParams.get('topic') || '';
+// We still support direct page access, but we'll default to 0 for the island to start from
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
@@ -62,17 +64,6 @@ try {
   error = 'Грешка при вчитување на архивата.';
 }
 
-const prevParams = new URLSearchParams({ date, page: String(Math.max(0, page - 1)) });
-const nextParams = new URLSearchParams({ date, page: String(page + 1) });
-if (source) {
-  prevParams.set('source', source);
-  nextParams.set('source', source);
-}
-if (topic) {
-  prevParams.set('topic', topic);
-  nextParams.set('topic', topic);
-}
-
 function buildFilterHref(kind: 'source' | 'topic', value: string) {
   const params = new URLSearchParams({ date });
   if (kind === 'source') {
@@ -88,7 +79,6 @@ function buildFilterHref(kind: 'source' | 'topic', value: string) {
 function buildClearHref() {
   return `/archive?${new URLSearchParams({ date }).toString()}`;
 }
-
 ---
 
 <Layout title="Архива">
@@ -155,33 +145,15 @@ function buildClearHref() {
             <p>{error}</p>
           </div>
         ) : archive.clusters.length > 0 ? (
-          <>
-            <div class="archive-clusters">
-              {archive.clusters.map((cluster: any, index: number) => (
-                <div class="archive-cluster-card">
-                  <div class="archive-cluster-index">
-                    <span class="micro-label">Кластер</span>
-                    <strong>{String(page * archive.page_size + index + 1).padStart(2, '0')}</strong>
-                  </div>
-                  <NewsCard cluster={cluster} variant={index < 4 ? 'featured' : 'compact'} />
-                </div>
-              ))}
-            </div>
-
-            <div class="archive-pagination">
-              {page > 0 ? (
-                <a href={`/archive?${prevParams.toString()}`} class="archive-page-link">← Претходна</a>
-              ) : (
-                <span class="archive-page-link is-disabled">← Претходна</span>
-              )}
-              <span class="archive-page-indicator">Страна {page + 1}</span>
-              {archive.has_more ? (
-                <a href={`/archive?${nextParams.toString()}`} class="archive-page-link">Следна →</a>
-              ) : (
-                <span class="archive-page-link is-disabled">Следна →</span>
-              )}
-            </div>
-          </>
+          <ArchiveFeedIsland 
+            client:load 
+            initialClusters={archive.clusters}
+            initialHasMore={archive.has_more}
+            date={date}
+            source={source}
+            topic={topic}
+            pageSize={50}
+          />
         ) : (
           <div class="archive-empty">
             <p>Нема пронајдени вести за овој датум.</p>
