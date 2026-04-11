@@ -11,35 +11,34 @@ type ConsentState =
       ts: number;
     };
 
-function readConsentState(): ConsentState | null {
-  const raw = globalThis?.localStorage?.getItem(CONSENT_KEY);
-  if (!raw) return null;
-  if (raw === 'accepted') return 'accepted';
+function readConsentState(): boolean {
+  if (typeof window === 'undefined') return true;
+  const raw = localStorage.getItem(CONSENT_KEY);
+  if (!raw) return false;
+  
+  if (raw === 'accepted') return true;
 
   try {
     const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      (parsed.status === 'accepted' || parsed.status === 'dismissed') &&
-      Number.isFinite(parsed.ts)
-    ) {
-      return parsed;
-    }
+    return parsed?.status === 'accepted';
   } catch {
-    return null;
+    return false;
   }
-
-  return null;
 }
 
 function writeConsentState(status: 'accepted' | 'dismissed') {
-  globalThis?.localStorage?.setItem(
-    CONSENT_KEY,
-    JSON.stringify({
-      status,
-      ts: Date.now(),
-    })
-  );
+  if (typeof window === 'undefined') return;
+  if (status === 'accepted') {
+    localStorage.setItem(CONSENT_KEY, 'accepted');
+  } else {
+    localStorage.setItem(
+      CONSENT_KEY,
+      JSON.stringify({
+        status,
+        ts: Date.now(),
+      })
+    );
+  }
 }
 
 export const ConsentBanner: React.FC = () => {
@@ -47,19 +46,19 @@ export const ConsentBanner: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    const consent = readConsentState();
-
-    if (consent === 'accepted') {
+    if (readConsentState()) {
       return;
     }
 
-    if (
-      consent &&
-      typeof consent === 'object' &&
-      consent.status === 'dismissed' &&
-      Date.now() - consent.ts < DISMISS_COOLDOWN_MS
-    ) {
-      return;
+    // Check for dismissed cooldown
+    const raw = localStorage.getItem(CONSENT_KEY);
+    if (raw && raw !== 'accepted') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.status === 'dismissed' && Date.now() - parsed.ts < DISMISS_COOLDOWN_MS) {
+          return;
+        }
+      } catch {}
     }
 
     // Show after a short delay to not block initial render.
