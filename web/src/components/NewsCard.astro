@@ -133,9 +133,9 @@ function getTimeStr(dateStr: string) {
 			<span class="dot">·</span>
 			<span>{cluster.articles.length} извора</span>
 		</div>
-	</div>
+		</div>
 
-	{thumbSrc && (
+		{thumbSrc && (
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={`/cluster/${cluster.cluster_id}`} class="block h-full">
 				{isFallbackArt ? (
