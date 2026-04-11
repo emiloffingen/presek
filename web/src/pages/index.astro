@@ -7,6 +7,7 @@ import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
+import AskPresekIsland from '../components/AskPresekIsland.tsx';
 import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
@@ -437,6 +438,17 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 				</section>
 
 				<HomeRailSuggestionsIsland client:load />
+				
+				<section class="rail-module rail-module-quiet">
+					<h3 class="rail-title flex items-center gap-2 mb-4">
+						<Sparkles size={14} className="text-nyt-accent" /> AI АСИСТЕНТ
+					</h3>
+					<AskPresekIsland 
+						client:load 
+						clusterId="frontpage" 
+						suggestedQuestions={["Кои се најважните вести во моментов?", "Дали има некој итен развој денес?", "Кои теми најмногу се спомнуваат?"]} 
+					/>
+				</section>
 
 				<NewsletterIsland client:load />
 

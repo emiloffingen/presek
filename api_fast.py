@@ -537,7 +537,7 @@ def _build_cluster_answer_fallback(question: str, articles, synthesis: str = "",
 
 
 async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
-    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
+    if cluster_id != "frontpage" and not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
         raise HTTPException(status_code=400, detail="Invalid cluster ID")
     if not question:
         raise HTTPException(status_code=400, detail="Question is required")
@@ -547,6 +547,73 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
     articles = []
     synthesis = ""
     perspectives = []
+    
+    if cluster_id == "frontpage":
+        try:
+            frontpage_articles = db.execute(
+                """
+                SELECT a.title, a.source, a.category, a.link
+                FROM cluster_metadata m
+                JOIN articles a ON m.cluster_id = a.cluster_id
+                WHERE m.updated_at >= NOW() - INTERVAL '24 hours'
+                ORDER BY m.updated_at DESC
+                LIMIT 30
+                """
+            )
+            context_lines = []
+            for idx, a in enumerate(frontpage_articles, start=1):
+                context_lines.append(f"[{idx}] {a['source']} ({a['category']}): {a['title']}")
+                
+            prompt = (
+                "Ова се најновите вести од насловната страница на македонскиот агрегатор Пресек:\n\n"
+                f"{chr(10).join(context_lines)}\n\n"
+                f"Прашање од корисник: {question}\n\n"
+                "Одговори генерално врз основа на овие вести. Ако корисникот прашува за трендови, сумирај ги најважните. "
+                "Врати JSON со полиња: "
+                "{\"answer\":\"...\",\"confirmed_points\":[\"...\"],\"unclear_points\":[\"...\"],\"source_differences\":\"...\",\"citation_numbers\":[1,2],\"related_questions\":[\"...\",\"...\"],\"confidence\":\"high|medium|low\"}. "
+                "Во citation_numbers вклучи само броеви од листата на извори што го поддржуваат одговорот. "
+                "Одговорот мора да биде на македонски."
+            )
+            system = "Ти си интелигентен новинарски асистент. Анализирај го глобалниот контекст на вестите и одговарај прецизно."
+            
+            response_text, provider = await _call_ai_async(prompt, system, task_type="chat", max_tokens=700, json_mode=True)
+            if not response_text:
+                raise ValueError("No AI response")
+                
+            data = clean_json_response(response_text)
+            record_runtime_event("chat_path", mode=provider or "unknown", surface="frontpage_answer")
+            
+            citations = []
+            if isinstance(data.get("citation_numbers"), list):
+                for idx in data["citation_numbers"]:
+                    try:
+                        i = int(idx) - 1
+                        if 0 <= i < len(frontpage_articles):
+                            a = frontpage_articles[i]
+                            citations.append({
+                                "source": a["source"],
+                                "title": a["title"],
+                                "link": a["link"],
+                                "snippet": a["category"]
+                            })
+                    except (ValueError, TypeError):
+                        pass
+                        
+            return {
+                "status": "success",
+                "answer": data.get("answer", "Не можев да генерирам одговор за насловната страница."),
+                "citations": citations[:4],
+                "related_questions": data.get("related_questions", [])[:3],
+                "confidence": data.get("confidence", "medium"),
+                "confirmed_points": data.get("confirmed_points", [])[:3],
+                "unclear_points": data.get("unclear_points", [])[:2],
+                "source_differences": data.get("source_differences", ""),
+                "generated_locally": False,
+            }
+        except Exception as e:
+            log.warning(f"[fastapi frontpage_answer] failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to process frontpage query")
+
     try:
         articles = db.execute(
             """
