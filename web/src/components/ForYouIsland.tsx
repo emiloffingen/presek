@@ -41,7 +41,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   }, [clusters]);
 
   useEffect(() => {
-    return subscribeToReaderProfile((nextProfile) => {
+    return subscribeToReaderProfile((nextProfile: ReturnType<typeof loadReaderProfile>) => {
       setProfile(nextProfile);
       const nextHasSignals = hasPersonalizationSignal(nextProfile);
       setHasSignals(nextHasSignals);

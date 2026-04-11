@@ -8,6 +8,13 @@ const SUGGESTION_ANALYTICS_KEY = 'presek_suggestion_analytics_v1';
 const CLIENT_ID_KEY = 'presek_client_id_v1';
 const MAX_SUGGESTION_IMPRESSION_KEYS = 240;
 const PROFILE_UPDATED_EVENT = 'presek:reader-profile-updated';
+const FOLLOW_RECOMMENDATION_MIN_SIGNAL = 1.25;
+const HOME_RAIL_TOPIC_MIN_SIGNAL = 1.8;
+const HOME_RAIL_SOURCE_MIN_SIGNAL = 3;
+const FOR_YOU_TOPIC_MIN_SIGNAL = 1.8;
+const FOR_YOU_SOURCE_MIN_SIGNAL = 1.25;
+const SECONDARY_SOURCE_MIN_SIGNAL = 1.25;
+const SURFACE_TOPIC_FALLBACK_MIN_SIGNAL = 0.65;
 
 const SUGGESTION_SURFACE_LABELS = {
   onboarding: 'Почетен водич',
@@ -552,7 +559,6 @@ function isWeakRecommendationValue(value) {
     'македонија',
     'свет',
     'балкан',
-    'економија',
     'спорт',
     'култура',
     'технологија',
@@ -577,6 +583,32 @@ function distinctByValue(items, limit) {
   }
 
   return next;
+}
+
+function buildTopicSignalFallbacks(topicCounts, followedTopics, existingTopics, limit) {
+  const existing = new Set((existingTopics || []).map((item) => normalizedLabelKey(item?.value)));
+  return distinctByValue(
+    Array.from(topicCounts.entries())
+      .filter(([topic, count]) => (
+        topic &&
+        count >= SURFACE_TOPIC_FALLBACK_MIN_SIGNAL &&
+        !followedTopics.has(topic) &&
+        !isWeakRecommendationValue(topic) &&
+        !existing.has(normalizedLabelKey(topic))
+      ))
+      .sort((left, right) => {
+        if (right[1] !== left[1]) return right[1] - left[1];
+        return left[0].localeCompare(right[0], 'mk');
+      })
+      .map(([topic, count]) => ({
+        value: topic,
+        count,
+        reason: count >= FOLLOW_RECOMMENDATION_MIN_SIGNAL
+          ? `Оваа тема се повторува во вашето читање`
+          : `Се појавува како споредна тема во кластерите што ги читате`,
+      })),
+    limit
+  );
 }
 
 export function scoreClusterForReader(cluster, profile) {
@@ -788,7 +820,12 @@ export function buildFollowRecommendations(profile, limit = 4) {
 
   const topicRecommendations = distinctByValue(
     Array.from(topicSignals.entries())
-    .filter(([topic, count]) => topic && count >= 2 && !followedTopics.has(topic) && !isWeakRecommendationValue(topic))
+    .filter(([topic, count]) => (
+      topic &&
+      count >= FOLLOW_RECOMMENDATION_MIN_SIGNAL &&
+      !followedTopics.has(topic) &&
+      !isWeakRecommendationValue(topic)
+    ))
     .sort((left, right) => {
       if (right[1] !== left[1]) return right[1] - left[1];
       return left[0].localeCompare(right[0], 'mk');
@@ -803,7 +840,7 @@ export function buildFollowRecommendations(profile, limit = 4) {
 
   const sourceRecommendations = distinctByValue(
     Array.from(sourceSignals.entries())
-    .filter(([source, count]) => source && count >= 2 && !followedSources.has(source))
+    .filter(([source, count]) => source && count >= FOLLOW_RECOMMENDATION_MIN_SIGNAL && !followedSources.has(source))
     .sort((left, right) => {
       if (right[1] !== left[1]) return right[1] - left[1];
       return left[0].localeCompare(right[0], 'mk');
@@ -841,20 +878,26 @@ export function buildSurfaceFollowSuggestions(profile, surface, options = {}) {
     topics = topics.slice(0, topicLimit || 2);
     sources = followedCount > 0 ? sources.slice(0, Math.min(1, sourceLimit || 1)) : [];
   } else if (cleanSurface === 'home_rail') {
-    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 3).slice(0, topicLimit || 2);
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 3).slice(0, hasSignals ? 0 : 1);
+    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= HOME_RAIL_TOPIC_MIN_SIGNAL).slice(0, topicLimit || 2);
+    if (topics.length < topicLimit) {
+      topics = distinctByValue([
+        ...topics,
+        ...buildTopicSignalFallbacks(topicCounts, new Set(normalizeList(normalizedProfile.followedTopics)), topics, topicLimit),
+      ], topicLimit);
+    }
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= HOME_RAIL_SOURCE_MIN_SIGNAL).slice(0, hasSignals ? 0 : 1);
   } else if (cleanSurface === 'for_you') {
-    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= 4).slice(0, topicLimit || 2);
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 3).slice(0, sourceLimit || 1);
+    topics = topics.filter((item) => (topicCounts.get(item.value) || 0) >= FOR_YOU_TOPIC_MIN_SIGNAL).slice(0, topicLimit || 2);
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= FOR_YOU_SOURCE_MIN_SIGNAL).slice(0, sourceLimit || 1);
     if (topics.length === 0 && sources.length === 0) {
-      sources = recommendations.sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.min(1, sourceLimit || 1));
+      sources = recommendations.sources.filter((item) => (sourceCounts.get(item.value) || 0) >= SECONDARY_SOURCE_MIN_SIGNAL).slice(0, Math.min(1, sourceLimit || 1));
     }
   } else if (cleanSurface === 'settings') {
     topics = topics.slice(0, Math.max(2, topicLimit));
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.max(1, sourceLimit));
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= SECONDARY_SOURCE_MIN_SIGNAL).slice(0, Math.max(1, sourceLimit));
   } else if (cleanSurface === 'cluster' || cleanSurface === 'topic') {
     topics = topics.slice(0, Math.max(2, topicLimit));
-    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= 2).slice(0, Math.max(1, sourceLimit));
+    sources = sources.filter((item) => (sourceCounts.get(item.value) || 0) >= SECONDARY_SOURCE_MIN_SIGNAL).slice(0, Math.max(1, sourceLimit));
   } else {
     topics = topics.slice(0, topicLimit);
     sources = sources.slice(0, sourceLimit);

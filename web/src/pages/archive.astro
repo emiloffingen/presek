@@ -3,13 +3,14 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import NewsCard from '../components/NewsCard.astro';
+import { apiBaseUrl } from '../lib/apiBase';
 import { CalendarDays, Info } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const source = Astro.url.searchParams.get('source') || '';
 const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+const API_URL = apiBaseUrl();
 
 let archive = {
   clusters: [],

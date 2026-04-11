@@ -13,6 +13,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode } from '../utils/textUtils';
 import { apiBaseUrl } from '../lib/apiBase';
 import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
+import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
 
@@ -22,7 +23,7 @@ const category = searchParams.get('category');
 const topic = searchParams.get('topic');
 const q = searchParams.get('q');
 
-let clusters = [];
+let clusters: NewsCluster[] = [];
 let trending = [];
 let topEntities = [];
 let stats = null;
@@ -293,13 +294,13 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 								<p class="section-note">Следниот слој на приказни што го шири дневниот контекст.</p>
 							</div>
 							<div class="supporting-featured-grid">
-								{supportingFeatured.map((cluster) => (
+									{supportingFeatured.map((cluster: NewsCluster) => (
 									<NewsCard cluster={cluster} variant="featured" />
 								))}
 							</div>
 							{supportingCompact.length > 0 && (
 								<div class="supporting-compact-grid">
-									{supportingCompact.map((cluster) => (
+										{supportingCompact.map((cluster: NewsCluster) => (
 										<NewsCard cluster={cluster} variant="compact" />
 									))}
 								</div>
@@ -321,14 +322,14 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 						</div>
 						{developmentsFeatured.length > 0 && (
 							<div class="news-feed-grid news-feed-grid-featured">
-								{developmentsFeatured.map((cluster) => (
+									{developmentsFeatured.map((cluster: NewsCluster) => (
 									<NewsCard cluster={cluster} variant="featured" />
 								))}
 							</div>
 						)}
 						{developmentsCompact.length > 0 && (
 							<div class="news-feed-grid news-feed-grid-compact">
-								{developmentsCompact.map((cluster) => (
+									{developmentsCompact.map((cluster: NewsCluster) => (
 									<NewsCard cluster={cluster} variant="compact" />
 								))}
 							</div>
@@ -343,7 +344,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 								<p class="section-note">Свежи поединечни објави што сè уште чекаат пошироко покривање од други извори.</p>
 							</div>
 							<div class="wire-stack">
-								{wireClusters.map((cluster) => (
+									{wireClusters.map((cluster: NewsCluster) => (
 									<NewsCard cluster={cluster} variant="wire" />
 								))}
 							</div>

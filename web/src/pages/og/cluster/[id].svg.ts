@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
+import { apiBaseUrl } from '../../../lib/apiBase';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+const API_URL = apiBaseUrl();
 
 function escapeXml(value: string) {
 	return String(value || '')

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { LoaderCircle, MessageCircleMore, ArrowUpRight, Quote } from 'lucide-react';
 import { genericAskError, normalizeAskErrorMessage } from '../lib/askPresekErrors.js';
+import { apiBaseUrl } from '../lib/apiBase';
 
 type Citation = {
   source: string;
@@ -38,10 +39,7 @@ export default function AskPresekIsland({
   clusterId: string;
   suggestedQuestions: string[];
 }) {
-  const API_URL =
-    typeof window !== 'undefined'
-      ? '/api'
-      : import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:5001/api';
+  const API_URL = apiBaseUrl();
 
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);

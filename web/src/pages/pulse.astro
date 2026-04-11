@@ -7,8 +7,17 @@ import SourceComparisonIsland from '../components/SourceComparisonIsland';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Activity, Zap, ShieldCheck, Info } from 'lucide-react';
 
+type PulseRow = {
+    source: string;
+    avg_sentiment: number;
+    avg_objectivity: number;
+    avg_sensationalism: number;
+    cluster_count: number;
+    first_report_count: number;
+};
+
 const API_URL = apiBaseUrl();
-let pulseData = [];
+let pulseData: PulseRow[] = [];
 let error = null;
 
 try {
@@ -70,7 +79,7 @@ function formatStat(val: number) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border">
-                            {pulseData.map((row) => {
+                            {pulseData.map((row: PulseRow) => {
                                 const sent = getSentimentLabel(row.avg_sentiment);
                                 return (
                                     <tr class="hover:bg-secondary/20 transition-colors">
@@ -107,7 +116,7 @@ function formatStat(val: number) {
                 </div>
 
                 <div class="mt-12">
-                    <SourceComparisonIsland client:load allSources={pulseData.map(r => r.source)} />
+                    <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
                 </div>
             </div>
 
@@ -118,7 +127,7 @@ function formatStat(val: number) {
                     </h3>
                     <p class="text-[11px] text-muted-foreground mb-4 uppercase font-bold">Кој прв ги објавува вестите?</p>
                     <div class="space-y-3">
-                        {pulseData.filter(r => r.first_report_count > 0).sort((a,b) => b.first_report_count - a.first_report_count).slice(0, 5).map((row, idx) => (
+                        {pulseData.filter((r: PulseRow) => r.first_report_count > 0).sort((a: PulseRow, b: PulseRow) => b.first_report_count - a.first_report_count).slice(0, 5).map((row: PulseRow, idx: number) => (
                             <div class="flex items-center justify-between border-b border-border/50 pb-2 last:border-0">
                                 <div class="flex items-center gap-2">
                                     <span class="font-sans text-[10px] font-black text-nyt-accent w-4">{idx + 1}.</span>
