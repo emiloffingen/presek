@@ -1167,7 +1167,33 @@ async def get_entity_profile(name: str):
         ORDER BY mention_count DESC LIMIT 5
     """, (name,))
 
-    # 3. Get Recent Clusters
+    # 3. Get Category Distribution
+    category_stats = db.execute("""
+        SELECT a.category, COUNT(DISTINCT a.cluster_id) as count
+        FROM articles a
+        JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+        WHERE %s = ANY(m.tags) AND a.category IS NOT NULL AND a.category != ''
+        GROUP BY a.category
+        ORDER BY count DESC LIMIT 5
+    """, (name,))
+
+    # 4. Get Sentiment History (last 14 days)
+    sentiment_history = db.execute("""
+        SELECT 
+            DATE(a.created_at) as day,
+            AVG(CAST(s.sentiment->>'score' AS FLOAT)) as avg_sentiment,
+            COUNT(DISTINCT a.cluster_id) as volume
+        FROM articles a
+        JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+        JOIN cluster_summaries s ON a.cluster_id = s.cluster_id
+        WHERE %s = ANY(m.tags) 
+          AND a.created_at >= NOW() - INTERVAL '14 days'
+          AND s.sentiment IS NOT NULL
+        GROUP BY day
+        ORDER BY day ASC
+    """, (name,))
+
+    # 5. Get Recent Clusters
     recent_clusters = db.execute("""
         SELECT
             c.cluster_id,
@@ -1209,6 +1235,8 @@ async def get_entity_profile(name: str):
         "profile": entity,
         "related": relationships,
         "media": media_stats,
+        "categories": category_stats,
+        "sentiment_history": sentiment_history,
         "clusters": processed_clusters
     }
 
