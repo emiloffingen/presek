@@ -1931,6 +1931,9 @@ async def get_stats_summary():
         last_24h = db.execute_one(
             "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
         )["count"] or 0
+        last_1h = db.execute_one(
+            "SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'"
+        )["count"] or 0
         total_feeds = db.execute_one(
             "SELECT COUNT(*) FROM sources WHERE is_active = TRUE"
         )["count"] or 0
@@ -1946,6 +1949,7 @@ async def get_stats_summary():
         
         result = {
             "last_24h": last_24h,
+            "last_1h": last_1h,
             "total_feeds": total_feeds,
             "quote_of_the_day": quote_row
         }

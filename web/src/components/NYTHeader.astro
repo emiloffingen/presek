@@ -8,9 +8,13 @@ interface Props {
     category?: string | null;
     topic?: string | null;
     q?: string | null;
+    stats?: {
+        last_1h?: number;
+        last_24h?: number;
+    } | null;
 }
 
-const { category, topic, q } = Astro.props;
+const { category, topic, q, stats: propStats } = Astro.props;
 
 const currentDate = new Date().toLocaleDateString('mk-MK', { 
     weekday: 'long', 
@@ -22,17 +26,27 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
 const API_URL = apiBaseUrl();
 
 let trendingItems: TrendingWord[] = [];
+let stats = propStats;
 
+// Parallel fetch for trending and stats (if missing)
 try {
-    const response = await fetch(`${API_URL}/trending`);
-    if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-            trendingItems = data.slice(0, 8);
-        }
+    const promises = [fetch(`${API_URL}/trending`)];
+    if (!stats) promises.push(fetch(`${API_URL}/stats/summary`));
+    
+    const results = await Promise.allSettled(promises);
+    
+    // Process Trending
+    if (results[0].status === 'fulfilled' && results[0].value.ok) {
+        const data = await results[0].value.json();
+        if (Array.isArray(data)) trendingItems = data.slice(0, 8);
     }
-} catch {
-    trendingItems = [];
+    
+    // Process Stats (only if we fetched them)
+    if (!stats && results[1]?.status === 'fulfilled' && results[1].value.ok) {
+        stats = await results[1].value.json();
+    }
+} catch (e) {
+    console.error('[Header] Fetch error:', e);
 }
 
 const headerItems = trendingItems.slice(0, 4);
@@ -62,8 +76,20 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     <header class="site-layout topbar">
         <div class="topbar-row">
             <div class="topbar-left">
-                <SearchIsland client:load />
-                <span class="topbar-edition">Пресек Денешно Издание</span>
+                <div class="search-trigger-wrap">
+                    <SearchIsland client:load />
+                    <span class="search-hint hidden lg:inline">⌘K</span>
+                </div>
+                <span class="topbar-edition">
+                    {stats?.last_1h && stats.last_1h > 0 ? (
+                        <span class="live-update-badge">
+                            <span class="pulse-dot"></span>
+                            +{stats.last_1h} нови објави овој час
+                        </span>
+                    ) : (
+                        "Пресек Денешно Издание"
+                    )}
+                </span>
             </div>
 
             <div class="topbar-center">
@@ -98,10 +124,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         <div class="masthead-inner">
             <div class="masthead-brand">
                 <a href="/" class="contents">
-                    <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-6 md:h-8 site-logo" />
+                    <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-5 md:h-8 site-logo" />
                 </a>
                 <a href="/" class="block">
-                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-9 md:h-14 lg:h-16" />
+                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-8 md:h-14 lg:h-16" />
                 </a>
             </div>
             <div class="masthead-copy">
@@ -133,6 +159,49 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 </div>
 
 <style>
+    .search-trigger-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .search-hint {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 900;
+        color: var(--muted-foreground);
+        padding: 0.15rem 0.3rem;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        opacity: 0.6;
+    }
+
+    .live-update-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: var(--nyt-red);
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .pulse-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--nyt-red);
+        border-radius: 50%;
+        animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(185, 28, 28, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0); }
+    }
+
     .breaking-dot {
         width: 6px;
         height: 6px;
@@ -141,12 +210,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         margin-right: 6px;
         display: inline-block;
         animation: pulse-red 2s infinite;
-    }
-
-    @keyframes pulse-red {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(185, 28, 28, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(185, 28, 28, 0); }
     }
 
     .trend-indicator {

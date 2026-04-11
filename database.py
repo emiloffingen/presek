@@ -254,12 +254,14 @@ class DatabaseManager:
         by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC")
         by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC")
         recent_24h = self.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'")["count"]
+        recent_1h = self.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")["count"]
         summarized = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")["count"]
         return {
             "total_articles": total,
             "by_category": by_cat,
             "by_source": by_source,
             "last_24h": recent_24h,
+            "last_1h": recent_1h,
             "summarized": summarized
         }
 
