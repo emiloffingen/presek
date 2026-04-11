@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
             <span className="inline-block min-w-[60px]">{weather?.aqi != null ? `AQI: ${weather.aqi}` : ''}</span>
           </div>
 
-          <div className="ml-auto flex gap-6 items-center">
+          <div className="ml-auto flex gap-2 items-center">
             <button onClick={() => navigate('/briefing')} className="font-extrabold text-[0.65rem] uppercase tracking-wider text-primary hover:opacity-70 transition">Дневен Брифинг</button>
             <button onClick={() => navigate('/stats')} className="font-extrabold text-[0.65rem] uppercase tracking-wider text-primary hover:opacity-70 transition">Статистика</button>
           </div>
@@ -121,7 +121,7 @@ export const Header: React.FC = () => {
           </button>
 
           <button onClick={() => { navigate('/'); setSelectedCategory(''); reset(); }} className="masthead-logo hover:opacity-90 transition">
-            <img src="/static/logo.svg" alt="Presek" className="h-9 sm:h-11 lg:h-12" />
+            <img src="/static/logo.svg" alt="Presek" className="h-9 sm:h-11 lg:h-10" />
           </button>
 
           <div className="flex items-center gap-1 lg:gap-2">

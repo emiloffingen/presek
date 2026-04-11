@@ -73,7 +73,7 @@ html {
   }
 
   .site-header {
-    @apply max-w-[1400px] mx-auto px-4 pt-2 pb-1 lg:pt-3 lg:pb-2;
+    @apply max-w-[1400px] mx-auto px-4 pt-1 pb-1 lg:pt-1.5 lg:pb-1;
   }
 
   .masthead-row {
@@ -102,7 +102,7 @@ html {
   
   /* ── Typography & Navigation ── */
   .nav-inner-broadsheet {
-    @apply flex flex-wrap justify-center border-y py-2 mt-2;
+    @apply flex flex-wrap justify-center border-y py-1.5 mt-1;
     border-color: var(--border-color);
   }
   
