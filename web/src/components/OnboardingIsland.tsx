@@ -17,9 +17,14 @@ import {
 export default function OnboardingIsland({ compact = false }: { compact?: boolean }) {
   const [progress, setProgress] = useState(() => getOnboardingProgress());
   const [profile, setProfile] = useState(() => loadReaderProfile());
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setProgress(getOnboardingProgress());
+    const p = getOnboardingProgress();
+    setProgress(p);
+    if (!p.shouldShow) {
+      setVisible(false);
+    }
     return subscribeToReaderProfile(setProfile);
   }, []);
 
@@ -29,7 +34,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
   );
 
   useEffect(() => {
-    if (!compact) return;
+    if (!compact || !visible) return;
     const result = recordSuggestionImpressions('onboarding', [
       ...recommendations.topics.map((item) => ({ kind: 'topic', value: item.value })),
       ...recommendations.sources.map((item) => ({ kind: 'source', value: item.value })),
@@ -42,24 +47,40 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
         value: item.value,
       }))
     );
-  }, [compact, recommendations]);
+  }, [compact, recommendations, visible]);
 
-  if (!progress.shouldShow) {
+  if (!visible || !progress.shouldShow) {
     return null;
   }
 
-  const close = () => {
-    const next = dismissOnboarding();
-    const tracked = recordSuggestionDismiss('onboarding');
-    if (tracked.recorded) {
-      sendSuggestionEvents([{ surface: 'onboarding', eventType: 'dismiss' }]);
+  const close = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const next = dismissOnboarding();
+      const tracked = recordSuggestionDismiss('onboarding');
+      if (tracked.recorded) {
+        sendSuggestionEvents([{ surface: 'onboarding', eventType: 'dismiss' }]);
+      }
+      setVisible(false);
+      setProgress((current) => ({ ...current, dismissed: next.dismissed, shouldShow: false }));
+    } catch (err) {
+      console.error('Failed to dismiss onboarding:', err);
+      setVisible(false);
     }
-    setProgress((current) => ({ ...current, dismissed: next.dismissed, shouldShow: false }));
   };
 
-  const markDone = () => {
-    completeOnboarding();
-    setProgress((current) => ({ ...current, completed: true, shouldShow: false }));
+  const markDone = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      completeOnboarding();
+      setVisible(false);
+      setProgress((current) => ({ ...current, completed: true, shouldShow: false }));
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      setVisible(false);
+    }
   };
 
   const quickFollow = (kind: 'topic' | 'source', value: string) => {
