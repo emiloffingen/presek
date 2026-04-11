@@ -140,6 +140,18 @@ RSS_FEEDS = [
     ("Bitola News",     "https://bitolanews.mk/feed/"),
     ("Lajm",            "https://lajm.mk/feed/"),
     ("Koha",            "https://koha.mk/feed/"),
+    # Regional Additions
+    ("OhridNews",       "https://www.ohridnews.com/feed/"),
+    ("Bitola News",     "https://bitolanews.mk/feed/"),
+    ("KumanovoNews",    "https://kumanovonews.mk/rss"),
+    ("Veles365",        "https://veles365.mk/feed/"),
+    ("MMS",             "https://mms.mk/feed/"),
+    # Culture & Lifestyle Additions
+    ("PopUp",           "https://popup.mk/feed/"),
+    ("Crnobelo",        "https://www.crnobelo.com/feed"),
+    ("Kultura.mk",      "https://www.kultura.mk/feed"),
+    ("Reper",           "https://reper.mk/feed"),
+    ("Diva",            "https://diva.mk/feed"),
 ]
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
@@ -170,6 +182,8 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
     "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
     "Almakos", "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
+    "OhridNews", "KumanovoNews", "Veles365", "MMS",
+    "PopUp", "Crnobelo", "Kultura.mk", "Reper", "Diva",
 })
 
 DIASPORA_FEEDS = []
@@ -195,6 +209,8 @@ SOURCE_CREDIBILITY = {
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
     "Lajm": 1.0, "Koha": 1.0,
+    "OhridNews": 1.0, "Bitola News": 1.0, "KumanovoNews": 0.9, "Veles365": 0.9, "MMS": 0.9,
+    "PopUp": 1.1, "Crnobelo": 1.0, "Kultura.mk": 1.2, "Reper": 1.1, "Diva": 1.0,
 }
 DEFAULT_CREDIBILITY = 0.8
 
@@ -207,6 +223,10 @@ SOURCE_CATEGORIES = {
     "Republika": "Алтернативни", "Infomax": "Алтернативни",
     "Alsat-M": "Главни", "Pressing TV": "Главни", "Antropol": "Независни",
     "Deutsche Welle": "Меѓународни", "Слободна Европа": "Меѓународни",
+    "OhridNews": "Регионални", "Bitola News": "Регионални", "KumanovoNews": "Регионални",
+    "Veles365": "Регионални", "MMS": "Регионални",
+    "PopUp": "Култура", "Crnobelo": "Lifestyle", "Kultura.mk": "Култура",
+    "Reper": "Култура", "Diva": "Lifestyle",
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 
