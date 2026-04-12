@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import StoryTimeline from '../../components/StoryTimeline.tsx';
-import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
+import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
@@ -24,7 +24,7 @@ const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice
 const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 // Canonical: use Astro.site + pathname, strip trailing slash (trailingSlash: 'never')
 const canonicalUrl = (() => {
-	const base = Astro.site || new URL("https://presek.live");
+	const base = Astro.site || new URL("https://https://presek.live");
 	const url = new URL(Astro.url.pathname, base);
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
 	if (clean === url.origin) return url.origin;
@@ -37,16 +37,16 @@ let error = null;
 try {
 	const res = await fetch(`${API_URL}/cluster/${id}`);
 	if (res.ok) {
-		const data = await res.json();
-		cluster = data.data;
+		const json = await res.json();
+		cluster = json.data;
 	} else {
-		error = "Кластерот не е пронајден.";
+		error = 'Не можеме да го вчитаме овој кластер.';
 	}
 } catch (e) {
-	console.error(e);
-	error = "Грешка при вчитување на податоците.";
+	error = 'Грешка при поврзување со серверот.';
 }
 
+// Helpers
 function getTimeStr(dateStr: string) {
     try {
         const date = new Date(dateStr);
@@ -59,37 +59,54 @@ function getTimeStr(dateStr: string) {
 function getRelativeTimeStr(dateStr: string) {
 	try {
 		const date = new Date(dateStr);
-		const diffMs = Date.now() - date.getTime();
-		const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
-		if (diffMinutes < 60) return `пред ${diffMinutes} мин`;
-		const diffHours = Math.round(diffMinutes / 60);
-		if (diffHours < 24) return `пред ${diffHours} ч`;
-		const diffDays = Math.round(diffHours / 24);
-		return `пред ${diffDays} д`;
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffMin = Math.round(diffMs / 60000);
+
+		if (diffMin < 1) return 'Штотуку';
+		if (diffMin < 60) return `${diffMin}м`;
+		const diffHrs = Math.round(diffMin / 60);
+		if (diffHrs < 24) return `${diffHrs}ч`;
+		return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' });
 	} catch {
 		return '';
 	}
 }
 
-function topicHref(value: string) {
-	const normalized = String(value || '').trim();
-	return normalized ? `/tema/${encodeURIComponent(normalized)}` : '/';
+function parseSynthesis(text: string) {
+	if (!text) return [];
+	return text
+		.split('\n')
+		.filter((line) => line.trim())
+		.map((line) => {
+			const cleaned = line.replace(/^[-•*]\s*/, '').trim();
+			const match = cleaned.match(/^\[(.*?)\]\s*(.*)$/);
+			if (match) {
+				return { source: match[1], content: match[2] };
+			}
+			return { source: null, content: cleaned };
+		});
 }
 
 function looksMacedonianHeadline(text: string) {
-	const value = String(text || '').trim();
-	if (!value) return false;
-
-	let cyrillic = 0;
-	let latin = 0;
-	for (const ch of value) {
-		if (ch >= '\u0400' && ch <= '\u04FF') cyrillic += 1;
-		else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) latin += 1;
-	}
-
+	const value = str(text || "").strip();
+    if (!value) return false;
+	const cyrillic = sum(1 for ch in value if "\u0400" <= ch <= "\u04FF");
+    const latin = sum(1 for ch in value if ("A" <= ch <= "Z") or ("a" <= ch <= "z"));
 	if (cyrillic < 8) return false;
 	if (latin === 0) return true;
 	return cyrillic >= latin * 2;
+}
+
+// Helper functions for MK logic within Astro component context
+function sum(iterable: Iterable<number>) {
+    let total = 0;
+    for (const val of iterable) total += val;
+    return total;
+}
+
+function str(val: any) {
+    return String(val || '');
 }
 
 function getPreferredClusterHeadline(articles: Article[]) {
@@ -115,31 +132,25 @@ function getPreferredClusterHeadline(articles: Article[]) {
 	return preferredMacedonian || fallback;
 }
 
-function titleTerms(text: string) {
-	return Array.from(
-		new Set(
-			(text || '')
-				.toLowerCase()
-				.match(/[a-zа-ш0-9]{3,}/g)?.filter(
-					(token) => !['вест', 'вести', 'извор', 'извори', 'денес', 'утре', 'вчера'].includes(token)
-				) || []
-		)
-	);
-}
-
 function getRelationshipMeta(title: string, leadTitle: string, index: number) {
 	if (index === 0) {
 		return {
 			label: 'Водечки извор',
 			tone: 'lead',
-			description: 'Најдиректна и најцелосна верзија на главниот развој.',
+			description: 'Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции.',
 		};
 	}
 
-	const leadTerms = titleTerms(leadTitle);
-	const currentTerms = titleTerms(title);
-	const overlapCount = currentTerms.filter((token) => leadTerms.includes(token)).length;
-	const overlap = overlapCount / Math.max(Math.min(leadTerms.length, currentTerms.length), 1);
+	const normalize = (t: string) =>
+		t
+			.toLowerCase()
+			.replace(/[^\w\sа-я]/gi, '')
+			.split(' ')
+			.filter((w) => w.length > 3);
+	const leadTerms = normalize(leadTitle);
+	const currentTerms = normalize(title);
+	const intersection = leadTerms.filter((t) => currentTerms.includes(t));
+	const overlap = intersection.length / Math.max(1, Math.min(leadTerms.length, currentTerms.length), 1);
 
 	if (overlap >= 0.5) {
 		return {
@@ -151,60 +162,17 @@ function getRelationshipMeta(title: string, leadTitle: string, index: number) {
 
 	if (overlap >= 0.24) {
 		return {
-			label: 'Додава контекст',
+			label: 'Дополнува контекст',
 			tone: 'context',
-			description: 'Ја проширува приказната со дополнителни детали или реакција.',
+			description: 'Ја потврдува главната приказна, но додава и свој контекст или детали.',
 		};
 	}
 
 	return {
-		label: 'Различен агол',
-		tone: 'contrast',
-		description: 'Го осветлува настанот од друг аспект или со поинаков акцент.',
+		label: 'Следење / реакција',
+		tone: 'context',
+		description: 'Доаѓа подоцна и повеќе носи реакција, последица или follow-up.',
 	};
-}
-
-function parseSynthesis(text: string) {
-    if (!text) return [];
-    const normalized = text
-        .replace(/^Статии:\s*/i, '')
-        .replace(/\r/g, '')
-        .trim();
-
-    const lines = normalized
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .filter((line) => line.toLowerCase() !== 'статии:');
-
-    const items = [];
-    let current = '';
-
-    for (const line of lines) {
-        const isBullet = /^[-•]\s+/.test(line) || /^\[[^\]]+\]:/.test(line);
-        if (isBullet) {
-            if (current) items.push(current.trim());
-            current = line.replace(/^[-•]\s+/, '');
-        } else if (current) {
-            current += ` ${line}`;
-        } else {
-            current = line;
-        }
-    }
-    if (current) items.push(current.trim());
-
-    return items
-        .map((item) => {
-            const sourceMatch = item.match(/^\[(.*?)\]:\s*(.*)$/s);
-            if (sourceMatch) {
-                return {
-                    source: sourceMatch[1],
-                    content: cleanAndDecode(sourceMatch[2].trim()),
-                };
-            }
-            return { source: null, content: cleanAndDecode(item.trim()) };
-        })
-        .filter((item) => item.content && item.content.toLowerCase() !== 'статии:');
 }
 
 function normalizePerspectives(items: ClusterSummary[]): ClusterSummary[] {
@@ -232,22 +200,13 @@ function normalizePerspectives(items: ClusterSummary[]): ClusterSummary[] {
         .filter(Boolean) as ClusterSummary[];
 }
 
-const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
 function extractSafeText(text?: string) {
 	if (!text) return '';
-	const trimmed = text.trim();
-	if (trimmed.startsWith('{') || trimmed.startsWith('&lt;%') || trimmed.includes('&quot;summary&quot;')) {
-		try {
-			const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
-			if (toParse.startsWith('{')) {
-				const parsed = JSON.parse(toParse);
-				if (parsed.summary) return cleanAndDecode(parsed.summary);
-				if (parsed.text) return cleanAndDecode(parsed.text);
-			}
-		} catch (e) {}
-	}
-	return cleanAndDecode(text);
+	return cleanAndDecode(text).replace(/<\/?[^>]+(>|$)/g, "");
 }
+
+const displayHeadline = cluster ? getPreferredClusterHeadline(cluster.articles) : 'Вест';
+const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 
 const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
 const headerBriefItems = synthesisItems.length > 0
@@ -310,12 +269,7 @@ const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => artic
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
 const generatedArticle = cluster?.generated_article || '';
-const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
 const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
-const verificationReport = cluster?.verification_report || null;
----
-const generatedArticle = cluster?.generated_article || '';
-const firstReporter = cluster?.first_reporter || null;
 const verificationReport = cluster?.verification_report || null;
 
 const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
@@ -335,159 +289,78 @@ const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${sh
 const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
 
 const filteredRelated = (cluster?.related || []).filter((rel: any) => {
-	// If it shares entities, it's likely relevant
 	if (rel.shared_entities && rel.shared_entities.length > 0) return true;
-	
-	// If it only shares tags, ensure they aren't all generic
 	if (rel.shared_tags && rel.shared_tags.length > 0) {
 		const nonGenericTags = rel.shared_tags.filter((tag: string) => !GENERIC_TAGS.includes(tag.toUpperCase()));
 		return nonGenericTags.length > 0;
 	}
-	
-	return true; // Keep if no shared info provided (fallback)
+	return true; 
 });
 
 function getLeadVisual(clusterData: any) {
-	const selected = chooseClusterImage(clusterData, 'hero');
-	if (!selected.proxiedUrl) return null;
-
-	return {
-		src: selected.proxiedUrl,
-		rawUrl: selected.rawUrl,
-		isWeak: selected.isWeak,
-	};
+    if (!clusterData) return null;
+    const res = chooseClusterImage(clusterData, 'hero');
+    return {
+        src: res.proxiedUrl,
+        rawUrl: res.rawUrl,
+        isWeak: res.isWeak
+    };
 }
-
-const leadVisual = cluster ? getLeadVisual(cluster) : null;
-const displayHeadline = cluster ? getPreferredClusterHeadline(cluster.articles) : '';
-const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
-const leadDescriptionIsCyrillic = isMostlyCyrillic(leadDescription);
-
-// JSON-LD Schema for Google News / AdSense
-const schema = cluster ? {
-	"@context": "https://schema.org",
-	"@type": "AnalysisNewsArticle",
-	"mainEntityOfPage": {
-		"@type": "WebPage",
-		"@id": canonicalUrl
-	},
-	"headline": displayHeadline,
-	"description": cleanAndDecode(shareDescription),
-	"image": imageUrl,
-	"datePublished": cluster.articles[0].created_at,
-	"dateModified": synthesisUpdatedAt || cluster.articles[0].created_at,
-	"author": {
-		"@type": "Organization",
-		"name": "Пресек",
-		"url": siteUrl
-	},
-	"publisher": {
-		"@type": "Organization",
-		"name": "Пресек",
-		"logo": {
-			"@type": "ImageObject",
-			"url": `${siteUrl}/static/img/presek_emblem.png`
-		}
-	},
-	"articleBody": generatedArticle || extractSafeText(cluster.synthesis),
-	"about": cluster.tags?.map((tag: string) => ({
-		"@type": "Thing",
-		"name": tag
-	})) || [],
-	"mentions": cluster.articles.map((a: any) => ({
-		"@type": "NewsArticle",
-		"headline": cleanAndDecode(a.title),
-		"publisher": {
-			"@type": "Organization",
-			"name": a.source
-		},
-		"url": a.link
-	}))
-} : undefined;
+const leadVisual = getLeadVisual(cluster);
 ---
 
-<Layout
-	title={cluster ? displayHeadline : "Детали за вест"}
-	description={cluster ? cleanAndDecode(shareDescription) : "Детали за вест од Пресек"}
-	image={shareImage}
-	type={cluster ? "article" : "website"}
-	schema={schema}
+<Layout 
+	title={displayHeadline} 
+	description={shareDescription}
+	image={imageUrl}
+	type="article"
+	canonical={canonicalUrl}
 >
-    <NYTHeader />
+	<NYTHeader topic={cluster?.topics?.[0]} />
+
+	<ReaderTracker clusterId={id} />
 
 	<main class="site-layout py-12">
-		{error && (
+		<Breadcrumbs items={[
+			{ label: cluster?.articles[0].category || 'Вести', href: cluster ? `/category/${cluster.articles[0].category}` : '/' },
+			{ label: adjacentTopic || 'Детали' }
+		]} />
+
+		{error ? (
 			<div class="py-20 text-center">
-				<h2 class="font-serif text-2xl font-black text-nyt-red mb-4">{error}</h2>
-				<a href="/" class="nyt-section-label hover:underline">← Назад кон почетна</a>
+				<h1 class="text-2xl font-serif mb-4">{error}</h1>
+				<a href="/" class="text-nyt-accent hover:underline">Назад на почетна</a>
 			</div>
-		)}
-
-		{cluster && (
-			<article class="cluster-shell">
-				<ReaderTracker
-					client:load
-					clusterId={cluster.cluster_id}
-					title={displayHeadline}
-					category={cluster.articles[0].category || ''}
-					topic={cluster.topics?.[0] || cluster.articles[0].topic || ''}
-					primarySource={cluster.articles[0].source || ''}
-					sources={cluster.articles.map((article: any) => article.source).filter(Boolean)}
-					tags={cluster.tags || []}
-				/>
-				<header class="cluster-header motion-rise">
+		) : cluster && (
+			<article class="cluster-detail-shell">
+				<header class="cluster-header-main mb-12">
 					<div class="cluster-header-grid">
-						<div class="cluster-header-copy">
-							<Breadcrumbs items={[
-								{ label: cluster.articles[0].category || "Вести", href: topicHref(cluster.articles[0].category || "Вести") },
-								{ label: "Детали за вест" }
-							]} />
+						<div class="cluster-header-content">
+							<div class="cluster-header-meta mb-6">
+								<span class="nyt-section-label text-nyt-red mr-4">{cluster.articles[0].category || 'ВЕСТИ'}</span>
+								<span class="cluster-time-meta inline-flex items-center gap-1">
+									<Clock size={12} />
+									{getRelativeTimeStr(cluster.articles[0].created_at)}
+								</span>
+							</div>
 
-							<h1 class:list={["cluster-headline", { "cluster-headline-cyrillic": headlineIsCyrillic }]} set:html={sanitizeHtml(displayHeadline)}>
+							<h1 class:list={["cluster-headline", { "cluster-headline-cyrillic": headlineIsCyrillic }]}>
+								{displayHeadline}
 							</h1>
 
-							{leadDescription && <p class:list={["cluster-dek", { "cluster-dek-cyrillic": leadDescriptionIsCyrillic }]} set:html={sanitizeHtml(cleanAndDecode(leadDescription))}></p>}
-
-							<div class="cluster-header-meta">
-								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
-								{firstReporter && (
-									<>
-										<span>·</span>
-										<span class="flex items-center gap-1">
-											<Zap size={12} className="text-nyt-red fill-nyt-red" /> 
-											<span class="text-nyt-red font-black">ПРВ ОБЈАВИ:</span> {firstReporter.source} 
-											<span class="opacity-60">({getTimeStr(firstReporter.created_at)})</span>
-										</span>
-									</>
-								)}
-								<span>·</span>
-								<span class="flex items-center gap-1"><Newspaper size={12}/> {cluster.articles.length} извора</span>
-								<span>·</span>
-								<span class="flex items-center gap-1"><Sparkles size={12}/> {cluster.total_reading_time} мин. за преглед</span>
-								<span>·</span>
-								<ShareIsland
-									client:load
-									title={displayHeadline}
-									url={canonicalUrl}
+							<div class="flex flex-wrap gap-4 items-center my-8 border-y border-border py-4">
+								<ShareIsland 
+									title={displayHeadline} 
+									url={canonicalUrl} 
+									client:load 
 								/>
-								{synthesisUpdatedAt && (
-									<>
-										<span>·</span>
-										<span class:list={["cluster-refresh-badge", synthesisFreshness.is_stale ? "is-stale" : "is-fresh"]}>
-											{synthesisFreshness.is_stale
-												? "Ново известување по синтезата"
-												: `Синтеза ажурирана ${getRelativeTimeStr(synthesisUpdatedAt)}`}
-										</span>
-									</>
-								)}
-							</div>
-							<div class="cluster-preference-actions">
-								<PreferenceToggle client:load kind="topic" value={cluster.topics?.[0] || cluster.articles[0].topic || cluster.articles[0].category || ''} label="ја темата" />
+								<div class="h-4 w-px bg-border mx-2"></div>
+								<PreferenceToggle client:load />
 							</div>
 
-							<div class="cluster-brief-grid">
+							<div class="cluster-comparison-brief">
 								{comparisonHighlights.map((item) => (
-									<div class="cluster-brief-card">
+									<div class="cluster-brief-item">
 										<p class="cluster-brief-label">{item.label}</p>
 										<p class="cluster-brief-value">{item.value}</p>
 										<p class="cluster-brief-copy">{item.copy}</p>
@@ -617,6 +490,7 @@ const schema = cluster ? {
 								</div>
 							</section>
 						)}
+
 						{/* Perspectives */}
 						{perspectives.length > 0 && (
 							<section class="cluster-synthesis cluster-perspectives">
@@ -654,6 +528,7 @@ const schema = cluster ? {
 											</ul>
 										</div>
 									)}
+									
 									{verificationReport.conflicts?.length > 0 && (
 										<div class="factcheck-box factcheck-conflicts">
 											<h3>Разлики во известувањето</h3>
@@ -676,7 +551,7 @@ const schema = cluster ? {
 
 						{/* Timeline */}
 						{cluster.timeline && cluster.timeline.length > 1 && (
-							<StoryTimeline timeline={cluster.timeline} />
+							<StoryTimeline timeline={cluster.timeline} client:load />
 						)}
 
 						{/* Articles List */}
@@ -710,97 +585,83 @@ const schema = cluster ? {
 												)}
 											</div>
 											<div class="article-row-time">
-												<span class="nyt-section-label text-muted-foreground lowercase first-letter:uppercase">{a.relativeTime}</span>
-												<span class="text-muted-foreground opacity-40">·</span>
-												<span class="article-row-time-exact">{a.exactTime}</span>
+												<span class="text-xs text-muted-foreground mr-3">{a.exactTime}</span>
+												<span class="text-xs font-bold text-foreground">{a.relativeTime}</span>
 											</div>
 										</div>
-										<a href={a.link} target="_blank" rel="noopener noreferrer" class="block group">
-											<h3 class="article-row-title">
-												{a.title}
-											</h3>
+										<a href={a.link} target="_blank" rel="noopener noreferrer" class="article-row-link">
+											<h3 class="article-row-title" set:html={sanitizeHtml(a.title)}></h3>
 										</a>
-										<p class="article-row-note">
-											<strong>{a.sourceSignal?.role_label || a.relationship.label}</strong>
-											{a.sourceSignal?.source_category ? ` · ${a.sourceSignal.source_category}` : ''}
-											{' · '}
-											{a.sourceSignal?.role_note || a.relationship.description}
-										</p>
-										<p class="article-row-summary">{a.summary || a.description}</p>
-										<a href={a.link} target="_blank" rel="noopener noreferrer" class="nyt-section-label flex items-center gap-1 text-nyt-accent hover:underline">
-											<Link2 size={12} /> Отвори го оригиналот
-										</a>
+										<p class="article-row-snippet" set:html={sanitizeHtml(a.description)}></p>
+										<div class="article-row-footer">
+											<a href={a.link} target="_blank" rel="noopener noreferrer" class="article-row-action">
+												Прочитај ја оригиналната објава
+												<Link2 size={12} />
+											</a>
+										</div>
 									</div>
 								))}
 							</div>
 						</section>
 					</div>
 
-					{/* Sidebar */}
-					<aside class="cluster-rail motion-rise motion-delay-2">
-						{cluster.topics && cluster.topics.length > 0 && (
-							<div class="rail-card">
-								<h3 class="rail-card-title">Тема</h3>
-								<div class="rail-tags">
-									{cluster.topics.map((item: string) => (
-										<a href={topicHref(item)} class="rail-chip rail-chip-topic">
-											{item}
-										</a>
-									))}
+					<aside class="cluster-sidebar">
+						<div class="sticky top-24 space-y-8">
+							<section class="sidebar-module">
+								<div class="cluster-module-head">
+									<Sparkles size={18} className="text-nyt-accent" />
+									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ПРАШАЈ ГО ПРЕСЕК</h2>
 								</div>
-							</div>
-						)}
-
-						{/* Tags */}
-						{cluster.tags && cluster.tags.length > 0 && (
-							<div class="rail-card">
-								<h3 class="rail-card-title">Теми Во Фокус</h3>
-								<div class="rail-tags">
-									{cluster.tags.map((tag: string) => (
-										<a href={`/subjekt/${encodeURIComponent(tag)}`} class="rail-chip">
-											{tag}
-										</a>
-									))}
+								<div class="bg-card border border-border p-6 rounded-lg shadow-sm">
+									<AskPresekPanel 
+										cluster_id={id || ''} 
+										suggestions={askPresekSuggestions}
+										initialQuestion={askQuestion}
+										client:load 
+									/>
 								</div>
-							</div>
-						)}
+							</section>
 
-						<div class="border border-nyt-gray-200 dark:border-nyt-gray-300/20 bg-gradient-to-br from-secondary via-background to-[color:var(--surface-soft)] p-6">
-							<AskPresekPanel client:load clusterId={cluster.cluster_id} suggestions={askPresekSuggestions} initialQuestion={askQuestion} />
-						</div>
+							{filteredRelated.length > 0 && (
+								<section class="sidebar-module">
+									<div class="cluster-module-head">
+										<Zap size={18} className="text-nyt-red" />
+										<h2 class="nyt-section-label tracking-[0.2em]">ПОВРЗАНО</h2>
+									</div>
+									<div class="space-y-4">
+										{filteredRelated.map((rel: any) => (
+											<a href={`/cluster/${rel.cluster_id}`} class="sidebar-related-link group">
+												<div class="flex gap-3">
+													{rel.image_url && (
+														<div class="w-16 h-16 flex-shrink-0">
+															<img 
+																src={`/proxy?url=${encodeURIComponent(rel.image_url)}&w=120`} 
+																alt="" 
+																class="w-full h-full object-cover rounded border border-border group-hover:border-nyt-accent transition-colors"
+															/>
+														</div>
+													)}
+													<div class="flex-1 min-width-0">
+														<p class="text-[10px] font-black uppercase text-nyt-red mb-1">
+															{rel.relationship_label || 'Сродна тема'}
+														</p>
+														<h4 class="font-serif text-sm font-bold leading-tight group-hover:text-nyt-accent transition-colors line-clamp-3">
+															{cleanAndDecode(rel.title)}
+														</h4>
+													</div>
+												</div>
+											</a>
+										))}
+									</div>
+								</section>
+							)}
 
-						<div class="rail-card">
-							<ClusterFollowSuggestionsIsland
-								client:load
-								topic={cluster.topics?.[0] || cluster.articles[0].topic || cluster.articles[0].category || ''}
-								source={cluster.articles[0].source || ''}
-								adjacentTopic={adjacentTopic}
+							<ClusterFollowSuggestionsIsland 
+								topics={cluster.topics} 
+								tags={cluster.tags}
+								client:visible 
 							/>
 						</div>
-
-						{/* Related */}
-						{filteredRelated && filteredRelated.length > 0 && (
-							<div class="rail-card">
-								<h3 class="rail-card-title">Поврзани Вести</h3>
-								<div class="related-list">
-								{filteredRelated.map((rel: any) => (
-									<a href={`/cluster/${rel.cluster_id}`} class="related-link group no-underline">
-										{rel.relationship_label && <p class="related-kicker">{rel.relationship_label}</p>}
-										<h4>
-											{cleanAndDecode(rel.title)}
-										</h4>
-										{(rel.shared_entities?.length || rel.shared_tags?.length) > 0 && (
-											<p class="related-meta">
-												{rel.shared_entities?.length > 0 ? `Имиња: ${rel.shared_entities.join(' · ')}` : ''}
-												{rel.shared_entities?.length > 0 && rel.shared_tags?.length > 0 ? ' · ' : ''}
-												{rel.shared_tags?.length > 0 ? `Теми: ${rel.shared_tags.join(' · ')}` : ''}
-											</p>
-										)}
-									</a>
-								))}
-								</div>
-							</div>
-						)}
 					</aside>
 				</div>
 			</article>
@@ -811,420 +672,231 @@ const schema = cluster ? {
 </Layout>
 
 <style>
-	.cluster-shell {
-		max-width: 78rem;
+	.cluster-detail-shell {
+		max-width: 1200px;
 		margin: 0 auto;
 	}
 
-	.cluster-header {
-		padding-bottom: 1rem;
-		margin-bottom: 1.2rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.cluster-header-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1.15rem;
-	}
-
-	.cluster-header-top {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		flex-wrap: wrap;
-		margin-bottom: 0.9rem;
-	}
-
 	.cluster-headline {
-		font-size: clamp(1.88rem, 1.34rem + 1.18vw, 3.55rem);
-		line-height: 1.06;
-		letter-spacing: -0.028em;
-		margin: 0 0 0.6rem;
-		max-width: 18ch;
+		font-family: var(--font-serif);
+		font-size: clamp(2rem, 3vw + 1rem, 3.5rem);
+		font-weight: 900;
+		line-height: 1.05;
+		letter-spacing: -0.02em;
+		color: var(--foreground);
 		text-wrap: balance;
 	}
 
 	.cluster-headline-cyrillic {
-		line-height: 1.09;
-		letter-spacing: -0.02em;
-		text-wrap: pretty;
-	}
-
-	.cluster-dek {
-		margin: 0;
-		max-width: 64ch;
-		font-family: var(--font-nyt-body);
-		font-size: 1.03rem;
-		line-height: 1.62;
-		color: var(--secondary-foreground);
-		text-wrap: pretty;
-	}
-
-	.cluster-dek-cyrillic {
-		line-height: 1.66;
-	}
-
-	.drop-cap::first-letter {
-		font-family: var(--font-serif);
-		font-size: 4.2rem;
-		font-weight: 900;
-		float: left;
-		line-height: 0.8;
-		margin-top: 0.12em;
-		margin-right: 0.12em;
-		color: var(--nyt-accent);
-		/* Adjust for wider Cyrillic glyphs like М, Ш, Щ */
-		padding-right: 0.05em;
-	}
-
-	.cluster-header-meta {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		column-gap: 0.7rem;
-		row-gap: 0.35rem;
-		padding-top: 0.72rem;
-		margin-top: 0.72rem;
-		border-top: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground) 12%);
-	}
-
-	.cluster-preference-actions {
-		margin-top: 0.75rem;
-	}
-
-	.cluster-brief-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.72rem;
-		margin-top: 1rem;
-	}
-
-	.cluster-brief-card {
-		padding: 0.82rem 0.9rem;
-		border: 1px solid var(--border);
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%), color-mix(in srgb, var(--card) 72%, var(--surface-soft) 28%));
-	}
-
-	.cluster-brief-label {
-		margin: 0 0 0.28rem;
-		font-family: var(--font-sans);
-		font-size: 0.56rem;
-		font-weight: 900;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.cluster-brief-value {
-		margin: 0 0 0.3rem;
-		font-family: var(--font-serif);
-		font-size: 1.06rem;
-		line-height: 1.02;
-		color: var(--foreground);
-	}
-
-	.cluster-brief-copy {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.48;
-		color: var(--secondary-foreground);
-		text-wrap: pretty;
-	}
-
-	.cluster-header-side {
-		display: flex;
-		flex-direction: column;
-		gap: 0.8rem;
-	}
-
-	.cluster-header-meta astro-island {
-		display: contents;
-	}
-
-	:global(.share-icons) {
-		display: inline-flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 0.35rem;
-	}
-
-	:global(.share-icon) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--text-secondary, #888);
-		opacity: 0.6;
-		transition: opacity 0.15s, color 0.15s;
-		text-decoration: none;
-	}
-
-	:global(.share-icon:hover) {
-		opacity: 1;
-	}
-
-	:global(.share-icon-facebook:hover) { color: #1877f2; }
-	:global(.share-icon-whatsapp:hover) { color: #25d366; }
-	:global(.share-icon-twitter:hover) { color: var(--text-primary, #000); }
-	:global(.share-icon-reddit:hover) { color: #ff4500; }
-
-	.cluster-refresh-badge {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.2rem 0.45rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.58rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.cluster-refresh-badge.is-fresh {
-		color: var(--nyt-accent);
-		border-color: color-mix(in srgb, var(--nyt-accent) 38%, var(--border) 62%);
-	}
-
-	.cluster-refresh-badge.is-stale {
-		color: var(--nyt-red);
-		border-color: color-mix(in srgb, var(--nyt-red) 38%, var(--border) 62%);
+		line-height: 1.1;
+		letter-spacing: -0.01em;
 	}
 
 	.cluster-grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1.25rem;
+		gap: 3rem;
+		align-items: start;
 	}
 
-	.cluster-main,
-	.cluster-rail {
-		display: flex;
-		flex-direction: column;
-		gap: 1.1rem;
+	@media (min-width: 1024px) {
+		.cluster-grid {
+			grid-template-columns: minmax(0, 1fr) 320px;
+		}
 	}
 
-	.cluster-module,
-	.cluster-synthesis,
-	.rail-card {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
-	}
-
-	.cluster-rail .rail-card {
-		padding: 0.9rem;
-	}
-
-	.cluster-summary-card {
-		padding: 0.9rem 1rem;
-		border: 1px solid var(--border);
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%), color-mix(in srgb, var(--card) 74%, var(--surface-soft) 26%));
-	}
-
-	.cluster-visual-card {
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
-		overflow: hidden;
-	}
-
-	.cluster-visual-image {
-		display: block;
-		width: 100%;
-		aspect-ratio: 5 / 4;
-		object-fit: cover;
-		object-position: center;
-	}
-
-	.cluster-visual-card.is-weak {
-		background:
-			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 10%, transparent 90%), transparent 32%),
-			linear-gradient(155deg, color-mix(in srgb, var(--card) 70%, var(--surface-strong) 30%), color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%));
-	}
-
-	.cluster-visual-fallback {
+	.cluster-header-grid {
 		display: grid;
-		gap: 0.45rem;
-		padding: 1.1rem;
-		min-height: 12rem;
-		align-content: end;
+		grid-template-columns: 1fr;
+		gap: 2.5rem;
+		align-items: start;
 	}
 
-	.cluster-visual-kicker {
-		margin: 0;
+	@media (min-width: 900px) {
+		.cluster-header-grid {
+			grid-template-columns: 1.2fr 1fr;
+		}
+	}
+
+	.cluster-brief-item {
+		margin-bottom: 1.5rem;
+	}
+
+	.cluster-brief-label {
 		font-family: var(--font-sans);
-		font-size: 0.62rem;
+		font-size: 0.65rem;
 		font-weight: 900;
-		letter-spacing: 0.12em;
 		text-transform: uppercase;
+		letter-spacing: 0.1em;
 		color: var(--nyt-accent);
+		margin-bottom: 0.25rem;
 	}
 
-	.cluster-visual-fallback h2 {
-		margin: 0;
-		font-size: clamp(1.34rem, 1.14rem + 0.65vw, 1.9rem);
-		line-height: 1;
-		max-width: 11ch;
-	}
-
-	.cluster-visual-fallback p {
-		margin: 0;
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
+	.cluster-brief-value {
+		font-family: var(--font-serif);
+		font-size: 1.1rem;
 		font-weight: 800;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
+		margin-bottom: 0.25rem;
+	}
+
+	.cluster-brief-copy {
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.5;
 		color: var(--secondary-foreground);
 	}
 
+	.cluster-visual-card {
+		width: 100%;
+		background: var(--card);
+		border: 1px solid var(--border);
+		overflow: hidden;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+	}
+
+	.cluster-visual-image {
+		width: 100%;
+		aspect-ratio: 16 / 10;
+		object-fit: cover;
+		opacity: 0;
+		transition: opacity 0.5s ease;
+	}
+
+	.cluster-visual-image.is-loaded {
+		opacity: 1;
+	}
+
+	.cluster-visual-fallback {
+		aspect-ratio: 16 / 10;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 2rem;
+		background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+		color: white;
+	}
+
+	.cluster-visual-kicker {
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.2em;
+		color: var(--nyt-accent);
+		margin-bottom: 1rem;
+	}
+
+	.cluster-visual-fallback h2 {
+		font-family: var(--font-serif);
+		font-size: 1.5rem;
+		margin-bottom: 0.5rem;
+	}
+
 	.cluster-visual-meta {
-		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		opacity: 0.7;
+		margin-bottom: 1.5rem;
 	}
 
 	.cluster-visual-title {
-		margin: 0.28rem 0 0;
-		max-width: 22ch;
 		font-family: var(--font-serif);
-		font-size: 0.88rem;
-		line-height: 1.16;
-		letter-spacing: -0.01em;
-		text-transform: none;
-		color: color-mix(in srgb, var(--foreground) 86%, var(--muted-foreground) 14%);
+		font-size: 1rem;
+		font-weight: 700;
+		line-height: 1.3;
+		opacity: 0.9;
 		display: -webkit-box;
-		-webkit-line-clamp: 4;
+		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
 
-	.cluster-visual-title-cyrillic {
-		line-height: 1.2;
-		letter-spacing: -0.008em;
+	.cluster-summary-card {
+		margin-top: 1.5rem;
+		padding: 1.5rem;
+		background: color-mix(in srgb, var(--card) 95%, var(--secondary) 5%);
+		border: 1px solid var(--border);
 	}
 
 	.cluster-summary-label {
-		margin: 0 0 0.45rem;
 		font-family: var(--font-sans);
-		font-size: 0.66rem;
+		font-size: 0.65rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
+		letter-spacing: 0.1em;
+		margin-bottom: 1rem;
 	}
 
-	.cluster-summary-copy,
-	.cluster-summary-sources {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.94rem;
-		line-height: 1.58;
-		color: var(--secondary-foreground);
-		text-wrap: pretty;
+	.cluster-summary-copy {
+		font-family: var(--font-serif);
+		font-size: 1rem;
+		line-height: 1.5;
+		color: var(--foreground);
+		margin-bottom: 1rem;
 	}
 
 	.cluster-summary-sources {
-		margin-top: 0.65rem;
 		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground) 10%);
+		font-size: 0.7rem;
+		color: var(--muted-foreground);
+		padding-top: 1rem;
+		border-top: 1px solid var(--border);
 	}
 
 	.cluster-summary-sources span {
+		font-weight: 900;
 		color: var(--foreground);
 	}
 
 	.cluster-summary-update {
-		margin: 0.8rem 0 0;
-		padding-top: 0.8rem;
-		border-top: 1px solid var(--border);
+		margin-top: 0.75rem;
 		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
+		font-size: 0.65rem;
+		font-weight: 700;
+		color: var(--muted-foreground);
 	}
 
 	.cluster-summary-update.is-stale {
 		color: var(--nyt-red);
 	}
 
-	.cluster-synthesis {
-		background: color-mix(in srgb, var(--background) 84%, var(--secondary) 16%);
-	}
-
-	.cluster-perspectives {
-		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
-	}
-
-	.cluster-module-head,
-	.rail-card-title {
+	.cluster-module-head {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding-bottom: 0.6rem;
-		margin: 0 0 0.7rem;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+		padding-bottom: 0.75rem;
 		border-bottom: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.cluster-section-title {
-		margin: 0 0 1rem;
-		font-size: clamp(1.22rem, 1.02rem + 0.7vw, 1.72rem);
-		line-height: 1.08;
-		letter-spacing: -0.018em;
 	}
 
 	.perspective-grid {
 		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
+		margin-bottom: 3rem;
 	}
 
 	.perspective-card {
-		padding: 1rem 0 0;
-		border-top: 1px solid var(--border);
-	}
-
-	.perspective-card:first-child {
-		border-top: 0;
-		padding-top: 0;
+		padding: 1.5rem;
+		background: var(--card);
+		border: 1px solid var(--border);
+		border-top: 3px solid var(--nyt-accent);
 	}
 
 	.perspective-card h3 {
 		font-family: var(--font-sans);
-		font-size: 0.74rem;
+		font-size: 0.75rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
-		line-height: 1.25;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
-		margin: 0 0 0.55rem;
+		letter-spacing: 0.1em;
+		margin-bottom: 0.75rem;
 	}
 
-	.perspective-card p,
-	.rail-copy,
-	.article-row-summary {
-		margin: 0;
+	.perspective-card p {
 		font-family: var(--font-nyt-body);
-		font-size: 0.96rem;
-		line-height: 1.62;
+		font-size: 0.95rem;
+		line-height: 1.6;
 		color: var(--secondary-foreground);
-		text-wrap: pretty;
 	}
 
 	.factcheck-grid {
@@ -1234,402 +906,191 @@ const schema = cluster ? {
 		margin-bottom: 1.5rem;
 	}
 
+	@media (min-width: 768px) {
+		.factcheck-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
 	.factcheck-box {
-		padding: 1.25rem;
-		border-radius: 4px;
-	}
-
-	.factcheck-agreements {
-		background: color-mix(in srgb, #2f855a 8%, var(--background) 92%);
-		border: 1px solid color-mix(in srgb, #2f855a 20%, var(--border) 80%);
-	}
-
-	.factcheck-conflicts {
-		background: color-mix(in srgb, var(--nyt-red) 8%, var(--background) 92%);
-		border: 1px solid color-mix(in srgb, var(--nyt-red) 20%, var(--border) 80%);
+		padding: 1.5rem;
+		background: var(--card);
+		border: 1px solid var(--border);
 	}
 
 	.factcheck-box h3 {
 		font-family: var(--font-sans);
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		margin: 0 0 1rem;
-		color: var(--foreground);
+		margin-bottom: 1rem;
 	}
 
 	.factcheck-box ul {
+		list-style: none;
+		padding: 0;
 		margin: 0;
-		padding: 0 0 0 1.25rem;
-		list-style-type: disc;
-		font-family: var(--font-nyt-body);
-		font-size: 0.94rem;
-		line-height: 1.6;
-		color: var(--secondary-foreground);
 	}
 
-	.factcheck-agreements h3 {
-		color: #2f855a;
-	}
-
-	.factcheck-conflicts h3 {
-		color: var(--nyt-red);
-	}
-
-	.factcheck-footer {
-		padding-top: 1.25rem;
-		border-top: 1px solid var(--border);
-		font-family: var(--font-nyt-body);
-		font-size: 0.92rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-	}
-
-	.factcheck-footer strong {
-		color: var(--foreground);
-		text-transform: uppercase;
-		font-size: 0.7rem;
-		font-family: var(--font-sans);
-		letter-spacing: 0.05em;
-	}
-
-	.article-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.comparison-digest {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.8rem;
-		margin-bottom: 1.1rem;
-	}
-
-	.comparison-digest-card {
-		padding: 0.9rem 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
-	}
-
-	.comparison-digest-label {
-		margin: 0 0 0.35rem;
-		font-family: var(--font-sans);
-		font-size: 0.58rem;
-		font-weight: 900;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.comparison-digest-value {
-		margin: 0 0 0.3rem;
-		font-family: var(--font-serif);
-		font-size: 1.2rem;
-		line-height: 1.05;
-		color: var(--foreground);
-	}
-
-	.comparison-digest-copy {
-		margin: 0;
+	.factcheck-box li {
 		font-family: var(--font-nyt-body);
 		font-size: 0.9rem;
 		line-height: 1.5;
+		margin-bottom: 0.75rem;
+		padding-left: 1.25rem;
+		position: relative;
+	}
+
+	.factcheck-box li::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0.5rem;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+	}
+
+	.factcheck-agreements {
+		border-left: 4px solid #059669;
+	}
+
+	.factcheck-agreements li::before {
+		background: #059669;
+	}
+
+	.factcheck-conflicts {
+		border-left: 4px solid var(--nyt-red);
+	}
+
+	.factcheck-conflicts li::before {
+		background: var(--nyt-red);
+	}
+
+	.factcheck-context-note {
+		padding: 1rem 1.5rem;
+		background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background) 95%);
+		border: 1px solid var(--border);
+		font-family: var(--font-nyt-body);
+		font-size: 0.9rem;
+		line-height: 1.6;
+		font-style: italic;
 		color: var(--secondary-foreground);
 	}
 
 	.article-row {
-		padding: 1rem 0;
-		border-top: 1px solid var(--border);
+		padding: 1.5rem 0;
+		border-bottom: 1px solid var(--border);
 	}
 
-	.article-row:first-child {
-		border-top: 0;
-		padding-top: 0;
+	.article-row:last-child {
+		border-bottom: 0;
 	}
 
 	.article-row-top {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
+		margin-bottom: 0.75rem;
 		gap: 1rem;
-		margin-bottom: 0.4rem;
 	}
 
-	.article-row-source,
-	.article-row-time {
+	.article-row-source {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.45rem;
-	}
-
-	.article-row-time {
-		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: 0.75rem;
 	}
 
 	.article-row-badge {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.2rem 0.45rem;
-		border: 1px solid var(--border);
 		font-family: var(--font-sans);
-		font-size: 0.58rem;
+		font-size: 0.55rem;
 		font-weight: 900;
-		letter-spacing: 0.07em;
 		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.1rem 0.4rem;
+		border: 1px solid var(--border);
+		border-radius: 2px;
 	}
 
-	.article-row-badge-lead {
-		border-color: color-mix(in srgb, var(--nyt-accent) 40%, var(--border) 60%);
-		color: var(--nyt-accent);
+	.article-row-badge-lead { border-color: var(--nyt-accent); color: var(--nyt-accent); }
+	.article-row-badge-confirm { border-color: #059669; color: #059669; }
+	.article-row-badge-context { border-color: var(--muted-foreground); color: var(--muted-foreground); }
+
+	.article-row-badge-trust {
+		background: var(--foreground);
+		color: var(--background);
+		border: 0;
 	}
 
-	.article-row-badge-confirm {
-		border-color: color-mix(in srgb, #2f855a 32%, var(--border) 68%);
-		color: #2f855a;
-	}
+	.article-row-badge-trust-high { background: var(--nyt-accent); }
 
-	.article-row-badge-context {
-		border-color: color-mix(in srgb, #9a6700 32%, var(--border) 68%);
-		color: #9a6700;
-	}
-
-	.article-row-badge-contrast {
-		border-color: color-mix(in srgb, #3b5ccc 32%, var(--border) 68%);
-		color: #3b5ccc;
-	}
-
-	.article-row-badge-trust-high {
-		border-color: color-mix(in srgb, var(--nyt-accent) 34%, var(--border) 66%);
-		color: var(--nyt-accent);
-	}
-
-	.article-row-badge-trust-medium {
-		border-color: color-mix(in srgb, var(--foreground) 18%, var(--border) 82%);
-		color: var(--foreground);
-	}
-
-	.article-row-badge-trust-low {
-		color: var(--muted-foreground);
-	}
-
-	:root.dark .article-row-badge-confirm {
-		color: #7bd6a3;
-	}
-
-	:root.dark .article-row-badge-context {
-		color: #f0c674;
-	}
-
-	:root.dark .article-row-badge-contrast {
-		color: #9bb2ff;
-	}
-
-	.article-row-time-exact {
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.04em;
-		color: var(--muted-foreground);
+	.article-row-time {
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
 	}
 
 	.article-row-title {
-		margin: 0 0 0.7rem;
-		font-size: 1.18rem;
-		line-height: 1.12;
-		letter-spacing: -0.02em;
+		font-family: var(--font-serif);
+		font-size: 1.25rem;
+		font-weight: 800;
+		line-height: 1.2;
+		margin-bottom: 0.5rem;
 		color: var(--foreground);
-		transition: color 160ms ease;
-		text-wrap: balance;
 	}
 
-	.article-row:hover .article-row-title,
-	.related-link:hover h4 {
+	.article-row-link:hover .article-row-title {
 		color: var(--nyt-accent);
 	}
 
-	.article-row-summary {
-		margin-bottom: 0.75rem;
-	}
-
-	.article-row-note {
-		margin: 0 0 0.45rem;
+	.article-row-snippet {
 		font-family: var(--font-nyt-body);
-		font-size: 0.88rem;
-		line-height: 1.5;
+		font-size: 0.95rem;
+		line-height: 1.6;
 		color: var(--secondary-foreground);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		margin-bottom: 1rem;
 	}
 
-	.article-row-note strong {
+	.article-row-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
 		font-family: var(--font-sans);
-		font-size: 0.66rem;
+		font-size: 0.7rem;
 		font-weight: 900;
-		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.coverage-metrics {
-		display: flex;
-		flex-direction: column;
-		gap: 0.85rem;
-	}
-
-	.rail-tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.45rem;
-	}
-
-	.rail-chip {
-		padding: 0.34rem 0.5rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.58rem;
-		font-weight: 900;
 		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--foreground);
+		color: var(--nyt-accent);
 		text-decoration: none;
 	}
 
-	.rail-chip:hover {
-		background: var(--foreground);
-		color: var(--background);
+	.article-row-action:hover {
+		text-decoration: underline;
 	}
 
-	.rail-card-accent {
-		background: color-mix(in srgb, var(--background) 76%, var(--secondary) 24%);
-	}
-
-	.related-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.related-link {
+	.sidebar-related-link {
 		display: block;
-		padding: 0.72rem 0;
-		border-top: 1px solid var(--border);
+		padding: 0.75rem 0;
+		border-bottom: 1px solid var(--border);
+		text-decoration: none;
 	}
 
-	.related-link:first-child {
-		border-top: 0;
-		padding-top: 0;
+	.sidebar-related-link:last-child {
+		border-bottom: 0;
 	}
 
-	.related-kicker,
-	.related-meta {
-		margin: 0 0 0.35rem;
-		font-family: var(--font-sans);
-		font-size: 0.64rem;
-		font-weight: 800;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
+	@media (max-width: 640px) {
+		.cluster-headline {
+			font-size: 2.25rem;
+		}
 
-	.related-kicker {
-		color: var(--nyt-accent);
-	}
-
-	.related-link h4 {
-		margin: 0 0 0.35rem;
-		font-size: 0.94rem;
-		line-height: 1.14;
-		color: var(--foreground);
-		transition: color 160ms ease;
-	}
-
-	.related-copy {
-		margin: 0 0 0.4rem;
-		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
-	}
-
-	.prose-nyt {
-		font-family: var(--font-nyt-body);
-        max-width: 65ch;
-        margin-left: auto;
-        margin-right: auto;
-	}
-    .prose-nyt ul li {
-        margin-bottom: 1.5em;
-    }
-
-	@media (min-width: 960px) {
 		.cluster-header-grid {
-			grid-template-columns: minmax(0, 1.42fr) minmax(17rem, 0.58fr);
-			align-items: start;
-			gap: 1.2rem;
-		}
-
-		.cluster-grid {
-			grid-template-columns: minmax(0, 1.58fr) minmax(15.25rem, 0.62fr);
-			gap: 1.25rem;
-		}
-
-		.cluster-main,
-		.cluster-rail {
-			gap: 0.95rem;
-		}
-
-		.cluster-brief-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-
-		.perspective-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.comparison-digest {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-
-		.cluster-headline {
-			max-width: 15.8ch;
-		}
-
-		.cluster-headline-cyrillic {
-			max-width: 16.6ch;
-		}
-
-		.cluster-visual-fallback {
-			padding: 1.2rem 1.15rem;
-			min-height: 13rem;
-		}
-
-		.cluster-visual-title {
-			font-size: 0.84rem;
-			max-width: 24ch;
-			-webkit-line-clamp: 5;
-		}
-	}
-
-	@media (max-width: 40rem) {
-		.cluster-header {
-			padding-bottom: 0.9rem;
-			margin-bottom: 1rem;
-		}
-
-		.cluster-headline {
-			font-size: clamp(1.8rem, 1.42rem + 1vw, 2.45rem);
-			max-width: 100%;
-		}
-
-		.cluster-headline-cyrillic {
-			line-height: 1.06;
-		}
-
-		.cluster-dek {
-			font-size: 0.98rem;
-		}
-
-		.cluster-brief-card {
-			padding: 0.78rem 0.84rem;
+			gap: 1.5rem;
 		}
 
 		.cluster-visual-image {
