@@ -89,24 +89,24 @@ function parseSynthesis(text: string) {
 }
 
 function looksMacedonianHeadline(text: string) {
-	const value = str(text || "").strip();
+    const value = String(text || "").trim();
     if (!value) return false;
-	const cyrillic = sum(1 for ch in value if "\u0400" <= ch <= "\u04FF");
-    const latin = sum(1 for ch in value if ("A" <= ch <= "Z") or ("a" <= ch <= "z"));
-	if (cyrillic < 8) return false;
-	if (latin === 0) return true;
-	return cyrillic >= latin * 2;
-}
-
-// Helper functions for MK logic within Astro component context
-function sum(iterable: Iterable<number>) {
-    let total = 0;
-    for (const val of iterable) total += val;
-    return total;
-}
-
-function str(val: any) {
-    return String(val || '');
+    
+    let cyrillicCount = 0;
+    let latinCount = 0;
+    
+    for (let i = 0; i < value.length; i++) {
+        const char = value[i];
+        if (char >= "\u0400" && char <= "\u04FF") {
+            cyrillicCount++;
+        } else if ((char >= "A" && char <= "Z") || (char >= "a" && char <= "z")) {
+            latinCount++;
+        }
+    }
+    
+    if (cyrillicCount < 8) return false;
+    if (latinCount === 0) return true;
+    return cyrillicCount >= latinCount * 2;
 }
 
 function getPreferredClusterHeadline(articles: Article[]) {
