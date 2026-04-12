@@ -40,13 +40,15 @@ interface CategoryStat {
   count: number;
 }
 
+import type { NewsCluster } from '../types';
+
 interface EntityPayload {
   profile: EntityProfile;
   related: Relationship[];
   media: MediaStat[];
   categories: CategoryStat[];
   sentiment_history: SentimentPoint[];
-  clusters: any[];
+  clusters: NewsCluster[];
 }
 
 function formatDate(value?: string) {
@@ -119,7 +121,7 @@ function splitRelated(related: Relationship[]) {
   return { strongest, broader };
 }
 
-function buildWhyItMatters(profile: EntityProfile, clusters: any[], related: Relationship[]) {
+function buildWhyItMatters(profile: EntityProfile, clusters: NewsCluster[], related: Relationship[]) {
   const recentCount = clusters.length;
   if (recentCount >= 5) {
     return `${profile.name} е во силен фокус со ${recentCount} активни теми во последниот период, што укажува на висок јавен и медиумски интерес.`;
@@ -130,7 +132,7 @@ function buildWhyItMatters(profile: EntityProfile, clusters: any[], related: Rel
   return `Присуството на ${profile.name} во медиумите се следи преку анализа на тонот и фреквенцијата на споменување во реално време.`;
 }
 
-function coMentionedEntities(clusters: any[], currentName: string) {
+function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
   const counts = new Map<string, number>();
   const current = currentName.toLowerCase();
   for (const cluster of clusters) {

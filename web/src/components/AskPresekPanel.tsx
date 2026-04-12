@@ -119,7 +119,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
         </p>
       </div>
 
-      <div className="ask-suggestions">
+      <div className="ask-suggestions" aria-label="Предложени прашања">
         {suggestions.map((item) => (
           <button
             key={item}
@@ -127,6 +127,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
             className="ask-suggestion"
             onClick={() => void submitQuestion(item)}
             disabled={isLoading}
+            aria-label={`Прашај: ${item}`}
           >
             {item}
           </button>
@@ -147,20 +148,26 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="На пример: Кои факти се повторуваат кај повеќе извори?"
           maxLength={500}
+          aria-label="Вашето прашање"
         />
-        <button type="submit" className="ask-submit" disabled={isLoading || !normalizeQuestion(question)}>
-          {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+        <button 
+          type="submit" 
+          className="ask-submit" 
+          disabled={isLoading || !normalizeQuestion(question)}
+          aria-label="Испрати прашање"
+        >
+          {isLoading ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}
           Одговор
         </button>
       </form>
 
-      {error && <p className="ask-error">{error}</p>}
+      {error && <p className="ask-error" role="alert">{error}</p>}
 
       {result && (
-        <div className="ask-result">
+        <div className="ask-result" aria-live="polite">
           <div className="ask-result-head">
             <strong className="nyt-section-label tracking-[0.18em]">Што можеме да кажеме сега</strong>
-            <span className={`ask-confidence ask-confidence-${confidenceTone || 'medium'}`}>{confidenceLabel}</span>
+            <span className={`ask-confidence ask-confidence-${confidenceTone || 'medium'}`} aria-label={`Ниво на сигурност: ${confidenceLabel}`}>{confidenceLabel}</span>
           </div>
 
           <p className="ask-scope-note">Овој одговор е составен само од изворите во овој кластер.</p>
@@ -168,7 +175,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
           <p className="ask-answer">{result.answer || result.response}</p>
 
           {Array.isArray(result.citations) && result.citations.length > 0 && (
-            <div className="ask-inline-citations">
+            <div className="ask-inline-citations" aria-label="Цитати">
               <span className="ask-inline-citations-label">Поткрепено со</span>
               {result.citations.map((item, index) => (
                 <button
@@ -176,6 +183,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
                   key={`inline-${item.link || item.title || item.source || index}`}
                   className="ask-inline-citation"
                   onClick={() => jumpToCitation(item.link)}
+                  aria-label={`Скокни до извор ${index + 1}: ${item.source || ''}`}
                 >
                   [{index + 1}]
                 </button>

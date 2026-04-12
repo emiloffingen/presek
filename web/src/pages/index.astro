@@ -84,21 +84,21 @@ function normalizeFocusName(name: string) {
 }
 
 const focusEntities = topEntities
-    .map((ent: any) => ({ ...ent, name: normalizeFocusName(ent?.name || '') }))
-    .filter((ent: any) => ent.name && ent.name.length >= 3)
+    .map((ent: { name: string; total_mentions: number }) => ({ ...ent, name: normalizeFocusName(ent?.name || '') }))
+    .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
     .slice(0, 10);
 
 const leadCluster = clusters[0] ?? null;
 const supportingClusters = clusters.slice(1, 5);
 const feedClusters = clusters.slice(5);
-const continuingClusters = feedClusters.filter((cluster: any) => (cluster?.articles?.length || 0) >= 2);
-const wireClusters = feedClusters.filter((cluster: any) => (cluster?.articles?.length || 0) < 2).slice(0, 8);
+const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
+const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 8);
 const supportingFeatured = supportingClusters.slice(0, 2);
 const supportingCompact = supportingClusters.slice(2);
 const developmentsFeatured = continuingClusters.slice(0, 4);
 const developmentsCompact = continuingClusters.slice(4);
 
-function getLeadSignal(cluster: any) {
+function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;
 	if (cluster?.is_breaking) return 'Најбрз развој во денот';
 	if (count >= 6) return 'Приказна што ја движи домашната агенда';
@@ -110,7 +110,7 @@ function cleanLeadSummary(text?: string) {
 	return cleanAndDecode(text);
 }
 
-function getLeadSummary(cluster: any) {
+function getLeadSummary(cluster: NewsCluster) {
 	const article = cluster?.articles?.[0];
 	let text = article?.summary || article?.description || '';
 	
@@ -154,7 +154,7 @@ function getTimeStr(dateStr: string) {
     }
 }
 
-function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
+function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'card') {
     return chooseClusterImage(cluster, variant).proxiedUrl || '/img/placeholder.svg';
 }
 ---

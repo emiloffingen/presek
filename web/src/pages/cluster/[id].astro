@@ -16,6 +16,8 @@ import { sanitizeHtml } from '../../lib/sanitize';
 import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
+import type { ClusterDetail, NewsCluster, Article, ClusterSummary } from '../../types';
+
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
 const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice(0, 500);
@@ -29,7 +31,7 @@ const canonicalUrl = (() => {
 	return clean;
 })();
 
-let cluster = null;
+let cluster: ClusterDetail | null = null;
 let error = null;
 
 try {
@@ -90,7 +92,7 @@ function looksMacedonianHeadline(text: string) {
 	return cyrillic >= latin * 2;
 }
 
-function getPreferredClusterHeadline(articles: any[]) {
+function getPreferredClusterHeadline(articles: Article[]) {
 	let fallback = '';
 	let preferredMacedonian = '';
 
@@ -205,13 +207,13 @@ function parseSynthesis(text: string) {
         .filter((item) => item.content && item.content.toLowerCase() !== 'статии:');
 }
 
-function normalizePerspectives(items: any[]) {
+function normalizePerspectives(items: ClusterSummary[]): ClusterSummary[] {
     if (!Array.isArray(items)) return [];
 
     return items
         .map((item) => {
             if (typeof item === 'string') {
-                const content = cleanAndDecode(item.trim());
+                const content = cleanAndDecode((item as string).trim());
                 return content ? { angle: 'Перспектива', content } : null;
             }
 
@@ -227,7 +229,7 @@ function normalizePerspectives(items: any[]) {
             if (!content) return null;
             return { angle: angle || 'Перспектива', content };
         })
-        .filter(Boolean);
+        .filter(Boolean) as ClusterSummary[];
 }
 
 const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];

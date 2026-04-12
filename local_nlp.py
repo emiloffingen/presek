@@ -384,11 +384,14 @@ def filter_cluster_tags(tags, limit=10):
     return filtered[:limit]
 
 
-def _tokenize_title_terms(text):
-    return [
+def _tokenize_title_terms(text, lemmatize=False):
+    tokens = [
         token for token in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
         if token not in STOPWORDS and token not in TAG_NOISE_WORDS and token not in SOURCE_NOISE_WORDS
     ]
+    if lemmatize:
+        return [lemmatize_mk(t) for t in tokens]
+    return tokens
 
 
 # Alias — _sentence_tokens is used by the summarizer and similarity helpers;
@@ -444,7 +447,9 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
             capitalized[phrase] += 1
 
         tokens = _tokenize_title_terms(title)
-        title_tokens.update(tokens)
+        lemmatized_tokens = [lemmatize_mk(t) for t in tokens]
+        title_tokens.update(lemmatized_tokens)
+        
         for left, right in zip(tokens, tokens[1:]):
             if left in TAG_GENERIC_STARTERS or right in TAG_GENERIC_STARTERS:
                 continue

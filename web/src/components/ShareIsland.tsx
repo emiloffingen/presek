@@ -67,6 +67,7 @@ export default function ShareIsland({
           rel="noopener noreferrer"
           className={`share-icon ${option.hoverClass}`}
           title={option.name}
+          aria-label={`Сподели на ${option.name}`}
         >
           {option.icon}
         </a>
