@@ -85,6 +85,78 @@ async def get_navigation():
 
     # 1. ВО ЖИВО (Breaking) - Top 2 breaking clusters
     breaking_items = []
+    recent_clusters = db.execute("""
+        SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
+        FROM cluster_metadata m
+        WHERE m.updated_at >= NOW() - INTERVAL '12 hours'
+        ORDER BY m.updated_at DESC
+        LIMIT 20
+    """)
+    
+    for c in recent_clusters:
+        arts = db.execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
+        if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
+            breaking_items.append({
+                "label": cleanAndDecode(c["title"])[:45] + ("..." if len(c["title"]) > 45 else ""),
+                "href": f"/cluster/{c['cluster_id']}",
+                "type": "breaking"
+            })
+            if len(breaking_items) >= 2: break
+
+    # 2. ФОКУС (Entities) - Top 4 entities from last 48h
+    focus_items = []
+    try:
+        entities = await get_top_entities(limit=4)
+        for ent in entities:
+            focus_items.append({
+                "label": ent["name"],
+                "href": f"/?q={urllib.parse.quote(ent['name'])}",
+                "type": "focus"
+            })
+    except: pass
+
+    # 3. РУБРИКИ (Sections) - Active standard categories
+    cat_order = ["Политика", "Економија", "Македонија", "Свет", "Спорт", "Култура", "Забава", "Технологија"]
+    section_items = []
+    
+    active_cats = db.execute("""
+        SELECT category, COUNT(*) as count 
+        FROM articles 
+        WHERE created_at >= NOW() - INTERVAL '24 hours' 
+        GROUP BY category
+    """)
+    active_set = {r["category"] for r in active_cats if r["category"]}
+    
+    for cat in cat_order:
+        if cat in active_set:
+            section_items.append({
+                "label": cat,
+                "href": f"/category/{cat}",
+                "type": "section"
+            })
+        if len(section_items) >= 6: break
+
+    res = {
+        "breaking": breaking_items,
+        "focus": focus_items,
+        "sections": section_items
+    }
+    set_cache(cache_key, res, ttl=600)
+    return res
+
+@router.get("/api/navigation")
+async def get_navigation():
+    """Returns structured navigation items for the header facelift."""
+    cache_key = "api:navigation:v1"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    from config import BREAKING_SCORE_THRESHOLD
+    from utils import score_cluster
+    from .intelligence import get_top_entities
+
+    # 1. ВО ЖИВО (Breaking) - Top 2 breaking clusters
+    breaking_items = []
     # Find clusters updated in last 12h with high score
     recent_clusters = db.execute("""
         SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
