@@ -9,6 +9,7 @@ import node from '@astrojs/node';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://presek.live',
+  trailingSlash: 'never',
   output: 'server',
   prefetch: {
     prefetchAll: false,

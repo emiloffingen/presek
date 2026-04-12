@@ -19,9 +19,15 @@ import { apiBaseUrl } from '../../lib/apiBase';
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
 const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice(0, 500);
-const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
-const cleanPath = Astro.url?.pathname === "/" ? "" : Astro.url.pathname.replace(/\/$/, "");
-const canonicalUrl = `${siteUrl}${cleanPath}`;
+const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
+// Canonical: use Astro.site + pathname, strip trailing slash (trailingSlash: 'never')
+const canonicalUrl = (() => {
+	const base = Astro.site || new URL("https://presek.live");
+	const url = new URL(Astro.url.pathname, base);
+	let clean = url.origin + url.pathname.replace(/\/+$/, "");
+	if (clean === url.origin) return url.origin;
+	return clean;
+})();
 
 let cluster = null;
 let error = null;

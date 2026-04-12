@@ -29,6 +29,19 @@ class TestAstroFrontendIntegrity:
         assert "<link rel=\"canonical\" href={canonicalUrl} />" in layout
         assert "<meta property=\"og:url\" content={canonicalUrl} />" in layout
 
+    def test_canonical_url_uses_astro_site_and_strips_trailing_slash(self):
+        layout = _read("web/src/layouts/Layout.astro")
+        # Must use Astro.site (not just env var) for canonical construction
+        assert "Astro.site" in layout
+        assert "new URL(" in layout
+        # Must strip trailing slashes
+        assert "replace(/\\/+$/" in layout or 'replace(/\\/+$/' in layout
+
+    def test_astro_config_enforces_trailing_slash_never(self):
+        config = _read("web/astro.config.mjs")
+        assert "trailingSlash: 'never'" in config
+        assert "site: 'https://presek.live'" in config
+
     def test_primary_pages_fetch_api_through_supported_base_url(self):
         # Pages can either import the shared apiBaseUrl() helper (which
         # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
