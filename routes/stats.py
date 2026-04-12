@@ -11,8 +11,9 @@ from database import db_manager as db
 from utils import (
     cached_response, set_cache, score_cluster, rank_articles_in_cluster,
     calculate_reading_time, is_balanced, build_editor_analytics_payload,
-    build_source_reputation_rows, get_source_statuses, reset_source_policy
+    build_source_reputation_rows
 )
+from health import get_source_statuses, reset_source_policy
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from local_nlp import generate_daily_brief_fallback
 from .common import _source_admin_authorized, _error_json
