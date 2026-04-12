@@ -25,20 +25,19 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
 
 const API_URL = apiBaseUrl();
 
-let trendingItems: TrendingWord[] = [];
+let navigationData = { breaking: [], focus: [], sections: [] };
 let stats = propStats;
 
-// Parallel fetch for trending and stats (if missing)
+// Parallel fetch for navigation and stats (if missing)
 try {
-    const promises = [fetch(`${API_URL}/trending`)];
+    const promises = [fetch(`${API_URL}/navigation`)];
     if (!stats) promises.push(fetch(`${API_URL}/stats/summary`));
     
     const results = await Promise.allSettled(promises);
     
-    // Process Trending
+    // Process Navigation
     if (results[0].status === 'fulfilled' && results[0].value.ok) {
-        const data = await results[0].value.json();
-        if (Array.isArray(data)) trendingItems = data.slice(0, 8);
+        navigationData = await results[0].value.json();
     }
     
     // Process Stats (only if we fetched them)
@@ -49,30 +48,10 @@ try {
     console.error('[Header] Fetch error:', e);
 }
 
-const headerItems = trendingItems.slice(0, 4);
-const trendingWordSet = new Set(headerItems.map((item: any) => item.word));
-const curatedTopics = ['Политика', 'Свет']
-    .filter((item) => !trendingWordSet.has(item));
-const navItems = [
-    ...headerItems.map((item: any) => ({
-        label: item.word,
-        href: `/?${new URLSearchParams({ q: item.word }).toString()}`,
-        isActive: q === item.word,
-        trend: item.trend,
-        isBreaking: item.is_breaking,
-    })),
-    ...curatedTopics.map((item: string) => ({
-        label: item,
-        href: `/tema/${encodeURIComponent(item)}`,
-        isActive: topic === item || category === item,
-        trend: '→',
-        isBreaking: false,
-    })),
-].slice(0, 6);
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 const liveCount = typeof stats?.last_1h === 'number' ? stats.last_1h : null;
 const dayCount = typeof stats?.last_24h === 'number' ? stats.last_24h : null;
-const leadTopic = navItems[0]?.label || topic || category || 'Македонија';
+const leadTopic = navigationData.focus[0]?.label || topic || category || 'Македонија';
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
@@ -163,22 +142,53 @@ const leadTopic = navItems[0]?.label || topic || category || 'Македониј
     <nav class="site-layout masthead-nav" aria-label="Популарно сега">
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
-                {navItems.length > 0 && (
-                    <ul class="masthead-nav-list">
-                        <li class="masthead-nav-kicker-item">
-                            <span class="masthead-nav-kicker">Актуелно</span>
-                        </li>
-                        {navItems.map((item) => (
-                            <li>
-                                <a href={item.href} class={`masthead-nav-link ${item.isActive ? 'is-active' : ''}`}>
-                                    {item.isBreaking && <span class="breaking-dot"></span>}
-                                    {item.label}
-                                    {item.trend !== '→' && <span class={`trend-indicator is-${item.trend === '↑' ? 'up' : 'down'}`}>{item.trend}</span>}
-                                </a>
+                <ul class="masthead-nav-list">
+                    {navigationData.breaking.length > 0 && (
+                        <>
+                            <li class="masthead-nav-kicker-item">
+                                <span class="masthead-nav-kicker">Во Живо</span>
                             </li>
-                        ))}
-                    </ul>
-                )}
+                            {navigationData.breaking.map((item) => (
+                                <li>
+                                    <a href={item.href} class="masthead-nav-link nav-link-breaking">
+                                        <span class="breaking-dot"></span>
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </>
+                    )}
+
+                    {navigationData.focus.length > 0 && (
+                        <>
+                            <li class="masthead-nav-kicker-item">
+                                <span class="masthead-nav-kicker kicker-focus">Фокус</span>
+                            </li>
+                            {navigationData.focus.map((item) => (
+                                <li>
+                                    <a href={item.href} class="masthead-nav-link nav-link-focus">
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </>
+                    )}
+
+                    {navigationData.sections.length > 0 && (
+                        <>
+                            <li class="masthead-nav-kicker-item">
+                                <span class="masthead-nav-kicker kicker-sections">Рубрики</span>
+                            </li>
+                            {navigationData.sections.map((item) => (
+                                <li>
+                                    <a href={item.href} class={`masthead-nav-link ${(category === item.label || topic === item.label) ? 'is-active' : ''}`}>
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </>
+                    )}
+                </ul>
             </div>
             <div class="nav-fade-left"></div>
             <div class="nav-fade-right"></div>
@@ -187,6 +197,32 @@ const leadTopic = navItems[0]?.label || topic || category || 'Македониј
 </div>
 
 <style>
+    /* ... existing styles ... */
+    
+    .nav-link-breaking {
+        color: var(--nyt-red) !important;
+        font-weight: 900 !important;
+    }
+
+    .kicker-focus {
+        color: var(--foreground) !important;
+    }
+
+    .kicker-focus::after {
+        background: var(--foreground) !important;
+    }
+
+    .kicker-sections {
+        color: var(--muted-foreground) !important;
+    }
+
+    .kicker-sections::after {
+        background: var(--muted-foreground) !important;
+    }
+
+    .nav-link-focus {
+        font-weight: 700 !important;
+    }
     /* ... existing styles ... */
     
     .masthead-inner {
