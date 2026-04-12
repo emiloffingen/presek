@@ -528,7 +528,7 @@ const schema = cluster ? {
 									{synthesisUpdatedAt && (
 										<p class:list={["cluster-summary-update", synthesisFreshness.is_stale ? "is-stale" : ""]}>
 											{synthesisFreshness.is_stale
-												? `${synthesisFreshness.new_article_count || 1} нови извештаи се појавиле по последната синтеза.`
+												? `${synthesisFreshness.new_article_count || 1} ${ (synthesisFreshness.new_article_count || 1) === 1 ? 'нов извештај се појавил' : 'нови извештаи се појавиле' } по последната синтеза.`
 												: `Последна синтеза: ${getRelativeTimeStr(synthesisUpdatedAt)}.`}
 										</p>
 									)}

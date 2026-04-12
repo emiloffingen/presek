@@ -555,7 +555,20 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 						if (metaRow) {
 							const badge = document.createElement('span');
 							badge.className = 'personalized-badge text-[9px] font-black text-nyt-accent uppercase tracking-widest ml-auto opacity-80 flex items-center gap-1';
-							badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> ${result.reason}`;
+							const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+							svg.setAttribute('width', '10');
+							svg.setAttribute('height', '10');
+							svg.setAttribute('viewBox', '0 0 24 24');
+							svg.setAttribute('fill', 'none');
+							svg.setAttribute('stroke', 'currentColor');
+							svg.setAttribute('stroke-width', '2.5');
+							svg.setAttribute('stroke-linecap', 'round');
+							svg.setAttribute('stroke-linejoin', 'round');
+							const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+							path.setAttribute('d', 'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z');
+							svg.appendChild(path);
+							badge.appendChild(svg);
+							badge.appendChild(document.createTextNode(` ${result.reason}`));
 							metaRow.appendChild(badge);
 						}
 					}
