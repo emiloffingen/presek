@@ -125,36 +125,49 @@ const leadTopic = navItems[0]?.label || topic || category || 'Македониј
 
     <div class="site-layout masthead">
         <div class="masthead-inner">
-            <div class="masthead-brand">
-                <a href="/" class="contents">
-                    <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-5 md:h-8 site-logo" />
-                </a>
-                <a href="/" class="block">
-                    <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-8 md:h-14 lg:h-16" />
-                </a>
-            </div>
-            <div class="masthead-copy">
-                <p class="masthead-sub">Вестите, групирани. Контекстот, јасен.</p>
-                <div class="masthead-metrics" aria-label="Краток преглед">
-                    <span class="masthead-metric">
+            <div class="masthead-left hidden lg:flex">
+                <div class="masthead-metric-group">
+                    <span class="masthead-metric-label">Активност</span>
+                    <div class="masthead-metric-value">
                         <strong>{liveCount && liveCount > 0 ? `+${liveCount}` : 'Живо'}</strong>
-                        <span>{liveCount && liveCount > 0 ? 'нови објави овој час' : 'уредуван преглед во тек'}</span>
-                    </span>
-                    <span class="masthead-metric">
-                        <strong>{dayCount && dayCount > 0 ? dayCount : leadTopic}</strong>
-                        <span>{dayCount && dayCount > 0 ? 'објави во последни 24ч' : 'тема што доминира сега'}</span>
-                    </span>
+                        <span class="pulse-dot"></span>
+                    </div>
+                    <span class="masthead-metric-sub">нови објави овој час</span>
+                </div>
+            </div>
+
+            <div class="masthead-center">
+                <div class="masthead-brand">
+                    <a href="/" class="contents">
+                        <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="site-emblem h-6 md:h-10 site-logo" />
+                    </a>
+                    <a href="/" class="block">
+                        <img src="/logo.svg?v=3" alt="Presek" class="site-logo h-10 md:h-16 lg:h-20" />
+                    </a>
+                </div>
+                <p class="masthead-sub">Вестите, групирани. Контекстот, јасен.</p>
+            </div>
+
+            <div class="masthead-right hidden lg:flex">
+                <div class="masthead-metric-group text-right">
+                    <span class="masthead-metric-label">Покриеност</span>
+                    <div class="masthead-metric-value justify-end">
+                        <strong>{dayCount && dayCount > 0 ? dayCount.toLocaleString('mk-MK') : leadTopic}</strong>
+                    </div>
+                    <span class="masthead-metric-sub">објави во последни 24ч</span>
                 </div>
             </div>
         </div>
     </div>
 
     <nav class="site-layout masthead-nav" aria-label="Популарно сега">
-        <div class="masthead-nav-shell flex overflow-x-auto whitespace-nowrap hide-scrollbar md:flex-wrap items-center">
-            {navItems.length > 0 && (
-                <>
-                    <span class="masthead-nav-kicker">Актуелно</span>
-                    <ul class="masthead-nav-list flex-nowrap">
+        <div class="masthead-nav-container">
+            <div class="masthead-nav-shell hide-scrollbar">
+                {navItems.length > 0 && (
+                    <ul class="masthead-nav-list">
+                        <li class="masthead-nav-kicker-item">
+                            <span class="masthead-nav-kicker">Актуелно</span>
+                        </li>
                         {navItems.map((item) => (
                             <li>
                                 <a href={item.href} class={`masthead-nav-link ${item.isActive ? 'is-active' : ''}`}>
@@ -165,13 +178,182 @@ const leadTopic = navItems[0]?.label || topic || category || 'Македониј
                             </li>
                         ))}
                     </ul>
-                </>
-            )}
+                )}
+            </div>
+            <div class="nav-fade-left"></div>
+            <div class="nav-fade-right"></div>
         </div>
     </nav>
 </div>
 
 <style>
+    /* ... existing styles ... */
+    
+    .masthead-inner {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        align-items: center;
+        text-align: center;
+        padding: 1.5rem 0;
+    }
+
+    @media (min-width: 1024px) {
+        .masthead-inner {
+            grid-template-columns: 1fr 2fr 1fr;
+            text-align: left;
+        }
+    }
+
+    .masthead-metric-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .masthead-metric-label {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--nyt-accent);
+    }
+
+    .masthead-metric-value {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .masthead-metric-value strong {
+        font-family: var(--font-serif);
+        font-size: 1.4rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--foreground);
+    }
+
+    .masthead-metric-sub {
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--muted-foreground);
+        max-width: 15ch;
+    }
+
+    .masthead-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .masthead-sub {
+        font-family: var(--font-serif);
+        font-size: 0.85rem;
+        font-style: italic;
+        font-weight: 500;
+        color: var(--foreground);
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    /* Navigation Container with Fade */
+    .masthead-nav-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .masthead-nav-shell {
+        width: 100%;
+        overflow-x: auto;
+        padding: 0.5rem 0;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .nav-fade-left, .nav-fade-right {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+        pointer-events: none;
+        z-index: 2;
+        transition: opacity 0.3s;
+    }
+
+    .nav-fade-left {
+        left: 0;
+        background: linear-gradient(to right, var(--background), transparent);
+        opacity: 0;
+    }
+
+    .nav-fade-right {
+        right: 0;
+        background: linear-gradient(to left, var(--background), transparent);
+    }
+
+    .masthead-nav-list {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .masthead-nav-list li {
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    .masthead-nav-kicker-item::after {
+        content: none !important;
+    }
+
+    .masthead-nav-list li + li:not(.masthead-nav-kicker-item)::before {
+        content: "";
+        width: 1px;
+        height: 14px;
+        background-color: var(--border);
+        margin: 0 1.25rem;
+    }
+
+    .masthead-nav-link {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .masthead-nav-link:hover {
+        color: var(--nyt-accent);
+    }
+
+    .masthead-nav-link.is-active {
+        color: var(--nyt-accent);
+        font-weight: 900;
+    }
+
+    @media (max-width: 1023px) {
+        .masthead-inner {
+            padding: 1rem 0;
+        }
+        .masthead-sub {
+            font-size: 0.75rem;
+        }
+        .masthead-brand .site-logo {
+            height: 2.5rem;
+        }
+    }
     .search-trigger-wrap {
         display: flex;
         align-items: center;
@@ -802,7 +984,29 @@ const leadTopic = navItems[0]?.label || topic || category || 'Македониј
         // Run on initial load
         initHeader();
 
+        // Navigation fade logic
+        const navShell = document.querySelector('.masthead-nav-shell');
+        const fadeLeft = document.querySelector('.nav-fade-left');
+        const fadeRight = document.querySelector('.nav-fade-right');
+
+        if (navShell && fadeLeft && fadeRight) {
+            const updateFades = () => {
+                const scrollLeft = navShell.scrollLeft;
+                const maxScroll = navShell.scrollWidth - navShell.clientWidth;
+                
+                fadeLeft.style.opacity = scrollLeft > 10 ? '1' : '0';
+                fadeRight.style.opacity = scrollLeft < maxScroll - 10 ? '1' : '0';
+            };
+
+            navShell.addEventListener('scroll', updateFades);
+            window.addEventListener('resize', updateFades);
+            updateFades();
+        }
+
         // Support Astro View Transitions if enabled later
-        document.addEventListener('astro:page-load', initHeader);
+        document.addEventListener('astro:page-load', () => {
+            initHeader();
+            // Re-init nav fades if needed
+        });
     })();
 </script>
