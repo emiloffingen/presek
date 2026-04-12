@@ -2,7 +2,7 @@
   <!-- Authoritative Broadsheet Masthead for ПРЕСЕК -->
   <g fill="#1e40af">
     <!-- Main Masthead Text -->
-    <text x="250" y="70" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="72" letter-spacing="-1" text-anchor="middle">ПРЕСЕК</text>
+    <text x="250" y="70" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="72" letter-spacing="-1" text-anchor="middle">ПРЕСЕК.мк</text>
     
     <!-- Double Rule Line (Classic Newspaper) -->
     <line x1="50" y1="85" x2="450" y2="85" stroke="#1e40af" stroke-width="2" />

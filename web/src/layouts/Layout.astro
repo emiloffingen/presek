@@ -24,7 +24,7 @@ const {
 } = Astro.props;
 
 const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
-const pageTitle = title.includes("Пресек") ? title : `${title} | Пресек`;
+const pageTitle = title.includes("Пресек") ? title.replace("Пресек", "ПРЕСЕК.мк") : `${title} | ПРЕСЕК.мк`;
 const adSenseClient = String(import.meta.env.PUBLIC_ADSENSE_CLIENT || '').trim();
 const shouldLoadAds = /^ca-pub-\d{10,}$/.test(adSenseClient) && adSenseClient !== 'ca-pub-0000000000000000';
 
@@ -68,12 +68,12 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="theme-color" content="#1a1715" media="(prefers-color-scheme: dark)" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="Пресек" />
+		<meta name="apple-mobile-web-app-title" content="ПРЕСЕК.мк" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<link rel="canonical" href={canonicalUrl} />
-		<meta property="og:site_name" content="Пресек" />
+		<meta property="og:site_name" content="ПРЕСЕК.мк" />
 		<meta property="og:locale" content="mk_MK" />
 		<meta property="og:type" content={type} />
 		<meta property="og:title" content={pageTitle} />

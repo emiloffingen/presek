@@ -16,7 +16,7 @@ export const GET: APIRoute = async () => {
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#111827"/>
   <rect x="0" y="0" width="1200" height="14" fill="#b91c1c"/>
-  <text x="90" y="130" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#b91c1c" letter-spacing="3">ПРЕСЕК</text>
+  <text x="90" y="130" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#b91c1c" letter-spacing="3">ПРЕСЕК.мк</text>
   <text x="90" y="270" font-family="Georgia, serif" font-size="88" font-weight="700" fill="#f9fafb">Вести со повеќе</text>
   <text x="90" y="360" font-family="Georgia, serif" font-size="88" font-weight="700" fill="#f9fafb">контекст и споредба</text>
   <text x="90" y="470" font-family="Arial, sans-serif" font-size="34" fill="#d1d5db">${subtitle}</text>
@@ -33,7 +33,7 @@ export const GET: APIRoute = async () => {
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#111827"/>
   <rect x="0" y="0" width="1200" height="14" fill="#b91c1c"/>
-  <text x="90" y="130" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#b91c1c" letter-spacing="3">ПРЕСЕК</text>
+  <text x="90" y="130" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#b91c1c" letter-spacing="3">ПРЕСЕК.мк</text>
   <text x="90" y="270" font-family="Georgia, serif" font-size="88" font-weight="700" fill="#f9fafb">Вести со повеќе</text>
   <text x="90" y="360" font-family="Georgia, serif" font-size="88" font-weight="700" fill="#f9fafb">контекст и споредба</text>
   <text x="90" y="470" font-family="Arial, sans-serif" font-size="34" fill="#d1d5db">Македонска платформа за споредба на вести и извори</text>
