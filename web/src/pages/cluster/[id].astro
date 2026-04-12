@@ -292,6 +292,8 @@ const comparisonHighlights = [
 		value: articleRows[0]?.source || 'Водечки извор',
 		copy: articleRows[0]?.sourceSignal?.role_note || articleRows[0]?.relationship?.description || 'Прво прочитајте го водечкиот извор, па потоа споредете ги другите верзии.',
 	},
+];
+
 const askPresekSuggestions = [
 	'Што е цврсто потврдено?',
 	'Каде изворите се разидуваат?',
@@ -302,12 +304,16 @@ const sentimentData = cluster?.sentiment ? {
 	sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
 	tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
 } : null;
----
 
 const leadDescription = extractSafeText(cluster?.articles?.find((article: any) => article?.description?.trim())?.description);
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
 
 const ai_summary_bullets = cluster?.ai_summary_bullets || [];
+const generatedArticle = cluster?.generated_article || '';
+const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
+const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
+const verificationReport = cluster?.verification_report || null;
+---
 const generatedArticle = cluster?.generated_article || '';
 const firstReporter = cluster?.first_reporter || null;
 const verificationReport = cluster?.verification_report || null;
