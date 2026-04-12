@@ -614,7 +614,7 @@ const leadVisual = getLeadVisual(cluster);
 								</div>
 								<div class="bg-card border border-border p-6 rounded-lg shadow-sm">
 									<AskPresekPanel 
-										cluster_id={id || ''} 
+										clusterId={id || ''} 
 										suggestions={askPresekSuggestions}
 										initialQuestion={askQuestion}
 										client:load 
@@ -657,8 +657,9 @@ const leadVisual = getLeadVisual(cluster);
 							)}
 
 							<ClusterFollowSuggestionsIsland 
-								topics={cluster.topics} 
-								tags={cluster.tags}
+								topic={cluster.topics?.[0] || ''} 
+								source={cluster.articles[0]?.source || ''}
+								adjacentTopic={adjacentTopic}
 								client:visible 
 							/>
 						</div>
