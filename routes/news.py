@@ -361,10 +361,17 @@ async def get_cluster_detail(cluster_id: str):
         s_row = db.execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
         synthesis = s_row["summary"] if s_row else None
         generated_article = s_row["generated_article"] if s_row else None
-        sentiment = json.loads(s_row["sentiment"]) if s_row and s_row["sentiment"] else None
-        verification_report = json.loads(s_row["verification_report"]) if s_row and s_row["verification_report"] else None
+        
+        def _parse_maybe_json(val):
+            if not val: return None
+            if isinstance(val, (dict, list)): return val
+            try: return json.loads(val)
+            except: return None
+
+        sentiment = _parse_maybe_json(s_row["sentiment"]) if s_row else None
+        verification_report = _parse_maybe_json(s_row["verification_report"]) if s_row else None
         ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
-        perspectives = json.loads(s_row["perspectives"]) if s_row and s_row["perspectives"] else []
+        perspectives = _parse_maybe_json(s_row["perspectives"]) or []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         m_row = db.execute_one("SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))

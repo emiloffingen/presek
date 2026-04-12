@@ -12,10 +12,15 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, Response, FileResponse
 from pathlib import Path
 
+import redis as _redis_lib
 from database import db_manager as db
 from utils import (
     cached_response, set_cache, record_runtime_event, redis_client
 )
+
+# Use a separate client for binary data to avoid UnicodeDecodeError from utils.redis_client
+_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+binary_redis_client = _redis_lib.from_url(_redis_url, decode_responses=False)
 from health import _probe_database, _probe_redis
 from local_nlp import generate_local_placeholder
 from ai_engine import _call_ai_async
@@ -94,26 +99,98 @@ async def get_cluster_share_card(cluster_id: str):
     return Response(content=out.getvalue(), media_type="image/png")
 
 @router.get("/proxy")
-async def proxy_image(url: str = Query(""), w: Optional[str] = None, cid: Optional[str] = None, t: Optional[str] = None, cat: Optional[str] = None):
-    if not url: raise HTTPException(status_code=400)
-    if url.startswith("/static/"):
-        rel = url[len("/static/"):].lstrip("/")
-        cand = (_STATIC_ROOT / rel).resolve()
-        if not cand.exists(): raise HTTPException(status_code=404)
-        return FileResponse(cand)
+async def proxy_image(
+    url: str = Query(""), 
+    w: Optional[str] = None, 
+    cid: Optional[str] = None, 
+    t: Optional[str] = None, 
+    cat: Optional[str] = None
+):
+    if not url:
+        raise HTTPException(status_code=400, detail="Missing url")
     
+    if url.startswith("/static/"):
+        relative = url[len("/static/"):].lstrip("/")
+        try:
+            candidate = (_STATIC_ROOT / relative).resolve()
+            candidate.relative_to(_STATIC_ROOT.resolve())
+            if not candidate.exists() or not candidate.is_file():
+                raise HTTPException(status_code=404)
+            return FileResponse(candidate)
+        except:
+            raise HTTPException(status_code=403)
+
+    if not re.match(r'^https?://', url):
+        raise HTTPException(status_code=400, detail="Invalid URL scheme")
+
     target_w = int(w) if w and w.isdigit() else 600
+    target_w = max(20, min(1200, target_w))
+    
     cache_key = f"proxy:bin:v3:{target_w}:{url}"
-    cached = redis_client.get(cache_key)
-    if cached: return Response(cached, media_type="image/webp")
+    try:
+        cached_bin = binary_redis_client.get(cache_key)
+        if cached_bin:
+            return Response(cached_bin, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"})
+    except: pass
+
+    def serve_fallback(reason="error"):
+        svg = generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести")
+        return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=3600", "X-Proxy-Fallback": reason})
 
     try:
-        resp = requests.get(url, timeout=5, stream=True)
-        if resp.status_code != 200: return Response(generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести"), media_type="image/svg+xml")
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        
+        # Security: Resolve IPs to prevent SSRF
+        try:
+            safe_ips = _resolve_public_ips(url)
+        except:
+            return serve_fallback("security_block")
+
+        resp = requests.get(url, headers=headers, timeout=5, stream=True, allow_redirects=True)
+        
+        # Check peer IP after connection
+        p_ip = _peer_ip(resp)
+        if not p_ip or p_ip not in safe_ips:
+            resp.close()
+            return serve_fallback("security_ip_block")
+
+        if resp.status_code != 200:
+            resp.close()
+            return serve_fallback(f"http_{resp.status_code}")
+
+        ctype = resp.headers.get("Content-Type", "").split(";")[0].strip()
+        if ctype not in _PROXY_ALLOWED_TYPES:
+            resp.close()
+            return serve_fallback("invalid_type")
+
+        # Read content safely
+        img_data = b""
+        for chunk in resp.iter_content(chunk_size=16384):
+            img_data += chunk
+            if len(img_data) > _PROXY_MAX_BYTES:
+                resp.close()
+                return serve_fallback("too_large")
+        resp.close()
+
         from PIL import Image
-        img = Image.open(BytesIO(resp.content)).convert("RGB")
-        if img.width > target_w: img = img.resize((target_w, int(img.height * (target_w/img.width))), Image.Resampling.LANCZOS)
-        out = BytesIO(); img.save(out, "WEBP", quality=75); data = out.getvalue()
-        redis_client.setex(cache_key, 86400, data)
-        return Response(data, media_type="image/webp")
-    except: return Response(generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести"), media_type="image/svg+xml")
+        img = Image.open(BytesIO(img_data))
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        
+        if img.width > target_w:
+            ratio = target_w / float(img.width)
+            img = img.resize((target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS)
+
+        out = BytesIO()
+        quality = 30 if target_w <= 80 else 75
+        img.save(out, "WEBP", quality=quality, method=4)
+        optimized = out.getvalue()
+
+        try:
+            binary_redis_client.setex(cache_key, 86400, optimized)
+        except: pass
+
+        return Response(optimized, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"})
+    except Exception as e:
+        log.warning(f"[proxy] Error for {url}: {e}")
+        return serve_fallback("exception")
