@@ -21,12 +21,17 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+_CACHE_MISS = object()  # sentinel to distinguish cache miss from Redis error
+
 def cached_response(key: str, ttl: int = 60):
-    """Read a cached JSON value from Redis."""
+    """Read a cached JSON value from Redis.
+    Returns None on cache miss or Redis error (fail-open)."""
     try:
         val = redis_client.get(key)
         if val:
             return json.loads(val)
+    except redis.ConnectionError:
+        log.error(f"[cache] Redis connection lost reading {key}")
     except Exception as e:
         log.warning(f"[cache] redis read error on {key}: {e}")
     return None
@@ -88,33 +93,40 @@ def record_runtime_event(event: str, **fields):
         log.info(f"[runtime_event] {event}")
 
 RATE_LIMIT_WINDOW = 60  # seconds
-RATE_LIMIT_MAX = 60     # requests per window
+RATE_LIMIT_MAX = 60     # requests per window (general endpoints)
+RATE_LIMIT_MAX_AI = 12  # requests per window (AI synthesis endpoints)
 
-def check_rate_limit(ip: str) -> bool:
-    """Redis-backed rate limiter using a sliding window approach."""
+# Expensive AI endpoints get stricter limits
+_AI_RATE_LIMIT_PATHS = frozenset({
+    "/api/chat_cluster", "/api/chat/stream",
+})
+
+def check_rate_limit(ip: str, path: str = "") -> bool:
+    """Redis-backed rate limiter using a sliding window approach.
+    AI synthesis endpoints have stricter limits."""
     # Exclude localhost from rate limiting to allow internal traffic (e.g. Astro SSR)
     if ip in {"127.0.0.1", "::1"}:
         return True
 
-    key = f"rate_limit:{ip}"
+    # Determine limit tier based on path
+    is_ai_path = path in _AI_RATE_LIMIT_PATHS or path.endswith("/ask")
+    max_requests = RATE_LIMIT_MAX_AI if is_ai_path else RATE_LIMIT_MAX
+    tier = "ai" if is_ai_path else "general"
+
+    key = f"rate_limit:{tier}:{ip}"
     now = time.time()
-    
+
     try:
-        # Use Redis pipeline for atomic operations
         pipe = redis_client.pipeline()
-        # Remove timestamps older than the window
         pipe.zremrangebyscore(key, 0, now - RATE_LIMIT_WINDOW)
-        # Count current requests in the window
         pipe.zcard(key)
-        # Add the new request timestamp
         pipe.zadd(key, {str(now): now})
-        # Set expiration on the key so it cleans up after inactivity
         pipe.expire(key, RATE_LIMIT_WINDOW)
-        
+
         results = pipe.execute()
         current_count = results[1]
-        
-        if current_count >= RATE_LIMIT_MAX:
+
+        if current_count >= max_requests:
             return False
         return True
     except Exception as e:

@@ -19,6 +19,12 @@ SyslogIdentifier=presek-fastapi
 MemoryHigh=640M
 MemoryMax=896M
 CPUWeight=100
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/home/emiloffingen/presek/shared/logs
 
 [Install]
 WantedBy=presek.target

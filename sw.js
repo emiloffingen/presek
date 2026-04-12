@@ -1,8 +1,9 @@
-// Пресек — Service Worker v22
+// Пресек — Service Worker v23
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v22';
-const API_CACHE_NAME = 'presek-api-v22';
+const CACHE_NAME = 'presek-v23';
+const API_CACHE_NAME = 'presek-api-v23';
+const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
 const STATIC_ASSETS = [
@@ -29,20 +30,36 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Stale-While-Revalidate for API calls
+  // Stale-While-Revalidate for API calls (with max-age enforcement)
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(
       caches.open(API_CACHE_NAME).then(cache => {
         return cache.match(e.request).then(cachedResponse => {
           const fetchPromise = fetch(e.request).then(networkResponse => {
             if (networkResponse && networkResponse.status === 200) {
-              cache.put(e.request, networkResponse.clone());
+              // Store response with timestamp header for TTL enforcement
+              const headers = new Headers(networkResponse.headers);
+              headers.set('sw-cached-at', Date.now().toString());
+              const timedResponse = new Response(networkResponse.clone().body, {
+                status: networkResponse.status,
+                statusText: networkResponse.statusText,
+                headers
+              });
+              cache.put(e.request, timedResponse);
             }
             return networkResponse;
           }).catch(() => null);
 
-          // Return cached response if available, otherwise wait for network
-          return cachedResponse || fetchPromise;
+          // Check if cached response is still fresh
+          if (cachedResponse) {
+            const cachedAt = parseInt(cachedResponse.headers.get('sw-cached-at') || '0', 10);
+            if (cachedAt && (Date.now() - cachedAt) > API_CACHE_MAX_AGE_MS) {
+              // Stale — prefer network, fall back to stale cache
+              return fetchPromise.then(net => net || cachedResponse);
+            }
+            return cachedResponse;
+          }
+          return fetchPromise;
         });
       })
     );

@@ -11,6 +11,7 @@ import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
+import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 import { TrendingUp, BarChart3, Quote, Sparkles, MessageCircle } from 'lucide-react';
 import type { NewsCluster } from '../types';
@@ -225,7 +226,7 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 									<>
 										<img
 											src={leadVisual.proxiedUrl}
-											alt=""
+											alt={leadTitle}
 											width="1200"
 											height="1000"
 											loading="eager"
@@ -262,11 +263,11 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
 							</div>
 							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-								<h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={leadTitle}></h1>
+								<h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
 							</a>
 							<p class="lead-signal">{leadSignal}</p>
 							{leadSummary && (
-								<p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={leadSummary}></p>
+								<p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
 							)}
 							<div class="lead-meta">
 								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>

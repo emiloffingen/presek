@@ -92,6 +92,28 @@ class TestDeploymentIntegrity:
         assert "node ./dist/server/entry.mjs" in astro_service
         assert "PORT=3000" in astro_service
 
+    def test_systemd_services_have_security_hardening(self):
+        for svc in (
+            "deploy/systemd/presek-fastapi.service",
+            "deploy/systemd/presek-astro.service",
+            "deploy/systemd/presek-beat.service",
+            "deploy/systemd/presek-worker.service",
+        ):
+            content = _read(svc)
+            assert "ProtectSystem=strict" in content, f"Missing ProtectSystem in {svc}"
+            assert "NoNewPrivileges=yes" in content, f"Missing NoNewPrivileges in {svc}"
+            assert "PrivateTmp=yes" in content, f"Missing PrivateTmp in {svc}"
+
+    def test_systemd_services_have_memory_limits(self):
+        for svc in (
+            "deploy/systemd/presek-fastapi.service",
+            "deploy/systemd/presek-astro.service",
+            "deploy/systemd/presek-beat.service",
+            "deploy/systemd/presek-worker.service",
+        ):
+            content = _read(svc)
+            assert "MemoryMax=" in content, f"Missing MemoryMax in {svc}"
+
     def test_nginx_routes_api_and_site_to_separate_upstreams(self):
         nginx_conf = _read("deploy/nginx/presek.live.conf")
         assert "upstream presek_fastapi" in nginx_conf
@@ -115,6 +137,16 @@ class TestDeploymentIntegrity:
         assert "sudo nginx -t" in deploy_script
         assert "sudo systemctl reload \"$NGINX_SERVICE\"" in deploy_script
         assert "sudo systemctl restart \"$SYSTEMD_TARGET\"" in deploy_script
+
+    def test_deploy_uses_file_locking(self):
+        deploy_script = _read("deploy/deploy_release.sh")
+        assert "flock" in deploy_script
+
+    def test_gitignore_covers_common_patterns(self):
+        gitignore = _read(".gitignore")
+        for pattern in (".env", "venv/", "__pycache__/", "node_modules/",
+                        ".mypy_cache/", ".ruff_cache/", "web/dist/"):
+            assert pattern in gitignore, f"Missing {pattern} in .gitignore"
 
     def test_smoke_check_covers_public_status_and_security_headers(self):
         smoke = _read("deploy/smoke_check.sh")

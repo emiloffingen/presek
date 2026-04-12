@@ -12,6 +12,7 @@ import AskPresekPanel from '../../components/AskPresekPanel.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
 import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
@@ -422,10 +423,10 @@ const schema = cluster ? {
 								{ label: "Детали за вест" }
 							]} />
 
-							<h1 class:list={["cluster-headline", { "cluster-headline-cyrillic": headlineIsCyrillic }]} set:html={displayHeadline}>
+							<h1 class:list={["cluster-headline", { "cluster-headline-cyrillic": headlineIsCyrillic }]} set:html={sanitizeHtml(displayHeadline)}>
 							</h1>
 
-							{leadDescription && <p class:list={["cluster-dek", { "cluster-dek-cyrillic": leadDescriptionIsCyrillic }]} set:html={cleanAndDecode(leadDescription)}></p>}
+							{leadDescription && <p class:list={["cluster-dek", { "cluster-dek-cyrillic": leadDescriptionIsCyrillic }]} set:html={sanitizeHtml(cleanAndDecode(leadDescription))}></p>}
 
 							<div class="cluster-header-meta">
 								<span class="flex items-center gap-1"><Clock size={12}/> {getTimeStr(cluster.articles[0].created_at)}</span>
@@ -510,7 +511,7 @@ const schema = cluster ? {
 									<p class="cluster-summary-label">Што носи кластерот</p>
 									<div class="cluster-summary-copy">
 										{headerBriefItems.map((line: string) => (
-											<p class="mb-2 last:mb-0" set:html={cleanAndDecode(line)}></p>
+											<p class="mb-2 last:mb-0" set:html={sanitizeHtml(cleanAndDecode(line))}></p>
 										))}
 									</div>
 									{sourcePreview.length > 0 && (
@@ -562,7 +563,7 @@ const schema = cluster ? {
 												<span class="text-nyt-accent font-black mt-1">●</span>
 												<span>
 													{item.source && <strong class="nyt-section-label text-[10px] mr-2 text-nyt-accent">[{item.source}]</strong>}
-													<span set:html={item.content}></span>
+													<span set:html={sanitizeHtml(item.content)}></span>
 												</span>
 											</li>
 										))}
@@ -583,7 +584,7 @@ const schema = cluster ? {
 										{synthesisItems.map(item => (
 											<li class="flex gap-3 items-start border-b border-border/50 pb-3 last:border-0">
 												<span class="text-nyt-accent font-black mt-0.5">●</span>
-												<span set:html={item.content}></span>
+												<span set:html={sanitizeHtml(item.content)}></span>
 											</li>
 										))}
 									</ul>
@@ -600,8 +601,8 @@ const schema = cluster ? {
 								<div class="perspective-grid">
 									{perspectives.map((p: any) => (
 										<div class="perspective-card">
-											<h3 set:html={p.angle}></h3>
-											<p set:html={p.content}></p>
+											<h3 set:html={sanitizeHtml(p.angle)}></h3>
+											<p set:html={sanitizeHtml(p.content)}></p>
 										</div>
 									))}
 								</div>
@@ -622,7 +623,7 @@ const schema = cluster ? {
 											<h3>Потврдени факти</h3>
 											<ul>
 												{verificationReport.agreements.map((item: string) => (
-													<li set:html={cleanAndDecode(item)}></li>
+													<li set:html={sanitizeHtml(cleanAndDecode(item))}></li>
 												))}
 											</ul>
 										</div>
@@ -633,7 +634,7 @@ const schema = cluster ? {
 											<h3>Разлики во известувањето</h3>
 											<ul>
 												{verificationReport.conflicts.map((item: string) => (
-													<li set:html={cleanAndDecode(item)}></li>
+													<li set:html={sanitizeHtml(cleanAndDecode(item))}></li>
 												))}
 											</ul>
 										</div>
@@ -642,7 +643,7 @@ const schema = cluster ? {
 
 								{verificationReport.context && typeof verificationReport.context === 'string' && (
 									<div class="factcheck-footer">
-										<p><strong>Контекст:</strong> <span set:html={cleanAndDecode(verificationReport.context)}></span></p>
+										<p><strong>Контекст:</strong> <span set:html={sanitizeHtml(cleanAndDecode(verificationReport.context))}></span></p>
 									</div>
 								)}
 							</section>

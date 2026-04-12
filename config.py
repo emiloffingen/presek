@@ -22,8 +22,8 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
-VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgrHKcVhuDtMQkOa3hRFd1hjOMCeXYr3SNXttf2kCFH0WhRANCAAStJXagEMl2Udqb5O4MtqAZ8sXqxllnVzL5Ptq+0SpkGprcnLhv3osfL4M2A9dRgY71pKS1/JzHUoqnzXEFFFZA")
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErSV2oBDJdlHam+TuDLagGfLF6sZZZ1cy+T7avtEqZBqa3Jy4b96LHy+DNgPXUYGO9aSktfycx1KKp81xBRRWQA==")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 

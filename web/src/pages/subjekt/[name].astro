@@ -7,6 +7,7 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Footer from '../../components/Footer.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode } from '../../utils/textUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const { name } = Astro.params;
 const decodedName = decodeURIComponent(name || "");
@@ -68,7 +69,7 @@ const compactClusters = clusters.slice(4);
                                     <article class="nyt-article variant-featured">
                                         <div class="article-body">
                                             <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-                                                <h2 class="headline headline-standard" set:html={cleanAndDecode(cluster.title || '')}></h2>
+                                                <h2 class="headline headline-standard" set:html={sanitizeHtml(cleanAndDecode(cluster.title || ''))}></h2>
                                             </a>
                                             {cluster.bullets && cluster.bullets.length > 0 && (
                                                 <p class="summary">{cluster.bullets[0]}</p>
@@ -88,7 +89,7 @@ const compactClusters = clusters.slice(4);
                                         <article class="nyt-article variant-compact">
                                             <div class="article-body">
                                                 <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-                                                    <h2 class="headline headline-standard" set:html={cleanAndDecode(cluster.title || '')}></h2>
+                                                    <h2 class="headline headline-standard" set:html={sanitizeHtml(cleanAndDecode(cluster.title || ''))}></h2>
                                                 </a>
                                                 {cluster.bullets && cluster.bullets.length > 0 && (
                                                     <p class="summary">{cluster.bullets[0]}</p>

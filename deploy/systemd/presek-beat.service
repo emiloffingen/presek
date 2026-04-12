@@ -16,6 +16,14 @@ TimeoutStartSec=90
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-beat
+MemoryHigh=256M
+MemoryMax=384M
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/home/emiloffingen/presek/shared
 
 [Install]
 WantedBy=presek.target

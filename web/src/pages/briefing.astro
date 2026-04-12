@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import { Clock, Sparkles, BookOpen } from 'lucide-react';
+import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 
 const API_URL = apiBaseUrl();
@@ -116,7 +117,7 @@ function formatBriefing(content: string) {
 			<div class="briefing-grid">
 				<div class="briefing-main">
 					{briefing ? (
-						<article class="briefing-content prose-nyt briefing-card" set:html={formatBriefing(briefing.content)} />
+						<article class="briefing-content prose-nyt briefing-card" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
 					) : (
 						<div class="briefing-empty">
 							<p class="text-4xl mb-4">📋</p>

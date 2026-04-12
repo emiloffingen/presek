@@ -55,7 +55,13 @@ class DatabaseManager:
     def get_conn(self):
         if not self._pool:
             return psycopg2.connect(DATABASE_URL)
-        return self._pool.getconn()
+        conn = self._pool.getconn()
+        try:
+            conn.isolation_level  # validate connection is alive
+        except Exception:
+            self._pool.putconn(conn, close=True)
+            conn = self._pool.getconn()
+        return conn
 
     def put_conn(self, conn):
         if self._pool:
@@ -157,10 +163,8 @@ class DatabaseManager:
         if topic:
             sql += " AND topic = %s"; params.append(topic)
         if sentiment:
-            # Use parameterized queries for safety (LIKE with ESCAPE is still vulnerable)
-            # Escape special characters for LIKE: % and _ are wildcards, \ is escape char
             escaped_sentiment = sentiment.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-            sql += " AND summary ILIKE %s"
+            sql += " AND summary ILIKE %s ESCAPE '\\'"
             params.append(f"%{escaped_sentiment}%")
         
         # Ensure limit is an integer

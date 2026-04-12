@@ -22,3 +22,7 @@ static/dist/
 web/dist/
 web/.env.local
 .claude/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.hypothesis/

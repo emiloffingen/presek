@@ -58,7 +58,7 @@ ensure_shared_web_deps() {
     install -d "$SHARED_WEB_DEPS_DIR"
     cp "$SOURCE_ROOT/web/package.json" "$SOURCE_ROOT/web/package-lock.json" "$SHARED_WEB_DEPS_DIR/"
     info "Installing shared Astro dependencies"
-    (cd "$SHARED_WEB_DEPS_DIR" && npm ci)
+    (cd "$SHARED_WEB_DEPS_DIR" && npm ci) || fail "npm ci failed — Astro dependencies not installed"
     ok "Shared Astro dependencies installed"
   fi
 

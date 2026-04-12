@@ -81,6 +81,7 @@ build_release() {
 
 run_release_checks() {
   if [ "$RUN_TESTS" = "1" ]; then
+    [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL must be set when RUN_TESTS=1"
     info "Running pytest before switch"
     (cd "$SOURCE_ROOT" && pytest -q)
   fi
@@ -117,9 +118,16 @@ main() {
   need_cmd npm
   need_cmd sudo
   need_cmd bash
+  need_cmd flock
 
   assert_paths_safe
   ensure_layout
+
+  # Acquire exclusive deploy lock to prevent concurrent deploys
+  LOCK_FILE="$APP_ROOT/.deploy.lock"
+  exec 9>"$LOCK_FILE"
+  flock -n 9 || fail "Another deploy is already in progress (lock: $LOCK_FILE)"
+
   [ ! -e "$RELEASE_DIR" ] || fail "Release already exists: $RELEASE_DIR"
 
   local previous_target=""
@@ -144,6 +152,8 @@ main() {
       switch_current_link "$previous_target"
       ln -sfn "$RELEASE_DIR" "$PREVIOUS_LINK"
       sudo systemctl restart "$SYSTEMD_TARGET"
+      info "Running post-rollback smoke checks"
+      ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
     fi
     fail "Release deploy failed"
   fi

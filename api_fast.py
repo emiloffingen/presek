@@ -122,8 +122,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Sync-Token", "X-Admin-Token", "X-Requested-With"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
@@ -286,6 +286,15 @@ def _safe_tracking_redirect_path(path: str) -> str:
         return "/briefing"
     if clean.startswith("//") or clean.startswith("/api/"):
         return "/briefing"
+    # Block path traversal and suspicious characters
+    if ".." in clean or "\\" in clean or ";" in clean:
+        return "/briefing"
+    # Whitelist known path prefixes
+    _allowed = ("/briefing", "/cluster/", "/trending", "/archive", "/stati",
+                "/subjekt/", "/tema/", "/izvori", "/status", "/stats", "/about",
+                "/contact", "/privacy", "/debug/")
+    if not any(clean.startswith(prefix) for prefix in _allowed) and clean != "/":
+        return "/briefing"
     return clean
 
 
@@ -349,7 +358,7 @@ def _row_int_value(row, key: str = "count", default: int = 0) -> int:
 def _news_row_limit(page: int, page_size: int) -> int:
     # Fetch enough article rows to rank cluster pages beyond the first page
     # instead of truncating every request to the same shallow window.
-    return min(max((page + 1) * page_size * 12, 200), 5000)
+    return min(max((page + 1) * page_size * 12, 200), 2000)
 
 
 def _client_ip_for_request(request: Request) -> str:
@@ -389,10 +398,21 @@ def _source_admin_authorized(request: Request) -> bool:
     client_host = str(getattr(getattr(request, "client", None), "host", "") or "").strip()
     forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
 
-    if expected and token and secrets.compare_digest(token, expected):
+    # Fail closed: if no admin token is configured, only allow localhost
+    if not expected:
+        is_local = client_host in {"127.0.0.1", "::1"} and not forwarded_for
+        if not is_local:
+            log.warning(f"[security] Admin access denied: PRESEK_ADMIN_TOKEN not configured, non-local client {client_host}")
+        return is_local
+
+    if not token:
+        log.warning(f"[security] Admin access denied: no token provided from {client_host}")
+        return False
+
+    if secrets.compare_digest(token, expected):
         return True
-    if client_host in {"127.0.0.1", "::1"} and not forwarded_for:
-        return True
+
+    log.warning(f"[security] Admin access denied: invalid token from {client_host}")
     return False
 
 
@@ -818,7 +838,7 @@ async def apply_runtime_policies(request: Request, call_next):
     if _is_rate_limited_path(request.url.path):
         client_host = _client_ip_for_request(request)
 
-        if not check_rate_limit(client_host):
+        if not check_rate_limit(client_host, request.url.path):
             return _apply_security_headers(JSONResponse(status_code=429, content=_rate_limit_error_payload()))
 
     response = await call_next(request)
@@ -905,7 +925,7 @@ async def og_cluster_image(cluster_id: str):
   <text x="100" y="120" font-family="serif" font-size="32" font-weight="800" fill="#E63946" letter-spacing="2">ПРЕСЕК АНАЛИЗА</text>
   <text x="100" y="240" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line1}</text>
   <text x="100" y="320" font-family="serif" font-size="56" font-weight="bold" fill="#ffffff">{line2}</text>
-  <text x="100" y="520" font-family="sans-serif" font-size="28" fill="#aaaaaa">{count} извори анализирани во овој кластер</text>
+  <text x="100" y="520" font-family="sans-serif" font-size="28" fill="#aaaaaa">{int(count)} извори анализирани во овој кластер</text>
   <text x="1100" y="560" font-family="serif" font-size="48" font-weight="bold" fill="#E63946" text-anchor="end">пресек.мк</text>
 </svg>"""
     return Response(svg, media_type="image/svg+xml")
@@ -918,7 +938,7 @@ async def og_image():
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#1a1a2e"/>
   <text x="600" y="280" font-family="sans-serif" font-size="72" font-weight="bold" fill="#ffffff" text-anchor="middle">Пресек</text>
-  <text x="600" y="380" font-family="sans-serif" font-size="36" fill="#aaaaaa" text-anchor="middle">{count} статии индексирани</text>
+  <text x="600" y="380" font-family="sans-serif" font-size="36" fill="#aaaaaa" text-anchor="middle">{int(count)} статии индексирани</text>
 </svg>"""
     return Response(svg, media_type="image/svg+xml")
 

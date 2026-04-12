@@ -2,6 +2,7 @@
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
+import { sanitizeHtml } from '../lib/sanitize';
 import { ShieldCheck } from 'lucide-react';
 
 interface Props {
@@ -104,7 +105,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={displayTitle}>
+			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
 			</h2>
 		</a>
 
@@ -113,7 +114,7 @@ function getTimeStr(dateStr: string) {
 		</p>
 
 		{displaySummary && (
-			<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={displaySummary}>
+			<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}>
 			</p>
 		)}
 
@@ -121,7 +122,7 @@ function getTimeStr(dateStr: string) {
             <ul class="sub-headlines">
                 {cluster.articles.slice(1, 4).map((sub: any) => (
                     <li>
-                        <a href={`/cluster/${cluster.cluster_id}`} set:html={cleanAndDecode(sub.title)}>
+                        <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(cleanAndDecode(sub.title))}>
                         </a>
                     </li>
                 ))}

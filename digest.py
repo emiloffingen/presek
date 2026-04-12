@@ -332,6 +332,15 @@ def send_email(html: str, subject: str,
             server.sendmail(from_addr, to_address, msg.as_string())
         log.info(f"Email sent to {to_address} via {host}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        log.error(f"SMTP auth failure on {host} (permanent): {e}")
+        return False
+    except smtplib.SMTPRecipientsRefused as e:
+        log.error(f"SMTP recipient refused {to_address} (permanent): {e}")
+        return False
+    except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, OSError) as e:
+        log.warning(f"SMTP transient error on {host} (retryable): {e}")
+        return False
     except Exception as e:
         log.warning(f"SMTP error on {host}: {e}")
         return False

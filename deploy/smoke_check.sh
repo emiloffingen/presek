@@ -31,9 +31,10 @@ wait_http_ok() {
 
   info "Checking $name at $url"
   for _ in $(seq 1 "$MAX_ATTEMPTS"); do
-    code="$(curl -sS -o /tmp/presek-smoke-body.$$ -w "%{http_code}" "$url" 2>/dev/null || true)"
-    body="$(cat /tmp/presek-smoke-body.$$ 2>/dev/null || true)"
-    rm -f /tmp/presek-smoke-body.$$ 2>/dev/null || true
+    _tmp="$(mktemp)"
+    code="$(curl -sS -o "$_tmp" -w "%{http_code}" "$url" 2>/dev/null || true)"
+    body="$(cat "$_tmp" 2>/dev/null || true)"
+    rm -f "$_tmp" 2>/dev/null || true
     if [ "$code" = "$expected" ]; then
       if [ -z "$body_pattern" ] || printf "%s" "$body" | grep -Fq "$body_pattern"; then
         ok "$name responded with HTTP $code"
@@ -76,9 +77,10 @@ wait_health_ready() {
 
   info "Checking $name at $url"
   for _ in $(seq 1 "$MAX_ATTEMPTS"); do
-    code="$(curl -sS -o /tmp/presek-smoke-body.$$ -w "%{http_code}" "$url" 2>/dev/null || true)"
-    body="$(cat /tmp/presek-smoke-body.$$ 2>/dev/null || true)"
-    rm -f /tmp/presek-smoke-body.$$ 2>/dev/null || true
+    _tmp="$(mktemp)"
+    code="$(curl -sS -o "$_tmp" -w "%{http_code}" "$url" 2>/dev/null || true)"
+    body="$(cat "$_tmp" 2>/dev/null || true)"
+    rm -f "$_tmp" 2>/dev/null || true
 
     if [ "$code" = "200" ]; then
       if BODY="$body" EXPECT_DB="$expect_db" EXPECT_REDIS="$expect_redis" python3 - <<'PY'

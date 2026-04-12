@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
+import { sanitizeHtml } from '../lib/sanitize';
 
 interface NewsCardProps {
   cluster: any;
@@ -124,7 +125,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             className={`headline ${isLead ? 'headline-lead' : 'headline-standard'} ${
               titleIsCyrillic ? 'headline-cyrillic' : ''
             }`}
-            dangerouslySetInnerHTML={{ __html: displayTitle }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
 
@@ -133,7 +134,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         {displaySummary && (
           <p
             className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''}`}
-            dangerouslySetInnerHTML={{ __html: displaySummary }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(displaySummary) }}
           ></p>
         )}
 
@@ -143,7 +144,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <li key={idx}>
                 <a
                   href={`/cluster/${cluster.cluster_id}`}
-                  dangerouslySetInnerHTML={{ __html: cleanAndDecode(sub.title) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(cleanAndDecode(sub.title)) }}
                 ></a>
               </li>
             ))}
