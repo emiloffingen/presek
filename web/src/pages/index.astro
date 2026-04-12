@@ -393,9 +393,9 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 							<p class="section-note">Приказни за кои веќе известуваат повеќе медиуми и кои вреди да се следат.</p>
 						</div>
 						{developmentsFeatured.length > 0 && (
-							<div class="news-feed-grid news-feed-grid-featured">
+							<div class="news-feed-grid news-feed-grid-compact">
 									{developmentsFeatured.map((cluster: NewsCluster) => (
-									<NewsCard cluster={cluster} variant="featured" />
+									<NewsCard cluster={cluster} variant="compact" />
 								))}
 							</div>
 						)}
