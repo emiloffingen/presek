@@ -3,9 +3,10 @@ import { ShieldCheck } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
+import type { NewsCluster, Article } from '../types';
 
 interface NewsCardProps {
-  cluster: any;
+  cluster: NewsCluster;
   isLead?: boolean;
   variant?: 'standard' | 'featured' | 'compact' | 'wire';
 }
@@ -36,7 +37,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const displayTitle = cleanAndDecode(main.title);
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
-  const getCardSummary = (article: any, lead = false) => {
+  const getCardSummary = (article: Article, lead = false) => {
     let text = article?.summary || article?.description || '';
     const trimmed = typeof text === 'string' ? text.trim() : '';
     if (
@@ -112,7 +113,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </span>
           )}
           {cluster.is_breaking && <span className="breaking-label">Во живо</span>}
-          {cluster.has_fact_check && (
+          {anyFactCheck(cluster.articles) && (
             <span className="fact-check-badge">
               <ShieldCheck size={10} /> ФАКТ-ЧЕК
             </span>
@@ -140,7 +141,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         {isLead && cluster.articles.length > 1 && (
           <ul className="sub-headlines">
-            {cluster.articles.slice(1, 4).map((sub: any, idx: number) => (
+            {cluster.articles.slice(1, 4).map((sub: Article, idx: number) => (
               <li key={idx}>
                 <a
                   href={`/cluster/${cluster.cluster_id}`}
@@ -220,3 +221,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     </article>
   );
 };
+
+function anyFactCheck(articles: Article[]) {
+  return articles.some(a => a.is_fact_check);
+}
+

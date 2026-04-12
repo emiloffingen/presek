@@ -14,6 +14,13 @@ export interface Article {
   reading_time: number;
   summary?: string;
   is_translated: number;
+  source_signal?: {
+    trust_label?: string;
+    role_label?: string;
+    trust_level?: number;
+  };
+  is_fact_check?: boolean;
+  image_caption?: string;
 }
 
 export interface ClusterSummary {
@@ -30,11 +37,24 @@ export interface NewsCluster {
   has_synthesis: boolean;
   has_balanced: boolean;
   reading_time: number;
+  reason?: string;
+  entities?: string[];
+  homepage_score?: number;
 }
 
 export interface ClusterDetail extends NewsCluster {
   synthesis: string;
+  generated_article?: string;
   perspectives: ClusterSummary[];
+  sentiment?: any;
+  verification_report?: any;
+  ai_summary_bullets?: string[];
+  synthesis_updated_at?: string;
+  synthesis_freshness?: {
+    is_stale: boolean;
+    new_article_count: number;
+    reasons: string[];
+  };
   tags: string[];
   topics: string[];
   related: Array<{
@@ -42,6 +62,7 @@ export interface ClusterDetail extends NewsCluster {
     title: string;
     image_url: string | null;
     tags?: string[];
+    relationship_label?: string;
   }>;
   total_reading_time: number;
 }

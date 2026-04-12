@@ -449,6 +449,7 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_metadata_tags ON cluster_metadata USING GIN (tags)")
                 
                 # Knowledge Graph Tables
                 cur.execute("""

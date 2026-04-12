@@ -265,6 +265,42 @@ LOCAL_TRANSLATION_MONTHS = {
     "october": "октомври",
     "november": "ноември",
     "december": "декември",
+}
+
+# --- Macedonian Lemmatization Logic ---
+_MK_PLURAL_SUFFIXES = [
+    (re.compile(r"ите$"), ""), (re.compile(r"ата$"), ""), (re.compile(r"ото$"), ""),
+    (re.compile(r"та$"), ""), (re.compile(r"то$"), ""), (re.compile(r"от$"), ""),
+    (re.compile(r"те$"), ""), (re.compile(r"и$"), ""), (re.compile(r"а$"), ""),
+    (re.compile(r"е$"), ""), (re.compile(r"овци$"), ""), (re.compile(r"евци$"), ""),
+]
+
+_MK_IRREGULAR_LEMMAS = {
+    "луѓе": "човек", "деца": "дете", "пазари": "пазар", "пазарот": "пазар",
+    "министри": "министер", "министерот": "министер", "претседатели": "претседател",
+    "избори": "избор", "изборите": "избор", "патишта": "пат", "светови": "свет",
+}
+
+def lemmatize_mk(word: str) -> str:
+    """Reduces a Macedonian word to its approximate lemma (base form)."""
+    w = word.lower().strip()
+    if len(w) <= 3: return w
+    if w in _MK_IRREGULAR_LEMMAS: return _MK_IRREGULAR_LEMMAS[w]
+    for rx, repl in _MK_PLURAL_SUFFIXES[:7]:
+        if rx.search(w):
+            w = rx.sub(repl, w)
+            break
+    if len(w) > 3:
+        for rx, repl in _MK_PLURAL_SUFFIXES[7:]:
+            if rx.search(w):
+                w = rx.sub(repl, w)
+                break
+    if w.endswith("ц"): w = w[:-1] + "це"
+    if w.endswith("шт"): w = w[:-2] + "ште"
+    return w
+
+    "november": "ноември",
+    "december": "декември",
     "monday": "понеделник",
     "tuesday": "вторник",
     "wednesday": "среда",

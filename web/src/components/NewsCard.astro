@@ -4,9 +4,10 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { ShieldCheck } from 'lucide-react';
+import type { NewsCluster, Article } from '../types';
 
 interface Props {
-	cluster: any;
+	cluster: NewsCluster;
 	isLead?: boolean;
 	variant?: 'standard' | 'featured' | 'compact' | 'wire';
 }
@@ -30,7 +31,7 @@ const isFallbackArt = selectedImage.isWeak;
 const displayTitle = cleanAndDecode(main.title);
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
-function getCardSummary(article: any, lead = false) {
+function getCardSummary(article: Article, lead = false) {
 	let text = article?.summary || article?.description || '';
 	
 	// Safety check for JSON leakage - can be raw or double-escaped from DB
@@ -96,7 +97,7 @@ function getTimeStr(dateStr: string) {
 			<span class="source-label">{main.source}</span>
 			{showTrustBadge && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
 			{cluster.is_breaking && <span class="breaking-label">Во живо</span>}
-			{cluster.has_fact_check && (
+			{cluster.articles.some(a => a.is_fact_check) && (
 				<span class="fact-check-badge">
 					<ShieldCheck size={10} /> ФАКТ-ЧЕК
 				</span>
@@ -120,7 +121,7 @@ function getTimeStr(dateStr: string) {
 
         {isLead && cluster.articles.length > 1 && (
             <ul class="sub-headlines">
-                {cluster.articles.slice(1, 4).map((sub: any) => (
+                {cluster.articles.slice(1, 4).map((sub: Article) => (
                     <li>
                         <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(cleanAndDecode(sub.title))}>
                         </a>
@@ -128,6 +129,7 @@ function getTimeStr(dateStr: string) {
                 ))}
             </ul>
         )}
+
 
 		<div class="footer-meta">
 			<span>{getTimeStr(main.created_at)}</span>

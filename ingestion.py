@@ -548,23 +548,45 @@ async def ingest_all_sources_async():
             new_count = len(results)
             conn.commit()
             
-            # Post-ingestion tasks
+            # Post-ingestion tasks: batch trigger translations/summaries
             if new_count > 0:
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles", "count": new_count, "time": cycle_now})
                 
-                # Translation & Summarization triggers
                 from tasks import translate_article_task, summarize_article_task
+                
+                # Use results from RETURNING id, country to avoid N+1 SELECTs
+                # prepared_rows maps 1:1 to candidates, but execute_values with RETURNING
+                # might only return rows that were actually inserted (not skipped by ON CONFLICT)
+                
+                # We need a way to correlate RETURNING results with their titles/descs
+                # Since execute_values returns rows in the order of the values provided:
+                # We only got IDs for inserted rows. 
+                
+                inserted_ids = [r[0] for r in results]
+                # Filter candidates/prepared_rows to only those that were inserted
+                # This is tricky because some might have been skipped.
+                # Simplest safe optimization: trigger for all returned IDs
+                
                 for r_id, r_country in results:
-                    art = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (r_id,))
-                    if not art: continue
+                    # Find the candidate matching this data to avoid SELECT title, description
+                    # Since we don't have a stable way to match RETURNING to input order 
+                    # without more complex logic, we do one small batch fetch if needed,
+                    # but even better: just pass the known data if we can match it.
+                    
+                    # Fallback to a single batch fetch for all inserted IDs
+                    pass
 
-                    if r_country != 'MK':
-                        # International: Translate first, then summarize (handled inside translate_article_task)
-                        translate_article_task.delay(r_id, art["title"], art["description"])
-                    else:
-                        # Macedonian: Summarize immediately
-                        summarize_article_task.delay(r_id, art["title"])
+                if inserted_ids:
+                    inserted_data = db.execute(
+                        "SELECT id, title, description, country FROM articles WHERE id = ANY(%s)",
+                        (inserted_ids,)
+                    )
+                    for art in inserted_data:
+                        if art["country"] != 'MK':
+                            translate_article_task.delay(art["id"], art["title"], art["description"])
+                        else:
+                            summarize_article_task.delay(art["id"], art["title"])
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():
