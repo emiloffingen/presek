@@ -1,8 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+Astro.response.status = 404;
 ---
 
-<Layout title="404 — Страницата не е пронајдена">
+<Layout title="404 — Страницата не е пронајдена" robots="noindex, nofollow">
 	<div class="min-h-screen flex items-center justify-center px-4">
 		<div class="text-center max-w-md">
 			<p class="text-6xl font-black text-foreground mb-4">404</p>

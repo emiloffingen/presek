@@ -837,8 +837,15 @@ async def apply_runtime_policies(request: Request, call_next):
     start_time = time.time()
     if _is_rate_limited_path(request.url.path):
         client_host = _client_ip_for_request(request)
+        
+        # Simple auth check (X-Sync-Token or X-Admin-Token or Session cookie)
+        is_auth = (
+            request.headers.get("X-Sync-Token") or 
+            request.headers.get("X-Admin-Token") or 
+            request.cookies.get("presek_session")
+        )
 
-        if not check_rate_limit(client_host, request.url.path):
+        if not check_rate_limit(client_host, request.url.path, is_authenticated=bool(is_auth)):
             return _apply_security_headers(JSONResponse(status_code=429, content=_rate_limit_error_payload()))
 
     response = await call_next(request)

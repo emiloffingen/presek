@@ -25,6 +25,7 @@ need_cmd() {
 main() {
   need_cmd pg_dump
   need_cmd gzip
+  need_cmd gpg
 
   if [ -f "$ENV_FILE" ]; then
     set -a
@@ -39,16 +40,24 @@ main() {
   fi
 
   [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
+  [ -n "${BACKUP_PASSPHRASE:-}" ] || warn "BACKUP_PASSPHRASE is not set; backup will be gzipped but NOT encrypted"
 
   install -d "$BACKUP_DIR"
 
-  local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz"
-  info "Creating PostgreSQL backup at $outfile"
-  pg_dump "$DATABASE_URL" | gzip -9 > "$outfile"
+  if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
+    local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz.gpg"
+    info "Creating encrypted PostgreSQL backup at $outfile"
+    pg_dump "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
+  else
+    local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz"
+    info "Creating PostgreSQL backup at $outfile"
+    pg_dump "$DATABASE_URL" | gzip -9 > "$outfile"
+  fi
+  
   ok "Backup complete"
 
   info "Pruning backups older than $KEEP_DAYS days"
-  find "$BACKUP_DIR" -type f -name 'presek-*.sql.gz' -mtime +"$KEEP_DAYS" -delete
+  find "$BACKUP_DIR" -type f \( -name 'presek-*.sql.gz' -o -name 'presek-*.sql.gz.gpg' \) -mtime +"$KEEP_DAYS" -delete
   ok "Backup pruning complete"
 }
 

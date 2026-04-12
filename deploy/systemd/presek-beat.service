@@ -1,8 +1,10 @@
 [Unit]
 Description=Presek Celery beat scheduler
-After=network-online.target presek-worker.service
+After=network-online.target presek-worker.service postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=simple

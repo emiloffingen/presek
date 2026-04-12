@@ -151,6 +151,8 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	reason: `${count} појавувања во активни кластери за оваа тема.`,
 }));
 
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
+
 const leadSummary =
 	cleanText(leadCluster?.articles?.[0]?.summary) ||
 	cleanText(leadCluster?.articles?.[0]?.description) ||
@@ -172,7 +174,11 @@ function topicIntro() {
 }
 ---
 
-<Layout title={topic ? `${topic} | Тема` : 'Тема'}>
+<Layout 
+	title={topic ? `${topic} | Тема` : 'Тема'} 
+	description={`Сè што е активно за темата ${topic} — кластери, извори, перспективи и развој.`}
+	canonical={canonicalUrl}
+>
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout topic-page">

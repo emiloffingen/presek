@@ -448,11 +448,16 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     try:
         svg_content = local_nlp.generate_local_placeholder(cluster_id, prompt, category)
         if svg_content:
+            # Validate cluster_id to prevent path traversal
+            safe_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(cluster_id))
+            if not safe_id:
+                log.warning("[ai] Invalid cluster_id for cover art: %s", cluster_id)
+                return None
             os.makedirs("static/generated", exist_ok=True)
-            path = f"static/generated/{cluster_id}.svg"
+            path = f"static/generated/{safe_id}.svg"
             with open(path, "w", encoding="utf-8") as f:
                 f.write(svg_content)
-            return f"/static/generated/{cluster_id}.svg"
+            return f"/static/generated/{safe_id}.svg"
     except Exception as e:
         log.warning(f"[ai] Local placeholder failed: {e}")
 
@@ -472,10 +477,10 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
         with urllib.request.urlopen(req, timeout=15) as resp:
             content = resp.read()
             if len(content) > 5000:
-                path = f"static/generated/{cluster_id}.jpg"
+                path = f"static/generated/{safe_id}.jpg"
                 with open(path, "wb") as f:
                     f.write(content)
-                return f"/static/generated/{cluster_id}.jpg"
+                return f"/static/generated/{safe_id}.jpg"
     except Exception as e:
         log.debug(f"[ai] AI cover art failed: {e}")
     return None

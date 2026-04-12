@@ -101,9 +101,10 @@ _AI_RATE_LIMIT_PATHS = frozenset({
     "/api/chat_cluster", "/api/chat/stream",
 })
 
-def check_rate_limit(ip: str, path: str = "") -> bool:
+def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) -> bool:
     """Redis-backed rate limiter using a sliding window approach.
-    AI synthesis endpoints have stricter limits."""
+    AI synthesis endpoints have stricter limits. 
+    Authenticated users get double the capacity."""
     # Exclude localhost from rate limiting to allow internal traffic (e.g. Astro SSR)
     if ip in {"127.0.0.1", "::1"}:
         return True
@@ -111,7 +112,12 @@ def check_rate_limit(ip: str, path: str = "") -> bool:
     # Determine limit tier based on path
     is_ai_path = path in _AI_RATE_LIMIT_PATHS or path.endswith("/ask")
     max_requests = RATE_LIMIT_MAX_AI if is_ai_path else RATE_LIMIT_MAX
-    tier = "ai" if is_ai_path else "general"
+    
+    if is_authenticated:
+        max_requests *= 2
+
+    tier = "auth" if is_authenticated else "anon"
+    tier += "_ai" if is_ai_path else "_gen"
 
     key = f"rate_limit:{tier}:{ip}"
     now = time.time()

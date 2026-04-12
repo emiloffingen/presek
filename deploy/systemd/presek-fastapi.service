@@ -1,8 +1,10 @@
 [Unit]
 Description=Presek FastAPI service
-After=network-online.target
+After=network-online.target postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=simple
