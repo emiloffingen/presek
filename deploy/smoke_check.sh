@@ -124,7 +124,7 @@ main() {
 
   if [ "$ENABLE_PUBLIC_CHECK" = "1" ]; then
     wait_http_ok "Public site" "$PUBLIC_URL" 200
-    wait_http_ok "Public status page" "$PUBLIC_URL/status" 200 "Состојба На Системот"
+    wait_http_ok "Public status page" "$PUBLIC_URL/status" 200 "Состојба на системот"
     wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
     wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
   else
