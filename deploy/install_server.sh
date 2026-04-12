@@ -8,9 +8,12 @@ SMOKE_SCRIPT="$APP_DIR/deploy/smoke_check.sh"
 
 DOMAIN="${DOMAIN:-presek.live}"
 SERVER_USER="${SERVER_USER:-emiloffingen}"
-APP_ROOT="${APP_ROOT:-/home/emiloffingen/presek}"
+APP_ROOT="${APP_ROOT:-/home/emiloffingen/presek-runtime}"
 CERT_FULLCHAIN="${CERT_FULLCHAIN:-/etc/ssl/cloudflare/presek.live/fullchain.pem}"
 CERT_PRIVKEY="${CERT_PRIVKEY:-/etc/ssl/cloudflare/presek.live/privkey.pem}"
+INSTALL_NGINX="${INSTALL_NGINX:-auto}"
+CURRENT_ROOT="$APP_ROOT/current"
+SHARED_ROOT="$APP_ROOT/shared"
 
 SITE_NAME="$DOMAIN.conf"
 SITE_AVAILABLE="/etc/nginx/sites-available/$SITE_NAME"
@@ -49,14 +52,29 @@ main() {
   require_root
 
   [ -d "$APP_ROOT/venv" ] || { echo "Missing Python virtualenv at $APP_ROOT/venv" >&2; exit 1; }
-  [ -f "$APP_ROOT/web/dist/server/entry.mjs" ] || { echo "Missing Astro server build at $APP_ROOT/web/dist/server/entry.mjs" >&2; exit 1; }
-  [ -f "$CERT_FULLCHAIN" ] || { echo "Missing TLS certificate at $CERT_FULLCHAIN" >&2; exit 1; }
-  [ -f "$CERT_PRIVKEY" ] || { echo "Missing TLS private key at $CERT_PRIVKEY" >&2; exit 1; }
+  [ -f "$SHARED_ROOT/.env" ] || { echo "Missing shared env file at $SHARED_ROOT/.env" >&2; exit 1; }
+  [ -f "$CURRENT_ROOT/api_fast.py" ] || { echo "Missing current release at $CURRENT_ROOT" >&2; exit 1; }
+  [ -f "$CURRENT_ROOT/web/dist/server/entry.mjs" ] || { echo "Missing Astro server build at $CURRENT_ROOT/web/dist/server/entry.mjs" >&2; exit 1; }
 
+  if [ "$INSTALL_NGINX" = "auto" ]; then
+    if [ -f "$CERT_FULLCHAIN" ] && [ -f "$CERT_PRIVKEY" ]; then
+      INSTALL_NGINX=1
+    else
+      INSTALL_NGINX=0
+    fi
+  fi
+
+  if [ "$INSTALL_NGINX" = "1" ]; then
+    [ -f "$CERT_FULLCHAIN" ] || { echo "Missing TLS certificate at $CERT_FULLCHAIN" >&2; exit 1; }
+    [ -f "$CERT_PRIVKEY" ] || { echo "Missing TLS private key at $CERT_PRIVKEY" >&2; exit 1; }
+  fi
+
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$APP_ROOT"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$APP_ROOT/releases"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/logs"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/backups"
   install -d /etc/systemd/system
-  install -d /etc/nginx/sites-available
-  install -d /etc/nginx/sites-enabled
-  install -d /etc/nginx/snippets
 
   for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
@@ -64,16 +82,24 @@ main() {
 
   systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
-  replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
-  cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
-
-  ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
-
   systemctl daemon-reload
   systemctl enable presek.target
 
-  nginx -t
-  systemctl restart nginx
+  if [ "$INSTALL_NGINX" = "1" ]; then
+    install -d /etc/nginx/sites-available
+    install -d /etc/nginx/sites-enabled
+    install -d /etc/nginx/snippets
+
+    replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
+    cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
+    ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
+
+    nginx -t
+    systemctl restart nginx
+  else
+    echo "Skipping nginx install/update (INSTALL_NGINX=$INSTALL_NGINX)." >&2
+  fi
+
   systemctl restart presek.target
 
   ENABLE_PUBLIC_CHECK=0 "$SMOKE_SCRIPT"
@@ -83,6 +109,15 @@ main() {
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
   echo "  sudo journalctl -u presek-fastapi.service -f"
+  echo "Release root:"
+  echo "  $APP_ROOT"
+  if [ "$INSTALL_NGINX" = "1" ]; then
+    echo "nginx:"
+    echo "  updated"
+  else
+    echo "nginx:"
+    echo "  unchanged"
+  fi
   echo "  sudo bash deploy/backup_postgres.sh"
 }
 

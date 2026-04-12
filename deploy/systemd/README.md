@@ -16,15 +16,23 @@ All services restart automatically and log to the systemd journal.
 
 ## Assumptions
 
-- Repo path: `/home/emiloffingen/presek`
+- Runtime root: `/home/emiloffingen/presek-runtime`
+- Current release symlink: `/home/emiloffingen/presek-runtime/current`
+- Shared env: `/home/emiloffingen/presek-runtime/shared/.env`
+- Shared Astro dependencies: `/home/emiloffingen/presek-runtime/shared/web-node_modules`
+- Python virtualenv: `/home/emiloffingen/presek-runtime/venv`
 - Service user: `emiloffingen`
-- Python virtualenv: `/home/emiloffingen/presek/venv`
-- Astro dependencies are installed in `web/node_modules`
 - `.env` is a shell-compatible file and is sourced with `bash`
 
 If your production server uses a different Unix user or checkout path, edit the unit files before installing them.
 
 ## Install
+
+Bootstrap the runtime root first:
+
+```sh
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/bootstrap_runtime_root.sh
+```
 
 Copy the units into `/etc/systemd/system` on the server:
 
@@ -33,6 +41,12 @@ sudo cp deploy/systemd/presek-*.service deploy/systemd/presek.target /etc/system
 sudo systemctl daemon-reload
 sudo systemctl enable presek.target
 sudo systemctl start presek.target
+```
+
+Or use the installer in systemd-only mode when nginx/TLS is managed elsewhere:
+
+```sh
+sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
 ```
 
 ## Operate
@@ -51,7 +65,8 @@ bash deploy/backup_postgres.sh
 ## Notes
 
 - `presek-fastapi.service` is the public API service.
-- `presek-astro.service` rebuilds Astro automatically when `web/dist` is missing or stale.
+- `presek-astro.service` runs from `current/web` and still guards against stale or broken `dist` output.
+- `presek-beat.service` stores scheduler state in `shared/celerybeat-schedule`, not inside a release.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.
 - After install or restart, run `deploy/smoke_check.sh` to verify the API and Astro locally before trusting the release.
 - Keep a regular backup cadence with `deploy/backup_postgres.sh` or a system cron/timer wrapper around it.

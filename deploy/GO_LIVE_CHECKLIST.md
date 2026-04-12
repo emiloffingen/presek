@@ -6,23 +6,21 @@ Run from the repo root on the production server:
 
 ```sh
 cd /home/emiloffingen/presek
-grep -E '^(DATABASE_URL|REDIS_URL|SECRET_KEY|PRESEK_ADMIN_TOKEN)=' .env
-test -f web/dist/server/entry.mjs && echo astro-build-ok
-test -d venv && echo venv-ok
+APP_ROOT=/home/emiloffingen/presek-runtime test -f "$APP_ROOT/shared/.env" && echo shared-env-ok
+APP_ROOT=/home/emiloffingen/presek-runtime test -x "$APP_ROOT/venv/bin/python3" && echo runtime-venv-ok
+APP_ROOT=/home/emiloffingen/presek-runtime test -d "$APP_ROOT/shared/web-node_modules" && echo shared-web-deps-ok
 ```
 
 Confirm:
 
-- `.env` contains `DATABASE_URL`
-- `.env` contains `REDIS_URL`
-- `.env` contains `SECRET_KEY`
-- `.env` contains `PRESEK_ADMIN_TOKEN`
-- Astro server build exists
-- Python virtualenv exists
+- `shared/.env` exists
+- runtime venv exists
+- shared Astro dependencies exist
 
 ## 2. Smoke test before release
 
 ```sh
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/runtime_status.sh
 bash deploy/smoke_check.sh
 ```
 
@@ -37,7 +35,7 @@ This now checks:
 ## 3. Deploy
 
 ```sh
-bash deploy/deploy_release.sh
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
 ```
 
 ## 4. Service verification
@@ -87,7 +85,7 @@ Go live only if:
 If release validation fails:
 
 ```sh
-bash deploy/rollback_release.sh
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/rollback_release.sh
 ```
 
 Then rerun:

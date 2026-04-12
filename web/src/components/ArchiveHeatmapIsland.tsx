@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, CalendarRange, Flame } from 'lucide-react';
+import { Loader2, CalendarRange } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 
 interface HeatmapDay {

@@ -7,11 +7,11 @@ PartOf=presek.target
 [Service]
 Type=simple
 User=emiloffingen
-WorkingDirectory=/home/emiloffingen/presek/web
+WorkingDirectory=/home/emiloffingen/presek/current/web
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
-ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek && APP_ROOT=/home/emiloffingen/presek bash deploy/ensure_astro_build.sh'
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/web && exec node ./dist/server/entry.mjs'
+ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek/current && APP_ROOT=/home/emiloffingen/presek/current WEB_DIR=/home/emiloffingen/presek/current/web bash deploy/ensure_astro_build.sh'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current/web && exec node ./dist/server/entry.mjs'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90

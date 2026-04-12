@@ -7,13 +7,12 @@ import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
-import AskPresekIsland from '../components/AskPresekIsland.tsx';
 import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
+import { TrendingUp, BarChart3, Quote, Sparkles, MessageCircle } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
@@ -140,6 +139,11 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 const freshness = health?.freshness || null;
+const homepageAskSuggestions = [
+	'Што е цврсто потврдено?',
+	'Каде изворите се разидуваат?',
+	'Што останува нејасно во оваа приказна?',
+];
 
 function getTimeStr(dateStr: string) {
     try {
@@ -268,6 +272,13 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
 								<span>·</span>
 								<span>{leadCluster.articles.length} извора</span>
+							</div>
+							<div class="lead-ask-links">
+								{homepageAskSuggestions.slice(0, 2).map((question) => (
+									<a href={`/cluster/${leadCluster.cluster_id}?ask=${encodeURIComponent(question)}`} class="lead-ask-chip">
+										<MessageCircle size={12} /> {question}
+									</a>
+								))}
 							</div>
 
 							{leadCluster.articles.length > 1 && (
@@ -440,14 +451,34 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 				<HomeRailSuggestionsIsland client:load />
 				
 				<section class="rail-module rail-module-quiet">
-					<h3 class="rail-title flex items-center gap-2 mb-4">
-						<Sparkles size={14} className="text-nyt-accent" /> AI АСИСТЕНТ
-					</h3>
-					<AskPresekIsland 
-						client:load 
-						clusterId="frontpage" 
-						suggestedQuestions={["Кои се најважните вести во моментов?", "Дали има некој итен развој денес?", "Кои теми најмногу се спомнуваат?"]} 
-					/>
+					<div class="border border-nyt-gray-300 bg-gradient-to-br from-background via-secondary to-[color:var(--surface-soft)] p-5">
+						<div class="flex items-start justify-between gap-4 mb-4">
+							<div>
+								<p class="micro-label mb-2 text-nyt-accent">Редакциски AI</p>
+								<h3 class="rail-title flex items-center gap-2 mb-2 text-foreground">
+									<MessageCircle size={14} /> ПРАШАЈ ГО ПРЕСЕК
+								</h3>
+								<p class="font-serif italic text-sm text-muted-foreground leading-relaxed max-w-[28ch]">
+									Поставете прашање за водечката приказна и добијте одговор што прави разлика меѓу потврдено, нејасно и различни агли.
+								</p>
+							</div>
+							{leadCluster && (
+								<a href={`/cluster/${leadCluster.cluster_id}`} class="nyt-section-label text-[10px] text-foreground border border-nyt-gray-300 px-3 py-1 hover:bg-foreground hover:text-background transition-colors">
+									ОТВОРИ
+								</a>
+							)}
+						</div>
+						<div class="grid gap-2 mb-4">
+							{leadCluster && homepageAskSuggestions.map((question) => (
+								<a href={`/cluster/${leadCluster.cluster_id}?ask=${encodeURIComponent(question)}`} class="border border-nyt-gray-300 bg-background/90 px-3 py-2 text-[11px] font-medium text-foreground hover:border-nyt-accent hover:text-nyt-accent transition-colors no-underline">
+									{question}
+								</a>
+							))}
+						</div>
+						<p class="text-[11px] leading-relaxed text-muted-foreground border-t border-nyt-gray-300 pt-3">
+							Одговорите се врзуваат за конкретниот кластер и за изворите што го градат, не за општ чат без контекст.
+						</p>
+					</div>
 				</section>
 
 				<NewsletterIsland client:load />
@@ -710,6 +741,35 @@ function getThumb(cluster: any, variant: 'hero' | 'card' | 'thumb' = 'card') {
 		align-items: center;
 		gap: 0.65rem;
 		flex-wrap: wrap;
+	}
+
+	.lead-ask-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin-top: 0.85rem;
+	}
+
+	.lead-ask-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.38rem;
+		padding: 0.45rem 0.75rem;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+		font-family: var(--font-sans);
+		font-size: 0.72rem;
+		font-weight: 800;
+		line-height: 1.2;
+		color: var(--foreground);
+		text-decoration: none;
+		transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+	}
+
+	.lead-ask-chip:hover {
+		border-color: var(--nyt-accent);
+		color: var(--nyt-accent);
+		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
 	}
 
 	.source-label {

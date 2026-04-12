@@ -21,6 +21,4 @@ screenshots/
 static/dist/
 web/dist/
 web/.env.local
-web-legacy/.env.local
-web-legacy/dist/
 .claude/

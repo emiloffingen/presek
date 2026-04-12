@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# start.sh — Presek local/manual fallback launcher
+# start.sh — Presek repo-local/manual fallback launcher
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 SESSION="${SCREEN_SESSION_NAME:-presek}"
@@ -301,7 +301,7 @@ print_summary() {
   echo -e "  ${CYAN}Logs:${RESET}            $LOG_DIR"
   echo -e "  ${CYAN}Reattach:${RESET}        screen -r $SESSION"
   echo -e "  ${CYAN}Stop:${RESET}            ./start.sh --stop"
-  echo -e "  ${CYAN}Production:${RESET}      systemd + nginx (see deploy/)"
+  echo -e "  ${CYAN}Production:${RESET}      presek-runtime + systemd (see deploy/)"
   divider
 }
 
@@ -314,7 +314,8 @@ touch "$WEB_LOG" "$WORKER_LOG" "$BEAT_LOG"
 
 load_env
 
-warn "start.sh is a local/manual fallback launcher. Supported production runtime is systemd + nginx."
+warn "start.sh is for repo-local/manual use only."
+warn "Supported production path is: deploy/bootstrap_runtime_root.sh -> deploy/install_server.sh -> deploy/deploy_release.sh"
 assert_manual_mode_safe
 
 case "${1:-}" in
@@ -336,6 +337,7 @@ case "${1:-}" in
     exit 0
     ;;
   --build)
+    warn "--build only bootstraps the repo-local checkout. It does not prepare the production runtime root."
     load_env
     bootstrap_runtime
     exit 0

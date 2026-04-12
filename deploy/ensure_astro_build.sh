@@ -18,6 +18,10 @@ build_required() {
     return 0
   fi
 
+  if ! build_outputs_intact; then
+    return 0
+  fi
+
   local path
   for path in \
     "$WEB_DIR/src" \
@@ -36,13 +40,80 @@ build_required() {
   return 1
 }
 
+build_outputs_intact() {
+  local server_dir="$WEB_DIR/dist/server"
+
+  [ -d "$server_dir" ] || return 1
+
+  node --input-type=module - "$server_dir" <<'EOF'
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = process.argv[2];
+const importPattern =
+  /\b(?:import|export)\b[\s\S]*?\bfrom\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+
+function walk(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walk(fullPath);
+      continue;
+    }
+    if (!entry.isFile() || !fullPath.endsWith('.mjs')) {
+      continue;
+    }
+
+    const source = fs.readFileSync(fullPath, 'utf8');
+    for (const match of source.matchAll(importPattern)) {
+      const specifier = match[1] ?? match[2];
+      if (!specifier || !specifier.startsWith('.')) {
+        continue;
+      }
+
+      const target = path.resolve(path.dirname(fullPath), specifier);
+      if (!fs.existsSync(target)) {
+        console.error(`Missing Astro server import: ${path.relative(root, fullPath)} -> ${specifier}`);
+        process.exit(1);
+      }
+    }
+  }
+}
+
+walk(root);
+EOF
+}
+
+rebuild_dist() {
+  local dist_dir="$WEB_DIR/dist"
+  local backup_dir="$WEB_DIR/.dist-backup.$$"
+
+  rm -rf "$backup_dir"
+  if [ -d "$dist_dir" ]; then
+    mv "$dist_dir" "$backup_dir"
+  fi
+
+  if (cd "$WEB_DIR" && npm run build); then
+    rm -rf "$backup_dir"
+    return 0
+  fi
+
+  echo "Astro rebuild failed; restoring previous dist/" >&2
+  rm -rf "$dist_dir"
+  if [ -d "$backup_dir" ]; then
+    mv "$backup_dir" "$dist_dir"
+  fi
+  return 1
+}
+
 main() {
   need_cmd npm
+  need_cmd node
 
   if build_required; then
     echo "Astro build is missing or stale; rebuilding..." >&2
-    rm -rf "$WEB_DIR/dist"
-    (cd "$WEB_DIR" && npm run build)
+    rebuild_dist
   fi
 }
 

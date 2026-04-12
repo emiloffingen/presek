@@ -70,6 +70,9 @@ const navItems = [
     })),
 ].slice(0, 6);
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
+const liveCount = typeof stats?.last_1h === 'number' ? stats.last_1h : null;
+const dayCount = typeof stats?.last_24h === 'number' ? stats.last_24h : null;
+const leadTopic = navItems[0]?.label || topic || category || 'Македонија';
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
@@ -131,7 +134,17 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 </a>
             </div>
             <div class="masthead-copy">
-                <p class="masthead-sub">Вестите, групирани за побрз контекст.</p>
+                <p class="masthead-sub">Вестите, групирани. Контекстот, јасен.</p>
+                <div class="masthead-metrics" aria-label="Краток преглед">
+                    <span class="masthead-metric">
+                        <strong>{liveCount && liveCount > 0 ? `+${liveCount}` : 'Живо'}</strong>
+                        <span>{liveCount && liveCount > 0 ? 'нови објави овој час' : 'уредуван преглед во тек'}</span>
+                    </span>
+                    <span class="masthead-metric">
+                        <strong>{dayCount && dayCount > 0 ? dayCount : leadTopic}</strong>
+                        <span>{dayCount && dayCount > 0 ? 'објави во последни 24ч' : 'тема што доминира сега'}</span>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -373,6 +386,9 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     .masthead-copy {
         display: flex;
         justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.55rem;
     }
 
     .masthead-sub {
@@ -384,6 +400,46 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         color: var(--muted-foreground);
         margin: 0;
         max-width: 34ch;
+    }
+
+    .masthead-metrics {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .masthead-metric {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.18rem;
+        min-width: 10rem;
+        padding: 0.6rem 0.8rem 0.55rem;
+        border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+        background:
+            linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background) 8%), color-mix(in srgb, var(--card) 80%, var(--surface-soft) 20%));
+        box-shadow:
+            0 0.65rem 1.5rem color-mix(in srgb, var(--foreground) 5%, transparent),
+            inset 0 1px 0 color-mix(in srgb, var(--background) 44%, transparent);
+    }
+
+    .masthead-metric strong {
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--foreground);
+    }
+
+    .masthead-metric span {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
     }
 
     .masthead-nav {
@@ -590,6 +646,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             display: none;
         }
 
+        .masthead-metrics {
+            display: none;
+        }
+
         .masthead-nav {
             padding-top: 0.35rem;
             padding-bottom: 0.45rem;
@@ -686,6 +746,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         .masthead-copy {
             justify-content: flex-start;
             padding-bottom: 0.2rem;
+            align-items: flex-start;
         }
     }
 </style>

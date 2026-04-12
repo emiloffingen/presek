@@ -2122,11 +2122,87 @@ h1, h2, h3 {
     color: var(--nyt-accent);
 }
 
+.ask-confidence-high {
+    color: var(--nyt-accent);
+}
+
+.ask-confidence-medium {
+    color: color-mix(in srgb, var(--nyt-accent) 65%, var(--foreground) 35%);
+}
+
+.ask-confidence-low {
+    color: var(--nyt-red);
+}
+
+.ask-scope-note {
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+    border-left: 3px solid var(--nyt-accent);
+    background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--secondary-foreground);
+}
+
 .ask-answer {
     font-family: var(--font-nyt-body);
     font-size: 1rem;
     line-height: 1.6;
     margin: 0;
+}
+
+.ask-answer-compact {
+    font-size: 0.95rem;
+}
+
+.ask-inline-citations {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: -0.35rem;
+}
+
+.ask-inline-citations-label {
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+}
+
+.ask-inline-citation {
+    padding: 0.18rem 0.46rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: var(--foreground);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.ask-inline-citation:hover {
+    border-color: var(--nyt-accent);
+    color: var(--nyt-accent);
+    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
+}
+
+.ask-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--foreground);
 }
 
 .ask-evidence-block {
@@ -2172,16 +2248,27 @@ h1, h2, h3 {
 .ask-citation {
     display: flex;
     gap: 0.75rem;
+    width: 100%;
+    text-align: left;
     text-decoration: none;
     color: inherit;
     padding: 0.5rem;
     border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .ask-citation:hover {
     background: var(--card);
     border-color: var(--border);
+}
+
+.ask-citation-targeted {
+    border-color: var(--nyt-accent) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--nyt-accent) 32%, transparent);
+    background: color-mix(in srgb, var(--background) 85%, var(--secondary) 15%);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .ask-citation div {

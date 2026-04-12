@@ -1,0 +1,78 @@
+#!/bin/bash
+set -euo pipefail
+
+APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
+CURRENT_LINK="$APP_ROOT/current"
+PREVIOUS_LINK="$APP_ROOT/previous"
+SHARED_DIR="$APP_ROOT/shared"
+VENV_DIR="$APP_ROOT/venv"
+
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
+ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
+warn() { echo -e "${YELLOW}!${RESET}  $*"; }
+fail() { echo -e "${RED}x${RESET}  $*"; }
+info() { echo -e "${BLUE}>${RESET}  $*"; }
+
+show_path_state() {
+  local label="$1"
+  local path="$2"
+
+  if [ -L "$path" ]; then
+    ok "$label: $(readlink -f "$path")"
+    return
+  fi
+
+  if [ -e "$path" ]; then
+    ok "$label: $path"
+    return
+  fi
+
+  fail "$label: missing ($path)"
+}
+
+show_service_state() {
+  local unit="$1"
+  local state
+
+  if ! command -v systemctl >/dev/null 2>&1; then
+    warn "$unit: systemctl unavailable"
+    return
+  fi
+
+  state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+  case "$state" in
+    active) ok "$unit: active" ;;
+    *) warn "$unit: ${state:-unknown}" ;;
+  esac
+}
+
+main() {
+  echo ""
+  info "Presek runtime status"
+  echo "APP_ROOT: $APP_ROOT"
+
+  show_path_state "current" "$CURRENT_LINK"
+  if [ -L "$PREVIOUS_LINK" ]; then
+    ok "previous: $(readlink -f "$PREVIOUS_LINK")"
+  else
+    warn "previous: not set"
+  fi
+
+  show_path_state "shared env" "$SHARED_DIR/.env"
+  show_path_state "runtime venv" "$VENV_DIR"
+  show_path_state "shared Astro deps" "$SHARED_DIR/web-node_modules"
+
+  if [ -L "$CURRENT_LINK" ]; then
+    local current_root
+    current_root="$(readlink -f "$CURRENT_LINK")"
+    show_path_state "current release web dist" "$current_root/web/dist/server/entry.mjs"
+    show_path_state "current release web node_modules" "$current_root/web/node_modules"
+  fi
+
+  show_service_state "presek-fastapi.service"
+  show_service_state "presek-astro.service"
+  show_service_state "presek-worker.service"
+  show_service_state "presek-beat.service"
+}
+
+main "$@"

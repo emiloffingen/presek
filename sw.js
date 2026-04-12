@@ -1,10 +1,10 @@
-// Пресек — Service Worker v21
-// Enhanced navigation support - Stale-While-Revalidate for API and Cache-First for assets
+// Пресек — Service Worker v22
+// Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v21';
-const API_CACHE_NAME = 'presek-api-v21';
+const CACHE_NAME = 'presek-v22';
+const API_CACHE_NAME = 'presek-api-v22';
 
-// Assets from Vite manifest are hashed, so we can cache them aggressively
+// Core static assets that are shared across the Astro frontend
 const STATIC_ASSETS = [
   '/static/logo.svg?v=3',
   '/static/img/presek_emblem.svg?v=3',
@@ -49,8 +49,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-First for static assets (images, Vite bundles)
-  if (url.pathname.startsWith('/static/dist/') || url.pathname.startsWith('/static/img/')) {
+  // Cache-First for static assets
+  if (url.pathname.startsWith('/static/img/')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;

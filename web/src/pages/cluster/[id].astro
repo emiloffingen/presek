@@ -2,21 +2,22 @@
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
-import AskPresekIsland from '../../components/AskPresekIsland.tsx';
 import StoryTimeline from '../../components/StoryTimeline.tsx';
 import MediaPulseRadar from '../../components/MediaPulseRadar.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ShareIsland from '../../components/ShareIsland.tsx';
+import AskPresekPanel from '../../components/AskPresekPanel.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
-import { Clock, ArrowLeft, Newspaper, Sparkles, MessageCircle, Link2, Zap } from 'lucide-react';
+import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
+const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice(0, 500);
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 const cleanPath = Astro.url?.pathname === "/" ? "" : Astro.url.pathname.replace(/\/$/, "");
 const canonicalUrl = `${siteUrl}${cleanPath}`;
@@ -283,10 +284,10 @@ const comparisonHighlights = [
 		copy: articleRows[0]?.sourceSignal?.role_note || articleRows[0]?.relationship?.description || 'Прво прочитајте го водечкиот извор, па потоа споредете ги другите верзии.',
 	},
 ];
-const suggestedQuestions = [
-	'Што е најважното ново во оваа вест?',
-	'Како се разликуваат изворите во известувањето?',
-	'Што останува нејасно или непотврдено?',
+const askPresekSuggestions = [
+	'Што е цврсто потврдено?',
+	'Каде изворите се разидуваат?',
+	'Што сè уште не е јасно?',
 ];
 const leadDescription = extractSafeText(cluster?.articles?.find((article: any) => article?.description?.trim())?.description);
 const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
@@ -677,7 +678,7 @@ const schema = cluster ? {
 							<h2 class="cluster-section-title">Сите Извори</h2>
 							<div class="article-list">
 								{articleRows.map((a: any) => (
-									<div class={`article-row article-row-${a.relationship.tone} group`}>
+									<div class={`article-row article-row-${a.relationship.tone} group`} data-article-link={encodeURIComponent(a.link || '')}>
 										<div class="article-row-top">
 											<div class="article-row-source">
 												<span class="nyt-section-label text-nyt-red">{a.source}</span>
@@ -744,12 +745,8 @@ const schema = cluster ? {
 							</div>
 						)}
 
-						{/* AI Chat Island (Coming Soon Style) */}
-						<div class="rail-card rail-card-accent">
-							<h3 class="rail-card-title flex items-center gap-2 text-foreground">
-								<MessageCircle size={14} /> ПРАШАЈ ГО ПРЕСЕК
-							</h3>
-							<AskPresekIsland client:load clusterId={cluster.cluster_id} suggestedQuestions={suggestedQuestions} />
+						<div class="border border-nyt-gray-200 dark:border-nyt-gray-300/20 bg-gradient-to-br from-secondary via-background to-[color:var(--surface-soft)] p-6">
+							<AskPresekPanel client:load clusterId={cluster.cluster_id} suggestions={askPresekSuggestions} initialQuestion={askQuestion} />
 						</div>
 
 						<div class="rail-card">

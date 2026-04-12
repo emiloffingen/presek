@@ -24,7 +24,8 @@ class TestAstroFrontendIntegrity:
     def test_layout_keeps_theme_sync_and_canonical_metadata(self):
         layout = _read("web/src/layouts/Layout.astro")
         assert "<html lang=\"mk\">" in layout
-        assert "window.localStorage.setItem('theme', theme);" in layout
+        assert "const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;" in layout
+        assert "window.localStorage.setItem('theme', theme);" not in layout
         assert "<link rel=\"canonical\" href={canonicalUrl} />" in layout
         assert "<meta property=\"og:url\" content={canonicalUrl} />" in layout
 

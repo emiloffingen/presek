@@ -2,7 +2,13 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BACKUP_DIR="${BACKUP_DIR:-$APP_DIR/backups}"
+DEFAULT_APP_ROOT="$APP_DIR"
+if [ -d "$HOME/presek-runtime/shared" ]; then
+  DEFAULT_APP_ROOT="$HOME/presek-runtime"
+fi
+APP_ROOT="${APP_ROOT:-$DEFAULT_APP_ROOT}"
+ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/.env}"
+BACKUP_DIR="${BACKUP_DIR:-$APP_ROOT/shared/backups}"
 KEEP_DAYS="${KEEP_DAYS:-7}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
@@ -20,7 +26,12 @@ main() {
   need_cmd pg_dump
   need_cmd gzip
 
-  if [ -f "$APP_DIR/.env" ]; then
+  if [ -f "$ENV_FILE" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$ENV_FILE"
+    set +a
+  elif [ -f "$APP_DIR/.env" ]; then
     set -a
     # shellcheck source=/dev/null
     source "$APP_DIR/.env"

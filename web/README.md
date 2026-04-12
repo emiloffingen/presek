@@ -24,5 +24,5 @@ The frontend reads `PUBLIC_API_URL`.
 
 - `src/pages/index.astro` is the editorial homepage.
 - `src/pages/stats.astro` renders the analytics view from `/api/stats/full`.
-- `../web-legacy` is an older build output/codepath and should not be treated as the active frontend.
 - `web/dist` is generated build output and should not be committed.
+- This is the only active frontend for the repo.

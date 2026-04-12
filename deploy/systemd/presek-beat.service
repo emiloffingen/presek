@@ -7,9 +7,9 @@ PartOf=presek.target
 [Service]
 Type=simple
 User=emiloffingen
-Environment=PYTHONPATH=/home/emiloffingen/presek
-WorkingDirectory=/home/emiloffingen/presek
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek && set -a && source ./.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app beat --loglevel=info'
+Environment=PYTHONPATH=/home/emiloffingen/presek/current
+WorkingDirectory=/home/emiloffingen/presek/current
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current && set -a && source /home/emiloffingen/presek/shared/.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app beat --loglevel=info --schedule /home/emiloffingen/presek/shared/celerybeat-schedule'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90

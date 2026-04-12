@@ -2369,11 +2369,14 @@ async def get_sources():
             "LEFT JOIN source_weeks sw ON sw.source = cf.source "
             "GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
         )
-        category_dominance = db.execute(
-            "SELECT source, category, COUNT(*) as count FROM articles "
-            "WHERE created_at >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' "
-            "GROUP BY source, category ORDER BY source, count DESC"
-        )
+        try:
+            category_dominance = db.execute(
+                "SELECT source, category, COUNT(*) as count FROM articles "
+                "WHERE created_at >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' "
+                "GROUP BY source, category ORDER BY source, count DESC"
+            )
+        except Exception:
+            category_dominance = []
         return build_source_reputation_rows(rows, pulse_rows, speed_rows, history_rows, category_dominance)
     except Exception as e:
         log.warning(f"FastAPI Sources Error: {e}")
@@ -2580,8 +2583,9 @@ async def proxy_image(
 
         content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
         if content_type not in _PROXY_ALLOWED_TYPES:
+            response.close()
             log.warning(f"[proxy/type] Unsupported content type {content_type} for {url}")
-            return serve_fallback("unsupported_type")
+            return _error_json("Unsupported content type", 415)
 
         image_chunks = []
         total_bytes = 0
