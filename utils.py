@@ -844,29 +844,46 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
 
 
 def rank_articles_in_cluster(arts):
-    """Within a cluster, put the most credible source first."""
-    all_titles = [str(article.get("title") or "") for article in arts]
-
-    def sort_key(article):
+    """Within a cluster, put the most credible source first and mark near-duplicates."""
+    if not arts: return []
+    
+    # Sort by raw weight first to find the "best" representative for each near-duplicate group
+    def initial_weight(article):
         source_weight = get_source_effective_weight(article["source"])
-        created_at = _coerce_datetime(article.get("created_at")) or datetime.datetime.min
         description_text = str(article.get("description") or "").strip()
         description_bonus = 0.12 if description_text else 0.0
-        evidence_bonus = min(0.16, len(description_text.split()) * 0.006) if description_text else 0.0
-        title = str(article.get("title") or "")
-        corroboration_bonus = 0.0
-        if title:
-            corroboration_bonus = min(
-                0.18,
-                sum(
-                    0.06
-                    for other_title in all_titles
-                    if other_title != title and _cluster_title_overlap(title, other_title) >= 0.3
-                )
-            )
-        return (source_weight + description_bonus + evidence_bonus + corroboration_bonus, created_at)
+        return source_weight + description_bonus
 
-    return sorted(arts, key=sort_key, reverse=True)
+    sorted_arts = sorted(arts, key=initial_weight, reverse=True)
+    ranked = []
+    seen_norm_titles = [] # List of (representative_title, [member_indices])
+
+    for i, article in enumerate(sorted_arts):
+        title = str(article.get("title") or "").strip()
+        is_redundant = False
+        
+        # Check if this title is a near-duplicate of something we already ranked
+        for rep_title in seen_norm_titles:
+            if _cluster_title_overlap(title, rep_title) >= 0.85:
+                is_redundant = True
+                break
+        
+        enriched = dict(article)
+        enriched["is_redundant"] = is_redundant
+        ranked.append(enriched)
+        
+        if not is_redundant:
+            seen_norm_titles.append(title)
+
+    # Final sort to ensure non-redundant and high-weight ones are at the top
+    def final_sort_key(article):
+        # penalize redundancy heavily in sorting
+        redundancy_penalty = -5.0 if article.get("is_redundant") else 0.0
+        source_weight = get_source_effective_weight(article["source"])
+        created_at = _coerce_datetime(article.get("created_at")) or datetime.datetime.min
+        return (redundancy_penalty + source_weight, created_at)
+
+    return sorted(ranked, key=final_sort_key, reverse=True)
 
 def is_balanced(arts) -> bool:
     """True if cluster contains 3+ unique sources from different categories."""

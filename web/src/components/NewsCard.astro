@@ -15,12 +15,13 @@ interface Props {
 const { cluster, isLead = false, variant = 'standard' } = Astro.props;
 const main = cluster.articles[0];
 const sourceSignal = main?.source_signal || {};
-const sourceCount = cluster.articles.length;
-const showTrustBadge = sourceCount >= 2 && Boolean(sourceSignal.trust_label);
-const showSignificanceLabel = cluster.is_breaking || sourceCount >= 3;
+const totalSources = cluster.articles.length;
+const uniqueSources = cluster.articles.filter(a => !a.is_redundant).length;
+const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
+const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =
-	sourceCount >= 6 ? 'Широко покриено' :
-	sourceCount >= 4 ? 'Следена тема' :
+	totalSources >= 6 ? 'Широко покриено' :
+	totalSources >= 4 ? 'Следена тема' :
 	cluster.is_breaking ? 'Итен развој' :
 	'Во тек';
 
@@ -60,23 +61,24 @@ const displaySummary = getCardSummary(main, isLead);
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 function getWhyItMatters() {
-	if (sourceSignal.role_label && sourceCount >= 4) {
+	if (sourceSignal.role_label && totalSources >= 4) {
 		return `${sourceSignal.role_label}. Темата веќе се потврдува и се проширува низ повеќе редакции.`;
 	}
-	if (sourceSignal.role_label && sourceCount >= 2) {
+	if (sourceSignal.role_label && totalSources >= 2) {
 		return `${sourceSignal.role_label}. Следете ја за нови потврди и реакции.`;
 	}
-	if (sourceCount >= 6) {
-		return `Развој со широко медиумско покривање од ${sourceCount} извори.`;
+	if (totalSources >= 6) {
+		return `Развој со широко медиумско покривање од ${totalSources} извори.`;
 	}
-	if (sourceCount >= 4) {
+	if (totalSources >= 4) {
 		return 'Повеќе редакции веќе додаваат нови детали.';
 	}
-	if (sourceCount >= 2) {
+	if (totalSources >= 2) {
 		return 'Приказна што почнува да добива потврди и поширок контекст.';
 	}
 	return 'Прв сигнал. Вреди да се следи дали ќе добие поширока потврда.';
 }
+
 
 const whyItMatters = getWhyItMatters();
 
@@ -121,7 +123,7 @@ function getTimeStr(dateStr: string) {
 
         {isLead && cluster.articles.length > 1 && (
             <ul class="sub-headlines">
-                {cluster.articles.slice(1, 4).map((sub: Article) => (
+                {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
                         <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(cleanAndDecode(sub.title))}>
                         </a>
@@ -134,7 +136,8 @@ function getTimeStr(dateStr: string) {
 		<div class="footer-meta">
 			<span>{getTimeStr(main.created_at)}</span>
 			<span class="dot">·</span>
-			<span>{cluster.articles.length} извора</span>
+			<span>{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</span>
+			{totalSources > uniqueSources && <span class="text-muted-foreground ml-1">({totalSources} вкупно)</span>}
 		</div>
 		</div>
 
@@ -145,7 +148,7 @@ function getTimeStr(dateStr: string) {
 					<div class="article-image-placeholder">
 						<div class="article-image-placeholder-topline">
 							<p class="article-image-placeholder-label">Пресек Избор</p>
-							<p class="article-image-placeholder-chip">{cluster.articles.length} извора</p>
+							<p class="article-image-placeholder-chip">{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</p>
 						</div>
 						<h3>{cluster.articles[0].category || 'Вести'}</h3>
 						<p class="article-image-placeholder-source">{main.source}</p>
