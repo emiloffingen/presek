@@ -299,6 +299,7 @@ def lemmatize_mk(word: str) -> str:
     if w.endswith("шт"): w = w[:-2] + "ште"
     return w
 
+LOCAL_TRANSLATION_EXTRA = {
     "november": "ноември",
     "december": "декември",
     "monday": "понеделник",
@@ -802,7 +803,11 @@ def rewrite_to_macedonian_locally(text):
     def _replace_word(match):
         word = match.group(0)
         lowered = word.lower()
-        replacement = LOCAL_TRANSLATION_MONTHS.get(lowered) or LOCAL_TRANSLATION_WORDS.get(lowered)
+        replacement = (
+            LOCAL_TRANSLATION_MONTHS.get(lowered) or 
+            LOCAL_TRANSLATION_EXTRA.get(lowered) or 
+            LOCAL_TRANSLATION_WORDS.get(lowered)
+        )
         if not replacement:
             return word
         if word.isupper():
