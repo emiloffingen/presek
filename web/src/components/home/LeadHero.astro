@@ -1,0 +1,143 @@
+---
+import { MessageCircle } from 'lucide-react';
+import { sanitizeHtml } from '../../lib/sanitize';
+import { cleanAndDecode } from '../../utils/textUtils';
+import type { NewsCluster } from '../../types';
+
+interface Props {
+    leadCluster: NewsCluster;
+    leadTitle: string;
+    leadTitleIsCyrillic: boolean;
+    leadSignal: string;
+    leadSummary: string;
+    leadSummaryIsCyrillic: boolean;
+    leadVisual: any;
+    homepageAskSuggestions: string[];
+    getTimeStr: (date: string) => string;
+}
+
+const { 
+    leadCluster, 
+    leadTitle, 
+    leadTitleIsCyrillic, 
+    leadSignal, 
+    leadSummary, 
+    leadSummaryIsCyrillic, 
+    leadVisual,
+    homepageAskSuggestions,
+    getTimeStr
+} = Astro.props;
+---
+
+<section class="lead-hero motion-rise">
+    <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
+        <div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
+            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+                <>
+                    <img
+                        src={leadVisual.proxiedUrl}
+                        alt={leadTitle}
+                        width="1200"
+                        height="1000"
+                        loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
+                        class="lead-media-image"
+                        onload="this.classList.add('is-loaded')"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+                    />
+                    <div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
+                        <div class="lead-media-topline">
+                            <p class="lead-media-kicker">Пресек Преглед</p>
+                            <p class="lead-media-chip">Без визуел</p>
+                        </div>
+                        <h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+                    </div>
+                </>
+            ) : (
+                <div class="lead-media-placeholder">
+                    <div class="lead-media-topline">
+                        <p class="lead-media-kicker">Пресек Преглед</p>
+                        <p class="lead-media-chip">{leadCluster.articles.length} извора</p>
+                    </div>
+                    <h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+                    <p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
+                    <p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
+                </div>
+            )}
+        </div>
+    </a>
+    <div class="lead-copy">
+        <div class="lead-kicker">
+            <span class="source-label">{leadCluster.articles[0].source}</span>
+            {leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
+        </div>
+        <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
+            <h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
+        </a>
+        <p class="lead-signal">{leadSignal}</p>
+        {leadSummary && (
+            <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
+        )}
+        <div class="lead-meta">
+            <span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
+            <span>·</span>
+            <span>{leadCluster.articles.length} извора</span>
+        </div>
+        <div class="lead-ask-links">
+            {homepageAskSuggestions.slice(0, 2).map((question) => (
+                <a href={`/cluster/${leadCluster.cluster_id}?ask=${encodeURIComponent(question)}`} class="lead-ask-chip">
+                    <MessageCircle size={12} /> {question}
+                </a>
+            ))}
+        </div>
+
+        {leadCluster.articles.length > 1 && (
+            <ul class="lead-related">
+                {leadCluster.articles.slice(1, 4).map((article: any) => (
+                    <li>
+                        <a href={`/cluster/${leadCluster.cluster_id}`}>{cleanAndDecode(article.title)}</a>
+                    </li>
+                ))}
+            </ul>
+        )}
+    </div>
+
+    <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
+        <div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
+            {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
+                <>
+                    <img
+                        src={leadVisual.proxiedUrl}
+                        alt=""
+                        width="1200"
+                        height="1000"
+                        loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
+                        class="lead-media-image"
+                        onload="this.classList.add('is-loaded')"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
+                    />
+                    <div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
+                        <div class="lead-media-topline">
+                            <p class="lead-media-kicker">Пресек Преглед</p>
+                            <p class="lead-media-chip">Без визуел</p>
+                        </div>
+                        <h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+                    </div>
+                </>
+            ) : (
+                <div class="lead-media-placeholder">
+                    <div class="lead-media-topline">
+                        <p class="lead-media-kicker">Пресек Преглед</p>
+                        <p class="lead-media-chip">{leadCluster.articles.length} извора</p>
+                    </div>
+                    <h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
+                    <p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
+                    <p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
+                </div>
+            )}
+        </div>
+    </a>
+</section>

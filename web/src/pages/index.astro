@@ -11,6 +11,9 @@ import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import GlobalAskIsland from '../components/GlobalAskIsland.tsx';
 import AskPresekPanel from '../components/AskPresekPanel.tsx';
+import LeadHero from '../components/home/LeadHero.astro';
+import SupportingBand from '../components/home/SupportingBand.astro';
+import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -236,183 +239,50 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 					)}
 
 				{leadCluster && (
-					<section class="lead-hero motion-rise">
-						<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
-							<div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-								{leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-									<>
-										<img
-											src={leadVisual.proxiedUrl}
-											alt={leadTitle}
-											width="1200"
-											height="1000"
-											loading="eager"
-											fetchpriority="high"
-											decoding="async"
-											class="lead-media-image"
-											onload="this.classList.add('is-loaded')"
-											onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
-										/>
-										<div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
-											<div class="lead-media-topline">
-												<p class="lead-media-kicker">Пресек Преглед</p>
-												<p class="lead-media-chip">Без визуел</p>
-											</div>
-											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
-										</div>
-									</>
-								) : (
-									<div class="lead-media-placeholder">
-										<div class="lead-media-topline">
-											<p class="lead-media-kicker">Пресек Преглед</p>
-											<p class="lead-media-chip">{leadCluster.articles.length} извора</p>
-										</div>
-										<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
-										<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
-										<p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
-									</div>
-								)}
-							</div>
-						</a>
-						<div class="lead-copy">
-							<div class="lead-kicker">
-								<span class="source-label">{leadCluster.articles[0].source}</span>
-								{leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
-							</div>
-							<a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-								<h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
-							</a>
-							<p class="lead-signal">{leadSignal}</p>
-							{leadSummary && (
-								<p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
-							)}
-							<div class="lead-meta">
-								<span>{getTimeStr(leadCluster.articles[0].created_at)}</span>
-								<span>·</span>
-								<span>{leadCluster.articles.length} извора</span>
-							</div>
-							<div class="lead-ask-links">
-								{homepageAskSuggestions.slice(0, 2).map((question) => (
-									<a href={`/cluster/${leadCluster.cluster_id}?ask=${encodeURIComponent(question)}`} class="lead-ask-chip">
-										<MessageCircle size={12} /> {question}
-									</a>
-								))}
-							</div>
-
-							{leadCluster.articles.length > 1 && (
-								<ul class="lead-related">
-									{leadCluster.articles.slice(1, 4).map((article: any) => (
-										<li>
-											<a href={`/cluster/${leadCluster.cluster_id}`}>{cleanAndDecode(article.title)}</a>
-										</li>
-									))}
-								</ul>
-							)}
-						</div>
-
-							<a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1">
-								<div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
-									{leadVisual?.proxiedUrl && !leadVisual.isWeak ? (
-										<>
-											<img
-												src={leadVisual.proxiedUrl}
-												alt=""
-												width="1200"
-												height="1000"
-												loading="eager"
-												fetchpriority="high"
-												decoding="async"
-												class="lead-media-image"
-												onload="this.classList.add('is-loaded')"
-												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
-											/>
-											<div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
-												<div class="lead-media-topline">
-													<p class="lead-media-kicker">Пресек Преглед</p>
-													<p class="lead-media-chip">Без визуел</p>
-												</div>
-												<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
-											</div>
-										</>
-									) : (
-										<div class="lead-media-placeholder">
-											<div class="lead-media-topline">
-												<p class="lead-media-kicker">Пресек Преглед</p>
-												<p class="lead-media-chip">{leadCluster.articles.length} извора</p>
-											</div>
-											<h2>{leadCluster.articles[0].category || 'Водечка тема'}</h2>
-											<p class="lead-media-fallback-source">{leadCluster.articles[0].source}</p>
-											<p class:list={["lead-media-fallback-title", { "lead-media-fallback-title-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</p>
-										</div>
-									)}
-								</div>
-							</a>
-						</section>
-					)}
-
-					{leadCluster && supportingClusters.length > 0 && (
-						<section class="supporting-band motion-rise motion-delay-2">
-							<div class="section-heading-row">
-								<h2 class="section-title">Веднаш потоа</h2>
-								<p class="section-note">Следниот слој на приказни што го шири дневниот контекст.</p>
-							</div>
-							<div class="supporting-featured-grid">
-									{supportingFeatured.map((cluster: NewsCluster) => (
-									<NewsCard cluster={cluster} variant="featured" />
-								))}
-							</div>
-							{supportingCompact.length > 0 && (
-								<div class="supporting-compact-grid">
-										{supportingCompact.map((cluster: NewsCluster) => (
-										<NewsCard cluster={cluster} variant="compact" />
-									))}
-								</div>
-							)}
-						</section>
-					)}
-
-					{clusters.length > 4 && (
-						<ForYouIsland client:load clusters={clusters.slice(0, 18)} />
-					)}
-
-					<OnboardingIsland client:load compact />
-
-					{feedClusters.length > 0 && (
-						<section class="feed-section motion-rise motion-delay-3">
-						<div class="section-heading-row">
-							<h2 class="section-title">Теми во развој</h2>
-							<p class="section-note">Приказни за кои веќе известуваат повеќе медиуми и кои вреди да се следат.</p>
-						</div>
-						{developmentsFeatured.length > 0 && (
-							<div class="news-feed-grid news-feed-grid-compact">
-									{developmentsFeatured.map((cluster: NewsCluster) => (
-									<NewsCard cluster={cluster} variant="compact" />
-								))}
-							</div>
-						)}
-						{developmentsCompact.length > 0 && (
-							<div class="news-feed-grid news-feed-grid-compact">
-									{developmentsCompact.map((cluster: NewsCluster) => (
-									<NewsCard cluster={cluster} variant="compact" />
-								))}
-							</div>
-						)}
-					</section>
+					<LeadHero
+						leadCluster={leadCluster}
+						leadTitle={leadTitle}
+						leadTitleIsCyrillic={leadTitleIsCyrillic}
+						leadSignal={leadSignal}
+						leadSummary={leadSummary}
+						leadSummaryIsCyrillic={leadSummaryIsCyrillic}
+						leadVisual={leadVisual}
+						homepageAskSuggestions={homepageAskSuggestions}
+						getTimeStr={getTimeStr}
+					/>
 				)}
 
-					{wireClusters.length > 0 && (
-						<section class="feed-section feed-section-wire motion-rise motion-delay-3">
-							<div class="section-heading-row">
-								<h2 class="section-title">Најнови вести</h2>
-								<p class="section-note">Свежи поединечни објави што сè уште чекаат пошироко покривање од други извори.</p>
-							</div>
-							<div class="wire-stack">
-									{wireClusters.map((cluster: NewsCluster) => (
-									<NewsCard cluster={cluster} variant="wire" />
-								))}
-							</div>
-						</section>
-					)}
+				{leadCluster && supportingClusters.length > 0 && (
+					<SupportingBand 
+						supportingFeatured={supportingFeatured}
+						supportingCompact={supportingCompact}
+					/>
+				)}
+
+				{clusters.length > 4 && (
+					<ForYouIsland client:load clusters={clusters.slice(0, 18)} />
+				)}
+
+				<OnboardingIsland client:load compact />
+
+				{feedClusters.length > 0 && (
+					<DevelopmentsSection
+						title="Теми во развој"
+						note="Приказни за кои веќе известуваат повеќе медиуми и кои вреди да се следат."
+						developmentsFeatured={developmentsFeatured}
+						developmentsCompact={developmentsCompact}
+					/>
+				)}
+
+				{wireClusters.length > 0 && (
+					<DevelopmentsSection
+						title="Најнови вести"
+						note="Свежи поединечни објави што сè уште чекаат пошироко покривање од други извори."
+						developmentsFeatured={wireClusters}
+						developmentsCompact={[]}
+						variant="wire"
+					/>
+				)}
 			</div>
 
 			<aside class="front-rail">

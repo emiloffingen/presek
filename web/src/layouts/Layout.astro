@@ -113,8 +113,30 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		</script>
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
+		<div id="loading-bar" class="fixed top-0 left-0 h-[2px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<ConsentBanner client:load />
+		<script>
+			// Handle Astro transitions loading state
+			document.addEventListener('astro:before-preparation', () => {
+				const bar = document.getElementById('loading-bar');
+				if (bar) {
+					bar.style.width = '30%';
+					bar.style.opacity = '1';
+				}
+			});
+
+			document.addEventListener('astro:after-preparation', () => {
+				const bar = document.getElementById('loading-bar');
+				if (bar) {
+					bar.style.width = '100%';
+					setTimeout(() => {
+						bar.style.opacity = '0';
+						setTimeout(() => { bar.style.width = '0'; }, 300);
+					}, 200);
+				}
+			});
+		</script>
 		<script is:inline>
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {

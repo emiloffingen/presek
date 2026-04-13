@@ -14,7 +14,7 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 import { sanitizeHtml } from '../../lib/sanitize';
-import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap } from 'lucide-react';
+import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
 
 import type { ClusterDetail, NewsCluster, Article, ClusterSummary } from '../../types';
@@ -525,10 +525,13 @@ const leadVisual = getLeadVisual(cluster);
 								<div class="factcheck-grid">
 									{verificationReport.agreements?.length > 0 && (
 										<div class="factcheck-box factcheck-agreements">
-											<h3>Потврдени факти</h3>
-											<ul>
+											<div class="flex items-center gap-2 mb-4 text-green-600 dark:text-green-500">
+												<ShieldCheck size={16} />
+												<h3 class="m-0 text-xs font-black uppercase tracking-widest">Потврдени факти</h3>
+											</div>
+											<ul class="space-y-3">
 												{verificationReport.agreements.map((item: string) => (
-													<li set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+													<li class="text-sm leading-relaxed border-l-2 border-green-600/30 pl-3" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
 												))}
 											</ul>
 										</div>
@@ -536,10 +539,13 @@ const leadVisual = getLeadVisual(cluster);
 									
 									{verificationReport.conflicts?.length > 0 && (
 										<div class="factcheck-box factcheck-conflicts">
-											<h3>Разлики во известувањето</h3>
-											<ul>
+											<div class="flex items-center gap-2 mb-4 text-nyt-red">
+												<TriangleAlert size={16} />
+												<h3 class="m-0 text-xs font-black uppercase tracking-widest">Разлики и нејаснотии</h3>
+											</div>
+											<ul class="space-y-3">
 												{verificationReport.conflicts.map((item: string) => (
-													<li set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+													<li class="text-sm leading-relaxed border-l-2 border-nyt-red/30 pl-3" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
 												))}
 											</ul>
 										</div>
@@ -547,7 +553,7 @@ const leadVisual = getLeadVisual(cluster);
 								</div>
 
 								{verificationReport.context && (
-									<div class="factcheck-context-note">
+									<div class="factcheck-context-note border-t border-border mt-6 pt-6 italic text-muted-foreground text-sm">
 										<p set:html={sanitizeHtml(cleanAndDecode(verificationReport.context))}></p>
 									</div>
 								)}

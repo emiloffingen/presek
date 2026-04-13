@@ -1,0 +1,35 @@
+---
+import NewsCard from '../NewsCard.astro';
+import type { NewsCluster } from '../../types';
+
+interface Props {
+    title: string;
+    note: string;
+    developmentsFeatured: NewsCluster[];
+    developmentsCompact: NewsCluster[];
+    variant?: "compact" | "wire";
+}
+
+const { title, note, developmentsFeatured, developmentsCompact, variant = "compact" } = Astro.props;
+---
+
+<section class="feed-section motion-rise motion-delay-3">
+    <div class="section-heading-row">
+        <h2 class="section-title">{title}</h2>
+        <p class="section-note">{note}</p>
+    </div>
+    {developmentsFeatured.length > 0 && (
+        <div class="news-feed-grid news-feed-grid-compact">
+            {developmentsFeatured.map((cluster: NewsCluster) => (
+                <NewsCard cluster={cluster} variant={variant} />
+            ))}
+        </div>
+    )}
+    {developmentsCompact.length > 0 && (
+        <div class="news-feed-grid news-feed-grid-compact">
+            {developmentsCompact.map((cluster: NewsCluster) => (
+                <NewsCard cluster={cluster} variant={variant} />
+            ))}
+        </div>
+    )}
+</section>
