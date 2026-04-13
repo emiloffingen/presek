@@ -162,13 +162,38 @@
     text-rendering: optimizeLegibility;
     font-variant-numeric: oldstyle-nums;
     hyphens: auto;
+    position: relative;
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  body::before {
     background-image:
       linear-gradient(to bottom, color-mix(in srgb, var(--surface-soft) 46%, transparent), transparent 22rem);
+    opacity: 1;
   }
-  .dark body {
+
+  body::after {
     background-image:
       radial-gradient(circle at top center, color-mix(in srgb, var(--surface-strong) 34%, transparent), transparent 34rem),
       linear-gradient(to bottom, color-mix(in srgb, var(--surface-soft) 58%, transparent), transparent 24rem);
+    opacity: 0;
+  }
+
+  .dark body::before {
+    opacity: 0;
+  }
+
+  .dark body::after {
+    opacity: 1;
   }
   html {
     @apply scroll-smooth;
@@ -2025,417 +2050,6 @@ h1, h2, h3 {
     .settings-stat-grid {
         grid-template-columns: 1fr;
     }
-}
-
-/* Ask Presek Component Styles */
-.ask-presek {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.ask-intro {
-    margin-bottom: 0.5rem;
-}
-
-.ask-suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.ask-suggestion {
-    padding: 0.4rem 0.7rem;
-    background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-family: var(--font-sans);
-    font-weight: 700;
-    color: var(--secondary-foreground);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    line-height: 1.35;
-}
-
-.ask-suggestion:hover {
-    background: var(--secondary);
-    border-color: var(--nyt-accent);
-    color: var(--nyt-accent);
-}
-
-.ask-form {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.ask-input {
-    width: 100%;
-    padding: 0.75rem;
-    padding-bottom: 3rem; /* Space for the absolute button */
-    border: 1px solid var(--border);
-    background: var(--card);
-    font-family: var(--font-nyt-body);
-    font-size: 0.95rem;
-    resize: none;
-    outline: none;
-    transition: border-color 0.2s ease;
-}
-
-.ask-input:focus {
-    border-color: var(--nyt-accent);
-}
-
-.ask-submit {
-    position: absolute;
-    right: 0.75rem;
-    bottom: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.8rem;
-    background: var(--nyt-accent);
-    color: white;
-    border: none;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-}
-
-.ask-submit:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.ask-error {
-    font-size: 0.85rem;
-    color: var(--nyt-red);
-    margin: 0;
-}
-
-.ask-result {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
-    border: 1px solid var(--border);
-}
-
-.ask-result-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.5rem;
-}
-
-.ask-confidence {
-    font-family: var(--font-sans);
-    font-size: 0.6rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: var(--nyt-accent);
-}
-
-.ask-confidence-high {
-    color: var(--nyt-accent);
-}
-
-.ask-confidence-medium {
-    color: color-mix(in srgb, var(--nyt-accent) 65%, var(--foreground) 35%);
-}
-
-.ask-confidence-low {
-    color: var(--nyt-red);
-}
-
-.ask-scope-note {
-    margin: 0;
-    padding: 0.55rem 0.7rem;
-    border-left: 3px solid var(--nyt-accent);
-    background: color-mix(in srgb, var(--background) 90%, var(--secondary) 10%);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 700;
-    line-height: 1.45;
-    color: var(--secondary-foreground);
-}
-
-.ask-answer {
-    font-family: var(--font-nyt-body);
-    font-size: 1rem;
-    line-height: 1.6;
-    margin: 0;
-}
-
-.ask-answer-compact {
-    font-size: 0.95rem;
-}
-
-.ask-inline-citations {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-top: -0.35rem;
-}
-
-.ask-inline-citations-label {
-    font-family: var(--font-sans);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-}
-
-.ask-inline-citation {
-    padding: 0.18rem 0.46rem;
-    border: 1px solid var(--border);
-    background: var(--background);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 900;
-    color: var(--foreground);
-    cursor: pointer;
-    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-}
-
-.ask-inline-citation:hover {
-    border-color: var(--nyt-accent);
-    color: var(--nyt-accent);
-    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
-}
-
-.ask-section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: 0.7rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--foreground);
-}
-
-.ask-evidence-block {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.ask-evidence-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.ask-evidence-list li {
-    font-family: var(--font-nyt-body);
-    font-size: 0.9rem;
-    line-height: 1.4;
-    padding-left: 1rem;
-    position: relative;
-}
-
-.ask-evidence-list li::before {
-    content: "•";
-    position: absolute;
-    left: 0;
-    color: var(--nyt-accent);
-}
-
-.ask-evidence-list-muted li::before {
-    color: var(--muted-foreground);
-}
-
-.ask-citation-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.ask-citation {
-    display: flex;
-    gap: 0.75rem;
-    width: 100%;
-    text-align: left;
-    text-decoration: none;
-    color: inherit;
-    padding: 0.5rem;
-    border: 1px solid transparent;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.ask-citation:hover {
-    background: var(--card);
-    border-color: var(--border);
-}
-
-.ask-citation-targeted {
-    border-color: var(--nyt-accent) !important;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--nyt-accent) 32%, transparent);
-    background: color-mix(in srgb, var(--background) 85%, var(--secondary) 15%);
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ask-citation div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-}
-
-.ask-citation strong {
-    font-family: var(--font-sans);
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    color: var(--nyt-accent);
-}
-
-.ask-citation span {
-    font-family: var(--font-serif);
-    font-size: 0.9rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.ask-citation small {
-    font-family: var(--font-nyt-body);
-    font-size: 0.8rem;
-    color: var(--secondary-foreground);
-    line-height: 1.4;
-}
-
-/* -- Multi-turn conversation history -- */
-
-.ask-history {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    max-height: 60vh;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-}
-
-.ask-turn {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.ask-turn-question {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: var(--foreground);
-    padding: 0.5rem 0.7rem;
-    background: color-mix(in srgb, var(--background) 85%, var(--secondary) 15%);
-    border-left: 3px solid var(--nyt-accent);
-}
-
-.ask-turn-question svg {
-    flex-shrink: 0;
-    color: var(--nyt-accent);
-    margin-top: 0.15rem;
-}
-
-/* -- Confidence explanation -- */
-
-.ask-confidence-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.15rem;
-}
-
-.ask-confidence-why {
-    font-family: var(--font-sans);
-    font-size: 0.58rem;
-    font-weight: 600;
-    color: var(--muted-foreground);
-    letter-spacing: 0.02em;
-}
-
-/* -- Share button -- */
-
-.ask-scope-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.ask-scope-row .ask-scope-note {
-    flex: 1;
-}
-
-.ask-share-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.3rem 0.55rem;
-    border: 1px solid var(--border);
-    background: var(--background);
-    font-family: var(--font-sans);
-    font-size: 0.6rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--secondary-foreground);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.ask-share-btn:hover {
-    border-color: var(--nyt-accent);
-    color: var(--nyt-accent);
-}
-
-/* -- Skeleton / shimmer loading -- */
-
-.ask-skeleton {
-    pointer-events: none;
-}
-
-.ask-skeleton-line {
-    height: 0.85rem;
-    border-radius: 3px;
-    background: linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--secondary) 25%, var(--background) 75%) 25%,
-        color-mix(in srgb, var(--secondary) 10%, var(--background) 90%) 50%,
-        color-mix(in srgb, var(--secondary) 25%, var(--background) 75%) 75%
-    );
-    background-size: 200% 100%;
-    animation: ask-shimmer 1.5s ease-in-out infinite;
-}
-
-.ask-skeleton-block {
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
 }
 
 @keyframes ask-slide-up {

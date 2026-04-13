@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
 export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+    return null;
+  });
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    // Sync with actual class if it changed from OS or other script
     const isDark = document.documentElement.classList.contains('dark');
-    const initialTheme = savedTheme || (isDark ? 'dark' : 'light');
-    setTheme(initialTheme);
+    setTheme(isDark ? 'dark' : 'light');
   }, []);
 
   const toggleTheme = () => {
@@ -20,8 +24,13 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
       } else {
         root.classList.remove('dark');
       }
-      // Only persist when the user explicitly toggles, so an unset
-      // preference keeps tracking the OS on subsequent visits.
+      
+      // Update theme-color meta tags for immediate effect
+      const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+      const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+      if (lightMeta) lightMeta.setAttribute('content', next === 'dark' ? '#000000' : '#fafafb');
+      if (darkMeta) darkMeta.setAttribute('content', next === 'dark' ? '#000000' : '#1a1715');
+
       localStorage.setItem('theme', next);
       return next;
     });

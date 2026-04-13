@@ -101,15 +101,29 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		)}
 
 		<script is:inline>
-			// Immediate theme sync to prevent flicker. Only explicit user
-			// toggles persist a preference; otherwise we follow the OS.
-			const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-			const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-			if (theme === 'dark') {
-				document.documentElement.classList.add('dark');
-			} else {
-				document.documentElement.classList.remove('dark');
+			/**
+			 * Immediate theme sync to prevent flicker. 
+			 * We encapsulate in a function so it can be re-run on 'astro:after-swap'.
+			 */
+			function applyTheme() {
+				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
+				const isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				
+				if (isDark) {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
+
+				// Update theme-color meta tags
+				const lightMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+				const darkMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+				if (lightMeta) lightMeta.setAttribute('content', isDark ? '#000000' : '#fafafb');
+				if (darkMeta) darkMeta.setAttribute('content', isDark ? '#000000' : '#1a1715');
 			}
+
+			applyTheme();
+			document.addEventListener('astro:after-swap', applyTheme);
 		</script>
 	</head>
 	<body class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300">
