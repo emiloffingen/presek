@@ -2298,33 +2298,213 @@ h1, h2, h3 {
     line-height: 1.4;
 }
 
-.ask-history-list {
+/* -- Multi-turn conversation history -- */
+
+.ask-history {
     display: flex;
     flex-direction: column;
+    gap: 1.25rem;
+}
+
+.ask-turn {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ask-turn-question {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--foreground);
+    padding: 0.5rem 0.7rem;
+    background: color-mix(in srgb, var(--background) 85%, var(--secondary) 15%);
+    border-left: 3px solid var(--nyt-accent);
+}
+
+.ask-turn-question svg {
+    flex-shrink: 0;
+    color: var(--nyt-accent);
+    margin-top: 0.15rem;
+}
+
+/* -- Confidence explanation -- */
+
+.ask-confidence-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+}
+
+.ask-confidence-why {
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+}
+
+/* -- Share button -- */
+
+.ask-scope-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 0.5rem;
 }
 
-.ask-history-item {
+.ask-scope-row .ask-scope-note {
+    flex: 1;
+}
+
+.ask-share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--secondary-foreground);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.ask-share-btn:hover {
+    border-color: var(--nyt-accent);
+    color: var(--nyt-accent);
+}
+
+/* -- Skeleton / shimmer loading -- */
+
+.ask-skeleton {
+    pointer-events: none;
+}
+
+.ask-skeleton-line {
+    height: 0.85rem;
+    border-radius: 3px;
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--secondary) 25%, var(--background) 75%) 25%,
+        color-mix(in srgb, var(--secondary) 10%, var(--background) 90%) 50%,
+        color-mix(in srgb, var(--secondary) 25%, var(--background) 75%) 75%
+    );
+    background-size: 200% 100%;
+    animation: ask-shimmer 1.5s ease-in-out infinite;
+}
+
+.ask-skeleton-block {
     display: flex;
     flex-direction: column;
-    text-align: left;
-    padding: 0.6rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    cursor: pointer;
+    gap: 0.45rem;
 }
 
-.ask-history-item strong {
+@keyframes ask-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* -- Global AskPresek modal -- */
+
+.ask-global-fab {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    background: var(--nyt-accent);
+    color: white;
+    border: none;
+    border-radius: 9999px;
     font-family: var(--font-sans);
-    font-size: 0.75rem;
-    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.ask-history-item span {
-    font-family: var(--font-nyt-body);
-    font-size: 0.85rem;
+.ask-global-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+}
+
+.ask-global-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: ask-fade-in 0.2s ease;
+}
+
+.ask-global-modal {
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    padding: 1.5rem;
+    animation: ask-slide-up 0.3s ease;
+}
+
+.ask-global-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.ask-global-modal-close {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
     color: var(--secondary-foreground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+    .ask-global-overlay {
+        align-items: center;
+    }
+    .ask-global-modal {
+        border-radius: 8px;
+        border-bottom: 1px solid var(--border);
+        max-height: 70vh;
+    }
+}
+
+@keyframes ask-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ask-slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
