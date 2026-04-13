@@ -134,7 +134,7 @@ async def get_navigation():
         if cat in active_set:
             section_items.append({
                 "label": cat,
-                "href": f"/category/{cat}",
+                "href": f"/?category={urllib.parse.quote(cat)}",
                 "type": "section"
             })
         if len(section_items) >= 6: break
