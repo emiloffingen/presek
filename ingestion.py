@@ -546,8 +546,9 @@ async def ingest_all_sources_async():
             execute_values(cur, sql, prepared_rows)
             results = cur.fetchall()
             new_count = len(results)
+            inserted_ids = [r[0] for r in results]
             conn.commit()
-            
+
             # Post-ingestion tasks: batch trigger translations/summaries
             if inserted_ids:
                 from utils import publish_event

@@ -90,7 +90,10 @@ async def get_profile_sync(request: Request):
 
 @router.post("/api/profile/sync")
 async def save_profile_sync(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     token = str(payload.get("token") or "").strip()
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
     incoming = _normalize_synced_profile(payload.get("profile") or {})
@@ -115,9 +118,14 @@ async def get_profile_delivery(request: Request):
 
 @router.post("/api/profile/delivery")
 async def save_profile_delivery(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     token = str(payload.get("token") or "").strip()
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
+    if not db.execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
+        raise HTTPException(status_code=400, detail="Invalid sync token")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
     db.execute("""INSERT INTO synced_delivery_subscriptions
            (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
@@ -131,7 +139,10 @@ async def save_profile_delivery(request: Request):
 
 @router.post("/api/profile/suggestion-event")
 async def save_suggestion_events(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     token = str(payload.get("token") or "").strip()
     client_id = str(payload.get("clientId") or "").strip()[:64]
     events = payload.get("events") or []

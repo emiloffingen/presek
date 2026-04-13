@@ -94,10 +94,17 @@ async def get_stats_summary():
 
 @router.post("/api/newsletter/subscribe")
 async def subscribe_newsletter(request: Request):
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     email = str(body.get("email", "")).strip().lower()
-    if not email or "@" not in email: return {"status": "error", "message": "Невалидна е-пошта."}
-    db.execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
+    if not email or "@" not in email or len(email) > 254: return {"status": "error", "message": "Невалидна е-пошта."}
+    try:
+        db.execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
+    except Exception as e:
+        log.warning(f"[subscribe] DB error: {e}")
+        return {"status": "error", "message": "Грешка при зачувување. Обидете се подоцна."}
     return {"status": "success", "message": "Успешно се пријавивте!"}
 
 @router.get("/api/stats/full")
@@ -142,7 +149,10 @@ async def get_sources_route():
 @router.post("/api/sources/{name}/control")
 async def control_source_route(name: str, request: Request):
     if not _source_admin_authorized(request): return _error_json("Unauthorized", 403)
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     action = str(payload.get("action", "")).strip().lower()
     source = db.execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source: return _error_json("Source not found", 404)

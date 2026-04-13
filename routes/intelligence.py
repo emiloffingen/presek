@@ -95,7 +95,10 @@ async def compare_sources(s1: str, s2: str):
 
 @router.post("/api/intelligence/recommendations")
 async def get_personalized_recommendations(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     recent_ids = payload.get("recentlyRead", [])[:10]
     followed = payload.get("followedTopics", [])
     limit = min(int(payload.get("limit", 6)), 20)

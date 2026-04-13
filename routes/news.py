@@ -406,22 +406,22 @@ async def get_cluster_detail(cluster_id: str):
             if not val: return None
             if isinstance(val, (dict, list)): return val
             try: return json.loads(val)
-            except: return None
+            except Exception: return None
 
-        sentiment = _parse_maybe_json(s_row["sentiment"]) if s_row else None
-        verification_report = _parse_maybe_json(s_row["verification_report"]) if s_row else None
+        sentiment = _parse_maybe_json(s_row.get("sentiment")) if s_row else None
+        verification_report = _parse_maybe_json(s_row.get("verification_report")) if s_row else None
         ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
-        perspectives = _parse_maybe_json(s_row["perspectives"]) if s_row else []
+        perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
         if not perspectives: perspectives = []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         m_row = db.execute_one("SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
-        tags = filter_cluster_tags(m_row["tags"] if m_row else [])
-        topics = m_row["topics"] if m_row else []
+        tags = filter_cluster_tags((m_row.get("tags") or []) if m_row else [])
+        topics = (m_row.get("topics") or []) if m_row else []
 
         related = []
-        lead_article = articles[0]
-        if lead_article.get("embedding"):
+        lead_article = articles[0] if articles else None
+        if lead_article and lead_article.get("embedding"):
             lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
             related_results = db.search_semantic(lead_vec, limit=8)
             related_cids = []
@@ -459,7 +459,10 @@ async def get_cluster_detail(cluster_id: str):
 @router.post("/api/cluster/{cluster_id}/ask")
 async def ask_cluster_route(cluster_id: str, request: Request):
     from utils import AI_QUERY_MAX_LENGTH
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     q = str(payload.get("question", "")).strip()
     if not q or len(q) > AI_QUERY_MAX_LENGTH:
         raise HTTPException(status_code=400, detail=f"Прашањето мора да биде 1–{AI_QUERY_MAX_LENGTH} знаци.")
@@ -468,7 +471,10 @@ async def ask_cluster_route(cluster_id: str, request: Request):
 @router.post("/api/chat_cluster")
 async def chat_cluster_route(request: Request):
     from utils import AI_QUERY_MAX_LENGTH
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     q = str(payload.get("query", "")).strip()
     if not q or len(q) > AI_QUERY_MAX_LENGTH:
         raise HTTPException(status_code=400, detail=f"Прашањето мора да биде 1–{AI_QUERY_MAX_LENGTH} знаци.")

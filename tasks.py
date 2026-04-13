@@ -1234,8 +1234,6 @@ def summarize_article_task(article_id, title, retry_attempt=0):
                 record_runtime_event("summary_path", mode="local_fallback", topic=topic or "unknown")
                 record_task_event("summarize_article", "fallback", f"article:{article_id}")
                 log.info(f"Stored local fallback summary for article {article_id}")
-                if retry_attempt < 2:
-                    summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
             else:
                 log.warning(f"No summary generated for article {article_id}")
     except Exception as e:
@@ -1246,8 +1244,6 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             record_runtime_event("summary_path", mode="local_exception_fallback", topic=topic or "unknown")
             record_task_event("summarize_article", "fallback", f"article:{article_id}")
             log.warning(f"[tasks] Summarize failed for {article_id}; stored local fallback")
-            if retry_attempt < 2:
-                summarize_article_task.apply_async(args=(article_id, title, retry_attempt + 1), countdown=1800)
         else:
             record_task_event("summarize_article", "error", f"article:{article_id}")
             log.error(f"[tasks] Summarize failed for {article_id}: {e}")
@@ -1382,7 +1378,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             record_task_event("synthesize_cluster", "error", f"cluster:{cluster_id}")
             log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
-@celery_app.task
+@celery_app.task(acks_late=True, reject_on_worker_lost=True)
 def run_ingestion():
     """
     Main ingestion orchestrator.
@@ -1410,18 +1406,14 @@ def run_ingestion():
             invalidate_public_data_caches()
 
         if new_count > 0:
-            # Chain dependent tasks to prevent resource spikes
-            # 1. Embed new articles first (crucial for clustering/search)
-            # 2. Extract metadata & entities
-            # 3. Categorize & summarize
-            (
-                generate_embeddings_task.si() |
-                generate_cluster_metadata_task.si() |
-                classify_topics_task.si() |
-                extract_entities_task.si() |
-                recategorize_clusters_task.si() |
-                auto_summarize_task.si()
-            ).apply_async()
+            # Dispatch post-ingestion tasks individually so a failure in one
+            # doesn't block the rest (unlike a chain where errors halt propagation).
+            generate_embeddings_task.apply_async(countdown=2)
+            generate_cluster_metadata_task.apply_async(countdown=30)
+            classify_topics_task.apply_async(countdown=60)
+            extract_entities_task.apply_async(countdown=90)
+            recategorize_clusters_task.apply_async(countdown=120)
+            auto_summarize_task.apply_async(countdown=150)
 
         log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
     finally:
@@ -1555,12 +1547,17 @@ def generate_daily_brief_task(retry_attempt=0):
 @celery_app.task
 def run_prune_db():
     """Standard maintenance."""
-    prune_db()
-    # Fetch valid cluster IDs to prune old images
-    valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
-    valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
-    from ai_engine import cleanup_cover_art
-    cleanup_cover_art(valid_ids)
+    try:
+        prune_db()
+    except Exception as e:
+        log.error(f"[tasks] prune_db failed: {e}", exc_info=True)
+    try:
+        valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
+        valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
+        from ai_engine import cleanup_cover_art
+        cleanup_cover_art(valid_ids)
+    except Exception as e:
+        log.error(f"[tasks] cleanup_cover_art failed: {e}", exc_info=True)
 
 
 @celery_app.task

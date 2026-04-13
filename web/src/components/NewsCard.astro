@@ -13,7 +13,8 @@ interface Props {
 }
 
 const { cluster, isLead = false, variant = 'standard' } = Astro.props;
-const main = cluster.articles[0];
+const main = cluster.articles?.[0];
+if (!main) return;
 const sourceSignal = main?.source_signal || {};
 const totalSources = cluster.articles.length;
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
@@ -155,7 +156,7 @@ function getTimeStr(dateStr: string) {
 							<p class="article-image-placeholder-label">Пресек Избор</p>
 							<p class="article-image-placeholder-chip">{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</p>
 						</div>
-						<h3>{cluster.articles[0].category || 'Вести'}</h3>
+						<h3>{main?.category || 'Вести'}</h3>
 						<p class="article-image-placeholder-source">{main.source}</p>
 						<p class:list={["article-image-placeholder-title", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]}>{displayTitle}</p>
 					</div>

@@ -323,7 +323,7 @@ const leadVisual = getLeadVisual(cluster);
 
 	<main class="site-layout py-12">
 		<Breadcrumbs items={[
-			{ label: cluster?.articles[0].category || 'Вести', href: cluster ? `/?category=${cluster.articles[0].category}` : '/' },
+			{ label: cluster?.articles?.[0]?.category || 'Вести', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
 			{ label: adjacentTopic || 'Детали' }
 		]} />
 
@@ -338,10 +338,10 @@ const leadVisual = getLeadVisual(cluster);
 					<div class="cluster-header-grid">
 						<div class="cluster-header-content">
 							<div class="cluster-header-meta mb-6">
-								<span class="nyt-section-label text-nyt-red mr-4">{cluster.articles[0].category || 'ВЕСТИ'}</span>
+								<span class="nyt-section-label text-nyt-red mr-4">{cluster.articles?.[0].category || 'ВЕСТИ'}</span>
 								<span class="cluster-time-meta inline-flex items-center gap-1">
 									<Clock size={12} />
-									{getRelativeTimeStr(cluster.articles[0].created_at)}
+									{getRelativeTimeStr(cluster.articles?.[0].created_at)}
 								</span>
 							</div>
 
@@ -358,7 +358,7 @@ const leadVisual = getLeadVisual(cluster);
 								<div class="h-4 w-px bg-border mx-2"></div>
 								<PreferenceToggle 
 									kind="topic" 
-									value={cluster.topics?.[0] || cluster.articles[0].category} 
+									value={cluster.topics?.[0] || cluster.articles?.[0].category} 
 									client:load 
 								/>
 							</div>
@@ -380,7 +380,7 @@ const leadVisual = getLeadVisual(cluster);
 									{leadVisual.isWeak ? (
 										<div class="cluster-visual-fallback">
 											<p class="cluster-visual-kicker">Пресек Преглед</p>
-											<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
+											<h2>{cluster.articles?.[0].category || 'Главна Приказна'}</h2>
 											<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 											<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
 										</div>
@@ -388,7 +388,7 @@ const leadVisual = getLeadVisual(cluster);
 										<>
 											<img
 												src={leadVisual.src}
-												alt={cleanAndDecode(cluster.articles[0].title)}
+												alt={cleanAndDecode(cluster.articles?.[0].title)}
 												class="cluster-visual-image"
 												loading="eager"
 												onload="this.classList.add('is-loaded')"
@@ -396,7 +396,7 @@ const leadVisual = getLeadVisual(cluster);
 											/>
 											<div class="cluster-visual-fallback cluster-visual-fallback-error" style="display: none;">
 												<p class="cluster-visual-kicker">Пресек Преглед</p>
-												<h2>{cluster.articles[0].category || 'Главна Приказна'}</h2>
+												<h2>{cluster.articles?.[0].category || 'Главна Приказна'}</h2>
 												<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 												<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
 											</div>
@@ -673,7 +673,7 @@ const leadVisual = getLeadVisual(cluster);
 
 							<ClusterFollowSuggestionsIsland 
 								topic={cluster.topics?.[0] || ''} 
-								source={cluster.articles[0]?.source || ''}
+								source={cluster.articles?.[0]?.source || ''}
 								adjacentTopic={adjacentTopic}
 								client:visible 
 							/>

@@ -16,7 +16,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   isLead = false,
   variant = 'standard',
 }) => {
-  const main = cluster.articles[0];
+  const main = cluster.articles?.[0];
+  if (!main) return null;
   const sourceSignal = main?.source_signal || {};
   const sourceCount = cluster.articles.length;
   const showTrustBadge = sourceCount >= 2 && Boolean(sourceSignal.trust_label);
@@ -168,7 +169,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   <p className="article-image-placeholder-label">Пресек Избор</p>
                   <p className="article-image-placeholder-chip">{cluster.articles.length} извора</p>
                 </div>
-                <h3>{cluster.articles[0].category || 'Вести'}</h3>
+                <h3>{main.category || 'Вести'}</h3>
                 <p className="article-image-placeholder-source">{main.source}</p>
                 <p
                   className={`article-image-placeholder-title ${

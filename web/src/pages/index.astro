@@ -140,7 +140,7 @@ function getLeadSummary(cluster: NewsCluster) {
 
 const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const leadSummary = leadCluster ? getLeadSummary(leadCluster) : '';
-const leadTitle = leadCluster ? cleanAndDecode(leadCluster.articles[0].title) : '';
+const leadTitle = leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : '';
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;

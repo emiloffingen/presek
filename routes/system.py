@@ -74,7 +74,8 @@ async def get_weather():
         res = {"temp": round(temp) if temp is not None else None, "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️")}
         set_cache("weather:skopje", res, ttl=900)
         return res
-    except: return {"temp": None, "icon": "🌡️"}
+    except Exception:
+        return {"temp": None, "icon": "🌡️"}
 
 @router.get("/api/trending")
 async def get_trending_route():
@@ -130,7 +131,8 @@ async def get_navigation():
                 "href": f"/?q={urllib.parse.quote(ent['name'])}",
                 "type": "focus"
             })
-    except: pass
+    except Exception as e:
+        log.warning(f"[navigation] Failed to load entities: {e}")
 
     res = {
         "breaking": breaking_items,
@@ -159,7 +161,7 @@ async def get_cluster_share_card(cluster_id: str):
     arts = db.execute("SELECT title, original_title, is_translated, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
     if not arts: raise HTTPException(status_code=404)
     s_row = db.execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
-    headline = _preferred_cluster_headline(arts); cat = (arts[0]["category"] or "ВЕСТИ").upper()
+    headline = _preferred_cluster_headline(arts); cat = ((arts[0]["category"] if arts else None) or "ВЕСТИ").upper()
     img = Image.new("RGB", (1200, 630), color=(15, 13, 12)); draw = ImageDraw.Draw(img)
     # Simplified drawing for brevity in refactor
     draw.text((100, 100), headline[:50], fill=(255,255,255))
@@ -185,7 +187,7 @@ async def proxy_image(
             if not candidate.exists() or not candidate.is_file():
                 raise HTTPException(status_code=404)
             return FileResponse(candidate)
-        except:
+        except Exception:
             raise HTTPException(status_code=403)
 
     if not re.match(r'^https?://', url):
@@ -199,7 +201,7 @@ async def proxy_image(
         cached_bin = binary_redis_client.get(cache_key)
         if cached_bin:
             return Response(cached_bin, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"})
-    except: pass
+    except Exception: pass
 
     def serve_fallback(reason="error"):
         svg = generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести")
@@ -211,7 +213,7 @@ async def proxy_image(
         # Security: Resolve IPs to prevent SSRF
         try:
             safe_ips = _resolve_public_ips(url)
-        except:
+        except Exception:
             return serve_fallback("security_block")
 
         resp = requests.get(url, headers=headers, timeout=5, stream=True, allow_redirects=True)
@@ -256,7 +258,7 @@ async def proxy_image(
 
         try:
             binary_redis_client.setex(cache_key, 86400, optimized)
-        except: pass
+        except Exception: pass
 
         return Response(optimized, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"})
     except Exception as e:
