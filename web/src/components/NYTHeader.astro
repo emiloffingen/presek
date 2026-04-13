@@ -49,14 +49,23 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 {/* ── Live ticker ─────────────────────────────────────── */}
 {hasBreaking && (
     <div class="live-ticker" id="live-ticker">
-        <div class="live-ticker-inner site-layout">
-            <span class="live-ticker-badge">
-                <span class="live-ticker-dot"></span>
-                Во живо
-            </span>
+        <span class="live-ticker-badge site-layout">
+            <span class="live-ticker-dot"></span>
+            Во живо
+        </span>
+        <div class="live-ticker-track-wrap">
             <div class="live-ticker-track">
                 {navigationData.breaking.map((item) => (
-                    <a href={item.href} class="live-ticker-headline">{item.label}</a>
+                    <a href={item.href} class="live-ticker-headline">
+                        <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                        {item.label}
+                    </a>
+                ))}
+                {navigationData.breaking.map((item) => (
+                    <a href={item.href} class="live-ticker-headline" aria-hidden="true">
+                        <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                        {item.label}
+                    </a>
                 ))}
             </div>
         </div>
@@ -123,28 +132,27 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     .live-ticker {
         background: var(--nyt-red);
         color: #fff;
-        overflow: hidden;
-    }
-
-    .live-ticker-inner {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.3rem 0;
-        min-height: 1.75rem;
+        overflow: hidden;
+        position: relative;
+        height: 1.75rem;
     }
 
     .live-ticker-badge {
         display: flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.35rem;
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.58rem;
         font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         white-space: nowrap;
         flex-shrink: 0;
+        z-index: 2;
+        padding-right: 0.75rem;
+        background: var(--nyt-red);
     }
 
     .live-ticker-dot {
@@ -157,30 +165,51 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
     @keyframes ticker-pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(0.8); }
+        50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .live-ticker-track-wrap {
+        flex: 1;
+        overflow: hidden;
+        mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
     }
 
     .live-ticker-track {
         display: flex;
-        gap: 2rem;
-        overflow: hidden;
-        mask-image: linear-gradient(to right, transparent, black 1rem, black calc(100% - 1rem), transparent);
+        width: max-content;
+        animation: ticker-scroll 25s linear infinite;
+    }
+
+    .live-ticker-track:hover {
+        animation-play-state: paused;
+    }
+
+    @keyframes ticker-scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
     }
 
     .live-ticker-headline {
+        display: inline-flex;
+        align-items: center;
         font-family: var(--font-serif);
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 600;
         color: #fff;
         text-decoration: none;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        padding: 0 0.25rem;
     }
 
     .live-ticker-headline:hover {
         text-decoration: underline;
         text-underline-offset: 2px;
+    }
+
+    .ticker-sep {
+        margin: 0 0.75rem;
+        opacity: 0.5;
+        font-size: 0.5rem;
     }
 
     /* ── Sticky Header ────────────────────────────────── */
