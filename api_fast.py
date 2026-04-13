@@ -80,11 +80,11 @@ async def apply_runtime_policies(request: Request, call_next):
         client_host = _client_ip_for_request(request)
         is_auth = (request.headers.get("X-Sync-Token") or request.headers.get("X-Admin-Token") or request.cookies.get("presek_session"))
         if not check_rate_limit(client_host, request.url.path, is_authenticated=bool(is_auth)):
-            return _apply_security_headers(JSONResponse(status_code=429, content=_rate_limit_error_payload()))
+            return JSONResponse(status_code=429, content=_rate_limit_error_payload())
 
     response = await call_next(request)
     log.info(f"API {request.method} {request.url.path} took {time.time() - start_time:.4f}s")
-    return _apply_security_headers(response)
+    return response
 
 async def serve_static_asset(filename: str):
     return FileResponse(os.path.join("static", filename))
