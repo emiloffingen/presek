@@ -157,6 +157,8 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
                 raise ValueError("No AI response")
                 
             data = clean_json_response(response_text)
+            if not isinstance(data, dict):
+                data = {"answer": str(data)}
             record_runtime_event("chat_path", mode=provider or "unknown", surface="frontpage_answer")
             
             citations = []

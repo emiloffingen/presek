@@ -199,17 +199,18 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
+    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["mistral", "local"],
-    "summarize":    ["local", "mistral"],
-    "synthesis":    ["mistral", "local"],
-    "daily_brief":  ["mistral", "local"],
-    "chat":         ["mistral", "local"],
-    "default":      ["mistral", "local"],
+    "translation":  ["mistral", "gemini", "local"],
+    "summarize":    ["local", "gemini", "mistral"],
+    "synthesis":    ["mistral", "gemini", "local"],
+    "daily_brief":  ["mistral", "gemini", "local"],
+    "chat":         ["mistral", "gemini", "local"],
+    "default":      ["mistral", "gemini", "local"],
 }
 
 # --- Service Methods ---
