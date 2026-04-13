@@ -39,7 +39,7 @@ async def get_archive_heatmap():
     cache_key = "archive:heatmap:v1"
     cached = cached_response(cache_key, ttl=3600)
     if cached: return {"status": "success", "data": cached}
-    sql = "SELECT DATE(created_at) as day, COUNT(DISTINCT cluster_id) as total_clusters, COUNT(DISTINCT cluster_id) FILTER (WHERE (SELECT count(*) FROM articles WHERE cluster_id = cluster_metadata.cluster_id) >= 5) as breaking_clusters FROM cluster_metadata WHERE created_at >= NOW() - INTERVAL '90 days' GROUP BY day ORDER BY day ASC"
+    sql = "SELECT DATE(updated_at) as day, COUNT(DISTINCT cluster_id) as total_clusters, COUNT(DISTINCT cluster_id) FILTER (WHERE (SELECT count(*) FROM articles WHERE cluster_id = cluster_metadata.cluster_id) >= 5) as breaking_clusters FROM cluster_metadata WHERE updated_at >= NOW() - INTERVAL '90 days' GROUP BY day ORDER BY day ASC"
     rows = db.execute(sql)
     fmt = [{"day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]), "total_clusters": r["total_clusters"], "breaking_clusters": r["breaking_clusters"]} for r in rows]
     set_cache(cache_key, fmt, ttl=3600)
@@ -97,7 +97,7 @@ async def subscribe_newsletter(request: Request):
     body = await request.json()
     email = str(body.get("email", "")).strip().lower()
     if not email or "@" not in email: return {"status": "error", "message": "Невалидна е-пошта."}
-    db.execute("INSERT INTO newsletter_subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
+    db.execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
     return {"status": "success", "message": "Успешно се пријавивте!"}
 
 @router.get("/api/stats/full")

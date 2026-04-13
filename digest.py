@@ -48,7 +48,7 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
 
     try:
         from database import db_manager as db
-        subscribers = db.execute("SELECT email FROM newsletter_subscribers WHERE is_active = TRUE")
+        subscribers = db.execute("SELECT email FROM subscribers WHERE is_active = TRUE")
         if not subscribers:
             log.info("Newsletter skipped: No active subscribers.")
             return 0

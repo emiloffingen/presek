@@ -19,7 +19,7 @@ class BreakingNewsNotifier:
                 "click":   f"https://presek.mk/cluster/{cluster_id}" if cluster_id else "https://presek.mk"
             }
             req = urllib.request.Request(
-                "https://ntfy.sh/",
+                f"https://ntfy.sh/{self.topic}",
                 data=json.dumps(data).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )

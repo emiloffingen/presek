@@ -365,8 +365,10 @@ class DatabaseManager:
                 cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
                     id SERIAL PRIMARY KEY, 
                     email TEXT UNIQUE NOT NULL, 
+                    is_active BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
+                cur.execute("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS synced_reader_profiles (
                     sync_token TEXT PRIMARY KEY,

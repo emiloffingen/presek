@@ -440,6 +440,12 @@ def translate_to_macedonian(text: str) -> str | None:
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     """Generate a stylized placeholder (Local) or AI cover image (Pollinations)."""
+    # Validate cluster_id early to prevent path traversal and ensure safe_id is available
+    safe_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(cluster_id))
+    if not safe_id:
+        log.warning("[ai] Invalid cluster_id for cover art: %s", cluster_id)
+        return None
+    
     category = "Вести"
     try:
         row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
@@ -449,11 +455,6 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     try:
         svg_content = local_nlp.generate_local_placeholder(cluster_id, prompt, category)
         if svg_content:
-            # Validate cluster_id to prevent path traversal
-            safe_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(cluster_id))
-            if not safe_id:
-                log.warning("[ai] Invalid cluster_id for cover art: %s", cluster_id)
-                return None
             os.makedirs("static/generated", exist_ok=True)
             path = f"static/generated/{safe_id}.svg"
             with open(path, "w", encoding="utf-8") as f:

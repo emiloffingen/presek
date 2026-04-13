@@ -25,7 +25,7 @@ const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice
 const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 // Canonical: use Astro.site + pathname, strip trailing slash (trailingSlash: 'never')
 const canonicalUrl = (() => {
-	const base = Astro.site || new URL("https://https://presek.live");
+	const base = Astro.site || new URL("https://presek.live");
 	const url = new URL(Astro.url.pathname, base);
 	let clean = url.origin + url.pathname.replace(/\/+$/, "");
 	if (clean === url.origin) return url.origin;
@@ -319,11 +319,11 @@ const leadVisual = getLeadVisual(cluster);
 >
 	<NYTHeader topic={cluster?.topics?.[0]} />
 
-	<ReaderTracker clusterId={id} />
+	<ReaderTracker clusterId={id} client:load />
 
 	<main class="site-layout py-12">
 		<Breadcrumbs items={[
-			{ label: cluster?.articles[0].category || 'Вести', href: cluster ? `/category/${cluster.articles[0].category}` : '/' },
+			{ label: cluster?.articles[0].category || 'Вести', href: cluster ? `/?category=${cluster.articles[0].category}` : '/' },
 			{ label: adjacentTopic || 'Детали' }
 		]} />
 
@@ -356,7 +356,11 @@ const leadVisual = getLeadVisual(cluster);
 									client:load 
 								/>
 								<div class="h-4 w-px bg-border mx-2"></div>
-								<PreferenceToggle client:load />
+								<PreferenceToggle 
+									kind="topic" 
+									value={cluster.topics?.[0] || cluster.articles[0].category} 
+									client:load 
+								/>
 							</div>
 
 							<div class="cluster-comparison-brief">
