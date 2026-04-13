@@ -477,6 +477,7 @@ class DatabaseManager:
                 """)
 
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_entity_b ON knowledge_relationships(entity_b)")
 
                 
                 # FTS Trigger
@@ -546,3 +547,4 @@ def prune_db():
         DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
         DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
     """, fetch=False)
+}
