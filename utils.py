@@ -95,6 +95,8 @@ def record_runtime_event(event: str, **fields):
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX = 60     # requests per window (general endpoints)
 RATE_LIMIT_MAX_AI = 12  # requests per window (AI synthesis endpoints)
+RATE_LIMIT_DAILY_AI = 100  # max AI calls per IP per day
+AI_QUERY_MAX_LENGTH = 500  # max characters for AI query input
 
 # Expensive AI endpoints get stricter limits
 _AI_RATE_LIMIT_PATHS = frozenset({
@@ -129,11 +131,24 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
         pipe.zadd(key, {str(now): now})
         pipe.expire(key, RATE_LIMIT_WINDOW)
 
+        # Daily budget check for AI endpoints
+        if is_ai_path:
+            daily_key = f"rate_limit:daily_ai:{ip}"
+            pipe.incr(daily_key)
+            pipe.expire(daily_key, 86400)
+
         results = pipe.execute()
         current_count = results[1]
 
         if current_count >= max_requests:
             return False
+
+        if is_ai_path:
+            daily_count = results[4]  # incr result after the first 4 commands
+            if daily_count > RATE_LIMIT_DAILY_AI:
+                log.info(f"[rate_limit] Daily AI budget exceeded for {ip}: {daily_count}/{RATE_LIMIT_DAILY_AI}")
+                return False
+
         return True
     except Exception as e:
         # Fail-open: Redis outage should not take down the site

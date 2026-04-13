@@ -220,7 +220,7 @@ async def get_navigation():
     return res
 
 @router.get("/api/chat/stream")
-async def chat_stream(cluster_id: str = Query(..., min_length=6), query: str = Query(...)):
+async def chat_stream(cluster_id: str = Query(..., min_length=6), query: str = Query(..., max_length=500)):
     articles = db.execute("SELECT title, source FROM articles WHERE cluster_id = %s LIMIT 10", (cluster_id,))
     if not articles: raise HTTPException(status_code=404)
     context = "\n".join([f"- [{a['source']}]: {a['title']}" for a in articles])

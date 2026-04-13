@@ -33,6 +33,9 @@ type Props = {
   initialQuestion?: string;
 };
 
+const MAX_TURNS = 8;
+const MAX_QUERY_LENGTH = 500;
+
 const CONFIDENCE_LABELS: Record<string, string> = {
   high: 'Висока сигурност',
   medium: 'Средна сигурност',
@@ -230,9 +233,15 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
   const resultRef = useRef<HTMLFormElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
+  const turnsExhausted = history.length >= MAX_TURNS;
+
   async function submitQuestion(nextQuestion?: string) {
     const normalized = normalizeQuestion(nextQuestion ?? question);
     if (!normalized || isLoading) return;
+    if (history.length >= MAX_TURNS) {
+      setError('Го достигнавте лимитот од прашања за овој кластер. Вчитајте ја страницата повторно за нова сесија.');
+      return;
+    }
 
     setQuestion('');
     setError('');
@@ -355,14 +364,15 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
           rows={history.length > 0 ? 2 : 4}
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder={history.length > 0 ? 'Прашај следно...' : 'На пример: Кои факти се повторуваат кај повеќе извори?'}
-          maxLength={500}
+          placeholder={turnsExhausted ? 'Лимитот е достигнат — вчитајте ја страницата повторно.' : history.length > 0 ? 'Прашај следно...' : 'На пример: Кои факти се повторуваат кај повеќе извори?'}
+          maxLength={MAX_QUERY_LENGTH}
+          disabled={turnsExhausted}
           aria-label="Вашето прашање"
         />
         <button
           type="submit"
           className="ask-submit"
-          disabled={isLoading || !normalizeQuestion(question)}
+          disabled={isLoading || turnsExhausted || !normalizeQuestion(question)}
           aria-label="Испрати прашање"
         >
           {isLoading ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}

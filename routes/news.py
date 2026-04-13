@@ -420,13 +420,21 @@ async def get_cluster_detail(cluster_id: str):
 
 @router.post("/api/cluster/{cluster_id}/ask")
 async def ask_cluster_route(cluster_id: str, request: Request):
+    from utils import AI_QUERY_MAX_LENGTH
     payload = await request.json()
-    return await _build_cluster_answer_payload(cluster_id, str(payload.get("question", "")).strip())
+    q = str(payload.get("question", "")).strip()
+    if not q or len(q) > AI_QUERY_MAX_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Прашањето мора да биде 1–{AI_QUERY_MAX_LENGTH} знаци.")
+    return await _build_cluster_answer_payload(cluster_id, q)
 
 @router.post("/api/chat_cluster")
 async def chat_cluster_route(request: Request):
+    from utils import AI_QUERY_MAX_LENGTH
     payload = await request.json()
-    return await _build_cluster_answer_payload(str(payload.get("cluster_id", "")).strip(), str(payload.get("query", "")).strip())
+    q = str(payload.get("query", "")).strip()
+    if not q or len(q) > AI_QUERY_MAX_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Прашањето мора да биде 1–{AI_QUERY_MAX_LENGTH} знаци.")
+    return await _build_cluster_answer_payload(str(payload.get("cluster_id", "")).strip(), q)
 
 @router.get("/api/live")
 async def get_live_route():
