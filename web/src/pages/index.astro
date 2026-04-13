@@ -334,33 +334,7 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 						</section>
 					)}
 
-					{leadCluster && (
-						<section class="editor-brief motion-rise motion-delay-1">
-							<div class="editor-brief-intro">
-								<p class="micro-label">Што да гледате прво</p>
-								<h2>Брз редакциски ориентир пред да влезете во целата лента.</h2>
-							</div>
-							<div class="editor-brief-grid">
-								<div class="editor-brief-card">
-									<span class="micro-label">Водечка тема</span>
-									<strong>{leadCluster.articles.length}</strong>
-									<p>извори веќе ја развиваат главната приказна на денот.</p>
-								</div>
-								<div class="editor-brief-card">
-									<span class="micro-label">Следуваат</span>
-									<strong>{supportingClusters.length}</strong>
-									<p>теми веднаш подолу што додаваат реакција, контекст или втор агол.</p>
-								</div>
-								<div class="editor-brief-card">
-									<span class="micro-label">Ритам 24ч</span>
-									<strong>{stats ? stats.last_24h.toLocaleString('mk-MK') : '...'}</strong>
-									<p>објави ја обликуваат денешната медиумска густина.</p>
-								</div>
-							</div>
-						</section>
-					)}
-
-					{supportingClusters.length > 0 && (
+					{leadCluster && supportingClusters.length > 0 && (
 						<section class="supporting-band motion-rise motion-delay-2">
 							<div class="section-heading-row">
 								<h2 class="section-title">Веднаш потоа</h2>
@@ -451,37 +425,6 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 				</section>
 
 				<HomeRailSuggestionsIsland client:load />
-				
-				<section class="rail-module rail-module-quiet">
-					<div class="border border-nyt-gray-300 bg-gradient-to-br from-background via-secondary to-[color:var(--surface-soft)] p-5">
-						<div class="flex items-start justify-between gap-4 mb-4">
-							<div>
-								<p class="micro-label mb-2 text-nyt-accent">Редакциски AI</p>
-								<h3 class="rail-title flex items-center gap-2 mb-2 text-foreground">
-									<MessageCircle size={14} /> ПРАШАЈ ГО ПРЕСЕК
-								</h3>
-								<p class="font-serif italic text-sm text-muted-foreground leading-relaxed max-w-[28ch]">
-									Поставете прашање за водечката приказна и добијте одговор што прави разлика меѓу потврдено, нејасно и различни агли.
-								</p>
-							</div>
-							{leadCluster && (
-								<a href={`/cluster/${leadCluster.cluster_id}`} class="nyt-section-label text-[10px] text-foreground border border-nyt-gray-300 px-3 py-1 hover:bg-foreground hover:text-background transition-colors">
-									ОТВОРИ
-								</a>
-							)}
-						</div>
-						<div class="grid gap-2 mb-4">
-							{leadCluster && homepageAskSuggestions.map((question) => (
-								<a href={`/cluster/${leadCluster.cluster_id}?ask=${encodeURIComponent(question)}`} class="border border-nyt-gray-300 bg-background/90 px-3 py-2 text-[11px] font-medium text-foreground hover:border-nyt-accent hover:text-nyt-accent transition-colors no-underline">
-									{question}
-								</a>
-							))}
-						</div>
-						<p class="text-[11px] leading-relaxed text-muted-foreground border-t border-nyt-gray-300 pt-3">
-							Одговорите се врзуваат за конкретниот кластер и за изворите што го градат, не за општ чат без контекст.
-						</p>
-					</div>
-				</section>
 
 				<NewsletterIsland client:load />
 
