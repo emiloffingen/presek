@@ -117,8 +117,11 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. ФОКУС (Entities) - Top 8 entities from last 48h
-    focus_items = []
+    # 2. ФОКУС — pinned categories first, then trending entities
+    focus_items = [
+        {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
+        {"label": "Свет", "href": f"/?category={urllib.parse.quote('Свет')}", "type": "focus"},
+    ]
     try:
         entities = await get_top_entities(limit=8)
         for ent in entities:
@@ -129,33 +132,10 @@ async def get_navigation():
             })
     except: pass
 
-    # 3. РУБРИКИ (Categories) - Active standard categories
-    # Priority order
-    cat_order = ["Политика", "Економија", "Македонија", "Свет", "Спорт", "Култура", "Забава", "Технологија"]
-    section_items = []
-    
-    # Check which categories have news in last 24h
-    active_cats = db.execute("""
-        SELECT category, COUNT(*) as count 
-        FROM articles 
-        WHERE created_at >= NOW() - INTERVAL '24 hours' 
-        GROUP BY category
-    """)
-    active_set = {r["category"] for r in active_cats if r["category"]}
-    
-    for cat in cat_order:
-        if cat in active_set:
-            section_items.append({
-                "label": cat,
-                "href": f"/?category={urllib.parse.quote(cat)}",
-                "type": "section"
-            })
-        if len(section_items) >= 6: break
-
     res = {
         "breaking": breaking_items,
         "focus": focus_items,
-        "sections": section_items
+        "sections": []
     }
     set_cache(cache_key, res, ttl=600)
     return res

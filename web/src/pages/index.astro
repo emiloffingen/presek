@@ -204,6 +204,7 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 				<AskPresekPanel
 					client:load
 					clusterId="frontpage"
+					suggestions={homepageAskSuggestions}
 					initialQuestion={`Направи сублимат на клучните настани поврзани со "${q}"`}
 					autoSubmit={true}
 				/>

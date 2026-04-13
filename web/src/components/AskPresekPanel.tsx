@@ -29,7 +29,7 @@ type HistoryEntry = {
 
 type Props = {
   clusterId: string;
-  suggestions: string[];
+  suggestions?: string[];
   initialQuestion?: string;
   autoSubmit?: boolean;
 };
@@ -225,7 +225,7 @@ function ResultBlock({ result, question, clusterId }: { result: AskPresekRespons
   );
 }
 
-export default function AskPresekPanel({ clusterId, suggestions, initialQuestion = '', autoSubmit = false }: Props) {
+export default function AskPresekPanel({ clusterId, suggestions = [], initialQuestion = '', autoSubmit = false }: Props) {
   const [question, setQuestion] = useState(initialQuestion);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [error, setError] = useState('');

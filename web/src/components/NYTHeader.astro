@@ -113,20 +113,18 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
                 <ul class="masthead-nav-list">
-                    {navigationData.sections.map((item) => (
-                        <li>
-                            <a href={item.href} data-astro-reload class={`masthead-nav-link ${category === item.label ? 'is-active' : ''}`}>
-                                {item.label}
-                            </a>
-                        </li>
-                    ))}
-                    {navigationData.focus.map((item) => (
-                        <li>
-                            <a href={item.href} data-astro-reload class={`masthead-nav-link ${q === item.label ? 'is-active' : ''}`}>
-                                {item.label}
-                            </a>
-                        </li>
-                    ))}
+                    {navigationData.focus.map((item) => {
+                        const isActive = item.href.includes('category=')
+                            ? category === item.label
+                            : q === item.label;
+                        return (
+                            <li>
+                                <a href={item.href} data-astro-reload class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                                    {item.label}
+                                </a>
+                            </li>
+                        );
+                    })}
                 </ul>
             </div>
             <div class="nav-fade-left"></div>

@@ -159,6 +159,16 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
             data = clean_json_response(response_text)
             if not isinstance(data, dict):
                 data = {"answer": str(data)}
+            # The AI sometimes returns the answer field as a nested JSON string;
+            # unwrap it so structured fields (confirmed_points etc.) surface properly.
+            answer_val = data.get("answer", "")
+            if isinstance(answer_val, str) and answer_val.lstrip().startswith("{"):
+                try:
+                    nested = json.loads(answer_val)
+                    if isinstance(nested, dict) and "answer" in nested:
+                        data = nested
+                except (json.JSONDecodeError, ValueError):
+                    pass
             record_runtime_event("chat_path", mode=provider or "unknown", surface="frontpage_answer")
             
             citations = []
