@@ -40,6 +40,7 @@ const {
                         fetchpriority="high"
                         decoding="async"
                         class="lead-media-image"
+                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
                         onload="this.classList.add('is-loaded')"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
                     />

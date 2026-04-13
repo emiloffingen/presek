@@ -382,6 +382,7 @@ const leadVisual = getLeadVisual(cluster);
 												src={leadVisual.src}
 												alt={cleanAndDecode(cluster.articles?.[0].title)}
 												class="cluster-visual-image"
+												transition:name={`cluster-image-${id}`}
 												loading="eager"
 												onload="this.classList.add('is-loaded')"
 												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"

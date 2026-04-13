@@ -159,6 +159,21 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 					});
 				});
 			}
+
+			// Parallax Effect for Hero Images
+			function initParallax() {
+				if (window.innerWidth < 1024) return;
+				const handleScroll = () => {
+					const scrolled = window.scrollY;
+					document.querySelectorAll('.lead-media-image, .cluster-visual-image').forEach(el => {
+						const speed = 0.15;
+						el.style.setProperty('--parallax-y', `${scrolled * speed}px`);
+					});
+				};
+				window.addEventListener('scroll', handleScroll, { passive: true });
+			}
+			initParallax();
+			document.addEventListener('astro:page-load', initParallax);
 		</script>
 	</body>
 </html>

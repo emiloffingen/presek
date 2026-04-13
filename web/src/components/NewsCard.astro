@@ -167,6 +167,7 @@ function getTimeStr(dateStr: string) {
 						width="700"
 						height="500"
 						class="article-image"
+						transition:name={`cluster-image-${cluster.cluster_id}`}
 						loading={isLead ? "eager" : "lazy"}
 						decoding="async"
 						fetchpriority={isLead ? "high" : "auto"}
@@ -249,9 +250,16 @@ function getTimeStr(dateStr: string) {
 
 	.article-body {
 		min-width: 0;
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-rows: subgrid;
+		grid-row: span 4;
+		gap: 0;
 	}
+
+	.article-meta { grid-row: 1; }
+	.headline-link { grid-row: 2; }
+	.why-it-matters, .summary { grid-row: 3; }
+	.footer-meta { grid-row: 4; }
 
     @media (min-width: 768px) {
         .lead-story {
