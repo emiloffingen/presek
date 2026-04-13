@@ -46,34 +46,36 @@ const hasBreaking = navigationData.breaking.length > 0;
 const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
-{/* ── Live ticker ─────────────────────────────────────── */}
-{hasBreaking && (
-    <div class="live-ticker" id="live-ticker">
-        <span class="live-ticker-badge site-layout">
-            <span class="live-ticker-dot"></span>
-            Во живо
-        </span>
-        <div class="live-ticker-track-wrap">
-            <div class="live-ticker-track">
-                {navigationData.breaking.map((item) => (
-                    <a href={item.href} class="live-ticker-headline">
-                        <span class="ticker-sep" aria-hidden="true">&bull;</span>
-                        {item.label}
-                    </a>
-                ))}
-                {navigationData.breaking.map((item) => (
-                    <a href={item.href} class="live-ticker-headline" aria-hidden="true">
-                        <span class="ticker-sep" aria-hidden="true">&bull;</span>
-                        {item.label}
-                    </a>
-                ))}
-            </div>
-        </div>
-    </div>
-)}
-
 {/* ── Sticky header ───────────────────────────────────── */}
 <div class="header-sticky-wrapper" id="main-header">
+    {/* ── Live ticker ─────────────────────────────────────── */}
+    {hasBreaking && (
+        <div class="live-ticker" id="live-ticker">
+            <div class="live-ticker-container site-layout">
+                <span class="live-ticker-badge">
+                    <span class="live-ticker-dot"></span>
+                    Во живо
+                </span>
+                <div class="live-ticker-track-wrap">
+                    <div class="live-ticker-track">
+                        {navigationData.breaking.map((item) => (
+                            <a href={item.href} class="live-ticker-headline">
+                                <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                                {item.label}
+                            </a>
+                        ))}
+                        {navigationData.breaking.map((item) => (
+                            <a href={item.href} class="live-ticker-headline" aria-hidden="true">
+                                <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                                {item.label}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )}
+
     <header class="site-layout topbar">
         <div class="topbar-row">
             <div class="topbar-left">
@@ -132,11 +134,16 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     .live-ticker {
         background: var(--nyt-red);
         color: #fff;
-        display: flex;
-        align-items: center;
         overflow: hidden;
         position: relative;
         height: 1.75rem;
+    }
+
+    .live-ticker-container {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        gap: 0;
     }
 
     .live-ticker-badge {

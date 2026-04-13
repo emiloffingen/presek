@@ -76,6 +76,15 @@ export const ConsentBanner: React.FC = () => {
     setVisible(false);
   };
 
+  useEffect(() => {
+    if (visible) {
+      document.body.classList.add('has-consent-banner');
+    } else {
+      document.body.classList.remove('has-consent-banner');
+    }
+    return () => document.body.classList.remove('has-consent-banner');
+  }, [visible]);
+
   if (!visible) return null;
 
   return (

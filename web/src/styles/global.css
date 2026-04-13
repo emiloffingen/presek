@@ -2443,7 +2443,18 @@ h1, h2, h3 {
     letter-spacing: 0.1em;
     cursor: pointer;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Offset when cookie banner is visible */
+.has-consent-banner .ask-global-fab {
+    bottom: 5rem;
+}
+
+@media (max-width: 768px) {
+    .has-consent-banner .ask-global-fab {
+        bottom: 5.5rem;
+    }
 }
 
 .ask-global-fab:hover {
