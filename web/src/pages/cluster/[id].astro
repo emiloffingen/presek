@@ -8,7 +8,6 @@ import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSugges
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ShareIsland from '../../components/ShareIsland.tsx';
-import AskPresekPanel from '../../components/AskPresekPanel.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -21,7 +20,6 @@ import type { ClusterDetail, NewsCluster, Article, ClusterSummary } from '../../
 
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
-const askQuestion = String(Astro.url.searchParams.get('ask') || '').trim().slice(0, 500);
 const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 // Canonical: use Astro.site + pathname, strip trailing slash (trailingSlash: 'never')
 const canonicalUrl = (() => {
@@ -252,12 +250,6 @@ const comparisonHighlights = [
 		value: articleRows[0]?.source || 'Водечки извор',
 		copy: articleRows[0]?.sourceSignal?.role_note || articleRows[0]?.relationship?.description || 'Прво прочитајте го водечкиот извор, па потоа споредете ги другите верзии.',
 	},
-];
-
-const askPresekSuggestions = [
-	'Што е цврсто потврдено?',
-	'Каде изворите се разидуваат?',
-	'Што сè уште не е јасно?',
 ];
 
 const sentimentData = cluster?.sentiment ? {
@@ -622,21 +614,6 @@ const leadVisual = getLeadVisual(cluster);
 
 					<aside class="cluster-sidebar">
 						<div class="sticky top-24 space-y-8">
-							<section class="sidebar-module">
-								<div class="cluster-module-head">
-									<Sparkles size={18} className="text-nyt-accent" />
-									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ПРАШАЈ ГО ПРЕСЕК</h2>
-								</div>
-								<div class="bg-card border border-border p-6 rounded-lg shadow-sm">
-									<AskPresekPanel 
-										clusterId={id || ''} 
-										suggestions={askPresekSuggestions}
-										initialQuestion={askQuestion}
-										client:load 
-									/>
-								</div>
-							</section>
-
 							{filteredRelated.length > 0 && (
 								<section class="sidebar-module">
 									<div class="cluster-module-head">

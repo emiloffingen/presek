@@ -134,23 +134,3 @@ export interface ChatResponse {
   status: 'success' | 'error';
   response: string;
 }
-
-export interface AskPresekCitation {
-  source?: string;
-  title?: string;
-  link?: string;
-  snippet?: string;
-  created_at?: string;
-}
-
-export interface AskPresekResponse {
-  status: 'success' | 'error';
-  answer: string;
-  response?: string;
-  confidence?: 'high' | 'medium' | 'low' | string;
-  confirmed_points?: string[];
-  unclear_points?: string[];
-  source_differences?: string;
-  citations?: AskPresekCitation[];
-  related_questions?: string[];
-}

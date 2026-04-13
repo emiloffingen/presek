@@ -9,8 +9,6 @@ import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
-import GlobalAskIsland from '../components/GlobalAskIsland.tsx';
-import AskPresekPanel from '../components/AskPresekPanel.tsx';
 import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
@@ -18,7 +16,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, BarChart3, Quote, Sparkles, MessageCircle } from 'lucide-react';
+import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
@@ -145,11 +143,6 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 const freshness = health?.freshness || null;
-const homepageAskSuggestions = [
-	'Што е цврсто потврдено?',
-	'Каде изворите се разидуваат?',
-	'Што останува нејасно во оваа приказна?',
-];
 
 function getTimeStr(dateStr: string) {
     try {
@@ -195,22 +188,6 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 			</div>
 		)}
 
-		{q && clusters.length > 0 && (
-			<section class="mb-10 p-6 border border-nyt-accent/30 bg-nyt-accent/5 rounded-sm motion-rise">
-				<div class="flex items-center gap-2 mb-4">
-					<Sparkles size={16} className="text-nyt-accent" />
-					<h3 class="font-sans text-xs font-black uppercase tracking-[0.2em] text-nyt-accent">Пресек УВИД — Интелигентен преглед</h3>
-				</div>
-				<AskPresekPanel
-					client:load
-					clusterId="frontpage"
-					suggestions={homepageAskSuggestions}
-					initialQuestion={`Направи сублимат на клучните настани поврзани со "${q}"`}
-					autoSubmit={true}
-				/>
-			</section>
-		)}
-
 		<div class="front-page-grid">
 			<div class="front-main">
 					{error && (
@@ -248,7 +225,6 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 						leadSummary={leadSummary}
 						leadSummaryIsCyrillic={leadSummaryIsCyrillic}
 						leadVisual={leadVisual}
-						homepageAskSuggestions={homepageAskSuggestions}
 						getTimeStr={getTimeStr}
 					/>
 				)}
@@ -356,7 +332,6 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 	</main>
 
 	<Footer />
-	<GlobalAskIsland client:idle />
 </Layout>
 
 <script>

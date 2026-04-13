@@ -18,9 +18,7 @@ from utils import (
 )
 from database import db_manager as db
 from health import _probe_database, _probe_redis, get_source_statuses
-from local_nlp import answer_cluster_question_locally
 from ai_engine import _call_ai_async, clean_json_response
-from api_helpers import rank_cluster_citations as _rank_cluster_citations
 from routes.common import (
     _client_ip_for_request, _apply_security_headers, _is_rate_limited_path, 
     _rate_limit_error_payload, _safe_tracking_redirect_path,
@@ -28,9 +26,7 @@ from routes.common import (
 )
 from routes import news, intelligence, profile, stats, system
 from routes.news import (
-    _build_cluster_answer_payload, get_news, 
-    chat_cluster_route as chat_cluster,
-    ask_cluster_route as ask_cluster
+    get_news, 
 )
 from routes.profile import (
     init_profile_sync, get_profile_sync, save_profile_sync,

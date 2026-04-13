@@ -33,7 +33,6 @@
   - `/archive`
 - Confirm:
   - homepage loads
-  - `Прашај го Пресек` still answers
   - no major source is unexpectedly auto-paused
   - freshness is not stale
 

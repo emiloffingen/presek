@@ -104,7 +104,6 @@ for name, mod in _get_fake_fastapi_modules().items():
 def mock_all():
     m_db = MagicMock()
     m_ai = AsyncMock(return_value=('{"answer":"ok"}', "prov"))
-    m_nlp = AsyncMock(return_value=None)
     
     # Patch everything
     with patch("api_fast.db", m_db), \
@@ -113,21 +112,10 @@ def mock_all():
          patch("routes.profile.db", m_db), \
          patch("routes.stats.db", m_db), \
          patch("routes.system.db", m_db), \
-         patch("ai_engine._call_ai_async", m_ai), \
-         patch("local_nlp.answer_cluster_question_locally", m_nlp):
-        yield {"db": m_db, "ai": m_ai, "nlp": m_nlp}
-
-def test_fastapi_cluster_ask_falls_back_when_local_and_ai_fail(mock_all):
-    import api_fast
-    mock_all["db"].execute.return_value = [{"title": "T1", "source": "MIA", "category": "Свет", "link": "", "description": ""}]
-    mock_all["nlp"].side_effect = RuntimeError("boom")
-    mock_all["ai"].side_effect = RuntimeError("boom")
-    
-    data = asyncio.run(api_fast.ask_cluster("abc123def456", _FakeRequest({"question": "Што е ново?"})))
-    assert data["status"] == "success"
-    assert data.get("generated_locally") is True
-
+         patch("ai_engine._call_ai_async", m_ai):
+         yield {"db": m_db, "ai": m_ai}
 def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
+
     import api_fast
     mock_all["db"].hybrid_search.return_value = []
     with patch("routes.news.cached_response", return_value=None):

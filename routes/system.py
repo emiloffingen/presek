@@ -142,18 +142,6 @@ async def get_navigation():
     set_cache(cache_key, res, ttl=600)
     return res
 
-@router.get("/api/chat/stream")
-async def chat_stream(cluster_id: str = Query(..., min_length=6), query: str = Query(..., max_length=500)):
-    articles = db.execute("SELECT title, source FROM articles WHERE cluster_id = %s LIMIT 10", (cluster_id,))
-    if not articles: raise HTTPException(status_code=404)
-    context = "\n".join([f"- [{a['source']}]: {a['title']}" for a in articles])
-    async def generate():
-        res = await _call_ai_async(f"Context:\n{context}\n\nUser Question: {query}", SYNTHESIS_SYSTEM_PROMPT, task_type="chat", stream=True)
-        if res and res[0]:
-            async for chunk in res[0]: yield f"data: {json.dumps({'token': chunk})}\n\n"
-        yield "data: [DONE]\n\n"
-    return StreamingResponse(generate(), media_type="text/event-stream")
-
 @router.get("/api/cluster/{cluster_id}/share-card")
 async def get_cluster_share_card(cluster_id: str):
     from PIL import Image, ImageDraw, ImageFont

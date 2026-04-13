@@ -68,7 +68,6 @@ Confirm:
 - freshness is not stale
 - homepage renders articles and images
 - one cluster page loads fully
-- `Прашај го Пресек` answers successfully
 - no major source is unexpectedly auto-paused
 
 ## 6. Launch decision
