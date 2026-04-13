@@ -31,6 +31,8 @@ const isFallbackArt = selectedImage.isWeak;
 const displayTitle = cleanAndDecode(main.title);
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
+const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
+
 function getCardSummary(article: Article, lead = false) {
 	let text = article?.summary || article?.description || '';
 	

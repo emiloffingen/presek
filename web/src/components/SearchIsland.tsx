@@ -20,9 +20,9 @@ type TrendingItem = {
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string }) {
+export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState(initialQuery);
+  const [query, setQuery] = useState(initialQuery || '');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
@@ -35,7 +35,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (initialQuery && query !== initialQuery) {
+    if (initialQuery !== undefined && initialQuery !== null && query !== initialQuery) {
       setQuery(initialQuery);
     }
   }, [initialQuery]);
