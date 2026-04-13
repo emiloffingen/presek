@@ -1,7 +1,6 @@
 ---
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
-import type { TrendingWord } from '../types';
 import { apiBaseUrl } from '../lib/apiBase';
 
 interface Props {
@@ -81,7 +80,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             <div class="topbar-left">
                 <div class="search-trigger-wrap">
                     <SearchIsland client:load />
-                    <span class="search-hint hidden lg:inline">⌘K</span>
+                    <kbd class="search-hint hidden lg:inline"></kbd>
                 </div>
                 <span class="topbar-date hidden md:inline">{currentDate}</span>
             </div>
@@ -404,16 +403,39 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         .topbar-logo { height: 1.6rem; }
         .topbar-emblem { height: 1.25rem; }
     }
+
+    .search-trigger-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .search-hint {
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--muted-foreground);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.1rem 0.35rem;
+        line-height: 1.4;
+    }
 </style>
 
 <script is:inline>
     (function() {
+        var _scrollHandler = null;
+        var _fadeScrollHandler = null;
+        var _fadeResizeHandler = null;
+
         const initHeader = () => {
+            if (_scrollHandler) window.removeEventListener('scroll', _scrollHandler);
+
             let lastScrollY = window.scrollY;
             const header = document.getElementById('main-header');
             if (!header) return;
 
-            const onScroll = () => {
+            _scrollHandler = () => {
                 const currentScrollY = window.scrollY;
                 if (currentScrollY < 100) {
                     header.classList.remove('header-hidden');
@@ -425,7 +447,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 lastScrollY = currentScrollY;
             };
 
-            window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('scroll', _scrollHandler, { passive: true });
         };
 
         const initFades = () => {
@@ -434,17 +456,30 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             const fadeRight = document.querySelector('.nav-fade-right');
             if (!navShell || !fadeLeft || !fadeRight) return;
 
+            if (_fadeScrollHandler) navShell.removeEventListener('scroll', _fadeScrollHandler);
+            if (_fadeResizeHandler) window.removeEventListener('resize', _fadeResizeHandler);
+
             const update = () => {
                 fadeLeft.style.opacity = navShell.scrollLeft > 10 ? '1' : '0';
                 fadeRight.style.opacity = navShell.scrollLeft < navShell.scrollWidth - navShell.clientWidth - 10 ? '1' : '0';
             };
+            _fadeScrollHandler = update;
+            _fadeResizeHandler = update;
             navShell.addEventListener('scroll', update);
             window.addEventListener('resize', update);
             update();
         };
 
+        const initHints = () => {
+            var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+            document.querySelectorAll('.search-hint').forEach(function(el) {
+                el.textContent = isMac ? '⌘K' : 'Ctrl+K';
+            });
+        };
+
         initHeader();
         initFades();
-        document.addEventListener('astro:page-load', () => { initHeader(); initFades(); });
+        initHints();
+        document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
     })();
 </script>

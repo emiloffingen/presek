@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { navigate } from 'astro:transitions/client';
 import { Search, X, Zap, ArrowUpRight, LoaderCircle } from 'lucide-react';
 import { cleanAndDecode } from '../utils/textUtils';
 
@@ -58,6 +59,7 @@ export default function SearchIsland() {
   useEffect(() => {
     if (!isOpen) {
       document.body.style.overflow = 'unset';
+      setQuery('');
       setActiveIndex(-1);
       setSuggestions([]);
       if (lastFocusedRef.current) {
@@ -69,6 +71,10 @@ export default function SearchIsland() {
     lastFocusedRef.current = document.activeElement as HTMLElement;
     document.body.style.overflow = 'hidden';
     inputRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -179,12 +185,14 @@ export default function SearchIsland() {
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return;
     persistRecentSearch(cleanQuery);
-    window.location.href = `/?q=${encodeURIComponent(cleanQuery)}`;
+    closeSearch();
+    navigate(`/?q=${encodeURIComponent(cleanQuery)}`);
   };
 
   const navigateToCluster = (clusterId: string) => {
     if (!clusterId) return;
-    window.location.href = `/cluster/${clusterId}`;
+    closeSearch();
+    navigate(`/cluster/${clusterId}`);
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -232,7 +240,6 @@ export default function SearchIsland() {
   };
 
   const showRecent = query.trim().length < 2 && recentSearches.length > 0;
-  const showTrending = query.trim().length < 2;
   const showSuggestions = query.trim().length >= 2;
 
   const renderHighlightedText = (text: string, searchQuery: string) => {
@@ -293,14 +300,16 @@ export default function SearchIsland() {
           aria-modal="true"
           aria-labelledby="presek-search-title"
           onKeyDown={onDialogKeyDown}
+          onClick={closeSearch}
         >
           <div
             ref={dialogRef}
             className="w-full max-w-5xl relative border border-[color:color-mix(in_srgb,var(--border)_88%,transparent)] bg-background shadow-[0_20px_80px_rgba(0,0,0,0.16)]"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
               <div className="flex items-center gap-3">
-                <img src="/img/presek_emblem.svg" alt="" className="h-6 site-logo" />
+                <img src="/img/presek_emblem.svg" alt="" className="h-6 site-emblem" />
                 <div>
                   <span id="presek-search-title" className="font-serif font-black text-lg block">
                     Пресек Пребарување
@@ -331,7 +340,7 @@ export default function SearchIsland() {
                   aria-label="Пребарај вести"
                   role="combobox"
                   aria-autocomplete="list"
-                  aria-controls="presek-search-listbox"
+                  aria-controls={showSuggestions && suggestions.length > 0 ? 'presek-search-listbox' : undefined}
                   aria-expanded={showSuggestions && suggestions.length > 0}
                   aria-activedescendant={
                     activeIndex >= 0 && suggestions[activeIndex]
