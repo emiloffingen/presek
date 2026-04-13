@@ -93,19 +93,23 @@ function ResultBlock({ result, question, clusterId }: { result: AskPresekRespons
   function jumpToCitation(link?: string) {
     if (!link) return;
     const target = document.querySelector<HTMLElement>(`[data-article-link="${encodeURIComponent(link)}"]`);
-    if (!target) return;
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    target.classList.add('ask-citation-targeted');
-    window.setTimeout(() => target.classList.remove('ask-citation-targeted'), 2200);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('ask-citation-targeted');
+      window.setTimeout(() => target.classList.remove('ask-citation-targeted'), 2200);
+    } else {
+      window.open(link, '_blank', 'noopener');
+    }
   }
 
   function shareAnswer() {
     const url = new URL(window.location.href);
     url.searchParams.set('ask', question);
-    navigator.clipboard.writeText(url.toString()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    const text = url.toString();
+    (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(
+      () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+      () => { window.prompt('Копирај го линкот:', text); },
+    );
   }
 
   return (
@@ -224,6 +228,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
   const [isLoading, setIsLoading] = useState(false);
   const autoAskedRef = useRef(false);
   const resultRef = useRef<HTMLFormElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
 
   async function submitQuestion(nextQuestion?: string) {
     const normalized = normalizeQuestion(nextQuestion ?? question);
@@ -249,7 +254,11 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
       }
 
       setHistory((prev) => [...prev, { question: normalized, result: payload as AskPresekResponse }]);
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+      setTimeout(() => {
+        if (historyRef.current) {
+          historyRef.current.scrollTop = historyRef.current.scrollHeight;
+        }
+      }, 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не успеав да добијам одговор.');
     } finally {
@@ -297,7 +306,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
       )}
 
       {history.length > 0 && (
-        <div className="ask-history">
+        <div className="ask-history" role="log" ref={historyRef}>
           {history.map((entry, idx) => (
             <div key={idx} className="ask-turn">
               <div className="ask-turn-question">

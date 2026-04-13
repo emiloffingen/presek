@@ -11,16 +11,17 @@ Type=simple
 User=emiloffingen
 Environment=PYTHONPATH=/home/emiloffingen/presek/current
 WorkingDirectory=/home/emiloffingen/presek/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current && set -a && source /home/emiloffingen/presek/shared/.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=1'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current && set -a && source /home/emiloffingen/presek/shared/.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=1 --max-memory-per-child=500000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-worker
+Nice=10
+CPUWeight=50
 MemoryHigh=900M
 MemoryMax=1200M
-CPUWeight=100
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes
