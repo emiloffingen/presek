@@ -326,13 +326,23 @@ async def get_news(
             rows = db.execute("SELECT * FROM articles ORDER BY created_at DESC LIMIT %s", (row_limit,))
 
         clusters = defaultdict(list)
+        cluster_relevance = {}
         for r in rows:
             r['reading_time'] = calculate_reading_time(r.get('description', ''))
-            clusters[r['cluster_id']].append(r)
+            cid = r['cluster_id']
+            clusters[cid].append(r)
+            # Track best relevance score for this cluster if searching
+            if q:
+                score = float(r.get('match_score', 0)) + float(r.get('rank', 0))
+                if cid not in cluster_relevance or score > cluster_relevance[cid]:
+                    cluster_relevance[cid] = score
 
         ranked_clusters = [annotate_cluster_articles(arts) for arts in clusters.values()]
         if sort == 'popular':
             ranked_clusters.sort(key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
+        elif q and sort == 'recent':
+            # Relevance-first for search results
+            ranked_clusters.sort(key=lambda arts: cluster_relevance.get(arts[0]['cluster_id'], 0), reverse=True)
         else:
             ranked_clusters.sort(key=score_cluster_for_homepage, reverse=True)
 
