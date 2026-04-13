@@ -20,9 +20,9 @@ type TrendingItem = {
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export default function SearchIsland() {
+export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
@@ -33,6 +33,12 @@ export default function SearchIsland() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (initialQuery && query !== initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
 
   useEffect(() => {
     const saved = localStorage.getItem('presek_recent_searches');
@@ -59,7 +65,6 @@ export default function SearchIsland() {
   useEffect(() => {
     if (!isOpen) {
       document.body.style.overflow = 'unset';
-      setQuery('');
       setActiveIndex(-1);
       setSuggestions([]);
       if (lastFocusedRef.current) {
@@ -70,10 +75,18 @@ export default function SearchIsland() {
 
     lastFocusedRef.current = document.activeElement as HTMLElement;
     document.body.style.overflow = 'hidden';
-    inputRef.current?.focus();
+    
+    // Use a small delay to ensure focus works on all browsers when opening
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+      if (query) {
+        inputRef.current?.setSelectionRange(query.length, query.length);
+      }
+    }, 10);
 
     return () => {
       document.body.style.overflow = 'unset';
+      clearTimeout(timer);
     };
   }, [isOpen]);
 
@@ -148,7 +161,7 @@ export default function SearchIsland() {
 
         if (!cancelled) {
           setSuggestions(nextSuggestions);
-          setActiveIndex(nextSuggestions.length > 0 ? 0 : -1);
+          setActiveIndex(-1); // Don't auto-select the first suggestion, let Enter perform general search
         }
       } catch {
         if (!cancelled) {
@@ -295,7 +308,7 @@ export default function SearchIsland() {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-[color:color-mix(in_srgb,var(--background)_84%,black_16%)]/96 backdrop-blur-md flex flex-col items-center pt-8 md:pt-12 px-4 transition-all animate-in fade-in duration-200"
+          className="fixed inset-0 z-[1000] bg-[color:color-mix(in_srgb,var(--background)_84%,black_16%)]/96 backdrop-blur-md flex flex-col items-center pt-8 md:pt-12 px-4 transition-all animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="presek-search-title"
@@ -309,7 +322,7 @@ export default function SearchIsland() {
           >
             <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
               <div className="flex items-center gap-3">
-                <img src="/img/presek_emblem.svg" alt="" className="h-6 site-emblem" />
+                <img src="/img/presek_emblem.svg?v=3" alt="" className="h-6 site-emblem" />
                 <div>
                   <span id="presek-search-title" className="font-serif font-black text-lg block">
                     Пресек Пребарување
@@ -329,16 +342,20 @@ export default function SearchIsland() {
             </div>
 
             <form onSubmit={onSubmit} className="mb-8 px-5 md:px-8">
-              <div className="border-y border-foreground/70 flex items-center gap-4 py-2">
+              <div className="border-y border-foreground/70 flex items-center gap-4 py-2 relative">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Внесете клучни зборови..."
-                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-transparent py-4 pr-12 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
                   aria-label="Пребарај вести"
                   role="combobox"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   aria-autocomplete="list"
                   aria-controls={showSuggestions && suggestions.length > 0 ? 'presek-search-listbox' : undefined}
                   aria-expanded={showSuggestions && suggestions.length > 0}
@@ -348,6 +365,16 @@ export default function SearchIsland() {
                       : undefined
                   }
                 />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => { setQuery(''); inputRef.current?.focus(); }}
+                    className="absolute right-[12rem] md:right-[14rem] p-2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Исчисти пребарување"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="bg-foreground text-background px-6 md:px-8 py-3 font-black text-[11px] uppercase tracking-[0.18em] hover:opacity-85 transition-all"

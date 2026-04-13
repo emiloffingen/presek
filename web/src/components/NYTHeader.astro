@@ -79,7 +79,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         <div class="topbar-row">
             <div class="topbar-left">
                 <div class="search-trigger-wrap">
-                    <SearchIsland client:load />
+                    <SearchIsland initialQuery={q} client:load />
                     <kbd class="search-hint hidden lg:inline"></kbd>
                 </div>
                 <span class="topbar-date hidden md:inline">{currentDate}</span>
