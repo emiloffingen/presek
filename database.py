@@ -78,10 +78,11 @@ class DatabaseManager:
         try:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(sql, params)
+                results = None
                 if fetch:
-                    return [dict(r) for r in cur.fetchall()]
+                    results = [dict(r) for r in cur.fetchall()]
                 conn.commit()
-                return cur.rowcount
+                return results if fetch else cur.rowcount
         except Exception as e:
             conn.rollback()
             log.error(f"Presek 4.0 DB Error: {e}")

@@ -58,7 +58,14 @@ async def apply_runtime_policies(request: Request, call_next):
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
     # This remains in main for redirect logic simplicity, or could move to stats
     from database import db_manager as db
-    db.execute("INSERT INTO delivery_tracking_events (delivery_id, event_type) VALUES (%s, %s)", (event_id, event_type), fetch=False)
+    # Fetch parent's context to inherit properties
+    p = db.execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
+    if p:
+        db.execute(
+            "INSERT INTO delivery_tracking_events (parent_event_id, event_type, sync_token, delivery_kind, channel, target, cluster_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (event_id, event_type, p['sync_token'], p['delivery_kind'], p['channel'], p['target'], p['cluster_id']),
+            fetch=False
+        )
     return RedirectResponse(url=f"{_public_site_url}{_safe_tracking_redirect_path(redirect)}", status_code=302)
 
 app.include_router(news.router)

@@ -1556,8 +1556,11 @@ def generate_daily_brief_task(retry_attempt=0):
 def run_prune_db():
     """Standard maintenance."""
     prune_db()
+    # Fetch valid cluster IDs to prune old images
+    valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
+    valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
     from ai_engine import cleanup_cover_art
-    cleanup_cover_art()
+    cleanup_cover_art(valid_ids)
 
 
 @celery_app.task
