@@ -58,13 +58,13 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 <div class="live-ticker-track-wrap">
                     <div class="live-ticker-track">
                         {navigationData.breaking.map((item) => (
-                            <a href={item.href} class="live-ticker-headline">
+                            <a href={item.href} data-astro-reload class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">&bull;</span>
                                 {item.label}
                             </a>
                         ))}
                         {navigationData.breaking.map((item) => (
-                            <a href={item.href} class="live-ticker-headline" aria-hidden="true">
+                            <a href={item.href} data-astro-reload class="live-ticker-headline" aria-hidden="true">
                                 <span class="ticker-sep" aria-hidden="true">&bull;</span>
                                 {item.label}
                             </a>
@@ -86,7 +86,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             </div>
 
             <div class="topbar-center">
-                <a href="/" class="topbar-brand-link">
+                <a href="/" data-astro-reload class="topbar-brand-link">
                     <img src="/img/presek_emblem.svg?v=3" alt="" class="topbar-emblem site-emblem" />
                     <img src="/logo.svg?v=3" alt="ПРЕСЕК.мк" class="topbar-logo site-logo" />
                 </a>
@@ -94,8 +94,8 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
             <div class="topbar-right">
                 <div class="topbar-links hidden sm:flex">
-                    <a href="/briefing" class="topbar-link">Брифинг</a>
-                    <a href="/stats" class="topbar-link">Пулс</a>
+                    <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
+                    <a href="/stats" data-astro-reload class="topbar-link">Пулс</a>
                     <a href={telegramUrl} class="topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">Телеграм</a>
                 </div>
                 {stats?.last_1h && stats.last_1h > 0 && (
@@ -113,9 +113,16 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
                 <ul class="masthead-nav-list">
+                    {navigationData.sections.map((item) => (
+                        <li>
+                            <a href={item.href} data-astro-reload class={`masthead-nav-link ${category === item.label ? 'is-active' : ''}`}>
+                                {item.label}
+                            </a>
+                        </li>
+                    ))}
                     {navigationData.focus.map((item) => (
                         <li>
-                            <a href={item.href} class={`masthead-nav-link ${q === item.label ? 'is-active' : ''}`}>
+                            <a href={item.href} data-astro-reload class={`masthead-nav-link ${q === item.label ? 'is-active' : ''}`}>
                                 {item.label}
                             </a>
                         </li>
