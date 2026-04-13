@@ -7,10 +7,10 @@ const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
 const STATIC_ASSETS = [
-  '/static/logo.svg?v=3',
-  '/static/img/presek_emblem.svg?v=3',
-  '/static/img/placeholder.svg',
-  '/static/manifest.json'
+  '/logo.svg?v=3',
+  '/img/presek_emblem.svg?v=3',
+  '/img/placeholder.svg',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -67,7 +67,7 @@ self.addEventListener('fetch', e => {
   }
 
   // Cache-First for static assets
-  if (url.pathname.startsWith('/static/img/')) {
+  if (url.pathname.startsWith('/img/')) {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;

@@ -268,6 +268,8 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
             "unclear_points": parsed.get("unclear_points", []) or sections["unclear_points"],
             "source_differences": parsed.get("source_differences", "") or sections["source_differences"],
         }
+    except HTTPException:
+        raise
     except Exception as e:
         log.error(f"[routes news] unexpected error: {e}", exc_info=True)
         return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
@@ -371,7 +373,8 @@ async def get_cluster_detail(cluster_id: str):
         sentiment = _parse_maybe_json(s_row["sentiment"]) if s_row else None
         verification_report = _parse_maybe_json(s_row["verification_report"]) if s_row else None
         ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
-        perspectives = _parse_maybe_json(s_row["perspectives"]) or []
+        perspectives = _parse_maybe_json(s_row["perspectives"]) if s_row else []
+        if not perspectives: perspectives = []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         m_row = db.execute_one("SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
@@ -409,6 +412,8 @@ async def get_cluster_detail(cluster_id: str):
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
         return {"status": "success", "data": {"cluster_id": cluster_id, "articles": articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+    except HTTPException:
+        raise
     except Exception as e:
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
