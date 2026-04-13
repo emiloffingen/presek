@@ -103,21 +103,9 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
                 <ul class="masthead-nav-list">
-                    {navigationData.sections.map((item) => (
-                        <li>
-                            <a href={item.href} class={`masthead-nav-link ${(category === item.label || topic === item.label) ? 'is-active' : ''}`}>
-                                {item.label}
-                            </a>
-                        </li>
-                    ))}
-
-                    {navigationData.focus.length > 0 && navigationData.sections.length > 0 && (
-                        <li class="nav-sep" aria-hidden="true"></li>
-                    )}
-
                     {navigationData.focus.map((item) => (
                         <li>
-                            <a href={item.href} class={`masthead-nav-link nav-link-focus ${q === item.label ? 'is-active' : ''}`}>
+                            <a href={item.href} class={`masthead-nav-link ${q === item.label ? 'is-active' : ''}`}>
                                 {item.label}
                             </a>
                         </li>
@@ -347,17 +335,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         flex-shrink: 0;
     }
 
-    .nav-sep {
-        width: 3px;
-        height: 3px;
-        border-radius: 50%;
-        background: var(--muted-foreground);
-        flex-shrink: 0;
-        margin: 0 0.25rem;
-    }
-
-    .nav-sep::before { display: none; }
-
     .masthead-nav-link {
         font-family: var(--font-sans);
         font-size: 0.7rem;
@@ -371,16 +348,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
     .masthead-nav-link:hover,
     .masthead-nav-link.is-active {
-        color: var(--nyt-accent);
-    }
-
-    .nav-link-focus {
-        font-weight: 600;
-        color: var(--muted-foreground);
-    }
-
-    .nav-link-focus:hover,
-    .nav-link-focus.is-active {
         color: var(--nyt-accent);
     }
 
