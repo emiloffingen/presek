@@ -16,7 +16,6 @@ const { cluster, isLead = false, variant = 'standard' } = Astro.props;
 const main = cluster.articles[0];
 const sourceSignal = main?.source_signal || {};
 const totalSources = cluster.articles.length;
-const uniqueSources = cluster.articles.filter(a => !a.is_redundant).length;
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
 const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =

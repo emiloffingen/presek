@@ -219,18 +219,4 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
     return scored_items[:limit]
 
 
-def register_trending_route(app):
-    """Register /api/trending onto a Flask app."""
-    from flask import jsonify
-    import time as _time
-    _trending_cache: list = [0.0, None]  # [timestamp, data]
 
-    @app.route("/api/trending")
-    def trending():
-        now = _time.time()
-        if _trending_cache[1] is not None and now - _trending_cache[0] < 120:
-            return jsonify(_trending_cache[1])
-        results = get_trending()
-        _trending_cache[0] = now
-        _trending_cache[1] = results
-        return jsonify(results)

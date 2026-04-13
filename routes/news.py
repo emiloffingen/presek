@@ -207,17 +207,20 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
         if not articles:
             raise HTTPException(status_code=404, detail="Cluster not found")
 
-        summary_row = db.execute_one(
-            "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
-            (cluster_id,)
-        )
-        synthesis = (summary_row or {}).get("summary") or ""
-        perspectives = _parse_perspectives_blob((summary_row or {}).get("perspectives"))
-
+        synthesis = ""
+        perspectives = []
         try:
+            summary_row = db.execute_one(
+                "SELECT summary, perspectives FROM cluster_summaries WHERE cluster_id = %s",
+                (cluster_id,)
+            )
+            if summary_row:
+                synthesis = summary_row.get("summary") or ""
+                perspectives = _parse_perspectives_blob(summary_row.get("perspectives"))
+
             local_answer = answer_cluster_question_locally(question, articles, synthesis=synthesis, perspectives=perspectives)
         except Exception as e:
-            log.warning(f"[routes news] local answer failed for {cluster_id}: {e}")
+            log.warning(f"[routes news] local/db setup failed for {cluster_id}: {e}")
             return _build_cluster_answer_fallback(question, articles, synthesis=synthesis, perspectives=perspectives)
         
         if local_answer:
@@ -257,6 +260,19 @@ async def _build_cluster_answer_payload(cluster_id: str, question: str) -> dict:
         record_runtime_event("chat_path", mode=provider or "unknown", surface="cluster_answer")
         parsed = clean_json_response(response_text)
         
+        if not isinstance(parsed, dict):
+            # Fallback for plain text response
+            return {
+                "status": "success",
+                "answer": str(parsed or response_text).strip(),
+                "citations": [],
+                "related_questions": [],
+                "confidence": "medium",
+                "confirmed_points": [],
+                "unclear_points": [],
+                "source_differences": "",
+            }
+
         answer = str(parsed.get("answer") or "").strip()
         sections = build_structured_answer_sections(answer, articles, synthesis=synthesis, perspectives=perspectives)
         

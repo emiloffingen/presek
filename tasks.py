@@ -1326,7 +1326,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
         if summary or perspectives:
-            record_runtime_event("synthesis_path", mode="local_exception_fallback")
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -1353,6 +1352,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
+        record_runtime_event("synthesis_path", mode="local_exception_fallback")
         fallback = synthesize_cluster_fallback(article_rows)
         sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
         summary, perspectives = _normalize_cluster_synthesis(

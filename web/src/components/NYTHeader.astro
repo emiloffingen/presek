@@ -424,18 +424,14 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
 <script is:inline>
     (function() {
-        var _scrollHandler = null;
-        var _fadeScrollHandler = null;
-        var _fadeResizeHandler = null;
-
         const initHeader = () => {
-            if (_scrollHandler) window.removeEventListener('scroll', _scrollHandler);
+            if (window._presek_scrollHandler) window.removeEventListener('scroll', window._presek_scrollHandler);
 
             let lastScrollY = window.scrollY;
             const header = document.getElementById('main-header');
             if (!header) return;
 
-            _scrollHandler = () => {
+            window._presek_scrollHandler = () => {
                 const currentScrollY = window.scrollY;
                 if (currentScrollY < 100) {
                     header.classList.remove('header-hidden');
@@ -447,7 +443,7 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 lastScrollY = currentScrollY;
             };
 
-            window.addEventListener('scroll', _scrollHandler, { passive: true });
+            window.addEventListener('scroll', window._presek_scrollHandler, { passive: true });
         };
 
         const initFades = () => {
@@ -456,17 +452,18 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             const fadeRight = document.querySelector('.nav-fade-right');
             if (!navShell || !fadeLeft || !fadeRight) return;
 
-            if (_fadeScrollHandler) navShell.removeEventListener('scroll', _fadeScrollHandler);
-            if (_fadeResizeHandler) window.removeEventListener('resize', _fadeResizeHandler);
+            if (window._presek_fadeResizeHandler) window.removeEventListener('resize', window._presek_fadeResizeHandler);
+            // Note: navShell is a new element on each page, so its listeners are gone, 
+            // but we still clean up window resize listener.
 
             const update = () => {
                 fadeLeft.style.opacity = navShell.scrollLeft > 10 ? '1' : '0';
                 fadeRight.style.opacity = navShell.scrollLeft < navShell.scrollWidth - navShell.clientWidth - 10 ? '1' : '0';
             };
-            _fadeScrollHandler = update;
-            _fadeResizeHandler = update;
-            navShell.addEventListener('scroll', update);
-            window.addEventListener('resize', update);
+            window._presek_fadeResizeHandler = update;
+            
+            navShell.addEventListener('scroll', update, { passive: true });
+            window.addEventListener('resize', update, { passive: true });
             update();
         };
 

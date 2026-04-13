@@ -58,7 +58,8 @@ async def get_weather():
     try:
         r = requests.get("https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true", timeout=3).json()
         curr = r.get("current_weather", {})
-        res = {"temp": round(curr.get("temperature")), "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️")}
+        temp = curr.get("temperature")
+        res = {"temp": round(temp) if temp is not None else None, "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️")}
         set_cache("weather:skopje", res, ttl=900)
         return res
     except: return {"temp": None, "icon": "🌡️"}

@@ -236,7 +236,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
 
   const turnsExhausted = history.length >= MAX_TURNS;
 
-  async function submitQuestion(nextQuestion?: string) {
+  const submitQuestion = React.useCallback(async (nextQuestion?: string) => {
     const normalized = normalizeQuestion(nextQuestion ?? question);
     if (!normalized || isLoading) return;
     if (history.length >= MAX_TURNS) {
@@ -274,7 +274,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [clusterId, history.length, isLoading, question]);
 
   const latestResult = history.length > 0 ? history[history.length - 1].result : null;
   const followUpSuggestions = latestResult?.related_questions;
@@ -284,7 +284,7 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
     if (!normalized || autoAskedRef.current || !autoSubmit) return;
     autoAskedRef.current = true;
     void submitQuestion(normalized);
-  }, [initialQuestion, autoSubmit]);
+  }, [initialQuestion, autoSubmit, submitQuestion]);
 
   return (
     <div className="ask-presek">

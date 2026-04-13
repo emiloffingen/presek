@@ -200,7 +200,6 @@ SOURCE_CREDIBILITY = {
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
     "Lajm": 1.0, "Koha": 1.0,
-    "Bitola News": 1.0,
     "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1,
 }
 DEFAULT_CREDIBILITY = 0.8
