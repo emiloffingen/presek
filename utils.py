@@ -804,8 +804,9 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
     newer_sources = {a.get("source") for a in newer_articles if a.get("source")}
     older_sources = {a.get("source") for a in older_articles if a.get("source")}
     net_new_sources = sorted(source for source in newer_sources if source not in older_sources)
-    if net_new_sources:
-        score += min(1.6, 0.9 + len(net_new_sources) * 0.35)
+    if (net_new_sources):
+        # Significant bonus for new voices
+        score += min(2.0, 1.0 + len(net_new_sources) * 0.4)
         reasons.append("new_sources")
 
     newer_numbers = set()
@@ -814,37 +815,45 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
         newer_numbers |= _number_tokens(" ".join([str(article.get("title") or ""), str(article.get("description") or "")]))
     for article in older_articles:
         older_numbers |= _number_tokens(" ".join([str(article.get("title") or ""), str(article.get("description") or "")]))
-    if newer_numbers - older_numbers:
-        score += 0.95
+    if (newer_numbers - older_numbers):
+        score += 1.1
         reasons.append("new_numbers")
 
     if older_articles:
         newest_title = str(newer_articles[0].get("title") or "")
         baseline_title = str(older_articles[0].get("title") or "")
         if newest_title and baseline_title and _title_overlap(newest_title, baseline_title) < 0.26:
-            score += 0.85
+            score += 0.9
             reasons.append("new_angle")
 
     if len(newer_articles) >= 2:
-        score += 0.45
+        score += 0.5
         reasons.append("multiple_new_reports")
 
     high_weight_new_source = any(get_source_effective_weight(str(article.get("source") or "")) >= 1.45 for article in newer_articles)
     if high_weight_new_source:
-        score += 0.55
+        score += 0.65
         reasons.append("credible_new_reporting")
 
     current_score = score_cluster_for_synthesis(ranked)
     if current_score >= 3.5:
-        score += 0.35
+        score += 0.5
         reasons.append("high_priority_cluster")
 
+    # Diversity bonus: if the cluster is becoming "balanced" (multi-source types)
+    if is_balanced(ranked) and not is_balanced(older_articles):
+        score += 1.2
+        reasons.append("broad_coverage_achieved")
+
     age_minutes = max(0.0, ((latest_article_at or synthesis_dt) - synthesis_dt).total_seconds() / 60.0)
-    # Stricter cooldown: 45 minutes, or less than 2 new articles unless high score
-    cooldown_active = age_minutes < 45 and (len(newer_articles) < 2 and not net_new_sources)
     
-    # Only refresh if score is substantial (1.8+) or many new articles
-    refresh_needed = (score >= 1.8 or len(newer_articles) >= 3) and not cooldown_active
+    # Dynamic cooldown: shorter for high-priority or very fresh breaking news
+    min_cooldown = 40 if current_score < 4.0 else 20
+    cooldown_active = age_minutes < min_cooldown and (len(newer_articles) < 2 and not net_new_sources)
+    
+    # Refresh if score is substantial (2.0+) or many new articles
+    # Increased threshold slightly to avoid "nervous" updates on minor changes
+    refresh_needed = (score >= 2.0 or len(newer_articles) >= 4) and not cooldown_active
 
     return {
         "has_synthesis": True,
