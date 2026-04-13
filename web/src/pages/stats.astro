@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import { SourceSpectrum } from '../components/SourceSpectrum.tsx';
 import ReaderSuggestionAnalyticsIsland from '../components/ReaderSuggestionAnalyticsIsland.tsx';
 import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -83,6 +84,21 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 							</div>
 						</div>
 					</section>
+
+					{stats.by_source && stats.by_source.length > 0 && (
+						<section class="stats-landscape motion-rise motion-delay-1">
+							<div class="editorial-panel">
+								<h2 class="stats-section-title editorial-panel-title">Глобален Медиумски Пејзаж</h2>
+								<p class="text-sm text-muted-foreground mb-6">Дистрибуција на сите активни објави во последните 24 часа според уредувачкиот профил на медиумите.</p>
+								<SourceSpectrum 
+									articles={stats.by_source.flatMap((s: any) => 
+										Array(s.n).fill({ source: s.source })
+									)} 
+									client:visible 
+								/>
+							</div>
+						</section>
+					)}
 
 					<div class="stats-metrics motion-rise motion-delay-1">
 						<div class="metric-card editorial-panel">
