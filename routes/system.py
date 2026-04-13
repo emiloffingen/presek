@@ -39,7 +39,19 @@ _WMO_ICON = {0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48
 
 @router.get("/api/health")
 async def health(request: Request):
+    admin_token = os.environ.get("PRESEK_ADMIN_TOKEN")
+    provided_token = request.headers.get("X-Admin-Token")
+    is_admin = admin_token and provided_token == admin_token
+    
     db_s = _probe_database(); rd_s = _probe_redis()
+    
+    if not is_admin:
+        # Omit sensitive details for public status
+        for probe in [db_s, rd_s]:
+            probe.pop("url", None)
+            probe.pop("error", None)
+            probe.pop("config", None)
+            
     return {"status": "ok" if db_s["ok"] and rd_s["ok"] else "degraded", "database": db_s, "redis": rd_s}
 
 @router.get("/sw.js")

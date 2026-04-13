@@ -4,18 +4,50 @@ import logging
 import datetime
 import time
 import re
+import requests
+from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from config import validate_required_env
-from utils import check_rate_limit, record_runtime_event
+from config import validate_required_env, API_MAX_PAGE, API_MAX_Q_LEN
+from utils import (
+    check_rate_limit, record_runtime_event, 
+    cached_response, set_cache, delete_cache
+)
+from database import db_manager as db
+from health import _probe_database, _probe_redis, get_source_statuses
+from local_nlp import answer_cluster_question_locally
+from ai_engine import _call_ai_async, clean_json_response
+from api_helpers import rank_cluster_citations as _rank_cluster_citations
 from routes.common import (
     _client_ip_for_request, _apply_security_headers, _is_rate_limited_path, 
-    _rate_limit_error_payload, _safe_tracking_redirect_path
+    _rate_limit_error_payload, _safe_tracking_redirect_path,
+    _resolve_public_ips, _peer_ip
 )
 from routes import news, intelligence, profile, stats, system
+from routes.news import (
+    _build_cluster_answer_payload, get_news, 
+    chat_cluster_route as chat_cluster,
+    ask_cluster_route as ask_cluster
+)
+from routes.profile import (
+    init_profile_sync, get_profile_sync, save_profile_sync,
+    get_profile_delivery, save_profile_delivery, save_suggestion_events
+)
+from routes.stats import (
+    get_stats_full, get_sources_route as get_sources,
+    control_source_route as control_source
+)
+from routes.system import (
+    health, serve_sw, robots_txt, serve_manifest, proxy_image,
+    get_cluster_share_card as og_cluster_image
+)
+
+# Dummy for missing og_image
+async def og_image():
+    return await og_cluster_image("default")
 
 log = logging.getLogger("presek")
 log.setLevel(logging.INFO)
@@ -30,7 +62,7 @@ _default_cors_origins = [
     "http://localhost:5173", "http://127.0.0.1:5173",
     "http://localhost:4321", "http://127.0.0.1:4321",
 ]
-_cors_origins = [o.rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip() and o != "*"] or _default_cors_origins
+_cors_origins = [o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip() and o != "*"] or _default_cors_origins
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,10 +86,12 @@ async def apply_runtime_policies(request: Request, call_next):
     log.info(f"API {request.method} {request.url.path} took {time.time() - start_time:.4f}s")
     return _apply_security_headers(response)
 
+async def serve_static_asset(filename: str):
+    return FileResponse(os.path.join("static", filename))
+
 @app.get("/api/delivery/track/{event_type}")
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
     # This remains in main for redirect logic simplicity, or could move to stats
-    from database import db_manager as db
     # Fetch parent's context to inherit properties
     p = db.execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
     if p:

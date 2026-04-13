@@ -1,6 +1,7 @@
 import pytest
 import datetime
 import math
+import utils
 from unittest.mock import patch, MagicMock
 from utils import (
     score_cluster,
@@ -15,6 +16,13 @@ from utils import (
     build_read_next_clusters,
     build_source_reputation_rows,
 )
+
+@pytest.fixture(autouse=True)
+def clear_utils_cache():
+    """Ensure every test starts with a clean cache to prevent pollution."""
+    utils._SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
+    yield
+    utils._SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
 
 
 def _make_article(source="MIA", created_at=None, clicks=0):

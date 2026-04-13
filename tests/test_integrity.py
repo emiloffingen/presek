@@ -75,7 +75,7 @@ class TestAstroFrontendIntegrity:
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/status.astro")
         assert "fetch(`${API_URL}/health`)" in status_page
-        assert "Состојба На Системот" in status_page
+        assert "Состојба на системот" in status_page
 
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage = _read("web/src/pages/index.astro")

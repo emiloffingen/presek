@@ -547,4 +547,3 @@ def prune_db():
         DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
         DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
     """, fetch=False)
-}

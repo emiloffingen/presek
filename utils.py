@@ -191,7 +191,8 @@ def get_source_quality_multiplier(source: str) -> float:
 
 def get_source_effective_weight(source: str) -> float:
     base = SOURCE_CREDIBILITY.get(source, DEFAULT_CREDIBILITY)
-    return base * get_source_quality_multiplier(source)
+    mult = get_source_quality_multiplier(source)
+    return base * mult
 
 
 def get_source_trust_label(source: str) -> str:
