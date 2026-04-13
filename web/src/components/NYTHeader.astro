@@ -104,17 +104,6 @@ const leadTopic = navigationData.focus[0]?.label || topic || category || 'Мак
 
     <div class="site-layout masthead">
         <div class="masthead-inner">
-            <div class="masthead-left hidden lg:flex">
-                <div class="masthead-metric-group">
-                    <span class="masthead-metric-label">Активност</span>
-                    <div class="masthead-metric-value">
-                        <strong>{liveCount && liveCount > 0 ? `+${liveCount}` : 'Живо'}</strong>
-                        <span class="pulse-dot"></span>
-                    </div>
-                    <span class="masthead-metric-sub">нови објави овој час</span>
-                </div>
-            </div>
-
             <div class="masthead-center">
                 <div class="masthead-brand">
                     <a href="/" class="contents">
@@ -125,16 +114,6 @@ const leadTopic = navigationData.focus[0]?.label || topic || category || 'Мак
                     </a>
                 </div>
                 <p class="masthead-sub">Вестите, групирани. Контекстот, јасен.</p>
-            </div>
-
-            <div class="masthead-right hidden lg:flex">
-                <div class="masthead-metric-group text-right">
-                    <span class="masthead-metric-label">Покриеност</span>
-                    <div class="masthead-metric-value justify-end">
-                        <strong>{dayCount && dayCount > 0 ? dayCount.toLocaleString('mk-MK') : leadTopic}</strong>
-                    </div>
-                    <span class="masthead-metric-sub">објави во последни 24ч</span>
-                </div>
             </div>
         </div>
     </div>
@@ -226,56 +205,11 @@ const leadTopic = navigationData.focus[0]?.label || topic || category || 'Мак
     /* ... existing styles ... */
     
     .masthead-inner {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-        align-items: center;
-        text-align: center;
-        padding: 0.5rem 0;
-    }
-
-    @media (min-width: 1024px) {
-        .masthead-inner {
-            grid-template-columns: 1fr 2fr 1fr;
-            text-align: left;
-        }
-    }
-
-    .masthead-metric-group {
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
-    }
-
-    .masthead-metric-label {
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 900;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: var(--nyt-accent);
-    }
-
-    .masthead-metric-value {
-        display: flex;
         align-items: center;
-        gap: 0.5rem;
-    }
-
-    .masthead-metric-value strong {
-        font-family: var(--font-serif);
-        font-size: 1.4rem;
-        font-weight: 800;
-        line-height: 1;
-        color: var(--foreground);
-    }
-
-    .masthead-metric-sub {
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: var(--muted-foreground);
-        max-width: 15ch;
+        text-align: center;
+        padding: 0.15rem 0;
     }
 
     .masthead-brand {
@@ -283,7 +217,7 @@ const leadTopic = navigationData.focus[0]?.label || topic || category || 'Мак
         align-items: center;
         justify-content: center;
         gap: 0.75rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
 
     .masthead-sub {
@@ -951,20 +885,8 @@ const leadTopic = navigationData.focus[0]?.label || topic || category || 'Мак
     }
 
     @media (min-width: 900px) {
-        .masthead-inner {
-            grid-template-columns: auto 1fr;
-            text-align: left;
-            gap: 1.25rem;
-        }
-
-        .masthead-brand {
-            justify-content: flex-start;
-        }
-
-        .masthead-copy {
-            justify-content: flex-start;
-            padding-bottom: 0.2rem;
-            align-items: flex-start;
+        .topbar-date {
+            text-align: center;
         }
     }
 </style>
