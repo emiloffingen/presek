@@ -31,6 +31,7 @@ type Props = {
   clusterId: string;
   suggestions: string[];
   initialQuestion?: string;
+  autoSubmit?: boolean;
 };
 
 const MAX_TURNS = 8;
@@ -224,7 +225,7 @@ function ResultBlock({ result, question, clusterId }: { result: AskPresekRespons
   );
 }
 
-export default function AskPresekPanel({ clusterId, suggestions, initialQuestion = '' }: Props) {
+export default function AskPresekPanel({ clusterId, suggestions, initialQuestion = '', autoSubmit = false }: Props) {
   const [question, setQuestion] = useState(initialQuestion);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [error, setError] = useState('');
@@ -280,10 +281,10 @@ export default function AskPresekPanel({ clusterId, suggestions, initialQuestion
 
   useEffect(() => {
     const normalized = normalizeQuestion(initialQuestion);
-    if (!normalized || autoAskedRef.current) return;
+    if (!normalized || autoAskedRef.current || !autoSubmit) return;
     autoAskedRef.current = true;
     void submitQuestion(normalized);
-  }, [initialQuestion]);
+  }, [initialQuestion, autoSubmit]);
 
   return (
     <div className="ask-presek">

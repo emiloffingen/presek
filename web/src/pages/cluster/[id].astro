@@ -9,6 +9,7 @@ import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ShareIsland from '../../components/ShareIsland.tsx';
 import AskPresekPanel from '../../components/AskPresekPanel.tsx';
+import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
@@ -428,9 +429,13 @@ const leadVisual = getLeadVisual(cluster);
 				<div class="cluster-grid">
 					<div class="cluster-main motion-rise motion-delay-1">
 						{sentimentData && (
-							<div class="mb-10">
+							<div class="mb-4">
 								<MediaPulseRadar data={sentimentData} client:load />
 							</div>
+						)}
+
+						{cluster.articles && cluster.articles.length > 1 && (
+							<SourceSpectrum articles={cluster.articles} client:visible />
 						)}
 
 						{/* Lead Article Section */}

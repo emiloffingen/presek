@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import ThemeIsland from '../components/ThemeIsland';
 import ConsentBanner from '../components/ConsentBanner';
+import { ViewTransitions } from 'astro:transitions';
 
 interface Props {
 	title: string;
@@ -92,6 +93,8 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		)}
 		
 		<title>{pageTitle}</title>
+
+		<ViewTransitions />
 
 		{schema && (
 			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />

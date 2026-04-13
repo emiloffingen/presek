@@ -233,12 +233,29 @@
 
 .nyt-section-label {
     font-family: 'Manrope', sans-serif;
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     line-height: 1.15;
-    color: var(--muted-foreground);
+    color: var(--foreground);
+    opacity: 0.9;
+}
+
+/* Accessible variant */
+.high-contrast .nyt-section-label {
+    font-size: 0.75rem;
+    opacity: 1;
+    letter-spacing: 0.14em;
+}
+
+.high-contrast .micro-label {
+    font-size: 0.75rem !important;
+    opacity: 1 !important;
+}
+
+.high-contrast {
+    --muted-foreground: var(--foreground);
 }
 
 /* Micro-interactions */
