@@ -136,9 +136,9 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, cate
             cat_filter = "AND a.category = %s"
             params.insert(1, category)
 
+        # 1. Find the best candidate leveraging HNSW index
         sql = f"""
-            SELECT a.cluster_id, a.embedding <=> %s::vector as distance,
-                   (SELECT count(*) FROM articles a2 WHERE a2.cluster_id = a.cluster_id) as c_size
+            SELECT a.cluster_id, a.embedding <=> %s::vector as distance
             FROM articles a
             WHERE a.embedding IS NOT NULL
               {cat_filter}
@@ -147,8 +147,13 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, cate
             LIMIT 1
         """
         row = conn.execute(sql, tuple(params)).fetchone()
-        if row and float(row['distance']) < threshold and int(row['c_size']) < MAX_CLUSTER_SIZE:
-            return row['cluster_id']
+        
+        if row and float(row['distance']) < threshold:
+            # 2. Only check size for the single winner
+            cid = row['cluster_id']
+            size_row = conn.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,)).fetchone()
+            if size_row and int(size_row['n']) < MAX_CLUSTER_SIZE:
+                return cid
     except Exception as e:
         import logging
         logging.getLogger("presek").error(f"[clustering] Semantic lookup failed: {e}")

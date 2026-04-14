@@ -1609,6 +1609,16 @@ def run_prune_db():
     except Exception as e:
         log.error(f"[tasks] cleanup_cover_art failed: {e}", exc_info=True)
 
+    try:
+        # 3. Clean up orphaned local images and logs
+        art_rows = db.execute("SELECT id FROM articles")
+        active_art_ids = {int(r["id"]) for r in art_rows}
+        import asyncio
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(image_service.cleanup_storage(active_art_ids))
+    except Exception as e:
+        log.error(f"[tasks] cleanup_storage failed: {e}", exc_info=True)
+
 
 @celery_app.task
 def generate_cluster_metadata_task():

@@ -79,4 +79,42 @@ class ImageService:
             log.error(f"Failed to process image {url}: {e}")
             return None
 
+    async def cleanup_storage(self, valid_article_ids: set[int]):
+        """
+        Removes local images that are no longer referenced by active articles.
+        Also prunes old logs.
+        """
+        try:
+            # 1. Image Cleanup
+            if os.path.exists(_UPLOAD_ROOT):
+                for filename in os.listdir(_UPLOAD_ROOT):
+                    if filename.startswith("art_") and filename.endswith(".webp"):
+                        try:
+                            art_id = int(filename.replace("art_", "").replace(".webp", ""))
+                            if art_id not in valid_article_ids:
+                                os.remove(os.path.join(_UPLOAD_ROOT, filename))
+                                log.info(f"Removed orphaned image: {filename}")
+                        except (ValueError, OSError):
+                            continue
+
+            # 2. Log Pruning (Keep last 10MB of logs if they grow too large)
+            log_dir = "logs"
+            if os.path.exists(log_dir):
+                for log_file in os.listdir(log_dir):
+                    path = os.path.join(log_dir, log_file)
+                    if os.path.isfile(path) and os.path.getsize(path) > 10 * 1024 * 1024:
+                        # Simple truncate: keep last 1MB
+                        try:
+                            with open(path, 'rb+') as f:
+                                f.seek(-1024 * 1024, os.SEEK_END)
+                                data = f.read()
+                                f.seek(0)
+                                f.write(data)
+                                f.truncate()
+                            log.info(f"Pruned large log file: {log_file}")
+                        except Exception:
+                            continue
+        except Exception as e:
+            log.error(f"Cleanup storage failed: {e}")
+
 image_service = ImageService()
