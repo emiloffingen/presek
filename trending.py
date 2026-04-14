@@ -114,14 +114,13 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
     Count word frequency in recent article titles with momentum calculation.
     """
     try:
-        conn = database.get_db()
-        cutoff = datetime.now() - timedelta(hours=hours)
-        # Fetch cluster_id and score potential if possible, but keep it simple
-        rows = conn.execute(
-            "SELECT title, created_at, cluster_id FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
-            (cutoff,)
-        ).fetchall()
-        conn.close()
+        with database.get_db() as conn:
+            cutoff = datetime.now() - timedelta(hours=hours)
+            # Fetch cluster_id and score potential if possible, but keep it simple
+            rows = conn.execute(
+                "SELECT title, created_at, cluster_id FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
+                (cutoff,)
+            ).fetchall()
     except Exception as e:
         log.error(f"DB error: {e}")
         return []
