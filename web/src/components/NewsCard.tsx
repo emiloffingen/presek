@@ -141,7 +141,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             ></p>
           )}
         </div>
-        </div>
 
         {isLead && cluster.articles.length > 1 && (
           <ul className="sub-headlines">
