@@ -130,7 +130,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<div class="noise-overlay"></div>
 		<div id="loading-bar" class="fixed top-0 left-0 h-[2px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
-		<ConsentBanner client:load />
+		<ConsentBanner client:idle />
 		<script>
 			// Handle Astro transitions loading state
 			document.addEventListener('astro:before-preparation', () => {

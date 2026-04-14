@@ -311,7 +311,7 @@ const leadVisual = getLeadVisual(cluster);
 >
 	<NYTHeader topic={cluster?.topics?.[0]} />
 
-	<ReaderTracker clusterId={id} client:load />
+	<ReaderTracker clusterId={id} client:idle />
 
 	<main class="site-layout py-12">
 		<Breadcrumbs items={[
@@ -342,16 +342,16 @@ const leadVisual = getLeadVisual(cluster);
 							</h1>
 
 							<div class="flex flex-wrap gap-4 items-center my-8 border-y border-border py-4">
-								<ShareIsland 
-									title={displayHeadline} 
-									url={canonicalUrl} 
-									client:load 
+								<ShareIsland
+									title={displayHeadline}
+									url={canonicalUrl}
+									client:idle
 								/>
 								<div class="h-4 w-px bg-border mx-2"></div>
-								<PreferenceToggle 
-									kind="topic" 
-									value={cluster.topics?.[0] || cluster.articles?.[0].category} 
-									client:load 
+								<PreferenceToggle
+									kind="topic"
+									value={cluster.topics?.[0] || cluster.articles?.[0].category}
+									client:idle
 								/>
 							</div>
 
@@ -433,7 +433,7 @@ const leadVisual = getLeadVisual(cluster);
 					<div class="cluster-main motion-rise motion-delay-1">
 						{sentimentData && (
 							<div class="mb-4">
-								<MediaPulseRadar data={sentimentData} client:load />
+								<MediaPulseRadar data={sentimentData} client:visible />
 							</div>
 						)}
 
@@ -565,7 +565,7 @@ const leadVisual = getLeadVisual(cluster);
 
 						{/* Timeline */}
 						{cluster.timeline && cluster.timeline.length > 1 && (
-							<StoryTimeline timeline={cluster.timeline} client:load />
+							<StoryTimeline timeline={cluster.timeline} client:visible />
 						)}
 
 						{/* Articles List */}
