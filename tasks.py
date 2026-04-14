@@ -1232,22 +1232,30 @@ def translate_article_task(article_id, title, description):
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
-    desc_row = db.execute_one("SELECT description, topic FROM articles WHERE id = %s", (article_id,))
-    description = (desc_row or {}).get("description") or ""
-    topic = (desc_row or {}).get("topic")
+    row = db.execute_one("SELECT description, full_content, topic FROM articles WHERE id = %s", (article_id,))
+    if not row:
+        return
+        
+    description = row.get("description") or ""
+    full_content = row.get("full_content") or ""
+    topic = row.get("topic")
+    
+    # Prioritize full content for better quality, but limit context size for cheap providers
+    context_text = full_content if len(full_content) > len(description) else description
     
     # Save tokens: Don't use AI for very short content, use local fallback
-    if len(description) < 200:
-        fallback = summarize_article_fallback(title, description, topic=topic)
+    if len(context_text) < 200:
+        fallback = summarize_article_fallback(title, context_text, topic=topic)
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
             invalidate_public_data_caches()
             record_runtime_event("summary_path", mode="local_short", topic=topic or "unknown")
             return
 
-    prompt_parts = [str(title or "").strip()]
-    if description:
-        prompt_parts.append(f"Опис: {str(description).strip()}")
+    prompt_parts = [f"Наслов: {str(title or '').strip()}"]
+    if context_text:
+        # Limit very long content to avoid extreme costs/token limits even for Gemini
+        prompt_parts.append(f"Текст:\n{str(context_text).strip()[:10000]}")
     prompt = "\n".join(part for part in prompt_parts if part)
 
     try:
@@ -1259,9 +1267,9 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             invalidate_public_data_caches()
             record_runtime_event("summary_path", mode=provider or "unknown", topic=topic or "unknown")
             record_task_event("summarize_article", "ok", f"article:{article_id}")
-            log.info(f"Successfully summarized article {article_id}")
+            log.info(f"Successfully summarized article {article_id} (provider: {provider})")
         else:
-            fallback = summarize_article_fallback(title, description, topic=topic)
+            fallback = summarize_article_fallback(title, context_text, topic=topic)
             if fallback:
                 db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
                 invalidate_public_data_caches()
@@ -1271,7 +1279,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             else:
                 log.warning(f"No summary generated for article {article_id}")
     except Exception as e:
-        fallback = summarize_article_fallback(title, description, topic=topic)
+        fallback = summarize_article_fallback(title, context_text, topic=topic)
         if fallback:
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
             invalidate_public_data_caches()
