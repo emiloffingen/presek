@@ -1,36 +1,42 @@
 ---
 ---
-<footer class="site-layout footer-shell">
-    <div class="footer-brand">
-        <div class="footer-mark">
-            <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="h-8 site-logo" />
-            <img src="/logo.svg?v=3" alt="Presek" class="h-12 site-logo" />
+<footer class="footer-outer-shell">
+    <div class="footer-shell site-layout max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="footer-brand">
+            <div class="footer-mark">
+                <img src="/img/presek_emblem.svg?v=3" alt="Presek Emblem" class="h-8 site-logo" />
+                <img src="/logo.svg?v=3" alt="Presek" class="h-12 site-logo" />
+            </div>
+            <p>Пресек ги собира вестите на едно место, ги групира по тема и ви покажува каде изворите се совпаѓаат, а каде се разликуваат.</p>
         </div>
-        <p>Пресек ги собира вестите на едно место, ги групира по тема и ви покажува каде изворите се совпаѓаат, а каде се разликуваат.</p>
+
+        <nav class="footer-nav">
+            <a href="/archive">Архива</a>
+            <a href="/izvori">Извори</a>
+            <a href="/pulse">Пулс</a>
+            <a href="/about">За проектот</a>
+            <a href="/editorial">Стандарди</a>
+            <a href="/contact">Контакт</a>
+            <a href="/privacy">Приватност</a>
+            <a href="/terms">Услови</a>
+            <a href="https://t.me/+lt4m-3TGQH9iZTAy" target="_blank" rel="noopener noreferrer">Телеграм канал</a>
+        </nav>
+
+        <p class="footer-meta">
+            © 2026 Пресек. Македонски информативен агрегатор за побрз, појасен преглед на денот со подлабок контекст.
+        </p>
     </div>
-
-    <nav class="footer-nav">
-        <a href="/archive">Архива</a>
-        <a href="/izvori">Извори</a>
-        <a href="/pulse">Пулс</a>
-        <a href="/about">За проектот</a>
-        <a href="/editorial">Стандарди</a>
-        <a href="/contact">Контакт</a>
-        <a href="/privacy">Приватност</a>
-        <a href="/terms">Услови</a>
-        <a href="https://t.me/+lt4m-3TGQH9iZTAy" target="_blank" rel="noopener noreferrer">Телеграм канал</a>
-    </nav>
-
-    <p class="footer-meta">
-        © 2026 Пресек. Македонски информативен агрегатор за побрз, појасен преглед на денот со подлабок контекст.
-    </p>
 </footer>
 
 <style>
-    .footer-shell {
+    .footer-outer-shell {
         margin-top: 2.75rem;
-        padding: 2rem 0 3rem;
         border-top: 1px solid var(--border);
+        background: var(--background);
+    }
+
+    .footer-shell {
+        padding: 2rem 0 3rem;
         display: grid;
         grid-template-columns: 1fr;
         gap: 1.5rem;

@@ -753,6 +753,7 @@
 			grid-row: auto;
 			order: -1;
 			aspect-ratio: 16 / 10;
+			max-height: 450px;
 		}
 
 		.nyt-article.variant-featured:not(.lead-story) .summary {
@@ -1305,7 +1306,8 @@ button:active,
 .news-feed-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    column-gap: 2rem;
+    row-gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
