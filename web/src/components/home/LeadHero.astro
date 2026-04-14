@@ -94,7 +94,7 @@ const tintColor = dominantColor || '#1e40af';
                     <li class="border-b border-gray-200 dark:border-gray-800 last:border-0">
                         <a 
                             href={`/cluster/${leadCluster.cluster_id}`}
-                            class="font-sans text-sm md:text-base font-semibold text-gray-800 dark:text-gray-200 block py-3 hover:text-nyt-accent transition-colors"
+                            class="font-sans text-sm md:text-base font-semibold text-zinc-800 dark:text-zinc-200 block py-3 hover:text-nyt-accent transition-colors [&_*]:font-sans [&_*]:text-sm [&_*]:md:text-base [&_*]:text-zinc-800 [&_*]:dark:text-zinc-200"
                         >
                             {cleanAndDecode(article.title)}
                         </a>
@@ -294,7 +294,7 @@ const tintColor = dominantColor || '#1e40af';
 
 	.lead-media-frame {
 		position: relative;
-		aspect-ratio: 1.28 / 1;
+		aspect-ratio: 16 / 9;
 		border: 1px solid var(--border);
 		overflow: hidden;
 		max-height: 400px;
@@ -467,8 +467,8 @@ const tintColor = dominantColor || '#1e40af';
 		}
 
 		.lead-media img {
-			aspect-ratio: 1.26 / 1;
-			object-position: center 22%;
+			aspect-ratio: 16 / 9;
+			object-position: center;
 		}
 
 		.lead-headline {
