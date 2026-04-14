@@ -140,6 +140,28 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
+// Slim projection for ForYouIsland hydration: only the fields the island and
+// personalization ranker actually touch. Full clusters are ~130 KB each when
+// serialized into the HTML; this keeps the payload around ~1 KB per cluster.
+const forYouClusters = clusters.slice(1, 19).map((c: any) => {
+    const a = c.articles?.[0] || {};
+    return {
+        cluster_id: c.cluster_id,
+        is_breaking: c.is_breaking,
+        topics: c.topics,
+        tags: c.tags,
+        homepage_score: c.homepage_score,
+        articles: [{
+            title: a.title,
+            source: a.source,
+            summary: a.summary,
+            description: a.description,
+            category: a.category,
+        }],
+        sources_count: c.articles?.length || 0,
+    };
+});
+
 function getTimeStr(dateStr: string) {
     try {
         return new Date(dateStr).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
@@ -234,7 +256,7 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 				)}
 
 				{clusters.length > 4 && (
-					<ForYouIsland client:visible clusters={clusters.slice(1, 19)} />
+					<ForYouIsland client:visible clusters={forYouClusters} />
 				)}
 
 				{feedClusters.length > 0 && (

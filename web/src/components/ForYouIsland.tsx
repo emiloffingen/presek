@@ -166,7 +166,7 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
                 <div className="for-you-card-meta">
                   <span>{article.source || 'Извор'}</span>
                   <span>·</span>
-                  <span>{cluster.articles?.length || 0} извори</span>
+                  <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} извори</span>
                 </div>
                 <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
               </div>
