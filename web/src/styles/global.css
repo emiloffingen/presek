@@ -265,7 +265,7 @@
 
 	.headline {
 		font-family: var(--font-serif);
-		line-height: 1.04;
+		line-height: 1.15;
 		letter-spacing: -0.022em;
 		margin-bottom: 0.55rem;
 		color: var(--foreground);
@@ -275,7 +275,7 @@
 
 	.headline-lead {
 		font-size: clamp(2.15rem, 1.8rem + 1.4vw, 2.7rem);
-		line-height: 1.02;
+		line-height: 1.1;
 	}
 
 	.headline-cyrillic {
@@ -1214,7 +1214,7 @@ button:active,
 .editorial-headline {
     margin: 0 0 0.9rem;
     font-size: clamp(2.35rem, 1.8rem + 1.8vw, 4.5rem);
-    line-height: 0.96;
+    line-height: 1.05;
 }
 
 .editorial-intro {
