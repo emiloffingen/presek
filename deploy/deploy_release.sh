@@ -94,7 +94,7 @@ run_release_checks() {
 
 run_migrations() {
   info "Running database schema updates"
-  (cd "$RELEASE_DIR" && "$VENV_DIR/bin/python3" -c "from database import init_db; init_db()")
+  (cd "$RELEASE_DIR" && "$VENV_DIR/bin/python3" -c "import config; from database import init_db; init_db()")
 }
 
 switch_current_link() {
