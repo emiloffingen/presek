@@ -840,23 +840,49 @@ def rewrite_to_macedonian_locally(text):
     return working[:420]
 
 
-def _is_noisy_summary_sentence(sentence):
+# Common noise phrases in news summaries (Macedonian/English)
+JUNK_NEWS_PHRASES = [
+    "прочитајте и", "можеби ќе ве интересира", "поврзано:", "извор:", 
+    "фото:", "видео:", "галерија:", "следете нè", "преземањето е дозволено",
+    "автор:", "пишува:", "фокус на денот", "трендинг", "најчитано",
+    "exclusive:", "breaking:", "read more", "related:", "source:",
+    "follow us", "дознајте повеќе", "според информациите на",
+]
+
+def _is_noisy_summary_sentence(sentence, title_terms=None):
     text = _normalize_summary_sentence(sentence)
     if not text:
         return True
     if len(text) < 28:
         return True
     lowered = text.lower()
-    if lowered.startswith(("фото:", "видео:", "gallery:", "галерија:", "коментар:", "реклама:")):
+    
+    # Filter known junk starters
+    if lowered.startswith(("фото:", "видео:", "gallery:", "галерија:", "коментар:", "реклама:", "извор:")):
         return True
+    
+    # Filter sentences that contain "Related" junk phrases
+    if any(phrase in lowered for phrase in JUNK_NEWS_PHRASES):
+        return True
+        
     if text.count("#") >= 2:
         return True
+        
+    # Title Relevance Check: 
+    # If we have title terms, and the sentence has ZERO overlap with them, 
+    # it is very likely a "Related Story" or "Trending" link in a messy RSS feed.
+    if title_terms:
+        sentence_words = set(_sentence_tokens(text))
+        if sentence_words and not (sentence_words & title_terms):
+            # Only apply this if the sentence is not the very first one (which might be contextual intro)
+            return True
+
     return False
 
-def summarize_locally(text, sentence_count=3, topic=None):
+def summarize_locally(text, sentence_count=3, topic=None, title=None):
     """
     Non-AI summarizer for news-like text.
-    Improved with Topic-Awareness.
+    Improved with Topic-Awareness and Title-Relevance filtering.
     """
     if not text or len(text) < 100:
         return text
@@ -869,7 +895,9 @@ def summarize_locally(text, sentence_count=3, topic=None):
     if len(sentences) <= sentence_count:
         return text
 
-    title_like_terms = set(_sentence_tokens(sentences[0]))
+    # Extract terms from the title if provided for better filtering
+    title_terms = set(_sentence_tokens(title)) if title else set(_sentence_tokens(sentences[0]))
+    
     words = _sentence_tokens(text)
     word_freq = Counter(words)
     if not word_freq:
@@ -896,8 +924,11 @@ def summarize_locally(text, sentence_count=3, topic=None):
         if not sentence_words:
             continue
 
+        if _is_noisy_summary_sentence(sentence, title_terms=title_terms if i > 0 else None):
+            continue
+
         score = sum(word_freq.get(word, 0) for word in sentence_words)
-        overlap = len(set(sentence_words) & title_like_terms)
+        overlap = len(set(sentence_words) & title_terms)
         number_bonus = 0.5 if _extract_number_tokens(sentence) else 0.0
         lead_bonus = 1.8 / (i + 1)
         density_bonus = min(len(sentence_words), 24) / 24
@@ -940,7 +971,7 @@ def summarize_locally(text, sentence_count=3, topic=None):
 def summarize_article_fallback(title, description=None, topic=None):
     parts = [str(title or "").strip(), str(description or "").strip()]
     text = ". ".join([part for part in parts if part])
-    summary = summarize_locally(text, sentence_count=2, topic=topic).strip()
+    summary = summarize_locally(text, sentence_count=2, topic=topic, title=title).strip()
     summary = re.sub(r'^[⚪🟢🔴]\s*', '', summary, flags=re.UNICODE)
     summary = re.sub(r'#[^\s#]+', '', summary)
     summary = re.sub(r'\s+', ' ', summary).strip()
