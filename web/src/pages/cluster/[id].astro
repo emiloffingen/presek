@@ -575,15 +575,6 @@ const leadVisual = getLeadVisual(cluster);
 								<Newspaper size={18} className="text-foreground" />
 								<h2 class="nyt-section-label tracking-[0.2em]">КАКО ДА ГО ЧИТАТЕ КЛАСТЕРОТ</h2>
 							</div>
-							<div class="comparison-digest">
-								{comparisonHighlights.map((item) => (
-									<div class="comparison-digest-card">
-										<p class="comparison-digest-label">{item.label}</p>
-										<p class="comparison-digest-value">{item.value}</p>
-										<p class="comparison-digest-copy">{item.copy}</p>
-									</div>
-								))}
-							</div>
 							<h2 class="cluster-section-title">Сите Извори</h2>
 							<div class="article-list">
 								{articleRows.map((a: any) => (

@@ -58,7 +58,7 @@ export default function ShareIsland({
   ];
 
   return (
-    <span className="share-icons">
+    <span className="share-icons flex flex-row items-center gap-3">
       {shareOptions.map((option) => (
         <a
           key={option.name}
