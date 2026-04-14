@@ -588,6 +588,15 @@ button:active,
     gap: 1.5rem;
 }
 
+/* If the main content is the only child, or explicitly told to span full width */
+.editorial-page-grid > .editorial-main:only-child,
+.editorial-page-grid > .editorial-main.col-span-full {
+    grid-column: 1 / -1;
+    max-width: 64rem; /* ~4xl */
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .editorial-main,
 .editorial-rail {
     display: flex;

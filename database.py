@@ -338,9 +338,11 @@ class DatabaseManager:
                     tags TEXT[], 
                     topics TEXT[], 
                     representative_image TEXT,
+                    dominant_color TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
                 cur.execute("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS topics TEXT[]")
+                cur.execute("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS dominant_color TEXT")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (
                     cluster_id TEXT, 

@@ -115,7 +115,7 @@ function getTimeStr(dateStr: string) {
 		</a>
 
 		{!isLead && variant === 'compact' ? null : (
-			<>
+			<div class="card-content-stack">
 				<p class="why-it-matters">
 					{whyItMatters}
 				</p>
@@ -124,7 +124,7 @@ function getTimeStr(dateStr: string) {
 					<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}>
 					</p>
 				)}
-			</>
+			</div>
 		)}
 
         {isLead && cluster.articles.length > 1 && (
@@ -258,8 +258,26 @@ function getTimeStr(dateStr: string) {
 
 	.article-meta { grid-row: 1; }
 	.headline-link { grid-row: 2; }
-	.why-it-matters, .summary { grid-row: 3; }
+	.card-content-stack { grid-row: 3; }
 	.footer-meta { grid-row: 4; }
+
+	.card-content-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	@media (min-width: 768px) {
+		.card-content-stack {
+			flex-direction: row;
+			gap: 1.5rem;
+			align-items: flex-start;
+		}
+		.why-it-matters, .summary {
+			flex: 1;
+			min-width: 0;
+		}
+	}
 
     @media (min-width: 768px) {
         .lead-story {

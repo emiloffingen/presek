@@ -702,6 +702,13 @@ const leadVisual = getLeadVisual(cluster);
 		align-items: start;
 	}
 
+	.cluster-grid > .cluster-main:only-child {
+		grid-column: 1 / -1;
+		max-width: 900px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	@media (min-width: 1024px) {
 		.cluster-grid {
 			grid-template-columns: minmax(0, 1fr) 320px;

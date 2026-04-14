@@ -71,6 +71,11 @@ prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 }
 
+update_venv_deps() {
+  info "Syncing shared venv dependencies"
+  "$VENV_DIR/bin/pip" install -q -r "$RELEASE_DIR/requirements.txt"
+}
+
 build_release() {
   ln -sfn "$SHARED_WEB_NODE_MODULES" "$RELEASE_DIR/web/node_modules"
 
@@ -85,6 +90,11 @@ run_release_checks() {
     info "Running pytest before switch"
     (cd "$SOURCE_ROOT" && pytest -q)
   fi
+}
+
+run_migrations() {
+  info "Running database schema updates"
+  (cd "$RELEASE_DIR" && "$VENV_DIR/bin/python3" -c "from database import init_db; init_db()")
 }
 
 switch_current_link() {
@@ -137,8 +147,10 @@ main() {
 
   copy_release_tree
   prepare_release_runtime_links
+  update_venv_deps
   build_release
   run_release_checks
+  run_migrations
 
   info "Switching current release to $RELEASE_ID"
   switch_current_link "$RELEASE_DIR"

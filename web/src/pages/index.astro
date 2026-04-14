@@ -744,9 +744,16 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 		aspect-ratio: 1.28 / 1;
 		border: 1px solid var(--border);
 		overflow: hidden;
+		max-height: 500px;
 		background:
 			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
 			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
+	}
+
+	@media (min-width: 960px) {
+		.lead-media-frame {
+			max-height: 600px;
+		}
 	}
 
 	.lead-media-frame-fallback {
@@ -759,7 +766,7 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		object-position: center top;
+		object-position: center;
 		opacity: 0;
 		transition: opacity 0.45s ease-out;
 	}

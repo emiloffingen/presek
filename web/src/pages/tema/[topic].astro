@@ -788,6 +788,14 @@ function topicIntro() {
 		font-size: 1.15rem;
 	}
 
+	.topic-hero > .topic-hero-copy:only-child,
+	.topic-layout > .topic-main:only-child {
+		grid-column: 1 / -1;
+		max-width: 900px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	@media (min-width: 720px) {
 		.topic-supporting-grid,
 		.topic-angle-grid {
