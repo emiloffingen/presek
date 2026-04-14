@@ -1,12 +1,22 @@
-import he from 'he';
+// Named HTML entities we actually see in scraped MK/EN news. Covers the long
+// tail via numeric fall-through; anything else passes through unchanged.
+const NAMED_ENTITIES: Record<string, string> = {
+    amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00A0',
+    hellip: '…', mdash: '—', ndash: '–',
+    laquo: '«', raquo: '»', bdquo: '„', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’',
+    copy: '©', reg: '®', trade: '™', middot: '·',
+};
 
-/**
- * Utility to decode common HTML entities using the robust 'he' library.
- */
 export function decodeHtmlEntities(text: any): string {
     if (!text) return '';
     if (typeof text !== 'string') text = String(text);
-    return he.decode(text);
+    return text.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m, g) => {
+        if (g[0] === '#') {
+            const code = g[1] === 'x' || g[1] === 'X' ? parseInt(g.slice(2), 16) : parseInt(g.slice(1), 10);
+            return Number.isFinite(code) ? String.fromCodePoint(code) : m;
+        }
+        return NAMED_ENTITIES[g.toLowerCase()] ?? m;
+    });
 }
 
 /**
