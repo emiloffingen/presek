@@ -50,14 +50,14 @@ class GeminiProvider(AIProvider):
         if not GOOGLE_API_KEY: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
         
-        # Newest valid structure for Gemini 2.0
+        # Correct payload for Gemini 2.0 Flash
         payload = {
             "system_instruction": {
-                "parts": {"text": system}
+                "parts": [{"text": system}]
             },
             "contents": [
                 {
-                    "parts": {"text": prompt}
+                    "parts": [{"text": prompt}]
                 }
             ],
             "generationConfig": {
@@ -204,12 +204,12 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["local", "gemini", "mistral"],
-    "summarize":    ["local", "gemini"],
-    "synthesis":    ["gemini", "mistral", "local"],
-    "daily_brief":  ["gemini", "mistral", "local"],
-    "chat":         ["gemini", "local"],
-    "default":      ["gemini", "local"],
+    "translation":  ["local", "mistral"],
+    "summarize":    ["local"],
+    "synthesis":    ["mistral", "local"],
+    "daily_brief":  ["mistral", "local"],
+    "chat":         ["local"],
+    "default":      ["local"],
 }
 
 # --- Service Methods ---
