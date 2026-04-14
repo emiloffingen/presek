@@ -115,13 +115,13 @@ function getTimeStr(dateStr: string) {
 		</a>
 
 		{!isLead && variant === 'compact' ? null : (
-			<div class="card-content-stack">
-				<p class="why-it-matters">
+			<div class="card-content-stack flex flex-col md:flex-row gap-2 md:gap-4">
+				<p class="why-it-matters w-full md:w-1/3">
 					{whyItMatters}
 				</p>
 
 				{displaySummary && (
-					<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}>
+					<p class:list={["summary w-full md:flex-1", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}>
 					</p>
 				)}
 			</div>

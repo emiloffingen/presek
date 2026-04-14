@@ -91,8 +91,13 @@ const tintColor = dominantColor || '#1e40af';
         {leadCluster.articles.length > 1 && (
             <ul class="lead-related">
                 {leadCluster.articles.slice(1, 4).map((article: any) => (
-                    <li>
-                        <a href={`/cluster/${leadCluster.cluster_id}`}>{cleanAndDecode(article.title)}</a>
+                    <li class="border-b border-gray-200 dark:border-gray-800 last:border-0">
+                        <a 
+                            href={`/cluster/${leadCluster.cluster_id}`}
+                            class="font-sans text-sm md:text-base font-semibold text-gray-800 dark:text-gray-200 block py-3 hover:text-nyt-accent transition-colors"
+                        >
+                            {cleanAndDecode(article.title)}
+                        </a>
                     </li>
                 ))}
             </ul>
