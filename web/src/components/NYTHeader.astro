@@ -134,37 +134,37 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 </div>
 
 <style>
-/* Header Styles */
-.live-ticker {
-    background: var(--nyt-red);
-    color: #fff;
-    overflow: hidden;
-    position: relative;
-    height: 1.75rem;
-}
+    /* ── Live Ticker ──────────────────────────────────── */
+    .live-ticker {
+        background: var(--nyt-red);
+        color: #fff;
+        overflow: hidden;
+        position: relative;
+        height: 1.75rem;
+    }
 
-.live-ticker-container {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    gap: 0;
-}
+    .live-ticker-container {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        gap: 0;
+    }
 
-.live-ticker-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-family: var(--font-sans);
-    font-size: 0.58rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    white-space: nowrap;
-    flex-shrink: 0;
-    z-index: 2;
-    padding-right: 0.75rem;
-    background: var(--nyt-red);
-}
+    .live-ticker-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        flex-shrink: 0;
+        z-index: 2;
+        padding-right: 0.75rem;
+        background: var(--nyt-red);
+    }
 
     .live-ticker-dot {
         width: 6px;
@@ -178,43 +178,45 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(0.7); }
     }
-.live-ticker-track-wrap {
-    flex: 1;
-    overflow: hidden;
-    mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
-    display: flex;
-    align-items: center;
-}
 
-.live-ticker-track {
-    display: flex;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    width: max-content;
-    animation: ticker-scroll 25s linear infinite;
-}
+    .live-ticker-track-wrap {
+        flex: 1;
+        overflow: hidden;
+        mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
+        display: flex;
+        align-items: center;
+    }
 
-.live-ticker-track:hover {
-    animation-play-state: paused;
-}
+    .live-ticker-track {
+        display: flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        width: max-content;
+        animation: ticker-scroll 25s linear infinite;
+    }
 
-@keyframes ticker-scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
+    .live-ticker-track:hover {
+        animation-play-state: paused;
+    }
 
-.live-ticker-headline {
-    display: inline-flex;
-    align-items: center;
-    font-family: var(--font-serif);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #fff;
-    text-decoration: none;
-    white-space: nowrap;
-    padding: 0 0.25rem;
-    flex-shrink: 0;
-}
+    @keyframes ticker-scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    .live-ticker-headline {
+        display: inline-flex;
+        align-items: center;
+        font-family: var(--font-serif);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 0 0.25rem;
+        flex-shrink: 0;
+    }
+
     .live-ticker-headline:hover {
         text-decoration: underline;
         text-underline-offset: 2px;
@@ -282,6 +284,13 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     .topbar-emblem {
         height: 1.1rem;
         flex-shrink: 0;
+        display: none;
+    }
+
+    @media (min-width: 641px) {
+        .topbar-emblem {
+            display: block;
+        }
     }
 
     .topbar-logo {
@@ -468,8 +477,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
             if (!navShell || !fadeLeft || !fadeRight) return;
 
             if (window._presek_fadeResizeHandler) window.removeEventListener('resize', window._presek_fadeResizeHandler);
-            // Note: navShell is a new element on each page, so its listeners are gone, 
-            // but we still clean up window resize listener.
 
             const update = () => {
                 fadeLeft.style.opacity = navShell.scrollLeft > 10 ? '1' : '0';
@@ -495,12 +502,3 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
     })();
 </script>
-t>
- document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
-    })();
-</script>
-t>
-() => { initHeader(); initFades(); initHints(); });
-    })();
-</script>
-t>
