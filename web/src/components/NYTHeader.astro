@@ -401,9 +401,11 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     .nav-fade-right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
     @media (max-width: 640px) {
-        .topbar-row { grid-template-columns: auto 1fr auto; }
+        .topbar-row { 
+            grid-template-columns: auto 1fr auto; 
+            gap: 0.5rem;
+        }
         .topbar-logo { height: 1.1rem; }
-        .topbar-emblem { height: 0.9rem; }
     }
 
     @media (min-width: 1024px) {
@@ -485,6 +487,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         initFades();
         initHints();
         document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
+    })();
+</script>
+t>
+ document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
     })();
 </script>
 t>
