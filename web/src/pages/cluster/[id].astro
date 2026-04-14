@@ -438,7 +438,7 @@ const leadVisual = getLeadVisual(cluster);
 						)}
 
 						{cluster.articles && cluster.articles.length > 1 && (
-							<SourceSpectrum articles={cluster.articles} client:visible />
+							<SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source }))} client:visible />
 						)}
 
 						{/* Lead Article Section */}
