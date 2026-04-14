@@ -134,29 +134,37 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 </div>
 
 <style>
-    /* ── Live Ticker ──────────────────────────────────── */
-    .live-ticker {
-        background: var(--nyt-red);
-        color: #fff;
-        overflow: hidden;
-        position: relative;
-        height: 1.75rem;
-    }
+/* Header Styles */
+.live-ticker {
+    background: var(--nyt-red);
+    color: #fff;
+    overflow: hidden;
+    position: relative;
+    height: 1.75rem;
+}
 
-.live-ticker-badge {        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        white-space: nowrap;
-        flex-shrink: 0;
-        z-index: 2;
-        padding-right: 0.75rem;
-        background: var(--nyt-red);
-    }
+.live-ticker-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 0;
+}
+
+.live-ticker-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    z-index: 2;
+    padding-right: 0.75rem;
+    background: var(--nyt-red);
+}
 
     .live-ticker-dot {
         width: 6px;
