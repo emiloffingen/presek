@@ -295,9 +295,10 @@ const tintColor = dominantColor || '#1e40af';
 	.lead-media-frame {
 		position: relative;
 		aspect-ratio: 16 / 9;
+		width: 100%;
+		height: 250px;
 		border: 1px solid var(--border);
 		overflow: hidden;
-		max-height: 400px;
 		background:
 			radial-gradient(circle at top right, color-mix(in srgb, var(--nyt-accent) 8%, transparent), transparent 40%),
 			linear-gradient(135deg, var(--secondary) 0%, color-mix(in srgb, var(--background) 84%, var(--secondary) 16%) 100%);
@@ -463,7 +464,7 @@ const tintColor = dominantColor || '#1e40af';
 		}
 
 		.lead-media-frame {
-			max-height: 600px;
+			height: 400px;
 		}
 
 		.lead-media img {
@@ -506,7 +507,7 @@ const tintColor = dominantColor || '#1e40af';
 
 		.lead-media-frame {
 			aspect-ratio: 16 / 9;
-			max-height: 11.75rem;
+			height: 250px;
 		}
 
 		.lead-media-placeholder {

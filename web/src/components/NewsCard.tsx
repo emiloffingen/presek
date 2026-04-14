@@ -131,12 +131,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           ></h2>
         </a>
 
-        <div className="card-content-stack flex flex-col md:flex-row gap-2 md:gap-4">
-          <p className="why-it-matters w-full md:w-1/3">{whyItMatters}</p>
+        <div className="card-content-stack">
+          <p className="why-it-matters">{whyItMatters}</p>
 
           {displaySummary && (
             <p
-              className={`summary w-full md:flex-1 ${summaryIsCyrillic ? 'summary-cyrillic' : ''}`}
+              className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''}`}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(displaySummary) }}
             ></p>
           )}
