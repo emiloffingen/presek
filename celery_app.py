@@ -75,5 +75,9 @@ celery_app.conf.update(
             'task': 'tasks.backfill_cover_art_task',
             'schedule': 1800.0,  # Every 30 minutes
         },
+        'auto-repair-sources': {
+            'task': 'tasks.auto_repair_sources_task',
+            'schedule': crontab(hour='*/6', minute=30), # Every 6 hours
+        },
     }
 )

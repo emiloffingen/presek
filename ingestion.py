@@ -554,13 +554,16 @@ async def ingest_all_sources_async():
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles", "count": len(inserted_ids), "time": cycle_now})
                 
-                from tasks import translate_article_task, summarize_article_task
+                from tasks import translate_article_task, summarize_article_task, crawl_article_task
                 
                 inserted_data = db.execute(
-                    "SELECT id, title, description, country FROM articles WHERE id = ANY(%s)",
+                    "SELECT id, title, description, link, country FROM articles WHERE id = ANY(%s)",
                     (inserted_ids,)
                 )
                 for art in inserted_data:
+                    # Always crawl for full content and better images
+                    crawl_article_task.delay(art["id"], art["link"])
+                    
                     if art["country"] != 'MK':
                         translate_article_task.delay(art["id"], art["title"], art["description"])
                     else:

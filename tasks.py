@@ -18,19 +18,52 @@ from prompts import (
     FACTCHECK_SYSTEM_PROMPT
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
+from crawler import crawler
 from entities import extract_entities
-from health import record_refresh, record_task_event
-from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness, record_runtime_event, get_dominant_color
-from local_nlp import (
-    summarize_article_fallback,
-    synthesize_cluster_fallback,
-    generate_daily_brief_fallback,
-    extract_cluster_tags_locally,
-    filter_cluster_tags,
-)
-from api_helpers import normalize_perspectives, normalize_summary_text
 
 log = logging.getLogger("presek_celery")
+
+@celery_app.task(rate_limit='20/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def crawl_article_task(article_id, url):
+    """
+    Background crawler task.
+    Fetches full content and high-res images for an article.
+    """
+    try:
+        # Use our new resilient crawler
+        import asyncio
+        loop = asyncio.get_event_loop()
+        res = loop.run_until_complete(crawler.extract_all(url))
+        
+        if res.get("error"):
+            log.warning(f"Crawl failed for article {article_id}: {res['error']}")
+            return
+
+        updates = []
+        params = []
+        
+        if res.get("content"):
+            updates.append("full_content = %s")
+            params.append(res["content"])
+            
+        if res.get("image_url"):
+            # Only update if current image is null or a low-res placeholder
+            updates.append("image_url = COALESCE(image_url, %s)")
+            params.append(res["image_url"])
+            
+        if updates:
+            params.append(article_id)
+            sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"
+            db.execute(sql, tuple(params), fetch=False)
+            log.info(f"Updated article {article_id} with crawled data (method: {res.get('method')})")
+            
+            # Invalidate cache if we got new content
+            invalidate_public_data_caches()
+            
+    except Exception as e:
+        log.error(f"Error in crawl_article_task for {article_id}: {e}")
+        raise
+
 _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 
 
@@ -1878,6 +1911,68 @@ def send_profile_breaking_alerts_task():
         if sent:
             log.info(f"[tasks] Sent {sent} profile breaking alerts.")
 
+
+@celery_app.task
+def auto_repair_sources_task():
+    """
+    Looks for sources that have been auto-paused due to errors
+    and attempts to find new RSS feeds on their homepages.
+    """
+    try:
+        # Find sources that are inactive and were auto-paused
+        paused_sources = db.execute(
+            "SELECT name, url FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'"
+        )
+        if not paused_sources:
+            return
+
+        import asyncio
+        import feedparser
+        loop = asyncio.get_event_loop()
+
+        for source in paused_sources:
+            name = source['name']
+            current_url = source['url']
+            
+            # Try to derive a homepage from the feed URL
+            from urllib.parse import urlsplit, urlunsplit
+            parts = urlsplit(current_url)
+            homepage = urlunsplit((parts.scheme, parts.netloc, "/", "", ""))
+            
+            log.info(f"Attempting to repair source '{name}' via {homepage}")
+            
+            # 1. Find potential feeds
+            potential_feeds = loop.run_until_complete(crawler.find_feeds(homepage))
+            
+            found_valid = False
+            for feed_url in potential_feeds:
+                # 2. Validate feed
+                try:
+                    with httpx.Client(timeout=10.0) as client:
+                        resp = client.get(feed_url, follow_redirects=True)
+                        if resp.status_code == 200:
+                            f = feedparser.parse(resp.content)
+                            if not f.bozo and len(f.entries) > 0:
+                                # Found a working feed!
+                                log.info(f"Source '{name}' repaired with new URL: {feed_url}")
+                                db.execute(
+                                    """UPDATE sources 
+                                       SET url = %s, is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL
+                                       WHERE name = %s""",
+                                    (feed_url, name), fetch=False
+                                )
+                                from health import reset_source_policy
+                                reset_source_policy(name)
+                                found_valid = True
+                                break
+                except Exception as e:
+                    log.debug(f"Validation failed for candidate {feed_url}: {e}")
+                    
+            if not found_valid:
+                log.warning(f"Could not repair source '{name}' after checking {len(potential_feeds)} candidates.")
+                
+    except Exception as e:
+        log.error(f"[tasks] Auto-repair failed: {e}")
 
 @celery_app.task(rate_limit='5/m')
 def backfill_cover_art_single_task(cluster_id, title):
