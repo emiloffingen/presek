@@ -50,16 +50,16 @@ export default function ArchiveHeatmapIsland() {
   }
 
   const getIntensityClass = (count: number, max: number, isBreaking: boolean) => {
-    if (count === 0) return 'bg-secondary/40 border border-border/50';
+    if (count === 0) return 'bg-muted/30 border border-border/20';
     const ratio = count / max;
     if (isBreaking) {
-      if (ratio > 0.7) return 'bg-nyt-red text-white font-bold';
-      if (ratio > 0.3) return 'bg-nyt-red/60 text-white font-bold';
-      return 'bg-nyt-red/30';
+      if (ratio > 0.7) return 'bg-nyt-red text-white font-bold shadow-[0_0_10px_rgba(185,28,28,0.4)]';
+      if (ratio > 0.3) return 'bg-nyt-red/80 text-white font-bold';
+      return 'bg-nyt-red/50';
     } else {
-      if (ratio > 0.7) return 'bg-nyt-accent text-white font-bold';
-      if (ratio > 0.3) return 'bg-nyt-accent/60 text-white';
-      return 'bg-nyt-accent/30';
+      if (ratio > 0.7) return 'bg-nyt-accent text-white font-bold shadow-[0_0_10px_rgba(30,64,175,0.4)]';
+      if (ratio > 0.3) return 'bg-nyt-accent/80 text-white';
+      return 'bg-nyt-accent/50';
     }
   };
 

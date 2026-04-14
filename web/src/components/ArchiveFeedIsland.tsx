@@ -61,14 +61,20 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
 
   return (
     <div className="archive-feed-container">
-      <div className="archive-clusters">
+      <div className="archive-clusters flex flex-col gap-6">
         {clusters.map((cluster: any, index: number) => (
-          <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-card">
-            <div className="archive-cluster-index">
-              <span className="micro-label">Кластер</span>
-              <strong>{String(index + 1).padStart(2, '0')}</strong>
+          <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-row border-b border-border/50 pb-6 last:border-0">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="archive-cluster-index-col w-full md:w-20 pt-2 flex-shrink-0">
+                <div className="sticky top-24">
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Архива</span>
+                  <strong className="font-serif text-2xl font-black block leading-none">{String(index + 1).padStart(2, '0')}</strong>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <NewsCard cluster={cluster} variant={index < 4 ? 'featured' : 'compact'} />
+              </div>
             </div>
-            <NewsCard cluster={cluster} variant={index < 4 ? 'featured' : 'compact'} />
           </div>
         ))}
       </div>
