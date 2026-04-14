@@ -16,7 +16,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, BarChart3, Quote, Sparkles } from 'lucide-react';
+import { TrendingUp, Quote, Sparkles } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
@@ -31,7 +31,6 @@ let clusters: NewsCluster[] = [];
 let trending = [];
 let topEntities = [];
 let stats = null;
-let health = null;
 let error = null;
 async function fetchJson(url: string) {
     const response = await fetch(url);
@@ -50,12 +49,11 @@ if (q) newsUrl.searchParams.set('q', q);
 
 // Fan out every SSR request in parallel — the news call is the only one
 // the page can't usefully render without, so we still surface its failure.
-const [newsResult, trendResult, entityResult, statsResult, healthResult] = await Promise.allSettled([
+const [newsResult, trendResult, entityResult, statsResult] = await Promise.allSettled([
     fetchJson(newsUrl.toString()),
     fetchJson(`${API_URL}/trending`),
     fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
     fetchJson(`${API_URL}/stats/summary`),
-    fetchJson(`${API_URL}/health`),
 ]);
 
 if (newsResult.status === 'fulfilled') {
@@ -72,7 +70,6 @@ topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.
     ? entityResult.value
     : [];
 stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-health = healthResult.status === 'fulfilled' ? healthResult.value : null;
 
 function normalizeFocusName(name: string) {
     const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
@@ -142,7 +139,6 @@ const leadTitle = leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articl
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
-const freshness = health?.freshness || null;
 
 function getTimeStr(dateStr: string) {
     try {
@@ -238,10 +234,8 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 				)}
 
 				{clusters.length > 4 && (
-					<ForYouIsland client:load clusters={clusters.slice(1, 19)} />
+					<ForYouIsland client:visible clusters={clusters.slice(1, 19)} />
 				)}
-
-				<OnboardingIsland client:load compact />
 
 				{feedClusters.length > 0 && (
 					<DevelopmentsSection
@@ -251,6 +245,8 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 						developmentsCompact={developmentsCompact}
 					/>
 				)}
+
+				<OnboardingIsland client:idle compact />
 
 				{wireClusters.length > 0 && (
 					<DevelopmentsSection
@@ -264,33 +260,9 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 			</div>
 
 			<aside class="front-rail">
-				<section class="rail-module rail-module-featured rail-pulse motion-rise-fast motion-delay-1">
-					<p class="rail-kicker">Редакциски сигнал</p>
-					<h3 class="rail-title">
-						<BarChart3 size={14} /> МЕДИУМСКИ ПУЛС
-					</h3>
-					<div class="pulse-grid">
-						<div>
-							<span class="micro-label">Статии денес</span>
-							<strong>{stats ? stats.last_24h.toLocaleString('mk-MK') : '...'}</strong>
-						</div>
-						<div>
-							<span class="micro-label">Извори</span>
-							<strong>{stats ? stats.total_feeds.toLocaleString('mk-MK') : '...'}</strong>
-						</div>
-					</div>
-					{freshness && (
-						<div class={`freshness-chip freshness-${freshness.status}`}>
-							<span>{freshness.label}</span>
-							{typeof freshness.age_minutes === 'number' && <strong>{freshness.age_minutes} мин</strong>}
-						</div>
-					)}
-					<p class="rail-note">Брз ориентир за тоа каде денес се натрупува вниманието, а не само каде прво излегла веста.</p>
-				</section>
+				<HomeRailSuggestionsIsland client:visible />
 
-				<HomeRailSuggestionsIsland client:load />
-
-				<NewsletterIsland client:load />
+				<NewsletterIsland client:visible />
 
 				<SourceMapIsland client:visible />
 
