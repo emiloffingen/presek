@@ -180,7 +180,7 @@ function getTimeStr(dateStr: string) {
 						width="700"
 						height="500"
 						class="article-image"
-						transition:name={`cluster-image-${cluster.cluster_id}`}
+						{...(isLead ? { 'transition:name': `cluster-image-${cluster.cluster_id}` } : {})}
 						loading={isLead ? "eager" : "lazy"}
 						decoding="async"
 						fetchpriority={isLead ? "high" : "auto"}
