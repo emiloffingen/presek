@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Compass, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Clock3, Compass, Sparkles } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
@@ -101,38 +101,69 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
   }
 
   if (!hasSignals || items.length === 0) {
-    if (!recommendations.topics.length && !recommendations.sources.length) return null;
+    const fallbackItems = clusters.slice(0, 4);
     
     return (
       <section className="for-you-module">
         <div className="for-you-head">
           <div>
             <p className="for-you-kicker"><Compass size={14} /> Откријте</p>
-            <h2>Започнете го вашиот персонализиран тек</h2>
+            <h2>Најново за вас</h2>
           </div>
           <p className="for-you-note">
-            Следете ги темите што ве интересираат за да добивате препораки прилагодени на вашето читање.
+            Прилагодете го вашиот преглед со следење на теми и извори што ве интересираат.
           </p>
         </div>
         
-        <div className="for-you-follow-grid" style={{ marginTop: '1rem' }}>
-          {recommendations.topics.map((item) => (
-            <div key={`topic:${item.value}`} className="for-you-follow-card">
-              <div>
-                <p className="for-you-follow-kicker">Препорачана Тема</p>
-                <strong>{item.value}</strong>
-                <p>{item.reason}</p>
-              </div>
-              <PreferenceToggle
-                kind="topic"
-                value={item.value}
-                label={`тема: ${item.value}`}
-                analyticsSurface="for_you"
-                onChanged={() => setProfile(loadReaderProfile())}
-              />
-            </div>
-          ))}
+        <div className="for-you-grid">
+          {fallbackItems.map((cluster) => {
+            const article = cluster.articles?.[0] || {};
+            const summary = getSummary(cluster);
+            return (
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card">
+                <p className="for-you-card-kicker">
+                  <Clock3 size={12} />
+                  <span>Актуелно во моментот</span>
+                </p>
+                <h3>{cleanAndDecode(article.title) || 'Кластер'}</h3>
+                {summary && <p className="for-you-card-copy">{summary}</p>}
+                <div className="for-you-card-footer">
+                  <div className="for-you-card-meta">
+                    <span>{article.source || 'Извор'}</span>
+                    <span>·</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} извори</span>
+                  </div>
+                  <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
+                </div>
+              </a>
+            );
+          })}
         </div>
+
+        {(recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
+          <div className="for-you-follow-block" style={{ marginTop: '1.5rem', borderTop: '1px dashed var(--border)' }}>
+            <div className="for-you-follow-head">
+               <p className="for-you-kicker"><Sparkles size={14} /> Препорачано за следење</p>
+            </div>
+            <div className="for-you-follow-grid">
+              {recommendations.topics.slice(0, 2).map((item) => (
+                <div key={`topic:${item.value}`} className="for-you-follow-card">
+                  <div>
+                    <p className="for-you-follow-kicker">Тема</p>
+                    <strong>{item.value}</strong>
+                  </div>
+                  <PreferenceToggle
+                    kind="topic"
+                    value={item.value}
+                    label={item.value}
+                    analyticsSurface="for_you_fallback"
+                    onChanged={() => setProfile(loadReaderProfile())}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     );
   }

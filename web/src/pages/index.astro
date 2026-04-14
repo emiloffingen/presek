@@ -90,13 +90,6 @@ const focusEntities = topEntities
 
 const leadCluster = clusters[0] ?? null;
 const supportingClusters = clusters.slice(1, 5);
-const feedClusters = clusters.slice(5);
-const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
-const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 8);
-const supportingFeatured = supportingClusters.slice(0, 2);
-const supportingCompact = supportingClusters.slice(2);
-const developmentsFeatured = continuingClusters.slice(0, 4);
-const developmentsCompact = continuingClusters.slice(4);
 
 function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;
@@ -140,10 +133,9 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
-// Slim projection for ForYouIsland hydration: only the fields the island and
-// personalization ranker actually touch. Full clusters are ~130 KB each when
-// serialized into the HTML; this keeps the payload around ~1 KB per cluster.
-const forYouClusters = clusters.slice(1, 19).map((c: any) => {
+// Slim projection for ForYouIsland hydration.
+// We start from index 5 to avoid overlap with LeadHero (0) and SupportingBand (1-4).
+const forYouClusters = clusters.slice(5, 20).map((c: any) => {
     const a = c.articles?.[0] || {};
     return {
         cluster_id: c.cluster_id,
@@ -162,18 +154,24 @@ const forYouClusters = clusters.slice(1, 19).map((c: any) => {
     };
 });
 
+// The rest of the feed starts after the ForYou section to maintain variety and prevent duplication.
+const feedClusters = clusters.slice(20);
+const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
+const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 10);
+const supportingFeatured = supportingClusters.slice(0, 2);
+const supportingCompact = supportingClusters.slice(2);
+const developmentsFeatured = continuingClusters.slice(0, 4);
+const developmentsCompact = continuingClusters.slice(4);
+
 function getTimeStr(dateStr: string) {
     try {
-        return new Date(dateStr).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
     } catch {
         return '';
     }
 }
 
-function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'card') {
-    return chooseClusterImage(cluster, variant).proxiedUrl || '/img/placeholder.svg';
-}
----
 
 <Layout
 	title={q || category || topic || "Пресек | Повеќе од вести"}
