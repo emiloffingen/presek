@@ -148,9 +148,25 @@ function buildClearHref() {
             <p>{error}</p>
           </div>
         ) : archive.clusters.length > 0 ? (
-          <ArchiveFeedIsland 
-            client:load 
-            initialClusters={archive.clusters}
+          <ArchiveFeedIsland
+            client:load
+            initialClusters={archive.clusters.map((c: any) => ({
+              cluster_id: c.cluster_id,
+              is_breaking: c.is_breaking,
+              representative_image: c.representative_image,
+              articles: (c.articles || []).map((a: any) => ({
+                source: a.source,
+                title: a.title,
+                summary: a.summary,
+                description: a.description,
+                category: a.category,
+                created_at: a.created_at,
+                image_url: a.image_url,
+                image_caption: a.image_caption,
+                is_fact_check: a.is_fact_check,
+                source_signal: a.source_signal,
+              })),
+            }))}
             initialHasMore={archive.has_more}
             date={date}
             source={source}
