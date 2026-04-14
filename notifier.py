@@ -4,9 +4,11 @@ log = logging.getLogger("presek")
 
 class BreakingNewsNotifier:
     def __init__(self, topic, threshold=3):
-        self.topic     = topic
-        self.threshold = threshold
-        self._notified = set()  # avoid re-notifying same cluster in same session
+        self.topic             = topic
+        self.threshold         = threshold
+        self.telegram_token    = os.environ.get("TELEGRAM_TOKEN")
+        self.telegram_chat_id  = os.environ.get("TELEGRAM_CHAT_ID")
+        self._notified         = set()  # avoid re-notifying same cluster in same session
 
     def send_ntfy(self, title, message, cluster_id=None):
         try:
@@ -25,8 +27,8 @@ class BreakingNewsNotifier:
             log.warning(f"[notifier] ntfy error: {e}")
 
     def send_telegram(self, message, cluster_id=None, image_url=None):
-        token = os.environ.get("TELEGRAM_TOKEN")
-        chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+        token = self.telegram_token
+        chat_id = self.telegram_chat_id
 
         if not token or not chat_id:
             return
