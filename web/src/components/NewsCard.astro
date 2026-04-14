@@ -34,6 +34,19 @@ const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
 
+const slimCluster = {
+	cluster_id: cluster.cluster_id,
+	is_breaking: cluster.is_breaking,
+	topics: cluster.topics,
+	tags: cluster.tags,
+	homepage_score: cluster.homepage_score,
+	articles: cluster.articles.map((a, i) => (i === 0 ? {
+		source: a.source,
+		category: a.category,
+		topic: a.topic,
+	} : { source: a.source })),
+};
+
 function getCardSummary(article: Article, lead = false) {
 	let text = article?.summary || article?.description || '';
 	
@@ -95,7 +108,7 @@ function getTimeStr(dateStr: string) {
 }
 ---
 
-<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]} data-cluster={JSON.stringify(cluster)}>
+<article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
 		<div class="article-meta">
 			<span class="source-label">{main.source}</span>
