@@ -1,6 +1,6 @@
 import json
 import os
-import urllib.request
+import httpx
 
 try:
     from dotenv import load_dotenv
@@ -16,9 +16,12 @@ def test_gemini():
         return
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}"
     payload = {"contents": [{"parts": [{"text": "Say hi"}]}]}
-    req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        print(f"Gemini status: {resp.status}")
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(url, json=payload)
+        print(f"Gemini status: {resp.status_code}")
+    except Exception as e:
+        print(f"Gemini error: {e}")
 
 
 def check_openai_compatible(env_key, url, model):
@@ -31,16 +34,15 @@ def check_openai_compatible(env_key, url, model):
         "messages": [{"role": "user", "content": "hi"}],
         "max_tokens": 5,
     }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        print(f"{env_key} status: {resp.status}")
+    headers = {
+        "Authorization": f"Bearer {key}",
+    }
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(url, json=payload, headers=headers)
+        print(f"{env_key} status: {resp.status_code}")
+    except Exception as e:
+        print(f"{env_key} error: {e}")
 
 
 def main():
@@ -55,3 +57,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

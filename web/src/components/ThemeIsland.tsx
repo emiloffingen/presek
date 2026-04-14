@@ -48,11 +48,13 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
       className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
       aria-label="Промени тема"
     >
-      {theme === 'light' ? (
-        <Moon size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground" />
-      ) : (
-        <Sun size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground" />
-      )}
+      <div className={`relative transition-transform duration-500 ${theme === 'dark' ? 'rotate-[360deg]' : 'rotate-0'}`}>
+        {theme === 'light' ? (
+          <Moon size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground transition-transform duration-300 hover:scale-110" />
+        ) : (
+          <Sun size={fixed ? 20 : 18} className="text-muted-foreground group-hover:text-foreground transition-transform duration-300 hover:scale-110" />
+        )}
+      </div>
     </button>
   );
 }

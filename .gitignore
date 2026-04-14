@@ -26,3 +26,4 @@ web/.env.local
 .ruff_cache/
 *.egg-info/
 .hypothesis/
+*.pem

@@ -2,7 +2,8 @@ import logging
 import datetime
 import json
 import os
-import urllib.request
+import httpx
+import urllib.parse
 from celery_app import celery_app
 from database import db_manager as db, prune_db
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
@@ -19,7 +20,7 @@ from prompts import (
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
 from health import record_refresh, record_task_event
-from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness, record_runtime_event
+from utils import rank_articles_in_cluster, score_cluster, score_cluster_for_homepage, redis_client, delete_cache, delete_cache_prefix, assess_cluster_synthesis_freshness, record_runtime_event, get_dominant_color
 from local_nlp import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
@@ -803,16 +804,16 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
         headers["Authorization"] = f"Bearer {NTFY_TOKEN}"
 
     url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
-    req = urllib.request.Request(
-        url,
-        data=clean_message.encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(req, timeout=10):
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                url,
+                content=clean_message.encode("utf-8"),
+                headers=headers,
+            )
+            resp.raise_for_status()
             return True
-    except urllib.error.URLError as e:
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
         log.warning(f"[tasks] ntfy delivery failed for topic {clean_topic}: {e}")
         return False
 
@@ -1598,14 +1599,23 @@ def generate_cluster_metadata_task():
             if not rep_image:
                 rep_image = generate_cover_art(r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
 
+            # 4. Dominant Color Extraction
+            # Fetch current to avoid redundant processing
+            curr_meta = db.execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (r['cluster_id'],))
+            dominant_color = curr_meta['dominant_color'] if curr_meta else None
+            
+            if rep_image and (not curr_meta or curr_meta['representative_image'] != rep_image or not dominant_color):
+                dominant_color = get_dominant_color(rep_image)
+
             db.execute(
-                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, updated_at)
-                   VALUES (%s, %s, %s, NOW())
+                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, dominant_color, updated_at)
+                   VALUES (%s, %s, %s, %s, NOW())
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                    tags = EXCLUDED.tags, 
                    representative_image = EXCLUDED.representative_image,
+                   dominant_color = EXCLUDED.dominant_color,
                    updated_at = NOW()""",
-                (r['cluster_id'], final_tags, rep_image), fetch=False
+                (r['cluster_id'], final_tags, rep_image, dominant_color), fetch=False
             )
         invalidate_public_data_caches()
         record_task_event("cluster_metadata", "ok", "clusters:recent")
@@ -1634,9 +1644,12 @@ def send_telegram_briefing_task():
         if not row or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
             return
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = json.dumps({"chat_id": TELEGRAM_CHAT_ID, "text": row["content"][:4096]}).encode()
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=10)
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": row["content"][:4096]}
+        
+        import httpx
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(url, json=payload)
+            resp.raise_for_status()
         log.info("[tasks] Telegram briefing sent.")
     except Exception as e:
         log.warning(f"[tasks] Telegram briefing failed: {e}")

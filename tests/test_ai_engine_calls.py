@@ -9,18 +9,15 @@ from io import BytesIO
 
 
 class TestOpenAICompatibleProvider:
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_successful_call(self, mock_urlopen):
+    @patch('httpx.Client.post')
+    def test_successful_call(self, mock_post):
         from ai_engine import OpenAICompatibleProvider
 
-        response_body = json.dumps({
-            "choices": [{"message": {"content": "OpenAI response text"}}]
-        }).encode()
         mock_resp = MagicMock()
-        mock_resp.read.return_value = response_body
-        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_resp
+        mock_resp.json.return_value = {
+            "choices": [{"message": {"content": "OpenAI response text"}}]
+        }
+        mock_post.return_value = mock_resp
 
         provider = OpenAICompatibleProvider("test", "api-key", "http://test-url", "test-model")
         result = provider.call("Test", "System", max_tokens=200, json_mode=False)
@@ -32,10 +29,11 @@ class TestOpenAICompatibleProvider:
         result = provider.call("Test", "System", max_tokens=200, json_mode=False)
         assert result is None
 
-    @patch('ai_engine.urllib.request.urlopen')
-    def test_network_error(self, mock_urlopen):
+    @patch('httpx.Client.post')
+    def test_network_error(self, mock_post):
+        import httpx
         from ai_engine import OpenAICompatibleProvider
-        mock_urlopen.side_effect = Exception("Connection refused")
+        mock_post.side_effect = httpx.RequestError("Connection refused", request=MagicMock())
         provider = OpenAICompatibleProvider("test", "api-key", "http://test-url", "test-model")
         result = provider.call("Test", "System", max_tokens=200, json_mode=False)
         assert result is None

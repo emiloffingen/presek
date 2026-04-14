@@ -369,6 +369,12 @@ const leadVisual = getLeadVisual(cluster);
 						<div class="cluster-header-side">
 							{leadVisual && leadVisual.rawUrl && (
 								<div class:list={["cluster-visual-card", leadVisual.isWeak ? "is-weak" : ""]}>
+									{cluster?.dominant_color && !leadVisual.isWeak && (
+										<div 
+											class="cluster-visual-aura" 
+											style={`background-color: ${cluster.dominant_color};`}
+										></div>
+									)}
 									{leadVisual.isWeak ? (
 										<div class="cluster-visual-fallback">
 											<p class="cluster-visual-kicker">Пресек Преглед</p>
@@ -749,6 +755,22 @@ const leadVisual = getLeadVisual(cluster);
 		border: 1px solid var(--border);
 		overflow: hidden;
 		box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+		position: relative;
+	}
+
+	.cluster-visual-aura {
+		position: absolute;
+		inset: -20%;
+		filter: blur(60px);
+		opacity: 0.15;
+		z-index: 0;
+		pointer-events: none;
+		transition: opacity 0.8s ease;
+	}
+
+	.dark .cluster-visual-aura {
+		opacity: 0.25;
+		filter: blur(80px);
 	}
 
 	.cluster-visual-image {

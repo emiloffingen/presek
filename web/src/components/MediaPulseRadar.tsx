@@ -20,12 +20,21 @@ interface Props {
 
 export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
   const { tone_analysis, sentiment } = data;
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Normalize values to 0-100 for the SVG
   const sensationalism = (tone_analysis?.sensationalism || 0) * 100;
   const objectivity = (tone_analysis?.objectivity || 0) * 100;
   const emotionalCharge = (tone_analysis?.emotional_charge || 0) * 100;
   
+  // Scale factor for animation
+  const scale = isMounted ? 1 : 0.1;
+
   // Center of the SVG
   const cx = 100;
   const cy = 100;
@@ -33,16 +42,16 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
 
   // Calculate coordinates for the 3 points
   // 0 degrees: Objectivity (Top)
-  const x1 = cx + radius * (objectivity / 100) * Math.sin(0);
-  const y1 = cy - radius * (objectivity / 100) * Math.cos(0);
+  const x1 = cx + radius * (objectivity / 100) * Math.sin(0) * scale;
+  const y1 = cy - (radius * (objectivity / 100) * Math.cos(0) * scale) + (1-scale)*cy*0.1;
 
   // 120 degrees: Sensationalism (Bottom Right)
-  const x2 = cx + radius * (sensationalism / 100) * Math.sin((120 * Math.PI) / 180);
-  const y2 = cy - radius * (sensationalism / 100) * Math.cos((120 * Math.PI) / 180);
+  const x2 = cx + radius * (sensationalism / 100) * Math.sin((120 * Math.PI) / 180) * scale;
+  const y2 = cy - radius * (sensationalism / 100) * Math.cos((120 * Math.PI) / 180) * scale;
 
   // 240 degrees: Emotional Charge (Bottom Left)
-  const x3 = cx + radius * (emotionalCharge / 100) * Math.sin((240 * Math.PI) / 180);
-  const y3 = cy - radius * (emotionalCharge / 100) * Math.cos((240 * Math.PI) / 180);
+  const x3 = cx + radius * (emotionalCharge / 100) * Math.sin((240 * Math.PI) / 180) * scale;
+  const y3 = cy - radius * (emotionalCharge / 100) * Math.cos((240 * Math.PI) / 180) * scale;
 
   const points = `${x1},${y1} ${x2},${y2} ${x3},${y3}`;
 
@@ -77,13 +86,13 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
               fill="rgba(185, 28, 28, 0.2)" 
               stroke="var(--nyt-red)" 
               strokeWidth="2"
-              className="transition-all duration-500"
+              className="transition-all duration-[800ms] cubic-bezier(0.34, 1.56, 0.64, 1)"
             />
             
             {/* Points */}
-            <circle cx={x1} cy={y1} r="4" fill="var(--nyt-red)" />
-            <circle cx={x2} cy={y2} r="4" fill="var(--nyt-red)" />
-            <circle cx={x3} cy={y3} r="4" fill="var(--nyt-red)" />
+            <circle cx={x1} cy={y1} r="4" fill="var(--nyt-red)" className="transition-all duration-[800ms] cubic-bezier(0.34, 1.56, 0.64, 1)" />
+            <circle cx={x2} cy={y2} r="4" fill="var(--nyt-red)" className="transition-all duration-[800ms] cubic-bezier(0.34, 1.56, 0.64, 1)" />
+            <circle cx={x3} cy={y3} r="4" fill="var(--nyt-red)" className="transition-all duration-[800ms] cubic-bezier(0.34, 1.56, 0.64, 1)" />
           </svg>
         </div>
 

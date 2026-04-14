@@ -1,4 +1,4 @@
-import json, urllib.request, os, logging
+import json, os, logging, httpx
 
 log = logging.getLogger("presek")
 
@@ -18,13 +18,10 @@ class BreakingNewsNotifier:
                 "priority": 4,
                 "click":   f"https://presek.mk/cluster/{cluster_id}" if cluster_id else "https://presek.mk"
             }
-            req = urllib.request.Request(
-                f"https://ntfy.sh/{self.topic}",
-                data=json.dumps(data).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception as e:
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
+                resp.raise_for_status()
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[notifier] ntfy error: {e}")
 
     def send_telegram(self, message, cluster_id=None, image_url=None):
@@ -57,10 +54,10 @@ class BreakingNewsNotifier:
                     "disable_web_page_preview": False,
                 }
 
-            data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            urllib.request.urlopen(req, timeout=8)
-        except Exception as e:
+            with httpx.Client(timeout=8.0) as client:
+                resp = client.post(url, json=payload)
+                resp.raise_for_status()
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[notifier] telegram bot error: {e}")
 
     def notify(self, headline, sources_count, cluster_id, description=None, sources=None, image_url=None):

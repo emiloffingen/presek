@@ -153,14 +153,21 @@ def _resolve_public_ips(candidate_url: str):
     return safe
 
 def _peer_ip(response):
-    sock = None
-    raw = getattr(response, "raw", None)
-    if raw is not None:
-        conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
-        if conn is not None: sock = getattr(conn, "sock", None)
-    if sock is None: return None
-    try: return sock.getpeername()[0]
-    except Exception: return None
+    try:
+        # httpx support
+        stream = getattr(response, "extensions", {}).get("network_stream")
+        if stream:
+            return stream.get_extra_info("server_addr")[0]
+        
+        # requests support
+        sock = None
+        raw = getattr(response, "raw", None)
+        if raw is not None:
+            conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+            if conn is not None: sock = getattr(conn, "sock", None)
+        if sock is not None: return sock.getpeername()[0]
+    except Exception: pass
+    return None
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     from local_nlp import is_valid_focus_entity

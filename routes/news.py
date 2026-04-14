@@ -87,7 +87,8 @@ async def get_news(
         start = page * page_size
         paged_clusters = ranked_clusters[start:start + page_size]
         cid_list = [c[0]["cluster_id"] for c in paged_clusters]
-        rep_images = {r['cluster_id']: r['representative_image'] for r in db.execute("SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cid_list,))} if cid_list else {}
+        meta_rows = db.execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cid_list,)) if cid_list else []
+        meta_map = {r['cluster_id']: r for r in meta_rows}
         synthesis_ids = set(db.get_synthesis_ids(cid_list)) if cid_list else set()
 
         result = []
@@ -95,10 +96,12 @@ async def get_news(
             main = arts[0]
             cid = main["cluster_id"]
             s = score_cluster(arts)
+            meta = meta_map.get(cid, {})
             result.append({
                 "cluster_id": cid,
                 "articles": arts,
-                "representative_image": rep_images.get(cid),
+                "representative_image": meta.get("representative_image"),
+                "dominant_color": meta.get("dominant_color"),
                 "reading_time": main.get('reading_time', 1),
                 "score": round(s, 3),
                 "homepage_score": round(score_cluster_for_homepage(arts), 3),
@@ -143,9 +146,18 @@ async def get_cluster_detail(cluster_id: str):
         if not perspectives: perspectives = []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
-        m_row = db.execute_one("SELECT tags, topics FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
+        m_row = db.execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
         tags = filter_cluster_tags((m_row.get("tags") or []) if m_row else [])
         topics = (m_row.get("topics") or []) if m_row else []
+        rep_image = m_row.get("representative_image") if m_row else None
+        dominant_color = m_row.get("dominant_color") if m_row else None
+
+        # Just-in-time extraction if missing
+        if rep_image and not dominant_color:
+            from utils import get_dominant_color
+            dominant_color = get_dominant_color(rep_image)
+            if dominant_color:
+                db.execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
 
         related = []
         lead_article = articles[0] if articles else None
@@ -177,7 +189,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
     except HTTPException:
         raise
     except Exception as e:

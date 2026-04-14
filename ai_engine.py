@@ -1,8 +1,7 @@
 import json
 import time
 import datetime
-import urllib.request
-import urllib.error
+import httpx
 import urllib.parse
 import re
 import logging
@@ -70,12 +69,12 @@ class GeminiProvider(AIProvider):
             payload["generationConfig"]["responseMimeType"] = "application/json"
 
         try:
-            data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data_encoded, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
                 return data["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/gemini] Call failed: {e}")
             return None
 
@@ -106,12 +105,12 @@ class MistralProvider(AIProvider):
             "Authorization": f"Bearer {MISTRAL_API_KEY}",
         }
         try:
-            data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data_encoded, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
                 return data["choices"][0]["message"]["content"]
-        except Exception as e:
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/mistral] Call failed (URL: {url}): {e}")
             return None
 
@@ -147,12 +146,12 @@ class OpenAICompatibleProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            data_encoded = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(self.api_url, data=data_encoded, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(self.api_url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
                 return data["choices"][0]["message"]["content"]
-        except Exception as e:
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/{self.provider_name}] Call failed: {e}")
             return None
 
@@ -475,15 +474,16 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
     
     try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            content = resp.read()
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            content = resp.content
             if len(content) > 5000:
                 path = f"static/generated/{safe_id}.jpg"
                 with open(path, "wb") as f:
                     f.write(content)
                 return f"/static/generated/{safe_id}.jpg"
-    except Exception as e:
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
         log.debug(f"[ai] AI cover art failed: {e}")
     return None
 

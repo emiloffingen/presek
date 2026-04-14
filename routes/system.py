@@ -68,7 +68,9 @@ async def get_weather():
     cached = cached_response("weather:skopje", ttl=900)
     if cached: return cached
     try:
-        r = requests.get("https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true", timeout=3).json()
+        import httpx
+        with httpx.Client(timeout=3.0) as client:
+            r = client.get("https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true").json()
         curr = r.get("current_weather", {})
         temp = curr.get("temperature")
         res = {"temp": round(temp) if temp is not None else None, "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️")}
@@ -204,31 +206,27 @@ async def proxy_image(
         except Exception:
             return serve_fallback("security_block")
 
-        resp = requests.get(url, headers=headers, timeout=5, stream=True, allow_redirects=True)
-        
-        # Check peer IP after connection
-        p_ip = _peer_ip(resp)
-        if not p_ip or p_ip not in safe_ips:
-            resp.close()
-            return serve_fallback("security_ip_block")
+        import httpx
+        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+            with client.stream("GET", url, headers=headers) as resp:
+                # Check peer IP after connection
+                p_ip = _peer_ip(resp)
+                if not p_ip or p_ip not in safe_ips:
+                    return serve_fallback("security_ip_block")
 
-        if resp.status_code != 200:
-            resp.close()
-            return serve_fallback(f"http_{resp.status_code}")
+                if resp.status_code != 200:
+                    return serve_fallback(f"http_{resp.status_code}")
 
-        ctype = resp.headers.get("Content-Type", "").split(";")[0].strip()
-        if ctype not in _PROXY_ALLOWED_TYPES:
-            resp.close()
-            return serve_fallback("invalid_type")
+                ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
+                if ctype not in _PROXY_ALLOWED_TYPES:
+                    return serve_fallback("invalid_type")
 
-        # Read content safely
-        img_data = b""
-        for chunk in resp.iter_content(chunk_size=16384):
-            img_data += chunk
-            if len(img_data) > _PROXY_MAX_BYTES:
-                resp.close()
-                return serve_fallback("too_large")
-        resp.close()
+                # Read content safely
+                img_data = b""
+                for chunk in resp.iter_bytes(chunk_size=16384):
+                    img_data += chunk
+                    if len(img_data) > _PROXY_MAX_BYTES:
+                        return serve_fallback("too_large")
 
         from PIL import Image
         img = Image.open(BytesIO(img_data))

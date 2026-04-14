@@ -42,10 +42,11 @@ class TestBreakingNewsNotifier:
             assert "Важна вест" in call_args[0][1]
             assert "5 извори" in call_args[0][1]
 
-    @patch('notifier.urllib.request.urlopen')
-    def test_send_ntfy_error_handled(self, mock_urlopen):
+    @patch('httpx.Client.post')
+    def test_send_ntfy_error_handled(self, mock_post):
         """Network errors should be caught, not raised."""
-        mock_urlopen.side_effect = Exception("Connection refused")
+        import httpx
+        mock_post.side_effect = httpx.RequestError("Connection refused", request=MagicMock())
         n = BreakingNewsNotifier(topic="test")
         # Should not raise
         n.send_ntfy("Title", "Message", "c1")

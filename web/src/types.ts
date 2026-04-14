@@ -32,6 +32,7 @@ export interface NewsCluster {
   cluster_id: string;
   articles: Article[];
   representative_image: string | null;
+  dominant_color?: string | null;
   score: number;
   is_breaking: boolean;
   has_synthesis: boolean;

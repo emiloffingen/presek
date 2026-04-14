@@ -86,19 +86,19 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
     body = "\n".join(lines).strip()
 
     try:
-        req = urllib.request.Request(
-            f"https://ntfy.sh/{topic}",
-            data=body.encode("utf-8"),
-            headers={
-                "Title": "Пресек — Дневен преглед",
-                "Priority": "default",
-                "Tags": "newspaper,macedonia",
-                "Content-Type": "text/plain; charset=utf-8",
-            },
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            ok = r.status == 200
+        import httpx
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                f"https://ntfy.sh/{topic}",
+                content=body.encode("utf-8"),
+                headers={
+                    "Title": "Пресек — Дневен преглед",
+                    "Priority": "default",
+                    "Tags": "newspaper,macedonia",
+                    "Content-Type": "text/plain; charset=utf-8",
+                }
+            )
+            ok = resp.status_code == 200
         log.info(f"ntfy {'sent' if ok else 'failed'} to topic '{topic}'")
         return ok
     except Exception as e:

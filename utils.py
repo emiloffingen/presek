@@ -6,6 +6,9 @@ import json
 import os
 import time
 import urllib.request
+from PIL import Image
+from io import BytesIO
+import requests
 from config import (
     SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
 )
@@ -20,6 +23,49 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, (datetime.datetime, datetime.date)):
             return obj.isoformat()
         return super().default(obj)
+
+def get_dominant_color(url: str) -> str:
+    """Extracts the dominant hex color from an image URL."""
+    if not url: return ""
+    try:
+        import httpx
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get(url)
+        if response.status_code != 200: return ""
+        
+        img = Image.open(BytesIO(response.content))
+        img = img.convert("RGB")
+        img.thumbnail((100, 100))
+        
+        # Get dominant color
+        colors = img.getcolors(10000) # (count, (r,g,b))
+        if not colors: return ""
+        
+        # Filter out white and very dark colors to get a "vibrant" or "editorial" color
+        def is_usable(rgb):
+            r, g, b = rgb
+            # Too bright?
+            if r > 245 and g > 245 and b > 245: return False
+            # Too dark?
+            if r < 15 and g < 15 and b < 15: return False
+            # Too neutral? (low saturation)
+            avg = (r + g + b) / 3
+            if abs(r-avg) < 10 and abs(g-avg) < 10 and abs(b-avg) < 10: return False
+            return True
+
+        sorted_colors = sorted(colors, key=lambda x: x[0], reverse=True)
+        usable = [c for c in sorted_colors if is_usable(c[1])]
+        
+        if not usable:
+            # Fallback to the most frequent if nothing vibrant found
+            dominant = sorted_colors[0][1]
+        else:
+            dominant = usable[0][1]
+            
+        return '#{:02x}{:02x}{:02x}'.format(*dominant)
+    except Exception as e:
+        log.warning(f"[utils] color extraction failed for {url}: {e}")
+        return ""
 
 _CACHE_MISS = object()  # sentinel to distinguish cache miss from Redis error
 
