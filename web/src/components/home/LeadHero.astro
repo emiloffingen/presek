@@ -11,6 +11,7 @@ interface Props {
     leadSummary: string;
     leadSummaryIsCyrillic: boolean;
     leadVisual: any;
+    dominantColor?: string | null;
     getTimeStr: (date: string) => string;
 }
 
@@ -22,11 +23,15 @@ const {
     leadSummary, 
     leadSummaryIsCyrillic, 
     leadVisual,
+    dominantColor,
     getTimeStr
 } = Astro.props;
+
+const tintColor = dominantColor || '#1e40af';
 ---
 
 <section class="lead-hero motion-rise">
+    <div class="lead-hero-tint" style={`--tint-color: ${tintColor};`}></div>
     <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
             {leadVisual?.proxiedUrl && !leadVisual.isWeak ? (

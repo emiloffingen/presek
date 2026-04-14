@@ -225,6 +225,7 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 						leadSummary={leadSummary}
 						leadSummaryIsCyrillic={leadSummaryIsCyrillic}
 						leadVisual={leadVisual}
+						dominantColor={leadCluster.dominant_color}
 						getTimeStr={getTimeStr}
 					/>
 				)}
@@ -504,6 +505,27 @@ function getThumb(cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb' = 'ca
 		gap: 0.8rem;
 		padding-bottom: 1.2rem;
 		border-bottom: 1px solid var(--border);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.lead-hero-tint {
+		position: absolute;
+		top: -20%;
+		right: -10%;
+		width: 60%;
+		height: 140%;
+		background: radial-gradient(circle at center, var(--tint-color), transparent 70%);
+		opacity: 0.04;
+		filter: blur(80px);
+		pointer-events: none;
+		z-index: 0;
+		transform: rotate(-15deg);
+	}
+
+	.dark .lead-hero-tint {
+		opacity: 0.12;
+		filter: blur(120px);
 	}
 
 	.lead-media-mobile {

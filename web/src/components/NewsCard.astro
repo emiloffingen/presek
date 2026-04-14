@@ -206,6 +206,15 @@ function getTimeStr(dateStr: string) {
 
 	.nyt-article:not(.lead-story) {
 		height: 100%;
+		transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+	}
+
+	.nyt-article:not(.lead-story):hover {
+		transform: translateY(-3px);
+		box-shadow: 0 16px 36px -12px rgba(0,0,0,0.08);
+		border-color: color-mix(in srgb, var(--border) 60%, var(--nyt-accent) 40%);
+		background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 98%, var(--nyt-accent) 2%));
+		z-index: 1;
 	}
 
 	.nyt-article.variant-featured:not(.lead-story) {
