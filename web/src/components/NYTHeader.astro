@@ -178,40 +178,43 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(0.7); }
     }
+.live-ticker-track-wrap {
+    flex: 1;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
+    display: flex;
+    align-items: center;
+}
 
-    .live-ticker-track-wrap {
-        flex: 1;
-        overflow: hidden;
-        mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
-    }
+.live-ticker-track {
+    display: flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    width: max-content;
+    animation: ticker-scroll 25s linear infinite;
+}
 
-    .live-ticker-track {
-        display: flex;
-        width: max-content;
-        animation: ticker-scroll 25s linear infinite;
-    }
+.live-ticker-track:hover {
+    animation-play-state: paused;
+}
 
-    .live-ticker-track:hover {
-        animation-play-state: paused;
-    }
+@keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
 
-    @keyframes ticker-scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-    }
-
-    .live-ticker-headline {
-        display: inline-flex;
-        align-items: center;
-        font-family: var(--font-serif);
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: #fff;
-        text-decoration: none;
-        white-space: nowrap;
-        padding: 0 0.25rem;
-    }
-
+.live-ticker-headline {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-serif);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+}
     .live-ticker-headline:hover {
         text-decoration: underline;
         text-underline-offset: 2px;
