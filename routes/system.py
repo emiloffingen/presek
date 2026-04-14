@@ -198,35 +198,57 @@ async def proxy_image(
         return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=3600", "X-Proxy-Fallback": reason})
 
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-        
-        # Security: Resolve IPs to prevent SSRF
-        try:
-            safe_ips = _resolve_public_ips(url)
-        except Exception:
-            return serve_fallback("security_block")
+        # 1. Fast path: check if we have a locally saved version in the DB
+        local_img_row = db_manager.execute_one(
+            "SELECT local_image_path FROM articles WHERE image_url = %s AND local_image_path IS NOT NULL LIMIT 1",
+            (url,)
+        )
+        img_data = None
+        if local_img_row:
+            local_rel = local_img_row["local_image_path"].lstrip("/")
+            if local_rel.startswith("static/"):
+                local_rel = local_rel[len("static/"):].lstrip("/")
+            
+            local_full = (_STATIC_ROOT / local_rel).resolve()
+            if local_full.exists() and local_full.is_file():
+                with open(local_full, "rb") as f:
+                    img_data = f.read()
+                log.info(f"[proxy] Using local master for {url}")
 
-        import httpx
-        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
-            with client.stream("GET", url, headers=headers) as resp:
-                # Check peer IP after connection
-                p_ip = _peer_ip(resp)
-                if not p_ip or p_ip not in safe_ips:
-                    return serve_fallback("security_ip_block")
+        # 2. Slow path: fetch from remote if no local version exists
+        if not img_data:
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+            
+            # Security: Resolve IPs to prevent SSRF
+            try:
+                safe_ips = _resolve_public_ips(url)
+            except Exception:
+                return serve_fallback("security_block")
 
-                if resp.status_code != 200:
-                    return serve_fallback(f"http_{resp.status_code}")
+            import httpx
+            with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+                with client.stream("GET", url, headers=headers) as resp:
+                    # Check peer IP after connection
+                    p_ip = _peer_ip(resp)
+                    if not p_ip or p_ip not in safe_ips:
+                        return serve_fallback("security_ip_block")
 
-                ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
-                if ctype not in _PROXY_ALLOWED_TYPES:
-                    return serve_fallback("invalid_type")
+                    if resp.status_code != 200:
+                        return serve_fallback(f"http_{resp.status_code}")
 
-                # Read content safely
-                img_data = b""
-                for chunk in resp.iter_bytes(chunk_size=16384):
-                    img_data += chunk
-                    if len(img_data) > _PROXY_MAX_BYTES:
-                        return serve_fallback("too_large")
+                    ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
+                    if ctype not in _PROXY_ALLOWED_TYPES:
+                        return serve_fallback("invalid_type")
+
+                    # Read content safely
+                    img_data = b""
+                    for chunk in resp.iter_bytes(chunk_size=16384):
+                        img_data += chunk
+                        if len(img_data) > _PROXY_MAX_BYTES:
+                            return serve_fallback("too_large")
+
+        if not img_data:
+            return serve_fallback("no_data")
 
         from PIL import Image
         img = Image.open(BytesIO(img_data))

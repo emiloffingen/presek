@@ -171,7 +171,6 @@ function getTimeStr(dateStr: string) {
 						</div>
 						<h3>{main?.category || 'Вести'}</h3>
 						<p class="article-image-placeholder-source">{main.source}</p>
-						<p class:list={["article-image-placeholder-title", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]}>{displayTitle}</p>
 					</div>
 				) : (
 					<img
@@ -193,7 +192,6 @@ function getTimeStr(dateStr: string) {
 							<p class="article-image-placeholder-chip">Без визуел</p>
 						</div>
 						<p class="article-image-placeholder-source">{main.source}</p>
-						<p class:list={["article-image-placeholder-title", { "article-image-placeholder-title-cyrillic": titleIsCyrillic }]}>{displayTitle}</p>
 					</div>
 				)}
 			</a>

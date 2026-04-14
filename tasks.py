@@ -19,6 +19,7 @@ from prompts import (
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from crawler import crawler
+from image_service import image_service
 from entities import extract_entities
 
 log = logging.getLogger("presek_celery")
@@ -46,10 +47,17 @@ def crawl_article_task(article_id, url):
             updates.append("full_content = %s")
             params.append(res["content"])
             
-        if res.get("image_url"):
+        final_image_url = res.get("image_url")
+        if final_image_url:
             # Only update if current image is null or a low-res placeholder
             updates.append("image_url = COALESCE(image_url, %s)")
-            params.append(res["image_url"])
+            params.append(final_image_url)
+            
+            # 2. Process and save a local version for the lightning-fast proxy
+            local_path = loop.run_until_complete(image_service.process_and_save(final_image_url, article_id))
+            if local_path:
+                updates.append("local_image_path = %s")
+                params.append(local_path)
             
         if updates:
             params.append(article_id)

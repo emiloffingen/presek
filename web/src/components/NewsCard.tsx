@@ -173,13 +173,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 </div>
                 <h3>{main.category || 'Вести'}</h3>
                 <p className="article-image-placeholder-source">{main.source}</p>
-                <p
-                  className={`article-image-placeholder-title ${
-                    titleIsCyrillic ? 'article-image-placeholder-title-cyrillic' : ''
-                  }`}
-                >
-                  {displayTitle}
-                </p>
               </div>
             ) : (
               <>
@@ -205,13 +198,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                     <p className="article-image-placeholder-chip">Без визуел</p>
                   </div>
                   <p className="article-image-placeholder-source">{main.source}</p>
-                  <p
-                    className={`article-image-placeholder-title ${
-                      titleIsCyrillic ? 'article-image-placeholder-title-cyrillic' : ''
-                    }`}
-                  >
-                    {displayTitle}
-                  </p>
                 </div>
               </>
             )}
