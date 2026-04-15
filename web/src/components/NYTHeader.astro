@@ -109,19 +109,17 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 </div>
             </div>
         </div>
-        
-        {/* Mobile secondary links */}
-        <div class="topbar-mobile-links flex lg:hidden border-t border-border mt-2 pt-2 justify-center gap-6">
-            <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
-            <a href="/stats" data-astro-reload class="topbar-link">Пулс</a>
-            <a href={telegramUrl} class="topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">Телеграм</a>
-        </div>
     </header>
 
     <nav class="site-layout masthead-nav" aria-label="Навигација">
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
                 <ul class="masthead-nav-list">
+                    {/* Mobile-only primary links merged into nav */}
+                    <li class="lg:hidden"><a href="/briefing" class="masthead-nav-link text-nyt-accent font-black">Брифинг</a></li>
+                    <li class="lg:hidden"><a href="/stats" class="masthead-nav-link text-nyt-accent font-black">Пулс</a></li>
+                    <li class="lg:hidden"><a href={telegramUrl} class="masthead-nav-link text-nyt-red font-black">Телеграм</a></li>
+                    
                     {navigationData.focus.map((item) => {
                         const isActive = item.href.includes('category=')
                             ? category === item.label
