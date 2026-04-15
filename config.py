@@ -53,7 +53,7 @@ FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000 # Unlimited (paid Gemini fallback tier)
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 BREAKING_SCORE_THRESHOLD = 4.5
-DB_RETAIN_DAYS = 90  # articles older than this are pruned daily
+DB_RETAIN_DAYS = 60  # articles older than this are pruned daily
 
 # ── Auto-summarization settings ──────────────────────────────────
 AUTO_SUMMARIZE_TOP_N   = 25   # summarize the top N clusters each cycle

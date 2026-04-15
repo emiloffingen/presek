@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import time
 import httpx
 from io import BytesIO
 from PIL import Image
@@ -89,13 +90,25 @@ class ImageService:
         """
         try:
             # 1. Image Cleanup
+            now = time.time()
+            max_age_seconds = 30 * 24 * 60 * 60 # 30 days
+            
             if os.path.exists(_UPLOAD_ROOT):
                 for filename in os.listdir(_UPLOAD_ROOT):
                     if filename.startswith("art_") and filename.endswith(".webp"):
                         try:
+                            file_path = os.path.join(_UPLOAD_ROOT, filename)
+                            
+                            # Check age first
+                            if (now - os.path.getmtime(file_path)) > max_age_seconds:
+                                os.remove(file_path)
+                                log.info(f"Pruned old image (30d+): {filename}")
+                                continue
+
+                            # Check if still in DB
                             art_id = int(filename.replace("art_", "").replace(".webp", ""))
                             if art_id not in valid_article_ids:
-                                os.remove(os.path.join(_UPLOAD_ROOT, filename))
+                                os.remove(file_path)
                                 log.info(f"Removed orphaned image: {filename}")
                         except (ValueError, OSError):
                             continue
