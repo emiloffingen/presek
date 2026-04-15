@@ -9,7 +9,7 @@ from nlp.utils import _articles_cache_key, _cache_get, _cache_set, _comparison_c
 from utils import record_runtime_event
 
 from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases, extract_keyphrases_locally, normalize_tag_name, SOURCE_NOISE_WORDS, TAG_NOISE_WORDS
-from nlp.text_processing import _normalize_summary_sentence, _is_noisy_similarity_sentence, _jaccard_similarity, _is_noisy_summary_sentence
+from nlp.text_processing import _normalize_summary_sentence, _jaccard_similarity, _is_noisy_summary_sentence
 
 def _extract_terms(text):
     return [
