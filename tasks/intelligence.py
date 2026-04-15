@@ -94,7 +94,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
     prompt_parts = [f"Наслов: {str(title or '').strip()}"]
     if context_text:
         # Limit very long content to avoid extreme costs/token limits even for Gemini
-        prompt_parts.append(f"Текст:\n{str(context_text).strip()[:10000]}")
+        prompt_parts.append(f"Текст за резимирање:\n[START_ARTICLE_TEXT]\n{str(context_text).strip()[:10000]}\n[END_ARTICLE_TEXT]")
     prompt = "\n".join(part for part in prompt_parts if part)
 
     try:
@@ -108,6 +108,10 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             record_runtime_event("summary_path", mode=provider or "unknown", topic=topic or "unknown")
             record_task_event("summarize_article", "ok", f"article:{article_id}")
             log.info(f"Successfully summarized article {article_id} (provider: {provider})")
+            
+            # Post-summarize triggers
+            extract_entities_task.delay()
+            classify_topics_task.delay()
         else:
             fallback = summarize_article_fallback(title, context_text, topic=topic)
             if fallback:
@@ -160,19 +164,19 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 r = related[0]
                 prev_text = r['generated_article'] or r['summary']
                 if prev_text:
-                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n{prev_text[:1000]}"
+                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n[START_HISTORICAL_CONTEXT]\n{prev_text[:1000]}\n[END_HISTORICAL_CONTEXT]"
     except Exception as e:
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
 
     try:
         from tasks.utils import record_task_event
-        full_prompt = f"{history_context}\n\nНОВИ СТАТИИ ОД ДЕНЕС:\n{content}"
+        full_prompt = f"{history_context}\n\nНОВИ СТАТИИ ОД ДЕНЕС:\n[START_NEW_ARTICLES]\n{content}\n[END_NEW_ARTICLES]"
         raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
         
         verification_report = None
         # Save tokens: only fact-check larger clusters (5+ sources)
         if len(article_rows) >= 5:
-            v_raw, _ = _call_ai(f"Статии за споредба:\n{content}", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck")
+            v_raw, _ = _call_ai(f"Статии за споредба:\n[START_COMPARISON_DATA]\n{content}\n[END_COMPARISON_DATA]", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck")
             if v_raw:
                 verification_report = clean_json_response(v_raw)
 
@@ -225,6 +229,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 if img_url:
                     db.execute("UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s LIMIT 1)", (img_url, cluster_id), fetch=False)
             invalidate_cluster_caches(cluster_id)
+            generate_cluster_metadata_task.delay()
             record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
             log.info(f"Successfully synthesized cluster {cluster_id}")
         else:

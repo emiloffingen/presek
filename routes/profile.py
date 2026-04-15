@@ -8,6 +8,7 @@ from database import db_manager as db
 from utils import delete_cache
 from api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from .common import _normalize_sync_list, _extract_sync_token, _normalize_suggestion_surface, _normalize_suggestion_kind, _normalize_suggestion_event_type
+from .security import validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -113,6 +114,9 @@ async def get_vapid_key():
 async def get_profile_delivery(request: Request):
     token = _extract_sync_token(request)
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
+    # Validate token length
+    if len(token) < 12:
+        raise HTTPException(status_code=400, detail="Invalid sync token format")
     row = db.execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
     return {"status": "success", "subscription": _normalize_server_delivery_row(row), "updated_at": row.get("updated_at") if row else None}
 
@@ -124,6 +128,9 @@ async def save_profile_delivery(request: Request):
         raise HTTPException(status_code=400, detail="Invalid JSON")
     token = str(payload.get("token") or "").strip()
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
+    # Validate token length
+    if len(token) < 12:
+        raise HTTPException(status_code=400, detail="Invalid sync token format")
     if not db.execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
         raise HTTPException(status_code=400, detail="Invalid sync token")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
@@ -147,6 +154,9 @@ async def save_suggestion_events(request: Request):
     client_id = str(payload.get("clientId") or "").strip()[:64]
     events = payload.get("events") or []
     if not client_id or not events: raise HTTPException(status_code=400, detail="Missing data")
+    # Validate client_id
+    if len(client_id) < 1 or len(client_id) > 64:
+        raise HTTPException(status_code=400, detail="Invalid client ID")
     for item in events[:24]:
         surface = _normalize_suggestion_surface(item.get("surface"))
         etype = _normalize_suggestion_event_type(item.get("eventType"))

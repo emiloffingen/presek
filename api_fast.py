@@ -26,9 +26,12 @@ from database import db_manager as db
 from health import _probe_database, _probe_redis, get_source_statuses
 from ai_engine import _call_ai_async, clean_json_response
 from routes.common import (
-    _client_ip_for_request, _apply_security_headers, _is_rate_limited_path, 
-    _rate_limit_error_payload, _safe_tracking_redirect_path,
+    _client_ip_for_request, _rate_limit_error_payload, _safe_tracking_redirect_path,
     _resolve_public_ips, _peer_ip
+)
+from routes.security import (
+    SecurityHeadersMiddleware, RequestSizeMiddleware, EnhancedRateLimitMiddleware,
+    validate_cluster_id, validate_date, validate_email, verify_admin_token, require_admin_token
 )
 from routes import news, intelligence, profile, stats, system
 from routes.news import (
@@ -74,6 +77,10 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-Sync-Token", "X-Admin-Token", "X-Requested-With"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestSizeMiddleware)
 
 @app.middleware("http")
 async def apply_runtime_policies(request: Request, call_next):

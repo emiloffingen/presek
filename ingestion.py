@@ -372,11 +372,19 @@ async def ingest_all_sources_async():
     recent_by_source = defaultdict(set)
     lookback_time = datetime.datetime.now() - datetime.timedelta(hours=12)
     
-    with get_db() as conn:
-        rows = conn.execute(
+    with db.connection() as conn:
+        rows = conn.cursor().execute(
             "SELECT link, source, title FROM articles WHERE created_at >= %s",
             (lookback_time,)
-        ).fetchall()
+        ).fetchall() if hasattr(conn, "cursor") else conn.execute(
+            "SELECT link, source, title FROM articles WHERE created_at >= %s",
+            (lookback_time,)
+        ).fetchall() # Handle both manager/wrapper
+        
+        # Correction: DatabaseManager/Wrapper execute already returns dicts or objects.
+        # If using raw psycopg2 via db.connection(), we need to handle it.
+        from database import db_manager
+        rows = db_manager.execute("SELECT link, source, title FROM articles WHERE created_at >= %s", (lookback_time,))
         for r in rows:
             known_links.add(normalize_feed_link(r["link"]))
             recent_by_source[r["source"]].add(normalize_candidate_title(r["title"]))
@@ -398,6 +406,8 @@ async def ingest_all_sources_async():
         tasks = [fetch_feed_async(client, s) for s in sources]
         results = await asyncio.gather(*tasks)
         
+        from utils import redis_client
+        
         for source_name, entries, err in results:
             source_stats[source_name]["fetched"] = len(entries)
             if err:
@@ -406,40 +416,52 @@ async def ingest_all_sources_async():
                 errors.append((source_name, err))
                 continue
             
-            source_meta = next(s for s in sources if s['name'] == source_name)
-            for e in entries:
-                title = e.get("title", "").strip()
-                link = normalize_feed_link(e.get("link", ""))
-                title_key = normalize_candidate_title(title)
-
-                if not title or not link or link in known_links or link in seen_links:
+            # Per-source lock to prevent concurrent processing of the same feed across workers
+            lock_key = f"lock:ingest:source:{source_name}"
+            try:
+                if not redis_client.set(lock_key, "1", nx=True, ex=300):
+                    log.info(f"Source {source_name} is being processed by another worker, skipping.")
                     continue
-                
-                desc = e.get("summary", "") or e.get("description", "")
-                if is_junk(title, desc):
-                    continue
+            except Exception: pass
 
-                if not title_key:
-                    continue
+            try:
+                source_meta = next(s for s in sources if s['name'] == source_name)
+                for e in entries:
+                    title = e.get("title", "").strip()
+                    link = normalize_feed_link(e.get("link", ""))
+                    title_key = normalize_candidate_title(title)
 
-                if title_key in recent_by_source[source_name] or title_key in seen_titles_by_source[source_name]:
-                    continue
+                    if not title or not link or link in known_links or link in seen_links:
+                        continue
+                    
+                    desc = e.get("summary", "") or e.get("description", "")
+                    if is_junk(title, desc):
+                        continue
 
-                published_at = parse_entry_timestamp(e, fallback_now=cycle_now)
+                    if not title_key:
+                        continue
 
-                candidates.append({
-                    "source": source_name,
-                    "title": title,
-                    "link": link,
-                    "desc": desc,
-                    "image_url": extract_image_url(e),
-                    "country": source_meta['country'],
-                    "category": source_meta['category'],
-                    "created_at": published_at,
-                })
-                seen_links.add(link)
-                seen_titles_by_source[source_name].add(title_key)
-                source_stats[source_name]["accepted"] += 1
+                    if title_key in recent_by_source[source_name] or title_key in seen_titles_by_source[source_name]:
+                        continue
+
+                    published_at = parse_entry_timestamp(e, fallback_now=cycle_now)
+
+                    candidates.append({
+                        "source": source_name,
+                        "title": title,
+                        "link": link,
+                        "desc": desc,
+                        "image_url": extract_image_url(e),
+                        "country": source_meta['country'],
+                        "category": source_meta['category'],
+                        "created_at": published_at,
+                    })
+                    seen_links.add(link)
+                    seen_titles_by_source[source_name].add(title_key)
+                    source_stats[source_name]["accepted"] += 1
+            finally:
+                try: redis_client.delete(lock_key)
+                except Exception: pass
 
             if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
                 source_stats[source_name]["status"] = "warning"
@@ -448,12 +470,11 @@ async def ingest_all_sources_async():
 
     successful_sources = [name for name, stats in source_stats.items() if stats["fetched"] > 0 and not stats["error"]]
     if successful_sources:
-        with get_db() as conn:
-            conn.execute(
-                "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
-                (successful_sources,),
-            )
-            conn.commit()
+        db_manager.execute(
+            "UPDATE sources SET last_fetched = NOW() WHERE name = ANY(%s)",
+            (successful_sources,),
+            fetch=False
+        )
 
     if not candidates:
         for source_name, stats in source_stats.items():
@@ -477,12 +498,14 @@ async def ingest_all_sources_async():
     # 4. Clustering & DB Preparation
     # (Rest of the logic remains mostly same but wrapped in async orchestration)
     new_count = 0
-    with get_db() as conn:
-        recent_rows = conn.execute(
+    with db.connection() as conn:
+        from database import DictCursor
+        cur = conn.cursor(cursor_factory=DictCursor)
+        cur.execute(
             "SELECT title, cluster_id, created_at, category FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
-        ).fetchall()
-        recent_articles = [dict(r) for r in recent_rows]
+        )
+        recent_articles = [dict(r) for r in cur.fetchall()]
 
         from clustering import VECTOR_THRESHOLD
         prepared_rows = []
@@ -508,8 +531,7 @@ async def ingest_all_sources_async():
                             break
                 
                 if not cluster_id:
-                    # find_or_create_cluster is currently synchronous
-                    cluster_id = clustering.find_or_create_cluster(display_title, recent_articles, embedding=emb, category=category, source=c['source'])
+                    cluster_id = clustering.find_or_create_cluster(conn, display_title, recent_articles, embedding=emb, category=category, source=c['source'])
                 
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]

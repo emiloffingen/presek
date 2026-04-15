@@ -7,6 +7,8 @@ from io import BytesIO
 from PIL import Image
 from typing import Optional, Tuple
 
+from utils import _resolve_public_ips, _peer_ip
+
 log = logging.getLogger("presek.image_service")
 
 # Use absolute path linked to shared storage to persist across releases
@@ -41,12 +43,19 @@ class ImageService:
         # For now, let's keep it simple.
         
         try:
+            safe_ips = _resolve_public_ips(url)
             async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    return None
-                
-                content = resp.content
+                with client.stream("GET", url) as resp:
+                    p_ip = _peer_ip(resp)
+                    if not p_ip or p_ip not in safe_ips:
+                        log.warning(f"SSRF blocked for image {url}: {p_ip}")
+                        return None
+                    
+                    resp.read()
+                    if resp.status_code != 200:
+                        return None
+                    
+                    content = resp.content
                 if len(content) > _MAX_IMAGE_SIZE:
                     log.warning(f"Image too large: {url}")
                     return None

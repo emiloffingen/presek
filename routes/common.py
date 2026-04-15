@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 
 from database import db_manager as db
 from config import API_MAX_Q_LEN
+from utils import _resolve_public_ips, _peer_ip
 
 log = logging.getLogger("presek")
 
@@ -134,40 +135,6 @@ def _error_json(message: str, status_code: int, details=None):
         payload["details"] = details
     return JSONResponse(status_code=status_code, content=payload)
 
-def _resolve_public_ips(candidate_url: str):
-    parsed = urllib.parse.urlparse(candidate_url)
-    hostname = (parsed.hostname or "").lower()
-    if not hostname or hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
-        raise ValueError("Blocked URL")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    resolved = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-    safe = []
-    for info in resolved:
-        ip = info[4][0]
-        try:
-            addr = ipaddress.ip_address(ip)
-            if not (addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_reserved or addr.is_unspecified):
-                if ip not in safe: safe.append(ip)
-        except ValueError: continue
-    if not safe: raise PermissionError("Blocked URL")
-    return safe
-
-def _peer_ip(response):
-    try:
-        # httpx support
-        stream = getattr(response, "extensions", {}).get("network_stream")
-        if stream:
-            return stream.get_extra_info("server_addr")[0]
-        
-        # requests support
-        sock = None
-        raw = getattr(response, "raw", None)
-        if raw is not None:
-            conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
-            if conn is not None: sock = getattr(conn, "sock", None)
-        if sock is not None: return sock.getpeername()[0]
-    except Exception: pass
-    return None
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
     from nlp import is_valid_focus_entity

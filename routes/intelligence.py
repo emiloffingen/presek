@@ -76,6 +76,7 @@ async def semantic_search(q: str, limit: int = 20):
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
 from .common import cleanAndDecode, _is_valid_focus_entity
+from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -108,6 +109,9 @@ async def get_source_pulse():
 
 @router.get("/api/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
+    # Validate name parameter
+    name = validate_string_param(name, "name", max_length=200, allow_empty=False)
+    
     entity = db.execute_one("SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score FROM knowledge_entities WHERE name = %s", (name,))
     if not entity:
         if not db.execute_one("SELECT 1 FROM cluster_metadata WHERE %s = ANY(tags) LIMIT 1", (name,)):
@@ -115,6 +119,7 @@ async def get_entity_profile(name: str):
         entity = {"name": name, "type": "ENTITY", "total_mentions": 0, "first_seen": None, "last_seen": None, "sentiment_score": 0}
     
     relationships = db.execute("SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity, weight FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s ORDER BY weight DESC LIMIT 8", (name, name, name))
+    # Use parameterized queries for array contains
     media_stats = db.execute("SELECT a.source, COUNT(DISTINCT a.cluster_id) as mention_count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) GROUP BY a.source ORDER BY mention_count DESC LIMIT 5", (name,))
     category_stats = db.execute("SELECT a.category, COUNT(DISTINCT a.cluster_id) as count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) AND a.category IS NOT NULL AND a.category != '' GROUP BY a.category ORDER BY count DESC LIMIT 5", (name,))
     sentiment_history = db.execute("SELECT DATE(a.created_at) as day, AVG(CAST(s.sentiment->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE %s = ANY(m.tags) AND a.created_at >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC", (name,))
@@ -149,6 +154,8 @@ async def get_top_entities(limit: int = 10):
 
 @router.get("/api/intelligence/entity/{name}/topics")
 async def get_entity_topics(name: str):
+    # Validate name parameter
+    name = validate_string_param(name, "name", max_length=200, allow_empty=False)
     return {"status": "success", "data": db.execute("SELECT a.topic, COUNT(*) as count FROM articles a JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id WHERE ce.entity_name = %s AND a.topic IS NOT NULL GROUP BY a.topic ORDER BY count DESC LIMIT 5", (name,))}
 
 @router.get("/api/intelligence/live-map")
@@ -157,6 +164,10 @@ async def get_live_map():
 
 @router.get("/api/intelligence/compare-sources")
 async def compare_sources(s1: str, s2: str):
+    # Validate source names
+    s1 = validate_string_param(s1, "s1", max_length=100, allow_empty=False)
+    s2 = validate_string_param(s2, "s2", max_length=100, allow_empty=False)
+    
     rows = db.execute("SELECT a.source, AVG(CAST(s.sentiment->>'score' AS REAL)) as avg_sentiment, AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity, AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism, COUNT(DISTINCT a.cluster_id) as cluster_count FROM cluster_summaries s JOIN articles a ON s.cluster_id = a.cluster_id WHERE a.source = ANY(%s) AND s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '30 days' GROUP BY a.source", ([s1, s2],))
     overlap = db.execute_one("WITH src_c AS (SELECT source, cluster_id FROM articles WHERE source = ANY(%s) AND created_at >= NOW() - INTERVAL '30 days' GROUP BY source, cluster_id) SELECT COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NOT NULL) as shared_clusters, COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NULL) as s1_exclusive, COUNT(*) FILTER (WHERE s1.cluster_id IS NULL AND s2.cluster_id IS NOT NULL) as s2_exclusive FROM (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s1 FULL OUTER JOIN (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s2 ON s1.cluster_id = s2.cluster_id", ([s1, s2], s1, s2))
     return {"status": "success", "data": rows, "overlap": overlap}
@@ -167,9 +178,9 @@ async def get_personalized_recommendations(request: Request):
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    recent_ids = payload.get("recentlyRead", [])[:10]
-    followed = payload.get("followedTopics", [])
-    limit = min(int(payload.get("limit", 6)), 20)
+    recent_ids = validate_list_param(payload.get("recentlyRead", []), "recentlyRead", max_items=10, max_item_length=64)
+    followed = validate_list_param(payload.get("followedTopics", []), "followedTopics", max_items=10, max_item_length=100)
+    limit = min(max(1, int(payload.get("limit", 6))), 20)
     if not recent_ids and not followed: return {"status": "success", "clusters": []}
     user_vectors = []
     if recent_ids:

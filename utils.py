@@ -109,6 +109,48 @@ def delete_cache_prefix(prefix: str):
         log.warning(f"[cache] prefix delete error on {prefix}: {e}")
 
 
+def _resolve_public_ips(candidate_url: str):
+    import urllib.parse
+    import socket
+    import ipaddress
+    parsed = urllib.parse.urlparse(candidate_url)
+    hostname = (parsed.hostname or "").lower()
+    if not hostname or hostname in {"localhost", "metadata.google.internal", "metadata.internal"}:
+        raise ValueError("Blocked URL")
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        resolved = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise ValueError("Could not resolve hostname")
+        
+    safe = []
+    for info in resolved:
+        ip = info[4][0]
+        try:
+            addr = ipaddress.ip_address(ip)
+            if not (addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_reserved or addr.is_unspecified):
+                if ip not in safe: safe.append(ip)
+        except ValueError: continue
+    if not safe: raise PermissionError("Blocked URL (Private/Reserved IP)")
+    return safe
+
+def _peer_ip(response):
+    try:
+        # httpx support
+        stream = getattr(response, "extensions", {}).get("network_stream")
+        if stream:
+            return stream.get_extra_info("server_addr")[0]
+        
+        # requests support
+        sock = None
+        raw = getattr(response, "raw", None)
+        if raw is not None:
+            conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+            if conn is not None: sock = getattr(conn, "sock", None)
+        if sock is not None: return sock.getpeername()[0]
+    except Exception: pass
+    return None
+
 def record_runtime_event(event: str, **fields):
     event = str(event or "").strip()
     if not event:

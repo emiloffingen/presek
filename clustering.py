@@ -121,9 +121,8 @@ MAX_CLUSTER_SIZE     = 35
 # strict that it misses near-duplicate stories from different sources.
 VECTOR_THRESHOLD     = 0.30
 
-def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
+def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
     if not embedding: return None
-    conn = get_db()
     try:
         # Adaptive threshold based on category diversity
         threshold = VECTOR_THRESHOLD
@@ -146,22 +145,24 @@ def find_cluster_semantic(embedding: list[float], lookback_hours: int = 36, cate
             ORDER BY a.embedding <=> %s::vector
             LIMIT 1
         """
-        row = conn.execute(sql, tuple(params)).fetchone()
+        with conn.cursor() as cur:
+            cur.execute(sql, tuple(params))
+            row = cur.fetchone()
         
         if row and float(row['distance']) < threshold:
             # 2. Only check size for the single winner
             cid = row['cluster_id']
-            size_row = conn.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,)).fetchone()
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,))
+                size_row = cur.fetchone()
             if size_row and int(size_row['n']) < MAX_CLUSTER_SIZE:
                 return cid
     except Exception as e:
         import logging
         logging.getLogger("presek").error(f"[clustering] Semantic lookup failed: {e}")
-    finally:
-        conn.close()
     return None
 
-def find_or_create_cluster(title: str, recent_articles: list, 
+def find_or_create_cluster(conn, title: str, recent_articles: list, 
                             threshold: float = SIMILARITY_THRESHOLD,
                             embedding: list[float] | None = None,
                             category: str | None = None,
@@ -177,7 +178,7 @@ def find_or_create_cluster(title: str, recent_articles: list,
     
     # 2. Semantic Search
     if embedding:
-        cid = find_cluster_semantic(embedding, category=category)
+        cid = find_cluster_semantic(conn, embedding, category=category)
         if cid: return cid
 
     # 3. TF-IDF Hybrid Fallback

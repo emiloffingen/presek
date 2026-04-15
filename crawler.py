@@ -8,6 +8,8 @@ import httpx
 import trafilatura
 from playwright.async_api import async_playwright
 
+from utils import _resolve_public_ips, _peer_ip
+
 log = logging.getLogger("presek.crawler")
 
 class CrawlerService:
@@ -34,11 +36,21 @@ class CrawlerService:
 
         # 1. Fast path: HTTPX + Trafilatura
         try:
+            safe_ips = _resolve_public_ips(url)
             async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                html_content = resp.text
-                final_url = str(resp.url)
+                with client.stream("GET", url) as resp:
+                    p_ip = _peer_ip(resp)
+                    if not p_ip or p_ip not in safe_ips:
+                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
+                        return await self._extract_headless(url)
+                    
+                    resp.read()
+                    resp.raise_for_status()
+                    html_content = resp.text
+                    final_url = str(resp.url)
+        except (ValueError, PermissionError) as e:
+            log.warning(f"SSRF blocked for {url}: {e}")
+            return {"url": url, "error": f"Security block: {e}"}
         except Exception as e:
             log.warning(f"Fast crawl failed for {url}: {e}")
             # If even the basic GET fails, we definitely want to try the "heavy" path
@@ -84,6 +96,9 @@ class CrawlerService:
         result = {"url": url, "method": "headless"}
         
         try:
+            # SSRF Protection
+            _resolve_public_ips(url)
+            
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 # Set a common viewport and user agent
@@ -144,6 +159,9 @@ class CrawlerService:
         log.info(f"Searching for feeds on {homepage_url}")
         feeds = []
         try:
+            # SSRF Protection
+            _resolve_public_ips(homepage_url)
+
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page(user_agent=self.headers["User-Agent"])

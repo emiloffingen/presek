@@ -17,6 +17,7 @@ from health import get_source_statuses, reset_source_policy
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from nlp import generate_daily_brief_fallback
 from .common import _source_admin_authorized, _error_json
+from .security import validate_date, validate_cluster_id, require_admin_token, verify_admin_token, validate_string_param, validate_email
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -48,12 +49,27 @@ async def get_archive_heatmap():
 @router.get("/api/archive")
 async def get_archive(date: str = Query(...), source: str = "", topic: str = "", page: int = 0, page_size: int = 50):
     try:
-        datetime.datetime.strptime(date, '%Y-%m-%d')
-        where = ["created_at::date = %s"]; params = [date]
-        if source: where.append("source = %s"); params.append(source)
-        if topic: where.append("topic = %s"); params.append(topic)
-        where_sql = " AND ".join(where)
-        rows = db.execute(f"SELECT * FROM articles WHERE {where_sql} ORDER BY created_at DESC LIMIT 1500", tuple(params))
+        # Validate inputs
+        validate_date(date)
+        source = validate_string_param(source, "source", max_length=200, allow_empty=True)
+        topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
+        
+        if page < 0 or page > 1000:
+            raise HTTPException(status_code=400, detail="Invalid page number")
+        if page_size < 1 or page_size > 50:
+            raise HTTPException(status_code=400, detail="Invalid page_size (1-50)")
+        
+        # Build parameterized query safely
+        base_sql = "SELECT * FROM articles WHERE created_at::date = %s"
+        params = [date]
+        if source:
+            base_sql += " AND source = %s"
+            params.append(source)
+        if topic:
+            base_sql += " AND topic = %s"
+            params.append(topic)
+        base_sql += " ORDER BY created_at DESC LIMIT 1500"
+        rows = db.execute(base_sql, tuple(params))
         clusters = defaultdict(list)
         for r in rows:
             r["reading_time"] = calculate_reading_time(r.get("description", ""))
@@ -64,17 +80,63 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
         paged = ranked[offset: offset + page_size]
         cids = [c[0]["cluster_id"] for c in paged]
         s_ids = set(db.get_synthesis_ids(cids)) if cids else set()
-        rep_images = {r["cluster_id"]: r["representative_image"] for r in db.execute("SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids or [""],))} if cids else {}
-        payload = [{"cluster_id": c[0]["cluster_id"], "articles": c, "representative_image": rep_images.get(c[0]["cluster_id"]), "reading_time": c[0].get("reading_time", 1), "score": round(score_cluster(c), 3), "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD, "has_synthesis": c[0]["cluster_id"] in s_ids, "has_balanced": is_balanced(c)} for c in paged]
+        rep_images = {r["cluster_id"]: r["representative_image"] for r in db.execute("SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))} if cids else {}
+        payload = [{"cluster_id": c[0]["cluster_id"], "articles": c, "representative_image": rep_images.get(c[0]["cluster_id"]), "reading_time": c[0].get('reading_time', 1), "score": round(score_cluster(c), 3), "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD, "has_synthesis": c[0]["cluster_id"] in s_ids, "has_balanced": is_balanced(c)} for c in paged]
+        
+        # Build count queries safely
+        count_sql = "SELECT COUNT(*) FROM articles WHERE created_at::date = %s"
+        count_params = [date]
+        if source:
+            count_sql += " AND source = %s"
+            count_params.append(source)
+        if topic:
+            count_sql += " AND topic = %s"
+            count_params.append(topic)
+        
+        dist_source_sql = "SELECT COUNT(DISTINCT source) FROM articles WHERE created_at::date = %s"
+        dist_source_params = [date]
+        if source:
+            dist_source_sql += " AND source = %s"
+            dist_source_params.append(source)
+        if topic:
+            dist_source_sql += " AND topic = %s"
+            dist_source_params.append(topic)
+        
+        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at::date = %s"
+        group_source_params = [date]
+        if source:
+            group_source_sql += " AND source = %s"
+            group_source_params.append(source)
+        if topic:
+            group_source_sql += " AND topic = %s"
+            group_source_params.append(topic)
+        group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
+        
+        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at::date = %s"
+        group_topic_params = [date]
+        if source:
+            group_topic_sql += " AND source = %s"
+            group_topic_params.append(source)
+        if topic:
+            group_topic_sql += " AND topic = %s"
+            group_topic_params.append(topic)
+        group_topic_sql += " GROUP BY topic ORDER BY n DESC LIMIT 8"
+        
         return {
-            "clusters": payload, "total": db.execute_one(f"SELECT COUNT(*) FROM articles WHERE {where_sql}", tuple(params))["count"],
-            "sources": db.execute_one(f"SELECT COUNT(DISTINCT source) FROM articles WHERE {where_sql}", tuple(params))["count"],
-            "date": date, "source": source, "topic": topic, "page": page, "page_size": page_size, "has_more": offset + page_size < len(ranked), "total_clusters": len(ranked),
-            "top_sources": db.execute(f"SELECT source, COUNT(*) AS n FROM articles WHERE {where_sql} GROUP BY source ORDER BY n DESC LIMIT 8", tuple(params)),
-            "top_topics": db.execute(f"SELECT topic, COUNT(*) AS n FROM articles WHERE {where_sql} GROUP BY topic ORDER BY n DESC LIMIT 8", tuple(params))
+            "clusters": payload, 
+            "total": db.execute_one(count_sql, tuple(count_params))["count"],
+            "sources": db.execute_one(dist_source_sql, tuple(dist_source_params))["count"],
+            "date": date, "source": source, "topic": topic, "page": page, "page_size": page_size, 
+            "has_more": offset + page_size < len(ranked), 
+            "total_clusters": len(ranked),
+            "top_sources": db.execute(group_source_sql, tuple(group_source_params)),
+            "top_topics": db.execute(group_topic_sql, tuple(group_topic_params))
         }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     except Exception as e:
-        log.error(f"Archive Error: {e}"); return {"status": "error", "message": "Failed to load archive"}
+        log.error(f"Archive Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load archive")
 
 @router.get("/api/stats")
 async def get_stats_route():
@@ -98,8 +160,7 @@ async def subscribe_newsletter(request: Request):
         body = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    email = str(body.get("email", "")).strip().lower()
-    if not email or "@" not in email or len(email) > 254: return {"status": "error", "message": "Невалидна е-пошта."}
+    email = validate_email(body.get("email", ""), "email")
     try:
         db.execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
     except Exception as e:

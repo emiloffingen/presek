@@ -102,22 +102,18 @@ for name, mod in _get_fake_fastapi_modules().items():
 
 @pytest.fixture
 def mock_all():
+    import database
     m_db = MagicMock()
     m_ai = AsyncMock(return_value=('{"answer":"ok"}', "prov"))
     
-    # Patch everything
-    with patch("api_fast.db", m_db), \
-         patch("routes.news.db", m_db), \
-         patch("routes.intelligence.db", m_db), \
-         patch("routes.profile.db", m_db), \
-         patch("routes.stats.db", m_db), \
-         patch("routes.system.db", m_db), \
+    # Patch everything - use importlib to patch database module
+    with patch.dict("sys.modules", {"database": MagicMock(db_manager=m_db)}), \
          patch("ai_engine._call_ai_async", m_ai):
-         yield {"db": m_db, "ai": m_ai}
+        # Set up hybrid_search mock
+        m_db.hybrid_search.return_value = []
+        yield {"db": m_db, "ai": m_ai}
 def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
-
     import api_fast
-    mock_all["db"].hybrid_search.return_value = []
     with patch("routes.news.cached_response", return_value=None):
         asyncio.run(api_fast.get_news(q="економија", page=3, page_size=25))
     assert mock_all["db"].hybrid_search.called
@@ -157,5 +153,5 @@ def test_fastapi_serves_og_cluster_image(mock_all):
     mock_all["db"].execute.return_value = [{"title": "T1", "source":"S1", "category":"C1"}]
     
     with patch("PIL.Image.new"), patch("PIL.ImageDraw.Draw"), patch("PIL.ImageFont.truetype"):
-        resp = asyncio.run(api_fast.og_cluster_image("c"))
+        resp = asyncio.run(api_fast.og_cluster_image("abc123"))
     assert resp.media_type == "image/png"

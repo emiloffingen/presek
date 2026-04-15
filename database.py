@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
+from contextlib import contextmanager
 from collections import defaultdict
 import datetime
 import logging
@@ -74,8 +75,9 @@ class DatabaseManager:
 
     def execute(self, sql, params=None, fetch=True):
         """Standardized query execution with automatic connection release."""
-        conn = self.get_conn()
+        conn = None
         try:
+            conn = self.get_conn()
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(sql, params)
                 results = None
@@ -84,15 +86,26 @@ class DatabaseManager:
                 conn.commit()
                 return results if fetch else cur.rowcount
         except Exception as e:
-            conn.rollback()
+            if conn:
+                conn.rollback()
             log.error(f"Presek 4.0 DB Error: {e}")
             raise
         finally:
-            self.put_conn(conn)
+            if conn:
+                self.put_conn(conn)
 
     def execute_one(self, sql, params=None):
         results = self.execute(sql, params)
         return results[0] if results else None
+
+    @contextmanager
+    def connection(self):
+        """Context manager for obtaining and returning a connection."""
+        conn = self.get_conn()
+        try:
+            yield conn
+        finally:
+            self.put_conn(conn)
 
     # --- High-Level DAL Methods ---
 

@@ -26,9 +26,10 @@ from nlp import generate_local_placeholder
 from ai_engine import _call_ai_async
 from prompts import SYNTHESIS_SYSTEM_PROMPT
 from .common import (
-    _apply_security_headers, _error_json, _resolve_public_ips, _peer_ip, 
+    _error_json, _resolve_public_ips, _peer_ip, 
     _preferred_cluster_headline, cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
 )
+from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -146,6 +147,9 @@ async def get_navigation():
 
 @router.get("/api/cluster/{cluster_id}/share-card")
 async def get_cluster_share_card(cluster_id: str):
+    # Validate cluster_id
+    validate_cluster_id(cluster_id)
+    
     from PIL import Image, ImageDraw, ImageFont
     import textwrap
     arts = db.execute("SELECT title, original_title, is_translated, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))

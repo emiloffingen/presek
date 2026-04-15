@@ -26,6 +26,7 @@ from api_helpers import (
     normalize_perspectives as _parse_perspectives_blob,
 )
 from .common import cleanAndDecode, _news_row_limit
+from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -55,13 +56,21 @@ async def get_news(
             query_vec = generate_query_embedding(q)
             rows = db.hybrid_search(q, query_vec, limit=row_limit) if query_vec else db.search_articles(q, limit=row_limit)
         elif entity:
-            rows = db.execute("SELECT a.* FROM articles a JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id WHERE ce.entity_name = %s ORDER BY a.created_at DESC LIMIT %s", (entity, row_limit))
+            rows = db.execute("SELECT cluster_id FROM cluster_entities ce WHERE ce.entity_name = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = ce.cluster_id) DESC LIMIT %s", (entity, page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
-            rows = db.execute("SELECT * FROM articles WHERE topic = %s ORDER BY created_at DESC LIMIT %s", (topic, row_limit))
+            rows = db.execute("SELECT DISTINCT cluster_id FROM articles WHERE topic = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (topic, page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:
-            rows = db.execute("SELECT * FROM articles WHERE category = %s ORDER BY created_at DESC LIMIT %s", (category, row_limit))
+            rows = db.execute("SELECT DISTINCT cluster_id FROM articles WHERE category = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (category, page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         else:
-            rows = db.execute("SELECT * FROM articles ORDER BY created_at DESC LIMIT %s", (row_limit,))
+            rows = db.execute("SELECT DISTINCT cluster_id FROM articles ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (page_size * (page + 1),))
+            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
 
         clusters = defaultdict(list)
         cluster_relevance = {}
@@ -121,8 +130,8 @@ async def get_news(
 
 @router.get("/api/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str):
-    if not cluster_id or not re.match(r'^[a-f0-9]{6,64}$', cluster_id):
-        raise HTTPException(status_code=400, detail="Invalid cluster ID")
+    # Validate cluster_id
+    validate_cluster_id(cluster_id)
     try:
         rows = db.execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
         if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
