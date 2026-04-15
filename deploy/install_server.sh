@@ -19,6 +19,7 @@ SITE_NAME="$DOMAIN.conf"
 SITE_AVAILABLE="/etc/nginx/sites-available/$SITE_NAME"
 SITE_ENABLED="/etc/nginx/sites-enabled/$SITE_NAME"
 REALIP_SNIPPET="/etc/nginx/snippets/cloudflare-realip.conf"
+SECURITY_SNIPPET="/etc/nginx/snippets/presek-security-headers.conf"
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1" >&2; exit 1; }
@@ -92,6 +93,7 @@ main() {
 
     replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
     cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
+    cp "$NGINX_DIR/security-headers.conf" "$SECURITY_SNIPPET"
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
 
     nginx -t

@@ -88,7 +88,7 @@ run_release_checks() {
   if [ "$RUN_TESTS" = "1" ]; then
     [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL must be set when RUN_TESTS=1"
     info "Running pytest before switch"
-    (cd "$SOURCE_ROOT" && pytest -q)
+    (cd "$SOURCE_ROOT" && "$VENV_DIR/bin/pytest" -q)
   fi
 }
 
