@@ -8,7 +8,10 @@ from typing import Optional, Tuple
 
 log = logging.getLogger("presek.image_service")
 
-_UPLOAD_ROOT = "static/uploads"
+# Use absolute path linked to shared storage to persist across releases
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+_UPLOAD_ROOT = os.path.join(_PROJECT_ROOT, "static", "uploads")
+
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 _MIN_DIMENSION = 200  # Skip tiny logos/icons
 _TARGET_WIDTH = 1200  # High-res "master" for the proxy to use
@@ -98,7 +101,7 @@ class ImageService:
                             continue
 
             # 2. Log Pruning (Keep last 10MB of logs if they grow too large)
-            log_dir = "logs"
+            log_dir = os.path.join(_PROJECT_ROOT, "logs")
             if os.path.exists(log_dir):
                 for log_file in os.listdir(log_dir):
                     path = os.path.join(log_dir, log_file)
