@@ -66,7 +66,7 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None):
         sentence_words = _sentence_tokens(sentence)
         if not sentence_words: continue
 
-        if _is_noisy_summary_sentence(sentence, title_terms=title_terms if i > 0 else None):
+        if _is_noisy_summary_sentence(sentence):
             continue
 
         score = sum(word_freq.get(word, 0) for word in sentence_words)
@@ -211,7 +211,7 @@ def synthesize_cluster_fallback(articles):
     common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
     compact_context = " ".join(_coerce_grounded_snippet(line).rstrip(".") for line in context_summary.splitlines()[:2] if _coerce_grounded_snippet(line))
     summary_lines = [f"• Што се случува: {lead['title']}"]
-    if common_line: summary_lines.append(f"• Заедничка линија: {common_line}")
+    if common_line: summary_lines.append(f"• Што е потврдено: {common_line}")
     elif compact_context: summary_lines.append(f"• Што е потврдено: {compact_context}.")
     summary_lines.append(f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}.")
     if comparison["difference_points"]: summary_lines.append(f"• Каде се разликуваат изворите: {comparison['difference_points'][0]}")
@@ -219,6 +219,7 @@ def synthesize_cluster_fallback(articles):
     perspectives = []
     if common_line: perspectives.append({"angle": "Заедничка линија", "content": common_line})
     if comparison["difference_points"]: perspectives.append({"angle": "Различни акценти", "content": " ".join(comparison["difference_points"][:2])})
+    if comparison.get("open_points"): perspectives.append({"angle": "Што останува отворено", "content": comparison["open_points"][0]})
     summary = "\n".join(summary_lines[:6])
     if _is_low_quality_local_text(summary):
         summary = _build_minimum_cluster_summary(articles, comparison=comparison)

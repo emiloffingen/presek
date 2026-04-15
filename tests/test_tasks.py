@@ -396,7 +396,7 @@ class TestProfileDeliveryTasks:
         assert "Lead weekly story" in message
 
     def test_select_profile_weekly_clusters_avoids_duplicate_heavy_same_topic_mix(self):
-        import tasks
+        import tasks.delivery
 
         clusters = [
             {
@@ -430,9 +430,9 @@ class TestProfileDeliveryTasks:
 
         profile = {"followedTopics": ["Политика", "Економија"], "followedSources": []}
 
-        with patch.object(tasks, "_load_weekly_digest_clusters", return_value=clusters), \
-             patch.object(tasks, "_load_weekly_cluster_engagement", return_value={}):
-            result = tasks._select_profile_weekly_clusters(profile, limit=3)
+        with patch("tasks.delivery._load_weekly_digest_clusters", return_value=clusters), \
+             patch("tasks.delivery._load_weekly_cluster_engagement", return_value={}):
+            result = tasks.delivery._select_profile_weekly_clusters(profile, limit=3)
 
         returned_topics = [item["topic"] for item in result]
         assert "Економија" in returned_topics

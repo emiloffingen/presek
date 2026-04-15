@@ -166,15 +166,16 @@ class TestClusterComparison:
         assert any("120" in item or "Стопанската комора" in item for item in result["open_points"])
 
     def test_compare_cluster_sources_reuses_cached_result_for_same_articles(self, monkeypatch):
-        local_nlp._comparison_cache.clear()
+        import nlp.generation
+        nlp.generation._comparison_cache.clear()
         calls = {"count": 0}
-        original = local_nlp.extract_keyphrases_locally
+        original = nlp.generation.extract_keyphrases_locally
 
         def counting_extract(*args, **kwargs):
             calls["count"] += 1
             return original(*args, **kwargs)
 
-        monkeypatch.setattr(local_nlp, "extract_keyphrases_locally", counting_extract)
+        monkeypatch.setattr(nlp.generation, "extract_keyphrases_locally", counting_extract)
         articles = [
             {
                 "source": "МИА",
@@ -255,12 +256,13 @@ class TestClusterComparison:
         assert "Пакетот" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
+        import nlp.generation
         events = []
 
         def record(event, **fields):
             events.append((event, fields))
 
-        monkeypatch.setattr(local_nlp, "record_runtime_event", record)
+        monkeypatch.setattr(nlp.generation, "record_runtime_event", record)
         articles = [
             {
                 "source": "МИА",
@@ -337,7 +339,7 @@ class TestLocalMacedonianRewrite:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Заедничка линија" in result["summary"]
+        assert "Што е потврдено" in result["summary"]
         assert "Што се случува" in result["summary"]
         assert "Покриеност" in result["summary"]
 
