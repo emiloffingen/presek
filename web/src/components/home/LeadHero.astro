@@ -484,65 +484,63 @@ const tintColor = dominantColor || '#1e40af';
 
 	@media (max-width: 639px) {
 		.lead-hero {
-			gap: 0.62rem;
+			gap: 0.75rem;
 		}
 
 		.lead-copy {
-			display: grid;
-			gap: 0.45rem;
+			display: flex;
+            flex-direction: column;
+			gap: 0.4rem;
 		}
 
 		.lead-headline {
-			font-size: clamp(1.68rem, 1.32rem + 0.86vw, 2.16rem);
-			line-height: 0.96;
-			margin: 0.06rem 0 0.14rem;
+			font-size: clamp(1.8rem, 6vw, 2.2rem);
+			line-height: 1.05;
+			margin: 0.1rem 0 0.2rem;
 			max-width: none;
 		}
 
 		.lead-headline-cyrillic {
-			line-height: 1.01;
+			line-height: 1.08;
 		}
 
 		.lead-media-frame {
 			aspect-ratio: 16 / 9;
-			height: 250px;
+			height: auto;
+            max-height: 220px;
 		}
 
 		.lead-media-placeholder {
-			padding: 0.8rem;
+			padding: 1rem;
 		}
 
 		.lead-media-placeholder h2 {
-			font-size: 1.05rem;
-		}
-
-		.lead-media-fallback-title {
-			font-size: 0.9rem;
-			max-width: 16ch;
+			font-size: 1.25rem;
 		}
 
 		.lead-summary {
-			font-size: 0.9rem;
-			line-height: 1.4;
+			font-size: 0.94rem;
+			line-height: 1.5;
 			-webkit-line-clamp: 3;
+            margin-bottom: 0.5rem;
 		}
 
 		.lead-signal {
-			font-size: 0.58rem;
+			font-size: 0.6rem;
 		}
 
 		.lead-meta {
-			margin-top: 0.2rem;
-			font-size: 0.63rem;
+			margin-top: 0.1rem;
+			font-size: 0.65rem;
 		}
 
 		.lead-related {
-			margin-top: 0.15rem;
+			margin-top: 0.25rem;
 		}
 
 		.lead-related a {
-			padding: 0.46rem 0;
-			font-size: 0.84rem;
+			padding: 0.6rem 0;
+			font-size: 0.9rem;
 		}
 	}
 </style>

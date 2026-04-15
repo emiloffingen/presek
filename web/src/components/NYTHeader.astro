@@ -245,14 +245,14 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 
     /* ── Topbar ───────────────────────────────────────── */
     .topbar {
-        padding: 0.35rem 0;
+        padding: 0.5rem 0;
         border-bottom: 1px solid var(--border);
     }
 
     .topbar-row {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 0.75rem;
     }
 
@@ -263,15 +263,10 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     }
 
     .topbar-center {
-        display: flex;
-        justify-content: center;
-    }
-
-    .topbar-right {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.5rem;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        pointer-events: none;
     }
 
     .topbar-brand-link {
@@ -279,23 +274,38 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
         align-items: center;
         gap: 0.5rem;
         text-decoration: none;
+        pointer-events: auto;
     }
 
     .topbar-emblem {
-        height: 1.1rem;
+        height: 1.2rem;
         flex-shrink: 0;
-        display: none;
-    }
-
-    @media (min-width: 641px) {
-        .topbar-emblem {
-            display: block;
-        }
     }
 
     .topbar-logo {
-        height: 1.35rem;
+        height: 1.45rem;
         flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+        .topbar-logo, .topbar-emblem {
+            display: none;
+        }
+        .topbar-center::after {
+            content: "ПРЕСЕК";
+            display: block;
+            font-family: var(--font-serif);
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: 0.05em;
+            color: var(--foreground);
+        }
+    }
+
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .topbar-date {
