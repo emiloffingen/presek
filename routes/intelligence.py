@@ -5,6 +5,73 @@ from typing import Optional, List
 from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
+from embeddings import generate_query_embedding
+from typing import List, Optional
+
+@router.get("/storylines/recent")
+async def get_recent_storylines(limit: int = 10):
+    """Fetch recently active long-term storylines."""
+    return db.execute("""
+        SELECT s.*, 
+               (SELECT COUNT(*) FROM storyline_clusters WHERE storyline_id = s.id) as cluster_count
+        FROM storylines s
+        WHERE s.is_active = TRUE
+        ORDER BY s.last_activity DESC
+        LIMIT %s
+    """, (limit,))
+
+@router.get("/storyline/{storyline_id}")
+async def get_storyline_detail(storyline_id: int):
+    """Fetch a storyline and its constituent clusters for a timeline view."""
+    story = db.execute_one("SELECT * FROM storylines WHERE id = %s", (storyline_id,))
+    if not story:
+        return {"error": "Storyline not found"}
+    
+    clusters = db.execute("""
+        SELECT c.*, sc.relevance_score
+        FROM storyline_clusters sc
+        JOIN cluster_summaries c ON sc.cluster_id = c.cluster_id
+        WHERE sc.storyline_id = %s
+        ORDER BY c.created_at ASC
+    """, (storyline_id,))
+    
+    return {"story": story, "timeline": clusters}
+
+@router.get("/media-pulse")
+async def get_media_pulse():
+    """Daily sentiment and bias radar data."""
+    return db.execute("""
+        SELECT a.category, 
+               AVG((cs.sentiment->>'score')::float) as avg_sentiment,
+               COUNT(DISTINCT a.source) as source_diversity,
+               COUNT(*) as article_count
+        FROM articles a
+        JOIN cluster_summaries cs ON a.cluster_id = cs.cluster_id
+        WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY a.category
+        HAVING COUNT(*) > 5
+    """)
+
+@router.get("/entity/{name}/power-map")
+async def get_entity_power_map(name: str, limit: int = 6):
+    """Fetch related entities from the knowledge graph."""
+    return db.execute("""
+        SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
+               weight
+        FROM knowledge_relationships
+        WHERE entity_a = %s OR entity_b = %s
+        ORDER BY weight DESC
+        LIMIT %s
+    """, (name, name, name, limit))
+
+@router.get("/search/semantic")
+async def semantic_search(q: str, limit: int = 20):
+    """AI-powered search using the HNSW vector index."""
+    embedding = generate_query_embedding(q)
+    if not embedding:
+        return {"error": "Could not generate embedding"}
+    
+    return db.search_semantic(embedding, limit=limit)
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
 from .common import cleanAndDecode, _is_valid_focus_entity
