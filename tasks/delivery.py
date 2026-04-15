@@ -266,6 +266,8 @@ def _load_weekly_cluster_engagement(days=45):
         "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
         (days,),
     )
+    # (No debug)
+    
     child_rows = db.execute(
         "SELECT parent_event_id, event_type "
         "FROM delivery_tracking_events "
@@ -290,6 +292,8 @@ def _load_weekly_cluster_engagement(days=45):
     for row in send_rows or []:
         event_id = int(row.get("id") or 0)
         metadata = row.get("metadata") or {}
+        # (No debug)
+        
         if isinstance(metadata, str):
             try:
                 metadata = json.loads(metadata)
@@ -304,6 +308,10 @@ def _load_weekly_cluster_engagement(days=45):
             clean_id = str(row.get("cluster_id") or "").strip()
             if clean_id:
                 cluster_ids.append(clean_id)
+        
+        # DEBUG
+        # log.info(f"DEBUG: cluster_ids={cluster_ids}")
+        
         if not cluster_ids:
             continue
 
@@ -314,6 +322,9 @@ def _load_weekly_cluster_engagement(days=45):
             bucket["opens"] += child_stats["opens"]
             bucket["clicks"] += child_stats["clicks"]
 
+    # DEBUG
+    # log.info(f"DEBUG: engagement_keys={list(engagement.keys())}")
+    
     for cluster_id, bucket in engagement.items():
         sends = int(bucket.get("sends") or 0)
         opens = int(bucket.get("opens") or 0)
@@ -709,14 +720,15 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     if not clean_topic or not clean_message:
         return False
 
-    headers = {
-        "Title": str(title or "Пресек").strip()[:120],
-        "Tags": str(tags or "newspaper"),
-        "Priority": "default",
+    params = {
+        "title": str(title or "Пресек").strip()[:120],
+        "tags": str(tags or "newspaper"),
+        "priority": "default",
     }
     if click_url:
-        headers["Click"] = str(click_url).strip()[:500]
+        params["click"] = str(click_url).strip()[:500]
     
+    headers = {}
     if NTFY_TOKEN:
         headers["Authorization"] = f"Bearer {NTFY_TOKEN}"
 
@@ -726,6 +738,7 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
             resp = client.post(
                 url,
                 content=clean_message.encode("utf-8"),
+                params=params,
                 headers=headers,
             )
             resp.raise_for_status()

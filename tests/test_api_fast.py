@@ -60,7 +60,13 @@ class _FakeJSONResponse(_FakeResponse):
         super().__init__(content, "application/json", {}, status_code)
 
 def _get_fake_fastapi_modules():
-    f = types.ModuleType("fastapi")
+    import importlib.machinery
+    def make_mod(name):
+        m = types.ModuleType(name)
+        m.__spec__ = importlib.machinery.ModuleSpec(name, None)
+        return m
+
+    f = make_mod("fastapi")
     f.FastAPI = _FakeFastAPI
     class _FakeRouter:
         def get(self, *args, **kwargs):
@@ -78,17 +84,21 @@ def _get_fake_fastapi_modules():
     f.Depends = MagicMock
     f.Form = MagicMock
     f.Header = MagicMock
-    r = types.ModuleType("fastapi.responses")
+    
+    r = make_mod("fastapi.responses")
     r.JSONResponse = _FakeJSONResponse
     r.RedirectResponse = MagicMock
     r.FileResponse = MagicMock
     r.StreamingResponse = MagicMock
     r.Response = _FakeResponse
-    mc = types.ModuleType("fastapi.middleware.cors")
+    
+    mc = make_mod("fastapi.middleware.cors")
     mc.CORSMiddleware = MagicMock
-    mg = types.ModuleType("fastapi.middleware.gzip")
+    
+    mg = make_mod("fastapi.middleware.gzip")
     mg.GZipMiddleware = MagicMock
-    m = types.ModuleType("fastapi.middleware")
+    
+    m = make_mod("fastapi.middleware")
     return {
         "fastapi": f,
         "fastapi.responses": r,

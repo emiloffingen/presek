@@ -62,12 +62,12 @@ def test_find_or_create_cluster():
 
     # Should match cluster 1 (use very similar words to pass threshold 0.35)
     title1 = "Владата донесе мерка за економијата"
-    cid1 = find_or_create_cluster(title1, recent_articles)
+    cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 == "c1"
 
     # Should create new cluster
     title2 = "Временска прогноза за утре"
-    cid2 = find_or_create_cluster(title2, recent_articles)
+    cid2 = find_or_create_cluster(MagicMock(), title2, recent_articles)
     assert cid2 != "c1"
     assert cid2 != "c2"
 
@@ -76,19 +76,19 @@ def test_max_cluster_size():
     # Mocking a full cluster
     recent_articles = [{"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"}] * 30
     title1 = "Мерки на владата за економија"
-    cid1 = find_or_create_cluster(title1, recent_articles)
+    cid1 = find_or_create_cluster(MagicMock(), title1, recent_articles)
     assert cid1 != "c1" # Should not join full cluster
 
 
 def test_empty_title_creates_new_cluster():
     """Empty or very short title should create a new cluster."""
     recent = [{"cluster_id": "c1", "title": "Владата донесе мерка"}]
-    cid = find_or_create_cluster("", recent)
+    cid = find_or_create_cluster(MagicMock(), "", recent)
     assert cid != "c1"
 
 def test_no_recent_articles():
     """With no recent articles, should always create new cluster."""
-    cid = find_or_create_cluster("Нова важна вест", [])
+    cid = find_or_create_cluster(MagicMock(), "Нова важна вест", [])
     assert len(cid) == 8  # uuid[:8]
 
 @patch(_DB_PATCH, _mock_db)
@@ -97,7 +97,7 @@ def test_completely_different_topic():
     recent = [
         {"cluster_id": "c1", "title": "Владата донесе нова мерка за економијата"},
     ]
-    cid = find_or_create_cluster("Фудбалски натпревар во Лига Шампиони", recent)
+    cid = find_or_create_cluster(MagicMock(), "Фудбалски натпревар во Лига Шампиони", recent)
     assert cid != "c1"
 
 def test_mk_stem_short_words_unchanged():
@@ -138,8 +138,8 @@ def test_cluster_age_decay():
         {"cluster_id": "c-new", "title": "Владата донесе нова мерка за економијата", "created_at": recent_time},
     ]
 
-    cid_old = find_or_create_cluster(title, recent_articles)
-    cid_new = find_or_create_cluster(title, fresh_articles)
+    cid_old = find_or_create_cluster(MagicMock(), title, recent_articles)
+    cid_new = find_or_create_cluster(MagicMock(), title, fresh_articles)
 
     # Fresh cluster should be matched, old cluster may not due to age penalty
     assert cid_new == "c-new"
@@ -152,5 +152,5 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
         {"cluster_id": "c2", "title": "Фудбалски натпревар во Скопје", "created_at": datetime.datetime.now()},
     ]
 
-    cid = find_or_create_cluster("Владата со пакет мерки за економија", recent_articles)
+    cid = find_or_create_cluster(MagicMock(), "Владата со пакет мерки за економија", recent_articles)
     assert cid == "c1"

@@ -373,16 +373,7 @@ async def ingest_all_sources_async():
     lookback_time = datetime.datetime.now() - datetime.timedelta(hours=12)
     
     with db.connection() as conn:
-        rows = conn.cursor().execute(
-            "SELECT link, source, title FROM articles WHERE created_at >= %s",
-            (lookback_time,)
-        ).fetchall() if hasattr(conn, "cursor") else conn.execute(
-            "SELECT link, source, title FROM articles WHERE created_at >= %s",
-            (lookback_time,)
-        ).fetchall() # Handle both manager/wrapper
-        
-        # Correction: DatabaseManager/Wrapper execute already returns dicts or objects.
-        # If using raw psycopg2 via db.connection(), we need to handle it.
+        # DatabaseManager/Wrapper execute already returns dicts or objects.
         from database import db_manager
         rows = db_manager.execute("SELECT link, source, title FROM articles WHERE created_at >= %s", (lookback_time,))
         for r in rows:
