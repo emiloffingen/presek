@@ -14,7 +14,8 @@ from tasks.intelligence import (
     generate_cluster_metadata_task,
     backfill_cover_art_single_task,
     backfill_cover_art_task,
-    generate_embeddings_task
+    generate_embeddings_task,
+    discover_storylines_task
 )
 from tasks.delivery import (
     generate_daily_brief_task,
@@ -45,6 +46,7 @@ __all__ = [
     'backfill_cover_art_single_task',
     'backfill_cover_art_task',
     'generate_embeddings_task',
+    'discover_storylines_task',
     'generate_daily_brief_task',
     'send_daily_digest_task',
     'send_telegram_briefing_task',

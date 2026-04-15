@@ -79,5 +79,9 @@ celery_app.conf.update(
             'task': 'tasks.auto_repair_sources_task',
             'schedule': crontab(hour='*/6', minute=30), # Every 6 hours
         },
+        'discover-storylines': {
+            'task': 'tasks.discover_storylines_task',
+            'schedule': crontab(minute='15', hour='*/2'), # Every 2 hours
+        },
     }
 )

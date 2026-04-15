@@ -454,3 +454,13 @@ def generate_embeddings_task():
         embed_recent_articles()
     except Exception as e:
         log.warning(f"[tasks] Embedding generation failed: {e}")
+
+@celery_app.task
+def discover_storylines_task():
+    """Discover evolving storylines from news clusters."""
+    try:
+        from topic_discovery import discovery_engine
+        discovery_engine.run_discovery(lookback_hours=48)
+        discovery_engine.refresh_storyline_metadata()
+    except Exception as e:
+        log.warning(f"[tasks] Storyline discovery failed: {e}")
