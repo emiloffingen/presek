@@ -163,6 +163,12 @@ const supportingCompact = supportingClusters.slice(2);
 const developmentsFeatured = continuingClusters.slice(0, 4);
 const developmentsCompact = continuingClusters.slice(4);
 
+// Extract cluster IDs to exclude from ForYou personalization to prevent duplication
+const excludedClusterIds = [
+  leadCluster?.cluster_id,
+  ...supportingClusters.map((c: any) => c.cluster_id)
+].filter(Boolean);
+
 function getTimeStr(dateStr: string) {
     try {
         const date = new Date(dateStr);
@@ -254,7 +260,7 @@ function getTimeStr(dateStr: string) {
 				)}
 
 				{clusters.length > 4 && (
-					<ForYouIsland client:visible clusters={forYouClusters} />
+					<ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
 				)}
 
 				{feedClusters.length > 0 && (

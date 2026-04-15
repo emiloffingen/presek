@@ -17,7 +17,7 @@ function getSummary(cluster: any) {
   return cleanAndDecode(article?.summary || article?.description || '');
 }
 
-export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
+export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: { clusters?: any[]; excludeClusterIds?: string[] }) {
   const [items, setItems] = useState<any[]>([]);
   const [hasSignals, setHasSignals] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -33,12 +33,12 @@ export default function ForYouIsland({ clusters = [] }: { clusters?: any[] }) {
       if (!nextHasSignals) {
         setItems([]);
       } else {
-        setItems(buildPersonalizedClusters(clusters, profile, 4));
+        setItems(buildPersonalizedClusters(clusters, profile, 4, excludeClusterIds));
       }
       setLoading(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [clusters]);
+  }, [clusters, excludeClusterIds]);
 
   useEffect(() => {
     return subscribeToReaderProfile((nextProfile: ReturnType<typeof loadReaderProfile>) => {

@@ -687,11 +687,12 @@ export function scoreClusterForReader(cluster, profile) {
   };
 }
 
-export function buildPersonalizedClusters(clusters, profile, limit = 4) {
+export function buildPersonalizedClusters(clusters, profile, limit = 4, excludeClusterIds = []) {
+  const excludeSet = new Set(excludeClusterIds);
   const scored = (Array.isArray(clusters) ? clusters : [])
     .map((cluster) => scoreClusterForReader(cluster, profile))
     .filter(Boolean)
-    .filter((item) => item.score > 1.45)
+    .filter((item) => item.score > 1.45 && !excludeSet.has(item.cluster?.cluster_id))
     .sort((left, right) => {
       if (right.score !== left.score) return right.score - left.score;
       return (right.cluster?.homepage_score || 0) - (left.cluster?.homepage_score || 0);
