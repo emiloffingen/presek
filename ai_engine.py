@@ -205,12 +205,12 @@ PROVIDERS = {
 }
 
 TASK_ROUTING = {
-    "translation":  ["local", "mistral"],
-    "summarize":    ["local"],
-    "synthesis":    ["mistral", "local"],
-    "daily_brief":  ["mistral", "local"],
-    "chat":         ["local"],
-    "default":      ["local"],
+    "translation":  ["gemini", "mistral", "local"],
+    "summarize":    ["gemini", "mistral", "local"],
+    "synthesis":    ["gemini", "mistral", "local"],
+    "daily_brief":  ["gemini", "mistral", "local"],
+    "chat":         ["gemini", "mistral", "local"],
+    "default":      ["gemini", "mistral", "local"],
 }
 
 # --- Service Methods ---

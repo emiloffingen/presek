@@ -33,7 +33,14 @@ def summarize_locally(text, sentence_count=3, topic=None, title=None):
     if len(sentences) <= sentence_count:
         return text
 
-    title_terms = set(_sentence_tokens(title)) if title else set(_sentence_tokens(sentences[0]))
+    potential_title = None
+    if not title:
+        for s in sentences:
+            if not _is_noisy_summary_sentence(s):
+                potential_title = s
+                break
+    
+    title_terms = set(_sentence_tokens(title)) if title else set(_sentence_tokens(potential_title or sentences[0]))
     
     words = _sentence_tokens(text)
     word_freq = Counter(words)
@@ -163,11 +170,10 @@ def compare_cluster_sources(articles):
     common_line = ""
     if common_phrases:
         from nlp.keywords import _format_common_line_from_phrases
-        # Fallback if _format_common_line_from_phrases is missing (it was in the grep list but I might have missed it)
         try: common_line = _format_common_line_from_phrases(common_phrases[:3])
-        except: common_line = "Повеќето извори се согласуваат околу: " + ", ".join(common_phrases[:3]) + "."
+        except: common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_phrases[:3]) + " како теми во фокус."
     elif common_terms:
-        common_line = "Повеќето извори се согласуваат околу: " + ", ".join(common_terms[:4]) + "."
+        common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_terms[:4]) + " како теми во фокус."
 
     difference_points, seen_titles = [], set()
     unique_titles = []
@@ -178,7 +184,19 @@ def compare_cluster_sources(articles):
     if len(unique_titles) >= 2:
         difference_points.append(f"{unique_titles[0][0]} најдиректно го формулира развојот како „{unique_titles[0][1]}“, додека {unique_titles[1][0]} повеќе нагласува „{unique_titles[1][1]}“.")
 
-    result = {"common_line": common_line, "difference_points": difference_points[:3], "open_points": []}
+    open_points = []
+    uncertain_sources = [a["source"] for a in articles if any(m in (a.get("title") or "").lower() or (a.get("description") or "").lower() for m in ["можеби", "се очекува", "наводно", "според неименувани", "непотврдено"])]
+    if uncertain_sources:
+        open_points.append(f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}.")
+    
+    # Extra check for numbers mismatch as open points
+    nums = [set(_extract_number_tokens(a.get("description") or "")) for a in articles]
+    all_nums = set().union(*nums)
+    conflicting_nums = [n for n in all_nums if sum(1 for s in nums if n in s) == 1 and len(nums) > 1]
+    if conflicting_nums and len(articles) > 1:
+        open_points.append(f"Постојат различни информации околу бројките (на пример: {conflicting_nums[0]}), што укажува на динамично известување.")
+
+    result = {"common_line": common_line, "difference_points": difference_points[:3], "open_points": open_points[:2]}
     _cache_set(_comparison_cache, cache_key, result)
     return result
 
@@ -193,7 +211,7 @@ def synthesize_cluster_fallback(articles):
     common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
     compact_context = " ".join(_coerce_grounded_snippet(line).rstrip(".") for line in context_summary.splitlines()[:2] if _coerce_grounded_snippet(line))
     summary_lines = [f"• Што се случува: {lead['title']}"]
-    if common_line: summary_lines.append(f"• Што е потврдено: {common_line}")
+    if common_line: summary_lines.append(f"• Заедничка линија: {common_line}")
     elif compact_context: summary_lines.append(f"• Што е потврдено: {compact_context}.")
     summary_lines.append(f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}.")
     if comparison["difference_points"]: summary_lines.append(f"• Каде се разликуваат изворите: {comparison['difference_points'][0]}")
@@ -215,6 +233,25 @@ def generate_daily_brief_fallback(clusters):
     if intro_titles:
         lines.append("Денот најсилно се врти околу " + ", ".join(intro_titles[:2]) + (f", а во фокус влегува и {intro_titles[2]}." if len(intro_titles) > 2 else "."))
         lines.append("")
+    
+    if any(c.get("difference_point") for c in clusters[:3]):
+        lines.append("## Каде се разликува известувањето")
+        lines.append("")
+        for cluster in clusters[:3]:
+            diff = str(cluster.get("difference_point") or "").strip()
+            if diff:
+                lines.append(f"• **{cluster.get('title')}**: {diff}")
+        lines.append("")
+
+    if any(c.get("open_point") for c in clusters[:3]):
+        lines.append("## Што да се следи понатаму")
+        lines.append("")
+        for cluster in clusters[:3]:
+            open_p = str(cluster.get("open_point") or "").strip()
+            if open_p:
+                lines.append(f"• **{cluster.get('title')}**: {open_p}")
+        lines.append("")
+
     for index, cluster in enumerate(clusters[:4], start=1):
         title, source = str(cluster.get("title") or "").strip(), str(cluster.get("source") or "Извор").strip()
         topic, description = str(cluster.get("topic") or cluster.get("category") or "Вести").strip(), str(cluster.get("description") or "").strip()

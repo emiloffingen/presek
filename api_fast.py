@@ -5,8 +5,14 @@ import datetime
 import time
 import re
 import requests
+import importlib.util
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
+import fastapi
+if not hasattr(fastapi, "__spec__") or fastapi.__spec__ is None:
+    try: fastapi.__spec__ = importlib.util.find_spec("fastapi")
+    except: pass
+
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware

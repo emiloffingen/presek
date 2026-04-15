@@ -1,3 +1,4 @@
 from nlp import *
 from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases
-from nlp.generation import _extract_number_tokens, _rank_cluster_question_evidence, _build_grounded_answer_from_evidence
+from nlp.generation import _extract_number_tokens, _rank_cluster_question_evidence, _build_grounded_answer_from_evidence, _comparison_cache
+from utils import record_runtime_event

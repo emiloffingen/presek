@@ -167,3 +167,36 @@ def generate_query_embedding(text: str) -> list[float] | None:
 
     return vector
 
+def get_cluster_embedding(cluster_id: str) -> list[float] | None:
+    """Calculate the average embedding vector for all articles in a cluster."""
+    from database import db_manager as db
+    import json
+    import numpy as np
+
+    try:
+        rows = db.execute(
+            "SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL",
+            (cluster_id,)
+        )
+        if not rows:
+            return None
+        
+        vecs = []
+        for r in rows:
+            emb = r["embedding"]
+            if isinstance(emb, str):
+                try: emb = json.loads(emb)
+                except: continue
+            if isinstance(emb, list) and len(emb) > 0:
+                vecs.append(emb)
+        
+        if not vecs:
+            return None
+        
+        # Centroid calculation via numpy
+        avg = np.mean(vecs, axis=0).tolist()
+        return avg
+    except Exception as e:
+        log.warning(f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}")
+        return None
+

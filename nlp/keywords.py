@@ -222,6 +222,17 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
 
     return filter_cluster_tags(sources or [], limit=min(top_n, 4))
 
+def _format_common_line_from_phrases(phrases):
+    if not phrases:
+        return ""
+    # Filter out empty or extremely short phrases
+    clean = [str(p).strip() for p in phrases if len(str(p).strip()) > 3]
+    if not clean:
+        return ""
+    if len(clean) == 1:
+        return f"Повеќето извори се согласуваат околу {clean[0]} како тема во фокус."
+    return f"Повеќето извори се согласуваат околу {', '.join(clean[:-1])} и {clean[-1]} како теми во фокус."
+
 def extract_keyphrases_locally(text, top_n=5):
     if not text:
         return []
