@@ -22,7 +22,7 @@ from utils import (
 _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 binary_redis_client = _redis_lib.from_url(_redis_url, decode_responses=False)
 from health import _probe_database, _probe_redis
-from local_nlp import generate_local_placeholder
+from nlp import generate_local_placeholder
 from ai_engine import _call_ai_async
 from prompts import SYNTHESIS_SYSTEM_PROMPT
 from .common import (

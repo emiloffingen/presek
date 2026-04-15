@@ -293,7 +293,7 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     Updates the global knowledge graph with seen entities and their relationships.
     """
     from database import db_manager as db
-    from local_nlp import analyze_sentiment_locally
+    from nlp import analyze_sentiment_locally
 
     if not entities: return
 

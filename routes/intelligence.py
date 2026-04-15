@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
 from utils import cached_response, set_cache, score_cluster
-from local_nlp import normalize_tag_name
+from nlp import normalize_tag_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 
 log = logging.getLogger("presek")

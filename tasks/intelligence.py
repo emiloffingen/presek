@@ -13,7 +13,7 @@ from prompts import (
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities
-from local_nlp import (
+from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
     extract_cluster_tags_locally, filter_cluster_tags
 )

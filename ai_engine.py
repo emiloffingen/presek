@@ -29,8 +29,9 @@ log = logging.getLogger("presek")
 
 from utils import redis_client, record_runtime_event
 from database import db_manager as db
-import local_nlp
-from local_nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
+import nlp
+from nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
+
 
 # --- Base Classes ---
 
@@ -452,7 +453,7 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     except: pass
 
     try:
-        svg_content = local_nlp.generate_local_placeholder(cluster_id, prompt, category)
+        svg_content = nlp.generate_local_placeholder(cluster_id, prompt, category)
         if svg_content:
             os.makedirs("static/generated", exist_ok=True)
             path = f"static/generated/{safe_id}.svg"

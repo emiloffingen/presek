@@ -170,7 +170,7 @@ def _peer_ip(response):
     return None
 
 def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
-    from local_nlp import is_valid_focus_entity
+    from nlp import is_valid_focus_entity
     return is_valid_focus_entity(name, entity_type)
 
 def _extract_sync_token(request: Request) -> str:

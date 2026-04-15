@@ -9,14 +9,16 @@ from nlp.keywords import (
 from nlp.text_processing import (
     lemmatize_mk,
     rewrite_to_macedonian_locally,
-    _jaccard_similarity
+    _jaccard_similarity,
+    synthesize_locally
 )
 from nlp.generation import (
     summarize_article_fallback,
     synthesize_cluster_fallback,
     generate_daily_brief_fallback,
     compare_cluster_sources,
-    generate_local_placeholder
+    generate_local_placeholder,
+    summarize_locally
 )
 
 # Export for easier access
@@ -33,5 +35,7 @@ __all__ = [
     'synthesize_cluster_fallback',
     'generate_daily_brief_fallback',
     'compare_cluster_sources',
-    'generate_local_placeholder'
+    'generate_local_placeholder',
+    'summarize_locally',
+    'synthesize_locally'
 ]

@@ -10,7 +10,7 @@ from ai_engine import sync_call_ai as _call_ai
 from prompts import DAILY_BRIEF_SYSTEM_PROMPT
 from api_helpers import normalize_perspectives
 from clustering import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
-from local_nlp import generate_daily_brief_fallback
+from nlp import generate_daily_brief_fallback
 from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL
 
 def _load_daily_brief_clusters(limit=6):

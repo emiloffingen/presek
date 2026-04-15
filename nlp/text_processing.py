@@ -175,3 +175,49 @@ def _is_noisy_summary_sentence(sentence, title_terms=None):
         if sentence_words and not (sentence_words & title_terms):
             return True
     return False
+
+def synthesize_locally(articles, sentence_count=4, topic=None):
+    """Sophisticated Local Synthesis Engine."""
+    if not articles: return ""
+    from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases
+    from nlp.generation import _extract_number_tokens
+    all_candidates = []
+    for art in articles:
+        src = art.get('source', 'Извор')
+        text = f"{art.get('title', '')}. {art.get('description', '')}"
+        raw_sents = re.split(r'(?<=[.!?])\s+', text)
+        for idx, s in enumerate(raw_sents):
+            clean_s = _normalize_summary_sentence(s)
+            if not clean_s or _is_noisy_summary_sentence(clean_s): continue
+            is_action = any(v in clean_s.lower() for v in ["изјави", "најави", "предупреди", "порача", "истакна", "повика", "одлучи"])
+            s_words = _sentence_tokens(clean_s)
+            if not s_words: continue
+            entities = set(_extract_capitalized_phrases(clean_s))
+            val_score = len(s_words) * 0.1 + (0.8 if idx == 0 else 0.0) + (0.6 if is_action else 0.0) + (0.5 if _extract_number_tokens(clean_s) else 0.0) + len(entities) * 0.4
+            all_candidates.append({"text": clean_s, "score": val_score, "entities": entities, "source": src, "is_action": is_action})
+    if not all_candidates: return ""
+    all_candidates.sort(key=lambda x: x['score'], reverse=True)
+    selected = []
+    used_entities, used_sources = set(), set()
+    for _ in range(sentence_count):
+        best_candidate, best_boosted_score = None, -1.0
+        for cand in all_candidates:
+            if any(_jaccard_similarity(cand['text'], s['text']) > 0.4 for s in selected): continue
+            diversity_boost = 1.3 if cand['source'] not in used_sources else 1.0
+            new_entity_boost = 1.0 + (len(cand['entities'] - used_entities) * 0.3)
+            flow_boost = 1.2 if len(selected) == 0 else (1.4 if len(selected) >= 2 and cand['is_action'] else 1.0)
+            boosted_score = cand['score'] * diversity_boost * new_entity_boost * flow_boost
+            if boosted_score > best_boosted_score:
+                best_boosted_score, best_candidate = boosted_score, cand
+        if best_candidate:
+            selected.append(best_candidate)
+            used_entities.update(best_candidate['entities'])
+            used_sources.add(best_candidate['source'])
+        else: break
+    res = []
+    for s in selected:
+        txt = s['text']
+        if txt and txt[0].islower(): txt = txt[0].upper() + txt[1:]
+        res.append(f"• {txt}")
+    return "\n".join(res)
+

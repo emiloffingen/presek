@@ -15,7 +15,7 @@ from utils import (
 )
 from health import get_source_statuses, reset_source_policy
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
-from local_nlp import generate_daily_brief_fallback
+from nlp import generate_daily_brief_fallback
 from .common import _source_admin_authorized, _error_json
 
 log = logging.getLogger("presek")

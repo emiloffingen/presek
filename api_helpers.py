@@ -9,7 +9,7 @@ import json
 import re
 from typing import Optional
 
-from local_nlp import ENTITY_NOISE_WORDS
+from nlp.keywords import ENTITY_NOISE_WORDS
 from utils import get_source_trust_label, build_cluster_source_signals
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}

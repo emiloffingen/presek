@@ -19,7 +19,7 @@ from config import (
     API_MAX_PAGE,
     API_MAX_Q_LEN,
 )
-from local_nlp import (
+from nlp import (
     filter_cluster_tags,
 )
 from api_helpers import (
