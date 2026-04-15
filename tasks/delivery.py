@@ -9,8 +9,7 @@ from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, NTFY_TOPIC, NTFY_TOKEN, BRE
 from ai_engine import sync_call_ai as _call_ai
 from prompts import DAILY_BRIEF_SYSTEM_PROMPT
 from api_helpers import normalize_perspectives
-from utils import rank_articles_in_cluster
-from clustering import score_cluster_for_homepage, assess_cluster_synthesis_freshness
+from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
 from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL
 
