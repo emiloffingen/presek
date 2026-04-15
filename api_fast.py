@@ -27,7 +27,7 @@ from health import _probe_database, _probe_redis, get_source_statuses
 from ai_engine import _call_ai_async, clean_json_response
 from routes.common import (
     _client_ip_for_request, _rate_limit_error_payload, _safe_tracking_redirect_path,
-    _resolve_public_ips, _peer_ip
+    _resolve_public_ips, _peer_ip, _is_rate_limited_path
 )
 from routes.security import (
     SecurityHeadersMiddleware, RequestSizeMiddleware, EnhancedRateLimitMiddleware,
