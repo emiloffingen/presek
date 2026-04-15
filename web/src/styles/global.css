@@ -1170,10 +1170,20 @@ button:active,
     background: color-mix(in srgb, var(--card) 86%, var(--surface-soft) 14%);
 }
 
+.dark .editorial-panel {
+    background: color-mix(in srgb, var(--card) 60%, var(--surface-strong) 40%);
+    border-color: var(--nyt-gray-300);
+}
+
 .editorial-panel-strong {
     padding: 1.35rem;
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--card) 76%, var(--surface-strong) 24%);
+}
+
+.dark .editorial-panel-strong {
+    background: color-mix(in srgb, var(--card) 40%, var(--surface-strong) 60%);
+    border-color: var(--nyt-gray-500);
 }
 
 .editorial-panel-title {

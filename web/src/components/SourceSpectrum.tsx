@@ -57,11 +57,11 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles }) => {
   }, [articles]);
 
   return (
-    <div className="source-spectrum-container my-8 p-6 border border-border bg-secondary/10">
+    <div className="source-spectrum-container my-8 p-6 border border-border bg-secondary/10 dark:bg-secondary/40">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground">Спектар на извори</h3>
-          <p className="text-[11px] text-muted-foreground mt-1">Дистрибуција на уредувачките профили во овој кластер</p>
+          <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground dark:text-foreground/90">Спектар на извори</h3>
+          <p className="text-[11px] text-muted-foreground dark:text-muted-foreground/90 mt-1">Дистрибуција на уредувачките профили во овој кластер</p>
         </div>
         <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></span>

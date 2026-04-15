@@ -517,6 +517,12 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 			linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 90%, #efe6da 10%));
 	}
 
+	:global(.dark) .metric-card-accent {
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, var(--secondary) 5%), color-mix(in srgb, var(--background) 80%, #3e3a34 20%));
+		border-color: var(--nyt-gray-300);
+	}
+
 	.stats-metrics {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -555,6 +561,12 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 	.stats-module-priority {
 		background:
 			linear-gradient(180deg, color-mix(in srgb, var(--background) 98%, transparent), color-mix(in srgb, var(--background) 90%, #f2eadf 10%));
+	}
+
+	:global(.dark) .stats-module-priority {
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, transparent), color-mix(in srgb, var(--background) 80%, #3a342c 20%));
+		border-color: var(--nyt-gray-300);
 	}
 
 	.source-bars,

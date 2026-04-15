@@ -67,23 +67,24 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
         <div className="relative w-48 h-48 flex-shrink-0">
           <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
             {/* Background circles */}
-            <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="1" className="text-border" strokeDasharray="4 4" />
-            <circle cx="100" cy="100" r="35" fill="none" stroke="currentColor" strokeWidth="1" className="text-border" strokeDasharray="4 4" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="1" className="text-border dark:text-muted-foreground/30" strokeDasharray="4 4" />
+            <circle cx="100" cy="100" r="35" fill="none" stroke="currentColor" strokeWidth="1" className="text-border dark:text-muted-foreground/30" strokeDasharray="4 4" />
             
             {/* Axis lines */}
-            <line x1="100" y1="30" x2="100" y2="100" stroke="currentColor" strokeWidth="1" className="text-border" />
-            <line x1="100" y1="100" x2="160.6" y2="135" stroke="currentColor" strokeWidth="1" className="text-border" />
-            <line x1="100" y1="100" x2="39.4" y2="135" stroke="currentColor" strokeWidth="1" className="text-border" />
+            <line x1="100" y1="30" x2="100" y2="100" stroke="currentColor" strokeWidth="1" className="text-border dark:text-muted-foreground/30" />
+            <line x1="100" y1="100" x2="160.6" y2="135" stroke="currentColor" strokeWidth="1" className="text-border dark:text-muted-foreground/30" />
+            <line x1="100" y1="100" x2="39.4" y2="135" stroke="currentColor" strokeWidth="1" className="text-border dark:text-muted-foreground/30" />
 
             {/* Labels */}
-            <text x="100" y="20" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground uppercase tracking-wider">Објективност</text>
-            <text x="175" y="145" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground uppercase tracking-wider">Сензационализам</text>
-            <text x="25" y="145" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground uppercase tracking-wider">Емоции</text>
+            <text x="100" y="20" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground dark:fill-foreground uppercase tracking-wider">Објективност</text>
+            <text x="175" y="145" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground dark:fill-foreground uppercase tracking-wider">Сензационализам</text>
+            <text x="25" y="145" textAnchor="middle" className="text-[10px] font-bold fill-muted-foreground dark:fill-foreground uppercase tracking-wider">Емоции</text>
 
             {/* Data shape */}
             <polygon 
               points={points} 
-              fill="rgba(185, 28, 28, 0.2)" 
+              fill="var(--nyt-red)"
+              fillOpacity="0.2"
               stroke="var(--nyt-red)" 
               strokeWidth="2"
               className="transition-all duration-[800ms] cubic-bezier(0.34, 1.56, 0.64, 1)"
