@@ -65,7 +65,7 @@ class CrawlerService:
             include_tables=True,
             no_fallback=False
         )
-        metadata = trafilatura.metadata.extract_metadata(html, url=url)
+        metadata = trafilatura.metadata.extract_metadata(html, default_url=url)
         
         return {
             "title": metadata.title if metadata else None,
