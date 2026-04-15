@@ -56,19 +56,19 @@ async def get_news(
             query_vec = generate_query_embedding(q)
             rows = db.hybrid_search(q, query_vec, limit=row_limit) if query_vec else db.search_articles(q, limit=row_limit)
         elif entity:
-            rows = db.execute("SELECT cluster_id FROM cluster_entities ce WHERE ce.entity_name = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = ce.cluster_id) DESC LIMIT %s", (entity, page_size * (page + 1)))
+            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM cluster_entities ce JOIN articles a USING (cluster_id) WHERE ce.entity_name = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (entity, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
             rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
-            rows = db.execute("SELECT DISTINCT cluster_id FROM articles WHERE topic = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (topic, page_size * (page + 1)))
+            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE topic = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (topic, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
             rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:
-            rows = db.execute("SELECT DISTINCT cluster_id FROM articles WHERE category = %s ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (category, page_size * (page + 1)))
+            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE category = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (category, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
             rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         else:
-            rows = db.execute("SELECT DISTINCT cluster_id FROM articles ORDER BY (SELECT MAX(created_at) FROM articles WHERE cluster_id = articles.cluster_id) DESC LIMIT %s", (page_size * (page + 1),))
+            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (page_size * (page + 1),))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
             rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
 
