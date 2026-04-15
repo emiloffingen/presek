@@ -22,3 +22,5 @@ keybert==0.8.5
 spacy==3.7.5
 fasttext==0.9.3
 pywebpush==1.14.0
+trafilatura==2.0.0
+playwright==1.58.0
