@@ -360,7 +360,6 @@ const leadVisual = getLeadVisual(cluster);
 									<div class="cluster-brief-item">
 										<p class="cluster-brief-label">{item.label}</p>
 										<p class="cluster-brief-value">{item.value}</p>
-										<p class="cluster-brief-copy">{item.copy}</p>
 									</div>
 								))}
 							</div>
@@ -719,32 +718,40 @@ const leadVisual = getLeadVisual(cluster);
 		}
 	}
 
+	.cluster-comparison-brief {
+		display: none;
+		margin-top: 2rem;
+		border-top: 1px solid var(--border);
+		padding-top: 1.5rem;
+	}
+
+	@media (min-width: 768px) {
+		.cluster-comparison-brief {
+			display: flex;
+			gap: 2.5rem;
+		}
+	}
+
 	.cluster-brief-item {
-		margin-bottom: 1.5rem;
+		flex: 1;
+		margin-bottom: 0;
 	}
 
 	.cluster-brief-label {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.6rem;
 		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
-		color: var(--nyt-accent);
+		color: var(--muted-foreground);
 		margin-bottom: 0.25rem;
 	}
 
 	.cluster-brief-value {
 		font-family: var(--font-serif);
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 800;
-		margin-bottom: 0.25rem;
-	}
-
-	.cluster-brief-copy {
-		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
+		color: var(--foreground);
 	}
 
 	.cluster-visual-card {
