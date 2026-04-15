@@ -1131,7 +1131,11 @@ def send_telegram_briefing_task():
         if not row or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
             return
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": row["content"][:4096]}
+        final_text = str(row["content"] or "").strip()
+        if final_text:
+            final_text += f"\n\nПрочитајте го целиот брифинг на: {_PUBLIC_SITE_URL}/briefing"
+        
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": final_text[:4096]}
         
         with httpx.Client(timeout=10.0) as client:
             resp = client.post(url, json=payload)
