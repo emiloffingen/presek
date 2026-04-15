@@ -6,7 +6,8 @@ from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
 from embeddings import generate_query_embedding
-from typing import List, Optional
+
+router = APIRouter()
 
 @router.get("/storylines/recent")
 async def get_recent_storylines(limit: int = 10):
