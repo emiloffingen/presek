@@ -199,7 +199,7 @@ async def proxy_image(
 
     try:
         # 1. Fast path: check if we have a locally saved version in the DB
-        local_img_row = db_manager.execute_one(
+        local_img_row = db.execute_one(
             "SELECT local_image_path FROM articles WHERE image_url = %s AND local_image_path IS NOT NULL LIMIT 1",
             (url,)
         )
