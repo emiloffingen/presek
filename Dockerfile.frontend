@@ -14,9 +14,6 @@ COPY static/ ./static/
 
 # Build Astro app
 # We need to pass environment variables if they are used at build time
-ARG PUBLIC_API_URL
-ENV PUBLIC_API_URL=$PUBLIC_API_URL
-
 RUN cd web && npm run build
 
 # Runtime stage
@@ -34,6 +31,7 @@ USER node
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NODE_ENV=production
+ENV INTERNAL_API_URL=http://api:5001/api
 
 EXPOSE 3000
 
