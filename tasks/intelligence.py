@@ -272,60 +272,55 @@ def auto_summarize_task():
 
 @celery_app.task
 def extract_entities_task():
-    """Extract entities for top clusters using free rule-based logic first."""
+    """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
         from tasks.utils import record_task_event
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
             FROM articles WHERE created_at >= %s GROUP BY cluster_id
-            HAVING COUNT(DISTINCT source) >= 2 LIMIT 20
+            HAVING COUNT(DISTINCT source) >= 2 LIMIT 50
         """, (cutoff,))
 
         for r in rows:
             text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
-            
-            # Rule-based (Free)
-            entities = extract_entities(text)
-            
+
+            # Use hybrid local extractor (curated lexicon + spaCy NER + regex)
+            entities = extract_entities(text, max_entities=8)
+
             if entities:
                 from entities import update_knowledge_graph
-                # Pass context text for local sentiment calculation
+                # update_knowledge_graph calculates local sentiment automatically
                 update_knowledge_graph(entities, context_text=text)
 
-            for ent in entities:
-                db.execute(
-                    "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                    (r['cluster_id'], ent.get('name'), ent.get('type')), fetch=False
-                )
+                for ent in entities:
+                    db.execute(
+                        "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                        (r['cluster_id'], ent.get('name'), ent.get('type')), fetch=False
+                    )
+
         invalidate_public_data_caches()
-        record_task_event("extract_entities", "ok", "clusters:recent")
+        record_task_event("extract_entities", "ok", "clusters:recent:local")
     except Exception as e:
-        from tasks.utils import record_task_event
-        record_task_event("extract_entities", "error", "clusters:recent")
-        log.error(f"[tasks] Entity extraction failed: {e}")
+        log.error(f"[tasks] Local entity extraction failed: {e}")
 
 @celery_app.task
 def classify_topics_task():
-    """Classify default 'Вести' clusters into specific topics using rule-based detection first."""
+    """Classify default 'Вести' clusters using local rule-based detection."""
     try:
         from tasks.utils import record_task_event
-        rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 50")
+        # Increased limit as local classification is nearly free
+        rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 200")
         for r in rows:
-            # Rule-based first (Free)
             topic = detect_topic(r['title'])
             if topic != 'Вести':
                 db.execute("UPDATE articles SET topic = %s WHERE cluster_id = %s", (topic, r['cluster_id']), fetch=False)
-                continue
     except Exception as e:
-        from tasks.utils import record_task_event
-        record_task_event("classify_topics", "error", "clusters:recent")
         log.error(f"[tasks] Topic classification failed: {e}")
     else:
-        from tasks.utils import record_task_event
         invalidate_public_data_caches()
-        record_task_event("classify_topics", "ok", "clusters:recent")
-
+        from tasks.utils import record_task_event
+        record_task_event("classify_topics", "ok", "clusters:recent:local")
 @celery_app.task
 def recategorize_clusters_task():
     """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
