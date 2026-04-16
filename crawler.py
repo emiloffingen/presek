@@ -38,13 +38,13 @@ class CrawlerService:
         try:
             safe_ips = _resolve_public_ips(url)
             async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
-                with client.stream("GET", url) as resp:
+                async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
                         log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
                         return await self._extract_headless(url)
                     
-                    resp.read()
+                    await resp.aread()
                     resp.raise_for_status()
                     html_content = resp.text
                     final_url = str(resp.url)
