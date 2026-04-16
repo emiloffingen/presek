@@ -11,18 +11,15 @@ from database import get_db
 MK_SUFFIXES = [
     "увањето", "ување", "ањето", "ање", "ењето", "ење",
     "истите", "истот", "иста", "исти", "ските", "скиот", "ската", "ски", "ска", "ско",
-    "овските", "овскиот", "овската", "овски", "овска", "овско",
-    "евските", "евскиот", "евската", "евски", "евска", "евско",
-    "ните", "ниот", "ната", "ното", "ни", "ите", "иот", "ата", "ото", "от", "та", "то",
-    "вме", "вте", "аа", "еа", "ше", "ат", "ет",
-    "овиот", "овата", "овото", "ови", "ов", "ова", "ово",
-    "евиот", "евата", "евото", "еви", "ев", "ева", "ево",
+    "овските", "овскиот", "овата", "овото", "овски", "овска", "овско",
+    "евските", "евскиот", "евата", "евото", "евски", "евска", "евско",
+    "ните", "ниот", "ната", "ното", "нава", "наво", "ни", "ите", "иот", "ата", "ото", "от", "та", "то",
+    "вме", "вте", "аа", "еа", "ше", "ат", "ет", "ов", "ев",
 ]
 
 def mk_stem(word: str) -> str:
     if len(word) < 4: return word
     # Don't stem proper nouns (starts with capital) unless it's the very start of a sentence
-    # but since we receive tokens, we'll be conservative.
     if word[0].isupper(): return word
     word = re.sub(r'[^\w\s]', '', word)
     
@@ -33,7 +30,7 @@ def mk_stem(word: str) -> str:
         word = word[2:]
         
     for suffix in MK_SUFFIXES:
-        if word.endswith(suffix) and len(word) - len(suffix) >= 4:
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
             return word[: -len(suffix)]
     return word
 
@@ -46,6 +43,8 @@ MK_STOPWORDS = {
     "еден","една","едно","еднa","нема","нема","нови","нов","нова",
     "само","уште","преку","бидејќи","поради","каде","како","кога",
     "туку","пак","сепак","затоа","бидејки","ваков","ваква","вакви",
+    "според","соопштија","информираат","изјави","вели","изјавија",
+    "рече","порача","велат","пренесе","објави","пишува",
     "the","and","for","from","that","this","with","has",
 }
 
@@ -231,10 +230,33 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     for cid, reps in cluster_docs.items():
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE: continue
         
-        # Source Exclusivity: Penalty if source is already in cluster (prevents flood)
+        # Source Exclusivity: 
+        # Only allow same-source if it's a "series" (follow-up hours later) 
+        # or if it's a fingerprint match (already handled above).
         source_penalty = 1.0
         if source and source in cluster_sources.get(cid, set()):
-            source_penalty = 0.7 
+            # Find time of earliest/latest article from same source in this cluster
+            source_times = [
+                r["created_at"] for r in recent_articles 
+                if r.get("cluster_id") == cid and r.get("source") == source
+            ]
+            if source_times:
+                # If the last article from this source was < 2 hours ago, penalize heavily
+                # (Prevents flood of same story, but allows follow-ups later in the day)
+                try:
+                    last_src_time = max(source_times)
+                    if isinstance(last_src_time, str):
+                        last_src_time = datetime.datetime.fromisoformat(last_src_time.replace("Z", "+00:00"))
+                    
+                    now_utc = datetime.datetime.now(datetime.timezone.utc)
+                    if last_src_time.tzinfo is None: last_src_time = last_src_time.replace(tzinfo=datetime.timezone.utc)
+                    
+                    if (now_utc - last_src_time).total_seconds() < 7200: # 2 hours
+                        source_penalty = 0.4  # Very high penalty for rapid repeats
+                    else:
+                        source_penalty = 0.85 # Slight penalty for diversity
+                except:
+                    source_penalty = 0.6
 
         current_best_rep_score = 0.0
         for rep in reps:
