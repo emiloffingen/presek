@@ -9,6 +9,7 @@ import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ShareIsland from '../../components/ShareIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
+import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { chooseClusterImage } from '../../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
@@ -566,6 +567,8 @@ const leadVisual = getLeadVisual(cluster);
 						{cluster.timeline && cluster.timeline.length > 1 && (
 							<StoryTimeline timeline={cluster.timeline} client:visible />
 						)}
+
+						<StorylineHistoryIsland clusterId={id} apiUrl={API_URL} client:load />
 
 						{/* Articles List */}
 

@@ -6,73 +6,6 @@ from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
 from embeddings import generate_query_embedding
-
-router = APIRouter()
-
-@router.get("/storylines/recent")
-async def get_recent_storylines(limit: int = 10):
-    """Fetch recently active long-term storylines."""
-    return db.execute("""
-        SELECT s.*, 
-               (SELECT COUNT(*) FROM storyline_clusters WHERE storyline_id = s.id) as cluster_count
-        FROM storylines s
-        WHERE s.is_active = TRUE
-        ORDER BY s.last_activity DESC
-        LIMIT %s
-    """, (limit,))
-
-@router.get("/storyline/{storyline_id}")
-async def get_storyline_detail(storyline_id: int):
-    """Fetch a storyline and its constituent clusters for a timeline view."""
-    story = db.execute_one("SELECT * FROM storylines WHERE id = %s", (storyline_id,))
-    if not story:
-        return {"error": "Storyline not found"}
-    
-    clusters = db.execute("""
-        SELECT c.*, sc.relevance_score
-        FROM storyline_clusters sc
-        JOIN cluster_summaries c ON sc.cluster_id = c.cluster_id
-        WHERE sc.storyline_id = %s
-        ORDER BY c.created_at ASC
-    """, (storyline_id,))
-    
-    return {"story": story, "timeline": clusters}
-
-@router.get("/media-pulse")
-async def get_media_pulse():
-    """Daily sentiment and bias radar data."""
-    return db.execute("""
-        SELECT a.category, 
-               AVG((cs.sentiment->>'score')::float) as avg_sentiment,
-               COUNT(DISTINCT a.source) as source_diversity,
-               COUNT(*) as article_count
-        FROM articles a
-        JOIN cluster_summaries cs ON a.cluster_id = cs.cluster_id
-        WHERE a.created_at >= NOW() - INTERVAL '24 hours'
-        GROUP BY a.category
-        HAVING COUNT(*) > 5
-    """)
-
-@router.get("/entity/{name}/power-map")
-async def get_entity_power_map(name: str, limit: int = 6):
-    """Fetch related entities from the knowledge graph."""
-    return db.execute("""
-        SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity,
-               weight
-        FROM knowledge_relationships
-        WHERE entity_a = %s OR entity_b = %s
-        ORDER BY weight DESC
-        LIMIT %s
-    """, (name, name, name, limit))
-
-@router.get("/search/semantic")
-async def semantic_search(q: str, limit: int = 20):
-    """AI-powered search using the HNSW vector index."""
-    embedding = generate_query_embedding(q)
-    if not embedding:
-        return {"error": "Could not generate embedding"}
-    
-    return db.search_semantic(embedding, limit=limit)
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
 from .common import cleanAndDecode, _is_valid_focus_entity
@@ -81,8 +14,106 @@ from .security import validate_cluster_id, validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+@router.get("/intelligence/pulse-overview")
+async def get_pulse_overview():
+    """Provides a high-level summary of the media landscape (free, token-less)."""
+    cache_key = "api:intelligence:pulse-overview"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    # 1. Trending Entities (Last 48h)
+    trending = db.execute("""
+        SELECT name, total_mentions, sentiment_score, type
+        FROM knowledge_entities
+        WHERE last_seen >= NOW() - INTERVAL '48 hours'
+        ORDER BY total_mentions DESC
+        LIMIT 10
+    """)
+
+    # 2. Sentiment Extremes
+    positives = db.execute("""
+        SELECT name, sentiment_score
+        FROM knowledge_entities
+        WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
+        ORDER BY sentiment_score DESC
+        LIMIT 5
+    """)
+    
+    negatives = db.execute("""
+        SELECT name, sentiment_score
+        FROM knowledge_entities
+        WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
+        ORDER BY sentiment_score ASC
+        LIMIT 5
+    """)
+
+    # 3. Hot Relationships (Duos)
+    relationships = db.execute("""
+        SELECT entity_a, entity_b, weight
+        FROM knowledge_relationships
+        WHERE last_seen >= NOW() - INTERVAL '48 hours'
+        ORDER BY weight DESC
+        LIMIT 6
+    """)
+
+    result = {
+        "trending": trending,
+        "sentiment": {
+            "positives": positives,
+            "negatives": negatives
+        },
+        "relationships": relationships,
+        "updated_at": db.execute_one("SELECT MAX(last_seen) as last FROM knowledge_entities")["last"]
+    }
+    
+    set_cache(cache_key, result, ttl=600)
+    return result
+
+@router.get("/intelligence/cluster/{cluster_id}/history")
+async def get_cluster_storyline_history(cluster_id: str):
+    """Finds related clusters from the past weeks to build a storyline (free, token-less)."""
+    validate_cluster_id(cluster_id)
+    
+    # Get current cluster's embedding (avg of its articles)
+    rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
+    if not rows:
+        return {"history": []}
+    
+    import numpy as np
+    import json
+    
+    vecs = []
+    for r in rows:
+        vecs.append(json.loads(r['embedding']) if isinstance(r['embedding'], str) else list(r['embedding']))
+    
+    if not vecs:
+        return {"history": []}
+    
+    avg_vec = np.mean(vecs, axis=0).tolist()
+    vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
+    
+    # Search for similar clusters from the past 30 days
+    # We group by cluster_id and take the most representative article title
+    related_clusters = db.execute("""
+        SELECT cluster_id, 
+               MAX(title) as title, 
+               MIN(created_at) as first_seen,
+               (1 - (MIN(embedding <=> %s::vector))) as similarity
+        FROM articles
+        WHERE embedding IS NOT NULL
+          AND cluster_id != %s
+          AND created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY cluster_id
+        HAVING (1 - (MIN(embedding <=> %s::vector))) > 0.45
+        ORDER BY first_seen ASC
+        LIMIT 10
+    """, (vec_str, cluster_id, vec_str))
+    
+    return {"history": related_clusters}
+
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse():
+...
     sql = """
         WITH first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id

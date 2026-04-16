@@ -4,6 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SourceComparisonIsland from '../components/SourceComparisonIsland';
+import KnowledgeGraphIsland from '../components/KnowledgeGraphIsland';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Activity, Zap, ShieldCheck, Info } from 'lucide-react';
 
@@ -115,7 +116,18 @@ function formatStat(val: number) {
                     </table>
                 </div>
 
-                <div class="mt-12">
+                <div class="mt-20">
+                    <header class="mb-10">
+                        <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Интелигенција</span>
+                        <h2 class="font-serif text-3xl font-black mb-4">Медиумски Пулс на Субјектите</h2>
+                        <p class="font-nyt-body text-secondary-foreground max-w-2xl">
+                            Кој е најмногу во фокусот на јавноста и каков е емоционалниот полнеж на нивното медиумско присуство?
+                        </p>
+                    </header>
+                    <KnowledgeGraphIsland client:load apiUrl={API_URL} />
+                </div>
+
+                <div class="mt-20">
                     <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
                 </div>
             </div>
