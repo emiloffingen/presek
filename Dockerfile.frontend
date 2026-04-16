@@ -1,0 +1,38 @@
+FROM node:22-slim AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY web/package*.json ./web/
+
+# Install dependencies
+RUN cd web && npm install
+
+# Copy source
+COPY web/ ./web/
+COPY static/ ./static/
+
+# Build Astro app
+# We need to pass environment variables if they are used at build time
+ARG PUBLIC_API_URL
+ENV PUBLIC_API_URL=$PUBLIC_API_URL
+
+RUN cd web && npm run build
+
+# Runtime stage
+FROM node:22-slim
+
+WORKDIR /app
+
+# Copy build artifacts and server files
+COPY --from=builder /app/web/dist ./web/dist
+COPY --from=builder /app/web/node_modules ./web/node_modules
+COPY --from=builder /app/web/package.json ./web/package.json
+
+ENV HOST=0.0.0.0
+ENV PORT=3000
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD ["node", "./web/dist/server/entry.mjs"]

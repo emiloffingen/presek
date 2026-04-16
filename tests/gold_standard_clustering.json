@@ -1,0 +1,34 @@
+[
+  {
+    "title_a": "Денеска се празнува Свети Никита Исповедник",
+    "title_b": "Денес се празнува Свети Никита Исповедник",
+    "should_cluster": true,
+    "entities": ["Никита", "Исповедник"],
+    "reason": "Exact story duplicate"
+  },
+  {
+    "title_a": "Ивица Џепароски стана дописен член на МАНУ",
+    "title_b": "ТРЕНЕР НА КОЛОТО: Борче Христов (Тиквеш)",
+    "should_cluster": false,
+    "reason": "Unrelated news (Politics vs Sport)"
+  },
+  {
+    "title_a": "Страв од природата – нова фобија на урбаниот човек",
+    "title_b": "Денеска се празнува Свети Никита Исповедник",
+    "should_cluster": false,
+    "reason": "Unrelated news (Health/Lifestyle vs Religion)"
+  },
+  {
+    "title_a": "Владата усвои нов пакет мерки за помош на стопанството",
+    "title_b": "Министерството за економија најави поддршка за фирмите",
+    "should_cluster": true,
+    "entities": ["Влада", "Економија", "Стопанство"],
+    "reason": "Same economic policy event"
+  },
+  {
+    "title_a": "Вардар победи во дербито против Пелистер",
+    "title_b": "Шкупи ремизираше со Силекс во Кратово",
+    "should_cluster": false,
+    "reason": "Different sports matches"
+  }
+]

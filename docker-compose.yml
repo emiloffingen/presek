@@ -1,0 +1,86 @@
+services:
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_DB: presek
+      POSTGRES_USER: presek
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-presek_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U presek -d presek"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: uvicorn api_fast:app --host 0.0.0.0 --port 5001 --workers 2
+    environment:
+      - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
+      - REDIS_URL=redis://redis:6379/0
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+    ports:
+      - "5001:5001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: celery -A celery_app worker --loglevel=info --concurrency=1
+    environment:
+      - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
+      - REDIS_URL=redis://redis:6379/0
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: celery -A celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - PUBLIC_API_URL=http://api:5001
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

@@ -230,7 +230,16 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     for cid, reps in cluster_docs.items():
         if cluster_size.get(cid, 0) >= MAX_CLUSTER_SIZE: continue
         
-        # Source Exclusivity: 
+        # Mandatory Category and Topic Match
+        rep_0 = reps[0]
+        if category and rep_0.get("category") != category: continue
+        
+        # Only block if both have specific (non-generic) topics and they don't match
+        rep_topic = rep_0.get("topic", "Вести")
+        if topic and topic != "Вести" and rep_topic != "Вести" and rep_topic != topic:
+            continue
+        
+        # Source Exclusivity
         # Only allow same-source if it's a "series" (follow-up hours later) 
         # or if it's a fingerprint match (already handled above).
         source_penalty = 1.0
@@ -276,7 +285,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         if cid in cluster_entities and potential_entities:
             shared = potential_entities.intersection(cluster_entities[cid])
             if shared:
-                current_best_rep_score += min(0.25, len(shared) * 0.12)
+                current_best_rep_score += min(0.35, len(shared) * 0.20)
 
         if current_best_rep_score > threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score

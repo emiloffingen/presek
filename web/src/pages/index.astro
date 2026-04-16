@@ -319,7 +319,10 @@ function getTimeStr(dateStr: string) {
 					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
 					<div class="focus-cloud">
 						{focusEntities.map((ent: any) => (
-							<a href={`/subjekt/${encodeURIComponent(ent.name)}`} class="focus-chip">
+							<a href={`/subjekt/${encodeURIComponent(ent.name)}`} class="focus-chip group">
+								<span class="opacity-60 mr-1.5 group-hover:opacity-100 transition-opacity">
+									{ent.type === 'ORG' ? '🏢' : ent.type === 'PERSON' ? '👤' : '🏷️'}
+								</span>
 								{ent.name}
 							</a>
 						))}
