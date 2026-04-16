@@ -5,6 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /app
 
+# Create a non-root user (matching host UID 1001 if possible for volume permissions)
+RUN groupadd -g 1002 presek && \
+    useradd -u 1001 -g presek -m -s /bin/bash presek
+
 # Set work directory
 WORKDIR /app
 
@@ -17,9 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
+# First install CPU-only torch to avoid pulling in 4GB of CUDA libraries
 COPY requirements.txt .
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers and system dependencies
 RUN playwright install-deps
@@ -28,11 +33,14 @@ RUN playwright install chromium
 # Copy project
 COPY . .
 
-# Create directory for logs and static assets
-RUN mkdir -p logs static/generated static/uploads screenshots
+# Create directory for logs and static assets and set permissions
+RUN mkdir -p logs static/generated static/uploads screenshots && \
+    chown -R presek:presek /app
 
 # Set entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER presek
 
 ENTRYPOINT ["docker-entrypoint.sh"]

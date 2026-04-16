@@ -24,10 +24,12 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Copy build artifacts and server files
-COPY --from=builder /app/web/dist ./web/dist
-COPY --from=builder /app/web/node_modules ./web/node_modules
-COPY --from=builder /app/web/package.json ./web/package.json
+# Copy build artifacts and server files with correct ownership
+COPY --from=builder --chown=node:node /app/web/dist ./web/dist
+COPY --from=builder --chown=node:node /app/web/node_modules ./web/node_modules
+COPY --from=builder --chown=node:node /app/web/package.json ./web/package.json
+
+USER node
 
 ENV HOST=0.0.0.0
 ENV PORT=3000

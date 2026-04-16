@@ -7,19 +7,31 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-presek_pass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U presek -d presek"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - presek-net
 
   redis:
     image: redis:alpine
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - presek-net
 
   api:
     build:
@@ -35,11 +47,23 @@ services:
     volumes:
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - presek-net
 
   worker:
     build:
@@ -53,11 +77,18 @@ services:
     volumes:
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - presek-net
 
   beat:
     build:
@@ -71,11 +102,17 @@ services:
     volumes:
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - presek-net
 
   frontend:
     build:
@@ -87,10 +124,21 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    networks:
+      - presek-net
 
 volumes:
   postgres_data:
   static_uploads:
   static_generated:
+
+networks:
+  presek-net:
+    driver: bridge
