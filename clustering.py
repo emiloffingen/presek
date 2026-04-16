@@ -119,40 +119,48 @@ MAX_CLUSTER_SIZE     = 35
 # same-story pairs typically sit around 0.10–0.25, clearly-related topics
 # 0.25–0.35, unrelated >0.45. 0.30 keeps precision high without being so
 # strict that it misses near-duplicate stories from different sources.
-VECTOR_THRESHOLD     = 0.30
+VECTOR_THRESHOLD     = 0.26
 
-def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None) -> str | None:
+def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None) -> str | None:
     if not embedding: return None
     try:
+        from psycopg2.extras import DictCursor
         # Adaptive threshold based on category diversity
         threshold = VECTOR_THRESHOLD
         if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион"):
             threshold = 0.22  # Stricter for international news
             
         params = [str(embedding), lookback_hours, str(embedding)]
-        cat_filter = ""
-        if category and category != 'Македонија':
-            cat_filter = "AND a.category = %s"
+        filters = []
+        if category:
+            filters.append("a.category = %s")
             params.insert(1, category)
+        if topic and topic != "Вести":
+            filters.append("a.topic = %s")
+            params.insert(1 + (1 if category else 0), topic)
+
+        where_clause = " AND ".join(filters)
+        if where_clause:
+            where_clause = "AND " + where_clause
 
         # 1. Find the best candidate leveraging HNSW index
         sql = f"""
             SELECT a.cluster_id, a.embedding <=> %s::vector as distance
             FROM articles a
             WHERE a.embedding IS NOT NULL
-              {cat_filter}
+              {where_clause}
               AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
             ORDER BY a.embedding <=> %s::vector
             LIMIT 1
         """
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql, tuple(params))
             row = cur.fetchone()
         
         if row and float(row['distance']) < threshold:
             # 2. Only check size for the single winner
             cid = row['cluster_id']
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,))
                 size_row = cur.fetchone()
             if size_row and int(size_row['n']) < MAX_CLUSTER_SIZE:
@@ -166,7 +174,8 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                             threshold: float = SIMILARITY_THRESHOLD,
                             embedding: list[float] | None = None,
                             category: str | None = None,
-                            source: str | None = None) -> str:
+                            source: str | None = None,
+                            topic: str | None = None) -> str:
     """
     Unified clustering pipeline:
     1. Title Fingerprinting (Instant match for same-story duplicates)
@@ -178,7 +187,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     
     # 2. Semantic Search
     if embedding:
-        cid = find_cluster_semantic(conn, embedding, category=category)
+        cid = find_cluster_semantic(conn, embedding, category=category, topic=topic)
         if cid: return cid
 
     # 3. TF-IDF Hybrid Fallback

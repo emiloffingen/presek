@@ -493,7 +493,7 @@ async def ingest_all_sources_async():
         from database import DictCursor
         cur = conn.cursor(cursor_factory=DictCursor)
         cur.execute(
-            "SELECT title, cluster_id, created_at, category FROM articles ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at, category, topic FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,)
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
@@ -517,12 +517,13 @@ async def ingest_all_sources_async():
                 cluster_id = None
                 if emb:
                     for bc in batch_clusters:
-                        if bc['category'] == category and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
+                        # Group within batch using same criteria (Category + Topic)
+                        if bc['category'] == category and bc['topic'] == topic and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
                             cluster_id = bc['cid']
                             break
                 
                 if not cluster_id:
-                    cluster_id = clustering.find_or_create_cluster(conn, display_title, recent_articles, embedding=emb, category=category, source=c['source'])
+                    cluster_id = clustering.find_or_create_cluster(conn, display_title, recent_articles, embedding=emb, category=category, source=c['source'], topic=topic)
                 
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
@@ -538,8 +539,8 @@ async def ingest_all_sources_async():
                 ))
 
                 if emb:
-                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category})
-                recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": created_at, "category": category})
+                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category, 'topic': topic})
+                recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": created_at, "category": category, "topic": topic})
                 if len(recent_articles) > CLUSTER_LOOKBACK: recent_articles.pop()
 
             except Exception as e:
