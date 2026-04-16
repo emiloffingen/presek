@@ -81,7 +81,7 @@ from .security import validate_cluster_id, validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
-@router.get("/api/intelligence/source-pulse")
+@router.get("/intelligence/source-pulse")
 async def get_source_pulse():
     sql = """
         WITH first_reporters AS (
@@ -107,7 +107,7 @@ async def get_source_pulse():
     """
     return {"status": "success", "data": db.execute(sql)}
 
-@router.get("/api/intelligence/entity/{name}")
+@router.get("/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
     # Validate name parameter
     name = validate_string_param(name, "name", max_length=200, allow_empty=False)
@@ -133,7 +133,7 @@ async def get_entity_profile(name: str):
 
     return {"profile": entity, "related": relationships, "media": media_stats, "categories": category_stats, "sentiment_history": sentiment_history, "clusters": processed}
 
-@router.get("/api/intelligence/top-entities")
+@router.get("/intelligence/top-entities")
 async def get_top_entities(limit: int = 10):
     cache_key = f"api:top-entities:{limit}"
     cached = cached_response(cache_key)
@@ -152,17 +152,17 @@ async def get_top_entities(limit: int = 10):
     set_cache(cache_key, filtered, ttl=600)
     return filtered
 
-@router.get("/api/intelligence/entity/{name}/topics")
+@router.get("/intelligence/entity/{name}/topics")
 async def get_entity_topics(name: str):
     # Validate name parameter
     name = validate_string_param(name, "name", max_length=200, allow_empty=False)
     return {"status": "success", "data": db.execute("SELECT a.topic, COUNT(*) as count FROM articles a JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id WHERE ce.entity_name = %s AND a.topic IS NOT NULL GROUP BY a.topic ORDER BY count DESC LIMIT 5", (name,))}
 
-@router.get("/api/intelligence/live-map")
+@router.get("/intelligence/live-map")
 async def get_live_map():
     return {"status": "success", "data": db.execute("SELECT source, COUNT(*) as activity_score FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY activity_score DESC")}
 
-@router.get("/api/intelligence/compare-sources")
+@router.get("/intelligence/compare-sources")
 async def compare_sources(s1: str, s2: str):
     # Validate source names
     s1 = validate_string_param(s1, "s1", max_length=100, allow_empty=False)
@@ -172,7 +172,7 @@ async def compare_sources(s1: str, s2: str):
     overlap = db.execute_one("WITH src_c AS (SELECT source, cluster_id FROM articles WHERE source = ANY(%s) AND created_at >= NOW() - INTERVAL '30 days' GROUP BY source, cluster_id) SELECT COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NOT NULL) as shared_clusters, COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NULL) as s1_exclusive, COUNT(*) FILTER (WHERE s1.cluster_id IS NULL AND s2.cluster_id IS NOT NULL) as s2_exclusive FROM (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s1 FULL OUTER JOIN (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s2 ON s1.cluster_id = s2.cluster_id", ([s1, s2], s1, s2))
     return {"status": "success", "data": rows, "overlap": overlap}
 
-@router.post("/api/intelligence/recommendations")
+@router.post("/intelligence/recommendations")
 async def get_personalized_recommendations(request: Request):
     try:
         payload = await request.json()

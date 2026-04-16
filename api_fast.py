@@ -111,6 +111,14 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
         )
     return RedirectResponse(url=f"{_public_site_url}{_safe_tracking_redirect_path(redirect)}", status_code=302)
 
+# Include routers with /api prefix (for Nginx/Public)
+app.include_router(news.router, prefix="/api")
+app.include_router(intelligence.router, prefix="/api")
+app.include_router(profile.router, prefix="/api")
+app.include_router(stats.router, prefix="/api")
+app.include_router(system.router, prefix="/api")
+
+# Also include without prefix (for internal frontend-to-api calls in Docker)
 app.include_router(news.router)
 app.include_router(intelligence.router)
 app.include_router(profile.router)

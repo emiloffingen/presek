@@ -31,7 +31,7 @@ from .security import validate_cluster_id, validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
-@router.get("/api/news")
+@router.get("/news")
 async def get_news(
     q: Optional[str] = None,
     category: Optional[str] = None,
@@ -128,7 +128,7 @@ async def get_news(
         log.error(f"News Route Error: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
-@router.get("/api/cluster/{cluster_id}")
+@router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
@@ -205,6 +205,6 @@ async def get_cluster_detail(cluster_id: str):
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/api/live")
+@router.get("/live")
 async def get_live_route():
     return StreamingResponse(event_stream("updates"), media_type="text/event-stream")

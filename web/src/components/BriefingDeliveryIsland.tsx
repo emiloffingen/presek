@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, BellRing, Copy, Mail, Send, Radio, Save } from 'lucide-react';
+import { Bell, BellRing, Copy, Mail, Radio, Save } from 'lucide-react';
 import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
   buildSyncTokenHeaders,
@@ -88,11 +88,6 @@ export default function BriefingDeliveryIsland({
     () => buildDeliveryDigest(content, profile, prefs),
     [content, profile, prefs]
   );
-
-  const telegramHref = useMemo(() => {
-    const text = encodeURIComponent(`${dateLabel}\n\n${digest}\n\nhttps://presek.live/briefing`);
-    return `https://t.me/share/url?url=${encodeURIComponent('https://presek.live/briefing')}&text=${text}`;
-  }, [dateLabel, digest]);
 
   const mailHref = useMemo(() => {
     const subject = encodeURIComponent(`Пресек брифинг · ${dateLabel}`);
@@ -232,9 +227,6 @@ export default function BriefingDeliveryIsland({
           <button type="button" className="delivery-action" onClick={copyDigest}>
             <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
           </button>
-          <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="delivery-action">
-            <Send size={14} /> Сподели на Telegram
-          </a>
         </div>
       </div>
     );
@@ -270,9 +262,6 @@ export default function BriefingDeliveryIsland({
         <button type="button" className="delivery-action" onClick={copyDigest}>
           <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
         </button>
-        <a href={telegramHref} target="_blank" rel="noopener noreferrer" className="delivery-action">
-          <Send size={14} /> Сподели на Telegram
-        </a>
         <a href={mailHref} className="delivery-action">
           <Mail size={14} /> Сподели преку е-пошта
         </a>

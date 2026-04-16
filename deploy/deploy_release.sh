@@ -36,7 +36,7 @@ assert_paths_safe() {
 }
 
 ensure_layout() {
-  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups"
+  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups" "$SHARED_DIR/static/uploads" "$SHARED_DIR/static/generated"
   [ -f "$SHARED_DIR/.env" ] || fail "Missing shared env file at $SHARED_DIR/.env"
   [ -x "$VENV_DIR/bin/uvicorn" ] || fail "Missing Python runtime at $VENV_DIR/bin/uvicorn"
   [ -d "$SHARED_WEB_NODE_MODULES" ] || fail "Missing shared Astro dependencies at $SHARED_WEB_NODE_MODULES. Run deploy/bootstrap_runtime_root.sh first."
@@ -64,11 +64,16 @@ copy_release_tree() {
     --exclude 'current' \
     --exclude 'previous' \
     --exclude 'presek.db' \
+    --exclude 'static/uploads/*' \
+    --exclude 'static/generated/*' \
     "$SOURCE_ROOT/" "$RELEASE_DIR/"
 }
 
 prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
+  mkdir -p "$RELEASE_DIR/static"
+  ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
+  ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 }
 
 update_venv_deps() {

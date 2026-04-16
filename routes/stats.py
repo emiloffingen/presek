@@ -22,7 +22,7 @@ from .security import validate_date, validate_cluster_id, require_admin_token, v
 log = logging.getLogger("presek")
 router = APIRouter()
 
-@router.get("/api/briefing")
+@router.get("/briefing")
 async def get_briefing():
     try:
         row = db.execute_one("SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE")
@@ -35,7 +35,7 @@ async def get_briefing():
         log.error(f"Briefing Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch briefing")
 
-@router.get("/api/archive/heatmap")
+@router.get("/archive/heatmap")
 async def get_archive_heatmap():
     cache_key = "archive:heatmap:v1"
     cached = cached_response(cache_key, ttl=3600)
@@ -46,7 +46,7 @@ async def get_archive_heatmap():
     set_cache(cache_key, fmt, ttl=3600)
     return {"status": "success", "data": fmt}
 
-@router.get("/api/archive")
+@router.get("/archive")
 async def get_archive(date: str = Query(...), source: str = "", topic: str = "", page: int = 0, page_size: int = 50):
     try:
         # Validate inputs
@@ -138,11 +138,11 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
         log.error(f"Archive Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to load archive")
 
-@router.get("/api/stats")
+@router.get("/stats")
 async def get_stats_route():
     return {"status": "success", "data": db.get_stats()}
 
-@router.get("/api/stats/summary")
+@router.get("/stats/summary")
 async def get_stats_summary():
     cached = cached_response("api:stats:summary")
     if cached: return cached
@@ -154,7 +154,7 @@ async def get_stats_summary():
     set_cache("api:stats:summary", res, ttl=300)
     return res
 
-@router.post("/api/newsletter/subscribe")
+@router.post("/newsletter/subscribe")
 async def subscribe_newsletter(request: Request):
     try:
         body = await request.json()
@@ -168,7 +168,7 @@ async def subscribe_newsletter(request: Request):
         return {"status": "error", "message": "Грешка при зачувување. Обидете се подоцна."}
     return {"status": "success", "message": "Успешно се пријавивте!"}
 
-@router.get("/api/stats/full")
+@router.get("/stats/full")
 async def get_stats_full(request: Request):
     if not _source_admin_authorized(request): raise HTTPException(status_code=403, detail="Forbidden")
     cached = cached_response("stats:full", ttl=120)
@@ -198,7 +198,7 @@ async def get_stats_full(request: Request):
     set_cache("stats:full", res, ttl=120)
     return res
 
-@router.get("/api/sources")
+@router.get("/sources")
 async def get_sources_route():
     rows = db.execute("SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC")
     pulse = db.execute("SELECT source, COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source")
@@ -207,7 +207,7 @@ async def get_sources_route():
     cats = db.execute("SELECT source, category, COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC")
     return build_source_reputation_rows(rows, pulse, speed, history, cats)
 
-@router.post("/api/sources/{name}/control")
+@router.post("/sources/{name}/control")
 async def control_source_route(name: str, request: Request):
     if not _source_admin_authorized(request): return _error_json("Unauthorized", 403)
     try:

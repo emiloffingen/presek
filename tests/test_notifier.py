@@ -17,17 +17,15 @@ class TestBreakingNewsNotifier:
     def test_dedup_prevents_double_notify(self):
         """Same cluster_id should only be notified once."""
         n = BreakingNewsNotifier(topic="test")
-        with patch.object(n, 'send_ntfy') as mock_ntfy, \
-             patch.object(n, 'send_telegram') as mock_tg:
+        with patch.object(n, 'send_ntfy') as mock_ntfy:
             n.notify("Breaking news!", 5, "cluster-1")
             n.notify("Breaking news!", 5, "cluster-1")  # duplicate
 
             assert mock_ntfy.call_count == 1
-            assert mock_tg.call_count == 1
 
     def test_different_clusters_both_notified(self):
         n = BreakingNewsNotifier(topic="test")
-        with patch.object(n, 'send_ntfy'), patch.object(n, 'send_telegram'):
+        with patch.object(n, 'send_ntfy'):
             n.notify("News A", 3, "cluster-1")
             n.notify("News B", 4, "cluster-2")
             assert "cluster-1" in n._notified
@@ -35,8 +33,7 @@ class TestBreakingNewsNotifier:
 
     def test_notify_message_format(self):
         n = BreakingNewsNotifier(topic="test")
-        with patch.object(n, 'send_ntfy') as mock_ntfy, \
-             patch.object(n, 'send_telegram') as mock_tg:
+        with patch.object(n, 'send_ntfy') as mock_ntfy:
             n.notify("Важна вест", 5, "c1")
             call_args = mock_ntfy.call_args
             assert "Важна вест" in call_args[0][1]
@@ -50,11 +47,3 @@ class TestBreakingNewsNotifier:
         n = BreakingNewsNotifier(topic="test")
         # Should not raise
         n.send_ntfy("Title", "Message", "c1")
-
-    def test_send_telegram_no_credentials(self):
-        """Without credentials, telegram send should be a no-op."""
-        n = BreakingNewsNotifier(topic="test")
-        n.telegram_token = None
-        n.telegram_chat_id = None
-        # Should not raise
-        n.send_telegram("Message", "c1")

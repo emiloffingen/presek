@@ -287,8 +287,12 @@ class DatabaseManager:
         conn = self.get_conn()
         try:
             with conn.cursor() as cur:
-                cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-
+                try:
+                    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                except Exception:
+                    conn.rollback() # extension might already exist or be in progress
+            
+            with conn.cursor() as cur:
                 # Migration: Handle vector dimension change (768 -> 384 for MiniLM)
                 cur.execute("""
                     DO $$ 

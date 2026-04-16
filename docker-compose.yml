@@ -26,13 +26,15 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     command: uvicorn api_fast:app --host 0.0.0.0 --port 5001 --workers 2
+    env_file: .env
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
     ports:
       - "5001:5001"
+    volumes:
+      - static_uploads:/app/static/uploads
+      - static_generated:/app/static/generated
     depends_on:
       db:
         condition: service_healthy
@@ -44,11 +46,13 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     command: celery -A celery_app worker --loglevel=info --concurrency=1
+    env_file: .env
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+    volumes:
+      - static_uploads:/app/static/uploads
+      - static_generated:/app/static/generated
     depends_on:
       db:
         condition: service_healthy
@@ -60,9 +64,13 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     command: celery -A celery_app beat --loglevel=info
+    env_file: .env
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - static_uploads:/app/static/uploads
+      - static_generated:/app/static/generated
     depends_on:
       db:
         condition: service_healthy
@@ -84,3 +92,5 @@ services:
 
 volumes:
   postgres_data:
+  static_uploads:
+  static_generated:

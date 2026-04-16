@@ -5,7 +5,7 @@ import urllib.parse
 import httpx
 from celery_app import celery_app
 from database import db_manager as db
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
+from config import NTFY_TOPIC, NTFY_TOKEN, BREAKING_SCORE_THRESHOLD
 from ai_engine import sync_call_ai as _call_ai
 from prompts import DAILY_BRIEF_SYSTEM_PROMPT
 from api_helpers import normalize_perspectives
@@ -266,7 +266,6 @@ def _load_weekly_cluster_engagement(days=45):
         "AND created_at >= NOW() - (%s * INTERVAL '1 day')",
         (days,),
     )
-    # (No debug)
     
     child_rows = db.execute(
         "SELECT parent_event_id, event_type "
@@ -292,7 +291,6 @@ def _load_weekly_cluster_engagement(days=45):
     for row in send_rows or []:
         event_id = int(row.get("id") or 0)
         metadata = row.get("metadata") or {}
-        # (No debug)
         
         if isinstance(metadata, str):
             try:
@@ -309,9 +307,6 @@ def _load_weekly_cluster_engagement(days=45):
             if clean_id:
                 cluster_ids.append(clean_id)
         
-        # DEBUG
-        # log.info(f"DEBUG: cluster_ids={cluster_ids}")
-        
         if not cluster_ids:
             continue
 
@@ -322,9 +317,6 @@ def _load_weekly_cluster_engagement(days=45):
             bucket["opens"] += child_stats["opens"]
             bucket["clicks"] += child_stats["clicks"]
 
-    # DEBUG
-    # log.info(f"DEBUG: engagement_keys={list(engagement.keys())}")
-    
     for cluster_id, bucket in engagement.items():
         sends = int(bucket.get("sends") or 0)
         opens = int(bucket.get("opens") or 0)
@@ -1133,29 +1125,6 @@ def send_daily_digest_task():
         digest_module.send_digest()
     except Exception as e:
         log.warning(f"[tasks] Daily digest skipped: {e}")
-
-@celery_app.task
-def send_telegram_briefing_task():
-    """Send daily briefing to Telegram channel."""
-    try:
-        row = db.execute_one(
-            "SELECT content FROM daily_briefings WHERE date = CURRENT_DATE"
-        )
-        if not row or not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-            return
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        final_text = str(row["content"] or "").strip()
-        if final_text:
-            final_text += f"\n\nПрочитајте го целиот брифинг на: {_PUBLIC_SITE_URL}/briefing"
-        
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": final_text[:4096]}
-        
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.post(url, json=payload)
-            resp.raise_for_status()
-        log.info("[tasks] Telegram briefing sent.")
-    except Exception as e:
-        log.warning(f"[tasks] Telegram briefing failed: {e}")
 
 @celery_app.task
 def send_profile_briefings_task():

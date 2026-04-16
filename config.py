@@ -117,7 +117,6 @@ RSS_FEEDS = [
     ("E-Magazin",       "https://emagazin.mk/feed/"),
     ("IT.mk",           "https://it.mk/feed/"),
     ("Sportmanija",     "https://sportmanija.mk/feed/"),
-    ("Portalb",         "https://portalb.mk/feed/"),
     ("Reporter",        "https://reporter.mk/feed/"),
     ("Alsat-M",         "https://alsat.mk/feed/"),
     ("Off.net.mk",      "https://off.net.mk/feed/"),
@@ -169,7 +168,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Сакам да кажам", "Бизнис Вести", "MRT", "Okno",
     "Alfa TV", "Tocka", "IRL", "Nova TV", "Libertas", "Racin",
     "Kajgana", "Pari.com.mk", "E-Magazin",
-    "IT.mk", "Sportmanija", "Portalb",
+    "IT.mk", "Sportmanija",
     "Reporter", "Alsat-M", "Off.net.mk", "Denesen", "24info",
     "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
     "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
@@ -193,7 +192,7 @@ SOURCE_CREDIBILITY = {
     "Радио МОФ": 1.1, "Сакам да кажам": 1.1, "Бизнис Вести": 1.0,
     "Okno": 1.0, "Tocka": 1.1, "IRL": 1.8, "Nova TV": 1.3, "Libertas": 1.1, "Racin": 1.3,
     "Kajgana": 1.0, "Pari.com.mk": 1.2, "E-Magazin": 1.1,
-    "IT.mk": 1.1, "Sportmanija": 0.8, "Portalb": 1.2,
+    "IT.mk": 1.1, "Sportmanija": 0.8,
     "Reporter": 1.0, "Alsat-M": 1.5, "Off.net.mk": 1.0, "Denesen": 0.9,
     "24info": 0.9, "Vreme": 0.9, "Frontline": 0.9, "Nacional": 0.8,
     "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
@@ -227,10 +226,6 @@ JUNK_KEYWORDS = [
 
 # ── Balanced Coverage Settings ──────────────────────────────────
 BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
-
-# ── Telegram Configuration ───────────────────────────────────────
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "") 
 
 # ── Image Generation Configuration ──────────────────────────────
 POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")

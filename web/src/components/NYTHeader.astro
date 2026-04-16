@@ -42,7 +42,6 @@ try {
 }
 
 const hasBreaking = navigationData.breaking.length > 0;
-const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
 ---
 
 {/* ── Sticky header ───────────────────────────────────── */}
@@ -96,7 +95,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
                 <div class="topbar-links hidden sm:flex">
                     <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
                     <a href="/stats" data-astro-reload class="topbar-link">Пулс</a>
-                    <a href={telegramUrl} class="topbar-link topbar-link-accent" target="_blank" rel="noopener noreferrer">Телеграм</a>
                 </div>
                 <div class="flex items-center gap-3">
                     {stats?.last_1h && stats.last_1h > 0 && (
@@ -356,7 +354,6 @@ const telegramUrl = 'https://t.me/+lt4m-3TGQH9iZTAy';
     }
 
     .topbar-link:hover { opacity: 1; }
-    .topbar-link-accent { color: var(--nyt-accent); opacity: 1; }
 
     .topbar-stat {
         display: inline-flex;

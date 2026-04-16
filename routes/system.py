@@ -38,7 +38,7 @@ _APP_ROOT = Path(__file__).resolve().parent.parent
 _STATIC_ROOT = _APP_ROOT / "static"
 _WMO_ICON = {0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌦️", 55: "🌦️", 61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️", 80: "🌦️", 81: "🌦️", 82: "🌦️", 85: "❄️", 86: "❄️", 95: "⛈️", 96: "⛈️", 99: "⛈️"}
 
-@router.get("/api/health")
+@router.get("/health")
 async def health(request: Request):
     admin_token = os.environ.get("PRESEK_ADMIN_TOKEN")
     provided_token = request.headers.get("X-Admin-Token")
@@ -64,7 +64,7 @@ async def serve_manifest(): return FileResponse(os.path.join("static", "manifest
 @router.get("/robots.txt")
 async def robots_txt(): return Response("User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n", media_type="text/plain")
 
-@router.get("/api/weather")
+@router.get("/weather")
 async def get_weather():
     cached = cached_response("weather:skopje", ttl=900)
     if cached: return cached
@@ -80,7 +80,7 @@ async def get_weather():
     except Exception:
         return {"temp": None, "icon": "🌡️"}
 
-@router.get("/api/trending")
+@router.get("/trending")
 async def get_trending_route():
     cached = cached_response("api:trending")
     if cached: return cached
@@ -89,7 +89,7 @@ async def get_trending_route():
     set_cache("api:trending", words, ttl=300)
     return words
 
-@router.get("/api/navigation")
+@router.get("/navigation")
 async def get_navigation():
     """Returns structured navigation items for the header facelift."""
     cache_key = "api:navigation:v1"
@@ -145,7 +145,7 @@ async def get_navigation():
     set_cache(cache_key, res, ttl=600)
     return res
 
-@router.get("/api/cluster/{cluster_id}/share-card")
+@router.get("/cluster/{cluster_id}/share-card")
 async def get_cluster_share_card(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
@@ -230,26 +230,30 @@ async def proxy_image(
                 return serve_fallback("security_block")
 
             import httpx
-            with httpx.Client(timeout=5.0, follow_redirects=True) as client:
-                with client.stream("GET", url, headers=headers) as resp:
-                    # Check peer IP after connection
-                    p_ip = _peer_ip(resp)
-                    if not p_ip or p_ip not in safe_ips:
-                        return serve_fallback("security_ip_block")
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                try:
+                    async with client.stream("GET", url, headers=headers) as resp:
+                        # Check peer IP after connection
+                        p_ip = _peer_ip(resp)
+                        if not p_ip or p_ip not in safe_ips:
+                            return serve_fallback("security_ip_block")
 
-                    if resp.status_code != 200:
-                        return serve_fallback(f"http_{resp.status_code}")
+                        if resp.status_code != 200:
+                            return serve_fallback(f"http_{resp.status_code}")
 
-                    ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
-                    if ctype not in _PROXY_ALLOWED_TYPES:
-                        return serve_fallback("invalid_type")
+                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
+                        if ctype not in _PROXY_ALLOWED_TYPES:
+                            return serve_fallback("invalid_type")
 
-                    # Read content safely
-                    img_data = b""
-                    for chunk in resp.iter_bytes(chunk_size=16384):
-                        img_data += chunk
-                        if len(img_data) > _PROXY_MAX_BYTES:
-                            return serve_fallback("too_large")
+                        # Read content safely
+                        img_data = b""
+                        async for chunk in resp.aiter_bytes(chunk_size=16384):
+                            img_data += chunk
+                            if len(img_data) > _PROXY_MAX_BYTES:
+                                return serve_fallback("too_large")
+                except Exception as e:
+                    log.error(f"[proxy] Fetch failed for {url}: {e}")
+                    return serve_fallback("fetch_failed")
 
         if not img_data:
             return serve_fallback("no_data")

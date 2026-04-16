@@ -1,0 +1,16 @@
+venv
+web/node_modules
+node_modules
+**/__pycache__
+.git
+.pytest_cache
+screenshots
+logs
+static/generated
+static/uploads
+.deploy
+deploy/backups
+*.sql
+*.sql.gz
+*.log
+.env

@@ -74,14 +74,14 @@ def _normalize_server_delivery_row(row):
         "isActive": row.get("is_active"),
     })
 
-@router.post("/api/profile/sync/init")
+@router.post("/profile/sync/init")
 async def init_profile_sync():
     token = secrets.token_urlsafe(18)
     empty = _normalize_synced_profile({})
     db.execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
     return {"status": "success", "token": token, "profile": empty}
 
-@router.get("/api/profile/sync")
+@router.get("/profile/sync")
 async def get_profile_sync(request: Request):
     token = _extract_sync_token(request)
     if not token or len(token) < 12: raise HTTPException(status_code=400, detail="Missing sync token")
@@ -89,7 +89,7 @@ async def get_profile_sync(request: Request):
     if not row: raise HTTPException(status_code=404, detail="Profile not found")
     return {"status": "success", "profile": _normalize_synced_profile(row.get("profile_data") or {}), "updated_at": row.get("updated_at")}
 
-@router.post("/api/profile/sync")
+@router.post("/profile/sync")
 async def save_profile_sync(request: Request):
     try:
         payload = await request.json()
@@ -104,13 +104,13 @@ async def save_profile_sync(request: Request):
     db.execute("UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s", (json.dumps(merged), token), fetch=False)
     return {"status": "success", "profile": merged}
 
-@router.get("/api/profile/vapid-key")
+@router.get("/profile/vapid-key")
 async def get_vapid_key():
     from config import VAPID_PUBLIC_KEY
     if not VAPID_PUBLIC_KEY: raise HTTPException(status_code=404, detail="Web Push not configured")
     return {"status": "success", "key": VAPID_PUBLIC_KEY}
 
-@router.get("/api/profile/delivery")
+@router.get("/profile/delivery")
 async def get_profile_delivery(request: Request):
     token = _extract_sync_token(request)
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
@@ -120,7 +120,7 @@ async def get_profile_delivery(request: Request):
     row = db.execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
     return {"status": "success", "subscription": _normalize_server_delivery_row(row), "updated_at": row.get("updated_at") if row else None}
 
-@router.post("/api/profile/delivery")
+@router.post("/profile/delivery")
 async def save_profile_delivery(request: Request):
     try:
         payload = await request.json()
@@ -144,7 +144,7 @@ async def save_profile_delivery(request: Request):
         (token, sub["channel"], sub["target"], sub["morningBriefing"], sub["weeklyDigest"], sub["breakingTopics"], sub["breakingSources"], sub["isActive"]), fetch=False)
     return {"status": "success", "subscription": sub}
 
-@router.post("/api/profile/suggestion-event")
+@router.post("/profile/suggestion-event")
 async def save_suggestion_events(request: Request):
     try:
         payload = await request.json()
