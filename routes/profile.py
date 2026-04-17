@@ -162,7 +162,7 @@ async def get_personalized_news_sync(request: Request):
 
     # 1. Fetch embeddings for recent clusters
     recent_ids = [r['cluster_id'] for r in recent[:10]] # Limit to last 10 for speed
-    vec_rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
+    vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
     
     if not vec_rows:
         return {"status": "success", "results": []}
@@ -179,7 +179,7 @@ async def get_personalized_news_sync(request: Request):
 
     # 2. Semantic Search for similar news in last 48 hours
     # Exclude already seen clusters
-    rows = db.execute("""
+    rows = await db.async_execute("""
         WITH pool AS (
             SELECT cluster_id, title, source, created_at, category, topic, is_global, is_fact_check,
                    (1 - (embedding <=> %s::vector)) as similarity

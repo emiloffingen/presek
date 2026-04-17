@@ -98,6 +98,16 @@ class DatabaseManager:
         results = self.execute(sql, params)
         return results[0] if results else None
 
+    async def async_execute(self, sql, params=None, fetch=True):
+        """Asynchronous execution via threadpool to avoid blocking FastAPI loop."""
+        import asyncio
+        return await asyncio.to_thread(self.execute, sql, params, fetch)
+
+    async def async_execute_one(self, sql, params=None):
+        """Asynchronous execution of single row query."""
+        import asyncio
+        return await asyncio.to_thread(self.execute_one, sql, params)
+
     @contextmanager
     def connection(self):
         """Context manager for obtaining and returning a connection."""
@@ -108,6 +118,25 @@ class DatabaseManager:
             self.put_conn(conn)
 
     # --- High-Level DAL Methods ---
+
+    async def async_get_articles_by_ids(self, ids):
+        return await self.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
+
+    async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
+        import asyncio
+        return await asyncio.to_thread(self.search_semantic, query_embedding, limit)
+
+    async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50):
+        import asyncio
+        return await asyncio.to_thread(self.hybrid_search, query_text, query_embedding, limit)
+
+    async def async_search_articles(self, query: str, limit: int = 50):
+        import asyncio
+        return await asyncio.to_thread(self.search_articles, query, limit)
+
+    async def async_get_synthesis_ids(self, cluster_ids: list[str]):
+        import asyncio
+        return await asyncio.to_thread(self.get_synthesis_ids, cluster_ids)
 
     def get_articles_by_ids(self, ids):
         return self.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))

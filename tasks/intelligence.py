@@ -299,20 +299,38 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
 
         if summary or perspectives:
+            # Calculate Cluster Centroid (Semantic Center)
+            centroid = None
+            try:
+                import numpy as np
+                def parse_vec(v):
+                    if isinstance(v, str):
+                        import json
+                        v = json.loads(v)
+                    return np.array(v, dtype=np.float32)
+
+                vec_pool = [parse_vec(a['embedding']) for a in article_rows if a.get('embedding')]
+                if vec_pool:
+                    centroid = np.mean(vec_pool, axis=0).tolist()
+            except Exception as ve:
+                log.warning(f"[tasks] Centroid calculation failed for {cluster_id}: {ve}")
+
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (cluster_id) DO UPDATE
-                   SET summary = EXCLUDED.summary,
-                       perspectives = EXCLUDED.perspectives,
-                       generated_article = EXCLUDED.generated_article,
-                       created_at = EXCLUDED.created_at,
-                       sentiment = EXCLUDED.sentiment,
-                       verification_report = EXCLUDED.verification_report,
-                       quote = EXCLUDED.quote""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote),
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote, centroid)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (cluster_id) DO UPDATE SET 
+                       summary = EXCLUDED.summary, 
+                       perspectives = EXCLUDED.perspectives, 
+                       generated_article = EXCLUDED.generated_article, 
+                       created_at = EXCLUDED.created_at, 
+                       sentiment = EXCLUDED.sentiment, 
+                       verification_report = EXCLUDED.verification_report, 
+                       quote = EXCLUDED.quote,
+                       centroid = EXCLUDED.centroid""",
+                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid),
                 fetch=False
             )
+
 
             # Real-time Sports Score Alert
             try:

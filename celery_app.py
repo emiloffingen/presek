@@ -21,8 +21,17 @@ def reset_db_pool(**kwargs):
 
 @task_failure.connect
 def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):
-    """Log permanently failed tasks for monitoring."""
-    log.error(f"[celery-failure] Task {sender.name} (id={task_id}) permanently failed: {exception}")
+    """Log permanently failed tasks to Dead Letter Queue (DLQ) in database."""
+    log.error(f"[celery-failure] Task {sender.name} (id={task_id}) failed: {exception}")
+    try:
+        from database import db_manager
+        import json
+        db_manager.execute("""
+            INSERT INTO failed_tasks (task_name, args, kwargs, error_message)
+            VALUES (%s, %s::jsonb, %s::jsonb, %s)
+        """, (sender.name, json.dumps(args or []), json.dumps(kwargs or {}), str(exception)), fetch=False)
+    except Exception as e:
+        log.error(f"[celery-dlq] Failed to store task error in DB: {e}")
 
 # Initialize Celery
 celery_app = Celery(

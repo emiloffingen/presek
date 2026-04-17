@@ -93,23 +93,23 @@ async def get_news(
         if q:
             from embeddings import generate_query_embedding
             query_vec = generate_query_embedding(q)
-            rows = db.hybrid_search(q, query_vec, limit=row_limit) if query_vec else db.search_articles(q, limit=row_limit)
+            rows = await db.async_hybrid_search(q, query_vec, limit=row_limit) if query_vec else await db.async_search_articles(q, limit=row_limit)
         elif entity:
-            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM cluster_entities ce JOIN articles a USING (cluster_id) WHERE ce.entity_name = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (entity, page_size * (page + 1)))
+            rows = await db.async_execute("SELECT cluster_id, MAX(created_at) as last_article FROM cluster_entities ce JOIN articles a USING (cluster_id) WHERE ce.entity_name = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (entity, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
-            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE topic = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (topic, page_size * (page + 1)))
+            rows = await db.async_execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE topic = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (topic, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:
-            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE category = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (category, page_size * (page + 1)))
+            rows = await db.async_execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles WHERE category = %s GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (category, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         else:
-            rows = db.execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (page_size * (page + 1),))
+            rows = await db.async_execute("SELECT cluster_id, MAX(created_at) as last_article FROM articles GROUP BY cluster_id ORDER BY last_article DESC LIMIT %s", (page_size * (page + 1),))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
 
         clusters = defaultdict(list)
         cluster_relevance = {}
@@ -135,9 +135,9 @@ async def get_news(
         start = page * page_size
         paged_clusters = ranked_clusters[start:start + page_size]
         cid_list = [c[0]["cluster_id"] for c in paged_clusters]
-        meta_rows = db.execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cid_list,)) if cid_list else []
+        meta_rows = await db.async_execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cid_list,)) if cid_list else []
         meta_map = {r['cluster_id']: r for r in meta_rows}
-        synthesis_ids = set(db.get_synthesis_ids(cid_list)) if cid_list else set()
+        synthesis_ids = set(await db.async_get_synthesis_ids(cid_list)) if cid_list else set()
 
         result = []
         for arts in paged_clusters:
@@ -187,7 +187,7 @@ async def semantic_search(
             raise HTTPException(status_code=500, detail="Failed to generate query embedding")
         
         # Fetch articles using vector distance
-        rows = db.search_semantic(query_vec, limit=limit)
+        rows = await db.async_search_semantic(query_vec, limit=limit)
         
         # Group by cluster ID
         clusters = defaultdict(list)
@@ -348,7 +348,7 @@ async def get_historical_events(cluster_id: str):
 
     try:
         # 1. Get average embedding for the target cluster
-        vec_rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
+        vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
         if not vec_rows:
             return {"status": "success", "events": []}
         
@@ -364,7 +364,7 @@ async def get_historical_events(cluster_id: str):
 
         # 2. Query archive using vector similarity
         # Exclude today's window to find truly historical context
-        rows = db.execute("""
+        rows = await db.async_execute("""
             WITH archive_pool AS (
                 SELECT cluster_id, title, created_at, category,
                        (1 - (embedding <=> %s::vector)) as similarity
