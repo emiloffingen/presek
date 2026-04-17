@@ -165,6 +165,60 @@ async def get_news(
         log.error(f"News Route Error: {e}", exc_info=True)
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
+@router.get("/search/semantic")
+async def semantic_search(
+    q: str = Query(..., min_length=3, max_length=API_MAX_Q_LEN),
+    limit: int = Query(24, ge=1, le=50)
+):
+    """
+    Explicit Semantic Search endpoint.
+    Uses MiniLM embeddings to find relevant clusters across languages.
+    """
+    cache_key = f"api:search:semantic:{q}:{limit}"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    try:
+        from embeddings import generate_query_embedding
+        query_vec = generate_query_embedding(q)
+        if not query_vec:
+            raise HTTPException(status_code=500, detail="Failed to generate query embedding")
+        
+        # Fetch articles using vector distance
+        rows = db.search_semantic(query_vec, limit=limit)
+        
+        # Group by cluster ID
+        clusters = defaultdict(list)
+        for r in rows:
+            r['reading_time'] = calculate_reading_time(r.get('description', ''))
+            cid = r['cluster_id']
+            clusters[cid].append(r)
+
+        # Process and sort clusters by their best similarity score
+        processed = [annotate_cluster_articles(arts) for arts in clusters.values()]
+        processed.sort(key=lambda arts: arts[0].get('similarity', 0), reverse=True)
+
+        result = []
+        for arts in processed:
+            main = arts[0]
+            cid = main["cluster_id"]
+            result.append({
+                "cluster_id": cid,
+                "articles": [_public_article_payload(article) for article in arts],
+                "similarity": round(float(main.get('similarity', 0)), 4),
+                "reading_time": main.get('reading_time', 1),
+                "score": round(score_cluster(arts), 3),
+                "entities": main.get("entity_names", [])
+            })
+
+        final_response = {"status": "success", "results": result}
+        set_cache(cache_key, final_response, ttl=300)
+        return final_response
+    except Exception as e:
+        log.error(f"Semantic Search Route Error: {e}", exc_info=True)
+        if isinstance(e, HTTPException): raise e
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str):
     # Validate cluster_id
