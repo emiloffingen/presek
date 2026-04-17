@@ -101,40 +101,41 @@ class CrawlerService:
             
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                # Set a common viewport and user agent
-                context = await browser.new_context(
-                    viewport={"width": 1280, "height": 800},
-                    user_agent=self.headers["User-Agent"]
-                )
-                page = await context.new_page()
-                
-                # Wait for 'networkidle' to ensure JS has finished loading content
-                await page.goto(url, wait_until="networkidle", timeout=30000)
-                
-                # Some sites might need a small extra sleep for hydration
-                await asyncio.sleep(1)
-                
-                html_content = await page.content()
-                final_url = page.url
-                
-                # Capture a screenshot as a fallback image if og:image is missing
-                screenshot_bytes = None
-                
-                # Extract metadata using page.evaluate to get computed properties
-                metadata = await page.evaluate("""() => {
-                    const getMeta = (name) => {
-                        const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
-                        return el ? el.getAttribute('content') : null;
-                    };
-                    return {
-                        title: document.title,
-                        ogImage: getMeta('og:image'),
-                        description: getMeta('og:description') || getMeta('description'),
-                        author: getMeta('author') || getMeta('article:author'),
-                    };
-                }""")
-                
-                await browser.close()
+                try:
+                    # Set a common viewport and user agent
+                    context = await browser.new_context(
+                        viewport={"width": 1280, "height": 800},
+                        user_agent=self.headers["User-Agent"]
+                    )
+                    page = await context.new_page()
+                    
+                    # Wait for 'networkidle' to ensure JS has finished loading content
+                    await page.goto(url, wait_until="networkidle", timeout=30000)
+                    
+                    # Some sites might need a small extra sleep for hydration
+                    await asyncio.sleep(1)
+                    
+                    html_content = await page.content()
+                    final_url = page.url
+                    
+                    # Capture a screenshot as a fallback image if og:image is missing
+                    screenshot_bytes = None
+                    
+                    # Extract metadata using page.evaluate to get computed properties
+                    metadata = await page.evaluate("""() => {
+                        const getMeta = (name) => {
+                            const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
+                            return el ? el.getAttribute('content') : null;
+                        };
+                        return {
+                            title: document.title,
+                            ogImage: getMeta('og:image'),
+                            description: getMeta('og:description') || getMeta('description'),
+                            author: getMeta('author') || getMeta('article:author'),
+                        };
+                    }""")
+                finally:
+                    await browser.close()
 
                 # Still use trafilatura on the rendered HTML for the best text extraction
                 extracted = self._parse_with_trafilatura(html_content, final_url)
@@ -164,27 +165,28 @@ class CrawlerService:
 
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(user_agent=self.headers["User-Agent"])
-                # Increase timeout for potential redirects
-                await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
-                
-                # Look for <link rel="alternate" type="application/rss+xml" ...>
-                found = await page.evaluate("""() => {
-                    const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
-                    return links
-                        .filter(l => l.type && (l.type.includes('rss') || l.type.includes('atom') || l.type.includes('xml')))
-                        .map(l => l.href);
-                }""")
-                
-                # Also look for <a> tags that look like feeds
-                found_links = await page.evaluate("""() => {
-                    const anchors = Array.from(document.querySelectorAll('a'));
-                    return anchors
-                        .filter(a => a.href && (a.href.includes('/feed') || a.href.includes('rss.xml')))
-                        .map(a => a.href);
-                }""")
-                
-                await browser.close()
+                try:
+                    page = await browser.new_page(user_agent=self.headers["User-Agent"])
+                    # Increase timeout for potential redirects
+                    await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
+                    
+                    # Look for <link rel="alternate" type="application/rss+xml" ...>
+                    found = await page.evaluate("""() => {
+                        const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
+                        return links
+                            .filter(l => l.type && (l.type.includes('rss') || l.type.includes('atom') || l.type.includes('xml')))
+                            .map(l => l.href);
+                    }""")
+                    
+                    # Also look for <a> tags that look like feeds
+                    found_links = await page.evaluate("""() => {
+                        const anchors = Array.from(document.querySelectorAll('a'));
+                        return anchors
+                            .filter(a => a.href && (a.href.includes('/feed') || a.href.includes('rss.xml')))
+                            .map(a => a.href);
+                    }""")
+                finally:
+                    await browser.close()
                 
                 # Unique-ify and resolve relative URLs
                 seen = set()
