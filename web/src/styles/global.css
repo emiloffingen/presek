@@ -99,24 +99,24 @@
     }
 
     .dark {
-        /* Core Palette (Dark - OLED True Black) */
-        --background: #000000;
+        /* Core Palette (Dark - Rich OLED Navy) */
+        --background: #05070a;
         --foreground: #f4f4f5;
-        --card: #0a0a0a;
+        --card: #0a0c12;
         --card-foreground: #f4f4f5;
         --primary: #f4f4f5;
         --primary-foreground: #000000;
-        --secondary: #141414;
+        --secondary: #11141d;
         --secondary-foreground: #e4e4e7;
-        --muted: #0a0a0a;
-        --muted-foreground: #a1a1aa;
+        --muted: #0a0c12;
+        --muted-foreground: #94a3b8;
         --accent: #f4f4f5;
         --accent-foreground: #000000;
-        --border: #1a1a1a;
-        --input: #1a1a1a;
+        --border: #1e293b;
+        --input: #1e293b;
         --ring: #3b82f6;
-        --surface-soft: #050505;
-        --surface-strong: #0f0f0f;
+        --surface-soft: #080a0f;
+        --surface-strong: #0f172a;
 
         /* NYT Smart Colors (Dark Mode - Automated Inversion) */
         --nyt-black: #f4f4f5;
