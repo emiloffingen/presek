@@ -144,6 +144,82 @@ async def save_profile_delivery(request: Request):
         (token, sub["channel"], sub["target"], sub["morningBriefing"], sub["weeklyDigest"], sub["breakingTopics"], sub["breakingSources"], sub["isActive"]), fetch=False)
     return {"status": "success", "subscription": sub}
 
+@router.post("/profile/sync/personalized-news")
+async def get_personalized_news_sync(request: Request):
+    """
+    Takes a profile payload, calculates the semantic interest vector 
+    of the user and returns semantically relevant clusters from the last 48h.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    
+    profile = _normalize_synced_profile(payload.get("profile") or {})
+    recent = profile.get("recentClusters") or []
+    if not recent:
+        return {"status": "success", "results": []}
+
+    # 1. Fetch embeddings for recent clusters
+    recent_ids = [r['cluster_id'] for r in recent[:10]] # Limit to last 10 for speed
+    vec_rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
+    
+    if not vec_rows:
+        return {"status": "success", "results": []}
+
+    import numpy as np
+    def parse_vec(v):
+        if isinstance(v, str):
+            import json
+            v = json.loads(v)
+        return np.array(v, dtype=np.float32)
+
+    vecs = [parse_vec(r['embedding']) for r in vec_rows]
+    interest_vec = np.mean(vecs, axis=0).tolist()
+
+    # 2. Semantic Search for similar news in last 48 hours
+    # Exclude already seen clusters
+    rows = db.execute("""
+        WITH pool AS (
+            SELECT cluster_id, title, source, created_at, category, topic, is_global, is_fact_check,
+                   (1 - (embedding <=> %s::vector)) as similarity
+            FROM articles
+            WHERE created_at >= NOW() - INTERVAL '48 hours'
+              AND cluster_id != ALL(%s)
+              AND embedding IS NOT NULL
+        )
+        SELECT DISTINCT ON (cluster_id) *
+        FROM pool
+        WHERE similarity > 0.60
+        ORDER BY cluster_id, similarity DESC
+        LIMIT 20
+    """, (interest_vec, recent_ids))
+
+    # 3. Group and annotate
+    from utils import annotate_cluster_articles
+    from .news import _public_article_payload
+    from collections import defaultdict
+    
+    clusters = defaultdict(list)
+    for r in rows:
+        clusters[r['cluster_id']].append(r)
+
+    results = []
+    # Rank by similarity
+    sorted_clusters = sorted(clusters.values(), key=lambda arts: arts[0]['similarity'], reverse=True)
+    
+    for arts in sorted_clusters[:6]: # Return top 6 clusters
+        main = arts[0]
+        annotated = annotate_cluster_articles(arts)
+        results.append({
+            "cluster_id": main["cluster_id"],
+            "articles": [_public_article_payload(a) for a in annotated],
+            "similarity": round(float(main['similarity']), 4),
+            "reason": "Поврзано со вашите интереси"
+        })
+
+    return {"status": "success", "results": results}
+
 @router.post("/profile/suggestion-event")
 async def save_suggestion_events(request: Request):
     try:
