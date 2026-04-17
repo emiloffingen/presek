@@ -4,7 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import { SourceSpectrum } from '../components/SourceSpectrum.tsx';
 import ReaderSuggestionAnalyticsIsland from '../components/ReaderSuggestionAnalyticsIsland.tsx';
-import { BarChart3, Activity, Zap, Layers } from 'lucide-react';
+import { BarChart3, Activity, Zap, Layers, Globe, ShieldCheck, Cpu } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 
 const API_URL = apiBaseUrl();
@@ -24,72 +24,84 @@ try {
 
 const topSource = stats?.by_source?.[0] ?? null;
 const topCategory = stats?.by_category?.[0] ?? null;
-const editorAnalytics = stats?.editor_analytics ?? {};
-const hasEditorSignals = Boolean(
-	(editorAnalytics.synced_profiles ?? 0) ||
-	(editorAnalytics.active_profiles_7d ?? 0) ||
-	(editorAnalytics.delivery_active ?? 0) ||
-	(editorAnalytics.delivery_targets ?? 0) ||
-	(editorAnalytics.opens_7d ?? 0) ||
-	(editorAnalytics.clicks_7d ?? 0)
-);
-const hasFollowData = Boolean(
-	(editorAnalytics.top_followed_topics ?? []).length ||
-	(editorAnalytics.top_followed_sources ?? []).length
-);
-const hasSurfacePerformance = Boolean((editorAnalytics.suggestion_surface_performance ?? []).length);
-const hasKindPerformance = Boolean((editorAnalytics.suggestion_kind_performance ?? []).length);
-const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performance ?? []).length);
+const intelligence = stats?.intelligence ?? {};
 ---
 
-<Layout title="Статистика" description="Дневната слика на медиумската сцена: обем, ритам, доминантни извори и редакциски сигнали.">
+<Layout title="Медиумски Пулс" description="Детална аналитика за македонскиот медиумски простор: обем, баланс и вештачка интелигенција.">
     <NYTHeader />
 
 	<main class="site-layout py-12">
 		<div class="stats-shell editorial-shell">
 			<header class="stats-header editorial-header motion-rise">
-				<span class="page-kicker">Аналитика</span>
+				<span class="page-kicker">Интелигенција</span>
 				<h1 class="stats-headline editorial-headline">
 					Медиумски пулс
 				</h1>
 				<p class="stats-subtitle editorial-intro">
-					Дневната слика на медиумската сцена: обем, ритам и доминантни извори.
+					Дневната слика на медиумската сцена: обем, ритам, диверзитет и AI транспарентност.
 				</p>
 			</header>
 
 			{stats ? (
 				<div class="stats-flow">
-					<section class="stats-overview motion-rise motion-delay-1">
-						<div class="overview-primary editorial-panel editorial-panel-strong">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Главна слика</p>
-							<p class="overview-value">{stats.last_24h.toLocaleString()}</p>
-							<p class="overview-copy">
-								објави во последните 24 часа низ {stats.total_feeds} извори. Денот најсилно го движи {topSource ? topSource.source : 'водечката редакциска група'}.
+					<section class="stats-hero-grid motion-rise motion-delay-1">
+						<div class="hero-primary editorial-panel editorial-panel-strong">
+							<p class="nyt-section-label flex items-center gap-1"><Activity size={10}/> ОБЕМ (24ч)</p>
+							<p class="hero-value">{stats.last_24h.toLocaleString()}</p>
+							<p class="hero-copy">
+								нови објави низ {stats.total_feeds} извори. Во просек, по една вест на секои {Math.round(86400 / stats.last_24h)} секунди.
 							</p>
-							<div class="overview-meta">
-								<span>Сублимат: {stats.summarized_pct}%</span>
-								<span>Вкупно статии: {stats.total_articles.toLocaleString()}</span>
-							</div>
 						</div>
-						<div class="overview-secondary">
-							<div class="metric-card editorial-panel metric-card-accent">
-								<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Најгласен извор</p>
-								<p class="metric-value metric-value-label">{topSource?.source ?? 'Нема податок'}</p>
-								<p class="metric-caption">{topSource ? `${topSource.n} статии денес.` : 'Се уште нема доволно податоци.'}</p>
+
+						<div class="hero-secondary grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div class="metric-card editorial-panel">
+								<p class="nyt-section-label flex items-center gap-1"><ShieldCheck size={10}/> Плурализам (24ч)</p>
+								<p class="metric-value">{intelligence.pluralism?.high_consensus_pct}%</p>
+								<p class="metric-caption">Сторири со широк консензус од сите медиумски сфери.</p>
 							</div>
 							<div class="metric-card editorial-panel">
-								<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Водечка категорија</p>
-								<p class="metric-value metric-value-label">{topCategory?.cat ?? 'Нема податок'}</p>
-								<p class="metric-caption">{topCategory ? `${topCategory.n} објави во оваа категорија.` : 'Се уште нема доволно податоци.'}</p>
+								<p class="nyt-section-label flex items-center gap-1"><Globe size={10}/> Светот кај нас</p>
+								<p class="metric-value">{intelligence.international_share_pct}%</p>
+								<p class="metric-caption">Удел на вестите од светот во вкупниот дневен волумен.</p>
 							</div>
 						</div>
 					</section>
 
+                    <section class="intelligence-overview motion-rise motion-delay-2">
+                        <div class="editorial-panel">
+                            <h2 class="stats-section-title flex items-center gap-2"><Cpu size={16} className="text-nyt-accent" /> Транспарентност на Вештачка Интелигенција</h2>
+                            <div class="ai-transparency-grid mt-6">
+                                <div class="ai-stat-row">
+                                    <div class="ai-stat-main">
+                                        <span class="text-3xl font-serif font-black">{intelligence.ai_transparency?.ai_ratio}%</span>
+                                        <span class="nyt-section-label">AI Синтеза</span>
+                                    </div>
+                                    <div class="ai-stat-bar-wrap">
+                                        <div class="ai-stat-bar-fill" style={`width: ${intelligence.ai_transparency?.ai_ratio}%`}></div>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground mt-2">
+                                        Удел на вестите синтетизирани преку Mistral/Gemini модели. Останатите се обработени локално.
+                                    </p>
+                                </div>
+                                <div class="ai-breakdown-mini grid grid-cols-2 gap-6 pt-4 border-t border-border mt-4">
+                                    <div>
+                                        <span class="block text-xs font-black uppercase text-muted-foreground">AI Модели</span>
+                                        <span class="block text-lg font-serif font-bold">{intelligence.ai_transparency?.ai_summaries}</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-xs font-black uppercase text-muted-foreground">Локален NLP</span>
+                                        <span class="block text-lg font-serif font-bold">{intelligence.ai_transparency?.local_summaries}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
 					{stats.by_source && stats.by_source.length > 0 && (
-						<section class="stats-landscape motion-rise motion-delay-1">
+						<section class="stats-landscape motion-rise motion-delay-2">
 							<div class="editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Глобален Медиумски Пејзаж</h2>
-								<p class="text-sm text-muted-foreground mb-6">Дистрибуција на сите активни објави во последните 24 часа според уредувачкиот профил на медиумите.</p>
+								<h2 class="stats-section-title editorial-panel-title">Медиумски Спектар</h2>
+								<p class="text-sm text-muted-foreground mb-6">Дистрибуција на активните објави според уредувачкиот профил на медиумите во последните 24 часа.</p>
 								<SourceSpectrum 
 									articles={stats.by_source.flatMap((s: any) => 
 										Array(s.n).fill({ source: s.source })
@@ -100,36 +112,16 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 						</section>
 					)}
 
-					<div class="stats-metrics motion-rise motion-delay-1">
-						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Layers size={10}/> Вкупно статии</p>
-							<p class="metric-value">{stats.total_articles.toLocaleString()}</p>
-						</div>
-						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Activity size={10}/> Последни 24ч</p>
-							<p class="metric-value text-nyt-red">{stats.last_24h.toLocaleString()}</p>
-						</div>
-						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><Zap size={10}/> Пресек сублимат 24ч</p>
-							<p class="metric-value">{stats.summarized_pct}%</p>
-							<p class="metric-caption">{stats.summarized_24h} од {stats.last_24h.toLocaleString()} статии во последните 24 часа.</p>
-						</div>
-						<div class="metric-card editorial-panel">
-							<p class="nyt-section-label text-muted-foreground mb-2 flex items-center gap-1"><BarChart3 size={10}/> Извори</p>
-							<p class="metric-value">{stats.total_feeds}</p>
-						</div>
-					</div>
-
-					<div class="stats-grid motion-rise motion-delay-2">
+					<div class="stats-grid motion-rise motion-delay-3">
 						<div class="stats-main">
-							<section class="stats-module stats-module-priority editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Најактивни медиуми</h2>
-								<div class="source-bars">
+							<section class="stats-module editorial-panel">
+								<h2 class="stats-section-title">Најактивни извори (24ч)</h2>
+								<div class="source-bars mt-6">
 									{stats.by_source.slice(0, 10).map((src: any) => (
 										<div class="source-row">
 											<div class="source-row-top">
-												<span>{src.source}</span>
-												<span>{src.n} статии</span>
+												<span class="font-bold">{src.source}</span>
+												<span class="text-muted-foreground">{src.n}</span>
 											</div>
 											<div class="source-bar-track">
 												<div 
@@ -143,307 +135,77 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 							</section>
 
 							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Распределба по категории</h2>
-								<div class="category-grid">
-									{stats.by_category.map((cat: any) => (
-										<div class="category-card">
-											<p class="nyt-section-label text-muted-foreground mb-1">{cat.cat}</p>
-											<p class="category-value">{cat.n}</p>
-										</div>
-									))}
-								</div>
-							</section>
-
-							{hasFollowData && (
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Што следат луѓето</h2>
-								<div class="follow-grid">
-									<div class="follow-card">
-										<h3 class="follow-title">Најследени Теми</h3>
+								<h2 class="stats-section-title">Најследени од читателите</h2>
+								<div class="follow-grid mt-6">
+									<div class="follow-card p-4 bg-secondary/20 border border-border">
+										<h3 class="text-xs font-black uppercase mb-4 text-nyt-accent tracking-widest">Топ Теми</h3>
 										<div class="follow-list">
-											{(stats.editor_analytics?.top_followed_topics ?? []).slice(0, 6).map((item: any, idx: number) => (
-												<div class="follow-row">
-													<span class="follow-rank">{idx + 1}.</span>
-													<span class="follow-label">{item.topic}</span>
-													<span class="follow-count">{item.followers}</span>
+											{(stats.editor_analytics?.top_followed_topics ?? []).slice(0, 5).map((item: any, idx: number) => (
+												<div class="flex justify-between py-2 border-b border-border last:border-0">
+													<span class="font-serif font-bold italic">{item.topic}</span>
+													<span class="font-black text-xs opacity-60">{item.followers}</span>
 												</div>
 											))}
 										</div>
 									</div>
-									<div class="follow-card">
-										<h3 class="follow-title">Најследени Извори</h3>
+									<div class="follow-card p-4 bg-secondary/20 border border-border">
+										<h3 class="text-xs font-black uppercase mb-4 text-nyt-accent tracking-widest">Топ Извори</h3>
 										<div class="follow-list">
-											{(stats.editor_analytics?.top_followed_sources ?? []).slice(0, 6).map((item: any, idx: number) => (
-												<div class="follow-row">
-													<span class="follow-rank">{idx + 1}.</span>
-													<span class="follow-label">{item.source}</span>
-													<span class="follow-count">{item.followers}</span>
+											{(stats.editor_analytics?.top_followed_sources ?? []).slice(0, 5).map((item: any, idx: number) => (
+												<div class="flex justify-between py-2 border-b border-border last:border-0">
+													<span class="font-serif font-bold italic">{item.source}</span>
+													<span class="font-black text-xs opacity-60">{item.followers}</span>
 												</div>
 											))}
 										</div>
 									</div>
 								</div>
 							</section>
-							)}
-
-							{hasEditorSignals && (
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Редакциски сигнали</h2>
-								<div class="editor-metrics">
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Синхронизирани профили</p>
-										<p class="editor-value">{stats.editor_analytics?.synced_profiles ?? 0}</p>
-										<p class="editor-copy">Профили што зачувуваат теми, извори или историја на читање.</p>
-									</div>
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Активни во 7 дена</p>
-										<p class="editor-value">{stats.editor_analytics?.active_profiles_7d ?? 0}</p>
-										<p class="editor-copy">Профили што се ажурирале во последната недела.</p>
-									</div>
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Активна достава</p>
-										<p class="editor-value">{stats.editor_analytics?.delivery_active ?? 0}</p>
-										<p class="editor-copy">Синхронизирани профили со вклучена достава.</p>
-									</div>
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Ntfy дестинации</p>
-										<p class="editor-value">{stats.editor_analytics?.delivery_targets ?? 0}</p>
-										<p class="editor-copy">Профили со успешно поврзан канал за испорака.</p>
-									</div>
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Отворања во 7 дена</p>
-										<p class="editor-value">{stats.editor_analytics?.opens_7d ?? 0}</p>
-										<p class="editor-copy">Отворања на доставени брифинзи преку испратените известувања.</p>
-									</div>
-									<div class="editor-card">
-										<p class="nyt-section-label text-muted-foreground mb-1">Кликови во 7 дена</p>
-										<p class="editor-value">{stats.editor_analytics?.clicks_7d ?? 0}</p>
-										<p class="editor-copy">Кликови кон брифинг, кластер или поврзана страница.</p>
-									</div>
-								</div>
-							</section>
-							)}
-
-							{hasSurfacePerformance && (
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Конверзија На Површини За Следење</h2>
-								<div class="follow-grid">
-									{(stats.editor_analytics?.suggestion_surface_performance ?? []).slice(0, 6).map((item: any) => (
-										<div class="follow-card">
-											<h3 class="follow-title">{item.label}</h3>
-											<div class="system-list">
-												<div class="system-row">
-													<span>Тренд 7 дена:</span>
-													<span class="text-foreground font-black">{item.trend_label} ({item.trend_delta > 0 ? '+' : ''}{item.trend_delta} пп)</span>
-												</div>
-												<div class="system-row">
-													<span>Сега / претходно:</span>
-													<span class="text-foreground font-black">{item.current_7d_rate}% / {item.previous_7d_rate}%</span>
-												</div>
-												<div class="system-row">
-													<span>Импресии:</span>
-													<span class="text-foreground font-black">{item.impressions}</span>
-												</div>
-												<div class="system-row">
-													<span>Следења:</span>
-													<span class="text-foreground font-black">{item.follows}</span>
-												</div>
-												<div class="system-row">
-													<span>Конверзија:</span>
-													<span class="text-foreground font-black">{item.conversion_rate}%</span>
-												</div>
-												<div class="system-row">
-													<span>Теми / извори:</span>
-													<span class="text-foreground font-black">{item.topic_follows} / {item.source_follows}</span>
-												</div>
-											</div>
-										</div>
-									))}
-								</div>
-							</section>
-							)}
-
-							{hasKindPerformance && (
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Конверзија По Вид На Предлог</h2>
-								<div class="follow-grid">
-									{(stats.editor_analytics?.suggestion_kind_performance ?? []).slice(0, 2).map((item: any) => (
-										<div class="follow-card">
-											<h3 class="follow-title">{item.label}</h3>
-											<div class="system-list">
-												<div class="system-row">
-													<span>Импресии:</span>
-													<span class="text-foreground font-black">{item.impressions}</span>
-												</div>
-												<div class="system-row">
-													<span>Следења:</span>
-													<span class="text-foreground font-black">{item.follows}</span>
-												</div>
-												<div class="system-row">
-													<span>Конверзија:</span>
-													<span class="text-foreground font-black">{item.conversion_rate}%</span>
-												</div>
-												<div class="system-row">
-													<span>Отфрлања:</span>
-													<span class="text-foreground font-black">{item.dismissals}</span>
-												</div>
-											</div>
-										</div>
-									))}
-								</div>
-							</section>
-							)}
 
 							<ReaderSuggestionAnalyticsIsland client:load />
-
-							{hasDeliveryPerformance && (
-							<section class="stats-module editorial-panel">
-								<h2 class="stats-section-title editorial-panel-title">Најуспешни Типови На Достава</h2>
-								<div class="follow-grid">
-									{(stats.editor_analytics?.delivery_kind_performance ?? []).slice(0, 3).map((item: any) => (
-										<div class="follow-card">
-											<h3 class="follow-title">{item.label}</h3>
-											<div class="system-list">
-												<div class="system-row">
-													<span>Испраќања:</span>
-													<span class="text-foreground font-black">{item.sends}</span>
-												</div>
-												<div class="system-row">
-													<span>Отворања:</span>
-													<span class="text-foreground font-black">{item.opens}</span>
-												</div>
-												<div class="system-row">
-													<span>Кликови:</span>
-													<span class="text-foreground font-black">{item.clicks}</span>
-												</div>
-												<div class="system-row">
-													<span>Стапка на отворање:</span>
-													<span class="text-foreground font-black">{item.open_rate}%</span>
-												</div>
-												<div class="system-row">
-													<span>Стапка на клик:</span>
-													<span class="text-foreground font-black">{item.click_rate}%</span>
-												</div>
-											</div>
-										</div>
-									))}
-								</div>
-							</section>
-							)}
 						</div>
 
 						<aside class="stats-rail">
-								<div class="rail-card editorial-panel">
-									<h3 class="rail-card-title editorial-panel-title">Оперативна Слика</h3>
-									<div class="system-list">
+								<div class="rail-card editorial-panel-strong">
+									<h3 class="rail-card-title flex items-center gap-2"><Zap size={14} /> Оперативен Статус</h3>
+									<div class="system-list mt-4">
 										<div class="system-row">
-											<span>Статус:</span>
-											<span class="text-green-600 font-black">Активно</span>
+											<span>Систем:</span>
+											<span class="text-emerald-500 font-black">Оптимално</span>
 										</div>
-									<div class="system-row">
-										<span>База на податоци:</span>
-										<span class="text-foreground font-black">{stats.db_size_mb} MB</span>
-									</div>
-									<div class="system-row">
-										<span>Најстара објава:</span>
-										<span class="text-foreground font-black">{new Date(stats.oldest_article).toLocaleDateString('mk-MK')}</span>
-									</div>
-									<div class="system-row">
-										<span>Најнова објава:</span>
-										<span class="text-foreground font-black">{new Date(stats.new_article).toLocaleTimeString('mk-MK')}</span>
-									</div>
-								</div>
-							</div>
+                                        <div class="system-row">
+                                            <span>База:</span>
+                                            <span class="font-bold">{stats.db_size_mb} MB</span>
+                                        </div>
+                                        <div class="system-row">
+                                            <span>Архива:</span>
+                                            <span class="font-bold">{stats.total_articles.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-								<div class="rail-card rail-card-dark editorial-panel-strong">
-									<h4 class="rail-card-title speed-title editorial-panel-title">Прв На Приказната</h4>
-									<p class="speed-copy">
-										Кои извори најчесто први влегуваат во нова приказна? Преглед на раните објави во последните 7 дена.
-									</p>
-								<div class="speed-list">
-									{stats.speed_leaderboard.slice(0, 5).map((src: any, idx: number) => (
-										<div class="speed-row">
-											<span class="speed-source">
-												<span class="speed-rank">{idx + 1}.</span>
-												{src.source}
-											</span>
-											<span class="speed-count">{src.first_count}</span>
+								<div class="rail-card editorial-panel">
+									<h4 class="rail-card-title text-xs font-black uppercase tracking-widest border-b border-border pb-3 mb-4">Прв на приказната</h4>
+								    <div class="speed-list">
+									{stats.speed_leaderboard.slice(0, 8).map((src: any, idx: number) => (
+										<div class="flex justify-between items-center py-2 border-b border-border last:border-0 text-sm">
+											<span class="font-bold">{src.source}</span>
+											<span class="text-nyt-accent font-black">{src.first_count}</span>
 										</div>
 									))}
-								</div>
-							</div>
-
-							<div class="rail-card editorial-panel">
-								<h4 class="rail-card-title editorial-panel-title">Достава И Следење</h4>
-								<div class="system-list">
-									<div class="system-row">
-										<span>Утрински брифинзи:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.morning_briefings ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Неделни дигести:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.weekly_digests ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Известувања за теми:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.breaking_topic_alerts ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Известувања за извори:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.breaking_source_alerts ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Историја на читање:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.profiles_with_recent_reads ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Испраќања / 7 дена:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.sends_7d ?? 0}</span>
-									</div>
-									<div class="system-row">
-										<span>Стапка на отворање:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.open_rate_7d ?? 0}%</span>
-									</div>
-									<div class="system-row">
-										<span>Стапка на клик:</span>
-										<span class="text-foreground font-black">{stats.editor_analytics?.click_rate_7d ?? 0}%</span>
-									</div>
-								</div>
-							</div>
+								    </div>
+                                    <p class="text-[10px] text-muted-foreground mt-4 leading-snug">
+                                        Број на стории каде овој медиум бил првиот што известил во последните 7 дена.
+                                    </p>
+							    </div>
 						</aside>
 					</div>
 				</div>
 			) : (
-				<div class="space-y-16 animate-pulse">
-					<div class="stats-metrics">
-						{[1,2,3,4].map(() => (
-							<div class="metric-card">
-								<div class="h-3 w-24 bg-nyt-gray-100 mb-4"></div>
-								<div class="h-10 w-32 bg-nyt-gray-200"></div>
-							</div>
-						))}
-					</div>
-					<div class="stats-grid">
-						<div class="stats-main space-y-16">
-							<section>
-								<div class="h-6 w-48 bg-nyt-gray-200 mb-8"></div>
-								<div class="space-y-6">
-									{[1,2,3,4,5].map(() => (
-										<div class="h-4 w-full bg-nyt-gray-100"></div>
-									))}
-								</div>
-							</section>
-							<section>
-								<div class="h-6 w-48 bg-nyt-gray-200 mb-8"></div>
-								<div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
-									{[1,2,3,4,5,6,7,8].map(() => (
-										<div class="h-24 bg-nyt-gray-100 border border-nyt-gray-200"></div>
-									))}
-								</div>
-							</section>
-						</div>
-					</div>
-				</div>
+				<div class="p-24 text-center">
+                    <Activity className="animate-spin mx-auto mb-4 opacity-20" size={48} />
+                    <p class="font-serif italic text-muted-foreground">Се вчитува пулсот на медиумите...</p>
+                </div>
 			)}
 		</div>
 	</main>
@@ -452,12 +214,22 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 </Layout>
 
 <style>
+    .editorial-shell {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
 	.stats-headline {
-		font-size: clamp(2.5rem, 1.8rem + 2vw, 4.6rem);
+		font-size: clamp(3rem, 2.5rem + 3vw, 5.5rem);
+        line-height: 0.88;
+        letter-spacing: -0.04em;
+        margin: 0.5rem 0 1.5rem;
 	}
 
 	.stats-subtitle {
 		max-width: 44rem;
+        font-size: 1.25rem;
+        color: var(--secondary-foreground);
 	}
 
 	.stats-flow,
@@ -465,301 +237,136 @@ const hasDeliveryPerformance = Boolean((editorAnalytics.delivery_kind_performanc
 	.stats-rail {
 		display: flex;
 		flex-direction: column;
+		gap: 2rem;
+	}
+
+	.stats-hero-grid {
+		display: grid;
+		grid-template-columns: 1fr;
 		gap: 1.5rem;
 	}
 
-	.stats-overview {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
+	.hero-primary {
+		padding: 2rem;
 	}
 
-	.overview-primary,
-	.overview-secondary {
-		display: grid;
-		gap: 1rem;
-	}
-
-	.overview-primary {
-		padding: 1.2rem;
-	}
-
-	.overview-value {
-		margin: 0;
+	.hero-value {
+		margin: 0.5rem 0;
 		font-family: var(--font-serif);
-		font-size: clamp(3rem, 2.2rem + 2vw, 5rem);
-		line-height: 0.92;
+		font-size: clamp(4rem, 3.5rem + 4vw, 8rem);
+		line-height: 0.85;
+        font-weight: 900;
+        letter-spacing: -0.05em;
 	}
 
-	.overview-copy {
+	.hero-copy {
 		margin: 0;
-		max-width: 42rem;
+		max-width: 32rem;
 		font-family: var(--font-nyt-body);
-		font-size: 1rem;
-		line-height: 1.55;
+		font-size: 1.15rem;
+		line-height: 1.5;
 		color: var(--secondary-foreground);
-	}
-
-	.overview-meta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.65rem;
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
-
-	.metric-card-accent {
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 90%, #efe6da 10%));
-	}
-
-	:global(.dark) .metric-card-accent {
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, var(--secondary) 5%), color-mix(in srgb, var(--background) 80%, #3e3a34 20%));
-		border-color: var(--nyt-gray-300);
-	}
-
-	.stats-metrics {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
 	}
 
 	.metric-value {
 		font-family: var(--font-serif);
-		font-size: clamp(2rem, 1.45rem + 1vw, 3rem);
+		font-size: 2.5rem;
 		line-height: 1;
-		margin: 0;
-	}
-
-	.metric-value-label {
-		font-size: clamp(1.3rem, 1rem + 0.7vw, 1.9rem);
-		line-height: 1.08;
+		margin: 0.35rem 0;
+        font-weight: 900;
 	}
 
 	.metric-caption {
-		margin: 0.45rem 0 0;
-		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
+		font-size: 0.75rem;
 		color: var(--muted-foreground);
-		line-height: 1.45;
+		line-height: 1.4;
 	}
+
+    .ai-stat-bar-wrap {
+        height: 8px;
+        background: var(--muted);
+        border: 1px solid var(--border);
+        margin: 1rem 0;
+    }
+
+    .ai-stat-bar-fill {
+        height: 100%;
+        background: var(--nyt-accent);
+    }
+
+    .ai-stat-main {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+    }
 
 	.stats-grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1.5rem;
+		gap: 2rem;
 	}
 
-	.stats-module-priority {
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 98%, transparent), color-mix(in srgb, var(--background) 90%, #f2eadf 10%));
-	}
-
-	:global(.dark) .stats-module-priority {
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, transparent), color-mix(in srgb, var(--background) 80%, #3a342c 20%));
-		border-color: var(--nyt-gray-300);
-	}
-
-	.source-bars,
-	.speed-list,
-	.system-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.source-row,
-	.system-row,
-	.speed-row {
-		padding: 0.85rem 0;
+	.source-row {
+		padding: 1rem 0;
 		border-top: 1px solid var(--border);
 	}
 
-	.source-row:first-child,
-	.system-row:first-child,
-	.speed-row:first-child {
-		padding-top: 0;
+	.source-row:first-child {
 		border-top: 0;
 	}
 
-	.source-row-top,
-	.system-row,
-	.speed-row {
+	.source-row-top {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
-		font-family: var(--font-sans);
-		font-size: 0.72rem;
-		font-weight: 800;
-		letter-spacing: 0.04em;
+		font-size: 0.75rem;
 		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.source-bar-track {
-		height: 0.3rem;
-		margin-top: 0.55rem;
-		background: var(--nyt-gray-200);
-		overflow: hidden;
+		height: 4px;
+		margin-top: 0.75rem;
+		background: var(--muted);
 	}
 
 	.source-bar-fill {
 		height: 100%;
 		background: var(--foreground);
-		transition: width 400ms ease;
 	}
 
-	.category-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-	}
+    .system-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
 
-	.editor-metrics,
-	.follow-grid {
-		display: grid;
-		grid-template-columns: repeat(1, minmax(0, 1fr));
-		gap: 1rem;
-	}
-
-	.editor-card,
-	.follow-card {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
-	}
-
-	.editor-value {
-		margin: 0 0 0.4rem;
-		font-family: var(--font-serif);
-		font-size: clamp(1.5rem, 1.15rem + 0.8vw, 2.15rem);
-		line-height: 1;
-	}
-
-	.editor-copy {
-		margin: 0;
-		font-size: 0.95rem;
-		line-height: 1.55;
-		color: var(--secondary-foreground);
-	}
-
-	.follow-title {
-		margin: 0 0 0.8rem;
-		font-size: 0.82rem;
-		font-weight: 900;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-
-	.follow-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.follow-row {
-		display: grid;
-		grid-template-columns: auto 1fr auto;
-		gap: 0.75rem;
-		align-items: center;
-		padding: 0.75rem 0;
-		border-top: 1px solid var(--border);
-	}
-
-	.follow-row:first-child {
-		padding-top: 0;
-		border-top: 0;
-	}
-
-	.follow-rank,
-	.follow-count {
-		font-size: 0.82rem;
-		font-weight: 900;
-	}
-
-	.follow-label {
-		font-size: 0.98rem;
-	}
-
-	.category-card {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
-	}
-
-	.category-value {
-		margin: 0;
-		font-family: var(--font-serif);
-		font-size: 1.9rem;
-		line-height: 1;
-	}
-
-	.rail-card-dark {
-		color: var(--foreground);
-	}
-
-	.rail-card-dark .rail-card-title,
-	.speed-title {
-		color: var(--foreground);
-	}
-
-	.speed-copy {
-		margin: 0 0 1rem;
-		font-family: var(--font-nyt-body);
-		font-size: 0.96rem;
-		line-height: 1.55;
-		color: var(--secondary-foreground);
-	}
-
-	.speed-row {
-		color: var(--foreground);
-	}
-
-	.speed-source {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.55rem;
-		color: var(--foreground);
-	}
-
-	.speed-rank {
-		color: var(--muted-foreground);
-	}
-
-	.speed-count {
-		font-weight: 900;
-		color: #f5c26b;
-	}
+    .system-row:last-child {
+        border-bottom: 0;
+    }
 
 	@media (min-width: 960px) {
-		.stats-overview {
-			grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.95fr);
-			align-items: stretch;
-		}
-
-		.stats-metrics {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
+		.stats-hero-grid {
+			grid-template-columns: 1.4fr 1fr;
 		}
 
 		.stats-grid {
-			grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
-			gap: 2rem;
+			grid-template-columns: 1.8fr 1fr;
+			gap: 3rem;
 		}
 
-		.editor-metrics,
-		.follow-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
+        .follow-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
 
-		.category-grid {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-		}
+        .stats-rail {
+            position: sticky;
+            top: 2rem;
+        }
 	}
 </style>
