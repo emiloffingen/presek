@@ -568,21 +568,24 @@ async def ingest_all_sources_async():
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles", "count": len(inserted_ids), "time": cycle_now})
                 
-                from tasks import translate_article_task, summarize_article_task, crawl_article_task
-                
+                from tasks import translate_article_task, summarize_article_task, crawl_article_task, standardize_article_style_task
+
                 inserted_data = db.execute(
-                    "SELECT id, title, description, link, country FROM articles WHERE id = ANY(%s)",
+                    "SELECT id, title, description, link, country, credibility FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
                     (inserted_ids,)
                 )
                 for art in inserted_data:
                     # Always crawl for full content and better images
                     crawl_article_task.delay(art["id"], art["link"])
-                    
+
                     if art["country"] != 'MK':
                         translate_article_task.delay(art["id"], art["title"], art["description"])
                     else:
-                        summarize_article_task.delay(art["id"], art["title"])
+                        # Style normalization for lower credibility sources (noise reduction)
+                        if art.get("credibility", 1.5) < 1.2:
+                            standardize_article_style_task.delay(art["id"])
 
+                        summarize_article_task.delay(art["id"], art["title"])
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():
         record_source_fetch(

@@ -66,8 +66,8 @@ def _load_model():
     return _model, _tokenizer
 
 
-def translate(text: str, src_lang: str) -> str | None:
-    """Translate a single text from src_lang (ISO 639-1) to Macedonian.
+def translate(text: str, src_lang: str, target_lang: str = "mk") -> str | None:
+    """Translate a single text from src_lang to target_lang.
 
     Returns the translated text, or None if translation fails.
     """
@@ -79,8 +79,9 @@ def translate(text: str, src_lang: str) -> str | None:
         return None
 
     src_code = LANG_CODES.get(src_lang)
-    if not src_code:
-        log.warning(f"[nllb] Unsupported source language: {src_lang}")
+    target_code = LANG_CODES.get(target_lang)
+    if not src_code or not target_code:
+        log.warning(f"[nllb] Unsupported language pair: {src_lang}→{target_lang}")
         return None
 
     try:
@@ -88,29 +89,32 @@ def translate(text: str, src_lang: str) -> str | None:
         inputs = tokenizer(text[:500], return_tensors="pt", truncation=True, max_length=256)
         translated = model.generate(
             **inputs,
-            forced_bos_token_id=tokenizer.convert_tokens_to_ids(TARGET_LANG),
+            forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
             max_new_tokens=256,
             num_beams=2,
         )
         result = tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
         return result.strip() if result else None
     except Exception as e:
-        log.error(f"[nllb] Translation failed ({src_lang}→mk): {e}")
+        log.error(f"[nllb] Translation failed ({src_lang}→{target_lang}): {e}")
         return None
 
 
-def translate_batch(texts: list[str], src_langs: list[str]) -> list[str | None]:
+def translate_batch(texts: list[str], src_langs: list[str], target_lang: str = "mk") -> list[str | None]:
     """Translate multiple texts, potentially with different source languages.
 
     Returns a list of translated texts (None for failures).
-    More efficient than calling translate() in a loop since texts with the
-    same source language are batched together.
     """
     if not texts:
         return []
 
     model, tokenizer = _load_model()
     if model is None:
+        return [None] * len(texts)
+
+    target_code = LANG_CODES.get(target_lang)
+    if not target_code:
+        log.warning(f"[nllb] Unsupported target language: {target_lang}")
         return [None] * len(texts)
 
     results = [None] * len(texts)
@@ -134,7 +138,7 @@ def translate_batch(texts: list[str], src_langs: list[str]) -> list[str | None]:
                              truncation=True, max_length=256)
             translated = model.generate(
                 **inputs,
-                forced_bos_token_id=tokenizer.convert_tokens_to_ids(TARGET_LANG),
+                forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
                 max_new_tokens=256,
                 num_beams=2,
             )

@@ -37,6 +37,7 @@ __all__ = [
     'run_ingestion',
     'auto_repair_sources_task',
     'translate_article_task',
+    'standardize_article_style_task',
     'summarize_article_task',
     'synthesize_cluster_task',
     'auto_summarize_task',

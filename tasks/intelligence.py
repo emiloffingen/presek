@@ -68,6 +68,41 @@ def translate_article_task(article_id, title, description):
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
         raise
 
+@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def standardize_article_style_task(article_id):
+    """Refines article linguistic style using NLLB round-trip (Style Normalization)."""
+    row = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (article_id,))
+    if not row: return
+
+    title = row.get("title", "")
+    desc = row.get("description", "")
+    
+    if not title or len(title) < 25: return # Skip very short headlines
+
+    try:
+        from nllb_translate import translate as nllb_translate
+        from ai_engine import rewrite_to_macedonian_locally
+        
+        # 1. Title Normalization: MK -> EN -> MK
+        en_bridge = nllb_translate(title, src_lang="mk", target_lang="en")
+        if en_bridge and en_bridge.strip().lower() != title.strip().lower():
+            mk_standard = nllb_translate(en_bridge, src_lang="en", target_lang="mk")
+            if mk_standard and len(mk_standard) > 15:
+                # Local polish
+                final_title = rewrite_to_macedonian_locally(mk_standard)
+                if final_title and final_title.strip().lower() != title.strip().lower():
+                    # Preserve original for transparency/debugging
+                    db.execute(
+                        "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
+                        (final_title, title, article_id), fetch=False
+                    )
+                    log.info(f"[style] Standardized title for article {article_id}")
+                    # Re-trigger summary if title changed significantly
+                    summarize_article_task.delay(article_id, final_title)
+        
+    except Exception as e:
+        log.error(f"[style] Normalization failed for {article_id}: {e}")
+
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
