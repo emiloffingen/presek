@@ -121,7 +121,7 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. ФОКУС — fixed categories and thematic topics
+    # 2. ФОКУС — core navigation
     focus_items = [
         {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
         {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "type": "focus"},
@@ -130,14 +130,21 @@ async def get_navigation():
         {"label": "Политика", "href": f"/?topic={urllib.parse.quote('Политика')}", "type": "focus"},
         {"label": "Економија", "href": f"/?topic={urllib.parse.quote('Економија')}", "type": "focus"},
         {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "type": "focus"},
-        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}", "type": "focus"},
-        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}", "type": "focus"},
+    ]
+
+    # 3. SECTIONS — secondary topics hidden under "More"
+    sections_items = [
+        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}"},
+        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}"},
+        {"label": "Криминал", "href": f"/?topic={urllib.parse.quote('Криминал')}"},
+        {"label": "Здравје", "href": f"/?topic={urllib.parse.quote('Здравје')}"},
+        {"label": "Живот", "href": f"/?topic={urllib.parse.quote('Живот')}"},
     ]
 
     res = {
         "breaking": breaking_items,
         "focus": focus_items,
-        "sections": []
+        "sections": sections_items
     }
     set_cache(cache_key, res, ttl=600)
     return res

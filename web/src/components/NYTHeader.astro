@@ -125,6 +125,20 @@ const hasBreaking = navigationData.breaking.length > 0;
                             </li>
                         );
                     })}
+                    {navigationData.sections && navigationData.sections.length > 0 && (
+                        <li class="nav-dropdown-wrap">
+                            <button class="masthead-nav-link nav-more-btn">
+                                Повеќе <span class="chevron">▼</span>
+                            </button>
+                            <div class="nav-dropdown">
+                                {navigationData.sections.map((sec) => (
+                                    <a href={sec.href} data-astro-reload class="nav-dropdown-item">
+                                        {sec.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </li>
+                    )}
                 </ul>
             </div>
             <div class="nav-fade-left"></div>
@@ -429,6 +443,69 @@ const hasBreaking = navigationData.breaking.length > 0;
 
     .masthead-nav-link:hover,
     .masthead-nav-link.is-active {
+        color: var(--nyt-accent);
+    }
+
+    /* ── Navigation Dropdown ─────────────────────────── */
+    .nav-dropdown-wrap {
+        position: relative;
+    }
+
+    .nav-more-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .chevron {
+        font-size: 0.5rem;
+        transition: transform 0.2s;
+        opacity: 0.6;
+    }
+
+    .nav-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        min-width: 160px;
+        background: var(--background);
+        border: 1px solid var(--border);
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        padding: 0.5rem;
+        display: none;
+        z-index: 110;
+        border-radius: 4px;
+        margin-top: 0.35rem;
+    }
+
+    .nav-dropdown-wrap:hover .nav-dropdown {
+        display: block;
+    }
+
+    .nav-dropdown-wrap:hover .chevron {
+        transform: rotate(180deg);
+    }
+
+    .nav-dropdown-item {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--foreground);
+        text-decoration: none;
+        letter-spacing: 0.02em;
+        border-radius: 3px;
+        transition: background 0.15s;
+    }
+
+    .nav-dropdown-item:hover {
+        background: var(--muted);
         color: var(--nyt-accent);
     }
 
