@@ -20,6 +20,9 @@ SITE_AVAILABLE="/etc/nginx/sites-available/$SITE_NAME"
 SITE_ENABLED="/etc/nginx/sites-enabled/$SITE_NAME"
 REALIP_SNIPPET="/etc/nginx/snippets/cloudflare-realip.conf"
 SECURITY_SNIPPET="/etc/nginx/snippets/presek-security-headers.conf"
+LEGACY_SITE_ENABLED="/etc/nginx/sites-enabled/presek"
+LEGACY_SITE_AVAILABLE="/etc/nginx/sites-available/presek"
+DISABLED_SITES_DIR="/etc/nginx/sites-disabled"
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1" >&2; exit 1; }
@@ -89,6 +92,7 @@ main() {
   if [ "$INSTALL_NGINX" = "1" ] || [ "$INSTALL_NGINX" = "nossl" ]; then
     install -d /etc/nginx/sites-available
     install -d /etc/nginx/sites-enabled
+    install -d "$DISABLED_SITES_DIR"
     install -d /etc/nginx/snippets
 
     if [ "$INSTALL_NGINX" = "nossl" ]; then
@@ -99,6 +103,13 @@ main() {
     cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
     cp "$NGINX_DIR/security-headers.conf" "$SECURITY_SNIPPET"
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
+
+    if [ -e "$LEGACY_SITE_ENABLED" ] && grep -q "server_name .*presek.live" "$LEGACY_SITE_ENABLED"; then
+      mv "$LEGACY_SITE_ENABLED" "$DISABLED_SITES_DIR/presek.enabled.disabled.$(date +%Y%m%d%H%M%S)"
+    fi
+    if [ -e "$LEGACY_SITE_AVAILABLE" ] && grep -q "server_name .*presek.live" "$LEGACY_SITE_AVAILABLE"; then
+      mv "$LEGACY_SITE_AVAILABLE" "$DISABLED_SITES_DIR/presek.available.disabled.$(date +%Y%m%d%H%M%S)"
+    fi
 
     nginx -t
     systemctl restart nginx
