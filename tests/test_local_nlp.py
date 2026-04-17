@@ -50,7 +50,7 @@ class TestClusterTagExtraction:
 
         assert "Израел" in tags
         assert "Иран" in tags
-        assert "Трамп" in tags
+        assert "Доналд Трамп" in tags
         assert "Подготвува Напади" not in tags
 
     def test_extract_keyphrases_locally_filters_source_noise_and_prefers_real_phrases(self):
