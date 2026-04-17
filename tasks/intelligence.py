@@ -103,6 +103,47 @@ def standardize_article_style_task(article_id):
     except Exception as e:
         log.error(f"[style] Normalization failed for {article_id}: {e}")
 
+@celery_app.task(rate_limit='15/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def detect_global_story_task(article_id):
+    """Detects if a Macedonian article is a translation of a foreign global report."""
+    row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))
+    if not row or not row.get("title"): return
+
+    try:
+        from nllb_translate import translate as nllb_translate
+        from embeddings import generate_query_embedding
+        from utils import redis_client
+        import numpy as np
+
+        # 1. Translate to English Bridge
+        en_title = nllb_translate(row["title"], src_lang="mk", target_lang="en")
+        if not en_title or len(en_title) < 15: return
+
+        # 2. Get English Embedding
+        mk_vec = generate_query_embedding(en_title)
+        if not mk_vec: return
+
+        # 3. Compare with Global Cache from Redis
+        global_data = redis_client.get("presek:global_headlines:v1")
+        if not global_data: return
+        
+        global_heads = json.loads(global_data) # List of {"title": str, "vec": list}
+        
+        best_similarity = 0
+        for head in global_heads:
+            g_vec = np.array(head["vec"])
+            sim = np.dot(mk_vec, g_vec) / (np.linalg.norm(mk_vec) * np.linalg.norm(g_vec))
+            if sim > best_similarity:
+                best_similarity = sim
+        
+        # 4. Verdict (0.82 is a strong semantic match for translations)
+        if best_similarity > 0.82:
+            db.execute("UPDATE articles SET is_global = TRUE WHERE id = %s", (article_id,), fetch=False)
+            log.info(f"[originality] Flagged article {article_id} as GLOBAL (Sim: {best_similarity:.4f})")
+            
+    except Exception as e:
+        log.warning(f"[originality] Detection failed for {article_id}: {e}")
+
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""

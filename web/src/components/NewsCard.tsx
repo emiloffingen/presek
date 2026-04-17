@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Globe } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -104,10 +104,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             {main.source}
             {showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
               <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" title="Висока доверба" />
-            )}
-          </span>
+              )}
+              </span>
 
-          {cluster.is_breaking && (
+              {main.is_global && (
+              <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
+              <Globe size={11} /> СВЕТСКА ВЕСТ
+              </span>
+              )}
+
+              {cluster.is_breaking && (
+
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>

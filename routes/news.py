@@ -58,7 +58,9 @@ _PUBLIC_ARTICLE_FIELDS = {
     "match_score",
     "rank",
     "hybrid_score",
-}
+    "is_global"
+    }
+
 
 
 def _public_article_payload(article):
