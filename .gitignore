@@ -27,3 +27,4 @@ web/.env.local
 *.egg-info/
 .hypothesis/
 *.pem
+venv/
