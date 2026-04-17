@@ -606,15 +606,20 @@ const hasBreaking = navigationData.breaking.length > 0;
             const btn = document.querySelector('.nav-more-btn');
             if (!wrap || !btn) return;
             
-            btn.onclick = (e) => {
+            // Remove old listeners if any
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 wrap.classList.toggle('is-open');
-            };
+                console.log('Dropdown toggled, is-open:', wrap.classList.contains('is-open'));
+            });
 
             // Close when clicking outside
             document.addEventListener('click', (e) => {
-                if (!wrap.contains(e.target)) {
+                if (wrap.classList.contains('is-open') && !wrap.contains(e.target)) {
                     wrap.classList.remove('is-open');
                 }
             });

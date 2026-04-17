@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { ShieldCheck } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
@@ -20,8 +20,8 @@ const totalSources = cluster.articles.length;
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
 const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
 const significanceLabel =
-	totalSources >= 6 ? 'Широко покриено' :
-	totalSources >= 4 ? 'Следена тема' :
+	totalSources >= 6 ? 'Ударна' :
+	totalSources >= 4 ? 'Следена' :
 	cluster.is_breaking ? 'Итен развој' :
 	'Во тек';
 
@@ -29,7 +29,7 @@ const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 
-const displayTitle = cleanAndDecode(main.title);
+const displayTitle = highlightScores(cleanAndDecode(main.title));
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
@@ -69,7 +69,8 @@ function getCardSummary(article: Article, lead = false) {
 	text = cleanAndDecode(text);
 	if (!text) return '';
 	const limit = lead ? 250 : 170;
-	return text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+	const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+	return highlightScores(truncated);
 }
 
 const displaySummary = getCardSummary(main, isLead);
@@ -111,16 +112,37 @@ function getTimeStr(dateStr: string) {
 <article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
 		<div class="article-meta">
-			<span class="source-label">{main.source}</span>
-			{showTrustBadge && <span class={`source-trust-badge source-trust-${sourceSignal.trust_label === 'Висока доверба' ? 'high' : sourceSignal.trust_label === 'Потврден извор' ? 'medium' : 'low'}`}>{sourceSignal.trust_label}</span>}
-			{cluster.is_breaking && <span class="breaking-label">Во живо</span>}
-			{cluster.articles.some(a => a.is_fact_check) && (
-				<span class="fact-check-badge">
-					<ShieldCheck size={10} /> ФАКТ-ЧЕК
+			<span class="source-label">
+				{main.source}
+				{showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
+					<ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" title="Висока доверба" />
+				)}
+			</span>
+
+			{cluster.is_breaking && (
+				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
+					<span class="relative flex h-2 w-2">
+						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+						<span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+					</span>
+					ВО ЖИВО
 				</span>
 			)}
-			{showSignificanceLabel && <span class="significance-label">{significanceLabel}</span>}
+
+			{cluster.articles.some(a => a.is_fact_check) && (
+				<span class="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
+					ФАКТ-ЧЕК
+				</span>
+			)}
+
+			{showSignificanceLabel && !cluster.is_breaking && (
+				<span class="significance-dot-label" title={significanceLabel}>
+					<span class:list={["h-1.5 w-1.5 rounded-full", totalSources >= 6 ? "bg-purple-500" : "bg-blue-400"]}></span>
+					{totalSources >= 6 ? 'Ударна' : 'Следена'}
+				</span>
+			)}
 		</div>
+
 
 		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
 			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
