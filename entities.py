@@ -283,10 +283,61 @@ ENTITY_ALIASES = {
     "СЗО": "Светска здравствена организација",
     "МВР": "Министерство за внатрешни работи",
     "МНР": "Министерство за надворешни работи",
+    # Common Latin-script renderings from international wires
+    "Donald Trump": "Доналд Трамп",
+    "Joe Biden": "Џо Бајден",
+    "Vladimir Putin": "Владимир Путин",
+    "Volodymyr Zelenskyy": "Володимир Зеленски",
+    "Volodymyr Zelensky": "Володимир Зеленски",
+    "Emmanuel Macron": "Емануел Макрон",
+    "Olaf Scholz": "Олаф Шолц",
+    "Viktor Orban": "Виктор Орбан",
+    "Aleksandar Vucic": "Александар Вучиќ",
+    "Kyriakos Mitsotakis": "Киријакос Мицотакис",
+    "Recep Tayyip Erdogan": "Реџеп Таип Ердоган",
+    "Xi Jinping": "Си Џинпинг",
+    "Rishi Sunak": "Риши Сунак",
+    "Keir Starmer": "Кир Стармер",
+    "Kamala Harris": "Камала Харис",
+    "Elon Musk": "Илон Маск",
+    "Pope Francis": "Папата Франциск",
+    "Benjamin Netanyahu": "Бенјамин Нетанјаху",
+    "Robert Fico": "Роберт Фицо",
+    "Antony Blinken": "Ентони Блинкен",
+    "Kim Jong Un": "Ким Џонг Ун",
+    "Mark Zuckerberg": "Марк Закерберг",
+    "Bill Gates": "Бил Гејтс",
+    "Jeff Bezos": "Џеф Безос",
+    "George Soros": "Џорџ Сорос",
 }
 
+_ENTITY_ALIASES_CASEFOLDED = {
+    str(alias).strip().casefold(): canonical
+    for alias, canonical in ENTITY_ALIASES.items()
+}
+_KNOWN_ENTITIES_ORDERED = sorted(KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0]))
+_ENTITY_ALIASES_ORDERED = sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0]))
+
+
 def normalize_entity_name(name: str) -> str:
-    return ENTITY_ALIASES.get(name, name)
+    clean = str(name or "").strip()
+    if not clean:
+        return ""
+    return _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold(), clean)
+
+
+def _is_name_like_phrase(candidate: str) -> bool:
+    parts = [part for part in re.split(r"[\s-]+", str(candidate or "").strip()) if part]
+    if len(parts) < 2 or len(parts) > 3:
+        return False
+    if any(part in IGNORE_WORDS for part in parts):
+        return False
+    for part in parts:
+        if len(part) < 3:
+            return False
+        if not re.match(r"^[A-ZА-ЯЀ-ӿ][A-Za-zА-Яа-яЀ-ӿѐ-ӿ'.-]+$", part):
+            return False
+    return True
 
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     """
@@ -335,9 +386,12 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
     found = {}  # name -> type
 
     # 1. Exact matching against the curated lexicon (highest precision)
-    for name, etype in KNOWN_ENTITIES.items():
+    for name, etype in _KNOWN_ENTITIES_ORDERED:
         if name in text:
             found[name] = etype
+    for alias, canonical in _ENTITY_ALIASES_ORDERED:
+        if alias in text and canonical in KNOWN_ENTITIES:
+            found[canonical] = KNOWN_ENTITIES[canonical]
 
     # 2. spaCy multilingual NER — catches novel entities the lexicon misses
     nlp = _get_spacy()
@@ -352,10 +406,12 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
                     continue
                 if name in IGNORE_WORDS:
                     continue
+                mapped = _SPACY_LABEL_MAP.get(ent.label_, "ENTITY")
+                if mapped == "PERSON" and not (_is_name_like_phrase(name) or name in ENTITY_ALIASES or name in KNOWN_ENTITIES):
+                    continue
                 # Prefer the curated type if we already matched this name
                 if name in found:
                     continue
-                mapped = _SPACY_LABEL_MAP.get(ent.label_, "ENTITY")
                 found[name] = mapped
         except Exception as e:
             log.warning(f"[entities] spaCy NER failed, falling back: {e}")
@@ -370,10 +426,11 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
                 continue
             if len(c) < 4:
                 continue
-            # Multi-word phrases are likely ORG or PERSON
-            if " " in c:
+            if _is_name_like_phrase(c):
                 found[c] = "ENTITY"
-            elif text.count(c) > 1:  # Repeated single proper noun
+            elif c in ENTITY_ALIASES or c in KNOWN_ENTITIES:
+                found[c] = KNOWN_ENTITIES.get(c, "ENTITY")
+            elif text.count(c) > 1 and c in ENTITY_ALIASES:  # Repeated known alias only
                 found[c] = "ENTITY"
 
     # Convert to requested format and limit
