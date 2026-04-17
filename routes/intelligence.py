@@ -8,6 +8,7 @@ from database import db_manager as db
 from embeddings import generate_query_embedding
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
+from entities import normalize_entity_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
 
@@ -170,15 +171,17 @@ async def get_top_entities(limit: int = 10):
     if cached: return cached
     fetch_limit = max(limit * 6, 40)
     rows = db.execute("SELECT tag AS name, COUNT(*) AS total_mentions FROM (SELECT cm.cluster_id, UNNEST(cm.tags) AS tag FROM cluster_metadata cm JOIN articles a ON a.cluster_id = cm.cluster_id WHERE a.created_at >= NOW() - INTERVAL '48 hours' AND cm.tags IS NOT NULL GROUP BY cm.cluster_id, tag) t GROUP BY tag ORDER BY total_mentions DESC LIMIT %s", (fetch_limit,))
-    filtered = []
-    seen = set()
+    aggregated = {}
     for row in rows:
-        norm = normalize_tag_name(row["name"])
+        norm = normalize_tag_name(normalize_entity_name(row["name"]))
         if not _is_valid_focus_entity(norm, None): continue
-        if norm.casefold() in seen: continue
-        seen.add(norm.casefold())
-        filtered.append({"name": norm, "type": None, "total_mentions": row.get("total_mentions")})
-        if len(filtered) >= limit: break
+        key = norm.casefold()
+        aggregated[key] = {
+            "name": norm,
+            "type": None,
+            "total_mentions": int(aggregated.get(key, {}).get("total_mentions", 0)) + int(row.get("total_mentions") or 0),
+        }
+    filtered = sorted(aggregated.values(), key=lambda item: item["total_mentions"], reverse=True)[:limit]
     set_cache(cache_key, filtered, ttl=600)
     return filtered
 

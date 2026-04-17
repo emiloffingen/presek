@@ -277,6 +277,9 @@ ENTITY_ALIASES = {
     "Апасиев": "Димитар Апасиев",
     "Макрон": "Емануел Макрон",
     "Курти": "Албин Курти",
+    "Филипче": "Венко Филипче",
+    "Груевски": "Никола Груевски",
+    "Јаневска": "Весна Јаневска",
     "ВМРО": "ВМРО-ДПМНЕ",
     "ВМРО ДПМНЕ": "ВМРО-ДПМНЕ",
     "ОН": "Обединети Нации",
@@ -310,6 +313,23 @@ ENTITY_ALIASES = {
     "Jeff Bezos": "Џеф Безос",
     "George Soros": "Џорџ Сорос",
 }
+
+_unique_person_surnames = {}
+_surname_to_person = {}
+for _name, _etype in KNOWN_ENTITIES.items():
+    if _etype != "PERSON":
+        continue
+    _parts = [part for part in re.split(r"[\s-]+", _name) if part]
+    if len(_parts) < 2:
+        continue
+    _surname = _parts[-1]
+    _surname_to_person.setdefault(_surname, set()).add(_name)
+
+for _surname, _people in _surname_to_person.items():
+    if len(_people) == 1 and _surname not in ENTITY_ALIASES:
+        _unique_person_surnames[_surname] = next(iter(_people))
+
+ENTITY_ALIASES.update(_unique_person_surnames)
 
 _ENTITY_ALIASES_CASEFOLDED = {
     str(alias).strip().casefold(): canonical

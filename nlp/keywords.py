@@ -150,6 +150,7 @@ def _extract_capitalized_phrases(text):
 
 def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=8):
     from nlp.text_processing import lemmatize_mk
+    from entities import normalize_entity_name
     candidates = []
     prioritized_entities = []
     normalized_titles = [str(title or "").strip() for title in titles or [] if str(title or "").strip()]
@@ -161,7 +162,7 @@ def extract_cluster_tags_locally(titles, entity_names=None, sources=None, top_n=
         else:
             name = entity
             entity_type = None
-        clean = normalize_tag_name(name)
+        clean = normalize_tag_name(normalize_entity_name(name))
         if not is_valid_focus_entity(clean, entity_type):
             continue
         mentions = _count_entity_mentions(clean, normalized_titles)
