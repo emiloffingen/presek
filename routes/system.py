@@ -121,24 +121,18 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. ФОКУС — pinned categories first, then trending entities
+    # 2. ФОКУС — fixed categories and thematic topics
     focus_items = [
         {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
         {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "type": "focus"},
         {"label": "Европа", "href": f"/?category={urllib.parse.quote('Европа')}", "type": "focus"},
         {"label": "Свет", "href": f"/?category={urllib.parse.quote('Свет')}", "type": "focus"},
+        {"label": "Политика", "href": f"/?topic={urllib.parse.quote('Политика')}", "type": "focus"},
+        {"label": "Економија", "href": f"/?topic={urllib.parse.quote('Економија')}", "type": "focus"},
         {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "type": "focus"},
+        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}", "type": "focus"},
+        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}", "type": "focus"},
     ]
-    try:
-        entities = await get_top_entities(limit=4)
-        for ent in entities:
-            focus_items.append({
-                "label": ent["name"],
-                "href": f"/?q={urllib.parse.quote(ent['name'])}",
-                "type": "focus"
-            })
-    except Exception as e:
-        log.warning(f"[navigation] Failed to load entities: {e}")
 
     res = {
         "breaking": breaking_items,
