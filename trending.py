@@ -111,14 +111,14 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
 
 def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
     """
-    Count word frequency in recent article titles with momentum calculation.
+    Count word frequency in recent article titles with momentum and velocity calculation.
     """
     try:
         with database.get_db() as conn:
             cutoff = datetime.now() - timedelta(hours=hours)
-            # Fetch cluster_id and score potential if possible, but keep it simple
+            # Fetch cluster_id and category to detect cross-category jumps
             rows = conn.execute(
-                "SELECT title, created_at, cluster_id FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 2000",
+                "SELECT title, created_at, cluster_id, category FROM articles WHERE created_at >= %s ORDER BY created_at DESC LIMIT 3000",
                 (cutoff,)
             ).fetchall()
     except Exception as e:
@@ -129,12 +129,19 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
         return []
 
     now = datetime.now()
-    current_weighted: Counter = Counter()
-    previous_weighted: Counter = Counter()
+    # Velocity windows:
+    # 1. Hot (0-1h): Current activity spike
+    # 2. Rising (1-4h): Sustained growth
+    # 3. Established (4-12h): Baseline
+    hot_weighted: Counter = Counter()
+    rising_weighted: Counter = Counter()
+    baseline_weighted: Counter = Counter()
     raw: Counter      = Counter()
     
+    # Track cross-category diversity per word
+    word_categories = {} # word -> set of categories
+    
     # Track which words appear in potentially breaking clusters
-    # We'll use a simple "breaking" heuristic: cluster has 4+ sources or is very recent
     breaking_words = set()
     cluster_source_counts = Counter()
     for row in rows:
@@ -151,12 +158,14 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
             age_h = 12
 
         # Momentum Windows
-        is_current = age_h <= 4
-        recency = 2.0 if age_h < 6 else 1.5 if age_h < 12 else 1.0
+        is_hot = age_h <= 1.5
+        is_rising = 1.5 < age_h <= 4.5
         
         is_high_volume_cluster = cluster_source_counts[row["cluster_id"]] >= 4
+        cat = row.get("category", "Вести")
 
         for word, is_proper in pairs:
+            # Basic normalization for common entities
             normalization = {
                 'iran': 'иран', 'iranski': 'иран',
                 'trump': 'трамп', 'trampa': 'трамп',
@@ -172,48 +181,63 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
             word = normalization.get(word, word)
             
             noun_bonus = PROPER_NOUN_BONUS if is_proper else 1.0
-            score = recency * noun_bonus
             
-            if is_current:
-                current_weighted[word] += score
+            if is_hot:
+                hot_weighted[word] += 3.0 * noun_bonus
+            elif is_rising:
+                rising_weighted[word] += 2.0 * noun_bonus
             else:
-                previous_weighted[word] += score
+                baseline_weighted[word] += 1.0 * noun_bonus
                 
             raw[word] += 1
-            if is_current and is_high_volume_cluster:
+            word_categories.setdefault(word, set()).add(cat)
+
+            if is_hot and is_high_volume_cluster:
                 breaking_words.add(word)
 
     # Calculate final scores and trends
-    results = []
-    # Combined view for ranking
-    all_words = set(current_weighted.keys()) | set(previous_weighted.keys())
-    
     scored_items = []
+    all_words = set(hot_weighted.keys()) | set(rising_weighted.keys()) | set(baseline_weighted.keys())
+    
     for word in all_words:
         if raw[word] < MIN_COUNT:
             continue
             
-        cur = current_weighted[word]
-        prev = previous_weighted[word]
+        h = hot_weighted[word]
+        r = rising_weighted[word]
+        b = baseline_weighted[word]
         
-        # Trend logic
-        if cur > prev * 1.5 and cur > 5:
+        # Velocity logic:
+        # High velocity if activity in last 1.5h is significantly higher than previous windows
+        velocity_score = (h * 2.0) + (r * 1.2) + (b * 0.5)
+        
+        # Category diversity boost
+        # If a story is jumping across 3+ categories (e.g. Politics -> Economy -> World)
+        cats = word_categories.get(word, set())
+        cat_boost = 1.0 + (len(cats) * 0.15) if len(cats) >= 2 else 1.0
+        
+        final_score = velocity_score * cat_boost
+        
+        # Trend indicator
+        if h > (r + b) * 0.8 and h > 6:
+            trend = "↑↑" # Breaking velocity
+        elif h + r > b * 1.5:
             trend = "↑"
-        elif prev > cur * 1.5 and prev > 5:
+        elif b > (h + r) * 2:
             trend = "↓"
         else:
             trend = "→"
             
-        total_score = cur + prev
         scored_items.append({
             "word": word.capitalize(),
             "count": raw[word],
-            "score": total_score,
+            "score": final_score,
             "trend": trend,
-            "is_breaking": word in breaking_words
+            "is_breaking": word in breaking_words or (h > 15 and len(cats) >= 2),
+            "categories": list(cats)[:3]
         })
 
-    # Sort by total weighted score
+    # Sort by velocity-weighted score
     scored_items.sort(key=lambda x: x["score"], reverse=True)
     return scored_items[:limit]
 

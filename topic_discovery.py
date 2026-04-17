@@ -27,11 +27,13 @@ class StoryDiscoveryEngine:
         log.info(f"Starting Story Discovery (lookback: {lookback_hours}h)")
         
         # 1. Get recent clusters that aren't already part of a storyline
-        # We look at clusters with 3+ sources to ensure we're finding "stories" not just "noise"
+        # Enhanced query to calculate source velocity (sources in last 3 hours)
         unassigned_clusters = db.execute("""
             SELECT DISTINCT a.cluster_id, 
                    AVG(a.embedding) as avg_embedding,
                    MAX(a.created_at) as latest_activity,
+                   COUNT(DISTINCT a.source) as source_count,
+                   COUNT(DISTINCT CASE WHEN a.created_at >= NOW() - INTERVAL '3 hours' THEN a.source END) as velocity,
                    ARRAY_AGG(DISTINCT a.title) as titles,
                    ARRAY_AGG(DISTINCT a.source) as sources
             FROM articles a
@@ -40,8 +42,8 @@ class StoryDiscoveryEngine:
               AND a.embedding IS NOT NULL
               AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
             GROUP BY a.cluster_id
-            HAVING COUNT(*) >= 3
-            ORDER BY latest_activity DESC
+            HAVING COUNT(DISTINCT a.source) >= 2
+            ORDER BY velocity DESC, latest_activity DESC
         """, (lookback_hours,))
 
         if not unassigned_clusters:
@@ -54,9 +56,10 @@ class StoryDiscoveryEngine:
     def _process_cluster(self, cluster: Dict[str, Any]):
         cid = cluster['cluster_id']
         emb = cluster['avg_embedding']
+        velocity = cluster.get('velocity', 0)
         
         # 2. Try to find an existing storyline that is semantically close
-        # We look for storylines active in the last 7 days
+        # Stricter lookback for matching (3 days) to keep stories focused
         best_storyline = db.execute_one("""
             SELECT s.id, s.title, 
                    (SELECT AVG(a.embedding) 
@@ -65,28 +68,29 @@ class StoryDiscoveryEngine:
                     WHERE sc2.storyline_id = s.id) <=> %s::vector as distance
             FROM storylines s
             WHERE s.is_active = TRUE
-              AND s.last_activity >= NOW() - INTERVAL '7 days'
+              AND s.last_activity >= NOW() - INTERVAL '3 days'
             ORDER BY distance ASC
             LIMIT 1
         """, (emb,))
 
         if best_storyline and float(best_storyline['distance']) < STORYLINE_LINK_THRESHOLD:
-            # Found a match! Link to existing storyline
             sid = best_storyline['id']
-            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']}")
+            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity})")
             
             db.execute(
                 "INSERT INTO storyline_clusters (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                 (sid, cid, 1.0 - float(best_storyline['distance'])),
                 fetch=False
             )
+            # Update storyline status based on new activity
             db.execute(
-                "UPDATE storylines SET last_activity = NOW() WHERE id = %s",
+                "UPDATE storylines SET last_activity = NOW(), is_active = TRUE WHERE id = %s",
                 (sid,), fetch=False
             )
         else:
-            # 3. Create a new storyline
-            self._create_new_storyline(cluster)
+            # 3. Create a new storyline if it has sufficient momentum
+            if cluster['source_count'] >= 3 or velocity >= 2:
+                self._create_new_storyline(cluster)
 
     def _create_new_storyline(self, cluster: Dict[str, Any]):
         cid = cluster['cluster_id']
