@@ -10,8 +10,8 @@ export function sanitizeHtml(dirty: string): string {
     ALLOWED_TAGS: [
       "b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li",
       "h1", "h2", "h3", "h4", "h5", "h6", "blockquote",
-      "pre", "code", "sub", "sup", "small",
+      "pre", "code", "sub", "sup", "small", "span",
     ],
-    ALLOWED_ATTR: ["href", "target", "rel"],
+    ALLOWED_ATTR: ["href", "target", "rel", "class"],
   });
 }

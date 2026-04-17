@@ -71,3 +71,34 @@ export function isMostlyCyrillic(text: any): boolean {
     if (latin === 0) return true;
     return cyrillic >= latin * 1.6;
 }
+
+/**
+ * Highlights football-like scores (e.g., 1-0, 2:1) in text,
+ * while excluding clock times like 15:00.
+ */
+export function highlightScores(text: string): string {
+    if (!text) return '';
+    
+    // Pattern for N:N or N-N (with optional parentheses)
+    return text.replace(/\(?\b(\d+[:\-]\d+)\b\)?/g, (match, score) => {
+        const parts = score.split(/[:\-]/);
+        if (parts.length === 2) {
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            
+            // 1. If it's a ":" separator and looks like an hour (>12), it's probably time
+            if (score.includes(':') && h > 12) return match;
+            
+            // 2. If it's a "-" separator and looks like a year-range (e.g. 2024-2025), it's not a score
+            if (score.includes('-') && h > 1900 && m > 1900) return match;
+            
+            // 3. Scores like 15:00 can be basketball, but in most cases it's time
+            // Let's assume scores are relatively small or if it's football/handball
+            // If it's exactly 15:00, 20:00 etc it's very likely time.
+            if (score.includes(':') && (h >= 10 && m === 0)) return match;
+            
+            return `<span class="font-bold text-red-600 dark:text-red-400">${match}</span>`;
+        }
+        return match;
+    });
+}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import type { NewsCluster, Article } from '../types';
 
@@ -35,7 +35,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
 
-  const displayTitle = cleanAndDecode(main.title);
+  const displayTitle = highlightScores(cleanAndDecode(main.title));
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
   const getCardSummary = (article: Article, lead = false) => {
@@ -59,7 +59,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     text = cleanAndDecode(text);
     if (!text) return '';
     const limit = lead ? 250 : 170;
-    return text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+    const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
+    return highlightScores(truncated);
   };
 
   const displaySummary = getCardSummary(main, isLead);

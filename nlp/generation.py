@@ -18,7 +18,46 @@ def _extract_terms(text):
     ]
 
 def _extract_number_tokens(text):
-    return re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", str(text or ""))
+    """Extracts plain numbers and percentages, avoiding clock times like 15:00."""
+    tokens = re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", str(text or ""))
+    # Filter out common clock patterns (HH:MM)
+    filtered = []
+    for t in tokens:
+        if ":" in t:
+            parts = t.split(":")
+            if len(parts) == 2:
+                try:
+                    h, m = int(parts[0]), int(parts[1])
+                    if 0 <= h <= 23 and 0 <= m <= 59:
+                        # Likely a time, skip unless it's a very low number that could be a score
+                        if h > 10: # Most scores aren't > 10 unless it's basketball/handball but those use '-' or ' '
+                            continue
+                except ValueError:
+                    pass
+        filtered.append(t)
+    return filtered
+
+def _extract_sports_scores(text):
+    """Specifically looks for match results like 1-0, 2:1, (0-0)."""
+    # Patterns: 1-0, 2:1, (0-0), 1:1 (halftime)
+    tokens = re.findall(r"\(?\b\d+[:\-]\d+\b\)?", str(text or ""))
+    scores = []
+    for t in tokens:
+        clean = t.strip("()")
+        parts = re.split(r"[:\-]", clean)
+        if len(parts) == 2:
+            try:
+                h, m = int(parts[0]), int(parts[1])
+                # Exclude clock times (e.g. 15:00)
+                if ":" in clean and h > 12: continue
+                # Exclude common years/seasons (e.g. 2024-2025)
+                if "-" in clean and h > 1900 and m > 1900: continue
+                # Exclude likely kickoff times (e.g. 15:00, 20:00)
+                if ":" in clean and h >= 10 and m == 0: continue
+                scores.append(clean)
+            except ValueError:
+                pass
+    return scores
 
 def summarize_locally(text, sentence_count=3, topic=None, title=None):
     """Non-AI summarizer for news-like text."""
@@ -190,11 +229,24 @@ def compare_cluster_sources(articles):
         open_points.append(f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}.")
     
     # Extra check for numbers mismatch as open points
-    nums = [set(_extract_number_tokens(a.get("description") or "")) for a in articles]
-    all_nums = set().union(*nums)
-    conflicting_nums = [n for n in all_nums if sum(1 for s in nums if n in s) == 1 and len(nums) > 1]
-    if conflicting_nums and len(articles) > 1:
-        open_points.append(f"Постојат различни информации околу бројките (на пример: {conflicting_nums[0]}), што укажува на динамично известување.")
+    from categories import detect_topic
+    all_titles = " ".join([a.get("title") or "" for a in articles])
+    is_sport = detect_topic(all_titles) == "Спорт"
+
+    if is_sport:
+        scores = [set(_extract_sports_scores(a.get("title") or "")) | set(_extract_sports_scores(a.get("description") or "")) for a in articles]
+        all_scores = set().union(*scores)
+        conflicting_scores = [s for s in all_scores if sum(1 for ms in scores if s in ms) < len(articles) and len(articles) > 1]
+        if conflicting_scores:
+            open_points.append(f"Информациите за конечниот резултат се разликуваат (на пример: {conflicting_scores[0]}), што може да укажува на промена во текот на мечот.")
+    
+    # Generic numbers only if not many articles (less noise)
+    if len(articles) > 1 and len(articles) <= 3:
+        nums = [set(_extract_number_tokens(a.get("description") or "")) for a in articles]
+        all_nums = set().union(*nums)
+        conflicting_nums = [n for n in all_nums if sum(1 for s in nums if n in s) == 1]
+        if conflicting_nums and not any(n in "".join(open_points) for n in conflicting_nums):
+            open_points.append(f"Постојат различни информации околу бројките (на пример: {conflicting_nums[0]}), што укажува на динамично известување.")
 
     result = {"common_line": common_line, "difference_points": difference_points[:3], "open_points": open_points[:2]}
     _cache_set(_comparison_cache, cache_key, result)
@@ -211,6 +263,16 @@ def synthesize_cluster_fallback(articles):
     common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
     compact_context = " ".join(_coerce_grounded_snippet(line).rstrip(".") for line in context_summary.splitlines()[:2] if _coerce_grounded_snippet(line))
     summary_lines = [f"• Што се случува: {lead['title']}"]
+    
+    # Special Score Detection for Sports
+    from categories import detect_topic
+    all_titles = " ".join([a.get("title") or "" for a in articles])
+    if detect_topic(all_titles) == "Спорт":
+        # Extract all scores; articles are typically sorted by date DESC
+        latest_scores = _extract_sports_scores(articles[0].get("title") or "") + _extract_sports_scores(articles[0].get("description") or "")
+        if latest_scores:
+            summary_lines.append(f"• Резултат: {latest_scores[0]}")
+
     if common_line: summary_lines.append(f"• Што е потврдено: {common_line}")
     elif compact_context: summary_lines.append(f"• Што е потврдено: {compact_context}.")
     summary_lines.append(f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}.")

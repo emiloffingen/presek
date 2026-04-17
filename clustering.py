@@ -281,6 +281,21 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             if score > current_best_rep_score:
                 current_best_rep_score = score
         
+        # Sports Match Validation (Avoid mixing different matches)
+        if topic == "Спорт" and rep_0.get("topic") == "Спорт":
+            from nlp.generation import _extract_sports_scores
+            # We check if they share any common "team-like" entities
+            rep_entities = cluster_entities.get(cid, set())
+            if potential_entities and rep_entities:
+                shared_entities = potential_entities.intersection(rep_entities)
+                # If they both have distinct entities but NONE are shared, they are likely different matches
+                # (e.g., "Arsenal - Barca" vs "Real - Milan")
+                if not shared_entities:
+                    current_best_rep_score *= 0.4
+            
+            # If they have different scores but same teams, it's probably an update (score evolution)
+            # If they have DIFFERENT scores and DIFFERENT teams, the entity check above already caught it.
+
         # Entity Boosting
         if cid in cluster_entities and potential_entities:
             shared = potential_entities.intersection(cluster_entities[cid])
