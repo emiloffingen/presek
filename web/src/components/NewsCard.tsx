@@ -100,28 +100,37 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     <article className={`nyt-article variant-${variant} ${isLead ? 'lead-story' : ''}`}>
       <div className="article-body">
         <div className="article-meta">
-          <span className="source-label">{main.source}</span>
-          {showTrustBadge && (
-            <span
-              className={`source-trust-badge source-trust-${
-                sourceSignal.trust_label === 'Висока доверба'
-                  ? 'high'
-                  : sourceSignal.trust_label === 'Потврден извор'
-                  ? 'medium'
-                  : 'low'
-              }`}
-            >
-              {sourceSignal.trust_label}
+          <span className="source-label">
+            {main.source}
+            {showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
+              <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" title="Висока доверба" />
+            )}
+          </span>
+
+          {cluster.is_breaking && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+              </span>
+              ВО ЖИВО
             </span>
           )}
-          {cluster.is_breaking && <span className="breaking-label">Во живо</span>}
+
           {anyFactCheck(cluster.articles) && (
-            <span className="fact-check-badge">
-              <ShieldCheck size={10} /> ФАКТ-ЧЕК
+            <span className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
+              ФАКТ-ЧЕК
             </span>
           )}
-          {showSignificanceLabel && <span className="significance-label">{significanceLabel}</span>}
+
+          {showSignificanceLabel && !cluster.is_breaking && (
+            <span className="significance-dot-label" title={significanceLabel}>
+              <span className={`h-1.5 w-1.5 rounded-full ${sourceCount >= 6 ? 'bg-purple-500' : 'bg-blue-400'}`}></span>
+              {sourceCount >= 6 ? 'Ударна' : 'Следена'}
+            </span>
+          )}
         </div>
+
 
         <a href={`/cluster/${cluster.cluster_id}`} className="headline-link group">
           <h2
