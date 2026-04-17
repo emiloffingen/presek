@@ -350,10 +350,36 @@ def build_cluster_source_signals(arts):
 def annotate_cluster_articles(arts):
     ranked = rank_articles_in_cluster(arts)
     signals = build_cluster_source_signals(ranked)
+    
+    # Media Pluralism Logic
+    TIER_MAP = {
+        "Агенциски": "M", "Јавен Сервис": "M", "Главни": "M",
+        "Независни": "I", "Истражувачки": "I",
+        "Регионални": "R", "Алтернативни": "R", "Локални": "R"
+    }
+    tiers_present = set()
+    for art in ranked:
+        src = art.get("source")
+        cat = SOURCE_CATEGORIES.get(src, "Локални")
+        tiers_present.add(TIER_MAP.get(cat, "R"))
+    
+    balance_score = len(tiers_present)
+    if balance_score >= 3:
+        balance_label = "Широк Консензус"
+    elif balance_score == 2:
+        balance_label = "Разновидни Извори"
+    else:
+        balance_label = None # Lean: don't show if one-sided unless many sources
+
     annotated = []
     for article, signal in zip(ranked, signals):
         enriched = dict(article)
         enriched["source_signal"] = signal
+        # Add cluster-level balance signal to every article for easy access in frontend
+        enriched["coverage_balance"] = {
+            "score": balance_score,
+            "label": balance_label
+        }
         annotated.append(enriched)
     return annotated
 

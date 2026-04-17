@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Globe } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2 } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -113,7 +113,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               </span>
               )}
 
-              {cluster.is_breaking && (
+              {main.coverage_balance?.label && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-500">
+              <CheckCircle2 size={11} /> {main.coverage_balance.label}
+            </span>
+          )}
+
+          {cluster.is_breaking && (
 
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
               <span className="relative flex h-2 w-2">
