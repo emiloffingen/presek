@@ -258,6 +258,26 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote),
                 fetch=False
             )
+
+            # Real-time Sports Score Alert
+            try:
+                from categories import detect_topic
+                all_titles = " ".join([a.get("title") or "" for a in article_rows])
+                if detect_topic(all_titles) == "Спорт":
+                    from nlp.generation import _extract_sports_scores
+                    from notifier import BreakingNewsNotifier
+                    from config import NTFY_TOPIC
+                    
+                    # Use articles sorted by date
+                    latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(article_rows[0].get("description") or "")
+                    if latest_scores:
+                        latest_score = latest_scores[0]
+                        # BreakingNewsNotifier handles deduplication internally
+                        notifier = BreakingNewsNotifier(NTFY_TOPIC)
+                        notifier.notify_score_change(article_rows[0].get("title"), latest_score, cluster_id)
+            except Exception as e:
+                log.warning(f"[tasks/sports] Score alert failed: {e}")
+
             any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
             if not any_img:
                 img_url = generate_cover_art(cluster_id, summary)
