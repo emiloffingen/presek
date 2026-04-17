@@ -124,10 +124,13 @@ async def get_navigation():
     # 2. ФОКУС — pinned categories first, then trending entities
     focus_items = [
         {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
+        {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "type": "focus"},
+        {"label": "Европа", "href": f"/?category={urllib.parse.quote('Европа')}", "type": "focus"},
         {"label": "Свет", "href": f"/?category={urllib.parse.quote('Свет')}", "type": "focus"},
+        {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "type": "focus"},
     ]
     try:
-        entities = await get_top_entities(limit=8)
+        entities = await get_top_entities(limit=4)
         for ent in entities:
             focus_items.append({
                 "label": ent["name"],
