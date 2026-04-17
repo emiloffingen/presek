@@ -403,6 +403,7 @@ const hasBreaking = navigationData.breaking.length > 0;
     .masthead-nav-shell {
         width: 100%;
         overflow-x: auto;
+        overflow-y: visible;
         padding: 0.35rem 0;
     }
 
@@ -477,16 +478,16 @@ const hasBreaking = navigationData.breaking.length > 0;
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
         padding: 0.5rem;
         display: none;
-        z-index: 110;
+        z-index: 1000;
         border-radius: 4px;
-        margin-top: 0.35rem;
+        margin-top: 0.5rem;
     }
 
-    .nav-dropdown-wrap:hover .nav-dropdown {
+    .nav-dropdown-wrap.is-open .nav-dropdown {
         display: block;
     }
 
-    .nav-dropdown-wrap:hover .chevron {
+    .nav-dropdown-wrap.is-open .chevron {
         transform: rotate(180deg);
     }
 
@@ -600,9 +601,29 @@ const hasBreaking = navigationData.breaking.length > 0;
             });
         };
 
+        const initDropdown = () => {
+            const wrap = document.querySelector('.nav-dropdown-wrap');
+            const btn = document.querySelector('.nav-more-btn');
+            if (!wrap || !btn) return;
+            
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                wrap.classList.toggle('is-open');
+            };
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrap.contains(e.target)) {
+                    wrap.classList.remove('is-open');
+                }
+            });
+        };
+
         initHeader();
         initFades();
         initHints();
-        document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
+        initDropdown();
+        document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); initDropdown(); });
     })();
 </script>
