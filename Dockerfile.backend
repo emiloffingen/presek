@@ -22,9 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python dependencies
 # First install CPU-only torch to avoid pulling in 4GB of CUDA libraries
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install spaCy model for local entity extraction
 RUN python -m spacy download xx_ent_wiki_sm

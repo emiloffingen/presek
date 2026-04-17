@@ -21,6 +21,18 @@ function permissionLabel(status: string) {
   return 'Известувањата во прелистувач не се вклучени';
 }
 
+function decodeVapidPublicKey(key: string) {
+  const clean = String(key || '').trim();
+  if (!clean) {
+    throw new Error('Missing VAPID public key');
+  }
+
+  const normalized = clean.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  const raw = globalThis.atob(padded);
+  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+}
+
 export default function BriefingDeliveryIsland({
   content = '',
   dateLabel = '',
@@ -110,10 +122,11 @@ export default function BriefingDeliveryIsland({
                 
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 await navigator.serviceWorker.ready;
-                
-                const sub = await reg.pushManager.subscribe({
+
+                const existingSub = await reg.pushManager.getSubscription();
+                const sub = existingSub || await reg.pushManager.subscribe({
                     userVisibleOnly: true,
-                    applicationServerKey: pubKey
+                    applicationServerKey: decodeVapidPublicKey(pubKey)
                 });
                 
                 if (syncToken) {
@@ -222,10 +235,16 @@ export default function BriefingDeliveryIsland({
 
         <div className="delivery-actions">
           <a href="/settings" className="delivery-action">
-            <Radio size={14} /> Отвори поставки за достава
+            <Radio size={14} />
+            <span className="delivery-action-content">
+              <span className="delivery-action-label">Отвори поставки за достава</span>
+            </span>
           </a>
           <button type="button" className="delivery-action" onClick={copyDigest}>
-            <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
+            <Copy size={14} />
+            <span className="delivery-action-content">
+              <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}</span>
+            </span>
           </button>
         </div>
       </div>
@@ -246,24 +265,42 @@ export default function BriefingDeliveryIsland({
 
       <div className="delivery-toggle-list">
         <button type="button" className={`delivery-toggle ${prefs.morningBriefing ? 'is-active' : ''}`} onClick={() => togglePref('morningBriefing')}>
-          <span>Утрински брифинг</span>
+          <span className="delivery-toggle-content">
+            <span className="delivery-toggle-label">Утрински брифинг</span>
+            <span className="delivery-toggle-meta">Локален преглед на денот на овој прелистувач.</span>
+          </span>
           <strong>{prefs.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
         <button type="button" className={`delivery-toggle ${prefs.breakingAlerts ? 'is-active' : ''}`} onClick={() => togglePref('breakingAlerts')}>
-            <span>Итни известувања</span>
+          <span className="delivery-toggle-content">
+            <span className="delivery-toggle-label">Итни известувања</span>
+            <span className="delivery-toggle-meta">Брзи сигнали кога следената приказна забрзува.</span>
+          </span>
           <strong>{prefs.breakingAlerts ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
       </div>
 
       <div className="delivery-actions">
         <button type="button" className="delivery-action" onClick={requestNotifications}>
-          <Bell size={14} /> Вклучи известувања во прелистувач
+          <Bell size={14} />
+          <span className="delivery-action-content">
+            <span className="delivery-action-label">Вклучи известувања во прелистувач</span>
+            <span className="delivery-action-note">Активира локални push пораки за овој уред.</span>
+          </span>
         </button>
         <button type="button" className="delivery-action" onClick={copyDigest}>
-          <Copy size={14} /> {copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}
+          <Copy size={14} />
+          <span className="delivery-action-content">
+            <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}</span>
+            <span className="delivery-action-note">Кратка текстуална верзија за споделување.</span>
+          </span>
         </button>
         <a href={mailHref} className="delivery-action">
-          <Mail size={14} /> Сподели преку е-пошта
+          <Mail size={14} />
+          <span className="delivery-action-content">
+            <span className="delivery-action-label">Сподели преку е-пошта</span>
+            <span className="delivery-action-note">Го отвора вашиот mail клиент со подготвен преглед.</span>
+          </span>
         </a>
       </div>
 
@@ -294,29 +331,48 @@ export default function BriefingDeliveryIsland({
 
         <div className="delivery-toggle-list">
           <button type="button" className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
-            <span>Утрински ntfy брифинг</span>
+            <span className="delivery-toggle-content">
+              <span className="delivery-toggle-label">Утрински ntfy брифинг</span>
+              <span className="delivery-toggle-meta">Серверски испорачан преглед во вашата `ntfy` тема.</span>
+            </span>
             <strong>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
-            <span>Неделен дигест</span>
+            <span className="delivery-toggle-content">
+              <span className="delivery-toggle-label">Неделен дигест</span>
+              <span className="delivery-toggle-meta">Побавен резиме-преглед на темите што сте ги следеле.</span>
+            </span>
             <strong>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.breakingTopics ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
-            <span>Известувања за следени теми</span>
+            <span className="delivery-toggle-content">
+              <span className="delivery-toggle-label">Известувања за следени теми</span>
+              <span className="delivery-toggle-meta">Се активира кога вашите теми добиваат нов силен кластер.</span>
+            </span>
             <strong>{serverDelivery.breakingTopics ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.breakingSources ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
-            <span>Известувања за следени извори</span>
+            <span className="delivery-toggle-content">
+              <span className="delivery-toggle-label">Известувања за следени извори</span>
+              <span className="delivery-toggle-meta">Следи кога избран извор прв отвора важна приказна.</span>
+            </span>
             <strong>{serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
           <button type="button" className={`delivery-toggle ${serverDelivery.isActive ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
-            <span>Закажаната достава е активна</span>
+            <span className="delivery-toggle-content">
+              <span className="delivery-toggle-label">Закажаната достава е активна</span>
+              <span className="delivery-toggle-meta">Главен прекинувач за серверската достава на овој профил.</span>
+            </span>
             <strong>{serverDelivery.isActive ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
         </div>
 
         <button type="button" className="delivery-action" onClick={saveScheduledDelivery}>
-          <Save size={14} /> Зачувај закажана достава
+          <Save size={14} />
+          <span className="delivery-action-content">
+            <span className="delivery-action-label">Зачувај закажана достава</span>
+            <span className="delivery-action-note">Ги снима `ntfy` поставките во синхронизираниот профил.</span>
+          </span>
         </button>
 
         {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}

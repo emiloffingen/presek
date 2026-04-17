@@ -42,7 +42,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
+      - PUBLIC_SITE_URL=https://presek.live
     volumes:
+      - .:/app
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
     deploy:
@@ -72,7 +74,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
+      - PUBLIC_SITE_URL=https://presek.live
     volumes:
+      - .:/app
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
     deploy:
@@ -97,7 +101,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek
       - REDIS_URL=redis://redis:6379/0
+      - PUBLIC_SITE_URL=https://presek.live
     volumes:
+      - .:/app
       - static_uploads:/app/static/uploads
       - static_generated:/app/static/generated
     deploy:
@@ -118,6 +124,9 @@ services:
       dockerfile: Dockerfile.frontend
     environment:
       - PORT=3000
+      - INTERNAL_API_URL=http://api:5001/api
+      - PUBLIC_API_URL=/api
+      - PUBLIC_SITE_URL=https://presek.live
     deploy:
       resources:
         limits:

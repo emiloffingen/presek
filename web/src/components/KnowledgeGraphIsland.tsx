@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, Heart, MessageSquare, ArrowRight, Activity } from 'lucide-react';
+import { TrendingUp, Users, Heart, Activity } from 'lucide-react';
 
 interface Entity {
     name: string;

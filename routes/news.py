@@ -31,6 +31,43 @@ from .security import validate_cluster_id, validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+_PUBLIC_ARTICLE_FIELDS = {
+    "id",
+    "cluster_id",
+    "source",
+    "link",
+    "title",
+    "original_title",
+    "description",
+    "summary",
+    "category",
+    "subcategory",
+    "topic",
+    "country",
+    "created_at",
+    "image_url",
+    "image_caption",
+    "clicks",
+    "original_description",
+    "is_translated",
+    "is_fact_check",
+    "is_redundant",
+    "reading_time",
+    "entity_names",
+    "source_signal",
+    "match_score",
+    "rank",
+    "hybrid_score",
+}
+
+
+def _public_article_payload(article):
+    return {
+        key: value
+        for key, value in article.items()
+        if key in _PUBLIC_ARTICLE_FIELDS
+    }
+
 @router.get("/news")
 async def get_news(
     q: Optional[str] = None,
@@ -108,7 +145,7 @@ async def get_news(
             meta = meta_map.get(cid, {})
             result.append({
                 "cluster_id": cid,
-                "articles": arts,
+                "articles": [_public_article_payload(article) for article in arts],
                 "representative_image": meta.get("representative_image"),
                 "dominant_color": meta.get("dominant_color"),
                 "reading_time": main.get('reading_time', 1),
@@ -137,6 +174,7 @@ async def get_cluster_detail(cluster_id: str):
         if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
         articles = annotate_cluster_articles(rows)
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))
+        public_articles = [_public_article_payload(article) for article in articles]
 
         s_row = db.execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
         synthesis = s_row["summary"] if s_row else None
@@ -160,6 +198,14 @@ async def get_cluster_detail(cluster_id: str):
         topics = (m_row.get("topics") or []) if m_row else []
         rep_image = m_row.get("representative_image") if m_row else None
         dominant_color = m_row.get("dominant_color") if m_row else None
+        current_tags = {str(tag or "").strip() for tag in tags if str(tag or "").strip()}
+        current_topics = {str(topic or "").strip() for topic in topics if str(topic or "").strip()}
+        current_entities = {
+            str(entity or "").strip()
+            for article in articles
+            for entity in (article.get("entity_names") or [])
+            if str(entity or "").strip()
+        }
 
         # Just-in-time extraction if missing
         if rep_image and not dominant_color:
@@ -189,7 +235,36 @@ async def get_cluster_detail(cluster_id: str):
                     arts = r_grouped.get(cid)
                     if arts:
                         main = annotate_cluster_articles(arts)[0]
-                        related.append({"cluster_id": cid, "title": main["title"], "image_url": main.get("image_url"), "tags": filter_cluster_tags(main.get("cluster_tags", [])), "relationship_label": "Сродна тема"})
+                        candidate_tags = {
+                            str(tag or "").strip()
+                            for article in arts
+                            for tag in (article.get("cluster_tags") or [])
+                            if str(tag or "").strip()
+                        }
+                        candidate_topics = {
+                            str(article.get("topic") or "").strip()
+                            for article in arts
+                            if str(article.get("topic") or "").strip()
+                        }
+                        candidate_entities = {
+                            str(entity or "").strip()
+                            for article in arts
+                            for entity in (article.get("entity_names") or [])
+                            if str(entity or "").strip()
+                        }
+                        shared_tags = sorted(current_tags & candidate_tags)[:3]
+                        shared_topics = sorted(current_topics & candidate_topics)[:2]
+                        shared_entities = sorted(current_entities & candidate_entities)[:3]
+                        related.append({
+                            "cluster_id": cid,
+                            "title": main["title"],
+                            "image_url": main.get("image_url"),
+                            "tags": filter_cluster_tags(main.get("cluster_tags", [])),
+                            "relationship_label": "Сродна тема",
+                            "shared_tags": shared_tags,
+                            "shared_topics": shared_topics,
+                            "shared_entities": shared_entities,
+                        })
 
         chrono = sorted(articles, key=lambda x: x['created_at'])
         timeline = []
@@ -198,7 +273,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
     except HTTPException:
         raise
     except Exception as e:

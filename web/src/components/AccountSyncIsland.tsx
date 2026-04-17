@@ -117,18 +117,34 @@ export default function AccountSyncIsland({
 
       <div className="account-sync-controls">
         <button type="button" className="delivery-action" onClick={createSyncKey}>
-          <KeyRound size={14} /> {hasToken ? 'Креирај нов клуч за синхронизација' : 'Креирај клуч за синхронизација'}
+          <KeyRound size={14} />
+          <span className="delivery-action-content">
+            <span className="delivery-action-label">{hasToken ? 'Креирај нов клуч за синхронизација' : 'Креирај клуч за синхронизација'}</span>
+            <span className="delivery-action-note">Започнува нов синхронизиран профил за овој читач.</span>
+          </span>
         </button>
         {hasToken && (
           <>
             <button type="button" className="delivery-action" onClick={() => pushLocalProfile()}>
-              <Upload size={14} /> Синхронизирај го овој уред
+              <Upload size={14} />
+              <span className="delivery-action-content">
+                <span className="delivery-action-label">Синхронизирај го овој уред</span>
+                <span className="delivery-action-note">Го испраќа локалниот профил кон активниот клуч.</span>
+              </span>
             </button>
             <button type="button" className="delivery-action" onClick={() => pullRemoteProfile()}>
-              <Download size={14} /> Вчитај синхронизиран профил
+              <Download size={14} />
+              <span className="delivery-action-content">
+                <span className="delivery-action-label">Вчитај синхронизиран профил</span>
+                <span className="delivery-action-note">Ги презема следењата и читањето зачувани на сервер.</span>
+              </span>
             </button>
             <button type="button" className="delivery-action" onClick={copyToken}>
-              <Copy size={14} /> Копирај клуч за синхронизација
+              <Copy size={14} />
+              <span className="delivery-action-content">
+                <span className="delivery-action-label">Копирај клуч за синхронизација</span>
+                <span className="delivery-action-note">За поврзување на друг уред со истиот профил.</span>
+              </span>
             </button>
           </>
         )}
@@ -145,12 +161,15 @@ export default function AccountSyncIsland({
             className="account-sync-input"
           />
           <button type="button" className="delivery-action account-sync-import-btn" onClick={() => pullRemoteProfile(inputToken)}>
-            <RefreshCw size={14} /> Поврзи
+            <RefreshCw size={14} />
+            <span className="delivery-action-content">
+              <span className="delivery-action-label">Поврзи</span>
+            </span>
           </button>
         </div>
       </label>
 
-      {token && <p className="account-sync-token">Тековен клуч: {token}</p>}
+      {token && <p className="account-sync-token">Тековен клуч:<code>{token}</code></p>}
       {message && <p className={`account-sync-message is-${status}`}>{message}</p>}
     </div>
   );

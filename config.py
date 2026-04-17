@@ -136,8 +136,6 @@ RSS_FEEDS = [
     ("Vesnik",          "https://vesnik.com/feed/"),
     ("Sloboden Svet",   "https://slobodensvet.com.mk/feed/"),
     ("BiznisInfo",      "https://biznisinfo.mk/feed/"),
-    ("Lajm",            "https://lajm.mk/feed/"),
-    ("Koha",            "https://koha.mk/feed/"),
     # Regional Additions
     ("Bitola News",     "https://bitolanews.mk/feed/"),
     # Culture & Lifestyle Additions
@@ -162,7 +160,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Republika", "Fokus", "Nezavisen", "Faktor", "Vecer", "Meta",
     "360 Stepeni", "Makfax", "Nova Makedonija", "Infomax", "Press24",
     "Skopje1", "Plusinfo", "Lokalno", "4News", "Makpress", "Vistinomer",
-    "Lider", "MKD", "Akademik", "Skopje Info",
+    "Lider", "MKD", "NetPress", "Akademik", "Skopje Info",
     "Prizma", "Expres", "Tetovo Info", "A1on", "SportSport",
     "24 Вести", "TV21", "Civil Media", "Радио МОФ",
     "Сакам да кажам", "Бизнис Вести", "MRT", "Okno",
@@ -198,7 +196,6 @@ SOURCE_CREDIBILITY = {
     "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
-    "Lajm": 1.0, "Koha": 1.0,
     "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1,
 }
 DEFAULT_CREDIBILITY = 0.8

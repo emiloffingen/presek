@@ -86,12 +86,44 @@ class TestAstroFrontendIntegrity:
         account_sync = _read("web/src/components/AccountSyncIsland.tsx")
         delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
         personalization = _read("web/src/lib/personalization.js")
+        debug_page = _read("web/src/pages/debug/recommendations.astro")
 
         assert "?token=" not in account_sync
         assert "?token=" not in delivery
+        assert "searchParams.get('token')" not in debug_page
         assert "buildSyncTokenHeaders" in account_sync
         assert "buildSyncTokenHeaders" in delivery
         assert "X-Sync-Token" in personalization
+
+    def test_public_api_rate_limits_include_profile_write_routes(self):
+        common = _read("routes/common.py")
+        assert '"/api/profile/sync/init"' in common
+        assert '"/api/profile/sync"' in common
+        assert '"/api/profile/delivery"' in common
+        assert '"/api/profile/suggestion-event"' in common
+
+    def test_public_news_routes_use_article_serializer_instead_of_returning_raw_rows(self):
+        news = _read("routes/news.py")
+        assert "def _public_article_payload(article):" in news
+        assert '"articles": [_public_article_payload(article) for article in arts]' in news
+        assert '"articles": public_articles' in news
+        assert '"image_caption"' in news
+        assert '"is_redundant"' in news
+
+    def test_cluster_related_payload_preserves_shared_metadata(self):
+        news = _read("routes/news.py")
+        assert '"shared_tags": shared_tags' in news
+        assert '"shared_topics": shared_topics' in news
+        assert '"shared_entities": shared_entities' in news
+
+    def test_recommendations_route_imports_list_validator(self):
+        intelligence = _read("routes/intelligence.py")
+        assert "validate_list_param" in intelligence
+
+    def test_delivery_component_decodes_vapid_key_before_subscribing(self):
+        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
+        assert "function decodeVapidPublicKey" in delivery
+        assert "applicationServerKey: decodeVapidPublicKey(pubKey)" in delivery
 
 
 class TestDeploymentIntegrity:

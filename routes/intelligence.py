@@ -9,7 +9,7 @@ from embeddings import generate_query_embedding
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
 from .common import cleanAndDecode, _is_valid_focus_entity
-from .security import validate_cluster_id, validate_string_param
+from .security import validate_cluster_id, validate_list_param, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -113,7 +113,6 @@ async def get_cluster_storyline_history(cluster_id: str):
 
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse():
-...
     sql = """
         WITH first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id

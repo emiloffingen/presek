@@ -6,7 +6,6 @@ import { getRecommendationEvaluation } from '../../lib/recommendationEval.mjs';
 
 const debugToken = String(import.meta.env.DEBUG_PAGE_TOKEN || '').trim();
 const requestToken =
-  Astro.url.searchParams.get('token') ||
   Astro.request.headers.get('x-debug-token') ||
   '';
 const isAuthorized = Boolean(debugToken) && requestToken === debugToken;

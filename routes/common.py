@@ -172,7 +172,15 @@ def _safe_tracking_redirect_path(path: str) -> str:
 def _is_rate_limited_path(path: str) -> bool:
     clean = str(path or "").strip()
     if not clean.startswith("/api/"): return False
-    return clean in {"/api/news", "/api/trending", "/api/intelligence/top-entities"}
+    return clean in {
+        "/api/news",
+        "/api/trending",
+        "/api/intelligence/top-entities",
+        "/api/profile/sync/init",
+        "/api/profile/sync",
+        "/api/profile/delivery",
+        "/api/profile/suggestion-event",
+    }
 
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}

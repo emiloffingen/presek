@@ -61,7 +61,7 @@ main() {
     if [ -f "$CERT_FULLCHAIN" ] && [ -f "$CERT_PRIVKEY" ]; then
       INSTALL_NGINX=1
     else
-      INSTALL_NGINX=0
+      INSTALL_NGINX=nossl
     fi
   fi
 
@@ -86,12 +86,16 @@ main() {
   systemctl daemon-reload
   systemctl enable presek.target
 
-  if [ "$INSTALL_NGINX" = "1" ]; then
+  if [ "$INSTALL_NGINX" = "1" ] || [ "$INSTALL_NGINX" = "nossl" ]; then
     install -d /etc/nginx/sites-available
     install -d /etc/nginx/sites-enabled
     install -d /etc/nginx/snippets
 
-    replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
+    if [ "$INSTALL_NGINX" = "nossl" ]; then
+      replace_paths "$NGINX_DIR/presek.live.nossl.conf" "$SITE_AVAILABLE"
+    else
+      replace_paths "$NGINX_DIR/presek.live.conf" "$SITE_AVAILABLE"
+    fi
     cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
     cp "$NGINX_DIR/security-headers.conf" "$SECURITY_SNIPPET"
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"

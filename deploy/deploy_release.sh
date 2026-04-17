@@ -8,6 +8,9 @@ SHARED_DIR="$APP_ROOT/shared"
 CURRENT_LINK="$APP_ROOT/current"
 PREVIOUS_LINK="$APP_ROOT/previous"
 VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+PYTHON_ENVS_DIR="${PYTHON_ENVS_DIR:-$SHARED_DIR/python-envs}"
+SHARED_WEB_DEPS_ROOT="${SHARED_WEB_DEPS_ROOT:-$SHARED_DIR/web-deps}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
@@ -28,6 +31,11 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+hash_file() {
+  local path="$1"
+  sha256sum "$path" | awk '{print $1}'
+}
+
 assert_paths_safe() {
   local source_real app_real
   source_real="$(cd "$SOURCE_ROOT" && pwd -P)"
@@ -35,8 +43,19 @@ assert_paths_safe() {
   [ "$source_real" != "$app_real" ] || fail "APP_ROOT must differ from SOURCE_ROOT for release-based deploys"
 }
 
+normalize_legacy_runtime_links() {
+  if [ -d "$VENV_DIR" ] && [ ! -L "$VENV_DIR" ]; then
+    local legacy_venv="$PYTHON_ENVS_DIR/legacy-runtime"
+    if [ ! -e "$legacy_venv" ]; then
+      info "Migrating legacy runtime venv into versioned storage"
+      mv "$VENV_DIR" "$legacy_venv"
+    fi
+    ln -sfn "$legacy_venv" "$VENV_DIR"
+  fi
+}
+
 ensure_layout() {
-  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups" "$SHARED_DIR/static/uploads" "$SHARED_DIR/static/generated"
+  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups" "$SHARED_DIR/static/uploads" "$SHARED_DIR/static/generated" "$PYTHON_ENVS_DIR" "$SHARED_WEB_DEPS_ROOT"
   [ -f "$SHARED_DIR/.env" ] || fail "Missing shared env file at $SHARED_DIR/.env"
   [ -x "$VENV_DIR/bin/uvicorn" ] || fail "Missing Python runtime at $VENV_DIR/bin/uvicorn"
   [ -d "$SHARED_WEB_NODE_MODULES" ] || fail "Missing shared Astro dependencies at $SHARED_WEB_NODE_MODULES. Run deploy/bootstrap_runtime_root.sh first."
@@ -76,13 +95,77 @@ prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 }
 
-update_venv_deps() {
-  info "Syncing shared venv dependencies"
-  "$VENV_DIR/bin/pip" install -q -r "$RELEASE_DIR/requirements.txt"
+persist_release_runtime_meta() {
+  local target_dir="$1"
+  local venv_target="$2"
+  local web_target="$3"
+  [ -n "$target_dir" ] && [ -d "$target_dir" ] || return 0
+  cat > "$target_dir/.runtime-meta" <<EOF
+VENV_TARGET=$venv_target
+WEB_NODE_MODULES_TARGET=$web_target
+EOF
+}
+
+read_release_runtime_meta() {
+  local target_dir="$1"
+  local key="$2"
+  local meta_path="$target_dir/.runtime-meta"
+  [ -f "$meta_path" ] || return 1
+  sed -n "s/^${key}=//p" "$meta_path" | tail -n 1
+}
+
+ensure_release_venv() {
+  local requirements_hash versioned_venv
+  requirements_hash="$(hash_file "$RELEASE_DIR/requirements.txt")"
+  versioned_venv="$PYTHON_ENVS_DIR/$requirements_hash"
+
+  if [ ! -x "$versioned_venv/bin/python3" ]; then
+    info "Creating versioned Python runtime $versioned_venv"
+    rm -rf "$versioned_venv"
+    "$PYTHON_BIN" -m venv "$versioned_venv"
+    "$versioned_venv/bin/python3" -m pip install --upgrade pip
+    "$versioned_venv/bin/pip" install -q -r "$RELEASE_DIR/requirements.txt"
+  else
+    info "Reusing versioned Python runtime $versioned_venv"
+  fi
+
+  RELEASE_VENV_TARGET="$versioned_venv"
+}
+
+ensure_release_web_deps() {
+  local lock_source deps_hash versioned_web_deps
+  lock_source="$RELEASE_DIR/web/package-lock.json"
+  [ -f "$lock_source" ] || lock_source="$RELEASE_DIR/web/package.json"
+  deps_hash="$(hash_file "$lock_source")"
+  versioned_web_deps="$SHARED_WEB_DEPS_ROOT/$deps_hash"
+
+  if [ ! -d "$versioned_web_deps/node_modules" ]; then
+    info "Installing versioned Astro dependencies $versioned_web_deps"
+    rm -rf "$versioned_web_deps"
+    install -d "$versioned_web_deps"
+    cp "$RELEASE_DIR/web/package.json" "$versioned_web_deps/"
+    [ ! -f "$RELEASE_DIR/web/package-lock.json" ] || cp "$RELEASE_DIR/web/package-lock.json" "$versioned_web_deps/"
+    (cd "$versioned_web_deps" && npm ci)
+  else
+    info "Reusing versioned Astro dependencies $versioned_web_deps"
+  fi
+
+  RELEASE_WEB_NODE_MODULES_TARGET="$versioned_web_deps/node_modules"
+}
+
+update_active_runtime_links() {
+  local venv_target="$1"
+  local web_target="$2"
+  local temp_venv="$APP_ROOT/.venv.$$"
+  local temp_web="$APP_ROOT/.web-node_modules.$$"
+  ln -sfn "$venv_target" "$temp_venv"
+  mv -Tf "$temp_venv" "$VENV_DIR"
+  ln -sfn "$web_target" "$temp_web"
+  mv -Tf "$temp_web" "$SHARED_WEB_NODE_MODULES"
 }
 
 build_release() {
-  ln -sfn "$SHARED_WEB_NODE_MODULES" "$RELEASE_DIR/web/node_modules"
+  ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web/node_modules"
 
   info "Building Astro release"
   (cd "$RELEASE_DIR/web" && npm run build)
@@ -93,13 +176,13 @@ run_release_checks() {
   if [ "$RUN_TESTS" = "1" ]; then
     [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL must be set when RUN_TESTS=1"
     info "Running pytest before switch"
-    (cd "$SOURCE_ROOT" && "$VENV_DIR/bin/pytest" -q)
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/pytest" -q)
   fi
 }
 
 run_migrations() {
   info "Running database schema updates"
-  (cd "$RELEASE_DIR" && "$VENV_DIR/bin/python3" -c "import config; from database import init_db; init_db()")
+  (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()")
 }
 
 switch_current_link() {
@@ -134,9 +217,12 @@ main() {
   need_cmd sudo
   need_cmd bash
   need_cmd flock
+  need_cmd sha256sum
+  need_cmd "$PYTHON_BIN"
 
   assert_paths_safe
   ensure_layout
+  normalize_legacy_runtime_links
 
   # Acquire exclusive deploy lock to prevent concurrent deploys
   LOCK_FILE="$APP_ROOT/.deploy.lock"
@@ -146,28 +232,44 @@ main() {
   [ ! -e "$RELEASE_DIR" ] || fail "Release already exists: $RELEASE_DIR"
 
   local previous_target=""
+  local current_venv_target=""
+  local current_web_deps_target=""
   if [ -L "$CURRENT_LINK" ]; then
     previous_target="$(readlink -f "$CURRENT_LINK" || true)"
   fi
+  if [ -L "$VENV_DIR" ]; then
+    current_venv_target="$(readlink -f "$VENV_DIR" || true)"
+  fi
+  if [ -L "$SHARED_WEB_NODE_MODULES" ]; then
+    current_web_deps_target="$(readlink -f "$SHARED_WEB_NODE_MODULES" || true)"
+  fi
+  [ -n "$current_venv_target" ] || fail "Could not resolve active Python runtime from $VENV_DIR"
+  [ -n "$current_web_deps_target" ] || fail "Could not resolve active Astro dependencies from $SHARED_WEB_NODE_MODULES"
 
   copy_release_tree
   prepare_release_runtime_links
-  update_venv_deps
+  ensure_release_venv
+  ensure_release_web_deps
   build_release
   run_release_checks
   run_migrations
+
+  persist_release_runtime_meta "$RELEASE_DIR" "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
+  persist_release_runtime_meta "$previous_target" "$current_venv_target" "$current_web_deps_target"
 
   info "Switching current release to $RELEASE_ID"
   switch_current_link "$RELEASE_DIR"
   if [ -n "$previous_target" ] && [ -d "$previous_target" ]; then
     ln -sfn "$previous_target" "$PREVIOUS_LINK"
   fi
+  update_active_runtime_links "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
 
   if ! restart_and_smoke; then
     if [ -n "$previous_target" ] && [ -d "$previous_target" ]; then
       warn "Deploy failed smoke checks; restoring previous release"
       switch_current_link "$previous_target"
       ln -sfn "$RELEASE_DIR" "$PREVIOUS_LINK"
+      update_active_runtime_links "$current_venv_target" "$current_web_deps_target"
       sudo systemctl restart "$SYSTEMD_TARGET"
       info "Running post-rollback smoke checks"
       ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
