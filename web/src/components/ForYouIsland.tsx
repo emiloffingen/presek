@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Clock3, Compass, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowUpRight, Clock3, Compass, Sparkles, AlertCircle, BrainCircuit } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
   buildPersonalizedClusters,
   hasPersonalizationSignal,
   loadReaderProfile,
+  loadSyncToken,
   recordSuggestionImpressions,
   sendSuggestionEvents,
   subscribeToReaderProfile,
 } from '../lib/personalization.js';
-import { cleanAndDecode } from '../utils/textUtils';
+import { cleanAndDecode, highlightScores } from '../utils/textUtils';
 
 function getSummary(cluster: any) {
   const article = cluster?.articles?.[0];
@@ -25,23 +26,63 @@ interface ForYouIslandProps {
 export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: ForYouIslandProps) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(() => loadReaderProfile());
+  const [semanticResults, setSemanticResults] = useState<any[]>([]);
+  const [semanticLoading, setSemanticLoading] = useState(false);
 
-  // Subscribe to profile changes
+  // 1. Load Local Profile & Subscribe
   useEffect(() => {
     const unsubscribe = subscribeToReaderProfile((nextProfile) => {
       setProfile(nextProfile);
     });
-    // Set loading false after initial load
     setLoading(false);
     return unsubscribe;
   }, []);
 
+  // 2. Fetch Semantic Recommendations from API
+  useEffect(() => {
+    const hasSignals = hasPersonalizationSignal(profile);
+    if (!hasSignals) return;
+
+    const fetchSemantic = async () => {
+      setSemanticLoading(true);
+      try {
+        const response = await fetch('/api/profile/sync/personalized-news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: loadSyncToken(),
+            profile: profile
+          })
+        });
+        const data = await response.json();
+        if (data.status === 'success' && data.results) {
+          setSemanticResults(data.results);
+        }
+      } catch (e) {
+        console.error('[Personalization] Semantic fetch failed:', e);
+      } finally {
+        setSemanticLoading(false);
+      }
+    };
+
+    fetchSemantic();
+  }, [profile]);
+
   const hasSignals = useMemo(() => hasPersonalizationSignal(profile), [profile]);
 
-  const personalizedItems = useMemo(() => {
+  // 3. Keyword-based Local Fallback (Personalization 1.0)
+  const localPersonalizedItems = useMemo(() => {
     if (!hasSignals || !Array.isArray(clusters) || clusters.length === 0) return [];
     return buildPersonalizedClusters(clusters, profile, 4, excludeClusterIds);
   }, [clusters, profile, hasSignals, excludeClusterIds]);
+
+  // 4. Combined Personalized Set
+  // Priority: Semantic Results (Brain) > Local Matches (Keywords)
+  const displayItems = useMemo(() => {
+    if (semanticResults.length > 0) return semanticResults;
+    if (localPersonalizedItems.length > 0) return localPersonalizedItems;
+    return [];
+  }, [semanticResults, localPersonalizedItems]);
 
   const recommendations = useMemo(
     () => buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 2, sourceLimit: 1 }),
@@ -49,12 +90,12 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
   );
 
   const fallbackItems = useMemo(() => {
-    if (personalizedItems.length > 0 || !Array.isArray(clusters)) return [];
+    if (displayItems.length > 0 || !Array.isArray(clusters)) return [];
     const excludeSet = new Set(excludeClusterIds);
     return clusters
       .filter(c => !excludeSet.has(c.cluster_id))
       .slice(0, 4);
-  }, [clusters, personalizedItems.length, excludeClusterIds]);
+  }, [clusters, displayItems.length, excludeClusterIds]);
 
   // Track impressions
   useEffect(() => {
@@ -98,10 +139,6 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
               <div className="skeleton h-4 w-full mb-1"></div>
               <div className="skeleton h-4 w-full mb-1"></div>
               <div className="skeleton h-4 w-1/2 mb-6"></div>
-              <div className="flex justify-between items-center">
-                <div className="skeleton h-3 w-20"></div>
-                <div className="skeleton h-3 w-16"></div>
-              </div>
             </div>
           ))}
         </div>
@@ -109,42 +146,34 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
     );
   }
 
-  // Error state if clusters is not an array (though default prop handles it)
-  if (!Array.isArray(clusters)) {
-    return (
-      <div className="p-8 text-center border border-dashed border-border rounded-lg bg-secondary/5">
-        <AlertCircle className="mx-auto mb-3 text-muted-foreground" size={24} />
-        <p className="text-sm text-muted-foreground">Не можевме да ги вчитаме вестите во овој момент.</p>
-      </div>
-    );
-  }
-
   // Case 1: Has signals and found personalized content
-  if (hasSignals && personalizedItems.length > 0) {
+  if (hasSignals && displayItems.length > 0) {
     return (
-      <section className="for-you-module" aria-labelledby="for-you-title">
+      <section className={`for-you-module ${semanticLoading ? 'opacity-70' : ''}`} aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
             <p className="for-you-kicker"><Sparkles size={14} /> За Вас</p>
-            <h2 id="for-you-title">Патека според тоа што веќе следите</h2>
+            <h2 id="for-you-title">Персонализиран избор</h2>
           </div>
           <p className="for-you-note">
-            Избрано од вашите следени теми, омилени извори и неодамнешно читање.
+            Нашиот систем ја анализира вашата историја и наоѓа најрелевантни вести за вашите интереси.
           </p>
         </div>
 
         <div className="for-you-grid">
-          {personalizedItems.map((item) => {
-            const cluster = item.cluster;
+          {displayItems.map((item) => {
+            const cluster = item.cluster || item; // Handle both Local (item.cluster) and Semantic (item itself) formats
             const article = cluster.articles?.[0] || {};
             const summary = getSummary(cluster);
+            const isSemantic = Boolean(item.similarity);
+
             return (
               <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${cleanAndDecode(article.title)}`}>
-                <p className="for-you-card-kicker">
-                  <Compass size={12} />
-                  <span>{item.reason || 'Поврзано со вашето читање'}</span>
+                <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
+                  {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
+                  <span>{isSemantic ? 'Семантичка препорака' : (item.reason || 'Сродна тема')}</span>
                 </p>
-                <h3>{cleanAndDecode(article.title) || 'Кластер'}</h3>
+                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(cleanAndDecode(article.title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
@@ -158,51 +187,8 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             );
           })}
         </div>
-
-        {/* Suggest following new things if they haven't followed much yet */}
-        {((profile?.followedTopics || []).length + (profile?.followedSources || []).length < 5) &&
-          (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
-          <div className="for-you-follow-block">
-            <div className="for-you-follow-head">
-              <p className="for-you-kicker"><Sparkles size={14} /> Следете го следното</p>
-              <p className="for-you-note">
-                Овие теми и извори се појавуваат во препораките што веќе ви одговараат.
-              </p>
-            </div>
-
-            <div className="for-you-follow-grid">
-              {recommendations.topics.map((item) => (
-                <div key={`topic:${item.value}`} className="for-you-follow-card">
-                  <div>
-                    <p className="for-you-follow-kicker">Тема</p>
-                    <strong>{item.value}</strong>
-                    {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
-                  </div>
-                  <PreferenceToggle
-                    kind="topic"
-                    value={item.value}
-                    analyticsSurface="for_you"
-                  />
-                </div>
-              ))}
-
-              {recommendations.sources.map((item) => (
-                <div key={`source:${item.value}`} className="for-you-follow-card">
-                  <div>
-                    <p className="for-you-follow-kicker">Извор</p>
-                    <strong>{item.value}</strong>
-                    {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
-                  </div>
-                  <PreferenceToggle
-                    kind="source"
-                    value={item.value}
-                    analyticsSurface="for_you"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        
+        <OnboardingIslandCompact profile={profile} recommendations={recommendations} />
       </section>
     );
   }
@@ -231,7 +217,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
                   <Clock3 size={12} />
                   <span>Актуелно во моментот</span>
                 </p>
-                <h3>{cleanAndDecode(article.title) || 'Кластер'}</h3>
+                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(cleanAndDecode(article.title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
@@ -251,41 +237,50 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
         </div>
       )}
 
-      {(recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
-        <div className="for-you-follow-block" style={{ marginTop: '1.5rem', borderTop: '1px dashed var(--border)' }}>
-          <div className="for-you-follow-head">
-             <p className="for-you-kicker"><Sparkles size={14} /> Препорачано за следење</p>
-          </div>
-          <div className="for-you-follow-grid">
-            {recommendations.topics.slice(0, 2).map((item) => (
-              <div key={`topic:${item.value}`} className="for-you-follow-card">
-                <div>
-                  <p className="for-you-follow-kicker">Тема</p>
-                  <strong>{item.value}</strong>
-                </div>
-                <PreferenceToggle
-                  kind="topic"
-                  value={item.value}
-                  analyticsSurface="for_you_fallback"
-                />
-              </div>
-            ))}
-            {recommendations.sources.slice(0, 1).map((item) => (
-              <div key={`source:${item.value}`} className="for-you-follow-card">
-                <div>
-                  <p className="for-you-follow-kicker">Извор</p>
-                  <strong>{item.value}</strong>
-                </div>
-                <PreferenceToggle
-                  kind="source"
-                  value={item.value}
-                  analyticsSurface="for_you_fallback"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <OnboardingIslandCompact profile={profile} recommendations={recommendations} />
     </section>
+  );
+}
+
+function OnboardingIslandCompact({ profile, recommendations }: any) {
+  if (((profile?.followedTopics || []).length + (profile?.followedSources || []).length >= 5)) return null;
+  if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return null;
+
+  return (
+    <div className="for-you-follow-block" style={{ marginTop: '1.5rem', borderTop: '1px dashed var(--border)' }}>
+      <div className="for-you-follow-head">
+          <p className="for-you-kicker"><Sparkles size={14} /> Препорачано за следење</p>
+      </div>
+      <div className="for-you-follow-grid">
+        {recommendations.topics.slice(0, 2).map((item: any) => (
+          <div key={`topic:${item.value}`} className="for-you-follow-card">
+            <div>
+              <p className="for-you-follow-kicker">Тема</p>
+              <strong>{item.value}</strong>
+              {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
+            </div>
+            <PreferenceToggle
+              kind="topic"
+              value={item.value}
+              analyticsSurface="for_you"
+            />
+          </div>
+        ))}
+        {recommendations.sources.slice(0, 1).map((item: any) => (
+          <div key={`source:${item.value}`} className="for-you-follow-card">
+            <div>
+              <p className="for-you-follow-kicker">Извор</p>
+              <strong>{item.value}</strong>
+              {item.reason && <p className="text-[10px] text-muted-foreground mt-1 opacity-80">{item.reason}</p>}
+            </div>
+            <PreferenceToggle
+              kind="source"
+              value={item.value}
+              analyticsSurface="for_you"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
