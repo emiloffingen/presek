@@ -121,7 +121,7 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. ФОКУС — core navigation
+    # 2. ФОКУС — Display all core and thematic categories in one row
     focus_items = [
         {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
         {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "type": "focus"},
@@ -130,21 +130,17 @@ async def get_navigation():
         {"label": "Политика", "href": f"/?topic={urllib.parse.quote('Политика')}", "type": "focus"},
         {"label": "Економија", "href": f"/?topic={urllib.parse.quote('Економија')}", "type": "focus"},
         {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "type": "focus"},
-    ]
-
-    # 3. SECTIONS — secondary topics hidden under "More"
-    sections_items = [
-        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}"},
-        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}"},
-        {"label": "Криминал", "href": f"/?topic={urllib.parse.quote('Криминал')}"},
-        {"label": "Здравје", "href": f"/?topic={urllib.parse.quote('Здравје')}"},
-        {"label": "Живот", "href": f"/?topic={urllib.parse.quote('Живот')}"},
+        {"label": "Криминал", "href": f"/?topic={urllib.parse.quote('Криминал')}", "type": "focus"},
+        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}", "type": "focus"},
+        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}", "type": "focus"},
+        {"label": "Здравје", "href": f"/?topic={urllib.parse.quote('Здравје')}", "type": "focus"},
+        {"label": "Живот", "href": f"/?topic={urllib.parse.quote('Живот')}", "type": "focus"},
     ]
 
     res = {
         "breaking": breaking_items,
         "focus": focus_items,
-        "sections": sections_items
+        "sections": []
     }
     set_cache(cache_key, res, ttl=600)
     return res
@@ -154,17 +150,88 @@ async def get_cluster_share_card(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
     
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFont, ImageEnhance
     import textwrap
-    arts = db.execute("SELECT title, original_title, is_translated, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
-    if not arts: raise HTTPException(status_code=404)
-    s_row = db.execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
-    headline = _preferred_cluster_headline(arts); cat = ((arts[0]["category"] if arts else None) or "ВЕСТИ").upper()
-    img = Image.new("RGB", (1200, 630), color=(15, 13, 12)); draw = ImageDraw.Draw(img)
-    # Simplified drawing for brevity in refactor
-    draw.text((100, 100), headline[:50], fill=(255,255,255))
-    out = BytesIO(); img.save(out, format="PNG")
-    return Response(content=out.getvalue(), media_type="image/png")
+    import requests
+    
+    try:
+        # 1. Gather Cluster Info
+        arts = db.execute("SELECT title, source, category, image_url, local_image_path FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
+        if not arts: raise HTTPException(status_code=404)
+        
+        meta = db.execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
+        headline = cleanAndDecode(arts[0]["title"])
+        source_count = len(set(a['source'] for a in arts))
+        cat = (arts[0]["category"] or "ВЕСТИ").upper()
+        
+        # 2. Setup Canvas (OG Standard: 1200x630)
+        img = Image.new("RGB", (1200, 630), color=(15, 13, 12))
+        
+        # 3. Background Image with Dimmer
+        bg_url = (meta or {}).get("representative_image") or arts[0]["image_url"]
+        local_bg = arts[0]["local_image_path"]
+        
+        bg_img = None
+        try:
+            if local_bg:
+                local_path = (_STATIC_ROOT / local_bg.lstrip("/")).resolve()
+                if local_path.exists(): bg_img = Image.open(local_path)
+            
+            if not bg_img and bg_url and bg_url.startswith("http"):
+                resp = requests.get(bg_url, timeout=3, stream=True)
+                if resp.status_code == 200: bg_img = Image.open(BytesIO(resp.content))
+        except: pass
+
+        if bg_img:
+            # Resize and crop to fill
+            bg_img = bg_img.convert("RGB")
+            ratio = max(1200 / bg_img.width, 630 / bg_img.height)
+            bg_img = bg_img.resize((int(bg_img.width * ratio), int(bg_img.height * ratio)), Image.Resampling.LANCZOS)
+            img.paste(bg_img, (int((1200 - bg_img.width)/2), int((630 - bg_img.height)/2)))
+            
+            # Add Dark Overlay
+            overlay = Image.new("RGBA", (1200, 630), (0, 0, 0, 160))
+            img.paste(overlay, (0,0), overlay)
+        
+        draw = ImageDraw.Draw(img)
+        
+        # 4. Load Fonts
+        font_path_serif = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+        font_path_sans = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        try:
+            f_title = ImageFont.truetype(font_path_serif, 72)
+            f_kicker = ImageFont.truetype(font_path_sans, 32)
+            f_footer = ImageFont.truetype(font_path_sans, 24)
+        except:
+            f_title = f_kicker = f_footer = ImageFont.load_default()
+
+        # 5. Draw Branding (Masthead)
+        draw.text((90, 80), "ПРЕСЕК.мк", fill=(185, 28, 28), font=f_title) # NYT Red
+        draw.rectangle([90, 165, 450, 168], fill=(185, 28, 28)) # Underline
+        
+        # 6. Draw Kicker
+        draw.text((90, 200), f"{cat} · {source_count} ИЗВОРИ ИЗВЕСТУВААТ", fill=(209, 213, 235), font=f_kicker)
+
+        # 7. Draw Headline (Wrapped)
+        lines = textwrap.wrap(headline, width=32)
+        y_text = 270
+        for line in lines[:3]: # Limit to 3 lines
+            draw.text((90, y_text), line, fill=(255, 255, 255), font=f_title)
+            y_text += 85
+
+        # 8. Footer Info
+        draw.text((90, 550), "СИТЕ ИЗВОРИ НА ЕДНО МЕСТО", fill=(156, 163, 175), font=f_footer)
+        draw.text((1110, 550), "presek.live", fill=(255, 255, 255), font=f_footer, anchor="ra")
+
+        out = BytesIO()
+        img.save(out, format="PNG")
+        return Response(content=out.getvalue(), media_type="image/png", headers={"Cache-Control": "public, max-age=3600"})
+    except Exception as e:
+        log.error(f"OG Image Error: {e}", exc_info=True)
+        # Fallback to simple image
+        img = Image.new("RGB", (1200, 630), color=(15, 13, 12))
+        out = BytesIO(); img.save(out, format="PNG")
+        return Response(content=out.getvalue(), media_type="image/png")
 
 @router.get("/proxy")
 async def proxy_image(

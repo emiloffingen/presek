@@ -67,8 +67,9 @@ def run_ingestion():
     lock_key = "lock:run_ingestion"
     try:
         acquired = redis_client.set(lock_key, "1", nx=True, ex=900)
-    except Exception:
-        acquired = True  # If Redis is down, fall through rather than block ingestion entirely.
+    except Exception as e:
+        log.error(f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}")
+        return # Fail-closed: better to skip a minute than crash the DB
     if not acquired:
         log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
