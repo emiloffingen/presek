@@ -266,23 +266,28 @@ def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_token
     """Backwards-compatible alias for synchronous callers."""
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
 
-def clean_json_response(text: str) -> dict | str:
-    if not text: return ""
+def clean_json_response(text: str) -> dict | str | None:
+    if not text or not isinstance(text, str): return None
+    # Look for JSON structure
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
     if match:
         json_text = match.group(1)
         try:
             data = json.loads(json_text)
             if isinstance(data, dict):
-                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category', 'article')):
+                # Valid keys check
+                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category', 'article', 'synthetic_headline')):
                     return data
+                # Single-key bridge
                 if len(data) == 1:
                     return str(list(data.values())[0]).strip()
             return data
-        except: pass
-    text = re.sub(r'```(?:json)?\n?', '', text)
-    text = text.replace('```', '').strip()
-    return text
+        except: 
+            pass
+    
+    # If it was supposed to be JSON but failed, don't return raw text
+    # that might contain the prompt leaks.
+    return None
 
 def auto_summarize_top_clusters():
     """Dispatch synthesis tasks for the top recent clusters."""

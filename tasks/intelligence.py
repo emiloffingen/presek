@@ -134,11 +134,23 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 
     try:
         from tasks.utils import record_task_event
-        summary, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic)
-        if summary:
-            clean = clean_json_response(summary)
-            final = clean.get('summary', str(clean)) if isinstance(clean, dict) else clean
-            db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final, article_id), fetch=False)
+        raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic)
+        
+        final_text = None
+        if raw_output:
+            parsed = clean_json_response(raw_output)
+            if isinstance(parsed, dict):
+                final_text = parsed.get('summary')
+            elif isinstance(parsed, str):
+                final_text = parsed
+
+        # Safety Check: Never allow prompt markers to leak into DB
+        if final_text and ("[START_ARTICLE_TEXT]" in final_text or "Наслов:" in final_text):
+            log.warning(f"AI response for {article_id} contained prompt markers, rejecting.")
+            final_text = None
+
+        if final_text:
+            db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final_text, article_id), fetch=False)
             invalidate_public_data_caches()
             record_runtime_event("summary_path", mode=provider or "unknown", topic=topic or "unknown")
             record_task_event("summarize_article", "ok", f"article:{article_id}")
@@ -148,6 +160,8 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             extract_entities_task.delay()
             classify_topics_task.delay()
         else:
+            # Fallback to local if AI failed or leaked prompt
+            log.info(f"AI summary failed for {article_id}, using local fallback.")
             fallback = summarize_article_fallback(title, context_text, topic=topic)
             if fallback:
                 db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
