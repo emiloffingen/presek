@@ -336,6 +336,68 @@ async def get_cluster_detail(cluster_id: str):
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@router.get("/cluster/{cluster_id}/historical")
+async def get_historical_events(cluster_id: str):
+    """
+    Finds semantically similar clusters from the 60-day archive.
+    """
+    validate_cluster_id(cluster_id)
+    cache_key = f"api:cluster:{cluster_id}:historical:v1"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    try:
+        # 1. Get average embedding for the target cluster
+        vec_rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
+        if not vec_rows:
+            return {"status": "success", "events": []}
+        
+        import numpy as np
+        def parse_vec(v):
+            if isinstance(v, str):
+                import json
+                v = json.loads(v)
+            return np.array(v, dtype=np.float32)
+
+        vecs = [parse_vec(r['embedding']) for r in vec_rows]
+        avg_vec = np.mean(vecs, axis=0).tolist()
+
+        # 2. Query archive using vector similarity
+        # Exclude today's window to find truly historical context
+        rows = db.execute("""
+            WITH archive_pool AS (
+                SELECT cluster_id, title, created_at, category,
+                       (1 - (embedding <=> %s::vector)) as similarity
+                FROM articles
+                WHERE cluster_id != %s
+                  AND created_at < NOW() - INTERVAL '48 hours'
+                  AND embedding IS NOT NULL
+            )
+            SELECT DISTINCT ON (cluster_id) 
+                   cluster_id, title, created_at, category, similarity
+            FROM archive_pool
+            WHERE similarity > 0.68
+            ORDER BY cluster_id, similarity DESC, created_at DESC
+            LIMIT 5
+        """, (avg_vec, cluster_id))
+
+        events = []
+        for r in sorted(rows, key=lambda x: x['similarity'], reverse=True):
+            events.append({
+                "cluster_id": r["cluster_id"],
+                "title": cleanAndDecode(r["title"]),
+                "created_at": r["created_at"],
+                "category": r["category"],
+                "similarity": round(float(r["similarity"]), 4)
+            })
+
+        res = {"status": "success", "events": events}
+        set_cache(cache_key, res, ttl=3600)
+        return res
+    except Exception as e:
+        log.error(f"Historical Search Error: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+
 @router.get("/live")
 async def get_live_route():
     return StreamingResponse(event_stream("updates"), media_type="text/event-stream")
