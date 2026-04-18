@@ -178,6 +178,71 @@ async def get_deep_research(cluster_id: str):
         log.error(f"Deep Research Error: {e}", exc_info=True)
         return {"status": "error", "message": "Грешка при пребарувањето."}
 
+@router.get("/intelligence/cluster/{cluster_id}/analyst")
+async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
+    """
+    Internal 'Deep Intel' Analyst.
+    Uses full content and a hybrid Local+Mistral approach.
+    Modes: 'facts', 'perspectives', 'context'
+    """
+    validate_cluster_id(cluster_id)
+    cache_key = f"api:intelligence:analyst:{cluster_id}:{mode}:v2"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    # 1. Fetch all full content
+    arts = db.execute("SELECT title, full_content, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
+    if not arts:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    combined_text = "\n\n".join([f"--- ИЗВОР: {a['source']} ---\n{a['full_content'] or a['title']}" for a in arts[:5]])
+    
+    # 2. Select Prompt based on Mode
+    prompts = {
+        "facts": (
+            "Ти си Економски Аналитичар. Твоја задача е да ги ИЗВЛЕЧЕШ сите клучни бројки, датуми, проценти и статистички податоци од текстовите. "
+            "Дај ги во форма на кратки, јасни булети. Не користи вовед. Само сурова вистина и бројки."
+        ),
+        "perspectives": (
+            "Ти си Политички Аналитичар. Идентификувај ги сите клучни актери и нивните ставови или изјави. "
+            "Нагласи каде има согласување, а каде има спротивставени мислења. Користи директни цитати каде што е можно."
+        ),
+        "context": (
+            "Ти си Историчар и Новинар. Објасни зошто е оваа вест важна и каков е нејзиниот поширок контекст во македонското општество. "
+            "Поврзи го ова со можни минати случувања или идни импликации."
+        )
+    }
+    
+    system_prompt = prompts.get(mode, prompts["facts"])
+    user_prompt = f"АНАЛИЗИРАЈ ГИ СЛЕДНИТЕ СТАТИИ:\n\n{combined_text[:12000]}" # Limit context to stay cheap
+
+    try:
+        from ai_engine import sync_call_ai
+        # Use mistral for high-quality formatting at low cost
+        response, provider = sync_call_ai(
+            prompt=user_prompt,
+            system=system_prompt,
+            task_type="default", # Standard editor mode
+            max_tokens=800
+        )
+        
+        if not response:
+            return {"status": "error", "message": "Аналитичарот е зафатен."}
+
+        result = {
+            "status": "success",
+            "report": response,
+            "mode": mode,
+            "provider": provider
+        }
+        
+        set_cache(cache_key, result, ttl=7200) # Cache for 2 hours
+        return result
+        
+    except Exception as e:
+        log.error(f"Analyst Error: {e}", exc_info=True)
+        return {"status": "error", "message": "Грешка при анализата."}
+
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse():
     sql = """
