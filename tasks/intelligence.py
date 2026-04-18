@@ -475,11 +475,12 @@ def generate_cluster_metadata_task():
     """Tag recent clusters with metadata (entities, source count, and representative image)."""
     try:
         from tasks.utils import record_task_event
+        # Remove the HAVING COUNT(*) >= 2 restriction to ensure all clusters get metadata/images
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles
             FROM articles WHERE created_at >= %s
-            GROUP BY cluster_id HAVING COUNT(*) >= 2
+            GROUP BY cluster_id
         """, (cutoff,))
         for r in rows:
             entities = db.execute(
@@ -496,13 +497,32 @@ def generate_cluster_metadata_task():
             if not final_tags:
                 final_tags = filter_cluster_tags(r['sources'], limit=4)
             
-            img_row = db.execute_one(
-                "SELECT image_url FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL ORDER BY created_at DESC LIMIT 1",
-                (r['cluster_id'],)
-            )
+            # Smart image selection: prefer high-quality sources and non-placeholder URLs
+            img_row = db.execute_one("""
+                SELECT image_url 
+                FROM articles 
+                WHERE cluster_id = %s 
+                  AND image_url IS NOT NULL 
+                  AND image_url NOT LIKE '%%placeholder%%'
+                  AND image_url NOT LIKE '%%default%%'
+                  AND image_url NOT LIKE '%%.svg'
+                ORDER BY 
+                    CASE 
+                        WHEN source ILIKE '%%sdk%%' THEN 1
+                        WHEN source ILIKE '%%360stepeni%%' THEN 1
+                        WHEN source ILIKE '%%prizma%%' THEN 1
+                        WHEN source ILIKE '%%slobodnaevropa%%' THEN 1
+                        WHEN source ILIKE '%%dw%%' THEN 1
+                        ELSE 2
+                    END,
+                    created_at DESC 
+                LIMIT 1
+            """, (r['cluster_id'],))
+            
             rep_image = img_row['image_url'] if img_row else None
 
             if not rep_image:
+                # If we still have no image, try to generate one (AI cover art)
                 rep_image = generate_cover_art(r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
 
             curr_meta = db.execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (r['cluster_id'],))
