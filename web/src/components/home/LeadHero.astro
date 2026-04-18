@@ -109,7 +109,9 @@ const tintColor = dominantColor || '#1e40af';
                 <>
                     <img
                         src={leadVisual.proxiedUrl}
-                        alt=""
+                        srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
+                        sizes="(max-width: 768px) 100vw, 1200px"
+                        alt={cleanAndDecode(leadCluster.articles?.[0].title || 'Водечка приказна')}
                         width="1200"
                         height="1000"
                         loading="eager"

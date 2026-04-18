@@ -98,7 +98,6 @@ const adjacentTopic = cluster?.topics?.find(t => t !== 'Македонија') |
 
 const canonicalUrl = `https://presek.live/cluster/${id}`;
 const shareDescription = cluster?.synthesis?.brief_summary || mainArticle?.description || '';
-const imageUrl = cluster?.articles?.[0]?.image_url || '/img/presek_emblem.png';
 
 function getLeadVisual(c: NewsCluster | null) {
     if (!c) return null;
@@ -106,6 +105,11 @@ function getLeadVisual(c: NewsCluster | null) {
     const main = c.articles?.[0];
     if (main?.image_url && main.image_url.startsWith('http')) {
         res.src = `/proxy?url=${encodeURIComponent(main.image_url)}&w=800`;
+        res.rawUrl = main.image_url;
+        res.isWeak = false;
+    } else if (main?.image_url && main.image_url.startsWith('/static/generated/')) {
+        // Handle locally generated AI art or placeholders
+        res.src = main.image_url;
         res.rawUrl = main.image_url;
         res.isWeak = false;
     }
@@ -117,6 +121,7 @@ function getLeadVisual(c: NewsCluster | null) {
     };
 }
 const leadVisual = getLeadVisual(cluster);
+const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/presek_emblem.png';
 
 const headerBriefItems = (cluster?.synthesis?.brief_summary || '').split('\n').filter(l => l.trim().length > 4);
 
@@ -454,9 +459,9 @@ const sentimentData = cluster?.sentiment ? {
 												<div class="flex gap-3">
 													{rel.image_url && (
 														<div class="w-16 h-16 flex-shrink-0">
-															<img 
-																src={`/proxy?url=${encodeURIComponent(rel.image_url)}&w=120`} 
-																alt="" 
+															<img
+																src={`/proxy?url=${encodeURIComponent(rel.image_url)}&w=120`}
+																alt={cleanAndDecode(rel.title)}
 																class="w-full h-full object-cover rounded border border-border group-hover:border-nyt-accent transition-colors"
 															/>
 														</div>
