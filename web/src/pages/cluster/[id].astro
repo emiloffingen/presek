@@ -7,7 +7,6 @@ import ShareIsland from '../../components/ShareIsland.tsx';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
-import StoryTimeline from '../../components/StoryTimeline.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
@@ -394,11 +393,6 @@ const sentimentData = cluster?.sentiment ? {
 									</div>
 								)}
 							</section>
-						)}
-
-						{/* Timeline */}
-						{cluster.timeline && cluster.timeline.length > 1 && (
-							<StoryTimeline timeline={cluster.timeline} clusterId={id} apiUrl={API_URL} client:visible />
 						)}
 
 						{/* Articles List */}
