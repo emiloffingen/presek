@@ -57,6 +57,7 @@ STOPWORDS = {
     "МКД", "mkd", "www", "http", "https", "com", "mk", "org", "net",
     "video", "видео", "еден", "напад", "фото", "foto", "галерија", "galerija",
     "интервју", "intervju", "денес", "denas", "утре", "utre", "вчера", "vchera",
+    "mia", "миа", "макфакс", "makfax", "сител", "телма", "канал5", "алфа",
     # Serbian / Bosnian overlap
     "nije", "koji", "koja", "koje", "što", "jer", "ali", "ili", "kao",
     "više", "koja", "kada", "gdje", "kako", "samo",
@@ -176,7 +177,9 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
                 'video': 'видео', 'vinea': 'видео', 'foto': 'фото',
                 'ukraine': 'украина', 'ukraina': 'украина',
                 'russia': 'русија', 'rusija': 'русија',
-                'skopje': 'скопје', 'macedonia': 'македонија'
+                'skopje': 'скопје', 'macedonia': 'македонија',
+                'ormuz': 'ормуз', 'ormuski': 'ормуз', 'ormutski': 'ормуз',
+                'ормускиот': 'ормуз', 'ормутскиот': 'ормуз', 'теснеце': 'теснец'
             }
             word = normalization.get(word, word)
             

@@ -20,6 +20,10 @@ def lemmatize_mk(word: str) -> str:
     w = word.lower().strip()
     if len(w) <= 3: return w
     if w in _MK_IRREGULAR_LEMMAS: return _MK_IRREGULAR_LEMMAS[w]
+    
+    # Strip common adjective suffixes to get to the root/noun form
+    w = re.sub(r"(скиот|ската|ското|ските|ски)$", "", w)
+    
     for rx, repl in _MK_PLURAL_SUFFIXES[:7]:
         if rx.search(w):
             w = rx.sub(repl, w)
@@ -29,7 +33,11 @@ def lemmatize_mk(word: str) -> str:
             if rx.search(w):
                 w = rx.sub(repl, w)
                 break
-    if w.endswith("ц"): w = w[:-1] + "це"
+    
+    # 'ц' -> 'це' was too aggressive (e.g. теснец -> теснеце is wrong)
+    # Only applies to very specific cases, safer to avoid for general entity tags
+    # if w.endswith("ц"): w = w[:-1] + "це"
+    
     if w.endswith("шт"): w = w[:-2] + "ште"
     return w
 

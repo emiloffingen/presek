@@ -59,18 +59,33 @@ TAG_NOISE_WORDS = {
 SOURCE_NOISE_WORDS = {
     "reuters", "ap", "afp", "mia", "mиа", "bbc", "cnn", "dw", "ansa", "tass",
     "associated", "press", "makfax", "макфакс", "тв21", "тв24", "телма", "сител", "канал5",
+    "ројтерс", "си-ен-ен", "би-би-си", "дојче веле", "франс прес",
 }
 
 TAG_GENERIC_STARTERS = {
     "ново", "нова", "нови", "нов", "главно", "главниот", "водечки",
     "утрински", "вечерни", "последни", "последно", "последната",
-    "подготвува", "најавува", "повикува", "напади", "напад",
+    "подготвува", "најавува", "повикува", "напади", "напад", "одлука",
 }
 
 def normalize_tag_name(name):
     clean = re.sub(r"\s+", " ", str(name or "").strip(" -–—,.;:!?()[]{}\"'"))
     if not clean:
         return ""
+    
+    # Handle specific common typos or bad lemmatizations
+    mapping = {
+        "теснеце": "Теснец",
+        "ормускиот": "Ормуз",
+        "ормутскиот": "Ормуз",
+    }
+    lowered = clean.lower()
+    if lowered in mapping:
+        return mapping[lowered]
+        
+    # Strip common adjective suffixes
+    clean = re.sub(r"(скиот|ската|ското|ските|ски)$", "", clean, flags=re.IGNORECASE)
+
     if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
         clean = " ".join(part.capitalize() for part in clean.split(" "))
     return clean
