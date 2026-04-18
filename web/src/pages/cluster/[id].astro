@@ -123,6 +123,11 @@ function getLeadVisual(c: NewsCluster | null) {
 const leadVisual = getLeadVisual(cluster);
 
 const headerBriefItems = (cluster?.synthesis?.brief_summary || '').split('\n').filter(l => l.trim().length > 4);
+
+const sentimentData = cluster?.sentiment ? {
+    sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
+    tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
+} : null;
 ---
 
 <Layout 
@@ -134,7 +139,16 @@ const headerBriefItems = (cluster?.synthesis?.brief_summary || '').split('\n').f
 >
 	<NYTHeader topic={cluster?.topics?.[0]} />
 
-	<ReaderTracker clusterId={id} client:idle />
+	<ReaderTracker 
+        clusterId={id} 
+        title={displayHeadline}
+        category={cluster?.articles?.[0]?.category}
+        topic={cluster?.topics?.[0]}
+        primarySource={cluster?.articles?.[0]?.source}
+        sources={Array.from(new Set(cluster?.articles?.map(a => a.source) || []))}
+        tags={cluster?.tags}
+        client:idle 
+    />
 
 	<main class="site-layout py-[var(--page-py)]">
 		<Breadcrumbs items={[
