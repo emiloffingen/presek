@@ -90,7 +90,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 <Layout title="Архива" description="Дневен преглед на медиумската покриеност — пребарувајте по датум, извор и тема за да видите што доминирало во вестите.">
   <NYTHeader />
   
-  <main class="site-layout mx-auto w-full py-8 md:py-16 !max-w-[1536px]">
+  <main class="site-layout archive-page-shell py-8 md:py-16">
     {/* ── Section 1: The Index Masthead ──────────────────────── */}
     <header class="archive-masthead motion-rise">
         <div class="masthead-main">
@@ -282,6 +282,11 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
 <style>
     /* ── Masthead ─────────────────────────────────────── */
+    .archive-page-shell {
+        width: min(100%, 1536px);
+        margin-inline: auto;
+    }
+
     .archive-masthead {
         display: grid;
         width: 100%;
@@ -392,15 +397,29 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         width: 100%;
         grid-template-columns: 1fr;
         gap: 2.5rem;
+        align-items: start;
+    }
+
+    .archive-content-grid > * {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .archive-feed-col,
+    .archive-rail-col,
+    .archive-feed-container {
+        min-width: 0;
+        width: 100%;
     }
 
     @media (min-width: 960px) {
         .archive-content-grid:not(.is-filtered) {
-            grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.8fr);
+            grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
             gap: 3rem;
         }
 
         .archive-content-grid.is-filtered {
+            width: 100%;
             max-width: 1000px;
             margin: 0 auto;
         }

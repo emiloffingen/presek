@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -115,8 +116,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 @router.get("/intelligence/cluster/{cluster_id}/research")
 async def get_deep_research(cluster_id: str):
     """
-    Performs 'Deep Dive' research using Gemini with Google Search grounding.
-    Similar to time.mk's questions but internal and structured.
+    Performs a structured deep-dive analysis using the configured paid AI provider.
     """
     validate_cluster_id(cluster_id)
     cache_key = f"api:intelligence:research:{cluster_id}:v1"
@@ -140,7 +140,7 @@ async def get_deep_research(cluster_id: str):
     # 2. Build the 'Researcher' Prompt
     system_prompt = (
         "Ти си врвен Аналитичар за новинската агенција 'Пресек'. "
-        "Твоја задача е да направиш ДЛАБОКА АНАЛИЗА на дадена вест користејќи Google Search за проверка на факти и дополнителен контекст. "
+        "Твоја задача е да направиш ДЛАБОКА АНАЛИЗА на дадена вест користејќи го дадениот контекст и твоето општо знаење за дополнителна рамка. "
         "Дај структуриран одговор на македонски јазик во неколку секции:\n"
         "1. 🔑 Клучни факти и бројки\n"
         "2. ⚖️ Ставови и реакции на засегнатите страни\n"
@@ -149,11 +149,10 @@ async def get_deep_research(cluster_id: str):
         "Биди објективен, професионален и детален."
     )
     
-    user_prompt = f"Тема: {title}\n\nПостоечко резиме: {summary}\n\nКористи Google Search за да најдеш најнови детали и длабок контекст за оваа тема."
+    user_prompt = f"Тема: {title}\n\nПостоечко резиме: {summary}\n\nДај длабок контекст, релевантни детали и јасно оддели што е потврдено од дадениот материјал од пошироката аналитичка рамка."
 
     try:
         from ai_engine import sync_call_ai
-        # Trigger the 'research' task which has Google Search enabled
         response, provider = sync_call_ai(
             prompt=user_prompt,
             system=system_prompt,

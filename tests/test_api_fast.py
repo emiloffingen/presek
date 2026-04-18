@@ -119,15 +119,17 @@ def mock_all():
     # Patch everything - use importlib to patch database module
     with patch.dict("sys.modules", {"database": MagicMock(db_manager=m_db)}), \
          patch("ai_engine._call_ai_async", m_ai):
-        # Set up hybrid_search mock
+        m_db.async_hybrid_search = AsyncMock(return_value=[])
+        m_db.async_search_articles = AsyncMock(return_value=[])
         m_db.hybrid_search.return_value = []
         yield {"db": m_db, "ai": m_ai}
+
 def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
     import api_fast
     with patch("routes.news.cached_response", return_value=None):
         asyncio.run(api_fast.get_news(q="економија", page=3, page_size=25))
-    assert mock_all["db"].hybrid_search.called
-    assert mock_all["db"].hybrid_search.call_args.kwargs["limit"] == 1200
+    assert mock_all["db"].async_search_articles.called
+    assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 1200
 
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import api_fast

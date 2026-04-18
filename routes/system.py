@@ -150,7 +150,7 @@ async def get_cluster_share_card(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
     
-    from PIL import Image, ImageDraw, ImageFont, ImageEnhance
+    from PIL import Image, ImageDraw, ImageFont
     import textwrap
     import requests
     

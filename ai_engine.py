@@ -13,7 +13,6 @@ from typing import AsyncGenerator
 
 from config import (
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
-    GOOGLE_API_KEY, GEMINI_URL,
     GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
@@ -45,48 +44,6 @@ class AIProvider(ABC):
         pass
 
 # --- Provider Registry ---
-
-class GeminiProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
-        if not GOOGLE_API_KEY: return None
-        url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
-        
-        # Enhanced System Prompt for Research tasks
-        if task_type == "research":
-            system = f"{system}\n\nВАЖНО: Ти си во 'RESEARCH' режим. Најди најнови факти, бројки и детали. Користи го твоето вградено знаење за светот и тековните настани за да дадеш длабок контекст."
-
-        # Correct payload for Gemini 2.0 Flash
-        payload = {
-            "system_instruction": {
-                "parts": [{"text": system}]
-            },
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "maxOutputTokens": max_tokens, 
-                "temperature": 0.1
-            }
-        }
-
-        if json_mode:
-            payload["generationConfig"]["responseMimeType"] = "application/json"
-
-        try:
-            with httpx.Client(timeout=45.0) as client:
-                resp = client.post(url, json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            log.warning(f"[ai/gemini] Call failed: {e}")
-            return None
-
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res: yield res
 
 class MistralProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
@@ -204,19 +161,18 @@ class LocalProvider(AIProvider):
         return summarize_article_fallback("", text, topic=topic)
 
 PROVIDERS = {
-    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
     "local": LocalProvider(),
 }
 
 TASK_ROUTING = {
-    "translation":  ["gemini", "mistral", "local"],
-    "summarize":    ["gemini", "mistral", "local"],
-    "synthesis":    ["gemini", "mistral", "local"],
-    "daily_brief":  ["gemini", "mistral", "local"],
-    "research":     ["gemini"], # Only Gemini has live search
-    "chat":         ["gemini", "mistral", "local"],
-    "default":      ["gemini", "mistral", "local"],
+    "translation":  ["mistral", "local"],
+    "summarize":    ["mistral", "local"],
+    "synthesis":    ["mistral", "local"],
+    "daily_brief":  ["mistral", "local"],
+    "research":     ["mistral", "local"],
+    "chat":         ["mistral", "local"],
+    "default":      ["mistral", "local"],
 }
 
 # --- Service Methods ---
@@ -273,7 +229,15 @@ def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_token
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
 
 def clean_json_response(text: str) -> dict | str | None:
-    if not text or not isinstance(text, str): return None
+    if text is None:
+        return ""
+    if not isinstance(text, str):
+        return None
+
+    text = text.strip()
+    if not text:
+        return ""
+
     # Look for JSON structure
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
     if match:
@@ -288,12 +252,15 @@ def clean_json_response(text: str) -> dict | str | None:
                 if len(data) == 1:
                     return str(list(data.values())[0]).strip()
             return data
-        except: 
+        except Exception:
             pass
-    
-    # If it was supposed to be JSON but failed, don't return raw text
-    # that might contain the prompt leaks.
-    return None
+
+    # Strip optional markdown fences while keeping plain-text fallbacks usable.
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    if fenced:
+        text = fenced.group(1).strip()
+
+    return text
 
 def auto_summarize_top_clusters():
     """Dispatch synthesis tasks for the top recent clusters."""
@@ -414,7 +381,7 @@ def translate_to_macedonian(text: str) -> str | None:
     except Exception as e:
         log.warning(f"[translate] NLLB failed for {lang} text: {e}")
 
-    # 2. Fallback to AI API (Gemini/Mistral/etc.)
+    # 2. Fallback to AI API
     try:
         result, provider = _call_ai(
             prompt=text,

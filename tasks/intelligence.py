@@ -169,7 +169,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 
     prompt_parts = [f"Наслов: {str(title or '').strip()}"]
     if context_text:
-        # Limit very long content to avoid extreme costs/token limits even for Gemini
+        # Limit very long content to keep provider cost and token usage bounded
         prompt_parts.append(f"Текст за резимирање:\n[START_ARTICLE_TEXT]\n{str(context_text).strip()[:10000]}\n[END_ARTICLE_TEXT]")
     prompt = "\n".join(part for part in prompt_parts if part)
 

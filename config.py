@@ -18,14 +18,11 @@ def validate_required_env(required_keys=REQUIRED_RUNTIME_ENV_KEYS):
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -50,7 +47,7 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
-AI_DAILY_LIMIT = 1000000 # Unlimited (paid Gemini fallback tier)
+AI_DAILY_LIMIT = 1000000
 CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
 BREAKING_SCORE_THRESHOLD = 4.5
 DB_RETAIN_DAYS = 60  # articles older than this are pruned daily

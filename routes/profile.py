@@ -176,6 +176,7 @@ async def get_personalized_news_sync(request: Request):
 
     vecs = [parse_vec(r['embedding']) for r in vec_rows]
     interest_vec = np.mean(vecs, axis=0).tolist()
+    vec_str = "[" + ",".join(map(str, interest_vec)) + "]"
 
     # 2. Semantic Search for similar news in last 48 hours
     # Exclude already seen clusters
@@ -193,7 +194,7 @@ async def get_personalized_news_sync(request: Request):
         WHERE similarity > 0.60
         ORDER BY cluster_id, similarity DESC
         LIMIT 20
-    """, (interest_vec, recent_ids))
+    """, (vec_str, recent_ids))
 
     # 3. Group and annotate
     from utils import annotate_cluster_articles
