@@ -140,9 +140,9 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
           const article = cluster.articles?.[0] || {};
           return (
             <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card">
-              <div className="live-now-meta">
+              <div className="live-now-meta flex items-center gap-2">
                 <span className="live-now-source">{article.source || 'Извор'}</span>
-                {cluster.is_breaking && <span className="live-now-flash">Во живо</span>}
+                {cluster.is_breaking && <span className="live-now-flash ml-1">Во живо</span>}
               </div>
               <h3>{cleanAndDecode(article.title || '')}</h3>
               <div className="live-now-footer">

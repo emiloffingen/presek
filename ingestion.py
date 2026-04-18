@@ -38,9 +38,23 @@ def is_junk(title: str, desc: str) -> bool:
     if any(word in text for word in JUNK_KEYWORDS):
         return True
     
-    # Filter out all-caps titles (usually sensationalist clickbait)
-    # Only if they are long enough (to avoid filtering short abbreviations)
-    if title and len(title) > 20 and title.isupper():
+    # Filter out all-caps titles or long all-caps prefixes (usually sensationalist clickbait)
+    # e.g. "НЕПОДНОСЛИВА ЛЕСНОТИЈА НА ПОСТОЕЊЕТО: ..."
+    if title:
+        # Check if the title starts with an all-caps segment followed by a colon
+        prefix_match = re.match(r'^([А-ЯЀ-ӿ\s]{10,}):', title)
+        if prefix_match:
+            return True
+            
+        if len(title) > 20 and title.isupper():
+            return True
+
+    # Filter out minor police bulletin style news that clutters the feed
+    if any(phrase in text for phrase in [
+        "приведен 27-годишњак", "приведено лице", "повреден скопјанец",
+        "паднал од велосипед", "изгубил контрола", "мвр билтен",
+        "дневно мени", "рецепт на денот"
+    ]):
         return True
         
     return False

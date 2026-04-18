@@ -308,16 +308,21 @@ def normalize_headline(title: str) -> str:
     title = html.unescape(title)
     # Strip HTML tags
     t = re.sub(r'<[^>]+>', '', title)
-    # Strip common prefixes and sensationalist labels
+    
+    # Strip common prefixes and sensationalist labels (including variants with pipes or colons)
     prefixes = [
         "ВИДЕО", "ФОТО", "ГАЛЕРИЈА", "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", 
         "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА",
         "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", "ПОВРЗАНО", "ГЛЕДАЈТЕ",
         "BREAKING", "EXCLUSIVE", "LIVE", "VIDEO", "PHOTO", "GALLERY"
     ]
-    pattern = r'^(' + '|'.join(prefixes) + r')[:\s\-–—]+'
-    t = re.sub(pattern, '', t, flags=re.IGNORECASE)
+    # Match prefix followed by space, pipe, colon, dash or just whitespace
+    prefix_pattern = r'^(' + '|'.join(prefixes) + r')[\s\|:–—-]+'
+    t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
     
+    # Also handle multiple prefixes like "ВИДЕО | ФОТО | ..."
+    t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
+
     # Standardize whitespace
     t = " ".join(t.split())
     return t.strip()
