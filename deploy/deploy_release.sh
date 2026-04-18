@@ -91,8 +91,9 @@ copy_release_tree() {
 prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
   mkdir -p "$RELEASE_DIR/static"
-  ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
-  ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
+  rm -rf "$RELEASE_DIR/static/uploads" "$RELEASE_DIR/static/generated"
+  ln -sfnT "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
+  ln -sfnT "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 }
 
 persist_release_runtime_meta() {
