@@ -287,6 +287,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         width: 100%;
         margin-inline: auto;
         padding-inline: clamp(1rem, 2vw, 2rem);
+        overflow-x: hidden; /* Prevent horizontal scroll */
     }
 
     @media (max-width: 640px) {
@@ -294,7 +295,10 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
             padding-inline: 1rem;
         }
         main.site-layout {
-            padding-inline: 0; /* Avoid double padding with shell */
+            padding-inline: 0 !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
         }
     }
 
@@ -306,6 +310,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         align-items: end;
         border-bottom: 4px double var(--foreground);
         padding-bottom: 3rem;
+        box-sizing: border-box;
     }
 
     @media (min-width: 1024px) {

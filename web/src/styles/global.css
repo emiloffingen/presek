@@ -56,6 +56,10 @@
 }
 
 @layer base {
+    * {
+        box-sizing: border-box;
+    }
+    
     :root {
         /* 60% Dominant: Background (Soft Off-White) */
         --background: #fafafb; 
