@@ -296,9 +296,11 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         }
         main.site-layout {
             padding-inline: 0 !important;
-            width: 100vw !important;
+            width: 100% !important;
+            max-width: 100% !important;
             margin: 0 !important;
             box-sizing: border-box !important;
+            overflow-x: hidden !important;
         }
     }
 

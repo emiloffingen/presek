@@ -259,11 +259,23 @@ const hasBreaking = navigationData.breaking.length > 0;
         justify-content: space-between;
         gap: 0.5rem;
         position: relative;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    @media (max-width: 640px) {
+        .topbar-row { 
+            display: grid;
+            grid-template-columns: auto 1fr auto; 
+            gap: 0.5rem;
+        }
+        .topbar-logo { height: 1.1rem; }
     }
 
     .topbar-left, .topbar-right {
         flex: 0 0 auto;
         z-index: 1;
+        min-width: 0;
     }
 
     .topbar-left {
@@ -280,6 +292,7 @@ const hasBreaking = navigationData.breaking.length > 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        max-width: 40%;
     }
 
     @media (max-width: 1024px) {
@@ -288,6 +301,7 @@ const hasBreaking = navigationData.breaking.length > 0;
             left: 0;
             transform: none;
             flex: 1;
+            max-width: none;
         }
     }
 
@@ -297,6 +311,8 @@ const hasBreaking = navigationData.breaking.length > 0;
         gap: 0.5rem;
         text-decoration: none;
         pointer-events: auto;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .topbar-emblem {
@@ -318,9 +334,12 @@ const hasBreaking = navigationData.breaking.length > 0;
             display: block;
             font-family: var(--font-serif);
             font-weight: 900;
-            font-size: 1.2rem;
+            font-size: clamp(0.9rem, 4vw, 1.2rem);
             letter-spacing: 0.05em;
             color: var(--foreground);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     }
 
