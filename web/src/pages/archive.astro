@@ -385,12 +385,19 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     .archive-content-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 4rem;
+        gap: 2.5rem;
     }
 
-    @media (min-width: 1024px) {
+    @media (min-width: 960px) {
         .archive-content-grid {
-            grid-template-columns: minmax(0, 1fr) 18.5rem;
+            grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.8fr);
+            gap: 3rem;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .archive-content-grid {
+            gap: 4.5rem;
         }
     }
 
