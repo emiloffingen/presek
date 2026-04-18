@@ -6,7 +6,7 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SourceComparisonIsland from '../components/SourceComparisonIsland';
 import KnowledgeGraphIsland from '../components/KnowledgeGraphIsland';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Activity, Zap, ShieldCheck, Info } from 'lucide-react';
+import { Activity, Zap, ShieldCheck, Info, Globe, Cpu } from 'lucide-react';
 
 type PulseRow = {
     source: string;
@@ -19,20 +19,31 @@ type PulseRow = {
 
 const API_URL = apiBaseUrl();
 let pulseData: PulseRow[] = [];
+let stats: any = null;
 let error = null;
 
 try {
-    const res = await fetch(`${API_URL}/intelligence/source-pulse`);
-    if (res.ok) {
-        const json = await res.json();
+    const [pulseRes, statsRes] = await Promise.all([
+        fetch(`${API_URL}/intelligence/source-pulse`),
+        fetch(`${API_URL}/stats/full`)
+    ]);
+
+    if (pulseRes.ok) {
+        const json = await pulseRes.json();
         pulseData = json.data || [];
     } else {
         error = "Неуспешно вчитување на пулсот.";
+    }
+
+    if (statsRes.ok) {
+        stats = await statsRes.json();
     }
 } catch (e) {
     console.error(e);
     error = "Грешка при поврзување со серверот.";
 }
+
+const intelligence = stats?.intelligence ?? {};
 
 function getSentimentLabel(score: number) {
     if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
@@ -55,16 +66,60 @@ function formatStat(val: number) {
         
         <header class="mb-12">
             <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Аналитика</span>
-            <h1 class="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Медиумски пејзаж</h1>
+            <h1 class="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Медиумски пулс</h1>
             <p class="font-nyt-body text-xl text-secondary-foreground max-w-3xl leading-relaxed">
-                Уникатен преглед на македонскиот медиумски простор базиран на автоматизирана анализа на илјадници статии во последните 7 дена.
+                Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност.
             </p>
         </header>
 
         {error && (
-            <div class="p-8 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red font-serif italic text-center rounded-lg">
+            <div class="p-8 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red font-serif italic text-center rounded-lg mb-8">
                 {error}
             </div>
+        )}
+
+        {stats && (
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="p-6 border border-border bg-card">
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><Activity size={12}/> ОБЕМ (24ч)</p>
+                    <p class="text-4xl font-serif font-black mt-2">{stats.last_24h.toLocaleString()}</p>
+                    <p class="text-xs text-muted-foreground mt-2">Нови објави низ {stats.total_feeds} извори.</p>
+                </div>
+                <div class="p-6 border border-border bg-card">
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
+                    <p class="text-4xl font-serif font-black mt-2">{intelligence.pluralism?.high_consensus_pct}%</p>
+                    <p class="text-xs text-muted-foreground mt-2">Стории со висок медиумски консензус.</p>
+                </div>
+                <div class="p-6 border border-border bg-card">
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><Globe size={12}/> СВЕТОТ КАЈ НАС</p>
+                    <p class="text-4xl font-serif font-black mt-2">{intelligence.international_share_pct}%</p>
+                    <p class="text-xs text-muted-foreground mt-2">Удел на вестите од светот во Македонија.</p>
+                </div>
+            </section>
+        )}
+
+        {intelligence.ai_transparency && (
+            <section class="mb-12 p-8 border border-nyt-accent/20 bg-nyt-accent/5 rounded-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div class="max-w-md">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-nyt-accent mb-2 flex items-center gap-2">
+                            <Cpu size={16} /> Транспарентност на Системот
+                        </h2>
+                        <p class="text-sm text-secondary-foreground leading-relaxed">
+                            Удел на вестите синтетизирани преку напредни јазични модели. Останатите се обработени преку локални алгоритми.
+                        </p>
+                    </div>
+                    <div class="w-full md:w-64">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-3xl font-serif font-black">{intelligence.ai_transparency.ai_ratio}%</span>
+                            <span class="nyt-section-label text-[10px]">Автоматска Синтеза</span>
+                        </div>
+                        <div class="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                            <div class="h-full bg-nyt-accent" style={`width: ${intelligence.ai_transparency.ai_ratio}%`}></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         )}
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

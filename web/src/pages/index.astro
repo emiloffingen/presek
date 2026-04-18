@@ -286,6 +286,26 @@ function getTimeStr(dateStr: string) {
 			</div>
 
 			<aside class="front-rail">
+				<section class="rail-module rail-module-featured motion-rise-fast">
+					<p class="rail-kicker">Интелигенција</p>
+					<h3 class="rail-title flex items-center gap-2">
+						<Sparkles size={14} className="text-nyt-accent" /> МЕДИУМСКИ ПУЛС
+					</h3>
+					<div class="space-y-4 mt-4">
+						<div class="flex justify-between items-end border-b border-border pb-2">
+							<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Плурализам</span>
+							<span class="font-serif font-black text-xl leading-none">{(stats?.intelligence?.pluralism?.high_consensus_pct || 0)}%</span>
+						</div>
+						<div class="flex justify-between items-end border-b border-border pb-2">
+							<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Синтеза</span>
+							<span class="font-serif font-black text-xl leading-none">{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</span>
+						</div>
+					</div>
+					<a href="/pulse" class="block text-center mt-4 py-2 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
+						Целосна Аналитика
+					</a>
+				</section>
+
 				<HomeRailSuggestionsIsland client:visible />
 
 				<NewsletterIsland client:visible />
