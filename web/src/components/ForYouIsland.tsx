@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Clock3, Compass, Sparkles, AlertCircle, BrainCircuit } from 'lucide-react';
+import { ArrowUpRight, Clock3, Compass, Sparkles, BrainCircuit } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
