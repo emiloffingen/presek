@@ -59,6 +59,13 @@
     * {
         box-sizing: border-box;
     }
+
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
     
     :root {
         /* 60% Dominant: Background (Soft Off-White) */
