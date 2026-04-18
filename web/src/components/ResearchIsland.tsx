@@ -7,12 +7,12 @@ interface ResearchIslandProps {
 }
 
 export default function ResearchIsland({ clusterId, initialHeadline }: ResearchIslandProps) {
-  // The complex deep-dive query for Google AI
+  // The exact deep-dive query template
   const promptTemplate = "Клучни факти, бројки и статистики, анализа, ставови и реакции на засегнатите страни, што е потврдено, а што не, прашања и одговори на тема: ";
   const fullQuery = `${promptTemplate}${initialHeadline}`;
   
-  // udm=14 triggers the AI/Research mode (SGE) on Google
-  const googleSearchUrl = `https://www.google.mk/search?q=${encodeURIComponent(fullQuery)}&udm=14`;
+  // udm=50 and csuir=1 are used to trigger the AI/Conversational Research mode on Google
+  const googleSearchUrl = `https://www.google.mk/search?q=${encodeURIComponent(fullQuery)}&udm=50&csuir=1`;
 
   return (
     <div className="ai-research-container mt-12 mb-16">
@@ -32,7 +32,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
                   Сакате подлабока анализа?
                 </h3>
                 <p className="text-muted-foreground text-sm max-w-lg leading-relaxed">
-                  Истражете ја оваа тема со помош на Google AI. Добијте клучни факти, ставови и детални статистики директно од најголемиот светски пребарувач.
+                  Истражете ја оваа тема со помош на Google AI. Добијте клучни факти, ставови и детални статистики директно од најголемиот светски пребарувач во AI режим.
                 </p>
               </div>
             </div>
