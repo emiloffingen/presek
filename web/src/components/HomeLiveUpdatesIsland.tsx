@@ -139,16 +139,14 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
         {clusters.map((cluster) => {
           const article = cluster.articles?.[0] || {};
           return (
-            <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card">
-              <div className="live-now-meta flex items-center gap-2">
-                <span className="live-now-source">{article.source || 'Извор'}</span>
+            <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card group">
+              <div className="live-now-meta flex items-center justify-between gap-2 mb-2">
+                <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'Извор'}</span>
+                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.created_at)}</span>
               </div>
-              <h3>{cleanAndDecode(article.title || '')}</h3>
-              <div className="live-now-footer">
-                <span>{getTimeStr(article.created_at)}</span>
-                <span className="live-now-open">
-                  Отвори <RefreshCcw size={11} />
-                </span>
+              <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{cleanAndDecode(article.title || '')}</h3>
+              <div className="mt-3 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                 <RefreshCcw size={12} className="text-nyt-accent animate-spin-slow" />
               </div>
             </a>
           );
