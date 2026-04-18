@@ -44,7 +44,7 @@ let cluster: NewsCluster | null = null;
 let error = null;
 
 try {
-    const res = await fetch(`${API_URL}/news/cluster/${id}`);
+    const res = await fetch(`${API_URL}/cluster/${id}`);
     if (!res.ok) {
         if (res.status === 404) {
             error = 'Кластерот не е пронајден.';
