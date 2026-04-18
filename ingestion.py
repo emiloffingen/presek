@@ -34,6 +34,13 @@ _TRACKING_PARAMS = {
 
 def is_junk(title: str, desc: str) -> bool:
     """True if text contains blacklisted low-quality keywords or has clickbait patterns."""
+    if not title or len(title.strip()) < 12:
+        return True
+
+    # Filter out titles that are just dates (e.g. "19.04.2026")
+    if re.match(r'^\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4}$', title.strip()):
+        return True
+
     text = f"{title} {desc}".lower()
     if any(word in text for word in JUNK_KEYWORDS):
         return True
