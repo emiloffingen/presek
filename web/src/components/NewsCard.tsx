@@ -191,7 +191,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             {isFallbackArt ? (
               <div className="article-image-placeholder">
                 <div className="article-image-placeholder-topline">
-                  <p className="article-image-placeholder-label">Пресек Избор</p>
+                  <p className="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
                   <p className="article-image-placeholder-chip">{cluster.articles.length} извора</p>
                 </div>
                 <h3>{main.category || 'Вести'}</h3>
@@ -217,7 +217,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 />
                 <div className="article-image-placeholder is-error-fallback" style={{ display: 'none' }}>
                   <div className="article-image-placeholder-topline">
-                    <p className="article-image-placeholder-label">Пресек Избор</p>
+                    <p className="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
                     <p className="article-image-placeholder-chip">Без визуел</p>
                   </div>
                   <p className="article-image-placeholder-source">{main.source}</p>

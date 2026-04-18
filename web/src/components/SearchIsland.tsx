@@ -322,10 +322,10 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
           >
             <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
               <div className="flex items-center gap-3">
-                <img src="/img/presek_emblem.svg?v=3" alt="" className="h-6 site-emblem" />
+                <img src="/img/presek_emblem.svg?v=3" alt="ПРЕСЕК.мк" className="h-6 site-emblem" />
                 <div>
                   <span id="presek-search-title" className="font-serif font-black text-lg block">
-                    Пресек Пребарување
+                    ПРЕСЕК.мк Пребарување
                   </span>
                   <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
                     Вести, теми, личности и контекст

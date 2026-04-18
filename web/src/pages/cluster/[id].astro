@@ -378,7 +378,7 @@ const leadVisual = getLeadVisual(cluster);
 									)}
 									{leadVisual.isWeak ? (
 										<div class="cluster-visual-fallback">
-											<p class="cluster-visual-kicker">Пресек Преглед</p>
+											<p class="cluster-visual-kicker">ПРЕСЕК.мк Преглед</p>
 											<h2>{cluster.articles?.[0].category || 'Главна Приказна'}</h2>
 											<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 											<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
@@ -395,7 +395,7 @@ const leadVisual = getLeadVisual(cluster);
 												onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
 											/>
 											<div class="cluster-visual-fallback cluster-visual-fallback-error" style="display: none;">
-												<p class="cluster-visual-kicker">Пресек Преглед</p>
+												<p class="cluster-visual-kicker">ПРЕСЕК.мк Преглед</p>
 												<h2>{cluster.articles?.[0].category || 'Главна Приказна'}</h2>
 												<p class="cluster-visual-meta">{cluster.articles.length} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
 												<p class:list={["cluster-visual-title", { "cluster-visual-title-cyrillic": headlineIsCyrillic }]}>{displayHeadline}</p>
@@ -462,7 +462,7 @@ const leadVisual = getLeadVisual(cluster);
 							<section class="cluster-synthesis">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
-									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ПРЕСЕК СУБЛИМАТ</h2>
+									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ПРЕСЕК.мк СУБЛИМАТ</h2>
 								</div>
 								<div class="prose-nyt text-lg leading-relaxed text-foreground font-serif">
 									<ul class="list-none p-0 m-0 space-y-4">
