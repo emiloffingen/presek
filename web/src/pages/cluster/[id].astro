@@ -52,9 +52,11 @@ try {
             error = 'Грешка при вчитување на податоците.';
         }
     } else {
-        cluster = await res.json();
+      const payload = await res.json();
+      cluster = payload.data;
     }
-} catch (e) {
+    } catch (e) {
+
     error = 'Неуспешно поврзување со серверот.';
 }
 
