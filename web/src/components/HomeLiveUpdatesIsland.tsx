@@ -46,7 +46,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
 
     const loadLatest = async () => {
       try {
-        const res = await fetch(`${API_URL}/news?page_size=12&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}/news?page_size=12&sort=recent&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -142,7 +142,6 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
             <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card">
               <div className="live-now-meta flex items-center gap-2">
                 <span className="live-now-source">{article.source || 'Извор'}</span>
-                {cluster.is_breaking && <span className="live-now-flash ml-1">Во живо</span>}
               </div>
               <h3>{cleanAndDecode(article.title || '')}</h3>
               <div className="live-now-footer">

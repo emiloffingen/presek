@@ -127,7 +127,10 @@ async def get_news(
         ranked_clusters = [annotate_cluster_articles(arts) for arts in clusters.values()]
         if sort == 'popular':
             ranked_clusters.sort(key=lambda arts: sum(a.get("clicks", 0) or 0 for a in arts), reverse=True)
-        elif q and sort == 'recent':
+        elif sort == 'recent':
+            # Strict chronological sort by the latest article in the cluster
+            ranked_clusters.sort(key=lambda arts: max(a.get('created_at') for a in arts), reverse=True)
+        elif q:
             # Relevance-first for search results
             ranked_clusters.sort(key=lambda arts: cluster_relevance.get(arts[0]['cluster_id'], 0), reverse=True)
         else:
