@@ -42,7 +42,7 @@ async function fetchJson(url: string) {
 
 // Build the fetch URL with params
 const newsUrl = new URL(`${API_URL}/news`);
-newsUrl.searchParams.set('page_size', '40');
+newsUrl.searchParams.set('page_size', '48');
 if (category) newsUrl.searchParams.set('category', category);
 if (topic) newsUrl.searchParams.set('topic', topic);
 if (q) newsUrl.searchParams.set('q', q);
@@ -133,9 +133,12 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
-// Slim projection for ForYouIsland hydration.
-// We start from index 5 to avoid overlap with LeadHero (0) and SupportingBand (1-4).
-const forYouClusters = clusters.slice(5, 20).map((c: any) => {
+// Reserve a smaller personalization pool so the homepage can surface more live
+// backend activity in the visible editorial feed instead of hiding it behind
+// recommendation logic.
+const FOR_YOU_START = 5;
+const FOR_YOU_END = 11;
+const forYouClusters = clusters.slice(FOR_YOU_START, FOR_YOU_END).map((c: any) => {
     const a = c.articles?.[0] || {};
     return {
         cluster_id: c.cluster_id,
@@ -154,14 +157,15 @@ const forYouClusters = clusters.slice(5, 20).map((c: any) => {
     };
 });
 
-// The rest of the feed starts after the ForYou section to maintain variety and prevent duplication.
-const feedClusters = clusters.slice(20);
+// Start the main feed immediately after the reserved personalization pool so
+// more fresh clusters remain visible on the homepage by default.
+const feedClusters = clusters.slice(FOR_YOU_END);
 const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
-const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 10);
+const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 12);
 const supportingFeatured = supportingClusters.slice(0, 2);
 const supportingCompact = supportingClusters.slice(2);
-const developmentsFeatured = continuingClusters.slice(0, 4);
-const developmentsCompact = continuingClusters.slice(4);
+const developmentsFeatured = continuingClusters.slice(0, 6);
+const developmentsCompact = continuingClusters.slice(6, 18);
 
 // Extract cluster IDs to exclude from ForYou personalization to prevent duplication
 const excludedClusterIds = [
