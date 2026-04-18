@@ -6,12 +6,11 @@ import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
-import { CalendarDays, Info } from 'lucide-react';
+import { CalendarDays, Info, ChevronRight, Hash, Building2 } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const source = Astro.url.searchParams.get('source') || '';
 const topic = Astro.url.searchParams.get('topic') || '';
-// We still support direct page access, but we'll default to 0 for the island to start from
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
@@ -80,332 +79,435 @@ function buildFilterHref(kind: 'source' | 'topic', value: string) {
 function buildClearHref() {
   return `/archive?${new URLSearchParams({ date }).toString()}`;
 }
+
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+});
 ---
 
 <Layout title="Архива" description="Дневен преглед на медиумската покриеност — пребарувајте по датум, извор и тема за да видите што доминирало во вестите.">
   <NYTHeader />
-  <main class="site-layout py-12">
-    <header class="archive-header editorial-header motion-rise">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-        <div class="flex-1">
-          <span class="page-kicker">Медиумска Меморија</span>
-          <h1 class="archive-headline editorial-headline">
-            Архива на вести
-          </h1>
-          <p class="archive-intro editorial-intro">
-            Вратете се на кој било ден и видете што доминирало во покривањето: теми, извори и дневната слика.
-          </p>
+  
+  <main class="site-layout py-8 md:py-16">
+    {/* ── Section 1: The Index Masthead ──────────────────────── */}
+    <header class="archive-masthead motion-rise">
+        <div class="masthead-main">
+            <span class="nyt-section-label text-nyt-accent tracking-[0.25em] mb-4 block">Медиумска Меморија</span>
+            <h1 class="archive-main-headline">Архива на <span class="italic font-serif">Изданија</span></h1>
+            
+            <div class="masthead-controls mt-8">
+                <form method="get" class="inline-date-picker">
+                    <div class="date-selector-frame">
+                        <CalendarDays size={16} className="text-nyt-accent" />
+                        <span class="dateline-label hidden sm:inline">Издание за:</span>
+                        <input type="date" name="date" value={date} class="archive-dateline-input" onchange="this.form.submit()" />
+                        <button type="submit" class="dateline-submit sm:hidden">Оди</button>
+                    </div>
+                    {source && <input type="hidden" name="source" value={source} />}
+                    {topic && <input type="hidden" name="topic" value={topic} />}
+                </form>
+            </div>
         </div>
 
-        <div class="archive-search-box editorial-panel-strong w-full md:w-auto">
-          <form method="get" class="flex flex-col gap-4">
-            <div class="space-y-1.5">
-              <label class="nyt-section-label text-muted-foreground flex items-center gap-1.5">
-                <CalendarDays size={12} /> Избери датум
-              </label>
-              <div class="archive-input-container">
-                <input type="date" name="date" value={date} class="archive-date-input" />
-                <button type="submit" class="archive-submit-btn">
-                  Прикажи
-                </button>
-              </div>
+        <div class="masthead-data-box hidden lg:grid">
+            <div class="data-box-row">
+                <span class="data-label">Вкупно Објави</span>
+                <strong class="data-value">{archive.total.toLocaleString('mk-MK')}</strong>
             </div>
-            {source && <input type="hidden" name="source" value={source} />}
-            {topic && <input type="hidden" name="topic" value={topic} />}
-          </form>
+            <div class="data-box-row">
+                <span class="data-label">Активни Редакции</span>
+                <strong class="data-value">{archive.sources.toLocaleString('mk-MK')}</strong>
+            </div>
+            <div class="data-box-row border-none">
+                <span class="data-label">Групирани Теми</span>
+                <strong class="data-value">{archive.total_clusters.toLocaleString('mk-MK')}</strong>
+            </div>
         </div>
-      </div>
     </header>
 
-    <div class="archive-dashboard mb-12 motion-rise motion-delay-1">
-      <ArchiveHeatmapIsland client:load />
+    {/* ── Section 2: The Time Machine (Heatmap) ────────────────── */}
+    <div class="archive-timeline-wrap mt-12 mb-16 motion-rise motion-delay-1">
+        <div class="timeline-header flex justify-between items-baseline mb-6 border-b border-border pb-4">
+            <h2 class="nyt-section-label !text-foreground">Интензитет на циклусот</h2>
+            <span class="text-[10px] font-bold text-muted-foreground uppercase">Преглед на 90 дена</span>
+        </div>
+        <ArchiveHeatmapIsland client:load />
     </div>
 
-    <div class="archive-grid">
-      <div class="archive-main motion-rise motion-delay-1">
-        {!error && (
-          <div class="archive-stats-row mb-8">
-            <div class="archive-stat-card editorial-panel">
-              <span class="nyt-section-label text-muted-foreground">Вкупно вести</span>
-              <span class="archive-stat-value">{archive.total.toLocaleString('mk-MK')}</span>
-            </div>
-            <div class="archive-stat-card editorial-panel">
-              <span class="nyt-section-label text-muted-foreground">Активни извори</span>
-              <span class="archive-stat-value">{archive.sources.toLocaleString('mk-MK')}</span>
-            </div>
-            <div class="archive-stat-card editorial-panel">
-              <span class="nyt-section-label text-muted-foreground">Групирани теми</span>
-              <span class="archive-stat-value">{archive.total_clusters.toLocaleString('mk-MK')}</span>
-            </div>
-            <div class="archive-stat-card editorial-panel-strong">
-              <span class="nyt-section-label text-muted-foreground">Преглед за</span>
-              <span class="archive-stat-value font-serif italic text-nyt-accent">{new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-            </div>
-          </div>
-        )}
+    {/* ── Section 3: The Front Page Grid ──────────────────────── */}
+    <div class="archive-content-grid motion-rise motion-delay-2">
+        
+        {/* Main Feed Column */}
+        <section class="archive-feed-col">
+            <div class="feed-editorial-header mb-12">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="h-px flex-1 bg-foreground"></span>
+                    <h2 class="font-serif italic font-bold text-2xl px-4">{formattedDisplayDate}</h2>
+                    <span class="h-px flex-1 bg-foreground"></span>
+                </div>
 
-        {!error && (source || topic) && (
-          <div class="archive-active-filters mb-6 flex items-center gap-3">
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Филтри:</span>
-            <div class="flex flex-wrap gap-2">
-              {source && (
-                <span class="filter-badge">
-                  Извор: {source}
-                  <a href={buildFilterHref('source', '')} class="ml-1.5 hover:text-nyt-red">×</a>
-                </span>
-              )}
-              {topic && (
-                <span class="filter-badge">
-                  Тема: {topic}
-                  <a href={buildFilterHref('topic', '')} class="ml-1.5 hover:text-nyt-red">×</a>
-                </span>
-              )}
-              <a href={buildClearHref()} class="text-[10px] font-bold text-nyt-accent uppercase underline underline-offset-4 ml-2">Исчисти сè</a>
+                {(!error && (source || topic)) && (
+                    <div class="active-filters-bar flex flex-wrap items-center gap-3 bg-secondary/30 p-4 border border-border">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Активен Филтер:</span>
+                        {source && (
+                            <span class="filter-stark-badge">
+                                <Building2 size={10} /> {source}
+                                <a href={buildFilterHref('source', '')} class="close-btn">×</a>
+                            </span>
+                        )}
+                        {topic && (
+                            <span class="filter-stark-badge">
+                                <Hash size={10} /> {topic}
+                                <a href={buildFilterHref('topic', '')} class="close-btn">×</a>
+                            </span>
+                        )}
+                        <a href={buildClearHref()} class="clear-all-link">Исчисти сè</a>
+                    </div>
+                )}
             </div>
-          </div>
-        )}
 
-        <div class="archive-results">
-          {error ? (
-            <div class="archive-empty-state">
-              <p>{error}</p>
+            <div class="feed-results">
+                {error ? (
+                    <div class="archive-error-panel">
+                        <p>{error}</p>
+                    </div>
+                ) : archive.clusters.length > 0 ? (
+                    <ArchiveFeedIsland
+                        client:load
+                        initialClusters={archive.clusters.map((c: any) => ({
+                            cluster_id: c.cluster_id,
+                            is_breaking: c.is_breaking,
+                            representative_image: c.representative_image,
+                            articles: (c.articles || []).map((a: any, idx: number) => {
+                                const trim = (s: any) => (typeof s === 'string' && s.length > 280 ? s.slice(0, 280) : s);
+                                const sig = a.source_signal ? {
+                                    role_label: a.source_signal.role_label,
+                                    trust_label: a.source_signal.trust_label,
+                                } : undefined;
+                                if (idx === 0) {
+                                    return {
+                                        source: a.source,
+                                        title: a.title,
+                                        summary: trim(a.summary),
+                                        description: trim(a.description),
+                                        category: a.category,
+                                        created_at: a.created_at,
+                                        image_url: a.image_url,
+                                        image_caption: a.image_caption,
+                                        is_fact_check: a.is_fact_check,
+                                        source_signal: sig,
+                                    };
+                                }
+                                return {
+                                    source: a.source,
+                                    title: a.title,
+                                    image_url: a.image_url,
+                                    is_fact_check: a.is_fact_check,
+                                };
+                            }),
+                        }))}
+                        initialHasMore={archive.has_more}
+                        date={date}
+                        source={source}
+                        topic={topic}
+                        pageSize={50}
+                    />
+                ) : (
+                    <div class="archive-empty-state">
+                        <div class="p-12 border-2 border-dashed border-border text-center">
+                            <p class="font-serif italic text-muted-foreground text-xl">Нема пронајдени вести за овој датум со избраните филтри.</p>
+                        </div>
+                    </div>
+                )}
             </div>
-          ) : archive.clusters.length > 0 ? (
-            <ArchiveFeedIsland
-              client:load
-              initialClusters={archive.clusters.map((c: any) => ({
-                cluster_id: c.cluster_id,
-                is_breaking: c.is_breaking,
-                representative_image: c.representative_image,
-                articles: (c.articles || []).map((a: any, idx: number) => {
-                  const trim = (s: any) => (typeof s === 'string' && s.length > 280 ? s.slice(0, 280) : s);
-                  const sig = a.source_signal ? {
-                    role_label: a.source_signal.role_label,
-                    trust_label: a.source_signal.trust_label,
-                  } : undefined;
-                  if (idx === 0) {
-                    return {
-                      source: a.source,
-                      title: a.title,
-                      summary: trim(a.summary),
-                      description: trim(a.description),
-                      category: a.category,
-                      created_at: a.created_at,
-                      image_url: a.image_url,
-                      image_caption: a.image_caption,
-                      is_fact_check: a.is_fact_check,
-                      source_signal: sig,
-                    };
-                  }
-                  return {
-                    source: a.source,
-                    title: a.title,
-                    image_url: a.image_url,
-                    is_fact_check: a.is_fact_check,
-                  };
-                }),
-              }))}
-              initialHasMore={archive.has_more}
-              date={date}
-              source={source}
-              topic={topic}
-              pageSize={50}
-            />
-          ) : (
-            <div class="archive-empty-state">
-              <p>Нема пронајдени вести за овој датум со избраните филтри.</p>
-            </div>
-          )}
-        </div>
-      </div>
+        </section>
 
-      <aside class="archive-rail motion-rise motion-delay-2">
-        <div class="rail-card editorial-panel">
-          <h2 class="rail-card-title editorial-panel-title flex items-center gap-2"><Info size={14} /> Како Да Ја Користите</h2>
-          <p class="rail-copy">
-            Архивата не е само листа на стари објави, туку начин брзо да ја вратите медиумската слика наназад. Изберете датум за да видите како се развивале сториите.
-          </p>
-        </div>
+        {/* Rail Column (Directories) */}
+        <aside class="archive-rail-col">
+            <div class="rail-module sticky top-24">
+                <div class="rail-section mb-10">
+                    <h3 class="rail-title"><Hash size={14} /> Индекс на Теми</h3>
+                    {!error && archive.top_topics?.length > 0 ? (
+                        <div class="directory-list">
+                            {archive.top_topics.slice(0, 15).map((item: any) => (
+                                <a href={buildFilterHref('topic', item.topic)} class={`directory-item ${topic === item.topic ? 'is-active' : ''}`}>
+                                    <span class="dir-label">{item.topic}</span>
+                                    <span class="dir-count">{item.n}</span>
+                                    <ChevronRight size={10} className="dir-arrow" />
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <p class="text-xs italic text-muted-foreground">Нема податоци за теми.</p>
+                    )}
+                </div>
 
-        {!error && archive.top_topics?.length > 0 && (
-          <div class="rail-card editorial-panel">
-            <h2 class="rail-card-title editorial-panel-title">Доминантни Теми</h2>
-            <div class="filter-list">
-              {archive.top_topics.slice(0, 15).map((item: any) => (
-                <a href={buildFilterHref('topic', item.topic)} class={`filter-item ${topic === item.topic ? 'is-active' : ''}`}>
-                  <span class="filter-label">{item.topic}</span>
-                  <span class="filter-count">{item.n}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+                <div class="rail-section">
+                    <h3 class="rail-title"><Building2 size={14} /> Активни Редакции</h3>
+                    {!error && archive.top_sources?.length > 0 ? (
+                        <div class="directory-list">
+                            {archive.top_sources.slice(0, 15).map((item: any) => (
+                                <a href={buildFilterHref('source', item.source)} class={`directory-item ${source === item.source ? 'is-active' : ''}`}>
+                                    <span class="dir-label">{item.source}</span>
+                                    <span class="dir-count">{item.n}</span>
+                                    <ChevronRight size={10} className="dir-arrow" />
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <p class="text-xs italic text-muted-foreground">Нема податоци за извори.</p>
+                    )}
+                </div>
 
-        {!error && archive.top_sources?.length > 0 && (
-          <div class="rail-card editorial-panel">
-            <h2 class="rail-card-title editorial-panel-title">Најактивни Извори</h2>
-            <div class="filter-list">
-              {archive.top_sources.slice(0, 15).map((item: any) => (
-                <a href={buildFilterHref('source', item.source)} class={`filter-item ${source === item.source ? 'is-active' : ''}`}>
-                  <span class="filter-label">{item.source}</span>
-                  <span class="filter-count">{item.n}</span>
-                </a>
-              ))}
+                <div class="rail-footer mt-12 pt-8 border-t border-border opacity-60">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4">Методологија</p>
+                    <p class="text-xs leading-relaxed font-nyt-body">
+                        Архивата ги содржи сите кластерирани вести обработени од системот. Податоците се рефрешираат на секои 15 минути.
+                    </p>
+                </div>
             </div>
-          </div>
-        )}
-      </aside>
+        </aside>
+
     </div>
   </main>
+
   <Footer />
 </Layout>
 
 <style>
-  .archive-headline {
-    font-size: clamp(2.5rem, 2rem + 2.5vw, 4.8rem);
-    line-height: 0.95;
-    margin-bottom: 0.5rem;
-  }
-
-  .archive-intro {
-    max-width: 44rem;
-  }
-
-  .archive-input-container {
-    display: flex;
-    align-items: stretch;
-    background: var(--background);
-    border: 1px solid var(--border);
-    padding: 0.25rem;
-  }
-
-  .archive-date-input {
-    background: transparent;
-    border: 0;
-    padding: 0.5rem 0.75rem;
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--foreground);
-    outline: none;
-  }
-
-  .archive-submit-btn {
-    background: var(--nyt-accent);
-    color: white;
-    font-family: var(--font-sans);
-    font-size: 0.7rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    padding: 0 1rem;
-    border: 0;
-    cursor: pointer;
-    transition: background 200ms ease;
-  }
-
-  .archive-submit-btn:hover {
-    background: color-mix(in srgb, var(--nyt-accent) 85%, black);
-  }
-
-  .archive-stats-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .archive-stats-row {
-      grid-template-columns: repeat(4, 1fr);
+    /* ── Masthead ─────────────────────────────────────── */
+    .archive-masthead {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        align-items: end;
+        border-bottom: 4px double var(--foreground);
+        padding-bottom: 3rem;
     }
-  }
 
-  .archive-stat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .archive-stat-value {
-    font-family: var(--font-serif);
-    font-size: 1.8rem;
-    line-height: 1;
-    font-weight: 900;
-  }
-
-  .filter-badge {
-    display: inline-flex;
-    align-items: center;
-    background: var(--nyt-accent);
-    color: white;
-    font-family: var(--font-sans);
-    font-size: 0.65rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.25rem 0.6rem;
-    border-radius: 2px;
-  }
-
-  .archive-empty-state {
-    padding: 6rem 2rem;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 95%, var(--surface-soft) 5%);
-    text-align: center;
-    font-family: var(--font-nyt-body);
-    font-style: italic;
-    color: var(--muted-foreground);
-  }
-
-  .filter-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .filter-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--border);
-    text-decoration: none;
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
-    font-weight: 600;
-    transition: color 200ms ease;
-  }
-
-  .filter-item:first-child {
-    border-top: 0;
-    padding-top: 0;
-  }
-
-  .filter-item:hover,
-  .filter-item.is-active {
-    color: var(--nyt-accent);
-  }
-
-  .filter-count {
-    font-size: 0.7rem;
-    font-weight: 900;
-    color: var(--muted-foreground);
-    background: var(--secondary);
-    padding: 0.15rem 0.4rem;
-    border-radius: 10px;
-  }
-
-  .rail-copy {
-    font-family: var(--font-nyt-body);
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: var(--secondary-foreground);
-  }
-
-  @media (min-width: 960px) {
-    .archive-grid {
-      grid-template-columns: 1fr 20rem;
-      gap: 3rem;
+    @media (min-width: 1024px) {
+        .archive-masthead {
+            grid-template-columns: 1fr auto;
+        }
     }
-  }
+
+    .archive-main-headline {
+        font-family: var(--font-serif);
+        font-size: clamp(2.5rem, 8vw, 5.5rem);
+        line-height: 0.92;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+
+    .inline-date-picker {
+        display: inline-block;
+    }
+
+    .date-selector-frame {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 1.25rem;
+        border: 1px solid var(--foreground);
+        background: var(--background);
+        transition: border-color 0.2s;
+    }
+
+    .date-selector-frame:focus-within {
+        border-color: var(--nyt-accent);
+    }
+
+    .dateline-label {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .archive-dateline-input {
+        background: transparent;
+        border: 0;
+        font-family: var(--font-serif);
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--foreground);
+        outline: none;
+        cursor: pointer;
+    }
+
+    .dateline-submit {
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        padding: 0.4rem 0.75rem;
+        border: 0;
+    }
+
+    /* ── Weather Box (Data Box) ───────────────────────── */
+    .masthead-data-box {
+        border: 1px solid var(--foreground);
+        padding: 1rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        min-width: 320px;
+    }
+
+    .data-box-row {
+        border-right: 1px solid var(--border);
+        padding-right: 1.5rem;
+    }
+
+    .data-label {
+        display: block;
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
+        margin-bottom: 0.35rem;
+    }
+
+    .data-value {
+        font-family: var(--font-serif);
+        font-size: 1.65rem;
+        line-height: 1;
+        font-weight: 900;
+    }
+
+    /* ── Grid Layout ──────────────────────────────────── */
+    .archive-content-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4rem;
+    }
+
+    @media (min-width: 1024px) {
+        .archive-content-grid {
+            grid-template-columns: minmax(0, 1fr) 18.5rem;
+        }
+    }
+
+    /* ── Filters ──────────────────────────────────────── */
+    .filter-stark-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        background: var(--foreground);
+        color: var(--background);
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .filter-stark-badge .close-btn {
+        margin-left: 0.25rem;
+        opacity: 0.6;
+        font-size: 1.1rem;
+        line-height: 1;
+        transition: opacity 0.2s;
+    }
+
+    .filter-stark-badge .close-btn:hover {
+        opacity: 1;
+    }
+
+    .clear-all-link {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        color: var(--nyt-accent);
+    }
+
+    /* ── Directory Lists ─────────────────────────────── */
+    .rail-title {
+        font-family: var(--font-sans);
+        font-size: 0.74rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding-bottom: 0.8rem;
+        border-bottom: 2px solid var(--foreground);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .directory-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .directory-item {
+        display: flex;
+        align-items: center;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid var(--border);
+        text-decoration: none;
+        color: var(--foreground);
+        group: true;
+        transition: background 0.15s;
+    }
+
+    .directory-item:hover {
+        padding-left: 0.5rem;
+        color: var(--nyt-accent);
+    }
+
+    .directory-item.is-active {
+        font-weight: 900;
+        color: var(--nyt-accent);
+    }
+
+    .dir-label {
+        flex: 1;
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .dir-count {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        background: var(--secondary);
+        padding: 0.15rem 0.45rem;
+        margin-right: 0.75rem;
+    }
+
+    .dir-arrow {
+        opacity: 0;
+        transform: translateX(-5px);
+        transition: all 0.2s;
+    }
+
+    .directory-item:hover .dir-arrow {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* ── Empty & Error states ────────────────────────── */
+    .archive-error-panel {
+        padding: 4rem;
+        background: var(--nyt-red)/5;
+        border: 1px dashed var(--nyt-red);
+        text-align: center;
+        font-family: var(--font-serif);
+        italic: true;
+        color: var(--nyt-red);
+    }
 </style>
