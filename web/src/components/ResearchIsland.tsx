@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, BrainCircuit, BarChart3, Users, BookOpen, Loader2, X, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, BrainCircuit, BarChart3, Users, BookOpen, Loader2, X, CheckCircle2 } from 'lucide-react';
 
 interface ResearchIslandProps {
   clusterId: string;
@@ -31,75 +31,127 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
     }
   };
 
+  const parseBoldText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-black text-foreground">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const formatText = (text: string) => {
+    if (!text) return '';
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      
+      // Headers
+      if (trimmed.startsWith('#')) {
+          return <h3 key={i} className="font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight">{parseBoldText(trimmed.replace(/^#+\s*/, ''))}</h3>;
+      }
+      
+      // List items
+      if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+          return (
+            <div key={i} className="flex gap-4 mb-4 items-start pl-2">
+              <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
+              <span className="text-lg md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(trimmed.replace(/^[-•]\s*/, ''))}</span>
+            </div>
+          );
+      }
+
+      // First paragraph (Drop Cap style)
+      if (i === 0) {
+          return (
+            <p key={i} className="mb-8 text-xl md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-6 py-2 bg-secondary/5 rounded-r-lg">
+                {parseBoldText(trimmed)}
+            </p>
+          );
+      }
+
+      // Regular paragraphs
+      return <p key={i} className="mb-6 text-lg md:text-xl leading-relaxed text-foreground/80 font-nyt-body">{parseBoldText(trimmed)}</p>;
+    });
+  };
+
   const modes = [
-    { id: 'facts' as const, label: 'Бројки и Факти', icon: BarChart3, desc: 'Извлечи статистички податоци и клучни бројки.' },
-    { id: 'perspectives' as const, label: 'Ставови и Изјави', icon: Users, desc: 'Кој што рекол и какви се реакциите.' },
-    { id: 'context' as const, label: 'Широк Контекст', icon: BookOpen, desc: 'Зошто ова е важно за општеството.' },
+    { id: 'facts' as const, label: 'Бројки и Факти', icon: BarChart3, desc: 'Клучни статистички податоци.' },
+    { id: 'perspectives' as const, label: 'Ставови и Изјави', icon: Users, desc: 'Анализа на актери и цитати.' },
+    { id: 'context' as const, label: 'Широк Контекст', icon: BookOpen, desc: 'Позадина и општествено влијание.' },
   ];
 
   return (
-    <div className="ai-analyst-container mt-12 mb-20">
-      <div className="flex items-center gap-3 mb-8">
-        <BrainCircuit className="text-nyt-accent" size={24} />
-        <h2 className="font-serif font-black text-2xl md:text-3xl text-foreground">AI Истражувачки Центар</h2>
+    <div className="ai-analyst-container mt-16 mb-24 max-w-4xl mx-auto">
+      <div className="flex flex-col items-center text-center mb-10">
+        <div className="p-4 bg-nyt-accent/10 rounded-full text-nyt-accent mb-4">
+            <BrainCircuit size={32} strokeWidth={1.5} />
+        </div>
+        <h2 className="font-serif font-black text-3xl md:text-4xl text-foreground mb-2">Интелигенција на Пресек</h2>
+        <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] font-black">AI Истражувачки Центар</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {modes.map((m) => (
           <button
             key={m.id}
             onClick={() => performResearch(m.id)}
             disabled={!!loading}
-            className={`group relative p-6 text-left border border-border rounded-xl bg-secondary/10 transition-all hover:bg-background hover:shadow-xl hover:border-nyt-accent/30 ${loading === m.id ? 'ring-2 ring-nyt-accent' : ''}`}
+            className={`group relative p-6 text-left border-2 border-border rounded-2xl bg-background transition-all hover:border-nyt-accent/40 hover:shadow-2xl ${loading === m.id ? 'border-nyt-accent bg-secondary/5' : ''}`}
           >
-            <div className={`p-3 rounded-lg mb-4 inline-block ${loading === m.id ? 'bg-nyt-accent text-white' : 'bg-secondary/30 text-muted-foreground group-hover:bg-nyt-accent/10 group-hover:text-nyt-accent'}`}>
-              {loading === m.id ? <Loader2 className="animate-spin" size={20} /> : <m.icon size={20} />}
+            <div className={`w-12 h-12 flex items-center justify-center rounded-xl mb-6 transition-colors ${loading === m.id ? 'bg-nyt-accent text-white' : 'bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white'}`}>
+              {loading === m.id ? <Loader2 className="animate-spin" size={24} /> : <m.icon size={24} />}
             </div>
-            <h4 className="font-bold text-sm mb-2 uppercase tracking-wide group-hover:text-nyt-accent transition-colors">{m.label}</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">{m.desc}</p>
+            <h4 className="font-black text-xs mb-3 uppercase tracking-widest text-foreground group-hover:text-nyt-accent">{m.label}</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed font-medium">{m.desc}</p>
+            <div className="mt-6 flex items-center text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                Истражи <ChevronRight size={10} className="ml-1" />
+            </div>
           </button>
         ))}
       </div>
 
       {error && (
-        <div className="mt-6 p-4 border border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-xs rounded-lg flex justify-between items-center">
-          <span>{error}</span>
-          <button onClick={() => setError(null)}><X size={14} /></button>
+        <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex justify-between items-center">
+          <div className="flex items-center gap-3">
+             <X size={18} />
+             <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="uppercase text-[10px] tracking-widest underline">Затвори</button>
         </div>
       )}
 
       {data && (
-        <div className="mt-8 editorial-panel p-0 overflow-hidden border-nyt-accent/40 motion-rise shadow-2xl">
-          <div className="bg-nyt-accent px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white">
-              <Sparkles size={14} fill="currentColor" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                {modes.find(m => m.id === data.mode)?.label} · Пресек Анализа
+        <div className="mt-12 editorial-panel p-0 overflow-hidden border-2 border-nyt-accent/20 bg-background motion-rise shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] rounded-3xl">
+          <div className="bg-nyt-accent text-white px-8 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles size={16} fill="currentColor" />
+              <span className="text-xs font-black uppercase tracking-[0.2em]">
+                {modes.find(m => m.id === data.mode)?.label} · Специјален Извештај
               </span>
             </div>
-            <button onClick={() => setData(null)} className="text-white/60 hover:text-white"><X size={16} /></button>
+            <button onClick={() => setData(null)} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                <X size={20} />
+            </button>
           </div>
           
-          <div className="p-8 md:p-12 bg-background/50 relative">
-             <div className="prose-nyt max-w-none prose-p:text-lg md:prose-p:text-xl prose-p:leading-relaxed">
-                {data.report.split('\n').map((line: string, i: number) => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return <div key={i} className="h-4" />;
-                    if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
-                        return <li key={i} className="ml-4 mb-3 list-none flex gap-3 text-foreground/90"><span className="text-nyt-accent mt-1.5"><CheckCircle2 size={14} /></span> <span>{trimmed.replace(/^[-•]\s*/, '')}</span></li>;
-                    }
-                    if (trimmed.startsWith('#')) return <h3 key={i} className="font-serif font-black text-2xl mt-8 mb-4 border-b border-border pb-2">{trimmed.replace(/^#+\s*/, '')}</h3>;
-                    return <p key={i} className="mb-4 text-foreground/90 font-nyt-body leading-relaxed">{trimmed}</p>;
-                })}
+          <div className="p-8 md:p-16 relative">
+             <div className="max-w-3xl mx-auto">
+                {formatText(data.report)}
              </div>
              
-             <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground italic uppercase tracking-wider">
-                   Извор: Внатрешна AI анализа на целосната содржина.
+             <div className="mt-16 pt-10 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-6 opacity-60">
+                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
+                   <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
+                   Интерна синтеза на целосна содржина
                 </div>
-                <span className="text-[9px] text-nyt-accent font-black tracking-widest border border-nyt-accent/20 px-2 py-1 rounded">
-                   MISTRAL INSIGHT v4.0
-                </span>
+                <div className="flex items-center gap-4">
+                    <span className="text-[9px] font-black tracking-[0.3em] border-2 border-foreground px-3 py-1.5 rounded-full">
+                        MISTRAL ANALYST 4.0
+                    </span>
+                </div>
              </div>
           </div>
         </div>
