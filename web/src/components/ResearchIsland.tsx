@@ -25,7 +25,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
         setError(result.message || 'Грешка при анализата.');
       }
     } catch (e) {
-      setError('Аналитичарот моментално не е достапен.');
+      setError('Системот моментално не е достапен.');
     } finally {
       setLoading(null);
     }
@@ -89,8 +89,8 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
         <div className="p-4 bg-nyt-accent/10 rounded-full text-nyt-accent mb-4">
             <BrainCircuit size={32} strokeWidth={1.5} />
         </div>
-        <h2 className="font-serif font-black text-3xl md:text-4xl text-foreground mb-2">Интелигенција на Пресек</h2>
-        <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] font-black">AI Истражувачки Центар</p>
+        <h2 className="font-serif font-black text-3xl md:text-4xl text-foreground mb-2">Аналитички Центар</h2>
+        <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] font-black">Интелигентни извештаи</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -145,7 +145,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
              <div className="mt-16 pt-10 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-6 opacity-60">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
-                   Интерна синтеза на целосна содржина
+                   Интерна системска синтеза
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.3em] border-2 border-foreground px-3 py-1.5 rounded-full">

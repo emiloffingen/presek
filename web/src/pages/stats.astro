@@ -27,7 +27,7 @@ const topCategory = stats?.by_category?.[0] ?? null;
 const intelligence = stats?.intelligence ?? {};
 ---
 
-<Layout title="Медиумски Пулс" description="Детална аналитика за македонскиот медиумски простор: обем, баланс и вештачка интелигенција.">
+<Layout title="Медиумски Пулс" description="Детална аналитика за македонскиот медиумски простор: обем, баланс и напредна технологија.">
     <NYTHeader />
 
 	<main class="site-layout py-12">
@@ -38,7 +38,7 @@ const intelligence = stats?.intelligence ?? {};
 					Медиумски пулс
 				</h1>
 				<p class="stats-subtitle editorial-intro">
-					Дневната слика на медиумската сцена: обем, ритам, диверзитет и AI транспарентност.
+					Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност.
 				</p>
 			</header>
 
@@ -69,27 +69,27 @@ const intelligence = stats?.intelligence ?? {};
 
                     <section class="intelligence-overview motion-rise motion-delay-2">
                         <div class="editorial-panel">
-                            <h2 class="stats-section-title flex items-center gap-2"><Cpu size={16} className="text-nyt-accent" /> Транспарентност на Вештачка Интелигенција</h2>
-                            <div class="ai-transparency-grid mt-6">
-                                <div class="ai-stat-row">
-                                    <div class="ai-stat-main">
+                            <h2 class="stats-section-title flex items-center gap-2"><Cpu size={16} className="text-nyt-accent" /> Транспарентност на Системот</h2>
+                            <div class="sys-transparency-grid mt-6">
+                                <div class="sys-stat-row">
+                                    <div class="sys-stat-main">
                                         <span class="text-3xl font-serif font-black">{intelligence.ai_transparency?.ai_ratio}%</span>
-                                        <span class="nyt-section-label">AI Синтеза</span>
+                                        <span class="nyt-section-label">Автоматска Синтеза</span>
                                     </div>
-                                    <div class="ai-stat-bar-wrap">
-                                        <div class="ai-stat-bar-fill" style={`width: ${intelligence.ai_transparency?.ai_ratio}%`}></div>
+                                    <div class="sys-stat-bar-wrap">
+                                        <div class="sys-stat-bar-fill" style={`width: ${intelligence.ai_transparency?.ai_ratio}%`}></div>
                                     </div>
                                     <p class="text-xs text-muted-foreground mt-2">
-                                        Удел на вестите синтетизирани преку Mistral/Gemini модели. Останатите се обработени локално.
+                                        Удел на вестите синтетизирани преку напредни јазични модели. Останатите се обработени преку локални алгоритми.
                                     </p>
                                 </div>
-                                <div class="ai-breakdown-mini grid grid-cols-2 gap-6 pt-4 border-t border-border mt-4">
+                                <div class="sys-breakdown-mini grid grid-cols-2 gap-6 pt-4 border-t border-border mt-4">
                                     <div>
-                                        <span class="block text-xs font-black uppercase text-muted-foreground">AI Модели</span>
+                                        <span class="block text-xs font-black uppercase text-muted-foreground">Напредни Модели</span>
                                         <span class="block text-lg font-serif font-bold">{intelligence.ai_transparency?.ai_summaries}</span>
                                     </div>
                                     <div>
-                                        <span class="block text-xs font-black uppercase text-muted-foreground">Локален NLP</span>
+                                        <span class="block text-xs font-black uppercase text-muted-foreground">Локални Алгоритми</span>
                                         <span class="block text-lg font-serif font-bold">{intelligence.ai_transparency?.local_summaries}</span>
                                     </div>
                                 </div>
@@ -282,19 +282,19 @@ const intelligence = stats?.intelligence ?? {};
 		line-height: 1.4;
 	}
 
-    .ai-stat-bar-wrap {
+    .sys-stat-bar-wrap {
         height: 8px;
         background: var(--muted);
         border: 1px solid var(--border);
         margin: 1rem 0;
     }
 
-    .ai-stat-bar-fill {
+    .sys-stat-bar-fill {
         height: 100%;
         background: var(--nyt-accent);
     }
 
-    .ai-stat-main {
+    .sys-stat-main {
         display: flex;
         align-items: baseline;
         gap: 0.75rem;

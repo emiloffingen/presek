@@ -139,7 +139,7 @@ async def get_deep_research(cluster_id: str):
     
     # 2. Build the 'Researcher' Prompt
     system_prompt = (
-        "Ти си врвен AI Истражувач за новинската агенција 'Пресек'. "
+        "Ти си врвен Аналитичар за новинската агенција 'Пресек'. "
         "Твоја задача е да направиш ДЛАБОКА АНАЛИЗА на дадена вест користејќи Google Search за проверка на факти и дополнителен контекст. "
         "Дај структуриран одговор на македонски јазик во неколку секции:\n"
         "1. 🔑 Клучни факти и бројки\n"
@@ -162,7 +162,7 @@ async def get_deep_research(cluster_id: str):
         )
         
         if not response:
-            return {"status": "error", "message": "AI моделот моментално не е достапен."}
+            return {"status": "error", "message": "Системот моментално не е достапен."}
 
         result = {
             "status": "success",
