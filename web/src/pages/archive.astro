@@ -283,8 +283,10 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 <style>
     /* ── Masthead ─────────────────────────────────────── */
     .archive-page-shell {
-        width: min(100%, 1536px);
+        max-width: none;
+        width: 100%;
         margin-inline: auto;
+        padding-inline: clamp(1rem, 2vw, 2rem);
     }
 
     .archive-masthead {
