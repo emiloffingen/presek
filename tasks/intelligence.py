@@ -507,6 +507,22 @@ def generate_cluster_metadata_task():
                   AND image_url NOT LIKE '%%default%%'
                   AND image_url NOT LIKE '%%.svg'
                 ORDER BY 
+                    (
+                        CASE WHEN image_url ~* '(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small)' THEN -12 ELSE 0 END +
+                        CASE WHEN image_url ~* '(hero|lead|main|large|full|original)' THEN 4 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.(avif|webp)(\\?|$)' THEN 3 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.(jpe?g)(\\?|$)' THEN 2 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.png(\\?|$)' THEN -1 ELSE 0 END +
+                        CASE WHEN image_url ~* '(^|[^0-9])(1[2-9][0-9]{2}|[2-9][0-9]{3})x(1[2-9][0-9]{2}|[2-9][0-9]{3})([^0-9]|$)' THEN 4 ELSE 0 END +
+                        CASE 
+                            WHEN source ILIKE '%%sdk%%' THEN 3
+                            WHEN source ILIKE '%%360stepeni%%' THEN 3
+                            WHEN source ILIKE '%%prizma%%' THEN 3
+                            WHEN source ILIKE '%%slobodnaevropa%%' THEN 3
+                            WHEN source ILIKE '%%dw%%' THEN 3
+                            ELSE 0
+                        END
+                    ) DESC,
                     CASE 
                         WHEN source ILIKE '%%sdk%%' THEN 1
                         WHEN source ILIKE '%%360stepeni%%' THEN 1
