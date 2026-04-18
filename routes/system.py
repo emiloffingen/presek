@@ -247,18 +247,33 @@ async def proxy_image(
     if url.startswith("/static/"):
         relative = url[len("/static/"):].lstrip("/")
         try:
-            # Important: we must resolve the static root to its real physical path 
-            # (which is usually the shared directory) to allow the relative_to check to work
-            # with symlinked releases.
-            real_static_root = _STATIC_ROOT.resolve()
+            # Important: In production, static/generated and static/uploads are symlinks
+            # to a shared directory outside the release tree. We must allow both.
             candidate = (_STATIC_ROOT / relative).resolve()
             
-            # Security: ensure the resolved path is still within the real static root
-            candidate.relative_to(real_static_root)
+            allowed_roots = [
+                _STATIC_ROOT.resolve(),
+                (_APP_ROOT.parent.parent / "shared" / "static").resolve() # Production shared root
+            ]
+            
+            is_safe = False
+            for root in allowed_roots:
+                try:
+                    candidate.relative_to(root)
+                    is_safe = True
+                    break
+                except ValueError:
+                    continue
+
+            if not is_safe:
+                log.warning(f"[proxy/static] Path traversal attempt or invalid root for {url}: {candidate}")
+                raise HTTPException(status_code=403)
             
             if not candidate.exists() or not candidate.is_file():
                 raise HTTPException(status_code=404)
             return FileResponse(candidate)
+        except HTTPException:
+            raise
         except Exception as e:
             log.warning(f"[proxy/static] Access denied for {url}: {e}")
             raise HTTPException(status_code=403)
