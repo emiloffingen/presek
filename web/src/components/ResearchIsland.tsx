@@ -149,7 +149,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.3em] border-2 border-foreground px-3 py-1.5 rounded-full">
-                        MISTRAL ANALYST 4.0
+                        АЛГОРИТМОТ НА УРЕДНИКОТ
                     </span>
                 </div>
              </div>
