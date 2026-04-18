@@ -34,23 +34,23 @@ _TRACKING_PARAMS = {
 
 def is_junk(title: str, desc: str) -> bool:
     """True if text contains blacklisted low-quality keywords or has clickbait patterns."""
-    if not title or len(title.strip()) < 12:
+    t_clean = str(title or "").strip()
+    if not t_clean or len(t_clean) < 14:
         return True
 
-    # Filter out titles that are just dates (e.g. "19.04.2026")
-    if re.match(r'^\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4}$', title.strip()):
+    # Filter out titles that are just dates or numbers
+    if re.match(r'^[\d\.\/\s:-]+$', t_clean):
         return True
 
-    # Strip common prefixes for the junk check to avoid missing all-caps segments after "ВИДЕО |"
+    # Strip common prefixes for the junk check
     from categories import normalize_headline
-    clean_title = normalize_headline(title)
+    clean_title = normalize_headline(t_clean)
 
     text = f"{clean_title} {desc}".lower()
     if any(word in text for word in JUNK_KEYWORDS):
         return True
     
-    # Filter out all-caps titles or long all-caps prefixes (usually sensationalist clickbait)
-    # e.g. "НЕПОДНОСЛИВА ЛЕСНОТИЈА НА ПОСТОЕЊЕТО: ..."
+    # Filter out all-caps titles or long all-caps prefixes
     if clean_title:
         # Check if the title starts with an all-caps segment followed by a colon
         prefix_match = re.match(r'^([А-ЯЀ-ӿ\s]{8,}):', clean_title)
@@ -60,11 +60,11 @@ def is_junk(title: str, desc: str) -> bool:
         if len(clean_title) > 20 and clean_title.isupper():
             return True
 
-    # Filter out minor police bulletin style news that clutters the feed
+    # Filter out minor police bulletin style news
     if any(phrase in text for phrase in [
         "приведен 27-годишњак", "приведено лице", "повреден скопјанец",
         "паднал од велосипед", "изгубил контрола", "мвр билтен",
-        "дневно мени", "рецепт на денот"
+        "дневно мени", "рецепт на денот", "курсна листа", "лото резултати"
     ]):
         return True
         

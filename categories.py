@@ -314,6 +314,7 @@ def normalize_headline(title: str) -> str:
         "ВИДЕО", "ФОТО", "ГАЛЕРИЈА", "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", 
         "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА",
         "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", "ПОВРЗАНО", "ГЛЕДАЈТЕ",
+        "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
         "BREAKING", "EXCLUSIVE", "LIVE", "VIDEO", "PHOTO", "GALLERY"
     ]
     # Match prefix followed by space, pipe, colon, dash or just whitespace

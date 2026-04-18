@@ -64,8 +64,9 @@ _PUBLIC_ARTICLE_FIELDS = {
 
 
 def _public_article_payload(article):
+    from categories import normalize_headline
     return {
-        key: value
+        key: (normalize_headline(value) if key == "title" else value)
         for key, value in article.items()
         if key in _PUBLIC_ARTICLE_FIELDS
     }

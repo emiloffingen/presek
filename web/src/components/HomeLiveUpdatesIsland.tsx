@@ -46,7 +46,7 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
 
     const loadLatest = async () => {
       try {
-        const res = await fetch(`${API_URL}/news?page_size=12`);
+        const res = await fetch(`${API_URL}/news?page_size=12&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
