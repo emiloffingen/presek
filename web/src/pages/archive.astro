@@ -85,178 +85,176 @@ function buildClearHref() {
 <Layout title="Архива" description="Дневен преглед на медиумската покриеност — пребарувајте по датум, извор и тема за да видите што доминирало во вестите.">
   <NYTHeader />
   <main class="site-layout py-12">
-    <div class="archive-shell editorial-shell">
-      <header class="archive-header editorial-header motion-rise">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-          <div class="flex-1">
-            <span class="page-kicker">Медиумска Меморија</span>
-            <h1 class="archive-headline editorial-headline">
-              Архива на вести
-            </h1>
-            <p class="archive-intro editorial-intro">
-              Вратете се на кој било ден и видете што доминирало во покривањето: теми, извори и дневната слика.
-            </p>
-          </div>
-
-          <div class="archive-search-box editorial-panel-strong w-full md:w-auto">
-            <form method="get" class="flex flex-col gap-4">
-              <div class="space-y-1.5">
-                <label class="nyt-section-label text-muted-foreground flex items-center gap-1.5">
-                  <CalendarDays size={12} /> Избери датум
-                </label>
-                <div class="archive-input-container">
-                  <input type="date" name="date" value={date} class="archive-date-input" />
-                  <button type="submit" class="archive-submit-btn">
-                    Прикажи
-                  </button>
-                </div>
-              </div>
-              {source && <input type="hidden" name="source" value={source} />}
-              {topic && <input type="hidden" name="topic" value={topic} />}
-            </form>
-          </div>
+    <header class="archive-header editorial-header motion-rise">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+        <div class="flex-1">
+          <span class="page-kicker">Медиумска Меморија</span>
+          <h1 class="archive-headline editorial-headline">
+            Архива на вести
+          </h1>
+          <p class="archive-intro editorial-intro">
+            Вратете се на кој било ден и видете што доминирало во покривањето: теми, извори и дневната слика.
+          </p>
         </div>
-      </header>
 
-      <div class="archive-dashboard mb-12 motion-rise motion-delay-1">
-        <ArchiveHeatmapIsland client:load />
+        <div class="archive-search-box editorial-panel-strong w-full md:w-auto">
+          <form method="get" class="flex flex-col gap-4">
+            <div class="space-y-1.5">
+              <label class="nyt-section-label text-muted-foreground flex items-center gap-1.5">
+                <CalendarDays size={12} /> Избери датум
+              </label>
+              <div class="archive-input-container">
+                <input type="date" name="date" value={date} class="archive-date-input" />
+                <button type="submit" class="archive-submit-btn">
+                  Прикажи
+                </button>
+              </div>
+            </div>
+            {source && <input type="hidden" name="source" value={source} />}
+            {topic && <input type="hidden" name="topic" value={topic} />}
+          </form>
+        </div>
       </div>
+    </header>
 
-      <div class="archive-grid editorial-page-grid">
-        <div class="archive-main motion-rise motion-delay-1">
-          {!error && (
-            <div class="archive-stats-row mb-8">
-              <div class="archive-stat-card editorial-panel">
-                <span class="nyt-section-label text-muted-foreground">Вкупно вести</span>
-                <span class="archive-stat-value">{archive.total.toLocaleString('mk-MK')}</span>
-              </div>
-              <div class="archive-stat-card editorial-panel">
-                <span class="nyt-section-label text-muted-foreground">Активни извори</span>
-                <span class="archive-stat-value">{archive.sources.toLocaleString('mk-MK')}</span>
-              </div>
-              <div class="archive-stat-card editorial-panel">
-                <span class="nyt-section-label text-muted-foreground">Групирани теми</span>
-                <span class="archive-stat-value">{archive.total_clusters.toLocaleString('mk-MK')}</span>
-              </div>
-              <div class="archive-stat-card editorial-panel-strong">
-                <span class="nyt-section-label text-muted-foreground">Преглед за</span>
-                <span class="archive-stat-value font-serif italic text-nyt-accent">{new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              </div>
+    <div class="archive-dashboard mb-12 motion-rise motion-delay-1">
+      <ArchiveHeatmapIsland client:load />
+    </div>
+
+    <div class="archive-grid">
+      <div class="archive-main motion-rise motion-delay-1">
+        {!error && (
+          <div class="archive-stats-row mb-8">
+            <div class="archive-stat-card editorial-panel">
+              <span class="nyt-section-label text-muted-foreground">Вкупно вести</span>
+              <span class="archive-stat-value">{archive.total.toLocaleString('mk-MK')}</span>
             </div>
-          )}
-
-          {!error && (source || topic) && (
-            <div class="archive-active-filters mb-6 flex items-center gap-3">
-              <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Филтри:</span>
-              <div class="flex flex-wrap gap-2">
-                {source && (
-                  <span class="filter-badge">
-                    Извор: {source}
-                    <a href={buildFilterHref('source', '')} class="ml-1.5 hover:text-nyt-red">×</a>
-                  </span>
-                )}
-                {topic && (
-                  <span class="filter-badge">
-                    Тема: {topic}
-                    <a href={buildFilterHref('topic', '')} class="ml-1.5 hover:text-nyt-red">×</a>
-                  </span>
-                )}
-                <a href={buildClearHref()} class="text-[10px] font-bold text-nyt-accent uppercase underline underline-offset-4 ml-2">Исчисти сè</a>
-              </div>
+            <div class="archive-stat-card editorial-panel">
+              <span class="nyt-section-label text-muted-foreground">Активни извори</span>
+              <span class="archive-stat-value">{archive.sources.toLocaleString('mk-MK')}</span>
             </div>
-          )}
+            <div class="archive-stat-card editorial-panel">
+              <span class="nyt-section-label text-muted-foreground">Групирани теми</span>
+              <span class="archive-stat-value">{archive.total_clusters.toLocaleString('mk-MK')}</span>
+            </div>
+            <div class="archive-stat-card editorial-panel-strong">
+              <span class="nyt-section-label text-muted-foreground">Преглед за</span>
+              <span class="archive-stat-value font-serif italic text-nyt-accent">{new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            </div>
+          </div>
+        )}
 
-          <div class="archive-results">
-            {error ? (
-              <div class="archive-empty-state">
-                <p>{error}</p>
-              </div>
-            ) : archive.clusters.length > 0 ? (
-              <ArchiveFeedIsland
-                client:load
-                initialClusters={archive.clusters.map((c: any) => ({
-                  cluster_id: c.cluster_id,
-                  is_breaking: c.is_breaking,
-                  representative_image: c.representative_image,
-                  articles: (c.articles || []).map((a: any, idx: number) => {
-                    const trim = (s: any) => (typeof s === 'string' && s.length > 280 ? s.slice(0, 280) : s);
-                    const sig = a.source_signal ? {
-                      role_label: a.source_signal.role_label,
-                      trust_label: a.source_signal.trust_label,
-                    } : undefined;
-                    if (idx === 0) {
-                      return {
-                        source: a.source,
-                        title: a.title,
-                        summary: trim(a.summary),
-                        description: trim(a.description),
-                        category: a.category,
-                        created_at: a.created_at,
-                        image_url: a.image_url,
-                        image_caption: a.image_caption,
-                        is_fact_check: a.is_fact_check,
-                        source_signal: sig,
-                      };
-                    }
+        {!error && (source || topic) && (
+          <div class="archive-active-filters mb-6 flex items-center gap-3">
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Филтри:</span>
+            <div class="flex flex-wrap gap-2">
+              {source && (
+                <span class="filter-badge">
+                  Извор: {source}
+                  <a href={buildFilterHref('source', '')} class="ml-1.5 hover:text-nyt-red">×</a>
+                </span>
+              )}
+              {topic && (
+                <span class="filter-badge">
+                  Тема: {topic}
+                  <a href={buildFilterHref('topic', '')} class="ml-1.5 hover:text-nyt-red">×</a>
+                </span>
+              )}
+              <a href={buildClearHref()} class="text-[10px] font-bold text-nyt-accent uppercase underline underline-offset-4 ml-2">Исчисти сè</a>
+            </div>
+          </div>
+        )}
+
+        <div class="archive-results">
+          {error ? (
+            <div class="archive-empty-state">
+              <p>{error}</p>
+            </div>
+          ) : archive.clusters.length > 0 ? (
+            <ArchiveFeedIsland
+              client:load
+              initialClusters={archive.clusters.map((c: any) => ({
+                cluster_id: c.cluster_id,
+                is_breaking: c.is_breaking,
+                representative_image: c.representative_image,
+                articles: (c.articles || []).map((a: any, idx: number) => {
+                  const trim = (s: any) => (typeof s === 'string' && s.length > 280 ? s.slice(0, 280) : s);
+                  const sig = a.source_signal ? {
+                    role_label: a.source_signal.role_label,
+                    trust_label: a.source_signal.trust_label,
+                  } : undefined;
+                  if (idx === 0) {
                     return {
                       source: a.source,
                       title: a.title,
+                      summary: trim(a.summary),
+                      description: trim(a.description),
+                      category: a.category,
+                      created_at: a.created_at,
                       image_url: a.image_url,
+                      image_caption: a.image_caption,
                       is_fact_check: a.is_fact_check,
+                      source_signal: sig,
                     };
-                  }),
-                }))}
-                initialHasMore={archive.has_more}
-                date={date}
-                source={source}
-                topic={topic}
-                pageSize={50}
-              />
-            ) : (
-              <div class="archive-empty-state">
-                <p>Нема пронајдени вести за овој датум со избраните филтри.</p>
-              </div>
-            )}
-          </div>
+                  }
+                  return {
+                    source: a.source,
+                    title: a.title,
+                    image_url: a.image_url,
+                    is_fact_check: a.is_fact_check,
+                  };
+                }),
+              }))}
+              initialHasMore={archive.has_more}
+              date={date}
+              source={source}
+              topic={topic}
+              pageSize={50}
+            />
+          ) : (
+            <div class="archive-empty-state">
+              <p>Нема пронајдени вести за овој датум со избраните филтри.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <aside class="archive-rail motion-rise motion-delay-2">
+        <div class="rail-card editorial-panel">
+          <h2 class="rail-card-title editorial-panel-title flex items-center gap-2"><Info size={14} /> Како Да Ја Користите</h2>
+          <p class="rail-copy">
+            Архивата не е само листа на стари објави, туку начин брзо да ја вратите медиумската слика наназад. Изберете датум за да видите како се развивале сториите.
+          </p>
         </div>
 
-        <aside class="archive-rail motion-rise motion-delay-2">
+        {!error && archive.top_topics?.length > 0 && (
           <div class="rail-card editorial-panel">
-            <h2 class="rail-card-title editorial-panel-title flex items-center gap-2"><Info size={14} /> Како Да Ја Користите</h2>
-            <p class="rail-copy">
-              Архивата не е само листа на стари објави, туку начин брзо да ја вратите медиумската слика наназад. Изберете датум за да видите како се развивале сториите.
-            </p>
+            <h2 class="rail-card-title editorial-panel-title">Доминантни Теми</h2>
+            <div class="filter-list">
+              {archive.top_topics.slice(0, 15).map((item: any) => (
+                <a href={buildFilterHref('topic', item.topic)} class={`filter-item ${topic === item.topic ? 'is-active' : ''}`}>
+                  <span class="filter-label">{item.topic}</span>
+                  <span class="filter-count">{item.n}</span>
+                </a>
+              ))}
+            </div>
           </div>
+        )}
 
-          {!error && archive.top_topics?.length > 0 && (
-            <div class="rail-card editorial-panel">
-              <h2 class="rail-card-title editorial-panel-title">Доминантни Теми</h2>
-              <div class="filter-list">
-                {archive.top_topics.slice(0, 15).map((item: any) => (
-                  <a href={buildFilterHref('topic', item.topic)} class={`filter-item ${topic === item.topic ? 'is-active' : ''}`}>
-                    <span class="filter-label">{item.topic}</span>
-                    <span class="filter-count">{item.n}</span>
-                  </a>
-                ))}
-              </div>
+        {!error && archive.top_sources?.length > 0 && (
+          <div class="rail-card editorial-panel">
+            <h2 class="rail-card-title editorial-panel-title">Најактивни Извори</h2>
+            <div class="filter-list">
+              {archive.top_sources.slice(0, 15).map((item: any) => (
+                <a href={buildFilterHref('source', item.source)} class={`filter-item ${source === item.source ? 'is-active' : ''}`}>
+                  <span class="filter-label">{item.source}</span>
+                  <span class="filter-count">{item.n}</span>
+                </a>
+              ))}
             </div>
-          )}
-
-          {!error && archive.top_sources?.length > 0 && (
-            <div class="rail-card editorial-panel">
-              <h2 class="rail-card-title editorial-panel-title">Најактивни Извори</h2>
-              <div class="filter-list">
-                {archive.top_sources.slice(0, 15).map((item: any) => (
-                  <a href={buildFilterHref('source', item.source)} class={`filter-item ${source === item.source ? 'is-active' : ''}`}>
-                    <span class="filter-label">{item.source}</span>
-                    <span class="filter-count">{item.n}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
-      </div>
+          </div>
+        )}
+      </aside>
     </div>
   </main>
   <Footer />
