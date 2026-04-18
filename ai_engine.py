@@ -417,7 +417,7 @@ def translate_to_macedonian(text: str) -> str | None:
     return text
 
 def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
-    """Generate a stylized placeholder (Local) or AI cover image (Pollinations)."""
+    """Generate a stylized AI cover image (Pollinations) or a fallback local placeholder."""
     # Validate cluster_id early to prevent path traversal and ensure safe_id is available
     safe_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(cluster_id))
     if not safe_id:
@@ -430,6 +430,32 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
         if row: category = row.get("category", "Вести")
     except: pass
 
+    # 1. Try AI Generation (Pollinations)
+    if POLLINATIONS_API_KEY:
+        clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
+        if len(clean_prompt) > 100:
+            styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
+        else:
+            styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
+        
+        encoded_prompt = urllib.parse.quote(styled_prompt)
+        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
+        
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                resp = client.get(url)
+                resp.raise_for_status()
+                content = resp.content
+                if len(content) > 5000:
+                    os.makedirs("static/generated", exist_ok=True)
+                    path = f"static/generated/{safe_id}.jpg"
+                    with open(path, "wb") as f:
+                        f.write(content)
+                    return f"/static/generated/{safe_id}.jpg"
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
+            log.debug(f"[ai] AI cover art failed: {e}")
+
+    # 2. Fallback to Local SVG Placeholder
     try:
         svg_content = nlp.generate_local_placeholder(cluster_id, prompt, category)
         if svg_content:
@@ -441,29 +467,6 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
     except Exception as e:
         log.warning(f"[ai] Local placeholder failed: {e}")
 
-    if not POLLINATIONS_API_KEY: return None
-    
-    clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
-    if len(clean_prompt) > 100:
-        styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
-    else:
-        styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
-    
-    encoded_prompt = urllib.parse.quote(styled_prompt)
-    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
-    
-    try:
-        with httpx.Client(timeout=15.0) as client:
-            resp = client.get(url)
-            resp.raise_for_status()
-            content = resp.content
-            if len(content) > 5000:
-                path = f"static/generated/{safe_id}.jpg"
-                with open(path, "wb") as f:
-                    f.write(content)
-                return f"/static/generated/{safe_id}.jpg"
-    except (httpx.RequestError, httpx.HTTPStatusError) as e:
-        log.debug(f"[ai] AI cover art failed: {e}")
     return None
 
 def cleanup_cover_art(valid_ids: set[str]):

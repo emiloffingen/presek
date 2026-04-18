@@ -247,12 +247,20 @@ async def proxy_image(
     if url.startswith("/static/"):
         relative = url[len("/static/"):].lstrip("/")
         try:
+            # Important: we must resolve the static root to its real physical path 
+            # (which is usually the shared directory) to allow the relative_to check to work
+            # with symlinked releases.
+            real_static_root = _STATIC_ROOT.resolve()
             candidate = (_STATIC_ROOT / relative).resolve()
-            candidate.relative_to(_STATIC_ROOT.resolve())
+            
+            # Security: ensure the resolved path is still within the real static root
+            candidate.relative_to(real_static_root)
+            
             if not candidate.exists() or not candidate.is_file():
                 raise HTTPException(status_code=404)
             return FileResponse(candidate)
-        except Exception:
+        except Exception as e:
+            log.warning(f"[proxy/static] Access denied for {url}: {e}")
             raise HTTPException(status_code=403)
 
     if not re.match(r'^https?://', url):
