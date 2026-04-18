@@ -112,6 +112,72 @@ async def get_cluster_storyline_history(cluster_id: str):
     
     return {"history": related_clusters}
 
+@router.get("/intelligence/cluster/{cluster_id}/research")
+async def get_deep_research(cluster_id: str):
+    """
+    Performs 'Deep Dive' research using Gemini with Google Search grounding.
+    Similar to time.mk's questions but internal and structured.
+    """
+    validate_cluster_id(cluster_id)
+    cache_key = f"api:intelligence:research:{cluster_id}:v1"
+    cached = cached_response(cache_key)
+    if cached: return cached
+
+    # 1. Get cluster context
+    row = db.execute_one("""
+        SELECT a.title, s.summary 
+        FROM articles a 
+        LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id 
+        WHERE a.cluster_id = %s 
+        ORDER BY a.created_at DESC LIMIT 1
+    """, (cluster_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+
+    title = row["title"]
+    summary = row["summary"] or ""
+    
+    # 2. Build the 'Researcher' Prompt
+    system_prompt = (
+        "Ти си врвен AI Истражувач за новинската агенција 'Пресек'. "
+        "Твоја задача е да направиш ДЛАБОКА АНАЛИЗА на дадена вест користејќи Google Search за проверка на факти и дополнителен контекст. "
+        "Дај структуриран одговор на македонски јазик во неколку секции:\n"
+        "1. 🔑 Клучни факти и бројки\n"
+        "2. ⚖️ Ставови и реакции на засегнатите страни\n"
+        "3. ✅ Што е потврдено, а што останува нејасно\n"
+        "4. 💡 Широк контекст и минати настани поврзани со ова\n"
+        "Биди објективен, професионален и детален."
+    )
+    
+    user_prompt = f"Тема: {title}\n\nПостоечко резиме: {summary}\n\nКористи Google Search за да најдеш најнови детали и длабок контекст за оваа тема."
+
+    try:
+        from ai_engine import sync_call_ai
+        # Trigger the 'research' task which has Google Search enabled
+        response, provider = sync_call_ai(
+            prompt=user_prompt,
+            system=system_prompt,
+            task_type="research",
+            max_tokens=1500
+        )
+        
+        if not response:
+            return {"status": "error", "message": "AI моделот моментално не е достапен."}
+
+        result = {
+            "status": "success",
+            "research": response,
+            "provider": provider,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        set_cache(cache_key, result, ttl=3600) # Cache for 1 hour
+        return result
+        
+    except Exception as e:
+        log.error(f"Deep Research Error: {e}", exc_info=True)
+        return {"status": "error", "message": "Грешка при пребарувањето."}
+
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse():
     sql = """
