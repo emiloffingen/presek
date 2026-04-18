@@ -51,6 +51,10 @@ class GeminiProvider(AIProvider):
         if not GOOGLE_API_KEY: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
         
+        # Enhanced System Prompt for Research tasks
+        if task_type == "research":
+            system = f"{system}\n\nВАЖНО: Ти си во 'RESEARCH' режим. Најди најнови факти, бројки и детали. Користи го твоето вградено знаење за светот и тековните настани за да дадеш длабок контекст."
+
         # Correct payload for Gemini 2.0 Flash
         payload = {
             "system_instruction": {
@@ -66,10 +70,6 @@ class GeminiProvider(AIProvider):
                 "temperature": 0.1
             }
         }
-        
-        # Enable Google Search Grounding for specialized tasks
-        if task_type in ("research", "chat"):
-            payload["tools"] = [{"google_search": {}}]
 
         if json_mode:
             payload["generationConfig"]["responseMimeType"] = "application/json"
