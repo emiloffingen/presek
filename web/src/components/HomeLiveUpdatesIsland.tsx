@@ -51,8 +51,16 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
         const data = await res.json();
         if (cancelled) return;
         const exclude = new Set(excludeClusterIds);
+        const sourceCount: Record<string, number> = {};
+        
         const latest = (Array.isArray(data?.clusters) ? data.clusters : [])
-          .filter((cluster: ClusterLike) => !exclude.has(cluster.cluster_id))
+          .filter((cluster: ClusterLike) => {
+            if (exclude.has(cluster.cluster_id)) return false;
+            const src = cluster.articles?.[0]?.source || 'unknown';
+            sourceCount[src] = (sourceCount[src] || 0) + 1;
+            // Limit to 2 per source in the live view to ensure diversity
+            return sourceCount[src] <= 2;
+          })
           .slice(0, 4);
         setClusters(latest);
       } catch (err) {
@@ -66,11 +74,21 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
     source.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
-        if (payload?.type !== 'new_articles') return;
-        setLiveState({
-          count: Number(payload.count || 0),
-          time: String(payload.time || ''),
-        });
+        // Support both batch and single article events
+        if (payload?.type !== 'new_articles' && payload?.type !== 'new_article' && payload?.type !== 'new_articles_batch') return;
+        
+        if (payload.type === 'new_article') {
+             setLiveState(prev => ({
+                count: (prev?.count || 0) + 1,
+                time: payload.time || new Date().toISOString()
+             }));
+        } else {
+            setLiveState({
+                count: Number(payload.count || 0),
+                time: String(payload.time || ''),
+            });
+        }
+        
         if (refreshTimer) clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => {
           loadLatest();

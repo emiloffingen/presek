@@ -33,9 +33,17 @@ _TRACKING_PARAMS = {
 }
 
 def is_junk(title: str, desc: str) -> bool:
-    """True if text contains blacklisted low-quality keywords."""
+    """True if text contains blacklisted low-quality keywords or has clickbait patterns."""
     text = f"{title} {desc}".lower()
-    return any(word in text for word in JUNK_KEYWORDS)
+    if any(word in text for word in JUNK_KEYWORDS):
+        return True
+    
+    # Filter out all-caps titles (usually sensationalist clickbait)
+    # Only if they are long enough (to avoid filtering short abbreviations)
+    if title and len(title) > 20 and title.isupper():
+        return True
+        
+    return False
 
 def detect_fact_check(source: str, title: str) -> bool:
     """Identify if an article is a fact-check."""
@@ -566,15 +574,24 @@ async def ingest_all_sources_async():
             # Post-ingestion tasks: batch trigger translations/summaries
             if inserted_ids:
                 from utils import publish_event
-                publish_event("updates", {"type": "new_articles", "count": len(inserted_ids), "time": cycle_now})
+                publish_event("updates", {"type": "new_articles_batch", "count": len(inserted_ids), "time": cycle_now})
                 
                 from tasks import translate_article_task, summarize_article_task, crawl_article_task, standardize_article_style_task, detect_global_story_task
 
                 inserted_data = db.execute(
-                    "SELECT id, title, description, link, country, credibility FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
+                    "SELECT id, title, description, link, country, credibility, source, cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
                     (inserted_ids,)
                 )
                 for art in inserted_data:
+                    # Broadcast each non-junk article to the Live feed individually
+                    publish_event("updates", {
+                        "type": "new_article",
+                        "title": art["title"],
+                        "source": art["source"],
+                        "cluster_id": art["cluster_id"],
+                        "time": cycle_now.isoformat()
+                    })
+
                     # Always crawl for full content and better images
                     crawl_article_task.delay(art["id"], art["link"])
 
