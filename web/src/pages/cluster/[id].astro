@@ -37,10 +37,6 @@ import { sanitizeHtml } from '../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { NewsCluster } from '../../types';
 
-export async function getStaticPaths() {
-	return [];
-}
-
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
 
