@@ -83,7 +83,7 @@ export default function ArchiveHeatmapIsland() {
         </div>
       </div>
 
-      <div className="flex overflow-x-auto pb-4 hide-scrollbar -mx-2 px-2">
+      <div className="flex overflow-x-auto pb-12 hide-scrollbar -mx-2 px-2">
         <div className="flex gap-[3px] min-w-max items-end h-24">
           {grid.map((dayData, idx) => {
             const isBreakingDay = dayData.breaking_clusters > (maxBreaking * 0.3); // High breaking day
@@ -115,8 +115,12 @@ export default function ArchiveHeatmapIsland() {
                   </div>
                 </div>
                 {/* Date marker below the bar */}
-                <div className="h-4 flex items-center justify-center overflow-visible">
-                    {isMarker && <span className="text-[8px] font-black text-muted-foreground uppercase opacity-70 absolute transform -rotate-45 mt-8">{getLabel(dayData.day)}</span>}
+                <div className="h-6 flex items-center justify-center relative">
+                    {isMarker && (
+                      <span className="text-[8px] font-black text-muted-foreground uppercase opacity-70 absolute left-0 origin-left transform rotate-[60deg] mt-6 whitespace-nowrap">
+                        {getLabel(dayData.day)}
+                      </span>
+                    )}
                 </div>
               </a>
             );

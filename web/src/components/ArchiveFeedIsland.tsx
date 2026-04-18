@@ -66,9 +66,10 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
           <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-row border-b border-border/50 pb-6 last:border-0">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="archive-cluster-index-col w-full md:w-20 pt-2 flex-shrink-0">
-                <div className="sticky top-24">
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Архива</span>
-                  <strong className="font-serif text-2xl font-black block leading-none">{String(index + 1).padStart(2, '0')}</strong>
+                <div className="sticky top-24 flex md:block items-baseline gap-2">
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1 hidden md:block">Архива</span>
+                  <strong className="font-serif text-lg md:text-2xl font-black block leading-none opacity-40 md:opacity-100">{String(index + 1).padStart(2, '0')}</strong>
+                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground md:hidden opacity-40">Позиција</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">

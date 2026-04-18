@@ -289,6 +289,15 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         padding-inline: clamp(1rem, 2vw, 2rem);
     }
 
+    @media (max-width: 640px) {
+        .archive-page-shell {
+            padding-inline: 1rem;
+        }
+        main.site-layout {
+            padding-inline: 0; /* Avoid double padding with shell */
+        }
+    }
+
     .archive-masthead {
         display: grid;
         width: 100%;
@@ -307,24 +316,40 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
     .archive-main-headline {
         font-family: var(--font-serif);
-        font-size: clamp(2.5rem, 8vw, 5.5rem);
-        line-height: 0.92;
+        font-size: clamp(2.2rem, 8vw, 5.5rem);
+        line-height: 0.95;
         letter-spacing: -0.03em;
         margin: 0;
+        word-break: break-word;
     }
 
     .inline-date-picker {
-        display: inline-block;
+        display: block;
+        width: 100%;
+        max-width: 400px;
     }
 
     .date-selector-frame {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.65rem 1.25rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
         border: 1px solid var(--foreground);
         background: var(--background);
         transition: border-color 0.2s;
+    }
+
+    @media (min-width: 640px) {
+        .date-selector-frame {
+            gap: 0.75rem;
+            padding: 0.65rem 1.25rem;
+            width: auto;
+            display: inline-flex;
+        }
+        .inline-date-picker {
+            display: inline-block;
+            width: auto;
+        }
     }
 
     .date-selector-frame:focus-within {
@@ -343,11 +368,20 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         background: transparent;
         border: 0;
         font-family: var(--font-serif);
-        font-size: 1.15rem;
+        font-size: 1rem;
         font-weight: 700;
         color: var(--foreground);
         outline: none;
         cursor: pointer;
+        flex: 1;
+        min-width: 0;
+    }
+
+    @media (min-width: 640px) {
+        .archive-dateline-input {
+            font-size: 1.15rem;
+            flex: none;
+        }
     }
 
     .dateline-submit {
@@ -358,6 +392,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         text-transform: uppercase;
         padding: 0.4rem 0.75rem;
         border: 0;
+        flex-shrink: 0;
     }
 
     /* ── Weather Box (Data Box) ───────────────────────── */
@@ -367,7 +402,15 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
-        min-width: 320px;
+        min-width: 0;
+        width: 100%;
+    }
+
+    @media (min-width: 1024px) {
+        .masthead-data-box {
+            min-width: 320px;
+            width: auto;
+        }
     }
 
     .data-box-row {
@@ -378,7 +421,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     .data-label {
         display: block;
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.55rem;
         font-weight: 900;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -388,9 +431,14 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
     .data-value {
         font-family: var(--font-serif);
-        font-size: 1.65rem;
+        font-size: 1.25rem;
         line-height: 1;
         font-weight: 900;
+    }
+
+    @media (min-width: 768px) {
+        .data-label { font-size: 0.6rem; }
+        .data-value { font-size: 1.65rem; }
     }
 
     /* ── Grid Layout ──────────────────────────────────── */
@@ -398,8 +446,26 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         display: grid;
         width: 100%;
         grid-template-columns: 1fr;
-        gap: 2.5rem;
+        gap: 2rem;
         align-items: start;
+    }
+
+    @media (max-width: 768px) {
+        .feed-editorial-header {
+            margin-bottom: 2rem;
+        }
+        .feed-editorial-header h2 {
+            font-size: 1.25rem;
+            padding-inline: 0.75rem;
+        }
+        .active-filters-bar {
+            padding: 0.75rem;
+            gap: 0.5rem;
+        }
+        .filter-stark-badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.6rem;
+        }
     }
 
     .archive-content-grid > * {
@@ -597,5 +663,22 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         font-family: var(--font-serif);
         italic: true;
         color: var(--nyt-red);
+    }
+
+    /* ── Timeline & Heatmap ────────────────────────── */
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    @media (max-width: 768px) {
+        .timeline-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
     }
 </style>
