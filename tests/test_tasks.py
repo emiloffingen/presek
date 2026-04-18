@@ -21,9 +21,8 @@ class TestBackfillCoverArtTask:
         assert mock_apply.call_count == 3
         countdowns = [call.kwargs["countdown"] for call in mock_apply.call_args_list]
         args = [call.kwargs["args"] for call in mock_apply.call_args_list]
-        assert countdowns == [0, 12, 24]
+        assert countdowns == [0, 5, 10]
         assert args == [("a1", "A"), ("b2", "B"), ("c3", "C")]
-
 
 class TestSynthesizeClusterTaskQuality:
     def test_normalizes_ai_summary_and_perspectives_before_store(self):

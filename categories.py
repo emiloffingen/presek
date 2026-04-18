@@ -320,9 +320,6 @@ def normalize_headline(title: str) -> str:
     # Match prefix followed by space, pipe, colon, dash or just whitespace
     prefix_pattern = r'^(' + '|'.join(prefixes) + r')[\s\|:–—-]+'
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
-    
-    # Also handle multiple prefixes like "ВИДЕО | ФОТО | ..."
-    t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
 
     # Standardize whitespace
     t = " ".join(t.split())
