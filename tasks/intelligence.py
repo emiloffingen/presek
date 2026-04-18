@@ -549,27 +549,33 @@ def backfill_cover_art_single_task(cluster_id, title):
 
 @celery_app.task
 def backfill_cover_art_task():
-    """Queue cover art generation only for clusters that have ZERO images from any source."""
+    """Queue cover art generation for clusters that lack a strong visual."""
     try:
+        # Find clusters from last 24h that either:
+        # 1. Have no representative image
+        # 2. Have a representative image that would be considered 'weak' (placeholders, small thumbs)
+        # But SKIP if we already generated AI art for them (to save credits)
         rows = db.execute("""
             SELECT DISTINCT a.cluster_id, 
                    (SELECT summary FROM cluster_summaries WHERE cluster_id = a.cluster_id LIMIT 1) as summary,
                    (SELECT title FROM articles WHERE cluster_id = a.cluster_id ORDER BY created_at DESC LIMIT 1) as title
             FROM articles a
-            WHERE NOT EXISTS (
-                SELECT 1 FROM articles sub 
-                WHERE sub.cluster_id = a.cluster_id 
-                  AND sub.image_url IS NOT NULL 
-                  AND sub.image_url NOT LIKE '/static/generated/%'
-            )
-            AND a.created_at >= NOW() - INTERVAL '24 hours'
-            LIMIT 30
+            LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+            WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+              AND (
+                  m.representative_image IS NULL 
+                  OR m.representative_image LIKE '%.svg'
+                  OR m.representative_image LIKE '%placeholder%'
+                  OR m.representative_image LIKE '%default%'
+              )
+              AND (m.representative_image IS NULL OR m.representative_image NOT LIKE '/static/generated/%.jpg')
+            LIMIT 50
         """)
         for idx, r in enumerate(rows):
             prompt_text = r['summary'] or r['title'] or ''
             backfill_cover_art_single_task.apply_async(
                 args=(r['cluster_id'], prompt_text),
-                countdown=idx * 12,
+                countdown=idx * 5, # Faster dispatch
             )
     except Exception as e:
         log.warning(f"[tasks] Cover art backfill failed: {e}")
