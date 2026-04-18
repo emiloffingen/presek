@@ -188,7 +188,8 @@ def _build_intelligence_summary_payload(last_24h: int) -> dict:
 
 @router.get("/stats/summary")
 async def get_stats_summary():
-    cached = cached_response("api:stats:summary")
+    cache_key = "api:stats:summary:v2"
+    cached = cached_response(cache_key)
     if cached: return cached
     last_24h = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")["count"] or 0
     last_1h = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")["count"] or 0
@@ -201,7 +202,7 @@ async def get_stats_summary():
         "quote_of_the_day": quote,
         "intelligence": _build_intelligence_summary_payload(last_24h),
     }
-    set_cache("api:stats:summary", res, ttl=300)
+    set_cache(cache_key, res, ttl=300)
     return res
 
 @router.post("/newsletter/subscribe")
