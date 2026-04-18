@@ -90,7 +90,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 <Layout title="Архива" description="Дневен преглед на медиумската покриеност — пребарувајте по датум, извор и тема за да видите што доминирало во вестите.">
   <NYTHeader />
   
-  <main class="site-layout archive-page-shell py-8 md:py-16">
+  <main class="site-layout archive-page-shell py-[var(--page-py)]">
     {/* ── Section 1: The Index Masthead ──────────────────────── */}
     <header class="archive-masthead motion-rise">
         <div class="masthead-main">
@@ -415,7 +415,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
     @media (min-width: 1024px) {
         .masthead-data-box {
-            min-width: 320px;
+            min-width: 280px;
             width: auto;
         }
     }

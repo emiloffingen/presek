@@ -1,7 +1,7 @@
 ---
 ---
 <footer class="footer-outer-shell">
-    <div class="footer-shell site-layout max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="footer-shell site-layout">
         <div class="footer-brand">
             <a href="/" data-astro-reload class="footer-mark hover:opacity-100 transition-opacity">
                 <img src="/img/presek_emblem.svg?v=3" alt="ПРЕСЕК.мк Емблем" class="h-6 sm:h-8 site-logo" />
@@ -29,13 +29,14 @@
 
 <style>
     .footer-outer-shell {
-        margin-top: 3rem;
+        margin-top: var(--section-py);
         border-top: 1px solid var(--border);
         background: var(--background);
     }
 
     .footer-shell {
-        padding: 2.5rem 0 3.5rem;
+        padding-top: var(--section-py);
+        padding-bottom: var(--page-py);
         display: grid;
         grid-template-columns: 1fr;
         gap: 2rem;
@@ -93,7 +94,6 @@
     @media (min-width: 960px) {
         .footer-shell {
             grid-template-columns: minmax(0, 1.2fr) auto;
-            padding: 4rem 0 6rem;
         }
 
         .footer-meta {
@@ -104,10 +104,9 @@
 
     @media (max-width: 639px) {
         .footer-outer-shell {
-            margin-top: 2rem;
+            margin-top: calc(var(--section-py) * 0.7);
         }
         .footer-shell {
-            padding: 1.5rem 0 2rem;
             gap: 1.25rem;
         }
         .footer-brand {

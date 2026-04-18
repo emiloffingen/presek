@@ -107,6 +107,11 @@
         --text-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
         --text-3xl: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
         --text-4xl: clamp(2.25rem, 1.8rem + 2vw, 3.5rem);
+
+        /* Standardized Spacing */
+        --section-py: clamp(1.5rem, 3vw, 4rem);
+        --page-py: clamp(2.5rem, 6vw, 6.5rem);
+        --grid-gap: clamp(1rem, 2vw, 2.5rem);
     }
 
     .dark {
@@ -274,32 +279,31 @@
 
 	.headline {
 		font-family: var(--font-serif);
-		line-height: 1.15;
-		letter-spacing: -0.015em;
+        font-size: var(--text-2xl);
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
 		margin-bottom: 0.25rem;
 		color: var(--foreground);
-        font-weight: 800;
-        text-wrap: balance;
 	}
 
 	.headline-lead {
-		font-size: clamp(1.75rem, 5vw, 2.7rem);
-		line-height: 1.1;
+		font-size: clamp(2rem, 5vw, 3.5rem);
+		line-height: 1;
 	}
 
 	.headline-cyrillic {
-		letter-spacing: -0.01em;
+		line-height: 1.12;
 		text-wrap: pretty;
 	}
 
 	.headline-standard {
-		font-size: 1.1rem;
-		line-height: 1.12;
+		font-size: var(--text-xl);
 	}
 
     @media (min-width: 768px) {
         .headline-standard {
-            font-size: 1.25rem;
+            font-size: var(--text-2xl);
         }
     }
 
@@ -816,7 +820,7 @@
 .site-layout {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 clamp(1rem, 2.5vw, 2rem);
     width: 100%;
 }
 
@@ -830,7 +834,10 @@
 }
 
 .skeleton-box {
-    @apply bg-secondary/50 rounded animate-pulse;
+    background-color: var(--secondary);
+    opacity: 0.5;
+    border-radius: 4px;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .nyt-section-label {
@@ -1374,14 +1381,13 @@ button:active,
 .sources-section-title,
 .entity-section-title,
 .rail-card-title {
-    margin: 0 0 1rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid var(--border);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--foreground);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
     font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    line-height: 1.1;
 }
 
 .source-reputation-grid {
@@ -1392,9 +1398,9 @@ button:active,
 
 .source-reputation-card {
     display: block;
-    padding: 1rem;
+    padding: 1.25rem;
     border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--card) 88%, var(--surface-soft) 12%);
+    background: var(--card);
     text-decoration: none;
     color: inherit;
 }
@@ -1404,13 +1410,15 @@ button:active,
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.8rem;
 }
 
 .source-reputation-name {
-    margin: 0 0 0.25rem;
-    font-size: 1.15rem;
-    line-height: 1.08;
+    margin: 0 0 0.35rem;
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 .source-reputation-meta,

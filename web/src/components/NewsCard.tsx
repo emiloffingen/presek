@@ -58,7 +58,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
     text = cleanAndDecode(text);
     if (!text) return '';
-    const limit = lead ? 250 : 170;
+    const limit = lead ? 300 : 180;
     const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
     return highlightScores(truncated);
   };

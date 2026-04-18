@@ -342,14 +342,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
             </div>
 
             <form onSubmit={onSubmit} className="mb-8 px-5 md:px-8">
-              <div className="border-y border-foreground/70 flex items-center gap-4 py-2 relative">
+              <div className="border-y border-foreground/70 flex items-center gap-2 py-1 relative">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Внесете клучни зборови..."
-                  className="w-full bg-transparent py-4 pr-12 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground"
+                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground min-w-0"
                   aria-label="Пребарај вести"
                   role="combobox"
                   autoComplete="off"
@@ -365,22 +365,24 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       : undefined
                   }
                 />
-                {query && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => { setQuery(''); inputRef.current?.focus(); }}
+                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Исчисти пребарување"
+                    >
+                      <X size={24} />
+                    </button>
+                  )}
                   <button
-                    type="button"
-                    onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                    className="absolute right-[12rem] md:right-[14rem] p-2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Исчисти пребарување"
+                    type="submit"
+                    className="bg-foreground text-background px-4 md:px-8 py-3 font-black text-[11px] uppercase tracking-[0.18em] hover:opacity-85 transition-all"
                   >
-                    <X size={20} />
+                    Барај
                   </button>
-                )}
-                <button
-                  type="submit"
-                  className="bg-foreground text-background px-6 md:px-8 py-3 font-black text-[11px] uppercase tracking-[0.18em] hover:opacity-85 transition-all"
-                >
-                  Барај
-                </button>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">

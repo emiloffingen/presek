@@ -168,8 +168,8 @@ export const IzvoriPage: React.FC = () => {
   );
 
   return (
-    <div className="bg-background text-foreground">
-      <div className="site-layout py-8">
+    <div className="sources-container">
+      <div className="py-2 md:py-4">
         <header className="sources-header">
           <span className="sources-kicker">Репутација</span>
           <h1 className="sources-headline">Медиумски Извори</h1>

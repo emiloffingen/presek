@@ -192,7 +192,7 @@ function getTimeStr(dateStr: string) {
 >
     <NYTHeader q={q} category={category} topic={topic} stats={stats} />
 
-	<main class="site-layout">
+	<main class="site-layout py-[var(--page-py)]">
 		{/* Filtering Status */}
 		{(q || category || topic) && (
 			<div class="mb-10 py-6 border-y border-nyt-gray-300 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-secondary/30 px-4 -mx-4 sm:mx-0 sm:px-0">
@@ -433,8 +433,8 @@ function getTimeStr(dateStr: string) {
 	.front-page-grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 2.35rem;
-		padding-bottom: 3.5rem;
+		gap: var(--grid-gap);
+		padding-bottom: var(--page-py);
 	}
 
 	.front-main {
@@ -713,7 +713,7 @@ function getTimeStr(dateStr: string) {
 	}
 
 	.feed-section {
-		padding-top: 1.8rem;
+		padding-top: var(--section-py);
 	}
 
 	.live-now-module {
@@ -843,8 +843,8 @@ function getTimeStr(dateStr: string) {
 
 	@media (max-width: 640px) {
 		.front-page-grid {
-			gap: 1.1rem;
-			padding-bottom: 2.5rem;
+			gap: calc(var(--grid-gap) * 0.7);
+			padding-bottom: calc(var(--page-py) * 0.6);
 		}
 
 		.editor-brief {
@@ -871,7 +871,7 @@ function getTimeStr(dateStr: string) {
 
 		.supporting-band,
 		.feed-section {
-			padding-top: 0.95rem;
+			padding-top: calc(var(--section-py) * 0.6);
 		}
 
 		.live-now-module {

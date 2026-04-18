@@ -2,306 +2,127 @@
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
-import StoryTimeline from '../../components/StoryTimeline.tsx';
-import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
-import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
-import PreferenceToggle from '../../components/PreferenceToggle.tsx';
-import ReaderTracker from '../../components/ReaderTracker.tsx';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ShareIsland from '../../components/ShareIsland.tsx';
-import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
+import ReaderTracker from '../../components/ReaderTracker.tsx';
+import PreferenceToggle from '../../components/PreferenceToggle.tsx';
+import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
+import StoryTimeline from '../../components/StoryTimeline.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
-import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import { chooseClusterImage } from '../../utils/imageSelection';
-import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
-import { sanitizeHtml } from '../../lib/sanitize';
-import { Clock, ArrowLeft, Newspaper, Sparkles, Link2, Zap, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
+import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
+import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 
-import type { ClusterDetail, NewsCluster, Article, ClusterSummary } from '../../types';
-
-const { id } = Astro.params;
-const API_URL = apiBaseUrl();
-const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
-// Canonical: use Astro.site + pathname, strip trailing slash (trailingSlash: 'never')
-const canonicalUrl = (() => {
-	const base = Astro.site || new URL("https://presek.live");
-	const url = new URL(Astro.url.pathname, base);
-	let clean = url.origin + url.pathname.replace(/\/+$/, "");
-	if (clean === url.origin) return url.origin;
-	return clean;
-})();
-
-let cluster: ClusterDetail | null = null;
-let error = null;
-
-try {
-	const res = await fetch(`${API_URL}/cluster/${id}`);
-	if (res.ok) {
-		const json = await res.json();
-		cluster = json.data;
-	} else {
-		error = 'Не можеме да го вчитаме овој кластер.';
-	}
-} catch (e) {
-	error = 'Грешка при поврзување со серверот.';
-}
-
-// Helpers
-function getTimeStr(dateStr: string) {
+function getRelativeTimeStr(dateStr: string) {
+    if (!dateStr) return '';
     try {
         const date = new Date(dateStr);
-        return date.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
-    } catch {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMins < 60) return `пред ${diffMins} ${diffMins === 1 ? 'минута' : 'минути'}`;
+        if (diffHours < 24) return `пред ${diffHours} ${diffHours === 1 ? 'час' : 'часа'}`;
+        return `пред ${diffDays} ${diffDays === 1 ? 'ден' : 'дена'}`;
+    } catch (e) {
         return '';
     }
 }
 
-function getRelativeTimeStr(dateStr: string) {
-	try {
-		const date = new Date(dateStr);
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffMin = Math.round(diffMs / 60000);
+import { sanitizeHtml } from '../../lib/sanitize';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert } from 'lucide-react';
+import type { NewsCluster } from '../../types';
 
-		if (diffMin < 1) return 'Штотуку';
-		if (diffMin < 60) return `${diffMin}м`;
-		const diffHrs = Math.round(diffMin / 60);
-		if (diffHrs < 24) return `${diffHrs}ч`;
-		return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' });
-	} catch {
-		return '';
-	}
+export async function getStaticPaths() {
+	return [];
 }
 
-function parseSynthesis(text: string) {
-	if (!text) return [];
-	return text
-		.split('\n')
-		.filter((line) => line.trim())
-		.map((line) => {
-			const cleaned = line.replace(/^[-•*]\s*/, '').trim();
-			const match = cleaned.match(/^\[(.*?)\]\s*(.*)$/);
-			if (match) {
-				return { source: match[1], content: match[2] };
-			}
-			return { source: null, content: cleaned };
-		});
-}
+const { id } = Astro.params;
+const API_URL = apiBaseUrl();
 
-function looksMacedonianHeadline(text: string) {
-    const value = String(text || "").trim();
-    if (!value) return false;
-    
-    let cyrillicCount = 0;
-    let latinCount = 0;
-    
-    for (let i = 0; i < value.length; i++) {
-        const char = value[i];
-        if (char >= "\u0400" && char <= "\u04FF") {
-            cyrillicCount++;
-        } else if ((char >= "A" && char <= "Z") || (char >= "a" && char <= "z")) {
-            latinCount++;
+let cluster: NewsCluster | null = null;
+let error = null;
+
+try {
+    const res = await fetch(`${API_URL}/news/cluster/${id}`);
+    if (!res.ok) {
+        if (res.status === 404) {
+            error = 'Кластерот не е пронајден.';
+        } else {
+            error = 'Грешка при вчитување на податоците.';
         }
+    } else {
+        cluster = await res.json();
     }
-    
-    if (cyrillicCount < 8) return false;
-    if (latinCount === 0) return true;
-    return cyrillicCount >= latinCount * 2;
+} catch (e) {
+    error = 'Неуспешно поврзување со серверот.';
 }
 
-function getPreferredClusterHeadline(articles: Article[]) {
-	let fallback = '';
-	let preferredMacedonian = '';
-
-	for (const article of articles || []) {
-		const title = cleanAndDecode(article?.title || '');
-		if (!title) continue;
-		if (!fallback) fallback = title;
-
-		const originalTitle = cleanAndDecode(article?.original_title || '');
-		const isTranslated = Boolean(article?.is_translated) || Boolean(originalTitle && title !== originalTitle);
-
-		if (isTranslated && looksMacedonianHeadline(title)) {
-			return title;
-		}
-		if (!preferredMacedonian && looksMacedonianHeadline(title)) {
-			preferredMacedonian = title;
-		}
-	}
-
-	return preferredMacedonian || fallback;
-}
-
-function getRelationshipMeta(title: string, leadTitle: string, index: number) {
-	if (index === 0) {
-		return {
-			label: 'Водечки извор',
-			tone: 'lead',
-			description: 'Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции.',
-		};
-	}
-
-	const normalize = (t: string) =>
-		t
-			.toLowerCase()
-			.replace(/[^\w\sа-я]/gi, '')
-			.split(' ')
-			.filter((w) => w.length > 3);
-	const leadTerms = normalize(leadTitle);
-	const currentTerms = normalize(title);
-	const intersection = leadTerms.filter((t) => currentTerms.includes(t));
-	const overlap = intersection.length / Math.max(1, Math.min(leadTerms.length, currentTerms.length), 1);
-
-	if (overlap >= 0.5) {
-		return {
-			label: 'Го потврдува главниот развој',
-			tone: 'confirm',
-			description: 'Носи слична главна линија како водечкиот извор.',
-		};
-	}
-
-	if (overlap >= 0.24) {
-		return {
-			label: 'Дополнува контекст',
-			tone: 'context',
-			description: 'Ја потврдува главната приказна, но додава и свој контекст или детали.',
-		};
-	}
-
-	return {
-		label: 'Следење / реакција',
-		tone: 'context',
-		description: 'Доаѓа подоцна и повеќе носи реакција, последица или follow-up.',
-	};
-}
-
-function normalizePerspectives(items: ClusterSummary[]): ClusterSummary[] {
-    if (!Array.isArray(items)) return [];
-
-    return items
-        .map((item) => {
-            if (typeof item === 'string') {
-                const content = cleanAndDecode((item as string).trim());
-                return content ? { angle: 'Перспектива', content } : null;
-            }
-
-            if (!item || typeof item !== 'object') return null;
-
-            const angle = String(
-                item.angle ?? item.label ?? item.title ?? item.name ?? 'Перспектива'
-            ).trim();
-            const content = cleanAndDecode(String(
-                item.content ?? item.text ?? item.description ?? ''
-            ).trim());
-
-            if (!content) return null;
-            return { angle: angle || 'Перспектива', content };
-        })
-        .filter(Boolean) as ClusterSummary[];
-}
-
-function extractSafeText(text?: string) {
-	if (!text) return '';
-	return cleanAndDecode(text).replace(/<\/?[^>]+(>|$)/g, "");
-}
-
-const displayHeadline = cluster ? getPreferredClusterHeadline(cluster.articles) : 'Вест';
+const mainArticle = cluster?.articles?.[0];
+const displayHeadline = mainArticle ? cleanAndDecode(mainArticle.title) : 'Детали за веста';
 const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 
-const synthesisItems = cluster?.synthesis ? parseSynthesis(cluster.synthesis) : [];
-const headerBriefItems = synthesisItems.length > 0
-	? synthesisItems.slice(0, 3).map((item) => item.content)
-	: (cluster?.ai_summary_bullets || []).slice(0, 3).map((line: string) => cleanAndDecode(line));
-const leadArticle = cluster?.articles?.[0];
-const articleRows = cluster
-	? cluster.articles.map((article: any, index: number) => ({
-			...article,
-			title: cleanAndDecode(article.title),
-			description: cleanAndDecode(article.description),
-			relationship: getRelationshipMeta(article.title, leadArticle?.title || article.title, index),
-			sourceSignal: article.source_signal || null,
-			exactTime: getTimeStr(article.created_at),
-			relativeTime: getRelativeTimeStr(article.created_at),
-	  }))
-	: [];
-const confirmRows = articleRows.filter((article: any) => article.relationship?.tone === 'confirm');
-const contextRows = articleRows.filter((article: any) => article.relationship?.tone === 'context');
-const contrastRows = articleRows.filter((article: any) => article.relationship?.tone === 'contrast');
-const comparisonHighlights = [
-	{
-		label: 'Заедничка линија',
-		value: confirmRows.length > 0 ? `${confirmRows.length + 1} извора` : `${articleRows.length} извора`,
-		copy:
-			confirmRows.length > 0
-				? `Главниот развој најјасно се повторува кај ${[leadArticle?.source, ...confirmRows.slice(0, 2).map((item: any) => item.source)].filter(Boolean).join(' · ')}.`
-				: 'Изворите во кластерот главно ја следат истата основна линија.',
-	},
-	{
-		label: 'Нов агол',
-		value: contrastRows.length > 0 ? `${contrastRows.length} извора` : contextRows.length > 0 ? `${contextRows.length} извора` : 'Слична рамка',
-		copy:
-			contrastRows.length > 0
-				? `${contrastRows.slice(0, 2).map((item: any) => item.source).join(' · ')} носат поинаков акцент или отвораат друг аспект.`
-				: contextRows.length > 0
-				? `${contextRows.slice(0, 2).map((item: any) => item.source).join(' · ')} додаваат дополнителен контекст и реакција.`
-				: 'Во овој кластер засега нема силно издвоен спротивен агол.',
-	},
-	{
-		label: 'Почни со',
-		value: articleRows[0]?.source || 'Водечки извор',
-		copy: articleRows[0]?.sourceSignal?.role_note || articleRows[0]?.relationship?.description || 'Прво прочитајте го водечкиот извор, па потоа споредете ги другите верзии.',
-	},
-];
+const sourcePreview = Array.from(new Set(cluster?.articles?.map(a => a.source) || [])).slice(0, 5);
+const synthesisUpdatedAt = cluster?.synthesis?.updated_at;
+const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false };
 
-const sentimentData = cluster?.sentiment ? {
-	sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
-	tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
-} : null;
+const comparisonHighlights = cluster?.synthesis?.comparison_highlights || [];
+const perspectives = cluster?.synthesis?.perspectives || [];
+const verificationReport = cluster?.synthesis?.verification_report || null;
+const generatedArticle = cluster?.synthesis?.generated_article || null;
 
-const leadDescription = extractSafeText(cluster?.articles?.find((article: any) => article?.description?.trim())?.description);
-const sourcePreview = cluster?.articles?.slice(0, 3).map((article: any) => article.source).filter(Boolean) || [];
+const synthesisItems = (cluster?.synthesis?.content || [])
+    .filter((line: string) => line.trim().length > 10)
+    .map((line: string) => {
+        const match = line.match(/^\[(.*?)\]\s*(.*)/);
+        if (match) {
+            return { source: match[1], content: cleanAndDecode(match[2]) };
+        }
+        return { source: null, content: cleanAndDecode(line) };
+    });
 
-const ai_summary_bullets = cluster?.ai_summary_bullets || [];
-const generatedArticle = cluster?.generated_article || '';
-const perspectives = cluster ? normalizePerspectives(cluster.perspectives) : [];
-const verificationReport = cluster?.verification_report || null;
-
-const synthesisUpdatedAt = cluster?.synthesis_updated_at || '';
-const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false, new_article_count: 0, reasons: [] };
-const adjacentTopic =
-	cluster?.related?.find((item: any) => item?.shared_topics?.length)?.shared_topics?.[0] ||
-	cluster?.related?.find((item: any) => item?.shared_tags?.length)?.shared_tags?.[0] ||
-	'';
-const shareDescription = (
-	extractSafeText(cluster?.synthesis) ||
-	leadDescription ||
-	`Овој кластер спојува ${cluster?.articles?.length || 0} извори за да ги покаже заедничките факти, разликите во акцентот и што останува неразјаснето.`
-).replace(/\s+/g, ' ').trim().slice(0, 220);
-const shareImage = cluster ? `/og/cluster/${cluster.cluster_id}.svg?v=1` : '/og-image.svg';
-const imageUrl = /^https?:\/\//i.test(shareImage) ? shareImage : `${siteUrl}${shareImage.startsWith("/") ? shareImage : `/${shareImage}`}`;
-
-const GENERIC_TAGS = ['ВИДЕО', 'ВЕСТИ', 'ФОТО', 'МАКЕДОНИЈА', 'СВЕТ', 'СПОРТ'];
-
-const filteredRelated = (cluster?.related || []).filter((rel: any) => {
-	if (rel.shared_entities && rel.shared_entities.length > 0) return true;
-	if (rel.shared_tags && rel.shared_tags.length > 0) {
-		const nonGenericTags = rel.shared_tags.filter((tag: string) => !GENERIC_TAGS.includes(tag.toUpperCase()));
-		return nonGenericTags.length > 0;
-	}
-	return true; 
+const articleRows = (cluster?.articles || []).map(a => {
+    const d = new Date(a.created_at);
+    return {
+        ...a,
+        exactTime: d.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
+        relativeTime: getRelativeTimeStr(a.created_at),
+        relationship: a.relationship_to_lead || { tone: 'neutral', label: 'Поврзана вест' }
+    };
 });
 
-function getLeadVisual(clusterData: any) {
-    if (!clusterData) return null;
-    const res = chooseClusterImage(clusterData, 'hero');
+const relatedClusters = cluster?.related_clusters || [];
+const filteredRelated = relatedClusters.filter(c => c.cluster_id !== id).slice(0, 5);
+
+const adjacentTopic = cluster?.topics?.find(t => t !== 'Македонија') || cluster?.topics?.[0];
+
+const canonicalUrl = `https://presek.live/cluster/${id}`;
+const shareDescription = cluster?.synthesis?.brief_summary || mainArticle?.description || '';
+const imageUrl = cluster?.articles?.[0]?.image_url || '/img/presek_emblem.png';
+
+function getLeadVisual(c: NewsCluster | null) {
+    if (!c) return null;
+    const res = { src: '/img/placeholder.svg', rawUrl: '', isWeak: true };
+    const main = c.articles?.[0];
+    if (main?.image_url && main.image_url.startsWith('http')) {
+        res.src = `/proxy?url=${encodeURIComponent(main.image_url)}&w=800`;
+        res.rawUrl = main.image_url;
+        res.isWeak = false;
+    }
     return {
-        src: res.proxiedUrl,
+        ...res,
+        src: res.src,
         rawUrl: res.rawUrl,
         isWeak: res.isWeak
     };
 }
 const leadVisual = getLeadVisual(cluster);
+
+const headerBriefItems = (cluster?.synthesis?.brief_summary || '').split('\n').filter(l => l.trim().length > 4);
 ---
 
 <Layout 
@@ -315,7 +136,7 @@ const leadVisual = getLeadVisual(cluster);
 
 	<ReaderTracker clusterId={id} client:idle />
 
-	<main class="site-layout py-12">
+	<main class="site-layout py-[var(--page-py)]">
 		<Breadcrumbs items={[
 			{ label: cluster?.articles?.[0]?.category || 'Вести', href: cluster?.articles?.[0]?.category ? `/?category=${cluster.articles[0].category}` : '/' },
 			{ label: adjacentTopic || 'Детали' }
@@ -447,7 +268,7 @@ const leadVisual = getLeadVisual(cluster);
 							<section class="cluster-article-hero">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
-									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ВОДЕЧКА СТОРИЈА</h2>
+									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ВОДЕЧКА СТОЈИЈА</h2>
 								</div>
 								<div class="prose-nyt text-xl leading-relaxed text-foreground font-serif">
 										{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
@@ -534,7 +355,7 @@ const leadVisual = getLeadVisual(cluster);
 										<div class="factcheck-box factcheck-agreements">
 											<div class="flex items-center gap-2 mb-4 text-green-600 dark:text-green-500">
 												<ShieldCheck size={16} />
-												<h3 class="m-0 text-xs font-black uppercase tracking-widest">Потврдени факти</h3>
+												<h3 class="m-0 text-xs font-black uppercase tracking-widest">Потвдени факти</h3>
 											</div>
 											<ul class="space-y-3">
 												{verificationReport.agreements.map((item: string) => (
@@ -676,15 +497,22 @@ const leadVisual = getLeadVisual(cluster);
 
 	.cluster-headline {
 		font-family: var(--font-serif);
-		font-size: clamp(2rem, 3vw + 1rem, 3.5rem);
+		font-size: var(--text-4xl);
 		font-weight: 900;
-		line-height: 1.05;
-		letter-spacing: -0.02em;
+		line-height: 1;
+		letter-spacing: -0.03em;
 		color: var(--foreground);
 		text-wrap: balance;
 		overflow-wrap: break-word;
 		word-break: normal;
 		hyphens: none;
+	}
+
+	@media (max-width: 640px) {
+		.cluster-headline {
+			font-size: clamp(1.8rem, 8vw, 2.5rem);
+			line-height: 1.05;
+		}
 	}
 
 	.cluster-headline-cyrillic {
@@ -699,16 +527,9 @@ const leadVisual = getLeadVisual(cluster);
 		align-items: start;
 	}
 
-	.cluster-grid > .cluster-main:only-child {
-		grid-column: 1 / -1;
-		max-width: 900px;
-		margin-left: auto;
-		margin-right: auto;
-	}
-
 	@media (min-width: 1024px) {
 		.cluster-grid {
-			grid-template-columns: minmax(0, 1fr) 320px;
+			grid-template-columns: minmax(0, 1fr) 280px;
 		}
 	}
 
@@ -780,17 +601,16 @@ const leadVisual = getLeadVisual(cluster);
 		transition: opacity 0.8s ease;
 	}
 
-	.dark .cluster-visual-aura {
-		opacity: 0.25;
-		filter: blur(80px);
-	}
-
 	.cluster-visual-image {
 		width: 100%;
+		height: auto;
 		aspect-ratio: 16 / 10;
 		object-fit: cover;
+		display: block;
 		opacity: 0;
 		transition: opacity 0.5s ease;
+		position: relative;
+		z-index: 1;
 	}
 
 	.cluster-visual-image.is-loaded {
@@ -998,24 +818,29 @@ const leadVisual = getLeadVisual(cluster);
 		background: var(--nyt-red);
 	}
 
-	.factcheck-context-note {
-		padding: 1rem 1.5rem;
-		background: color-mix(in srgb, var(--nyt-accent) 5%, var(--background) 95%);
-		border: 1px solid var(--border);
-		font-family: var(--font-nyt-body);
-		font-size: 0.9rem;
-		line-height: 1.6;
-		font-style: italic;
-		color: var(--secondary-foreground);
+	.cluster-section-title {
+		font-family: var(--font-serif);
+		font-size: 1.25rem;
+		font-weight: 800;
+		margin: 2rem 0 1rem;
+	}
+
+	.article-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
 	.article-row {
-		padding: 1.5rem 0;
-		border-bottom: 1px solid var(--border);
+		padding: 1.25rem;
+		background: var(--card);
+		border: 1px solid var(--border);
+		transition: all 0.2s ease;
 	}
 
-	.article-row:last-child {
-		border-bottom: 0;
+	.article-row:hover {
+		border-color: var(--nyt-accent);
+		background: color-mix(in srgb, var(--card) 97%, var(--nyt-accent) 3%);
 	}
 
 	.article-row-top {
@@ -1023,14 +848,13 @@ const leadVisual = getLeadVisual(cluster);
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-bottom: 0.75rem;
-		gap: 1rem;
 	}
 
 	.article-row-source {
 		display: flex;
-		align-items: center;
 		flex-wrap: wrap;
-		gap: 0.75rem;
+		gap: 0.5rem;
+		align-items: center;
 	}
 
 	.article-row-badge {
@@ -1039,101 +863,65 @@ const leadVisual = getLeadVisual(cluster);
 		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		padding: 0.1rem 0.4rem;
-		border: 1px solid var(--border);
+		padding: 0.15rem 0.4rem;
 		border-radius: 2px;
 	}
 
-	.article-row-badge-lead { border-color: var(--nyt-accent); color: var(--nyt-accent); }
-	.article-row-badge-confirm { border-color: #059669; color: #059669; }
-	.article-row-badge-context { border-color: var(--muted-foreground); color: var(--muted-foreground); }
+	.article-row-badge-neutral { background: var(--secondary); color: var(--secondary-foreground); }
+	.article-row-badge-supporting { background: #dcfce7; color: #166534; }
+	.article-row-badge-critical { background: #fee2e2; color: #991b1b; }
 
-	.article-row-badge-trust {
-		background: var(--foreground);
-		color: var(--background);
-		border: 0;
-	}
-
-	.article-row-badge-trust-high { background: var(--nyt-accent); }
-
-	.article-row-time {
-		display: flex;
-		align-items: center;
-		white-space: nowrap;
-	}
+	.article-row-badge-trust { border: 1px solid currentColor; background: transparent; }
+	.article-row-badge-trust-high { color: #059669; }
+	.article-row-badge-trust-medium { color: var(--nyt-accent); }
+	.article-row-badge-trust-low { color: var(--muted-foreground); }
 
 	.article-row-title {
 		font-family: var(--font-serif);
-		font-size: 1.25rem;
+		font-size: 1.15rem;
 		font-weight: 800;
-		line-height: 1.2;
+		line-height: 1.25;
 		margin-bottom: 0.5rem;
 		color: var(--foreground);
-	}
-
-	.article-row-link:hover .article-row-title {
-		color: var(--nyt-accent);
 	}
 
 	.article-row-snippet {
 		font-family: var(--font-nyt-body);
 		font-size: 0.95rem;
-		line-height: 1.6;
+		line-height: 1.5;
 		color: var(--secondary-foreground);
+		margin-bottom: 1rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
-		margin-bottom: 1rem;
+	}
+
+	.article-row-footer {
+		display: flex;
+		justify-content: flex-end;
 	}
 
 	.article-row-action {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 900;
+		font-size: 0.65rem;
+		font-weight: 800;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--nyt-accent);
+		color: var(--muted-foreground);
 		text-decoration: none;
 	}
 
 	.article-row-action:hover {
+		color: var(--nyt-accent);
 		text-decoration: underline;
 	}
 
 	.sidebar-related-link {
 		display: block;
-		padding: 0.75rem 0;
-		border-bottom: 1px solid var(--border);
 		text-decoration: none;
-	}
-
-	.sidebar-related-link:last-child {
-		border-bottom: 0;
-	}
-
-	@media (max-width: 640px) {
-		.cluster-headline {
-			font-size: 2.25rem;
-		}
-
-		.cluster-header-grid {
-			gap: 1.5rem;
-		}
-
-		.cluster-visual-image {
-			aspect-ratio: 16 / 10;
-		}
-
-		.article-row-top {
-			flex-direction: column;
-		}
-
-		.article-row-time {
-			justify-content: flex-start;
-		}
+		color: inherit;
 	}
 </style>

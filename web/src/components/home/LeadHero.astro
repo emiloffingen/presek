@@ -75,7 +75,7 @@ const tintColor = dominantColor || '#1e40af';
             {leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
-            <h1 class:list={["lead-headline", { "lead-headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
+            <h1 class:list={["headline headline-lead", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
         </a>
         <p class="lead-signal">{leadSignal}</p>
         {leadSummary && (
@@ -204,26 +204,6 @@ const tintColor = dominantColor || '#1e40af';
 		font-weight: 900;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-	}
-
-	.lead-headline {
-		font-size: clamp(2.2rem, 1.8rem + 1.5vw, 3.5rem);
-		line-height: 0.92;
-		letter-spacing: -0.03em;
-		margin: 0.2rem 0 0.42rem;
-		max-width: 15.5ch;
-		text-wrap: balance;
-		overflow-wrap: break-word;
-		word-break: normal;
-		hyphens: none;
-        color: var(--foreground);
-	}
-
-	.lead-headline-cyrillic {
-		line-height: 1.01;
-		letter-spacing: -0.02em;
-		max-width: 14.5ch;
-		text-wrap: pretty;
 	}
 
 	.lead-summary {
@@ -471,17 +451,10 @@ const tintColor = dominantColor || '#1e40af';
 			aspect-ratio: 16 / 9;
 			object-position: center;
 		}
-
-		.lead-headline {
-			font-size: clamp(2.05rem, 1.65rem + 0.85vw, 2.7rem);
-			max-width: 14.5ch;
-		}
 	}
 
 	@media (min-width: 1280px) {
-		.lead-headline {
-			max-width: 12.5ch;
-		}
+		/* Space for potential desktop-only tweaks */
 	}
 
 	@media (max-width: 639px) {
@@ -493,17 +466,6 @@ const tintColor = dominantColor || '#1e40af';
 			display: flex;
             flex-direction: column;
 			gap: 0.4rem;
-		}
-
-		.lead-headline {
-			font-size: clamp(1.8rem, 6vw, 2.2rem);
-			line-height: 1.05;
-			margin: 0.1rem 0 0.2rem;
-			max-width: none;
-		}
-
-		.lead-headline-cyrillic {
-			line-height: 1.08;
 		}
 
 		.lead-media-frame {
