@@ -12,7 +12,6 @@ type ClusterLike = {
 };
 
 const WEAK_VISUAL_TOKENS = [
-  '/static/generated/',
   '.svg',
   'placeholder',
   'default',
@@ -23,10 +22,6 @@ const WEAK_VISUAL_TOKENS = [
   'watermark',
   'republika',
   'online',
-  'screenshot',
-  'thumb',
-  'thumbnail',
-  'small',
   'banner',
   'sprite',
   'facebook-share',
@@ -44,7 +39,9 @@ const WEAK_VISUAL_TOKENS = [
 export function isWeakVisual(url?: string | null) {
   const value = String(url || '').toLowerCase().trim();
   if (!value) return true;
-  if (value.length < 15) return true; // Too short to be a real CDN URL usually
+  // Generated AI art is never weak
+  if (value.includes('/static/generated/')) return false;
+  if (value.length < 15) return true; 
   return WEAK_VISUAL_TOKENS.some((token) => value.includes(token));
 }
 

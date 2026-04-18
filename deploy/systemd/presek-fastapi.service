@@ -26,7 +26,7 @@ ProtectHome=read-only
 NoNewPrivileges=yes
 PrivateTmp=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-ReadWritePaths=/home/emiloffingen/presek/shared/logs
+ReadWritePaths=/home/emiloffingen/presek/shared/logs /home/emiloffingen/presek/shared/static/generated /home/emiloffingen/presek/shared/static/uploads
 
 [Install]
 WantedBy=presek.target
