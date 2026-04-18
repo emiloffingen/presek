@@ -41,19 +41,23 @@ def is_junk(title: str, desc: str) -> bool:
     if re.match(r'^\d{1,2}[\.\/]\d{1,2}[\.\/]\d{2,4}$', title.strip()):
         return True
 
-    text = f"{title} {desc}".lower()
+    # Strip common prefixes for the junk check to avoid missing all-caps segments after "ВИДЕО |"
+    from categories import normalize_headline
+    clean_title = normalize_headline(title)
+
+    text = f"{clean_title} {desc}".lower()
     if any(word in text for word in JUNK_KEYWORDS):
         return True
     
     # Filter out all-caps titles or long all-caps prefixes (usually sensationalist clickbait)
     # e.g. "НЕПОДНОСЛИВА ЛЕСНОТИЈА НА ПОСТОЕЊЕТО: ..."
-    if title:
+    if clean_title:
         # Check if the title starts with an all-caps segment followed by a colon
-        prefix_match = re.match(r'^([А-ЯЀ-ӿ\s]{10,}):', title)
+        prefix_match = re.match(r'^([А-ЯЀ-ӿ\s]{8,}):', clean_title)
         if prefix_match:
             return True
             
-        if len(title) > 20 and title.isupper():
+        if len(clean_title) > 20 and clean_title.isupper():
             return True
 
     # Filter out minor police bulletin style news that clutters the feed
@@ -541,7 +545,8 @@ async def ingest_all_sources_async():
                 topic = detect_topic(c['title'], description=c['desc'])
                 
                 is_intl = c['country'] != 'MK'
-                display_title = normalize_headline(c['title']) if is_intl else c['title']
+                # Always normalize headlines to strip ВИДЕО, ФОТО, etc.
+                display_title = normalize_headline(c['title'])
                 
                 cluster_id = None
                 if emb:
