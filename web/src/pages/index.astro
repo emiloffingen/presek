@@ -5,9 +5,7 @@ import NewsCard from '../components/NewsCard.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
-import OnboardingIsland from '../components/OnboardingIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
-import SourceMapIsland from '../components/SourceMapIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import HomeLiveUpdatesIsland from '../components/HomeLiveUpdatesIsland.tsx';
 import LeadHero from '../components/home/LeadHero.astro';
@@ -201,6 +199,11 @@ function getTimeStr(dateStr: string) {
 					<h2 class="font-serif text-3xl font-black italic leading-none">
 						{q ? `"${q}"` : `${category || topic}`}
 					</h2>
+					<div class="flex flex-wrap gap-2 mt-1">
+						{q && <span class="filter-chip">Пребарување</span>}
+						{category && <span class="filter-chip">Категорија</span>}
+						{topic && <span class="filter-chip">Тема</span>}
+					</div>
 					{q && (
 						<div class="flex items-center gap-2 text-nyt-accent mt-1">
 							<Sparkles size={12} strokeWidth={2.5} />
@@ -230,6 +233,10 @@ function getTimeStr(dateStr: string) {
 							<p class="empty-feed-copy mb-10 text-balance">
 								Нашите алгоритми сè уште не откриле нови групирани објави за оваа специфична тема. Пробајте со поопшт поим или пребарајте нешто што е актуелно:
 							</p>
+							<div class="empty-feed-actions">
+								<a href="/" class="empty-feed-action">Сите главни вести</a>
+								<a href="/archive" class="empty-feed-action empty-feed-action-secondary">Побарај во архива</a>
+							</div>
 							
 							{trending.length > 0 && (
 								<div class="flex flex-wrap justify-center gap-3 max-w-2xl">
@@ -281,8 +288,6 @@ function getTimeStr(dateStr: string) {
 					/>
 				)}
 
-				<OnboardingIsland client:idle compact />
-
 				{wireClusters.length > 0 && (
 					<DevelopmentsSection
 						title="Најнови вести"
@@ -318,8 +323,6 @@ function getTimeStr(dateStr: string) {
 				<HomeRailSuggestionsIsland client:visible />
 
 				<NewsletterIsland client:visible />
-
-				<SourceMapIsland client:visible />
 
 				{stats?.quote_of_the_day && (
 					<section class="rail-module rail-quote motion-rise-fast">
@@ -606,6 +609,45 @@ function getTimeStr(dateStr: string) {
 		color: var(--nyt-accent);
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
+	}
+
+	.empty-feed-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.empty-feed-action,
+	.filter-chip {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.45rem 0.7rem;
+		border: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		text-decoration: none;
+	}
+
+	.empty-feed-action {
+		color: var(--background);
+		background: var(--foreground);
+		border-color: var(--foreground);
+	}
+
+	.empty-feed-action-secondary {
+		color: var(--foreground);
+		background: transparent;
+		border-color: var(--border);
+	}
+
+	.filter-chip {
+		color: var(--muted-foreground);
+		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
 	}
 
 	.lead-kicker,
@@ -941,12 +983,12 @@ function getTimeStr(dateStr: string) {
 	.front-rail {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1rem;
+		gap: 1.35rem;
 		align-content: start;
 	}
 
 	.rail-module {
-		padding: 0.9rem;
+		padding: 1rem;
 		border: 1px solid var(--border);
 		background:
 			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, var(--secondary) 5%), color-mix(in srgb, var(--background) 89%, var(--secondary) 11%));
@@ -954,7 +996,7 @@ function getTimeStr(dateStr: string) {
 	}
 
 	.rail-module-featured {
-		padding: 1.1rem;
+		padding: 1.2rem;
 		background:
 			linear-gradient(180deg, color-mix(in srgb, var(--background) 98%, var(--secondary) 2%), color-mix(in srgb, var(--background) 90%, #efe8de 10%));
 	}
@@ -979,22 +1021,30 @@ function getTimeStr(dateStr: string) {
 		align-items: center;
 		gap: 0.5rem;
 		font-family: var(--font-sans);
-		font-size: 0.72rem;
+		font-size: 0.7rem;
 		font-weight: 900;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		padding-bottom: 0.7rem;
-		margin: 0 0 0.75rem;
+		padding-bottom: 0.6rem;
+		margin: 0 0 0.65rem;
 		border-bottom: 1px solid var(--border);
+	}
+
+	.rail-note {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 0.88rem;
+		line-height: 1.45;
+		color: var(--secondary-foreground);
 	}
 
 	@media (min-width: 960px) {
 		.front-rail {
-			gap: 0.8rem;
+			gap: 1rem;
 		}
 
 		.rail-module {
-			padding: 0.85rem;
+			padding: 0.95rem;
 			background:
 				linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 92%, var(--secondary) 8%));
 			box-shadow: none;

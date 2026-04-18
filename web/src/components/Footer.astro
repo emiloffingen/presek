@@ -22,7 +22,7 @@
         </nav>
 
         <p class="footer-meta">
-            © 2026 Пресек. Македонски информативен агрегатор за побрз, појасен преглед на денот со подлабок контекст.
+            © 2026 Пресек.
         </p>
     </div>
 </footer>
@@ -108,6 +108,8 @@
         }
         .footer-shell {
             gap: 1.25rem;
+            padding-top: calc(var(--section-py) * 0.7);
+            padding-bottom: calc(var(--page-py) * 0.7);
         }
         .footer-brand {
             gap: 0.75rem;
@@ -117,10 +119,16 @@
             line-height: 1.5;
         }
         .footer-nav {
-            gap: 0.5rem 0.85rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.55rem 0.85rem;
         }
         .footer-nav a {
             font-size: 0.6rem;
+        }
+        .footer-meta {
+            font-size: 0.68rem;
+            line-height: 1.45;
         }
     }
 </style>

@@ -18,18 +18,30 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
         <h2 class="section-title">{title}</h2>
         <p class="section-note">{note}</p>
     </div>
-    {developmentsFeatured.length > 0 && (
-        <div class="news-feed-grid news-feed-grid-compact">
-            {developmentsFeatured.map((cluster: NewsCluster) => (
-                <NewsCard cluster={cluster} variant={variant} />
-            ))}
-        </div>
-    )}
-    {developmentsCompact.length > 0 && (
-        <div class="news-feed-grid news-feed-grid-compact">
-            {developmentsCompact.map((cluster: NewsCluster) => (
-                <NewsCard cluster={cluster} variant={variant} />
-            ))}
-        </div>
+    {variant === "wire" ? (
+        developmentsFeatured.length > 0 && (
+            <div class="news-feed-grid wire-stack">
+                {developmentsFeatured.map((cluster: NewsCluster) => (
+                    <NewsCard cluster={cluster} variant="wire" />
+                ))}
+            </div>
+        )
+    ) : (
+        <>
+            {developmentsFeatured.length > 0 && (
+                <div class="news-feed-grid news-feed-grid-featured">
+                    {developmentsFeatured.map((cluster: NewsCluster) => (
+                        <NewsCard cluster={cluster} variant="featured" />
+                    ))}
+                </div>
+            )}
+            {developmentsCompact.length > 0 && (
+                <div class="news-feed-grid news-feed-grid-compact">
+                    {developmentsCompact.map((cluster: NewsCluster) => (
+                        <NewsCard cluster={cluster} variant="compact" />
+                    ))}
+                </div>
+            )}
+        </>
     )}
 </section>

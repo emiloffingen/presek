@@ -182,15 +182,35 @@ function topicIntro() {
 	<NYTHeader topic={topic} />
 
 	<main class="site-layout py-[var(--page-py)]">
+		{(error || !clusters.length) && (
+			<Breadcrumbs items={[{ label: "Теми", href: "/" }, { label: topic || "Тема" }]} />
+		)}
+
 		{error && (
 			<div class="topic-empty">
-				<p>{error}</p>
+				<div class="topic-empty-inner">
+					<span class="topic-kicker">Тема</span>
+					<h1 class="topic-empty-title">{topic || 'Тема'}</h1>
+					<p>{error}</p>
+					<div class="topic-empty-actions">
+						<a href="/" class="topic-empty-link">Назад на почеток</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Отвори архива</a>
+					</div>
+				</div>
 			</div>
 		)}
 
 		{!error && !clusters.length && (
 			<div class="topic-empty">
-				<p>Нема доволно активни кластери за оваа тема во моментов.</p>
+				<div class="topic-empty-inner">
+					<span class="topic-kicker">Тема</span>
+					<h1 class="topic-empty-title">{topic}</h1>
+					<p>Нема доволно активни кластери за оваа тема во моментов.</p>
+					<div class="topic-empty-actions">
+						<a href="/" class="topic-empty-link">Почетна</a>
+						<a href="/archive" class="topic-empty-link topic-empty-link-secondary">Побарај во архива</a>
+					</div>
+				</div>
 			</div>
 		)}
 
@@ -384,6 +404,65 @@ function topicIntro() {
 
 	<Footer />
 </Layout>
+
+<style>
+	.topic-empty {
+		padding: clamp(3rem, 8vw, 6rem) 0;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+	}
+
+	.topic-empty-inner {
+		max-width: 40rem;
+		margin: 0 auto;
+		padding: 0 1.5rem;
+		text-align: center;
+	}
+
+	.topic-empty-title {
+		margin: 0.6rem 0 1rem;
+		font-family: var(--font-serif);
+		font-size: clamp(2rem, 6vw, 3.4rem);
+		line-height: 0.98;
+		font-weight: 900;
+	}
+
+	.topic-empty p {
+		margin: 0;
+		font-family: var(--font-nyt-body);
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--secondary-foreground);
+	}
+
+	.topic-empty-actions {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+	}
+
+	.topic-empty-link {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.7rem 1rem;
+		border: 1px solid var(--foreground);
+		font-family: var(--font-sans);
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		text-decoration: none;
+		color: var(--background);
+		background: var(--foreground);
+	}
+
+	.topic-empty-link-secondary {
+		color: var(--foreground);
+		background: transparent;
+	}
+</style>
 
 <style>
 	.topic-page {

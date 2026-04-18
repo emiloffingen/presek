@@ -44,6 +44,8 @@ try {
 }
 
 const intelligence = stats?.intelligence ?? {};
+const pulseLeaders = pulseData.slice(0, 12);
+const pulseRemainder = pulseData.slice(12);
 
 function getSentimentLabel(score: number) {
     if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
@@ -124,52 +126,133 @@ function formatStat(val: number) {
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
-                <div class="border border-border rounded-lg overflow-hidden bg-card">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-secondary/50 border-bottom border-border">
-                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
-                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
-                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
-                                <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border">
-                            {pulseData.map((row: PulseRow) => {
-                                const sent = getSentimentLabel(row.avg_sentiment);
-                                return (
-                                    <tr class="hover:bg-secondary/20 transition-colors">
-                                        <td class="px-6 py-4">
-                                            <span class="font-serif font-bold text-lg">{row.source}</span>
-                                            <p class="text-[10px] uppercase font-bold text-muted-foreground mt-1">{row.cluster_count} покриени теми</p>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
-                                                {sent.label}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                    <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                <section class="mb-12 border border-border rounded-[1.25rem] bg-card p-8">
+                    <header class="mb-8">
+                        <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Алатка</span>
+                        <h2 class="font-serif text-3xl font-black mb-3">Споредба на медиуми</h2>
+                        <p class="font-nyt-body text-secondary-foreground max-w-2xl">
+                            Почнете со директна споредба меѓу две редакции, па потоа влезете во целосниот ранг.
+                        </p>
+                    </header>
+                    <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
+                </section>
+
+                <section class="mb-12">
+                    <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Ранг</span>
+                            <h2 class="font-serif text-3xl font-black">Водечки редакции денес</h2>
+                        </div>
+                        <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                            Прикажани се првите {pulseLeaders.length} медиуми
+                        </p>
+                    </header>
+
+                    <div class="pulse-compact-table border border-border rounded-lg overflow-hidden bg-card">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-secondary/50 border-bottom border-border">
+                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
+                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
+                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
+                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                {pulseLeaders.map((row: PulseRow) => {
+                                    const sent = getSentimentLabel(row.avg_sentiment);
+                                    return (
+                                        <tr class="hover:bg-secondary/20 transition-colors">
+                                            <td class="px-6 py-4">
+                                                <span class="font-serif font-bold text-lg">{row.source}</span>
+                                                <p class="text-[10px] uppercase font-bold text-muted-foreground mt-1">{row.cluster_count} покриени теми</p>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
+                                                    {sent.label}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                        <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                                                    </div>
+                                                    <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
                                                 </div>
-                                                <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                    <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                        <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                                    </div>
+                                                    <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
                                                 </div>
-                                                <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {pulseRemainder.length > 0 && (
+                        <details class="mt-5 border border-border rounded-lg bg-background">
+                            <summary class="cursor-pointer list-none px-6 py-4 flex items-center justify-between gap-4">
+                                <div>
+                                    <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Целосен ранг</p>
+                                    <p class="font-nyt-body text-sm text-secondary-foreground mt-1">Преостанати {pulseRemainder.length} редакции од дневната табела.</p>
+                                </div>
+                                <span class="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent">Отвори</span>
+                            </summary>
+                            <div class="border-t border-border">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-secondary/40 border-bottom border-border">
+                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
+                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
+                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
+                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-border">
+                                        {pulseRemainder.map((row: PulseRow) => {
+                                            const sent = getSentimentLabel(row.avg_sentiment);
+                                            return (
+                                                <tr class="hover:bg-secondary/20 transition-colors">
+                                                    <td class="px-6 py-4">
+                                                        <span class="font-serif font-bold text-lg">{row.source}</span>
+                                                        <p class="text-[10px] uppercase font-bold text-muted-foreground mt-1">{row.cluster_count} покриени теми</p>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
+                                                            {sent.label}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-right">
+                                                        <div class="flex items-center justify-end gap-2">
+                                                            <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                                <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                                                            </div>
+                                                            <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-right">
+                                                        <div class="flex items-center justify-end gap-2">
+                                                            <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                                <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                                            </div>
+                                                            <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    )}
+                </section>
 
                 <div class="mt-20">
                     <header class="mb-10">
@@ -180,10 +263,6 @@ function formatStat(val: number) {
                         </p>
                     </header>
                     <KnowledgeGraphIsland client:load apiUrl={API_URL} />
-                </div>
-
-                <div class="mt-20">
-                    <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
                 </div>
             </div>
 
@@ -233,3 +312,16 @@ function formatStat(val: number) {
     </main>
     <Footer />
 </Layout>
+
+<style>
+    @media (max-width: 640px) {
+        .pulse-compact-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .pulse-compact-table table {
+            min-width: 38rem;
+        }
+    }
+</style>

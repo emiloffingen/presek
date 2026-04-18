@@ -84,10 +84,10 @@ export default function ClusterFollowSuggestionsIsland({
     <section className="cluster-follow-suggestions">
       <div className="cluster-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> Следете ја темата
+          <Sparkles size={12} /> Следете понатаму
         </p>
         <p className="cluster-follow-suggestions-copy">
-          Брзо зачувајте ја темата или изворот што најмногу го отвора овој кластер.
+          Зачувајте ја темата или изворот што најмногу ја продолжува оваа приказна.
         </p>
       </div>
 

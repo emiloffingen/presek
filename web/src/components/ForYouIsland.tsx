@@ -156,7 +156,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             <h2 id="for-you-title">Персонализиран избор</h2>
           </div>
           <p className="for-you-note">
-            Нашиот систем ја анализира вашата историја и наоѓа најрелевантни вести за вашите интереси.
+            Избор според темите и изворите што веќе ги следите.
           </p>
         </div>
 
@@ -202,7 +202,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
           <h2 id="discover-title">Најново за вас</h2>
         </div>
         <p className="for-you-note">
-          Прилагодете го вашиот преглед со следење на теми и извори што ве интересираат.
+          Почетен избор додека не поставите што сакате да следите.
         </p>
       </div>
       
@@ -247,9 +247,9 @@ function OnboardingIslandCompact({ profile, recommendations }: any) {
   if (recommendations.topics.length === 0 && recommendations.sources.length === 0) return null;
 
   return (
-    <div className="for-you-follow-block" style={{ marginTop: '1.5rem', borderTop: '1px dashed var(--border)' }}>
+    <div className="for-you-follow-block">
       <div className="for-you-follow-head">
-          <p className="for-you-kicker"><Sparkles size={14} /> Препорачано за следење</p>
+          <p className="for-you-kicker"><Sparkles size={14} /> Следете понатаму</p>
       </div>
       <div className="for-you-follow-grid">
         {recommendations.topics.slice(0, 2).map((item: any) => (

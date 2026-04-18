@@ -42,6 +42,7 @@ try {
 }
 
 const hasBreaking = navigationData.breaking.length > 0;
+const breakingItems = navigationData.breaking.slice(0, 4);
 ---
 
 {/* ── Sticky header ───────────────────────────────────── */}
@@ -56,13 +57,13 @@ const hasBreaking = navigationData.breaking.length > 0;
                 </span>
                 <div class="live-ticker-track-wrap">
                     <div class="live-ticker-track">
-                        {navigationData.breaking.map((item) => (
+                        {breakingItems.map((item) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">&bull;</span>
                                 {item.label}
                             </a>
                         ))}
-                        {navigationData.breaking.map((item) => (
+                        {breakingItems.map((item) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline" aria-hidden="true">
                                 <span class="ticker-sep" aria-hidden="true">&bull;</span>
                                 {item.label}
@@ -95,8 +96,6 @@ const hasBreaking = navigationData.breaking.length > 0;
                 <div class="topbar-links hidden sm:flex">
                     <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
                     <a href="/archive" data-astro-reload class="topbar-link">Архива</a>
-                    <a href="/izvori" data-astro-reload class="topbar-link">Извори</a>
-                    <a href="/pulse" data-astro-reload class="topbar-link">Пулс</a>
                 </div>
                 <div class="flex items-center gap-3">
                     {stats?.last_1h && stats.last_1h > 0 && (
@@ -142,7 +141,7 @@ const hasBreaking = navigationData.breaking.length > 0;
         color: #fff;
         overflow: hidden;
         position: relative;
-        height: 1.85rem;
+        height: 1.55rem;
         box-shadow: inset 0 -2px 10px rgba(0,0,0,0.1);
     }
 
@@ -158,7 +157,7 @@ const hasBreaking = navigationData.breaking.length > 0;
         align-items: center;
         gap: 0.5rem;
         font-family: var(--font-sans);
-        font-size: 0.62rem;
+        font-size: 0.58rem;
         font-weight: 950;
         text-transform: uppercase;
         letter-spacing: 0.12em;
@@ -196,7 +195,7 @@ const hasBreaking = navigationData.breaking.length > 0;
         flex-wrap: nowrap;
         white-space: nowrap;
         width: max-content;
-        animation: ticker-scroll 25s linear infinite;
+        animation: ticker-scroll 20s linear infinite;
     }
 
     .live-ticker-track:hover {
@@ -212,7 +211,7 @@ const hasBreaking = navigationData.breaking.length > 0;
         display: inline-flex;
         align-items: center;
         font-family: var(--font-serif);
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         font-weight: 600;
         color: #fff;
         text-decoration: none;
@@ -265,6 +264,10 @@ const hasBreaking = navigationData.breaking.length > 0;
     }
 
     @media (max-width: 640px) {
+        .live-ticker {
+            display: none;
+        }
+
         .topbar-row { 
             display: grid;
             grid-template-columns: auto 1fr auto; 
@@ -362,14 +365,14 @@ const hasBreaking = navigationData.breaking.length > 0;
     .topbar-links {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.65rem;
     }
 
     .topbar-link {
         color: var(--foreground);
         text-decoration: none;
         font-family: var(--font-sans);
-        font-size: 0.6rem;
+        font-size: 0.58rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -468,6 +471,15 @@ const hasBreaking = navigationData.breaking.length > 0;
             gap: 0.5rem;
         }
         .topbar-logo { height: 1.1rem; }
+        .masthead-nav-shell {
+            padding: 0.25rem 0;
+        }
+        .masthead-nav-list li + li::before {
+            margin: 0 0.65rem;
+        }
+        .masthead-nav-link {
+            font-size: 0.64rem;
+        }
     }
 
     @media (min-width: 1024px) {

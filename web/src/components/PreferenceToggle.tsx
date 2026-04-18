@@ -11,7 +11,6 @@ import {
 export default function PreferenceToggle({
   kind,
   value,
-  label,
   onChanged,
   analyticsSurface,
 }: {
@@ -58,22 +57,11 @@ export default function PreferenceToggle({
     onChanged?.(result.isFollowing);
   };
 
-  const noun = label || (kind === 'topic' ? 'тема' : 'извор');
   const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
 
-  // Custom logic for common Macedonian specific labels to be grammatically correct
-  let displayAction = isFollowing ? `Следите ${noun}` : `Следи ${noun}`;
-  if (label === 'ја темата') {
-    displayAction = isFollowing ? "Ја следите темата" : "Следи ја темата";
-  } else if (label === 'го изворот') {
-    displayAction = isFollowing ? "Го следите изворот" : "Следи го изворот";
-  } else if (kind === 'topic') {
-    displayAction = isFollowing ? "Ја следите темата" : "Следи ја темата";
-  } else if (kind === 'source') {
-    displayAction = isFollowing ? "Го следите изворот" : "Следи го изворот";
-  }
+  const shortAction = isFollowing ? 'Се следи' : kind === 'topic' ? 'Следи тема' : 'Следи извор';
   const clitic = kind === 'topic' ? 'Ја' : 'Го';
-  const buttonLabel = feedback || displayAction;
+  const buttonLabel = feedback || shortAction;
   const liveMessage = feedback
     ? `${feedback}: ${value}`
     : `${isFollowing ? clitic + ' следите' : 'Не ' + clitic.toLowerCase() + ' следите'} ${value}`;

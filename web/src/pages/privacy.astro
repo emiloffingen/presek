@@ -2,11 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 ---
 
 <Layout title="Политика за приватност">
   <NYTHeader />
   <main class="site-layout py-[var(--page-py)]">
+    <Breadcrumbs items={[{ label: "Политика за приватност" }]} />
     <article class="privacy-shell">
       <header class="privacy-header">
         <span class="page-kicker">Политика</span>
@@ -88,6 +90,13 @@ import Footer from '../components/Footer.astro';
               прелистувач за побрз и поконзистентен пристап.
             </p>
           </div>
+          <div class="rail-card">
+            <h2 class="rail-card-title">Поврзано</h2>
+            <div class="rail-links">
+              <a href="/terms" class="rail-link">Услови</a>
+              <a href="/contact" class="rail-link">Контакт</a>
+            </div>
+          </div>
         </aside>
       </div>
     </article>
@@ -147,6 +156,12 @@ import Footer from '../components/Footer.astro';
     gap: 1.5rem;
   }
 
+  .rail-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
   .privacy-module,
   .rail-card {
     padding: 1.4rem;
@@ -182,6 +197,36 @@ import Footer from '../components/Footer.astro';
     .privacy-grid {
       grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
       gap: 2rem;
+    }
+
+    .privacy-rail {
+      position: sticky;
+      top: 7rem;
+      align-self: start;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .privacy-header {
+      padding-bottom: 1.4rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .privacy-headline {
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      line-height: 0.98;
+    }
+
+    .privacy-intro,
+    .rail-copy,
+    .prose-nyt {
+      font-size: 0.98rem;
+      line-height: 1.65;
+    }
+
+    .privacy-module,
+    .rail-card {
+      padding: 1rem;
     }
   }
 </style>

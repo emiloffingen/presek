@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
-import { Clock, Sparkles, BookOpen, Coffee, Moon, Sun, Timer } from 'lucide-react';
+import { Sparkles, Coffee, Moon, Sun, Timer } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 
@@ -120,10 +120,10 @@ const DispatchIconComp = dispatchIcon;
                     </span>
                 </div>
 				
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+				<div class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-10">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-secondary/30 border border-border rounded-full">
-                            <DispatchIconComp size={32} className="text-nyt-accent" />
+                        <div class="p-2.5 bg-secondary/30 border border-border rounded-full">
+                            <DispatchIconComp size={26} className="text-nyt-accent" />
                         </div>
                         <h1 class="stats-headline editorial-headline !my-0">
                             Дневен <span class="italic font-serif serif-display">Брифинг</span>
@@ -136,7 +136,7 @@ const DispatchIconComp = dispatchIcon;
                 </div>
 			</header>
 
-			<div class="briefing-grid mt-12">
+			<div class="briefing-grid mt-10">
 				<div class="briefing-main">
 					{briefing ? (
 						<article class="briefing-view prose-nyt max-w-none">
@@ -155,9 +155,9 @@ const DispatchIconComp = dispatchIcon;
 
 				<aside class="briefing-rail">
 					<div class="rail-card editorial-panel-strong">
-							<h3 class="rail-card-title flex items-center gap-2"><Sparkles size={14} className="text-nyt-accent" /> Системски сублимат</h3>
-							<p class="rail-copy text-sm italic">
-								Овој диспач е генериран преку напредна семантичка синтеза на стотици вести, со цел да ви заштеди време и да ги оддели фактите од сензационализмот.
+							<h3 class="rail-card-title flex items-center gap-2"><Sparkles size={14} className="text-nyt-accent" /> Како да го користите</h3>
+							<p class="rail-copy text-sm">
+								Прочитајте го брифингот како прв слој на денот, а потоа отворете само темите што навистина бараат подлабока проверка низ кластерите.
 							</p>
 					</div>
 
@@ -166,13 +166,6 @@ const DispatchIconComp = dispatchIcon;
 						<p class="text-xs text-muted-foreground mb-6">Добивајте го овој брифинг секое утро директно преку ntfy.sh или Web Push.</p>
                         <BriefingDeliveryIsland client:load variant="summary" content={briefing?.content || ''} dateLabel={currentDate} />
 					</div>
-
-                    <div class="rail-card editorial-panel opacity-80">
-                        <h4 class="rail-card-title">Зошто Пресек?</h4>
-                        <p class="text-xs leading-relaxed">
-                            Наместо да читате 50 портали, прочитајте еден брифинг. Пресек користи MiniLM и NLLB за да ги најде најважните точки од денот.
-                        </p>
-                    </div>
 				</aside>
 			</div>
 	</main>
@@ -251,4 +244,19 @@ const DispatchIconComp = dispatchIcon;
             column-gap: 3rem;
         }
 	}
+
+    @media (max-width: 640px) {
+        .briefing-meta-box {
+            text-align: left;
+        }
+
+        .briefing-grid {
+            gap: 2rem;
+        }
+
+        .briefing-main,
+        .briefing-rail {
+            gap: 1.25rem;
+        }
+    }
 </style>

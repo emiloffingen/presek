@@ -208,6 +208,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     navigate(`/cluster/${clusterId}`);
   };
 
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem('presek_recent_searches');
+  };
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeIndex >= 0 && suggestions[activeIndex]) {
@@ -317,7 +322,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         >
           <div
             ref={dialogRef}
-            className="w-full max-w-5xl relative border border-[color:color-mix(in_srgb,var(--border)_88%,transparent)] bg-background shadow-[0_20px_80px_rgba(0,0,0,0.16)]"
+            className="w-full max-w-4xl relative border border-[color:color-mix(in_srgb,var(--border)_88%,transparent)] bg-background shadow-[0_20px_80px_rgba(0,0,0,0.16)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
@@ -349,7 +354,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Внесете клучни зборови..."
-                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground min-w-0"
+                  className="w-full bg-transparent py-3 text-2xl md:text-4xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground min-w-0"
                   aria-label="Пребарај вести"
                   role="combobox"
                   autoComplete="off"
@@ -411,9 +416,27 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     )}
 
                     {!isLoading && suggestions.length === 0 && (
-                      <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
-                        Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
-                      </p>
+                      <div className="space-y-4">
+                        <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
+                          Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => navigateToQuery(query)}
+                            className="px-4 py-2 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-[0.16em]"
+                          >
+                            Отвори ги сите резултати
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/archive')}
+                            className="px-4 py-2 border border-border font-sans text-[10px] font-black uppercase tracking-[0.16em] text-foreground"
+                          >
+                            Архива
+                          </button>
+                        </div>
+                      </div>
                     )}
 
                     {!isLoading &&
@@ -473,6 +496,18 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 {showRecent && (
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                        Последни пребарувања
+                      </p>
+                      <button
+                        type="button"
+                        onClick={clearRecentSearches}
+                        className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
+                      >
+                        Исчисти
+                      </button>
+                    </div>
                     {recentSearches.map((item) => (
                       <button
                         key={item}
@@ -494,7 +529,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
               <div className="px-5 md:px-8 py-6 md:py-0 md:pt-0 bg-[color:color-mix(in_srgb,var(--background)_90%,var(--secondary)_10%)]">
                 <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
-                  АКТУЕЛНО
+                  ПОПУЛАРНО ДЕНЕС
                 </h3>
                 <div className="space-y-3">
                   {(trendingItems.length > 0
@@ -526,8 +561,24 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
                 <div className="mt-8 pt-5 border-t border-border">
                   <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-3">
-                    Кратенки
+                    Брзи Патеки
                   </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => { closeSearch(); navigate('/briefing'); }}
+                      className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
+                    >
+                      Брифинг
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { closeSearch(); navigate('/archive'); }}
+                      className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
+                    >
+                      Архива
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
                       Ctrl/Cmd + K

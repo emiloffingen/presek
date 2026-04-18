@@ -78,35 +78,42 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Бројки и Факти', icon: BarChart3, desc: 'Клучни статистички податоци.' },
-    { id: 'perspectives' as const, label: 'Ставови и Изјави', icon: Users, desc: 'Анализа на актери и цитати.' },
-    { id: 'context' as const, label: 'Широк Контекст', icon: BookOpen, desc: 'Позадина и општествено влијание.' },
+    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Клучни податоци и размер.' },
+    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Актери, цитати и агли.' },
+    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Позадина и значење.' },
   ];
 
   return (
-    <div className="ai-analyst-container mt-16 mb-24 max-w-4xl mx-auto">
-      <div className="flex flex-col items-center text-center mb-10">
-        <div className="p-4 bg-nyt-accent/10 rounded-full text-nyt-accent mb-4">
-            <BrainCircuit size={32} strokeWidth={1.5} />
+    <section className="ai-analyst-container mt-12 mb-16 border border-border bg-card/50 p-5 md:p-6">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="mb-2 flex items-center gap-2 font-sans text-[10px] font-black uppercase tracking-[0.18em] text-nyt-accent">
+            <BrainCircuit size={14} strokeWidth={2} /> Аналитички Центар
+          </p>
+          <h2 className="font-serif text-2xl md:text-[2rem] font-black text-foreground mb-2">Подлабока анализа</h2>
+          <p className="max-w-2xl font-nyt-body text-sm md:text-[15px] leading-relaxed text-secondary-foreground">
+            Отворете дополнителен слој само кога ви треба повеќе бројки, актери или позадина околу приказната.
+          </p>
         </div>
-        <h2 className="font-serif font-black text-3xl md:text-4xl text-foreground mb-2">Аналитички Центар</h2>
-        <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] font-black">Интелигентни извештаи</p>
+        <p className="max-w-sm font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+          Опционален аналитички слој
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {modes.map((m) => (
           <button
             key={m.id}
             onClick={() => performResearch(m.id)}
             disabled={!!loading}
-            className={`group relative p-6 text-left border-2 border-border rounded-2xl bg-background transition-all hover:border-nyt-accent/40 hover:shadow-2xl ${loading === m.id ? 'border-nyt-accent bg-secondary/5' : ''}`}
+            className={`group relative p-4 md:p-5 text-left border border-border bg-background transition-all hover:border-nyt-accent/30 hover:bg-secondary/10 ${loading === m.id ? 'border-nyt-accent bg-secondary/5' : ''}`}
           >
-            <div className={`w-12 h-12 flex items-center justify-center rounded-xl mb-6 transition-colors ${loading === m.id ? 'bg-nyt-accent text-white' : 'bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white'}`}>
-              {loading === m.id ? <Loader2 className="animate-spin" size={24} /> : <m.icon size={24} />}
+            <div className={`w-10 h-10 flex items-center justify-center rounded-lg mb-3 transition-colors ${loading === m.id ? 'bg-nyt-accent text-white' : 'bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white'}`}>
+              {loading === m.id ? <Loader2 className="animate-spin" size={20} /> : <m.icon size={20} />}
             </div>
-            <h4 className="font-black text-xs mb-3 uppercase tracking-widest text-foreground group-hover:text-nyt-accent">{m.label}</h4>
+            <h4 className="font-black text-[11px] mb-1 uppercase tracking-[0.12em] text-foreground group-hover:text-nyt-accent">{m.label}</h4>
             <p className="text-xs text-muted-foreground leading-relaxed font-medium">{m.desc}</p>
-            <div className="mt-6 flex items-center text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="mt-3 flex items-center text-[10px] font-black uppercase text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">
                 Истражи <ChevronRight size={10} className="ml-1" />
             </div>
           </button>
@@ -124,38 +131,38 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
       )}
 
       {data && (
-        <div className="mt-12 editorial-panel p-0 overflow-hidden border-2 border-nyt-accent/20 bg-background motion-rise shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25)] rounded-3xl">
-          <div className="bg-nyt-accent text-white px-8 py-4 flex items-center justify-between">
+        <div className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise">
+          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-5 py-4 md:px-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Sparkles size={16} fill="currentColor" />
-              <span className="text-xs font-black uppercase tracking-[0.2em]">
-                {modes.find(m => m.id === data.mode)?.label} · Специјален Извештај
+              <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
+              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
+                {modes.find(m => m.id === data.mode)?.label}
               </span>
             </div>
-            <button onClick={() => setData(null)} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+            <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors">
                 <X size={20} />
             </button>
           </div>
           
-          <div className="p-8 md:p-16 relative">
-             <div className="max-w-3xl mx-auto">
+          <div className="p-5 md:p-8 relative">
+             <div className="max-w-3xl">
                 {formatText(data.report)}
              </div>
              
-             <div className="mt-16 pt-10 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-6 opacity-60">
+             <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 opacity-60">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
                    Интерна системска синтеза
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-[9px] font-black tracking-[0.3em] border-2 border-foreground px-3 py-1.5 rounded-full">
-                        АЛГОРИТМОТ НА УРЕДНИКОТ
+                    <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">
+                        АЛГОРИТАМСКИ СЛОЈ
                     </span>
                 </div>
              </div>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
 const API_URL = apiBaseUrl();
@@ -44,6 +45,7 @@ function formatUptime(seconds?: number) {
 <Layout title="Статус" description="Состојба на системот — проверете дали API, базата и Redis одговараат." robots="noindex, nofollow">
   <NYTHeader />
   <main class="site-layout py-[var(--page-py)]">
+    <Breadcrumbs items={[{ label: "Статус" }]} />
     <article class="status-shell">
       <header class="status-header">
         <span class="page-kicker">Статус</span>
@@ -117,6 +119,12 @@ function formatUptime(seconds?: number) {
               <h2 class="rail-card-title">Што Не Гледате</h2>
               <p class="rail-copy">
                 Не ги заменува логовите, systemd статусите или smoke проверките, туку ви кажува дали основните сервиси се кренати и читливи.
+              </p>
+            </div>
+            <div class="rail-card">
+              <h2 class="rail-card-title">Кога Да Реагирате</h2>
+              <p class="rail-copy">
+                Ако API-от или базата покажуваат проблем, а страниците се празни или бавни, ова е сигнал дека треба да се продолжи кон подлабока оперативна проверка.
               </p>
             </div>
           </aside>

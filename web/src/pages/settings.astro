@@ -2,16 +2,18 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
-import { KeyRound, Radio, Sparkles } from 'lucide-react';
+import { KeyRound, Radio } from 'lucide-react';
 ---
 
-<Layout title="Поставки">
+<Layout title="Поставки" description="Управувајте со синхронизацијата, следењата и доставата на брифингот во Пресек.">
   <NYTHeader />
 
   <main class="site-layout py-[var(--page-py)]">
+    <Breadcrumbs items={[{ label: "Поставки" }]} />
     <div class="settings-shell editorial-shell">
       <header class="settings-header editorial-header motion-rise">
         <span class="page-kicker">Синхронизиран профил</span>
@@ -21,13 +23,13 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
         </p>
       </header>
 
-      <div class="settings-page-grid editorial-page-grid">
+        <div class="settings-page-grid editorial-page-grid">
         <div class="settings-main editorial-main motion-rise motion-delay-1">
           <div class="settings-card editorial-panel">
-            <OnboardingIsland client:load />
+            <SettingsProfileIsland client:load />
           </div>
           <div class="settings-card editorial-panel">
-            <SettingsProfileIsland client:load />
+            <OnboardingIsland client:load />
           </div>
         </div>
 
@@ -38,17 +40,19 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
           </div>
 
           <div class="settings-card settings-card-accent editorial-panel-strong">
-            <h3 class="settings-rail-title editorial-panel-title"><KeyRound size={14} /> Зошто синхронизацијата е важна</h3>
+            <h3 class="settings-rail-title editorial-panel-title"><KeyRound size={14} /> Што се менува тука</h3>
             <p class="settings-rail-copy">
-              Синхронизацијата ги носи вашите следења, изборите за достава и историјата на читање меѓу уреди. Така „За Вас“, итните известувања и неделните дигести остануваат конзистентни наместо да почнуваат одново во секој прелистувач.
+              Оваа страница ги контролира сигналите што влијаат врз „За Вас“, следењата по тема и извор, како и каналите преку кои добивате брифинг и известувања.
             </p>
           </div>
 
           <div class="settings-card editorial-panel">
-            <h3 class="settings-rail-title editorial-panel-title"><Sparkles size={14} /> Што контролира ова</h3>
-            <p class="settings-rail-copy">
-              Оваа страница ги управува деловите од Пресек што треба да се приспособат на вас: рангирање, препораки, достава за следени теми, достава за следени извори и поспориот неделен преглед.
-            </p>
+            <h3 class="settings-rail-title editorial-panel-title">Понатаму</h3>
+            <div class="settings-rail-links">
+              <a href="/briefing">Отвори брифинг</a>
+              <a href="/izvori">Уреди извори</a>
+              <a href="/contact">Побарај помош</a>
+            </div>
           </div>
         </aside>
       </div>
@@ -75,5 +79,25 @@ import { KeyRound, Radio, Sparkles } from 'lucide-react';
     font-size: 1rem;
     line-height: 1.6;
     color: var(--secondary-foreground);
+  }
+
+  .settings-rail-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .settings-rail-links a {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--foreground);
+  }
+
+  .settings-rail-links a:hover {
+    color: var(--nyt-accent);
   }
 </style>

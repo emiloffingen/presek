@@ -1,5 +1,5 @@
-import React from 'react';
-import { Clock, History, ArrowDown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowDown, ArrowRight, Calendar, Clock, History } from 'lucide-react';
 
 interface TimelineItem {
   article_id: number;
@@ -11,11 +11,39 @@ interface TimelineItem {
   milestone?: string;
 }
 
-interface StoryTimelineProps {
-  timeline: TimelineItem[];
+interface StorylineItem {
+  cluster_id: string;
+  title: string;
+  first_seen: string;
+  similarity: number;
 }
 
-const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline }) => {
+interface StoryTimelineProps {
+  timeline: TimelineItem[];
+  clusterId: string;
+  apiUrl: string;
+}
+
+const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline, clusterId, apiUrl }) => {
+  const [history, setHistory] = useState<StorylineItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${apiUrl}/intelligence/cluster/${clusterId}/history`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setHistory(data.history || []);
+      })
+      .catch(() => {
+        if (!cancelled) setHistory([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clusterId, apiUrl]);
+
   if (!timeline || timeline.length === 0) return null;
 
   // Process timeline to find interesting points if milestone not provided
@@ -93,6 +121,35 @@ const StoryTimeline: React.FC<StoryTimelineProps> = ({ timeline }) => {
             </div>
           </div>
         ))}
+
+        {history.length > 0 && (
+          <>
+            <div className="relative -left-8 w-[calc(100%+2rem)] border-t border-border/80 pt-12" />
+            {history.map((item) => (
+              <div key={item.cluster_id} className="relative">
+                <div className="absolute -left-[41px] top-1.5 z-10 h-4 w-4 rounded-full border-2 border-nyt-accent bg-background" />
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <span className="flex items-center gap-1 font-sans">
+                      <Calendar size={10} /> {getDateStr(item.first_seen)}
+                    </span>
+                    <span>·</span>
+                    <span className="font-sans">Претходен кластер</span>
+                  </div>
+                  <a href={`/cluster/${item.cluster_id}`} className="group block">
+                    <h3 className="font-serif text-base font-bold leading-snug tracking-tight text-secondary-foreground transition-colors group-hover:text-nyt-accent">
+                      {item.title}
+                    </h3>
+                    <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 transition-opacity group-hover:opacity-100">
+                      Види го кластерот <ArrowRight size={12} />
+                    </div>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
       
       <div className="mt-12 flex justify-center">

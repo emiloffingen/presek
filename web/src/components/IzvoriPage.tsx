@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, Loader2, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
+import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
 
 interface SourceRow {
   source: string;
@@ -245,7 +245,12 @@ export const IzvoriPage: React.FC = () => {
             ) : (
               <div className="space-y-12">
                 <section className="sources-section">
-                  <h2 className="sources-section-title">Македонски Медиуми</h2>
+                  <div className="mb-5 border-b border-border pb-3">
+                    <h2 className="sources-section-title">Македонски Медиуми</h2>
+                    <p className="mt-2 max-w-2xl font-nyt-body text-sm leading-relaxed text-secondary-foreground">
+                      Главниот домашен екосистем што најчесто ја поставува дневната слика, од агенциски до телевизиски и независни редакции.
+                    </p>
+                  </div>
                   <div className="source-reputation-grid">
                     {mkSources.map(renderSourceCard)}
                     {mkSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
@@ -253,7 +258,12 @@ export const IzvoriPage: React.FC = () => {
                 </section>
 
                 <section className="sources-section">
-                  <h2 className="sources-section-title">Меѓународни Медиуми</h2>
+                  <div className="mb-5 border-b border-border pb-3">
+                    <h2 className="sources-section-title">Меѓународни Медиуми</h2>
+                    <p className="mt-2 max-w-2xl font-nyt-body text-sm leading-relaxed text-secondary-foreground">
+                      Извори што внесуваат надворешен сигнал и поширок контекст, особено кога домашното покривање се потпира на агенции и глобални редакции.
+                    </p>
+                  </div>
                   <div className="source-reputation-grid">
                     {intSources.map(renderSourceCard)}
                     {intSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
@@ -263,7 +273,7 @@ export const IzvoriPage: React.FC = () => {
             )}
           </div>
 
-          <aside className="sources-rail">
+          <aside className="sources-rail lg:sticky lg:top-28 self-start">
             <div className="rail-card">
               <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldCheck size={14} /> Доверба</h3>
               <p className="rail-copy">
@@ -277,6 +287,9 @@ export const IzvoriPage: React.FC = () => {
 
             <div className="rail-card rail-card-accent">
               <h3 className="rail-card-title flex items-center gap-2 mb-4"><Zap size={14} /> Први На Приказната</h3>
+              <p className="rail-copy mb-4">
+                Овие извори најчесто први отвораат тема во последниот период.
+              </p>
               <div className="source-fast-list">
                 {fastMovers.map((source) => (
                   <div key={source.source} className="source-fast-row">
@@ -288,34 +301,39 @@ export const IzvoriPage: React.FC = () => {
             </div>
 
             <div className="rail-card">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><LineChart size={14} /> Најчесто Потврдени</h3>
-              <div className="source-fast-list">
-                {bestCorroborated.map((source) => (
-                  <div key={source.source} className="source-fast-row">
-                    <span>{source.source}</span>
-                    <strong>{formatPercent(source.corroboration_rate)}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rail-card">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldAlert size={14} /> Често Остануваат Сами</h3>
-              <div className="source-fast-list">
-                {loneLeaders.map((source) => (
-                  <div key={source.source} className="source-fast-row">
-                    <span>{source.source}</span>
-                    <strong>{formatPercent(source.lone_lead_rate)}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rail-card">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><Activity size={14} /> Како Да Се Чита</h3>
-              <p className="rail-copy">
+              <h3 className="rail-card-title flex items-center gap-2 mb-4"><LineChart size={14} /> Како Да Се Чита</h3>
+              <p className="rail-copy mb-5">
                 Висока доверба не значи секогаш прв извор. Гледајте ги заедно: колку често водат, колку често подоцна се потврдуваат и колку често остануваат сами.
               </p>
+              <div className="space-y-5">
+                <div>
+                  <p className="mb-2 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <ShieldCheck size={12} /> Најчесто потврдени
+                  </p>
+                  <div className="source-fast-list">
+                    {bestCorroborated.map((source) => (
+                      <div key={source.source} className="source-fast-row">
+                        <span>{source.source}</span>
+                        <strong>{formatPercent(source.corroboration_rate)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <ShieldAlert size={12} /> Често остануваат сами
+                  </p>
+                  <div className="source-fast-list">
+                    {loneLeaders.map((source) => (
+                      <div key={source.source} className="source-fast-row">
+                        <span>{source.source}</span>
+                        <strong>{formatPercent(source.lone_lead_rate)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </aside>
         </div>

@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getRecommendationEvaluation } from '../../lib/recommendationEval.mjs';
 
 const debugToken = String(import.meta.env.DEBUG_PAGE_TOKEN || '').trim();
@@ -30,15 +31,18 @@ try {
   <NYTHeader />
 
   <main class="site-layout debug-shell">
+    <Breadcrumbs items={[{ label: "Internal Debug" }, { label: "Recommendations" }]} />
     {!isAuthorized ? (
       <section class="debug-panel debug-error">
-        <h1>Not Found</h1>
-        <p>Оваа страница не е јавно достапна.</p>
+        <span class="page-kicker">Internal Debug</span>
+        <h1 class="debug-title">Страницата не е јавно достапна</h1>
+        <p class="debug-copy">Овој екран е ограничен на интерна употреба и бара валиден debug token во барањето.</p>
       </section>
     ) : error ? (
       <section class="debug-panel debug-error">
-        <h2>Грешка</h2>
-        <p>{error}</p>
+        <span class="page-kicker">Internal Debug</span>
+        <h1 class="debug-title">Грешка при евалуација</h1>
+        <p class="debug-copy">{error}</p>
       </section>
     ) : evaluation && (
       <>
@@ -65,6 +69,13 @@ try {
           </article>
         </section>
 
+        <aside class="debug-callout debug-panel">
+          <h2 class="debug-section-title">Како Да Се Чита</h2>
+          <p class="debug-copy">
+            Ова е работен преглед за тоа како различни профили добиваат персонализирани кластери и кои сигнали стигнуваат до home rail, for you и topic логиката.
+          </p>
+        </aside>
+
         <section class="debug-results">
           {evaluation.results.map((entry) => (
             <article class="debug-panel profile-panel">
@@ -75,7 +86,7 @@ try {
 
               <div class="debug-grid">
                 <section>
-                  <h3>Personalized</h3>
+                  <h3>Персонализирано</h3>
                   {entry.personalized.length > 0 ? (
                     <ul class="debug-list">
                       {entry.personalized.map((item) => (
@@ -125,6 +136,10 @@ try {
   .debug-header {
     max-width: 52rem;
     margin-bottom: 2rem;
+  }
+
+  .debug-callout {
+    margin-bottom: 1.5rem;
   }
 
   .debug-title {
@@ -178,6 +193,17 @@ try {
   .debug-results {
     display: grid;
     gap: 1.25rem;
+  }
+
+  .debug-section-title {
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .profile-head {
@@ -279,5 +305,33 @@ try {
   .debug-error p {
     margin: 0.5rem 0 0;
     color: var(--secondary-foreground);
+  }
+
+  pre {
+    margin: 0;
+    padding: 0.85rem;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+    line-height: 1.5;
+  }
+
+  .debug-error {
+    max-width: 52rem;
+  }
+
+  @media (max-width: 640px) {
+    .debug-shell {
+      padding-top: 2rem;
+      padding-bottom: 3rem;
+    }
+
+    .debug-panel {
+      padding: 0.95rem;
+    }
+
+    .profile-head h2 {
+      font-size: 1.35rem;
+    }
   }
 </style>

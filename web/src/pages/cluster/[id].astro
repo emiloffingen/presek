@@ -8,7 +8,6 @@ import ReaderTracker from '../../components/ReaderTracker.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
 import StoryTimeline from '../../components/StoryTimeline.tsx';
-import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
@@ -333,9 +332,6 @@ const sentimentData = cluster?.sentiment ? {
 							</section>
 						)}
 
-						{/* Deep Research */}
-						<ResearchIsland client:load clusterId={id} initialHeadline={displayHeadline} />
-
 						{/* Perspectives */}
 						{perspectives.length > 0 && (
 							<section class="cluster-synthesis cluster-perspectives">
@@ -402,17 +398,15 @@ const sentimentData = cluster?.sentiment ? {
 
 						{/* Timeline */}
 						{cluster.timeline && cluster.timeline.length > 1 && (
-							<StoryTimeline timeline={cluster.timeline} client:visible />
+							<StoryTimeline timeline={cluster.timeline} clusterId={id} apiUrl={API_URL} client:visible />
 						)}
-
-						<StorylineHistoryIsland clusterId={id} apiUrl={API_URL} client:load />
 
 						{/* Articles List */}
 
 						<section class="cluster-module">
 							<div class="cluster-module-head">
 								<Newspaper size={18} className="text-foreground" />
-								<h2 class="nyt-section-label tracking-[0.2em]">КАКО ДА ГО ЧИТАТЕ КЛАСТЕРОТ</h2>
+								<h2 class="nyt-section-label tracking-[0.2em]">ИЗВОРИ</h2>
 							</div>
 							<h2 class="cluster-section-title">Сите Извори</h2>
 							<div class="article-list">
@@ -447,6 +441,9 @@ const sentimentData = cluster?.sentiment ? {
 								))}
 							</div>
 						</section>
+
+						{/* Deep Research */}
+						<ResearchIsland client:load clusterId={id} initialHeadline={displayHeadline} />
 					</div>
 
 					<aside class="cluster-sidebar">
@@ -524,6 +521,34 @@ const sentimentData = cluster?.sentiment ? {
 		.cluster-headline {
 			font-size: clamp(1.8rem, 8vw, 2.5rem);
 			line-height: 1.05;
+		}
+
+		.cluster-header-main {
+			margin-bottom: 2rem;
+		}
+
+		.cluster-header-meta {
+			margin-bottom: 1rem;
+		}
+
+		.cluster-summary-card,
+		.article-row,
+		.factcheck-box,
+		.perspective-card {
+			padding: 1rem;
+		}
+
+		.article-row-top {
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.article-row-time {
+			width: 100%;
+		}
+
+		.cluster-grid {
+			gap: 2rem;
 		}
 	}
 

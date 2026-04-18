@@ -99,8 +99,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     <section className={`onboarding-card ${compact ? 'is-compact' : ''}`}>
       <div className="onboarding-head">
         <div>
-          <p className="onboarding-kicker"><Sparkles size={14} /> Започнете со Пресек</p>
-          <h2>Поставете го вашиот персонализиран тек</h2>
+          <p className="onboarding-kicker"><Sparkles size={14} /> Почетно поставување</p>
+          <h2>Поставете што сакате да следите</h2>
         </div>
         <button type="button" className="onboarding-dismiss" onClick={close} aria-label="Затвори">
           <X size={14} />
@@ -108,7 +108,7 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       </div>
 
       <p className="onboarding-copy">
-        Следете неколку теми и извори, па вклучете достава. Така „За Вас“, брифинзите и известувањата ќе почнат да работат како личен сервис, а не само како општа насловна.
+        Изберете неколку теми или извори и потоа вклучете достава. Тоа е доволно `За Вас`, брифингот и известувањата да станат попрецизни.
       </p>
 
       <div className="onboarding-progress">
@@ -128,8 +128,8 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
       {compact && (recommendations.topics.length > 0 || recommendations.sources.length > 0) && (
         <div className="onboarding-starters">
           <div>
-            <p className="onboarding-starters-title">Почнете со неколку брзи следења</p>
-            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за „За Вас“, известувањата и неделниот преглед да станат побрзо корисни.</p>
+            <p className="onboarding-starters-title">Брз почеток</p>
+            <p className="onboarding-starters-copy">Изберете 1 до 2 сигнали за првиот персонализиран преглед.</p>
           </div>
 
           {recommendations.topics.length > 0 && (

@@ -184,6 +184,8 @@ export default function EntityIsland({
   const trend = getSentimentTrend(sentiment_history);
   const relationBands = splitRelated(related);
   const whyItMatters = buildWhyItMatters(profile, clusters, related);
+  const contextEntities = coMentionedEntities(clusters, profile.name);
+  const leadingCategories = (categories || []).slice(0, 4);
 
   return (
     <div className="entity-flow">
@@ -273,7 +275,7 @@ export default function EntityIsland({
             <section className="entity-summary">
               <h2 className="entity-section-title flex items-center gap-2"><Newspaper size={14} /> Тематски Профил</h2>
               <div className="space-y-3 mt-4">
-                {categories && categories.map((c) => (
+                {leadingCategories.map((c) => (
                   <div key={c.category} className="flex items-center justify-between">
                     <span className="font-sans font-bold text-[11px] uppercase tracking-wide">{c.category}</span>
                     <div className="flex items-center gap-3">
@@ -287,20 +289,28 @@ export default function EntityIsland({
                     </div>
                   </div>
                 ))}
-                {(!categories || categories.length === 0) && <p className="text-xs text-muted italic">Нема доволно податоци за теми.</p>}
+                {leadingCategories.length === 0 && <p className="text-xs text-muted italic">Нема доволно податоци за теми.</p>}
+                {categories && categories.length > leadingCategories.length && (
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pt-1">
+                    Прикажани се водечките {leadingCategories.length} тематски насоки.
+                  </p>
+                )}
               </div>
             </section>
           </div>
 
           <section className="entity-summary">
             <h2 className="entity-section-title flex items-center gap-2"><Link2 size={14} /> Истиот Контекст</h2>
+            <p className="entity-summary-copy">
+              Овие имиња најчесто се појавуваат заедно со {profile.name} во исти кластери и помагаат да се види пошироката мрежа околу приказната.
+            </p>
             <div className="entity-chip-list">
-              {coMentionedEntities(clusters, profile.name).map(([entity, count]) => (
+              {contextEntities.map(([entity, count]) => (
                 <a key={entity} href={`/subjekt/${encodeURIComponent(entity)}`} className="entity-chip entity-chip-link">
                   {entity} · {count}
                 </a>
               ))}
-              {coMentionedEntities(clusters, profile.name).length === 0 && (
+              {contextEntities.length === 0 && (
                 <div className="flex flex-wrap gap-2">
                   {related.map(r => (
                     <a key={r.related_entity} href={`/subjekt/${encodeURIComponent(r.related_entity)}`} className="entity-chip entity-chip-link">
@@ -316,6 +326,9 @@ export default function EntityIsland({
         <aside className="sources-rail">
           <div className="rail-card">
             <h3 className="rail-card-title flex items-center gap-2"><Link2 size={14} /> Најтесно Поврзани</h3>
+            <p className="rail-copy">
+              Овде се прикажани субјектите што најчесто влегуваат во ист контекст со {profile.name}, со најсилните врски најгоре.
+            </p>
             <div className="space-y-4">
               {relationBands.strongest.map((rel) => (
                 <a key={rel.related_entity} href={`/subjekt/${encodeURIComponent(rel.related_entity)}`} className="entity-related-link">
@@ -336,10 +349,19 @@ export default function EntityIsland({
           </div>
 
           <div className="rail-card rail-card-accent">
-            <h3 className="rail-card-title">Автоматизиран надзор</h3>
+            <h3 className="rail-card-title">Како Да Се Чита</h3>
             <p className="rail-copy">
-              Овие податоци се генерираат преку постојано следење на македонскиот медиумски простор. Анализата на тонот и поврзаноста помага во разбирање на јавниот дискурс.
+              Тонoт покажува како се менува медиумската рамка, а поврзаните субјекти покажуваат со кого најчесто се врзува приказната околу {profile.name}.
             </p>
+          </div>
+
+          <div className="rail-card">
+            <h3 className="rail-card-title">Понатаму</h3>
+            <div className="flex flex-col gap-3">
+              <a href="/archive" className="entity-related-jump">Погледни ја архивата</a>
+              <a href="/izvori" className="entity-related-jump">Отвори извори</a>
+              <a href="/pulse" className="entity-related-jump">Спореди медиуми</a>
+            </div>
           </div>
         </aside>
       </div>

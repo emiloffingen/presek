@@ -85,10 +85,10 @@ export default function TopicFollowSuggestionsIsland({
     <section className="topic-follow-suggestions">
       <div className="topic-follow-suggestions-head">
         <p className="nyt-section-label flex items-center gap-1 text-muted-foreground">
-          <Sparkles size={12} /> Следете ја оваа тема подобро
+          <Sparkles size={12} /> Следете понатаму
         </p>
         <p className="topic-follow-suggestions-copy">
-          Зачувајте ја темата или изворите што најчесто ја водат, за следната достава и „За Вас“ да станат попрецизни.
+          Зачувајте ја темата или водечките извори за следниот преглед да биде попрецизен.
         </p>
       </div>
 

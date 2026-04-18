@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { Mail, Info } from 'lucide-react';
 ---
 
@@ -11,6 +12,7 @@ import { Mail, Info } from 'lucide-react';
 >
     <NYTHeader />
     <main class="site-layout py-[var(--page-py)]">
+        <Breadcrumbs items={[{ label: "Контакт" }]} />
         <article class="editorial-shell">
             <header class="editorial-header">
                 <span class="page-kicker">Комуникација</span>
@@ -31,6 +33,7 @@ import { Mail, Info } from 'lucide-react';
                             <div>
                                 <p class="font-serif text-2xl font-black text-nyt-accent">contact@presek.mk</p>
                                 <p class="text-sm text-muted-foreground mt-1">Одговараме на сите легитимни барања во рок од 24 часа.</p>
+                                <a href="mailto:contact@presek.mk" class="contact-action-link">Испрати е-пошта</a>
                             </div>
                         </div>
                     </section>
@@ -56,20 +59,22 @@ import { Mail, Info } from 'lucide-react';
 
                 <aside class="editorial-rail">
                     <div class="rail-card rail-card-accent">
-                        <h2 class="rail-card-title">Зошто Пресек?</h2>
-                        <p class="rail-copy italic font-serif text-lg mb-4">
-                            "Нашата цел не е само да ги собереме вестите, туку да изградиме структура во која читателот веднаш ќе го препознае контекстот."
+                        <h2 class="rail-card-title">Најбрз пат</h2>
+                        <p class="rail-copy">
+                            За прашања, технички проблеми или барања за вклучување медиум, најбрзо е директно да ни пишете на е-пошта со краток опис и линк каде што е потребно.
                         </p>
-                        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-nyt-accent">
-                            <Info size={14} /> Уреднички тим
-                        </div>
                     </div>
 
                     <div class="rail-card">
-                        <h2 class="rail-card-title">Локација</h2>
-                        <p class="rail-copy">
-                            Пресек е дигитален проект со седиште во Скопје, Македонија, фокусиран на развој на напредни јазични технологии за македонскиот јазик.
-                        </p>
+                        <h2 class="rail-card-title">Пред да пишете</h2>
+                        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-nyt-accent mb-4">
+                            <Info size={14} /> Корисно за побрз одговор
+                        </div>
+                        <ul class="contact-checklist">
+                            <li>испратете линк до конкретната страница или кластер;</li>
+                            <li>наведете дали се работи за содржина, технички проблем или нов извор;</li>
+                            <li>ако е баг, наведете уред и прелистувач.</li>
+                        </ul>
                     </div>
                 </aside>
             </div>
@@ -78,3 +83,37 @@ import { Mail, Info } from 'lucide-react';
 
     <Footer />
 </Layout>
+
+<style>
+    .contact-action-link {
+        display: inline-flex;
+        margin-top: 0.9rem;
+        padding: 0.65rem 0.9rem;
+        border: 1px solid var(--foreground);
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--foreground);
+    }
+
+    .contact-action-link:hover {
+        background: var(--foreground);
+        color: var(--background);
+    }
+
+    .contact-checklist {
+        margin: 0;
+        padding-left: 1.1rem;
+        font-family: var(--font-nyt-body);
+        font-size: 0.98rem;
+        line-height: 1.7;
+        color: var(--secondary-foreground);
+    }
+
+    .contact-checklist li + li {
+        margin-top: 0.45rem;
+    }
+</style>
