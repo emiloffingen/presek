@@ -37,7 +37,7 @@ from nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedo
 
 class AIProvider(ABC):
     @abstractmethod
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         pass
 
     @abstractmethod
@@ -47,7 +47,7 @@ class AIProvider(ABC):
 # --- Provider Registry ---
 
 class GeminiProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not GOOGLE_API_KEY: return None
         url = f"{GEMINI_URL}?key={GOOGLE_API_KEY}"
         
@@ -66,11 +66,16 @@ class GeminiProvider(AIProvider):
                 "temperature": 0.1
             }
         }
+        
+        # Enable Google Search Grounding for specialized tasks
+        if task_type in ("research", "chat"):
+            payload["tools"] = [{"google_search": {}}]
+
         if json_mode:
             payload["generationConfig"]["responseMimeType"] = "application/json"
 
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=45.0) as client:
                 resp = client.post(url, json=payload)
                 resp.raise_for_status()
                 data = resp.json()
@@ -84,7 +89,7 @@ class GeminiProvider(AIProvider):
         if res: yield res
 
 class MistralProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not MISTRAL_API_KEY: return None
         payload = {
             "model": MISTRAL_MODEL,
@@ -126,7 +131,7 @@ class OpenAICompatibleProvider(AIProvider):
         self.api_url = api_url
         self.model = model
 
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.api_key or not self.api_url:
             return None
 
@@ -168,7 +173,7 @@ class LocalProvider(AIProvider):
                 yield word + ' '
                 await asyncio.sleep(0.01)
 
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None) -> str | None:
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         lowered_system = (system or "").lower()
         if "translate" in lowered_system or "превед" in lowered_system:
             return rewrite_to_macedonian_locally(prompt)
@@ -209,6 +214,7 @@ TASK_ROUTING = {
     "summarize":    ["gemini", "mistral", "local"],
     "synthesis":    ["gemini", "mistral", "local"],
     "daily_brief":  ["gemini", "mistral", "local"],
+    "research":     ["gemini"], # Only Gemini has live search
     "chat":         ["gemini", "mistral", "local"],
     "default":      ["gemini", "mistral", "local"],
 }
@@ -237,7 +243,7 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
                     return _stream_with_initial_chunk(generator, first_chunk), provider_name
                 continue
             
-            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
+            res = await asyncio.to_thread(provider.call, prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type)
             if res:
                 return res, provider_name
         except Exception as e:
@@ -253,7 +259,7 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
     for provider_name in route:
         provider = PROVIDERS[provider_name]
         try:
-            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic)
+            res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type)
             if res:
                 return res, provider_name
         except Exception as e:
