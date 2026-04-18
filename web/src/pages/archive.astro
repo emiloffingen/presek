@@ -414,6 +414,13 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         width: 100%;
     }
 
+    .archive-feed-col :global(.archive-feed-container),
+    .archive-feed-col :global(.archive-clusters),
+    .archive-feed-col :global(.archive-cluster-row) {
+        width: 100%;
+        min-width: 0;
+    }
+
     @media (min-width: 960px) {
         .archive-content-grid:not(.is-filtered) {
             grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
@@ -430,6 +437,48 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     @media (min-width: 1280px) {
         .archive-content-grid:not(.is-filtered) {
             gap: 4.5rem;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .archive-feed-col :global(.nyt-article:not(.lead-story)) {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 22rem);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .archive-feed-col :global(.nyt-article:not(.lead-story) .article-body) {
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .archive-feed-col :global(.nyt-article:not(.lead-story) .image-wrap) {
+            grid-column: 2;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+        }
+
+        .archive-feed-col :global(.nyt-article:not(.lead-story) .card-content-stack) {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            align-items: stretch;
+        }
+
+        .archive-feed-col :global(.nyt-article:not(.lead-story) .why-it-matters) {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .archive-feed-col :global(.nyt-article.variant-featured:not(.lead-story)) {
+            grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 24rem);
+            padding: 1rem;
+        }
+
+        .archive-feed-col :global(.nyt-article.variant-compact:not(.lead-story)) {
+            grid-template-columns: minmax(0, 1.4fr) minmax(9rem, 12rem);
+            gap: 1rem;
         }
     }
 

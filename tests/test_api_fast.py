@@ -167,3 +167,39 @@ def test_fastapi_serves_og_cluster_image(mock_all):
     with patch("PIL.Image.new"), patch("PIL.ImageDraw.Draw"), patch("PIL.ImageFont.truetype"):
         resp = asyncio.run(api_fast.og_cluster_image("abc123"))
     assert resp.media_type == "image/png"
+
+def test_stats_summary_includes_intelligence_payload(mock_all):
+    import routes.stats
+
+    def execute_one_side_effect(query, *args, **kwargs):
+        if "COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'" in query:
+            return {"count": 120}
+        if "COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'" in query:
+            return {"count": 12}
+        if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
+            return {"count": 40}
+        if "FROM cluster_summaries s WHERE s.quote IS NOT NULL" in query:
+            return {"quote": "Q", "cluster_id": "abc123", "title": "T"}
+        if "SELECT COUNT(*) FROM articles WHERE is_global = TRUE" in query:
+            return {"count": 30}
+        if "SELECT COUNT(*) FROM articles" in query:
+            return {"count": 200}
+        if "FROM cluster_tiers" in query:
+            return {"total_clusters": 20, "high_consensus": 5, "diverse_sources": 8}
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].execute_one.side_effect = execute_one_side_effect
+
+    with patch("routes.stats.cached_response", return_value=None), \
+         patch("routes.stats.set_cache"), \
+         patch.object(routes.stats.redis_client, "hgetall", return_value={
+             "summary_path|mode=ai": "3",
+             "summary_path|mode=local": "1",
+         }):
+        data = asyncio.run(routes.stats.get_stats_summary())
+
+    assert data["last_24h"] == 120
+    assert data["quote_of_the_day"]["cluster_id"] == "abc123"
+    assert data["intelligence"]["international_share_pct"] == 15.0
+    assert data["intelligence"]["ai_transparency"]["ai_ratio"] == 75.0
+    assert data["intelligence"]["pluralism"]["high_consensus_pct"] == 25.0
