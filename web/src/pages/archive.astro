@@ -137,7 +137,10 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     </div>
 
     {/* ── Section 3: The Front Page Grid ──────────────────────── */}
-    <div class="archive-content-grid motion-rise motion-delay-2">
+    <div class:list={[
+        "archive-content-grid motion-rise motion-delay-2",
+        (source || topic) ? "is-filtered" : ""
+    ]}>
         
         {/* Main Feed Column */}
         <section class="archive-feed-col">
@@ -225,7 +228,8 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         </section>
 
         {/* Rail Column (Directories) */}
-        <aside class="archive-rail-col">
+        {!(source || topic) && (
+            <aside class="archive-rail-col">
             <div class="rail-module sticky top-24">
                 <div class="rail-section mb-10">
                     <h3 class="rail-title"><Hash size={14} /> Индекс на Теми</h3>
@@ -269,7 +273,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
                 </div>
             </div>
         </aside>
-
+        )}
     </div>
   </main>
 
@@ -391,14 +395,19 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     }
 
     @media (min-width: 960px) {
-        .archive-content-grid {
+        .archive-content-grid:not(.is-filtered) {
             grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.8fr);
             gap: 3rem;
+        }
+
+        .archive-content-grid.is-filtered {
+            max-width: 1000px;
+            margin: 0 auto;
         }
     }
 
     @media (min-width: 1280px) {
-        .archive-content-grid {
+        .archive-content-grid:not(.is-filtered) {
             gap: 4.5rem;
         }
     }
