@@ -21,6 +21,9 @@ class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder to handle datetime objects."""
     def default(self, obj):
         if isinstance(obj, (datetime.datetime, datetime.date)):
+            # Append Z to indicate UTC if it's naive, or use isoformat as-is if already aware
+            if isinstance(obj, datetime.datetime) and obj.tzinfo is None:
+                return obj.isoformat() + "Z"
             return obj.isoformat()
         return super().default(obj)
 

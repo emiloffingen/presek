@@ -19,7 +19,8 @@ const currentDate = new Intl.DateTimeFormat('mk-MK', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'Europe/Skopje'
 }).format(new Date());
 
 const API_URL = apiBaseUrl();
