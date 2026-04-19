@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert } from 'lucide-react';
+import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert, Info } from 'lucide-react';
 
 interface SourceRow {
   source: string;
@@ -55,11 +55,25 @@ function trendClass(label?: string) {
   return 'source-trend-flat';
 }
 
+function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' {
+  if (!lastFetched) return 'critical';
+  try {
+    const diffMs = Date.now() - new Date(lastFetched).getTime();
+    const diffMins = diffMs / (1000 * 60);
+    if (diffMins <= 60) return 'active';
+    if (diffMins <= 360) return 'stale';
+    return 'critical';
+  } catch {
+    return 'critical';
+  }
+}
+
 export const IzvoriPage: React.FC = () => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterTier, setFilterTier] = useState<string>('all');
 
   useEffect(() => {
     const load = async () => {
@@ -85,10 +99,21 @@ export const IzvoriPage: React.FC = () => {
   }, []);
 
   const filtered = useMemo(() => {
+    let results = sources;
+    
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return sources;
-    return sources.filter((source) => source.source?.toLowerCase().includes(q));
-  }, [sources, searchTerm]);
+    if (q) {
+      results = results.filter((source) => source.source?.toLowerCase().includes(q));
+    }
+    
+    if (filterTier === 'high') {
+      results = results.filter(s => s.trust_tier === 'Висока доверба');
+    } else if (filterTier === 'verified') {
+      results = results.filter(s => s.trust_tier === 'Потврден извор');
+    }
+    
+    return results;
+  }, [sources, searchTerm, filterTier]);
 
   const mkSources = filtered.filter((s) => s.country === 'MK' || !s.country);
   const intSources = filtered.filter((s) => s.country && s.country !== 'MK');
@@ -103,42 +128,59 @@ export const IzvoriPage: React.FC = () => {
     .sort((a, b) => b.lone_lead_rate - a.lone_lead_rate)
     .slice(0, 5);
 
-  const renderSourceCard = (source: SourceRow) => (
-    <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card">
-      <div className="source-reputation-top">
-        <div>
-          <h3 className="source-reputation-name">{source.source}</h3>
-          <div className="flex flex-wrap gap-1 mt-1">
-              <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-bold uppercase">{source.country || 'MK'}</span>
-              {source.top_categories?.map(cat => (
-                  <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-bold uppercase opacity-70">{cat}</span>
-              ))}
+  const renderSourceCard = (source: SourceRow) => {
+    const health = getHealthStatus(source.last_fetched);
+    
+    return (
+      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card">
+        <div className="source-reputation-top">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                health === 'active' ? 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 
+                health === 'stale' ? 'bg-amber-400' : 'bg-red-500'
+              }`} title={
+                health === 'active' ? 'Активен (ажуриран неодамна)' : 
+                health === 'stale' ? 'Во мирување (нема сигнал >1ч)' : 'Неактивен (нема сигнал >6ч)'
+              }></div>
+              <h3 className="source-reputation-name">{source.source}</h3>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1">
+                <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-bold uppercase">{source.country || 'MK'}</span>
+                {source.top_categories?.map(cat => (
+                    <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-bold uppercase opacity-70">{cat}</span>
+                ))}
+            </div>
           </div>
+          <span className={`source-tier ${tierClass(source.trust_tier)}`}>{source.trust_tier}</span>
         </div>
-        <span className={`source-tier ${tierClass(source.trust_tier)}`}>{source.trust_tier}</span>
-      </div>
 
-      <p className="source-reputation-copy">{source.tendency}</p>
-      
-      {/* Reliability Mini-Chart */}
-      <div className="mt-4 mb-2">
-          <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter mb-1 opacity-60">
-              <span>Сигурност на водство</span>
-              <span>{formatPercent(source.corroboration_rate)}</span>
-          </div>
-          <div className="flex h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500" 
-                title="Води и е потврден"
-                style={{ width: `${(source.corroboration_rate || 0) * 100}%` }} 
-              />
-              <div 
-                className="h-full bg-orange-400" 
-                title="Води сам"
-                style={{ width: `${(source.lone_lead_rate || 0) * 100}%` }} 
-              />
-          </div>
-      </div>
+        <p className="source-reputation-copy">{source.tendency}</p>
+        
+        {/* Reliability Mini-Chart */}
+        <div className="mt-4 mb-2">
+            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-tighter mb-1 opacity-60">
+                <div className="flex items-center gap-1">
+                  <span>Сигурност на водство</span>
+                  <span title="Зелено: Прв на вест и потврден од други. Портокалово: Прв на вест но останал единствен.">
+                    <Info size={10} className="cursor-help" />
+                  </span>
+                </div>
+                <span>{formatPercent(source.corroboration_rate)}</span>
+            </div>
+            <div className="flex h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500" 
+                  title="Води и е потврден"
+                  style={{ width: `${(source.corroboration_rate || 0) * 100}%` }} 
+                />
+                <div 
+                  className="h-full bg-orange-400" 
+                  title="Води сам"
+                  style={{ width: `${(source.lone_lead_rate || 0) * 100}%` }} 
+                />
+            </div>
+        </div>
 
       <p className={`source-trend-note ${trendClass(source.trend_label)}`}>
         <span>{source.trend_label}</span>
@@ -166,6 +208,7 @@ export const IzvoriPage: React.FC = () => {
       </div>
     </a>
   );
+};
 
   return (
     <div className="sources-container">
@@ -176,15 +219,38 @@ export const IzvoriPage: React.FC = () => {
           <p className="sources-intro">
             Преглед на изворите што Пресек ги следи, со ниво на доверба, дневен ритам, сигнал за брзина и присуство во покривањето.
           </p>
-          <div className="max-w-md mt-6 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Пребарај извори..."
-              className="w-full bg-secondary border border-border pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-nyt-accent transition-colors rounded-full"
-            />
+          <div className="max-w-xl mt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Пребарај извори..."
+                className="w-full bg-secondary border border-border pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-nyt-accent transition-colors rounded-full"
+              />
+            </div>
+            
+            {/* Quick Filters */}
+            <div className="flex flex-wrap gap-2 mt-4">
+               {[
+                 { id: 'all', label: 'Сите' },
+                 { id: 'high', label: 'Висока доверба' },
+                 { id: 'verified', label: 'Потврдени' }
+               ].map(btn => (
+                 <button
+                   key={btn.id}
+                   onClick={() => setFilterTier(btn.id)}
+                   className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
+                     filterTier === btn.id 
+                       ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm' 
+                       : 'bg-card text-muted-foreground border-border hover:border-nyt-accent hover:text-nyt-accent'
+                   }`}
+                 >
+                   {btn.label}
+                 </button>
+               ))}
+            </div>
           </div>
         </header>
 
