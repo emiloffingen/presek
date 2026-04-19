@@ -615,7 +615,7 @@ async def ingest_all_sources_async():
                 from tasks import translate_article_task, summarize_article_task, crawl_article_task, standardize_article_style_task, detect_global_story_task
 
                 inserted_data = db.execute(
-                    "SELECT id, title, description, link, country, credibility, source, cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
+                    "SELECT a.id, a.title, a.description, a.link, a.country, s.credibility, a.source, a.cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
                     (inserted_ids,)
                 )
                 for art in inserted_data:
