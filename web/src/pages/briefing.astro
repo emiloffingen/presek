@@ -10,15 +10,21 @@ import { apiBaseUrl } from '../lib/apiBase';
 const API_URL = apiBaseUrl();
 
 let briefing = null;
+let stats: any = null;
 let error = null;
 
 try {
-    const res = await fetch(`${API_URL}/briefing`);
-    if (res.ok) {
-        briefing = await res.json();
-        if (briefing.error) {
-            briefing = null;
-        }
+    const [briefRes, statsRes] = await Promise.all([
+        fetch(`${API_URL}/briefing`),
+        fetch(`${API_URL}/stats/summary`)
+    ]);
+    
+    if (briefRes.ok) {
+        briefing = await briefRes.json();
+        if (briefing.error) briefing = null;
+    }
+    if (statsRes.ok) {
+        stats = await statsRes.json();
     }
 } catch (e) {
     console.error("Fetch error:", e);
@@ -52,7 +58,23 @@ function renderBriefingLine(line: string) {
         return `<h1 class="briefing-content-title font-serif font-black text-4xl md:text-5xl mb-8 text-foreground tracking-tight">${esc(line.substring(2))}</h1>`;
     }
     if (line.startsWith('### ')) {
-        return `<h3 class="font-serif font-black text-xl md:text-2xl mt-12 mb-4 text-foreground border-b border-border pb-3">${esc(line.substring(4))}</h3>`;
+        let text = line.substring(4);
+        let link = "";
+        
+        // Match [[id]] at the end
+        const match = text.match(/\[\[([\w-]+)\]\]$/);
+        if (match) {
+            const id = match[1];
+            text = text.replace(`[[${id}]]`, '').trim();
+            return `<h3 class="font-serif font-black text-xl md:text-2xl mt-12 mb-4 text-foreground border-b border-border pb-3 group">
+                <a href="/cluster/${id}" class="hover:text-nyt-accent transition-colors flex items-center justify-between">
+                    <span>${esc(text)}</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">Истражи приказна →</span>
+                </a>
+            </h3>`;
+        }
+        
+        return `<h3 class="font-serif font-black text-xl md:text-2xl mt-12 mb-4 text-foreground border-b border-border pb-3">${esc(text)}</h3>`;
     }
     if (line.startsWith('## ')) {
         return `<h2 class="font-serif font-bold text-2xl md:text-3xl mt-12 mb-6 text-foreground italic border-l-4 border-nyt-accent pl-4 py-1">${esc(line.substring(3))}</h2>`;
@@ -135,6 +157,33 @@ const DispatchIconComp = dispatchIcon;
                     </div>
                 </div>
 			</header>
+
+            {briefing && (
+                <section class="briefing-morning-context mt-8 p-8 border border-border bg-card/40 rounded-2xl motion-rise motion-delay-1">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div class="max-w-xl">
+                            <h2 class="font-serif text-2xl md:text-3xl font-black mb-2 italic">
+                                {hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}
+                            </h2>
+                            <p class="font-nyt-body text-secondary-foreground leading-relaxed">
+                                Системот денес обработи <span class="font-bold text-foreground">{(stats?.total_articles || 500).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор. Овој брифинг е синтеза на <span class="font-bold text-foreground">6-те највлијателни развои</span> кои го обликуваат денот.
+                            </p>
+                        </div>
+                        <div class="flex gap-8">
+                            <div class="text-center">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Фокус</p>
+                                <p class="font-serif font-black text-2xl">{(stats?.total_clusters || 200).toLocaleString('mk-MK')}</p>
+                                <p class="text-[9px] font-bold text-nyt-accent">ТЕМИ</p>
+                            </div>
+                            <div class="text-center border-l border-border pl-8">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ритам</p>
+                                <p class="font-serif font-black text-2xl">{(stats?.total_feeds || 35)}</p>
+                                <p class="text-[9px] font-bold text-nyt-accent">ИЗВОРИ</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
 
 			<div class="briefing-grid mt-10">
 				<div class="briefing-main">

@@ -233,6 +233,7 @@ def _build_daily_brief_context(clusters):
         blocks.append(
             "\n".join([
                 f"### Кластер {index}",
+                f"ID: {cluster.get('cluster_id') or ''}",
                 f"Наслов: {cluster.get('title') or ''}",
                 f"Категорија: {cluster.get('category') or cluster.get('topic') or 'Вести'}",
                 f"Водечки извор: {cluster.get('source') or 'Извор'}",
