@@ -347,8 +347,8 @@ def build_cluster_source_signals(arts):
     return signals
 
 
-def annotate_cluster_articles(arts):
-    ranked = rank_articles_in_cluster(arts)
+def annotate_cluster_articles(arts, prefer_recent=False):
+    ranked = rank_articles_in_cluster(arts, prefer_recent=prefer_recent)
     signals = build_cluster_source_signals(ranked)
     
     # Media Pluralism Logic
@@ -820,9 +820,24 @@ def _coerce_datetime(value):
     if not value:
         return None
     try:
-        return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00").replace("+00:00", ""))
+        # Standardize and parse
+        s = str(value).replace(" ", "T").replace("Z", "")
+        # Cut at + or last - if it looks like a timezone offset
+        if "+" in s: s = s.split("+")[0]
+        # Only split on - if it's in the time part (after T)
+        time_part = s.split("T")[1] if "T" in s else ""
+        if "-" in time_part: s = s[:s.rfind("-")]
+        
+        return datetime.datetime.fromisoformat(s)
     except Exception:
-        return None
+        try:
+            # Last resort: just the date-time part
+            import re
+            m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
+            if m: return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
+            return None
+        except:
+            return None
 
 
 def _number_tokens(text: str) -> set[str]:
@@ -960,7 +975,7 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
     }
 
 
-def rank_articles_in_cluster(arts):
+def rank_articles_in_cluster(arts, prefer_recent=False):
     """Within a cluster, put the most credible source first and mark near-duplicates."""
     if not arts: return []
     
@@ -969,6 +984,13 @@ def rank_articles_in_cluster(arts):
         source_weight = get_source_effective_weight(article["source"])
         description_text = str(article.get("description") or "").strip()
         description_bonus = 0.12 if description_text else 0.0
+        
+        # If we prefer recent (Live mode), the lead SHOULD be the latest development
+        if prefer_recent:
+            created_at = _coerce_datetime(article.get("created_at")) or datetime.datetime.min
+            # Use timestamp directly as the base, weight as a tiny tie-breaker
+            return created_at.timestamp() + (source_weight * 0.001)
+            
         return source_weight + description_bonus
 
     sorted_arts = sorted(arts, key=initial_weight, reverse=True)
@@ -998,6 +1020,11 @@ def rank_articles_in_cluster(arts):
         redundancy_penalty = -5.0 if article.get("is_redundant") else 0.0
         source_weight = get_source_effective_weight(article["source"])
         created_at = _coerce_datetime(article.get("created_at")) or datetime.datetime.min
+        
+        if prefer_recent:
+            # recency first, then weight
+            return (redundancy_penalty, created_at, source_weight)
+            
         return (redundancy_penalty + source_weight, created_at)
 
     return sorted(ranked, key=final_sort_key, reverse=True)
