@@ -67,6 +67,16 @@ def is_junk(title: str, desc: str) -> bool:
         "дневно мени", "рецепт на денот", "курсна листа", "лото резултати"
     ]):
         return True
+
+    # 4. ML-based Quality Classifier (Local)
+    try:
+        from local_nlp import classify_news_quality_locally
+        quality = classify_news_quality_locally(title, desc)
+        if quality["score"] < 0.3:
+            log.info(f"[ingestion] Rejecting low-quality content: {title[:50]}... (Score: {quality['score']}, Reason: {quality['reason']})")
+            return True
+    except Exception as e:
+        log.warning(f"[ingestion] Quality classifier failed: {e}")
         
     return False
 

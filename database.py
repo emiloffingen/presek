@@ -170,21 +170,32 @@ class DatabaseManager:
                 FROM articles
                 WHERE search_vector @@ plainto_tsquery('simple', %s)
                 ORDER BY rank DESC
-                LIMIT 100
+                LIMIT 200
             ),
             semantic_results AS (
                 SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
                 FROM articles
                 WHERE embedding IS NOT NULL
                 ORDER BY similarity DESC
-                LIMIT 100
+                LIMIT 200
+            ),
+            scored_articles AS (
+                SELECT a.*, 
+                       (COALESCE(f.rank, 0) * 0.4 + COALESCE(s.similarity, 0) * 0.6) AS base_score,
+                       GREATEST(0.5, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 2592000)) as recency_factor
+                FROM articles a
+                LEFT JOIN fts_results f ON a.id = f.id
+                LEFT JOIN semantic_results s ON a.id = s.id
+                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.4)
+            ),
+            ranked_clusters AS (
+                SELECT *,
+                       ROW_NUMBER() OVER (PARTITION BY cluster_id ORDER BY base_score DESC) as cluster_rank
+                FROM scored_articles
             )
-            SELECT a.*, 
-                   (COALESCE(f.rank, 0) * 0.4 + COALESCE(s.similarity, 0) * 0.6) AS hybrid_score
-            FROM articles a
-            LEFT JOIN fts_results f ON a.id = f.id
-            LEFT JOIN semantic_results s ON a.id = s.id
-            WHERE f.id IS NOT NULL OR s.id IS NOT NULL
+            SELECT *, (base_score * recency_factor) as hybrid_score
+            FROM ranked_clusters
+            WHERE cluster_rank = 1
             ORDER BY hybrid_score DESC
             LIMIT %s
         """

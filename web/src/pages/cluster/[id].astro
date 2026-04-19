@@ -8,6 +8,7 @@ import ReaderTracker from '../../components/ReaderTracker.tsx';
 import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
+import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -66,7 +67,7 @@ const sourcePreview = Array.from(new Set(cluster?.articles?.map(a => a.source) |
 const synthesisUpdatedAt = cluster?.synthesis_updated_at;
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false };
 
-const comparisonHighlights = [];
+const comparisonHighlights: { label: string; value: string }[] = [];
 const perspectives = cluster?.perspectives || [];
 const verificationReport = cluster?.verification_report || null;
 const generatedArticle = cluster?.generated_article || null;
@@ -87,7 +88,7 @@ const articleRows = (cluster?.articles || []).map(a => {
         ...a,
         exactTime: d.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
         relativeTime: getRelativeTimeStr(a.created_at),
-        relationship: a.relationship_to_lead || { tone: 'neutral', label: 'Поврзана вест' }
+        relationship: (a as any).relationship_to_lead || { tone: 'neutral', label: 'Поврзана вест' }
     };
 });
 
@@ -141,7 +142,7 @@ const sentimentData = cluster?.sentiment ? {
 	<NYTHeader topic={cluster?.topics?.[0]} />
 
 	<ReaderTracker 
-        clusterId={id} 
+        clusterId={id || ''} 
         title={displayHeadline}
         category={cluster?.articles?.[0]?.category}
         topic={cluster?.topics?.[0]}
@@ -275,7 +276,7 @@ const sentimentData = cluster?.sentiment ? {
 						)}
 
 						{cluster.articles && cluster.articles.length > 1 && (
-							<SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source }))} client:visible />
+							<SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source })) as any} client:visible />
 						)}
 
 						{/* Lead Article Section */}
@@ -442,7 +443,10 @@ const sentimentData = cluster?.sentiment ? {
 						</section>
 
 						{/* Deep Research */}
-						<ResearchIsland client:load clusterId={id} initialHeadline={displayHeadline} />
+						<ResearchIsland client:load clusterId={id || ''} initialHeadline={displayHeadline || ''} />
+
+						{/* Storyline History */}
+						<StorylineHistoryIsland client:load clusterId={id || ''} apiUrl={API_URL} />
 					</div>
 
 					<aside class="cluster-sidebar">

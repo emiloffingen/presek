@@ -24,7 +24,12 @@ const currentDate = new Intl.DateTimeFormat('mk-MK', {
 
 const API_URL = apiBaseUrl();
 
-let navigationData = { breaking: [], focus: [], sections: [] };
+interface NavItem {
+    label: string;
+    href: string;
+}
+
+let navigationData: { breaking: NavItem[]; focus: NavItem[]; sections: NavItem[] } = { breaking: [], focus: [], sections: [] };
 let stats = propStats;
 
 try {

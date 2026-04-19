@@ -134,24 +134,25 @@ async def get_cluster_storyline_history(cluster_id: str):
     vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
     
     # Search for similar clusters from the past 30 days
-    # We group by cluster_id and take the most representative article title
+    # We group by cluster_id and join with metadata for images
     related_clusters = db.execute("""
-        SELECT cluster_id, 
-               MAX(title) as title, 
-               MIN(created_at) as first_seen,
-               (1 - (MIN(embedding <=> %s::vector))) as similarity
-        FROM articles
-        WHERE embedding IS NOT NULL
-          AND cluster_id != %s
-          AND created_at >= NOW() - INTERVAL '30 days'
-        GROUP BY cluster_id
-        HAVING (1 - (MIN(embedding <=> %s::vector))) > 0.45
-        ORDER BY first_seen ASC
+        SELECT a.cluster_id,
+               MAX(a.title) as title,
+               MIN(a.created_at) as first_seen,
+               (1 - (MIN(a.embedding <=> %s::vector))) as similarity,
+               MAX(cm.representative_image) as image_url
+        FROM articles a
+        LEFT JOIN cluster_metadata cm ON a.cluster_id = cm.cluster_id
+        WHERE a.embedding IS NOT NULL
+          AND a.cluster_id != %s
+          AND a.created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY a.cluster_id
+        HAVING (1 - (MIN(a.embedding <=> %s::vector))) > 0.60
+        ORDER BY first_seen DESC
         LIMIT 10
     """, (vec_str, cluster_id, vec_str))
-    
-    return {"history": related_clusters}
 
+    return {"history": related_clusters}
 @router.get("/intelligence/cluster/{cluster_id}/research")
 async def get_deep_research(cluster_id: str):
     """

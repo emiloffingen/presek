@@ -22,6 +22,7 @@ export interface Article {
   is_fact_check?: boolean;
   image_caption?: string;
   is_global?: boolean;
+  is_redundant?: boolean;
   coverage_balance?: {
     score: number;
     label: string | null;
@@ -48,6 +49,7 @@ export interface NewsCluster {
   homepage_score?: number;
   created_at?: string;
   tags?: string[];
+  topics?: string[];
 }
 
 export interface ClusterDetail extends NewsCluster {

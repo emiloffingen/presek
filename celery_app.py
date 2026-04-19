@@ -89,5 +89,9 @@ celery_app.conf.update(
             'task': 'tasks.intelligence.discover_storylines_task',
             'schedule': crontab(minute='15', hour='*/2'), # Every 2 hours
         },
+        'validate-cluster-images': {
+            'task': 'tasks.maintenance.validate_cluster_images_task',
+            'schedule': 3600.0, # Every hour
+        },
     }
 )
