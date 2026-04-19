@@ -196,8 +196,26 @@ def _build_intelligence_summary_payload(last_24h: int) -> dict:
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
-    ai_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("synthesis_path|mode=") and "local" not in k)
-    local_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("synthesis_path|mode=") and "local" in k)
+    
+    # Robustly count summaries (AI vs Local)
+    # Keys look like: synthesis_path|mode=mistral or synthesis_path|mode=local_fallback
+    ai_summaries = 0
+    local_summaries = 0
+    
+    for k, v in ai_events.items():
+        if k.startswith("synthesis_path"):
+            val = int(v)
+            if "mode=local" in k:
+                local_summaries += val
+            else:
+                ai_summaries += val
+        elif k.startswith("summary_path"):
+            # Also count individual article summaries if available
+            val = int(v)
+            if "mode=local" in k:
+                local_summaries += val
+            else:
+                ai_summaries += val
 
     balance_stats = db.execute_one("""
         WITH cluster_tiers AS (
