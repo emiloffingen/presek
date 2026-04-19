@@ -1,0 +1,45 @@
+---
+/**
+ * AdUnit.astro
+ * Standardized AdSense container with editorial labeling.
+ * Respects 'PUBLIC_ADSENSE_CLIENT' environment variable.
+ */
+interface Props {
+	slot?: string;
+	format?: "auto" | "fluid" | "rectangle";
+	className?: string;
+}
+
+const { 
+    slot = "default", 
+    format = "auto", 
+    className = "" 
+} = Astro.props;
+
+const adSenseClient = String(import.meta.env.PUBLIC_ADSENSE_CLIENT || '').trim();
+const isProduction = /^ca-pub-\d{10,}$/.test(adSenseClient) && adSenseClient !== 'ca-pub-0000000000000000';
+---
+
+{isProduction && (
+    <div class={`ad-container my-12 overflow-hidden flex flex-col items-center ${className}`}>
+        <span class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-3">ОГЛАС</span>
+        <div class="w-full bg-muted/5 border border-border/40 rounded-lg min-h-[90px] flex items-center justify-center">
+            <ins class="adsbygoogle"
+                style={{ display: 'block', width: '100%' }}
+                data-ad-client={adSenseClient}
+                data-ad-slot={slot}
+                data-ad-format={format}
+                data-full-width-responsive="true"></ins>
+            <script is:inline>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </div>
+)}
+
+{!isProduction && (
+    <div class={`ad-placeholder my-12 border-2 border-dashed border-border/20 rounded-xl p-8 flex flex-col items-center justify-center bg-muted/5 ${className}`}>
+         <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 mb-2">Простор за оглас</span>
+         <p class="text-[11px] text-muted-foreground/40 italic">Конфигурирајте AdSense во .env за активација</p>
+    </div>
+)}

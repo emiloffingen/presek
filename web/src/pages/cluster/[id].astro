@@ -11,6 +11,7 @@ import ResearchIsland from '../../components/ResearchIsland.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
+import AdUnit from '../../components/AdUnit.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 
@@ -484,6 +485,8 @@ const sentimentData = cluster?.sentiment ? {
 									</div>
 								</section>
 							)}
+
+							<AdUnit slot="cluster_sidebar" />
 
 							<ClusterFollowSuggestionsIsland 
 								topic={cluster.topics?.[0] || ''} 

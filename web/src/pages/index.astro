@@ -11,6 +11,7 @@ import HomeLiveUpdatesIsland from '../components/HomeLiveUpdatesIsland.tsx';
 import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
+import AdUnit from '../components/AdUnit.astro';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -270,6 +271,8 @@ function getTimeStr(dateStr: string) {
 						supportingCompact={supportingCompact}
 					/>
 				)}
+
+				<AdUnit slot="home_top" />
 
 				{clusters.length > 6 && (
 					<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} />
