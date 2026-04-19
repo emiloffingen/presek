@@ -194,14 +194,24 @@ const DispatchIconComp = dispatchIcon;
 						<article class="briefing-view prose-nyt max-w-none">
 							<div class="briefing-body border-t-2 border-foreground pt-12" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
                             
-                            <div class="mt-16 p-8 border-t border-border bg-secondary/20 rounded-b-xl flex flex-col md:flex-row items-center justify-between gap-6">
-                                <div>
-                                    <h4 class="font-serif font-bold text-xl mb-1">Ви се допадна денешниот брифинг?</h4>
-                                    <p class="text-sm text-secondary-foreground">Вашата поддршка ни помага овој сервис да остане бесплатен и независен.</p>
+                            <div class="mt-16 p-1 bg-gradient-to-br from-[#ff5e5b] to-[#ff8a71] rounded-3xl shadow-lg">
+                                <div class="bg-card rounded-[calc(1.5rem-1px)] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                                    <div class="text-center md:text-left">
+                                        <h4 class="font-serif font-bold text-2xl mb-2">Ви се допадна денешниот брифинг?</h4>
+                                        <p class="text-sm text-secondary-foreground leading-relaxed max-w-md">
+                                            Вашата поддршка ни помага овој сервис да остане бесплатен, независен и достапен за сите.
+                                        </p>
+                                    </div>
+                                    <a 
+                                        href="https://ko-fi.com/presek" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        class="group flex items-center gap-3 px-8 py-4 bg-[#ff5e5b] text-white font-black text-xs uppercase tracking-widest rounded-full hover:bg-[#e54b48] hover:scale-105 transition-all shadow-md"
+                                    >
+                                        <img src="https://ko-fi.com/img/cup-border.png" alt="Ko-fi" class="h-5 w-auto brightness-0 invert transition-transform group-hover:rotate-12" />
+                                        <span>Поддржи на Ko-fi</span>
+                                    </a>
                                 </div>
-                                <a href="https://ko-fi.com/presek" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-[#ff5e5b] text-white font-black text-xs uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-sm">
-                                    <Coffee size={16} /> Поддржи на Ko-fi
-                                </a>
                             </div>
 						</article>
 					) : (

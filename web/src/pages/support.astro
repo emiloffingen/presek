@@ -25,7 +25,7 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
                 </p>
             </header>
 
-            <div class="prose-nyt mb-16">
+            <div class="prose-nyt mb-12">
                 <p class="text-lg leading-relaxed">
                     Пресек работи без претплати и без агресивни реклами. За да платформата остане бесплатна, брза и постојано достапна, се потпираме на заедницата која ја користи.
                 </p>
@@ -33,40 +33,68 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
                     Вашата донација директно помага во:
                 </p>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-10 not-prose">
-                    <div class="p-6 border border-border bg-card rounded-xl">
-                        <Cpu className="text-nyt-accent mb-3" size={24} />
-                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">AI Модели</h3>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">Обработка на илјадници објави дневно преку напредни јазични модели.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-10 not-prose">
+                    <div class="p-5 border border-border bg-card rounded-xl">
+                        <Cpu className="text-nyt-accent mb-2" size={20} />
+                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">AI Модели</h3>
+                        <p class="text-[12px] text-secondary-foreground leading-snug">Обработка на илјадници објави дневно.</p>
                     </div>
-                    <div class="p-6 border border-border bg-card rounded-xl">
-                        <Globe className="text-nyt-accent mb-3" size={24} />
-                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">Инфраструктура</h3>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">Одржување на сервери со високи перформанси за моментално вчитување.</p>
+                    <div class="p-5 border border-border bg-card rounded-xl">
+                        <Globe className="text-nyt-accent mb-2" size={20} />
+                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">Инфраструктура</h3>
+                        <p class="text-[12px] text-secondary-foreground leading-snug">Брзи сервери за моментално вчитување.</p>
                     </div>
-                    <div class="p-6 border border-border bg-card rounded-xl">
-                        <ShieldCheck className="text-nyt-accent mb-3" size={24} />
-                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">Независност</h3>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">Остануваме отпорни на комерцијални притисоци и влијанија врз уредничката политика.</p>
-                    </div>
-                    <div class="p-6 border border-border bg-card rounded-xl text-center flex flex-col items-center justify-center bg-nyt-accent/5 border-nyt-accent/20">
-                        <Coffee className="text-nyt-accent mb-3" size={28} />
-                        <a href="https://ko-fi.com/presek" target="_blank" class="font-black text-sm uppercase tracking-[0.2em] text-nyt-accent hover:underline">Поддржи на Ko-fi →</a>
+                    <div class="p-5 border border-border bg-card rounded-xl">
+                        <ShieldCheck className="text-nyt-accent mb-2" size={20} />
+                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">Независност</h3>
+                        <p class="text-[12px] text-secondary-foreground leading-snug">Отпорност на надворешни притисоци.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="p-10 border-2 border-nyt-accent bg-card rounded-2xl text-center shadow-xl">
-                <h2 class="font-serif text-3xl font-black mb-6">Стани поддржувач</h2>
-                <p class="mb-10 text-secondary-foreground">Секој придонес е значаен за опстанокот на овој дигитален јавен сервис.</p>
-                
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <a href="https://ko-fi.com/presek" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-[#ff5e5b] text-white font-black text-sm uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-md">
-                        <Coffee size={20} /> Поддржи го тимот на Ko-fi
-                    </a>
+            <div class="relative overflow-hidden p-1 bg-gradient-to-br from-[#ff5e5b] to-[#ff8a71] rounded-3xl shadow-2xl transition-transform hover:scale-[1.01]">
+                <div class="bg-card rounded-[calc(1.5rem-1px)] p-8 md:p-12 text-center relative z-10">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-[#ff5e5b]/10 rounded-2xl mb-6">
+                        <Coffee className="text-[#ff5e5b]" size={32} />
+                    </div>
+                    
+                    <h2 class="font-serif text-3xl md:text-4xl font-black mb-4">Стани поддржувач на Пресек</h2>
+                    <p class="max-w-md mx-auto mb-10 text-secondary-foreground leading-relaxed">
+                        Секој придонес е значаен за опстанокот на овој дигитален јавен сервис. Поддржете нѐ со еднократно „кафе“ или месечна претплата.
+                    </p>
+                    
+                    <div class="flex flex-col items-center gap-6">
+                        <a 
+                            href="https://ko-fi.com/presek" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="group relative inline-flex items-center gap-3 px-10 py-5 bg-[#ff5e5b] text-white font-black text-sm uppercase tracking-widest rounded-full transition-all hover:bg-[#e54b48] hover:shadow-[0_0_30px_rgba(255,94,91,0.4)]"
+                        >
+                            <img src="https://ko-fi.com/img/cup-border.png" alt="Ko-fi" class="h-6 w-auto brightness-0 invert transition-transform group-hover:rotate-12" />
+                            <span>Чести кафе на Ko-fi</span>
+                        </a>
+                        
+                        <div class="flex items-center gap-8 py-4 px-8 border border-border/50 rounded-2xl bg-secondary/5">
+                            <div class="text-center">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Безбедно</p>
+                                <p class="text-[11px] font-bold">Stripe / PayPal</p>
+                            </div>
+                            <div class="w-px h-6 bg-border/50"></div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Директно</p>
+                                <p class="text-[11px] font-bold">100% за проектот</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="mt-8 text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] opacity-60">
+                        Официјална страница за поддршка • Ko-fi.com/presek
+                    </p>
                 </div>
                 
-                <p class="mt-8 text-[11px] text-muted-foreground uppercase font-bold tracking-widest">Безбедно плаќање преку Ko-fi</p>
+                {/* Decorative background elements */}
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#ff5e5b]/10 rounded-full blur-3xl pointer-events-none"></div>
             </div>
         </article>
     </main>
