@@ -78,9 +78,9 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Клучни податоци и размер.' },
-    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Актери, цитати и агли.' },
-    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Позадина и значење.' },
+    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Статистика, клучни податоци и размер на настанот.' },
+    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Клучни актери, цитати и спротивставени агли.' },
+    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Историска позадина и значење на развојот.' },
   ];
 
   return (
@@ -92,11 +92,11 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
           </p>
           <h2 className="font-serif text-2xl md:text-[2rem] font-black text-foreground mb-2">Подлабока анализа</h2>
           <p className="max-w-2xl font-nyt-body text-sm md:text-[15px] leading-relaxed text-secondary-foreground">
-            Отворете дополнителен слој само кога ви треба повеќе бројки, актери или позадина околу приказната.
+            Активирајте дополнителен аналитички слој само кога ви се потребни повеќе бројки, клучни актери или поширок контекст за приказната.
           </p>
         </div>
         <p className="max-w-sm font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-          Опционален аналитички слој
+          Интелигенција по барање
         </p>
       </div>
 
