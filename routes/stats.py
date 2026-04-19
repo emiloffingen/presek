@@ -66,10 +66,29 @@ async def get_briefing():
 
 @router.get("/archive/heatmap")
 async def get_archive_heatmap():
-    cache_key = "archive:heatmap:v1"
+    cache_key = "archive:heatmap:v2"
     cached = cached_response(cache_key, ttl=3600)
     if cached: return {"status": "success", "data": cached}
-    sql = "SELECT DATE(updated_at) as day, COUNT(DISTINCT cluster_id) as total_clusters, COUNT(DISTINCT cluster_id) FILTER (WHERE (SELECT count(*) FROM articles WHERE cluster_id = cluster_metadata.cluster_id) >= 5) as breaking_clusters FROM cluster_metadata WHERE updated_at >= NOW() - INTERVAL '90 days' GROUP BY day ORDER BY day ASC"
+    
+    # Use articles table as source of truth for historical presence
+    sql = """
+        WITH daily_stats AS (
+            SELECT 
+                DATE(created_at) as day,
+                cluster_id,
+                COUNT(*) as source_count
+            FROM articles
+            WHERE created_at >= NOW() - INTERVAL '90 days'
+            GROUP BY day, cluster_id
+        )
+        SELECT 
+            day,
+            COUNT(DISTINCT cluster_id) as total_clusters,
+            COUNT(DISTINCT cluster_id) FILTER (WHERE source_count >= 5) as breaking_clusters
+        FROM daily_stats
+        GROUP BY day
+        ORDER BY day ASC
+    """
     rows = db.execute(sql)
     fmt = [{"day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]), "total_clusters": r["total_clusters"], "breaking_clusters": r["breaking_clusters"]} for r in rows]
     set_cache(cache_key, fmt, ttl=3600)

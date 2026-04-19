@@ -13,30 +13,33 @@ export default function ArchiveHeatmapIsland() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[ArchiveHeatmap] Fetching data...');
     fetch(`${apiBaseUrl()}/archive/heatmap`)
       .then(res => res.json())
       .then(json => {
+        console.log('[ArchiveHeatmap] Data received:', json);
         if (json.status === 'success') {
           setData(json.data);
         }
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error('[ArchiveHeatmap] Fetch failed:', err);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-24">
-        <Loader2 className="animate-spin text-nyt-accent" />
+      <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg">
+        <Loader2 className="animate-spin text-nyt-accent mr-2" size={16} />
+        <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">Вчитување на машина на времето...</span>
       </div>
     );
   }
 
-  if (data.length === 0) return null;
-
   // Find max values for color scaling
-  const maxTotal = Math.max(...data.map(d => d.total_clusters), 1);
-  const maxBreaking = Math.max(...data.map(d => d.breaking_clusters), 1);
+  const maxTotal = data.length > 0 ? Math.max(...data.map(d => d.total_clusters), 1) : 1;
+  const maxBreaking = data.length > 0 ? Math.max(...data.map(d => d.breaking_clusters), 1) : 1;
 
   // Fill in missing days to make a complete 90-day grid
   const today = new Date();
@@ -50,16 +53,16 @@ export default function ArchiveHeatmapIsland() {
   }
 
   const getIntensityClass = (count: number, max: number, isBreaking: boolean) => {
-    if (count === 0) return 'bg-muted/30 border border-border/20';
+    if (count === 0) return 'bg-muted/20 border border-border/10';
     const ratio = count / max;
     if (isBreaking) {
-      if (ratio > 0.7) return 'bg-nyt-red text-white font-bold shadow-[0_0_10px_rgba(185,28,28,0.4)]';
-      if (ratio > 0.3) return 'bg-nyt-red/80 text-white font-bold';
-      return 'bg-nyt-red/50';
+      if (ratio > 0.6) return 'bg-nyt-red text-white shadow-[0_0_8px_rgba(185,28,28,0.3)]';
+      if (ratio > 0.2) return 'bg-nyt-red/70';
+      return 'bg-nyt-red/40';
     } else {
-      if (ratio > 0.7) return 'bg-nyt-accent text-white font-bold shadow-[0_0_10px_rgba(30,64,175,0.4)]';
-      if (ratio > 0.3) return 'bg-nyt-accent/80 text-white';
-      return 'bg-nyt-accent/50';
+      if (ratio > 0.6) return 'bg-nyt-accent text-white shadow-[0_0_8px_rgba(30,64,175,0.3)]';
+      if (ratio > 0.2) return 'bg-nyt-accent/70';
+      return 'bg-nyt-accent/40';
     }
   };
 
