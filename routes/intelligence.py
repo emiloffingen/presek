@@ -287,6 +287,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse():
+    from utils import get_source_trust_label, get_source_effective_weight
     sql = """
         WITH first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
@@ -309,7 +310,12 @@ async def get_source_pulse():
         GROUP BY a.source HAVING COUNT(DISTINCT a.cluster_id) >= 3
         ORDER BY cluster_count DESC
     """
-    return {"status": "success", "data": db.execute(sql)}
+    rows = db.execute(sql)
+    for r in rows:
+        r["trust_label"] = get_source_trust_label(r["source"])
+        r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
+        
+    return {"status": "success", "data": rows}
 
 @router.get("/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
