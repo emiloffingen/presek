@@ -41,10 +41,10 @@ export default function ArchiveHeatmapIsland() {
   const maxTotal = data.length > 0 ? Math.max(...data.map(d => d.total_clusters), 1) : 1;
   const maxBreaking = data.length > 0 ? Math.max(...data.map(d => d.breaking_clusters), 1) : 1;
 
-  // Fill in missing days to make a complete 60-day grid
+  // Fill in missing days to make a complete 180-day grid
   const today = new Date();
   const grid = [];
-  for (let i = 59; i >= 0; i--) {
+  for (let i = 179; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
@@ -78,7 +78,7 @@ export default function ArchiveHeatmapIsland() {
           <h2 className="font-serif text-xl font-black italic flex items-center gap-2">
             <CalendarRange size={18} className="text-nyt-accent" /> Машина на Времето
           </h2>
-          <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">Интензитет на вести: Последни 60 дена</p>
+          <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mt-1">Интензитет на вести: Последни 180 дена</p>
         </div>
         <div className="flex gap-4 text-xs font-bold font-sans">
           <div className="flex items-center gap-2"><span className="w-3 h-3 bg-nyt-accent/60 rounded-sm"></span> Волумен</div>
