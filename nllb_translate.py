@@ -91,7 +91,8 @@ def translate(text: str, src_lang: str, target_lang: str = "mk") -> str | None:
             **inputs,
             forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
             max_new_tokens=256,
-            num_beams=2,
+            num_beams=4,
+            repetition_penalty=1.1,
         )
         result = tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
         return result.strip() if result else None
@@ -140,7 +141,8 @@ def translate_batch(texts: list[str], src_langs: list[str], target_lang: str = "
                 **inputs,
                 forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
                 max_new_tokens=256,
-                num_beams=2,
+                num_beams=4,
+                repetition_penalty=1.1,
             )
             decoded = tokenizer.batch_decode(translated, skip_special_tokens=True)
             for (idx, _), text in zip(items, decoded):
