@@ -42,8 +42,8 @@ def _get_model():
             log.error("[embeddings] sentence-transformers is not installed. Run: pip install sentence-transformers")
             return None
         try:
-            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' (first run downloads ~120 MB)")
-            _model = SentenceTransformer(EMBEDDING_MODEL)
+            log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on CPU")
+            _model = SentenceTransformer(EMBEDDING_MODEL, device="cpu")
             log.info(f"[embeddings] Model loaded, dim={_model.get_sentence_embedding_dimension()}")
         except Exception as e:
             log.error(f"[embeddings] Failed to load model: {e}")

@@ -35,16 +35,19 @@ const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString(
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
-    day: 'numeric' 
+    day: 'numeric',
+    timeZone: 'Europe/Skopje'
 }) : new Date().toLocaleDateString('mk-MK', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
-    day: 'numeric' 
+    day: 'numeric',
+    timeZone: 'Europe/Skopje'
 });
 
 // Dynamic Title and Icon based on time
-const hour = new Date().getHours();
+const nowSkopje = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Skopje"}));
+const hour = nowSkopje.getHours();
 let dispatchIcon = Sun;
 if (hour >= 5 && hour < 12) dispatchIcon = Coffee;
 else if (hour >= 18 || hour < 5) dispatchIcon = Moon;
@@ -166,18 +169,18 @@ const DispatchIconComp = dispatchIcon;
                                 {hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}
                             </h2>
                             <p class="font-nyt-body text-secondary-foreground leading-relaxed">
-                                Системот денес обработи <span class="font-bold text-foreground">{(stats?.total_articles || 500).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор. Овој брифинг е синтеза на <span class="font-bold text-foreground">6-те највлијателни развои</span> кои го обликуваат денот.
+                                Системот денес обработи <span class="font-bold text-foreground">{(stats?.total_articles || 0).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор. Овој брифинг е синтеза на <span class="font-bold text-foreground">6-те највлијателни развои</span> кои го обликуваат денот.
                             </p>
                         </div>
                         <div class="flex gap-8">
                             <div class="text-center">
                                 <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Фокус</p>
-                                <p class="font-serif font-black text-2xl">{(stats?.total_clusters || 200).toLocaleString('mk-MK')}</p>
+                                <p class="font-serif font-black text-2xl">{(stats?.total_clusters || 0).toLocaleString('mk-MK')}</p>
                                 <p class="text-[9px] font-bold text-nyt-accent">ТЕМИ</p>
                             </div>
                             <div class="text-center border-l border-border pl-8">
                                 <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ритам</p>
-                                <p class="font-serif font-black text-2xl">{(stats?.total_feeds || 35)}</p>
+                                <p class="font-serif font-black text-2xl">{(stats?.total_feeds || 0)}</p>
                                 <p class="text-[9px] font-bold text-nyt-accent">ИЗВОРИ</p>
                             </div>
                         </div>

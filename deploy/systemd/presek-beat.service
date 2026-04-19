@@ -9,9 +9,9 @@ StartLimitBurst=3
 [Service]
 Type=simple
 User=emiloffingen
-Environment=PYTHONPATH=/home/emiloffingen/presek/current
-WorkingDirectory=/home/emiloffingen/presek/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current && set -a && source /home/emiloffingen/presek/shared/.env && set +a && exec /home/emiloffingen/presek/venv/bin/celery -A celery_app beat --loglevel=info --schedule /home/emiloffingen/presek/shared/celerybeat-schedule'
+Environment=PYTHONPATH=/home/emiloffingen/presek-runtime/current
+WorkingDirectory=/home/emiloffingen/presek-runtime/current
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app beat --loglevel=info --schedule /home/emiloffingen/presek-runtime/shared/celerybeat-schedule'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
@@ -25,7 +25,7 @@ ProtectHome=read-only
 NoNewPrivileges=yes
 PrivateTmp=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-ReadWritePaths=/home/emiloffingen/presek/shared
+ReadWritePaths=/home/emiloffingen/presek-runtime/shared
 
 [Install]
 WantedBy=presek.target

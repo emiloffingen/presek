@@ -9,9 +9,9 @@ StartLimitBurst=3
 [Service]
 Type=simple
 User=emiloffingen
-WorkingDirectory=/home/emiloffingen/presek/current
-ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek/current && test -f api_fast.py'
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current && set -a && source /home/emiloffingen/presek/shared/.env && set +a && exec /home/emiloffingen/presek/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 1'
+WorkingDirectory=/home/emiloffingen/presek-runtime/current
+ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && test -f api_fast.py'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 1'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
@@ -26,7 +26,7 @@ ProtectHome=read-only
 NoNewPrivileges=yes
 PrivateTmp=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-ReadWritePaths=/home/emiloffingen/presek/shared/logs /home/emiloffingen/presek/shared/static/generated /home/emiloffingen/presek/shared/static/uploads
+ReadWritePaths=/home/emiloffingen/presek-runtime/shared/logs /home/emiloffingen/presek-runtime/shared/static/generated /home/emiloffingen/presek-runtime/shared/static/uploads
 
 [Install]
 WantedBy=presek.target

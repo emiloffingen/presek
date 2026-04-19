@@ -9,11 +9,11 @@ StartLimitBurst=3
 [Service]
 Type=simple
 User=emiloffingen
-WorkingDirectory=/home/emiloffingen/presek/current/web
+WorkingDirectory=/home/emiloffingen/presek-runtime/current/web
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
-ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek/current && APP_ROOT=/home/emiloffingen/presek/current WEB_DIR=/home/emiloffingen/presek/current/web bash deploy/ensure_astro_build.sh'
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek/current/web && exec node ./dist/server/entry.mjs'
+ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && APP_ROOT=/home/emiloffingen/presek-runtime/current WEB_DIR=/home/emiloffingen/presek-runtime/current/web bash deploy/ensure_astro_build.sh'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current/web && exec node ./dist/server/entry.mjs'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
@@ -27,7 +27,7 @@ ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes
 PrivateTmp=yes
-ReadWritePaths=/home/emiloffingen/presek/shared/logs
+ReadWritePaths=/home/emiloffingen/presek-runtime/shared/logs
 
 [Install]
 WantedBy=presek.target
