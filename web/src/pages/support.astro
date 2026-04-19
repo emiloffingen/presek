@@ -1,0 +1,74 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
+---
+
+<Layout 
+    title="Поддржи го проектот" 
+    description="Пресек е независен сервис за вести. Помогнете ни да ги покриеме трошоците за AI и серверите."
+>
+    <NYTHeader />
+    <main class="site-layout py-[var(--page-py)]">
+        <Breadcrumbs items={[{ label: "Поддршка" }]} />
+        
+        <article class="max-w-3xl mx-auto py-12">
+            <header class="text-center mb-16">
+                <div class="inline-flex items-center justify-center p-4 bg-nyt-accent/10 rounded-full mb-6">
+                    <Heart className="text-nyt-accent animate-pulse" size={32} />
+                </div>
+                <h1 class="font-serif text-4xl md:text-5xl font-black mb-4">Поддржи го <span class="italic">Пресек</span></h1>
+                <p class="text-xl text-secondary-foreground font-nyt-body leading-relaxed">
+                    Ние сме независен проект посветен на чиста и објективна информираност преку технологија.
+                </p>
+            </header>
+
+            <div class="prose-nyt mb-16">
+                <p class="text-lg leading-relaxed">
+                    Пресек работи без претплати и без агресивни реклами. За да платформата остане бесплатна, брза и постојано достапна, се потпираме на заедницата која ја користи.
+                </p>
+                <p class="text-lg leading-relaxed">
+                    Вашата донација директно помага во:
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-10 not-prose">
+                    <div class="p-6 border border-border bg-card rounded-xl">
+                        <Cpu className="text-nyt-accent mb-3" size={24} />
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">AI Модели</h3>
+                        <p class="text-sm text-secondary-foreground leading-relaxed">Обработка на илјадници објави дневно преку напредни јазични модели.</p>
+                    </div>
+                    <div class="p-6 border border-border bg-card rounded-xl">
+                        <Globe className="text-nyt-accent mb-3" size={24} />
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">Инфраструктура</h3>
+                        <p class="text-sm text-secondary-foreground leading-relaxed">Одржување на сервери со високи перформанси за моментално вчитување.</p>
+                    </div>
+                    <div class="p-6 border border-border bg-card rounded-xl">
+                        <ShieldCheck className="text-nyt-accent mb-3" size={24} />
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-widest">Независност</h3>
+                        <p class="text-sm text-secondary-foreground leading-relaxed">Остануваме отпорни на комерцијални притисоци и влијанија врз уредничката политика.</p>
+                    </div>
+                    <div class="p-6 border border-border bg-card rounded-xl text-center flex flex-col items-center justify-center bg-nyt-accent/5 border-nyt-accent/20">
+                        <Coffee className="text-nyt-accent mb-3" size={28} />
+                        <a href="https://buymeacoffee.com/presek" target="_blank" class="font-black text-sm uppercase tracking-[0.2em] text-nyt-accent hover:underline">Чести кафе →</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-10 border-2 border-nyt-accent bg-card rounded-2xl text-center shadow-xl">
+                <h2 class="font-serif text-3xl font-black mb-6">Стани поддржувач</h2>
+                <p class="mb-10 text-secondary-foreground">Секој придонес е значаен за опстанокот на овој дигитален јавен сервис.</p>
+                
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="https://buymeacoffee.com/presek" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-[#FFDD00] text-black font-black text-sm uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-md">
+                        <Coffee size={20} /> Чести кафе на тимот
+                    </a>
+                </div>
+                
+                <p class="mt-8 text-[11px] text-muted-foreground uppercase font-bold tracking-widest">Безбедно плаќање преку BuyMeACoffee</p>
+            </div>
+        </article>
+    </main>
+    <Footer />
+</Layout>
