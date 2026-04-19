@@ -5,7 +5,11 @@ from typing import Optional, List
 from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
-from utils import delete_cache
+from utils import (
+    delete_cache, score_cluster, is_balanced, 
+    score_cluster_for_homepage, annotate_cluster_articles
+)
+from config import BREAKING_SCORE_THRESHOLD
 from api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from .common import _normalize_sync_list, _extract_sync_token, _normalize_suggestion_surface, _normalize_suggestion_kind, _normalize_suggestion_event_type
 from .security import validate_string_param
@@ -178,26 +182,31 @@ async def get_personalized_news_sync(request: Request):
     interest_vec = np.mean(vecs, axis=0).tolist()
     vec_str = "[" + ",".join(map(str, interest_vec)) + "]"
 
-    # 2. Semantic Search for similar news in last 48 hours
+    limit = payload.get("limit") or 6
+    try:
+        limit = min(max(int(limit), 1), 48)
+    except:
+        limit = 6
+
+    # 2. Semantic Search for similar news in last 72 hours (expanded window)
     # Exclude already seen clusters
     rows = await db.async_execute("""
         WITH pool AS (
             SELECT cluster_id, title, source, created_at, category, topic, is_global, is_fact_check,
                    (1 - (embedding <=> %s::vector)) as similarity
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '48 hours'
+            WHERE created_at >= NOW() - INTERVAL '72 hours'
               AND cluster_id != ALL(%s)
               AND embedding IS NOT NULL
         )
         SELECT DISTINCT ON (cluster_id) *
         FROM pool
-        WHERE similarity > 0.60
+        WHERE similarity > 0.55
         ORDER BY cluster_id, similarity DESC
-        LIMIT 20
+        LIMIT 100
     """, (vec_str, recent_ids))
 
     # 3. Group and annotate
-    from utils import annotate_cluster_articles
     from .news import _public_article_payload
     from collections import defaultdict
     
@@ -205,17 +214,44 @@ async def get_personalized_news_sync(request: Request):
     for r in rows:
         clusters[r['cluster_id']].append(r)
 
-    results = []
-    # Rank by similarity
-    sorted_clusters = sorted(clusters.values(), key=lambda arts: arts[0]['similarity'], reverse=True)
+    # 4. Fetch all articles for these clusters to build complete NewsClusters
+    cids = list(clusters.keys())
+    if not cids:
+        return {"status": "success", "results": []}
+
+    all_articles = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,))
+    meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))
+    synthesis_ids = set(await db.async_get_synthesis_ids(cids))
     
-    for arts in sorted_clusters[:6]: # Return top 6 clusters
+    meta_map = {r['cluster_id']: r for r in meta_rows}
+    cluster_articles = defaultdict(list)
+    for a in all_articles:
+        cluster_articles[a['cluster_id']].append(a)
+
+    results = []
+    # Rank by original similarity
+    sorted_cids = sorted(cids, key=lambda cid: clusters[cid][0]['similarity'], reverse=True)
+    
+    for cid in sorted_cids[:limit]:
+        arts = cluster_articles[cid]
+        if not arts: continue
+        
         main = arts[0]
         annotated = annotate_cluster_articles(arts)
+        meta = meta_map.get(cid) or {}
+        score = score_cluster(arts)
+        
         results.append({
-            "cluster_id": main["cluster_id"],
+            "cluster_id": cid,
             "articles": [_public_article_payload(a) for a in annotated],
-            "similarity": round(float(main['similarity']), 4),
+            "representative_image": meta.get("representative_image"),
+            "dominant_color": meta.get("dominant_color"),
+            "is_breaking": score >= BREAKING_SCORE_THRESHOLD,
+            "has_synthesis": cid in synthesis_ids,
+            "has_balanced": is_balanced(arts),
+            "score": round(score, 3),
+            "homepage_score": round(score_cluster_for_homepage(arts), 3),
+            "similarity": round(float(clusters[cid][0]['similarity']), 4),
             "reason": "Поврзано со вашите интереси"
         })
 

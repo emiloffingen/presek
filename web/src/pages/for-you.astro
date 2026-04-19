@@ -1,0 +1,34 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ForYouPageIsland from '../components/ForYouPageIsland.tsx';
+import { apiBaseUrl } from '../lib/apiBase';
+
+const API_URL = apiBaseUrl();
+
+// Fetch latest clusters to provide as potential local matches
+let initialClusters = [];
+try {
+    const res = await fetch(`${API_URL}/news?page_size=100`);
+    if (res.ok) {
+        const data = await res.json();
+        initialClusters = data.clusters || [];
+    }
+} catch (e) {
+    console.error("ForYou page fetch error:", e);
+}
+---
+
+<Layout 
+    title="За Вас" 
+    description="Вашиот личен преглед на вести, прилагоден според темите и изворите што ги следите."
+>
+    <NYTHeader />
+    <main class="site-layout py-[var(--page-py)]">
+        <Breadcrumbs items={[{ label: "За Вас" }]} />
+        <ForYouPageIsland client:load initialClusters={initialClusters} />
+    </main>
+    <Footer />
+</Layout>

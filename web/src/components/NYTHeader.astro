@@ -1,6 +1,7 @@
 ---
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
+import { Sparkles } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 
 interface Props {
@@ -100,6 +101,7 @@ const breakingItems = navigationData.breaking.slice(0, 4);
 
             <div class="topbar-right">
                 <div class="topbar-links hidden sm:flex">
+                    <a href="/for-you" data-astro-reload class="topbar-link flex items-center gap-1.5"><Sparkles size={11} className="text-nyt-accent" /> За Вас</a>
                     <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
                     <a href="/archive" data-astro-reload class="topbar-link">Архива</a>
                 </div>
