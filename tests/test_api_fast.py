@@ -138,6 +138,30 @@ def test_fastapi_profile_sync_init_creates_token(mock_all):
     assert data["token"] == "token123"
     mock_all["db"].execute.assert_called()
 
+def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
+    import routes.intelligence as intelligence
+
+    mock_all["db"].execute.return_value = [
+        {"name": "МИА", "total_mentions": 12},
+        {"name": "Ормуз", "total_mentions": 8},
+        {"name": "Теснец", "total_mentions": 7},
+        {"name": "Договор", "total_mentions": 6},
+        {"name": "Иран", "total_mentions": 10},
+        {"name": "Доналд Трамп", "total_mentions": 9},
+    ]
+
+    with patch("routes.intelligence.cached_response", return_value=None), \
+         patch("routes.intelligence.set_cache"):
+        data = asyncio.run(intelligence.get_top_entities(limit=10))
+
+    names = [item["name"] for item in data]
+    assert "МИА" not in names
+    assert "Договор" not in names
+    assert "Ормуз" not in names
+    assert "Теснец" not in names
+    assert "Ормуски Теснец" in names
+    assert "Иран" in names
+
 def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     import api_fast
     with patch("routes.system._probe_database", return_value={"ok": True, "article_count": 8}), \
@@ -168,6 +192,67 @@ def test_fastapi_serves_og_cluster_image(mock_all):
         resp = asyncio.run(api_fast.og_cluster_image("abc123"))
     assert resp.media_type == "image/png"
 
+def test_fastapi_og_cluster_image_blocks_unresolved_remote_backgrounds(mock_all):
+    import api_fast
+    mock_all["db"].execute.return_value = [{
+        "title": "T1",
+        "source": "S1",
+        "category": "C1",
+        "image_url": "http://169.254.169.254/latest/meta-data",
+        "local_image_path": None,
+    }]
+    mock_all["db"].execute_one.side_effect = [
+        {"representative_image": "http://169.254.169.254/latest/meta-data", "dominant_color": None},
+    ]
+
+    fake_image = MagicMock()
+    fake_client = MagicMock()
+
+    with patch("routes.system._resolve_public_ips", side_effect=ValueError("Blocked URL")), \
+         patch("httpx.Client", return_value=fake_client), \
+         patch("PIL.Image.new", return_value=fake_image), \
+         patch("PIL.ImageDraw.Draw"), \
+         patch("PIL.ImageFont.truetype"):
+        fake_image.save.side_effect = lambda output, format=None: output.write(b"png")
+        resp = asyncio.run(api_fast.og_cluster_image("abc123"))
+
+    fake_client.get.assert_not_called()
+    assert resp.media_type == "image/png"
+
+def test_fastapi_historical_events_formats_pgvector_parameter(mock_all):
+    import routes.news
+
+    async def async_execute_side_effect(query, params=None, fetch=True):
+        if "SELECT embedding FROM articles" in query:
+            return [{"embedding": "[0.1,0.2,0.3]"}]
+        if "WITH archive_pool AS" in query:
+            assert isinstance(params[0], str)
+            assert params[0].startswith("[") and params[0].endswith("]")
+            return []
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = async_execute_side_effect
+
+    with patch("routes.news.cached_response", return_value=None), \
+         patch("routes.news.set_cache"):
+        data = asyncio.run(routes.news.get_historical_events("abc123"))
+
+    assert data == {"status": "success", "events": []}
+
+def test_request_size_middleware_rejects_large_content_length():
+    from routes.security import RequestSizeMiddleware, MAX_REQUEST_BODY_SIZE
+
+    request = types.SimpleNamespace(
+        headers={"content-length": str(MAX_REQUEST_BODY_SIZE + 1)},
+        query_params={},
+    )
+    middleware = RequestSizeMiddleware(app=MagicMock())
+
+    with pytest.raises(_FakeHTTPException) as exc:
+        asyncio.run(middleware.dispatch(request, AsyncMock()))
+
+    assert exc.value.status_code == 413
+
 def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 
@@ -178,8 +263,8 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
             return {"count": 12}
         if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
             return {"count": 40}
-        if "FROM cluster_summaries s WHERE s.quote IS NOT NULL" in query:
-            return {"quote": "Q", "cluster_id": "abc123", "title": "T"}
+        if "FROM cluster_summaries s" in query:
+            return {"quote": "", "summary": "• Q\n• R", "generated_article": "", "cluster_id": "abc123", "title": "T"}
         if "SELECT COUNT(*) FROM articles WHERE is_global = TRUE" in query:
             return {"count": 30}
         if "SELECT COUNT(*) FROM articles" in query:
@@ -193,13 +278,15 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     with patch("routes.stats.cached_response", return_value=None), \
          patch("routes.stats.set_cache"), \
          patch.object(routes.stats.redis_client, "hgetall", return_value={
-             "summary_path|mode=ai": "3",
-             "summary_path|mode=local": "1",
+             "synthesis_path|mode=ai": "3",
+             "synthesis_path|mode=local_fallback": "1",
          }):
         data = asyncio.run(routes.stats.get_stats_summary())
 
     assert data["last_24h"] == 120
     assert data["quote_of_the_day"]["cluster_id"] == "abc123"
+    assert data["quote_of_the_day"]["quote"] == "Q"
     assert data["intelligence"]["international_share_pct"] == 15.0
     assert data["intelligence"]["ai_transparency"]["ai_ratio"] == 75.0
+    assert data["intelligence"]["pluralism"]["pluralism_pct"] == 65.0
     assert data["intelligence"]["pluralism"]["high_consensus_pct"] == 25.0

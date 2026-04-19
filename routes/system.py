@@ -4,7 +4,6 @@ import json
 import logging
 import datetime
 import time
-import requests
 import urllib.parse
 from io import BytesIO
 from typing import Optional, List
@@ -178,8 +177,13 @@ async def get_cluster_share_card(cluster_id: str):
                 if local_path.exists(): bg_img = Image.open(local_path)
             
             if not bg_img and bg_url and bg_url.startswith("http"):
-                resp = requests.get(bg_url, timeout=3, stream=True)
-                if resp.status_code == 200: bg_img = Image.open(BytesIO(resp.content))
+                safe_ips = _resolve_public_ips(bg_url)
+                import httpx
+                with httpx.Client(timeout=3.0, follow_redirects=True) as client:
+                    resp = client.get(bg_url)
+                p_ip = _peer_ip(resp)
+                if p_ip and p_ip in safe_ips and resp.status_code == 200:
+                    bg_img = Image.open(BytesIO(resp.content))
         except: pass
 
         if bg_img:

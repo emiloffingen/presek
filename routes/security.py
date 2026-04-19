@@ -195,6 +195,18 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
     """Middleware to limit request sizes."""
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Check declared body size before reading the request downstream.
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > MAX_REQUEST_BODY_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Request body exceeds maximum size"
+                    )
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid Content-Length header")
+
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:

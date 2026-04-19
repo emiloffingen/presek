@@ -144,6 +144,238 @@ class TestDailyBriefTaskQuality:
         assert clusters
         assert "### Кластер 1" in context or "###" in context
 
+    def test_rejects_daily_brief_with_named_entity_missing_from_context(self):
+        import tasks.delivery
+
+        context = (
+            "### Кластер 1\n"
+            "Наслов: Интерпелација на владата\n"
+            "Категорија: Политика\n"
+            "Водечки извор: МИА\n"
+            "Краток контекст: Опозицијата поднесе интерпелација.\n"
+        )
+        brief = (
+            "## Што го движи денот\n\n"
+            "### 1. Интерпелацијата на владата\n"
+            "- Што е новото: Премиерот Димитар Ковачевски ја оцени како неиздржана.\n"
+            "- Зошто е важно: Политичкиот судир се продлабочува.\n"
+        )
+
+        assert tasks.delivery._is_grounded_daily_brief(brief, context) is False
+
+    def test_accepts_daily_brief_when_named_entities_are_in_context(self):
+        import tasks.delivery
+
+        context = (
+            "### Кластер 1\n"
+            "Наслов: Интерпелација на владата\n"
+            "Категорија: Политика\n"
+            "Водечки извор: МИА\n"
+            "Краток контекст: Премиерот Христијан Мицкоски одговори на интерпелацијата.\n"
+        )
+        brief = (
+            "## Што го движи денот\n\n"
+            "### 1. Интерпелацијата на владата\n"
+            "- Што е новото: Премиерот Христијан Мицкоски одговори на интерпелацијата.\n"
+            "- Зошто е важно: Темата останува во политички фокус.\n"
+        )
+
+        assert tasks.delivery._is_grounded_daily_brief(brief, context) is True
+
+    def test_daily_brief_structure_validator_rejects_malformed_body(self):
+        import tasks.delivery
+
+        malformed = "# Утрински Диспач\n\n| нешто | нешто друго |"
+        valid = (
+            "## Што го движи денот\n\n"
+            "### 1. Наслов\n- Што е новото: Факт.\n- Зошто е важно: Контекст.\n"
+            "## Каде се разликува известувањето\n• Разлика.\n"
+            "## Што да се следи понатаму\n• Следен чекор.\n"
+        )
+
+        assert tasks.delivery._has_valid_daily_brief_structure(malformed) is False
+        assert tasks.delivery._has_valid_daily_brief_structure(valid) is True
+
+    def test_daily_brief_penalizes_press_release_style_titles(self):
+        import tasks.delivery
+
+        assert tasks.delivery._briefing_title_penalty("ВМРО-ДПМНЕ: Во очајна потрага по добра вест") > 3.0
+        assert tasks.delivery._briefing_title_penalty("Земјотрес од 4,8 степени ја потресе Македонија") == 0.0
+        assert tasks.delivery._briefing_title_penalty(
+            "ВМРО-ДПМНЕ: Во очајна потрага по добра вест",
+            source_count=8,
+            has_editorial_depth=True,
+        ) < tasks.delivery._briefing_title_penalty("ВМРО-ДПМНЕ: Во очајна потрага по добра вест")
+
+    def test_load_daily_brief_clusters_pushes_plain_party_pr_behind_public_interest_cluster(self):
+        import tasks
+
+        rows = [
+            {
+                "cluster_id": "party-pr",
+                "title": "СДСМ: Бараме локален референдум за рудникот",
+                "description": "Партиско соопштение.",
+                "summary": "",
+                "source": "МИА",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:00:00",
+            },
+            {
+                "cluster_id": "election",
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "description": "Гласањето се одржува денеска.",
+                "summary": "",
+                "source": "Reuters",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:05:00",
+            },
+            {
+                "cluster_id": "election",
+                "title": "Во Бугарија се отвораат избирачките места",
+                "description": "Следуваат резултати и реакции.",
+                "summary": "",
+                "source": "DW",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:06:00",
+            },
+        ]
+
+        def fake_score(ranked):
+            lead_title = ranked[0]["title"]
+            if "СДСМ:" in lead_title:
+                return 5.0
+            return 4.0
+
+        with patch("tasks.delivery.db") as mock_db, \
+             patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score):
+            mock_db.execute.return_value = rows
+            mock_db.execute_one.side_effect = [
+                {"summary": "", "perspectives": []},
+                {"summary": "Главен развој со повеќе контекст.", "perspectives": []},
+            ]
+
+            clusters = tasks._load_daily_brief_clusters(limit=2)
+
+        assert clusters[0]["cluster_id"] == "election"
+        assert clusters[1]["cluster_id"] == "party-pr"
+
+    def test_load_daily_brief_clusters_excludes_routine_weather_when_higher_signal_clusters_exist(self):
+        import tasks
+
+        rows = [
+            {
+                "cluster_id": "weather",
+                "title": "Најстудено изутринава во Берово минус еден степен",
+                "description": "Очекува се сончево и релативно топло време.",
+                "summary": "",
+                "source": "УХМР",
+                "category": "Вести",
+                "topic": "Вести",
+                "created_at": "2026-04-19T09:00:00",
+            },
+            {
+                "cluster_id": "election",
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "description": "Гласањето се одржува денеска.",
+                "summary": "",
+                "source": "Reuters",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:05:00",
+            },
+            {
+                "cluster_id": "election",
+                "title": "Во Бугарија се отвораат избирачките места",
+                "description": "Следуваат резултати и реакции.",
+                "summary": "",
+                "source": "DW",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:06:00",
+            },
+            {
+                "cluster_id": "missiles",
+                "title": "Северна Кореја повторно истрела балистички ракети",
+                "description": "Потегот предизвика меѓународни реакции.",
+                "summary": "",
+                "source": "AP",
+                "category": "Свет",
+                "topic": "Вести",
+                "created_at": "2026-04-19T09:07:00",
+            },
+        ]
+
+        with patch("tasks.delivery.db") as mock_db, \
+             patch.object(tasks, "score_cluster_for_homepage", return_value=4.0):
+            mock_db.execute.return_value = rows
+            mock_db.execute_one.side_effect = [
+                {"summary": "", "perspectives": []},
+                {"summary": "Главен развој со повеќе контекст.", "perspectives": []},
+                {"summary": "Ракетното лансирање повторно ја отвори безбедносната тема.", "perspectives": []},
+            ]
+
+            clusters = tasks._load_daily_brief_clusters(limit=2)
+
+        assert clusters[0]["cluster_id"] == "election"
+        assert clusters[1]["cluster_id"] == "missiles"
+
+    def test_party_cluster_with_synthesis_but_no_public_interest_does_not_lead(self):
+        import tasks
+
+        rows = [
+            {
+                "cluster_id": "party-pr",
+                "title": "ВРЕДИ: Партиска реакција по дневнополитичко прашање",
+                "description": "Партиско соопштение без јасен јавен ефект.",
+                "summary": "",
+                "source": "МИА",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:00:00",
+            },
+            {
+                "cluster_id": "court",
+                "title": "Судска одлука отвори правна расправа",
+                "description": "Следуваат реакции и толкувања.",
+                "summary": "",
+                "source": "Reuters",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:05:00",
+            },
+            {
+                "cluster_id": "court",
+                "title": "Повеќе извори ја анализираат судската одлука",
+                "description": "Се отвораат прашања за следните чекори.",
+                "summary": "",
+                "source": "DW",
+                "category": "Политика",
+                "topic": "Политика",
+                "created_at": "2026-04-19T09:06:00",
+            },
+        ]
+
+        def fake_score(ranked):
+            if ranked[0]["cluster_id"] == "party-pr":
+                return 5.0
+            return 4.0
+
+        with patch("tasks.delivery.db") as mock_db, \
+             patch.object(tasks, "score_cluster_for_homepage", side_effect=fake_score):
+            mock_db.execute.return_value = rows
+            mock_db.execute_one.side_effect = [
+                {"summary": "Внатрепартиска реакција без јасен поширок ефект.", "perspectives": []},
+                {"summary": "Судската одлука отвори спор околу следните правни чекори.", "perspectives": []},
+            ]
+
+            clusters = tasks._load_daily_brief_clusters(limit=2)
+
+        assert clusters[0]["cluster_id"] == "court"
+        assert clusters[1]["cluster_id"] == "party-pr"
+
 
 class TestProfileDeliveryTasks:
     def test_send_profile_briefings_updates_last_sent(self):

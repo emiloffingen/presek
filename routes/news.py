@@ -365,6 +365,7 @@ async def get_historical_events(cluster_id: str):
 
         vecs = [parse_vec(r['embedding']) for r in vec_rows]
         avg_vec = np.mean(vecs, axis=0).tolist()
+        vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
 
         # 2. Query archive using vector similarity
         # Exclude today's window to find truly historical context
@@ -383,7 +384,7 @@ async def get_historical_events(cluster_id: str):
             WHERE similarity > 0.68
             ORDER BY cluster_id, similarity DESC, created_at DESC
             LIMIT 5
-        """, (avg_vec, cluster_id))
+        """, (vec_str, cluster_id))
 
         events = []
         for r in sorted(rows, key=lambda x: x['similarity'], reverse=True):

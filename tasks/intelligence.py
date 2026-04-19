@@ -235,6 +235,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         from embeddings import get_cluster_embedding
         current_vec = get_cluster_embedding(cluster_id)
         if current_vec:
+            current_vec_str = "[" + ",".join(map(str, current_vec)) + "]"
             # Find semantically similar clusters from the last 7 days
             related = db.execute("""
                 SELECT s.summary, s.generated_article, a.title
@@ -248,7 +249,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                     SELECT AVG(embedding) FROM articles WHERE cluster_id = s.cluster_id
                 ) <=> %s::vector
                 LIMIT 1
-            """, (cluster_id, cluster_id, cluster_id, current_vec))
+            """, (cluster_id, cluster_id, cluster_id, current_vec_str))
             
             if related:
                 r = related[0]

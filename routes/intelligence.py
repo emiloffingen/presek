@@ -16,6 +16,45 @@ from .security import validate_cluster_id, validate_list_param, validate_string_
 log = logging.getLogger("presek")
 router = APIRouter()
 
+_FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
+    "договор",
+    "теснец",
+    "реакции",
+    "одлука",
+    "мерки",
+    "избори",
+}
+
+def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
+    by_key = {str(item.get("name") or "").casefold(): dict(item) for item in items if str(item.get("name") or "").strip()}
+
+    # Merge common fragmented geopolitics phrase into one canonical entity.
+    if "ормуз" in by_key and "теснец" in by_key:
+        merged_mentions = max(
+            int(by_key.get("ормуз", {}).get("total_mentions") or 0),
+            int(by_key.get("теснец", {}).get("total_mentions") or 0),
+            int(by_key.get("ормуски теснец", {}).get("total_mentions") or 0),
+        )
+        by_key["ормуски теснец"] = {
+            "name": "Ормуски Теснец",
+            "type": by_key.get("ормуски теснец", {}).get("type") or "LOC",
+            "total_mentions": merged_mentions,
+        }
+        by_key.pop("ормуз", None)
+        by_key.pop("теснец", None)
+
+    compact = []
+    for item in sorted(by_key.values(), key=lambda entry: int(entry.get("total_mentions") or 0), reverse=True):
+        name = str(item.get("name") or "").strip()
+        key = name.casefold()
+        words = [word for word in re.split(r"\s+", key) if word]
+        if len(words) == 1 and key in _FOCUS_ENTITY_GENERIC_SINGLE_WORDS:
+            continue
+        compact.append(item)
+        if len(compact) >= limit:
+            break
+    return compact
+
 @router.get("/intelligence/pulse-overview")
 async def get_pulse_overview():
     """Provides a high-level summary of the media landscape (free, token-less)."""
@@ -314,7 +353,7 @@ async def get_top_entities(limit: int = 10):
             "type": None,
             "total_mentions": int(aggregated.get(key, {}).get("total_mentions", 0)) + int(row.get("total_mentions") or 0),
         }
-    filtered = sorted(aggregated.values(), key=lambda item: item["total_mentions"], reverse=True)[:limit]
+    filtered = _compact_focus_entities(list(aggregated.values()), limit=limit)
     set_cache(cache_key, filtered, ttl=600)
     return filtered
 

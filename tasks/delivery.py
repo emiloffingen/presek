@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import re
 import urllib.parse
 import httpx
 from celery_app import celery_app
@@ -11,7 +12,128 @@ from prompts import DAILY_BRIEF_SYSTEM_PROMPT
 from api_helpers import normalize_perspectives
 from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
+from nlp.keywords import _extract_capitalized_phrases
 from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL
+
+_BRIEFING_PARTISAN_MARKERS = {
+    "во очајна потрага", "крах систем", "слави победа", "предавство",
+    "скандал", "шокантно", "удри", "жестоко", "катастрофа",
+}
+
+_BRIEFING_PARTY_PREFIXES = (
+    "вмро-дпмне:",
+    "сдсм:",
+    "дуи:",
+    "вреди:",
+    "левица:",
+    "знам:",
+    "аллијанса за албанците:",
+    "алтернатива:",
+    "гром:",
+    "дпа:",
+    "нсдп:",
+)
+
+_BRIEFING_LOW_SIGNAL_TITLE_MARKERS = (
+    "временска прогноза",
+    "најстудено",
+    "сончево",
+    "релативно топло",
+    "промоција на активностите",
+    "по повод 100 години",
+    "години скопје зоо",
+    "свеченост",
+    "одбележување",
+    "годишнина",
+)
+
+_BRIEFING_PUBLIC_INTEREST_MARKERS = (
+    "избор",
+    "избори",
+    "суд",
+    "правосуд",
+    "земјотрес",
+    "пожар",
+    "влада",
+    "собрание",
+    "закон",
+    "одлука",
+    "министер",
+    "обвинител",
+    "полиц",
+    "либан",
+    "он",
+    "обединетите нации",
+    "напад",
+    "безбед",
+    "референдум",
+)
+
+_BRIEFING_WEATHER_MARKERS = (
+    "време",
+    "временска прогноза",
+    "сончево",
+    "облачност",
+    "температура",
+    "најстудено",
+    "ухмр",
+    "ветер",
+    "врнежи",
+)
+
+_BRIEFING_SEVERE_WEATHER_MARKERS = (
+    "невреме",
+    "портокалов",
+    "црвен аларм",
+    "предупредување",
+    "поплава",
+    "силен ветер",
+    "град",
+    "екстремна температура",
+    "жолт аларм",
+)
+
+def _is_party_press_release_title(title: str) -> bool:
+    clean = str(title or "").strip().casefold()
+    return bool(clean) and clean.startswith(_BRIEFING_PARTY_PREFIXES)
+
+def _has_public_interest_signal(title: str, description: str = "", cluster_summary: str = "") -> bool:
+    haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
+    return any(marker in haystack for marker in _BRIEFING_PUBLIC_INTEREST_MARKERS)
+
+def _is_low_signal_briefing_cluster(title: str, description: str = "", cluster_summary: str = "") -> bool:
+    haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
+    return any(marker in haystack for marker in _BRIEFING_LOW_SIGNAL_TITLE_MARKERS)
+
+def _is_routine_weather_cluster(title: str, description: str = "", cluster_summary: str = "") -> bool:
+    haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
+    if not any(marker in haystack for marker in _BRIEFING_WEATHER_MARKERS):
+        return False
+    return not any(marker in haystack for marker in _BRIEFING_SEVERE_WEATHER_MARKERS)
+
+def _allow_partisan_briefing_cluster(title: str, source_count: int, has_editorial_depth: bool, has_synthesis: bool, has_public_interest: bool) -> bool:
+    if not _is_party_press_release_title(title):
+        return True
+    if has_editorial_depth and has_public_interest:
+        return True
+    return source_count >= 10 and has_synthesis and has_public_interest
+
+def _briefing_title_penalty(title: str, source_count: int = 1, has_editorial_depth: bool = False) -> float:
+    clean = str(title or "").strip()
+    lowered = clean.casefold()
+    penalty = 0.0
+
+    if re.match(r"^[A-ZА-ЯЀ-Я0-9\-]{2,}:\s", clean):
+        penalty += 1.8
+    if any(marker in lowered for marker in _BRIEFING_PARTISAN_MARKERS):
+        penalty += 1.8
+    if clean.count("!") >= 1 or clean.count("?") >= 2:
+        penalty += 0.35
+    if source_count >= 6:
+        penalty *= 0.8
+    if has_editorial_depth:
+        penalty *= 0.75
+    return penalty
 
 def _load_daily_brief_clusters(limit=6):
     rows = db.execute(
@@ -45,24 +167,65 @@ def _load_daily_brief_clusters(limit=6):
                     difference_point = content
                 if not open_point and ("отвор" in angle or "нејас" in angle):
                     open_point = content
+        source_count = len({a.get("source") for a in ranked if a.get("source")})
+        has_editorial_depth = bool(difference_point or open_point)
+        cluster_summary = (synthesis_row or {}).get("summary") or ""
+        has_synthesis = bool(str(cluster_summary).strip())
+        description = lead.get("summary") or lead.get("description") or ""
+        has_public_interest = _has_public_interest_signal(lead.get("title"), description, cluster_summary)
+        is_low_signal = _is_low_signal_briefing_cluster(lead.get("title"), description, cluster_summary)
+        is_routine_weather = _is_routine_weather_cluster(lead.get("title"), description, cluster_summary)
         ranked_clusters.append({
             "cluster_id": cluster_id,
             "title": lead.get("title"),
-            "description": lead.get("summary") or lead.get("description") or "",
+            "description": description,
             "source": lead.get("source"),
             "category": lead.get("category"),
             "topic": lead.get("topic"),
             "created_at": lead.get("created_at"),
-            "source_count": len({a.get("source") for a in ranked if a.get("source")}),
+            "source_count": source_count,
             "difference_point": difference_point,
             "open_point": open_point,
-            "cluster_summary": (synthesis_row or {}).get("summary") or "",
-            "score": score_cluster_for_homepage(ranked),
+            "cluster_summary": cluster_summary,
+            "is_party_press_release": _is_party_press_release_title(lead.get("title")),
+            "has_public_interest": has_public_interest,
+            "is_low_signal": is_low_signal,
+            "is_routine_weather": is_routine_weather,
+            "score": max(
+                0.0,
+                score_cluster_for_homepage(ranked)
+                - _briefing_title_penalty(
+                    lead.get("title"),
+                    source_count=source_count,
+                    has_editorial_depth=has_editorial_depth,
+                )
+                - (2.0 if is_low_signal and not has_public_interest else 0.0)
+                - (3.0 if is_routine_weather else 0.0)
+                + (1.1 if has_public_interest else 0.0),
+            ),
             "other_titles": [str(item.get("title") or "").strip() for item in ranked[1:4] if str(item.get("title") or "").strip()],
         })
 
     ranked_clusters.sort(key=lambda item: item["score"], reverse=True)
-    return ranked_clusters[:limit]
+    non_weather = [item for item in ranked_clusters if not item.get("is_routine_weather")]
+    weather_fallback = [item for item in ranked_clusters if item.get("is_routine_weather")]
+    preferred = [
+        item for item in non_weather
+        if not item.get("is_low_signal") or item.get("has_public_interest")
+    ]
+    secondary = [
+        item for item in ranked_clusters
+        if item in preferred
+        if _allow_partisan_briefing_cluster(
+            item.get("title"),
+            int(item.get("source_count") or 0),
+            bool(item.get("difference_point") or item.get("open_point")),
+            bool(item.get("cluster_summary")),
+            bool(item.get("has_public_interest")),
+        )
+    ]
+    fallback = [item for item in non_weather if item not in secondary] + weather_fallback
+    return (secondary + fallback)[:limit]
 
 def _build_daily_brief_context(clusters):
     blocks = []
@@ -82,6 +245,54 @@ def _build_daily_brief_context(clusters):
             ])
         )
     return "\n\n".join(blocks)
+
+def _is_grounded_daily_brief(brief: str, context: str) -> bool:
+    brief_text = str(brief or "").strip()
+    context_text = str(context or "").strip()
+    if not brief_text or not context_text:
+        return False
+
+    context_entities = {
+        phrase.casefold()
+        for phrase in _extract_capitalized_phrases(context_text)
+        if len(str(phrase or "").strip()) >= 4
+    }
+    if not context_entities:
+        return True
+
+    allowed_singletons = {
+        "македонија", "скопје", "албанија", "еу", "вмро-дпмне",
+        "ирaн", "ормускиот теснец", "дојран", "сад"
+    }
+
+    for phrase in _extract_capitalized_phrases(brief_text):
+        clean = str(phrase or "").strip()
+        if len(clean) < 4:
+            continue
+        words = [part for part in clean.replace("-", " ").split() if part]
+        is_acronym = clean.isupper()
+        if len(words) < 2 and not is_acronym:
+            continue
+        folded = clean.casefold()
+        if folded in context_entities or folded in allowed_singletons:
+            continue
+        if "## " in clean or clean in {"Што", "Зошто", "Каде"}:
+            continue
+        return False
+    return True
+
+def _has_valid_daily_brief_structure(brief: str) -> bool:
+    text = str(brief or "").strip()
+    if not text:
+        return False
+    required_sections = (
+        "## Што го движи денот",
+        "## Каде се разликува известувањето",
+        "## Што да се следи понатаму",
+    )
+    if not all(section in text for section in required_sections):
+        return False
+    return any(f"### {index}." in text for index in range(1, 4))
 
 def _normalize_synced_profile_for_delivery(profile):
     profile = profile or {}
@@ -1137,7 +1348,13 @@ def generate_daily_brief_task(retry_attempt=0):
         full_context = content_context + system_insight
 
         brief, _ = _call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
-        
+        if brief and not _has_valid_daily_brief_structure(brief):
+            log.warning("[tasks] Daily brief rejected for invalid structure; using local fallback")
+            brief = ""
+        if brief and not _is_grounded_daily_brief(brief, full_context):
+            log.warning("[tasks] Daily brief rejected as ungrounded; using local fallback")
+            brief = ""
+
         final_brief = brief or generate_daily_brief_fallback(clusters)
         if final_brief:
             # We store the dispatch name in the content first line or handle it in UI

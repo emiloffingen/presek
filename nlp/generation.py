@@ -11,6 +11,174 @@ from utils import record_runtime_event
 from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases, extract_keyphrases_locally, normalize_tag_name, SOURCE_NOISE_WORDS, TAG_NOISE_WORDS
 from nlp.text_processing import _normalize_summary_sentence, _jaccard_similarity, _is_noisy_summary_sentence
 
+def _clean_briefing_snippet(text):
+    clean = str(text or "").strip()
+    if not clean:
+        return ""
+    clean = re.sub(r"^[A-ZА-ЯЀ-Я][^,]{0,40},\s*\d{1,2}\s+[^\d]{3,20}\s+\d{4}\s*\([^)]{2,20}\)\s*[-–—]\s*", "", clean)
+    clean = re.sub(r"^(Скопје|Битола|Охрид|Тетово|Штип|Прилеп|Велес|Куманово|Берово|Дојран)\s*,\s*", "", clean)
+    clean = re.sub(r"\s+", " ", clean).strip()
+    return clean
+
+def _normalize_briefing_line(text):
+    clean = _clean_briefing_snippet(text)
+    clean = re.sub(r"^[\-•*#\d.\)\s]+", "", clean).strip()
+    clean = re.sub(
+        r"^(Што е новото|Што се менува|Зошто е важно|Што се случува|Што е потврдено|Покриеност|Контекст|Разлика|Отворено)\s*:\s*",
+        "",
+        clean,
+        flags=re.IGNORECASE,
+    )
+    clean = re.sub(r"\s+", " ", clean).strip(" .;:")
+    return clean
+
+def _briefing_lines_from_text(text, *, max_lines=3):
+    lines = []
+    for raw in str(text or "").splitlines():
+        clean = _normalize_briefing_line(raw)
+        if not clean or len(clean) < 12:
+            continue
+        if clean.casefold() in {item.casefold() for item in lines}:
+            continue
+        lines.append(clean)
+        if len(lines) >= max_lines:
+            break
+    return lines
+
+def _extract_briefing_update(cluster):
+    cluster = cluster or {}
+    synthesis_lines = _briefing_lines_from_text(
+        cluster.get("cluster_summary") or cluster.get("generated_article") or "",
+        max_lines=4,
+    )
+    if synthesis_lines:
+        return synthesis_lines[0]
+
+    clean_title = _clean_briefing_snippet(cluster.get("title"))
+    clean_description = _clean_briefing_snippet(cluster.get("description"))
+    summary = _clean_briefing_snippet(
+        summarize_locally(f"{clean_title}. {clean_description}", sentence_count=2).strip()
+    )
+    return summary or clean_description or clean_title
+
+def _extract_briefing_importance(cluster):
+    cluster = cluster or {}
+    diff = _normalize_briefing_line(cluster.get("difference_point"))
+    if diff:
+        return diff
+
+    open_point = _normalize_briefing_line(cluster.get("open_point"))
+    if open_point:
+        return open_point
+
+    synthesis_lines = _briefing_lines_from_text(
+        cluster.get("cluster_summary") or cluster.get("generated_article") or "",
+        max_lines=4,
+    )
+    if len(synthesis_lines) >= 2:
+        return synthesis_lines[1]
+
+    clean_title = _clean_briefing_snippet(cluster.get("title"))
+    clean_description = _clean_briefing_snippet(cluster.get("description"))
+    title = clean_title.casefold()
+    description = clean_description.casefold()
+    haystack = f"{title} {description}".strip()
+    if "избор" in haystack:
+        return "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
+
+    description_lines = _briefing_lines_from_text(clean_description, max_lines=2)
+    title_terms = set(_extract_terms(clean_title))
+    for line in description_lines:
+        line_terms = set(_extract_terms(line))
+        overlap = len(title_terms & line_terms) / max(1, min(len(title_terms or {""}), len(line_terms or {""})))
+        if line_terms and overlap < 0.75:
+            return _condense_briefing_update(line, max_chars=160)
+
+    topic = str(cluster.get("topic") or cluster.get("category") or "Вести").strip()
+    topic_lower = topic.lower()
+
+    if any(marker in haystack for marker in {"ракет", "балистичк", "лансира"}):
+        return "Потегот може да поттикне нови воени сигнали, предупредувања и дипломатски реакции"
+    if any(marker in haystack for marker in {"либан", "мировник", "он", "обединетите нации"}):
+        return "Случајот повторно отвора прашања за безбедноста на меѓународните мисии и регионалната стабилност"
+    if any(marker in haystack for marker in {"напад", "безбед"}):
+        return "Развојот може да предизвика нови безбедносни реакции и дипломатски притисок"
+    if any(marker in haystack for marker in {"суд", "правосуд", "одлука", "закон"}):
+        return "Следните правни и политички реакции ќе покажат колку широко ќе се прелее последицата"
+    if any(marker in haystack for marker in {"влада", "собрание", "референдум", "министер"}):
+        return "Следните институционални потези ќе покажат дали темата ќе прерасне во поширок политички спор"
+    if topic_lower == "политика":
+        return "Развојот може брзо да влијае врз следните политички позиции и јавната дебата"
+    if topic_lower == "економија":
+        return "Следните одлуки и реакции ќе покажат дали ефектот ќе се прелее врз цените, буџетот или бизнис-климата"
+    if topic_lower == "спорт":
+        return "Следните резултати и реакции ќе одредат како ќе се менува натпреварувачката слика"
+    if topic_lower in {"вести", "свет"}:
+        return "Развојот останува важен затоа што може брзо да добие пошироки последици или нови реакции"
+    return f"Следните реакции ќе покажат колку овој развој ќе влијае врз {topic_lower} темите"
+
+def _condense_briefing_update(text, *, max_chars=180):
+    clean = _normalize_briefing_line(text)
+    if not clean:
+        return ""
+    first_sentence = re.split(r"(?<=[.!?])\s+", clean, maxsplit=1)[0].strip()
+    candidate = first_sentence or clean
+    candidate = candidate.rstrip(" .,;:")
+    if len(candidate) <= max_chars:
+        return candidate
+    return candidate[: max_chars - 1].rstrip(" ,;:") + "…"
+
+def _extract_briefing_focus_point(cluster):
+    text = _condense_briefing_update(_extract_briefing_update(cluster), max_chars=140)
+    if not text:
+        text = _clean_briefing_snippet(cluster.get("title"))
+    text = _normalize_briefing_line(text)
+    return text[:180].rstrip(" .,;:")
+
+def _dedupe_briefing_clusters(clusters, limit=4):
+    deduped = []
+    seen_titles = set()
+    seen_updates = []
+
+    for cluster in clusters:
+        title = _clean_briefing_snippet(cluster.get("title"))
+        title_key = title.casefold()
+        if title_key and title_key in seen_titles:
+            continue
+
+        update = _extract_briefing_focus_point(cluster)
+        update_tokens = set(_extract_terms(update))
+        duplicate_update = False
+        for other_tokens in seen_updates:
+            if not update_tokens or not other_tokens:
+                continue
+            overlap = len(update_tokens & other_tokens) / max(1, min(len(update_tokens), len(other_tokens)))
+            if overlap >= 0.8:
+                duplicate_update = True
+                break
+        if duplicate_update:
+            continue
+
+        deduped.append(cluster)
+        if title_key:
+            seen_titles.add(title_key)
+        if update_tokens:
+            seen_updates.append(update_tokens)
+        if len(deduped) >= limit:
+            break
+
+    return deduped
+
+def _is_penalized_briefing_title(title):
+    clean = str(title or "").strip()
+    lowered = clean.casefold()
+    if re.match(r"^[A-ZА-ЯЀ-Я0-9\-]{2,}:\s", clean):
+        return True
+    return any(marker in lowered for marker in {
+        "во очајна потрага", "крах систем", "слави победа", "предавство",
+        "скандал", "шокантно", "удри", "жестоко", "катастрофа",
+    })
+
 def _extract_terms(text):
     return [
         term for term in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
@@ -291,37 +459,67 @@ def synthesize_cluster_fallback(articles):
 
 def generate_daily_brief_fallback(clusters):
     if not clusters: return "## Дневен Брифинг\n\nНема доволно достапни вести."
+    display_clusters = sorted(
+        clusters[:4],
+        key=lambda item: (
+            -int(bool(str(item.get("cluster_summary") or "").strip())),
+            int(_is_penalized_briefing_title(item.get("title"))),
+            -int(item.get("source_count") or 0),
+        ),
+    )
+    display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4)
     lines = ["## Што го движи денот", ""]
-    intro_titles = [str(item.get("title") or "").strip() for item in clusters[:3] if str(item.get("title") or "").strip()]
-    if intro_titles:
-        lines.append("Денот најсилно се врти околу " + ", ".join(intro_titles[:2]) + (f", а во фокус влегува и {intro_titles[2]}." if len(intro_titles) > 2 else "."))
-        lines.append("")
-    
-    if any(c.get("difference_point") for c in clusters[:3]):
-        lines.append("## Каде се разликува известувањето")
-        lines.append("")
-        for cluster in clusters[:3]:
-            diff = str(cluster.get("difference_point") or "").strip()
-            if diff:
-                lines.append(f"• **{cluster.get('title')}**: {diff}")
+    intro_candidates = [
+        item for item in display_clusters[:5]
+        if _extract_briefing_focus_point(item)
+    ]
+    preferred_intro = [item for item in intro_candidates if not _is_penalized_briefing_title(item.get("title"))]
+    intro_pool = preferred_intro[:3] if len(preferred_intro) >= 2 else intro_candidates[:3]
+    intro_points = [_extract_briefing_focus_point(item) for item in intro_pool if _extract_briefing_focus_point(item)]
+    if intro_points:
+        lines.append("Во фокус се: " + "; ".join(intro_points[:3]) + ".")
         lines.append("")
 
-    if any(c.get("open_point") for c in clusters[:3]):
-        lines.append("## Што да се следи понатаму")
-        lines.append("")
-        for cluster in clusters[:3]:
-            open_p = str(cluster.get("open_point") or "").strip()
-            if open_p:
-                lines.append(f"• **{cluster.get('title')}**: {open_p}")
-        lines.append("")
+    lines.append("## Каде се разликува известувањето")
+    lines.append("")
+    difference_added = False
+    for cluster in display_clusters[:3]:
+        diff = _normalize_briefing_line(cluster.get("difference_point"))
+        if diff:
+            lines.append(f"• **{cluster.get('title')}**: {diff}")
+            difference_added = True
+    if not difference_added and display_clusters[:3]:
+        fallback_cluster = display_clusters[0]
+        lines.append(
+            f"• **{fallback_cluster.get('title')}**: "
+            f"{_extract_briefing_importance(fallback_cluster)}."
+        )
+    lines.append("")
 
-    for index, cluster in enumerate(clusters[:4], start=1):
+    lines.append("## Што да се следи понатаму")
+    lines.append("")
+    open_added = False
+    for cluster in display_clusters[:3]:
+        open_p = _normalize_briefing_line(cluster.get("open_point"))
+        if open_p:
+            lines.append(f"• **{cluster.get('title')}**: {open_p}")
+            open_added = True
+    if not open_added and display_clusters[:3]:
+        fallback_cluster = display_clusters[0]
+        lines.append(
+            f"• **{fallback_cluster.get('title')}**: "
+            f"Вреди да се следат следните потврди и официјални реакции околу развојот."
+        )
+    lines.append("")
+
+    for index, cluster in enumerate(display_clusters, start=1):
         title, source = str(cluster.get("title") or "").strip(), str(cluster.get("source") or "Извор").strip()
-        topic, description = str(cluster.get("topic") or cluster.get("category") or "Вести").strip(), str(cluster.get("description") or "").strip()
-        summary = summarize_locally(f"{title}. {description}", sentence_count=2).strip()
-        lines.append(f"### {index}. {title}")
-        lines.append(f"- Што се менува: {summary or title}")
-        lines.append(f"- Зошто е важно: Темата е во фокусот на {topic.lower()} покривањето со {cluster.get('source_count', 1)} извори.")
+        clean_title = _clean_briefing_snippet(title)
+        summary = _condense_briefing_update(_extract_briefing_update(cluster))
+        importance = _extract_briefing_importance(cluster)
+        lines.append(f"### {index}. {clean_title or title}")
+        lines.append(f"- Што се менува: {summary or clean_title or title}.")
+        lines.append(f"- Зошто е важно: {importance}.")
         lines.append("")
     lines.append("**Напомена**: Брифинг составен локално.")
     return "\n".join(lines).strip()
@@ -405,5 +603,3 @@ def generate_local_placeholder(cluster_id, title, category="Вести"):
     colors = {"Македонија": "#a63d40", "Балкан": "#3d6b63", "Европа": "#3f7d8a", "Америка": "#3e6282", "Свет": "#5f556f", "Спорт": "#b36b24", "Технологија": "#3e4954", "Економија": "#456a4f", "default": "#5f6470"}
     bg = colors.get(category, colors["default"])
     return f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="{bg}" /><text x="400" y="225" font-family="serif" text-anchor="middle" font-size="44" fill="white">{title[:140]}</text></svg>'
-
-

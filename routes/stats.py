@@ -23,6 +23,34 @@ from .security import validate_date, validate_cluster_id, require_admin_token, v
 log = logging.getLogger("presek")
 router = APIRouter()
 
+def _pick_quote_of_the_day(row) -> dict | None:
+    if not row:
+        return None
+
+    def _extract_text(value) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        for line in text.splitlines():
+            clean = re.sub(r"^[-•*]\s*", "", line).strip()
+            if clean:
+                return clean[:280]
+        return ""
+
+    quote = _extract_text(row.get("quote"))
+    if not quote:
+        quote = _extract_text(row.get("summary"))
+    if not quote:
+        quote = _extract_text(row.get("generated_article"))
+    if not quote:
+        return None
+
+    return {
+        "quote": quote,
+        "cluster_id": row.get("cluster_id"),
+        "title": row.get("title"),
+    }
+
 @router.get("/briefing")
 async def get_briefing():
     try:
@@ -149,8 +177,8 @@ def _build_intelligence_summary_payload(last_24h: int) -> dict:
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
-    ai_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("summary_path|mode=") and "local" not in k)
-    local_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("summary_path|mode=") and "local" in k)
+    ai_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("synthesis_path|mode=") and "local" not in k)
+    local_summaries = sum(int(v) for k, v in ai_events.items() if k.startswith("synthesis_path|mode=") and "local" in k)
 
     balance_stats = db.execute_one("""
         WITH cluster_tiers AS (
@@ -181,6 +209,7 @@ def _build_intelligence_summary_payload(last_24h: int) -> dict:
             "ai_ratio": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
         },
         "pluralism": {
+            "pluralism_pct": round((balance_stats["high_consensus"] + balance_stats["diverse_sources"]) / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
             "high_consensus_pct": round(balance_stats["high_consensus"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
             "diverse_sources_pct": round(balance_stats["diverse_sources"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0
         }
@@ -194,7 +223,22 @@ async def get_stats_summary():
     last_24h = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")["count"] or 0
     last_1h = db.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")["count"] or 0
     total_feeds = db.execute_one("SELECT COUNT(*) FROM sources WHERE is_active = TRUE")["count"] or 0
-    quote = db.execute_one("SELECT s.quote, s.cluster_id, (SELECT title FROM articles WHERE cluster_id = s.cluster_id ORDER BY created_at DESC LIMIT 1) as title FROM cluster_summaries s WHERE s.quote IS NOT NULL AND s.quote != '' AND s.created_at >= NOW() - INTERVAL '48 hours' ORDER BY RANDOM() LIMIT 1")
+    quote_row = db.execute_one("""
+        SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
+               (SELECT title FROM articles WHERE cluster_id = s.cluster_id ORDER BY created_at DESC LIMIT 1) as title
+        FROM cluster_summaries s
+        WHERE s.created_at >= NOW() - INTERVAL '72 hours'
+          AND (
+              COALESCE(s.quote, '') != ''
+              OR COALESCE(s.summary, '') != ''
+              OR COALESCE(s.generated_article, '') != ''
+          )
+        ORDER BY
+            CASE WHEN COALESCE(s.quote, '') != '' THEN 0 ELSE 1 END,
+            s.created_at DESC
+        LIMIT 1
+    """)
+    quote = _pick_quote_of_the_day(quote_row)
     res = {
         "last_24h": last_24h,
         "last_1h": last_1h,

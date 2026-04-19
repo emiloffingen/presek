@@ -57,7 +57,7 @@ TAG_NOISE_WORDS = {
 }
 
 SOURCE_NOISE_WORDS = {
-    "reuters", "ap", "afp", "mia", "mиа", "bbc", "cnn", "dw", "ansa", "tass",
+    "reuters", "ap", "afp", "mia", "миа", "mиа", "bbc", "cnn", "dw", "ansa", "tass",
     "associated", "press", "makfax", "макфакс", "тв21", "тв24", "телма", "сител", "канал5",
     "ројтерс", "си-ен-ен", "би-би-си", "дојче веле", "франс прес",
 }

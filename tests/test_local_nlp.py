@@ -390,3 +390,207 @@ class TestLocalBriefingFallback:
         assert "## Што да се следи понатаму" in result
         assert "- Што се менува:" in result
         assert "- Зошто е важно:" in result
+
+    def test_generate_daily_brief_fallback_prefers_cluster_synthesis_text(self):
+        clusters = [
+            {
+                "title": "СДСМ: Партиско соопштение за дневната политика",
+                "source": "МИА",
+                "topic": "Политика",
+                "description": "Општ партиски став без многу детали.",
+                "cluster_summary": (
+                    "Што се случува: Собраниската расправа за интерпелацијата влегува во завршна фаза.\n"
+                    "Зошто е важно: Исходот ќе влијае врз темпото на политичката агенда."
+                ),
+                "source_count": 5,
+            }
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "Собраниската расправа за интерпелацијата влегува во завршна фаза" in result
+        assert "Општ партиски став без многу детали" not in result
+
+    def test_generate_daily_brief_fallback_strips_agency_boilerplate(self):
+        clusters = [
+            {
+                "title": "СДСМ: Бараме локален референдум за рудникот",
+                "source": "МИА",
+                "topic": "Политика",
+                "description": "Скопје, 19 април 2026 (МИА) - За најавата на Мицкоски за отворање рудник со антимон мора да има јавна дебата.",
+                "source_count": 5,
+            }
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "Скопје, 19 април 2026 (МИА) -" not in result
+
+    def test_generate_daily_brief_fallback_intro_prefers_less_partisan_updates(self):
+        clusters = [
+            {
+                "title": "СДСМ: Во очајна потрага по добра вест",
+                "source": "МИА",
+                "topic": "Политика",
+                "description": "Партиско соопштение.",
+                "source_count": 7,
+            },
+            {
+                "title": "Земјотрес од 4,8 степени ја потресе Македонија",
+                "source": "ММС",
+                "topic": "Вести",
+                "description": "Потресот е почувствуван во повеќе градови.",
+                "cluster_summary": "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија.",
+                "source_count": 8,
+            },
+            {
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Гласањето се одржува денеска.",
+                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "source_count": 9,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "Земјотрес од 4,8 степени е почувствуван во повеќе градови низ Македонија" in result.splitlines()[2]
+        assert "СДСМ: Во очајна потрага по добра вест" not in result.splitlines()[2]
+
+    def test_generate_daily_brief_fallback_keeps_required_sections_without_editorial_points(self):
+        clusters = [
+            {
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Гласањето се одржува денеска.",
+                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "source_count": 3,
+            }
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "## Каде се разликува известувањето" in result
+        assert "## Што да се следи понатаму" in result
+        assert "### 1. Бугарија денеска излегува на парламентарни избори" in result
+        assert "Темата се појавува низ" not in result
+
+    def test_generate_daily_brief_fallback_reorders_body_away_from_penalized_titles(self):
+        clusters = [
+            {
+                "title": "СДСМ: Во очајна потрага по добра вест",
+                "source": "МИА",
+                "topic": "Политика",
+                "description": "Партиско соопштение.",
+                "source_count": 8,
+            },
+            {
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Гласањето се одржува денеска.",
+                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "source_count": 7,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "### 1. Бугарија денеска излегува на парламентарни избори" in result
+
+    def test_generate_daily_brief_fallback_dedupes_near_identical_story_slots(self):
+        clusters = [
+            {
+                "title": "Северна Кореја повторно истрела балистички ракети",
+                "source": "AP",
+                "topic": "Вести",
+                "description": "Ракетното лансирање предизвика меѓународни реакции.",
+                "cluster_summary": "Северна Кореја повторно истрела балистички ракети.",
+                "source_count": 5,
+            },
+            {
+                "title": "Пјонгјанг повторно лансираше балистички ракети",
+                "source": "Reuters",
+                "topic": "Вести",
+                "description": "Северна Кореја повторно истрела балистички ракети кон морето.",
+                "cluster_summary": "Северна Кореја повторно истрела балистички ракети.",
+                "source_count": 4,
+            },
+            {
+                "title": "Бугарија денеска излегува на парламентарни избори",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Гласањето се одржува денеска.",
+                "cluster_summary": "Бугарија денеска гласа на парламентарни избори со неизвесен исход.",
+                "source_count": 9,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert result.count("### ") == 2
+        assert "### 3. Пјонгјанг повторно лансираше балистички ракети" not in result
+
+    def test_generate_daily_brief_fallback_uses_distinct_description_context_for_importance(self):
+        clusters = [
+            {
+                "title": "Северна Кореја повторно истрела балистички ракети",
+                "source": "AP",
+                "topic": "Вести",
+                "description": "Ракетното лансирање предизвика итни реакции од соседните држави и сојузниците.",
+                "source_count": 5,
+            },
+            {
+                "title": "Гутереш го осуди нападот во кој беше убиен француски мировник на ОН во Либан",
+                "source": "Reuters",
+                "topic": "Вести",
+                "description": "Нападот повторно отвори прашања за безбедноста на мировните мисии во јужен Либан.",
+                "source_count": 4,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "итни реакции од соседните држави и сојузниците" in result
+        assert "безбедноста на мировните мисии во јужен Либан" in result
+
+    def test_generate_daily_brief_fallback_splits_security_heuristics_by_story_type(self):
+        clusters = [
+            {
+                "title": "Северна Кореја повторно истрела балистички ракети",
+                "source": "AP",
+                "topic": "Вести",
+                "description": "",
+                "source_count": 5,
+            },
+            {
+                "title": "Гутереш го осуди нападот во кој беше убиен француски мировник на ОН во Либан",
+                "source": "Reuters",
+                "topic": "Вести",
+                "description": "",
+                "source_count": 4,
+            },
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "нови воени сигнали, предупредувања и дипломатски реакции" in result
+        assert "безбедноста на меѓународните мисии и регионалната стабилност" in result
+
+    def test_generate_daily_brief_fallback_keeps_election_importance_outcome_oriented(self):
+        clusters = [
+            {
+                "title": "Бугарија денеска излегува на парламентарни избори во последните пет години",
+                "source": "Reuters",
+                "topic": "Политика",
+                "description": "Во Бугарија денеска се одржуваат парламентарни избори за состав на 52-рото Народно собрание.",
+                "source_count": 9,
+            }
+        ]
+
+        result = generate_daily_brief_fallback(clusters)
+
+        assert "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции" in result
+        assert "52-рото Народно собрание" not in result.split("- Зошто е важно:")[1]

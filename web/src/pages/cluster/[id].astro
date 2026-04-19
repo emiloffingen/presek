@@ -33,12 +33,12 @@ function getRelativeTimeStr(dateStr: string) {
 
 import { sanitizeHtml } from '../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert } from 'lucide-react';
-import type { NewsCluster } from '../../types';
+import type { ClusterDetail } from '../../types';
 
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
 
-let cluster: NewsCluster | null = null;
+let cluster: ClusterDetail | null = null;
 let error = null;
 
 try {
@@ -63,15 +63,15 @@ const displayHeadline = mainArticle ? cleanAndDecode(mainArticle.title) : 'Де�
 const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 
 const sourcePreview = Array.from(new Set(cluster?.articles?.map(a => a.source) || [])).slice(0, 5);
-const synthesisUpdatedAt = cluster?.synthesis?.updated_at;
+const synthesisUpdatedAt = cluster?.synthesis_updated_at;
 const synthesisFreshness = cluster?.synthesis_freshness || { is_stale: false };
 
-const comparisonHighlights = cluster?.synthesis?.comparison_highlights || [];
-const perspectives = cluster?.synthesis?.perspectives || [];
-const verificationReport = cluster?.synthesis?.verification_report || null;
-const generatedArticle = cluster?.synthesis?.generated_article || null;
+const comparisonHighlights = [];
+const perspectives = cluster?.perspectives || [];
+const verificationReport = cluster?.verification_report || null;
+const generatedArticle = cluster?.generated_article || null;
 
-const synthesisItems = (cluster?.synthesis?.content || [])
+const synthesisItems = (cluster?.ai_summary_bullets?.length ? cluster.ai_summary_bullets : (cluster?.synthesis || '').split('\n'))
     .filter((line: string) => line.trim().length > 10)
     .map((line: string) => {
         const match = line.match(/^\[(.*?)\]\s*(.*)/);
@@ -91,15 +91,15 @@ const articleRows = (cluster?.articles || []).map(a => {
     };
 });
 
-const relatedClusters = cluster?.related_clusters || [];
+const relatedClusters = cluster?.related || [];
 const filteredRelated = relatedClusters.filter(c => c.cluster_id !== id).slice(0, 5);
 
 const adjacentTopic = cluster?.topics?.find(t => t !== 'Македонија') || cluster?.topics?.[0];
 
 const canonicalUrl = `https://presek.live/cluster/${id}`;
-const shareDescription = cluster?.synthesis?.brief_summary || mainArticle?.description || '';
+const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
 
-function getLeadVisual(c: NewsCluster | null) {
+function getLeadVisual(c: ClusterDetail | null) {
     if (!c) return null;
     const res = { src: '/img/placeholder.svg', rawUrl: '', isWeak: true };
     const main = c.articles?.[0];
@@ -123,7 +123,7 @@ function getLeadVisual(c: NewsCluster | null) {
 const leadVisual = getLeadVisual(cluster);
 const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/presek_emblem.png';
 
-const headerBriefItems = (cluster?.synthesis?.brief_summary || '').split('\n').filter(l => l.trim().length > 4);
+const headerBriefItems = synthesisItems.map(item => item.content).filter((line: string) => line.trim().length > 4).slice(0, 3);
 
 const sentimentData = cluster?.sentiment ? {
     sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
