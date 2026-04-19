@@ -302,25 +302,53 @@ def detect_country(source_name: str) -> str:
 
 
 def normalize_headline(title: str) -> str:
-    """Clean up news titles by stripping tags, extra whitespace and common prefixes."""
+    """Clean up and professionalize news titles for a high-end editorial feel."""
     if not title: return ""
-    # Decode HTML entities
-    title = html.unescape(title)
-    # Strip HTML tags
-    t = re.sub(r'<[^>]+>', '', title)
     
-    # Strip common prefixes and sensationalist labels (including variants with pipes or colons)
-    prefixes = [
-        "ВИДЕО", "ФОТО", "ГАЛЕРИЈА", "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", 
-        "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА",
-        "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", "ПОВРЗАНО", "ГЛЕДАЈТЕ",
-        "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
-        "BREAKING", "EXCLUSIVE", "LIVE", "VIDEO", "PHOTO", "GALLERY"
+    # 1. Preliminary Cleaning
+    t = html.unescape(title)
+    t = re.sub(r'<[^>]+>', '', t) # Strip HTML
+    
+    # 2. Aggressive Tag & Decorative Prefix Removal
+    # Handles (ВИДЕО), [ФОТО], ЖИВО:, BREAKING:, etc.
+    tags_pattern = r'(\[(ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\]|\((ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\))'
+    t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
+    
+    sensationalist = [
+        "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", 
+        "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА", "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", 
+        "ГЛЕДАЈТЕ", "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
+        "BREAKING", "EXCLUSIVE", "LIVE"
     ]
-    # Match prefix followed by space, pipe, colon, dash or just whitespace
-    prefix_pattern = r'^(' + '|'.join(prefixes) + r')[\s\|:–—-]+'
+    prefix_pattern = r'^(' + '|'.join(sensationalist) + r')[\s\|:–—-]+'
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
 
-    # Standardize whitespace
-    t = " ".join(t.split())
+    # 3. Suffix / Source Attribution Cleanup
+    # Remove things like "- ПРЕСЕК", "| 360 степени" at the end
+    suffix_pattern = r'[\s\|:–—-]+(360 степени|Слободен печат|Макфакс|Фокус|Канал 5|Сител|Телма|МРТ|A1on|Локално|Lokalno|Вечер|Vecer|Nezavisen|Независен|Republika|Република)$'
+    t = re.sub(suffix_pattern, '', t, flags=re.IGNORECASE)
+
+    # 4. De-Shouting (Sentence Case)
+    # If the headline is mostly uppercase (screaming), normalize it
+    # We ignore short words to protect acronyms like ЕУ, НАТО, САД
+    upper_count = sum(1 for c in t if c.isupper())
+    alpha_count = sum(1 for c in t if c.isalpha())
+    if alpha_count > 10 and (upper_count / alpha_count) > 0.65:
+        # Convert to sentence case but try to preserve common acronyms
+        t = t.capitalize()
+        # Restore common Macedonian acronyms (this is a heuristic)
+        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ"]:
+            t = re.sub(re.escape(acronym), acronym, t, flags=re.IGNORECASE)
+
+    # 5. Macedonian Quote Standardization
+    # Convert "...", '...', and other variants to literary „...“
+    t = re.sub(r'["\'\']([^"\']+)["\'\']', r'„\1“', t)
+    # Fix common cases where portals use double single-quotes
+    t = t.replace("''", "„").replace("''", "“") 
+
+    # 6. Technical Polish
+    t = re.sub(r'[\?\!]{2,}', lambda m: m.group(0)[0], t) # No !!! or ???
+    t = " ".join(t.split()) # Standardize whitespace
+    t = t.strip(" -–—:|") # Remove trailing/leading decorations
+    
     return t.strip()
