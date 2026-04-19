@@ -10,7 +10,7 @@ const NAMED_ENTITIES: Record<string, string> = {
 export function decodeHtmlEntities(text: any): string {
     if (!text) return '';
     if (typeof text !== 'string') text = String(text);
-    return text.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m, g) => {
+    return text.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m: string, g: string) => {
         if (g[0] === '#') {
             const code = g[1] === 'x' || g[1] === 'X' ? parseInt(g.slice(2), 16) : parseInt(g.slice(1), 10);
             return Number.isFinite(code) ? String.fromCodePoint(code) : m;

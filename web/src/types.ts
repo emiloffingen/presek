@@ -21,6 +21,11 @@ export interface Article {
   };
   is_fact_check?: boolean;
   image_caption?: string;
+  is_global?: boolean;
+  coverage_balance?: {
+    score: number;
+    label: string | null;
+  };
 }
 
 export interface ClusterSummary {
@@ -41,6 +46,8 @@ export interface NewsCluster {
   reason?: string;
   entities?: string[];
   homepage_score?: number;
+  created_at?: string;
+  tags?: string[];
 }
 
 export interface ClusterDetail extends NewsCluster {

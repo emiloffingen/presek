@@ -31,7 +31,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
 
   // 1. Load Local Profile & Subscribe
   useEffect(() => {
-    const unsubscribe = subscribeToReaderProfile((nextProfile) => {
+    const unsubscribe = subscribeToReaderProfile((nextProfile: any) => {
       setProfile(nextProfile);
     });
     setLoading(false);

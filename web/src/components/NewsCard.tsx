@@ -103,17 +103,19 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           <span className="source-label">
             {main.source}
             {showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
-              <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" title="Висока доверба" />
-              )}
+              <span title="Висока доверба">
+                <ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" />
               </span>
+            )}
+          </span>
 
-              {main.is_global && (
-              <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
+          {main.is_global && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">
               <Globe size={11} /> СВЕТСКА ВЕСТ
-              </span>
-              )}
+            </span>
+          )}
 
-              {main.coverage_balance?.label && (
+          {main.coverage_balance?.label && (
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-500">
               <CheckCircle2 size={11} /> {main.coverage_balance.label}
             </span>

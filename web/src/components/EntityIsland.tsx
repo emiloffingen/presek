@@ -210,7 +210,7 @@ export default function EntityIsland({
           </div>
           <div className="entity-metric">
             <p>Последно виден</p>
-            <strong>{formatRelative(profile.last_seen || clusters[0]?.created_at)}</strong>
+            <strong>{formatRelative(profile.last_seen || (clusters[0] as any)?.created_at)}</strong>
           </div>
           <div className="entity-metric">
             <p>Медиумски тон</p>
