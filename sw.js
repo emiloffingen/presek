@@ -1,8 +1,8 @@
-// Пресек — Service Worker v23
+// Пресек — Service Worker v24
 // Astro-only frontend caching: Stale-While-Revalidate for API and Cache-First for static assets
 
-const CACHE_NAME = 'presek-v23';
-const API_CACHE_NAME = 'presek-api-v23';
+const CACHE_NAME = 'presek-v24';
+const API_CACHE_NAME = 'presek-api-v24';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max staleness for API
 
 // Core static assets that are shared across the Astro frontend
