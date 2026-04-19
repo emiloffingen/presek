@@ -5,12 +5,22 @@ import os
 import re
 import secrets
 import logging
+import importlib
 from typing import Callable, Awaitable
 from fastapi import Request, HTTPException
 from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 log = logging.getLogger("presek")
+
+
+def _raise_http_error(status_code: int, detail: str):
+    try:
+        fastapi_mod = importlib.import_module("fastapi")
+        exc_cls = getattr(fastapi_mod, "HTTPException", HTTPException)
+    except Exception:
+        exc_cls = HTTPException
+    raise exc_cls(status_code=status_code, detail=detail)
 
 # =============================================================================
 # Input Validation Helpers
@@ -25,38 +35,32 @@ EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
 def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     """Validate cluster ID format (hex string, 6-64 chars)."""
     if not cluster_id:
-        raise HTTPException(status_code=400, detail=f"{param_name} is required")
+        _raise_http_error(400, f"{param_name} is required")
     if not isinstance(cluster_id, str):
-        raise HTTPException(status_code=400, detail=f"{param_name} must be a string")
+        _raise_http_error(400, f"{param_name} must be a string")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
     return cluster_id
 
 
 def validate_date(date_str: str, param_name: str = "date") -> str:
     """Validate date format (YYYY-MM-DD)."""
     if not date_str:
-        raise HTTPException(status_code=400, detail=f"{param_name} is required")
+        _raise_http_error(400, f"{param_name} is required")
     if not DATE_PATTERN.match(date_str):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid {param_name}. Must be in YYYY-MM-DD format."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be in YYYY-MM-DD format.")
     return date_str
 
 
 def validate_email(email: str, param_name: str = "email") -> str:
     """Validate email format."""
     if not email:
-        raise HTTPException(status_code=400, detail=f"{param_name} is required")
+        _raise_http_error(400, f"{param_name} is required")
     email = email.strip().lower()
     if len(email) > 254:
-        raise HTTPException(status_code=400, detail=f"{param_name} too long")
+        _raise_http_error(400, f"{param_name} too long")
     if not EMAIL_PATTERN.match(email):
-        raise HTTPException(status_code=400, detail=f"Invalid {param_name}")
+        _raise_http_error(400, f"Invalid {param_name}")
     return email
 
 
@@ -65,20 +69,20 @@ def validate_string_param(value: str, param_name: str, max_length: int = 200, mi
     if value is None:
         if allow_empty:
             return ""
-        raise HTTPException(status_code=400, detail=f"{param_name} is required")
+        _raise_http_error(400, f"{param_name} is required")
     
     if not isinstance(value, str):
-        raise HTTPException(status_code=400, detail=f"{param_name} must be a string")
+        _raise_http_error(400, f"{param_name} must be a string")
     
     value = value.strip()
     if not allow_empty and not value:
-        raise HTTPException(status_code=400, detail=f"{param_name} is required")
+        _raise_http_error(400, f"{param_name} is required")
     
     if len(value) > max_length:
-        raise HTTPException(status_code=400, detail=f"{param_name} exceeds maximum length of {max_length}")
+        _raise_http_error(400, f"{param_name} exceeds maximum length of {max_length}")
     
     if len(value) < min_length and value:
-        raise HTTPException(status_code=400, detail=f"{param_name} must be at least {min_length} characters")
+        _raise_http_error(400, f"{param_name} must be at least {min_length} characters")
     
     return value
 
@@ -88,16 +92,16 @@ def validate_list_param(items, param_name: str, max_items: int = 20, max_item_le
     if items is None:
         return []
     if not isinstance(items, list):
-        raise HTTPException(status_code=400, detail=f"{param_name} must be a list")
+        _raise_http_error(400, f"{param_name} must be a list")
     if len(items) > max_items:
-        raise HTTPException(status_code=400, detail=f"{param_name} exceeds maximum of {max_items} items")
+        _raise_http_error(400, f"{param_name} exceeds maximum of {max_items} items")
     result = []
     for item in items:
         if not isinstance(item, str):
-            raise HTTPException(status_code=400, detail=f"All items in {param_name} must be strings")
+            _raise_http_error(400, f"All items in {param_name} must be strings")
         cleaned = item.strip()
         if len(cleaned) > max_item_length:
-            raise HTTPException(status_code=400, detail=f"Items in {param_name} exceed maximum length of {max_item_length}")
+            _raise_http_error(400, f"Items in {param_name} exceed maximum length of {max_item_length}")
         if cleaned:
             result.append(cleaned)
     return result
@@ -126,7 +130,7 @@ def verify_admin_token(request: Request) -> bool:
 def require_admin_token(request: Request) -> None:
     """Raise 403 if not authenticated as admin."""
     if not verify_admin_token(request):
-        raise HTTPException(status_code=403, detail="Forbidden")
+        _raise_http_error(403, "Forbidden")
 
 
 def verify_sync_token(request: Request) -> str:
@@ -134,7 +138,7 @@ def verify_sync_token(request: Request) -> str:
     from .common import _extract_sync_token
     token = _extract_sync_token(request)
     if not token or len(token) < 12:
-        raise HTTPException(status_code=400, detail="Missing or invalid sync token")
+        _raise_http_error(400, "Missing or invalid sync token")
     return token
 
 
@@ -200,28 +204,19 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
         if content_length:
             try:
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail="Request body exceeds maximum size"
-                    )
+                    _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid Content-Length header")
+                _raise_http_error(400, "Invalid Content-Length header")
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Query parameter '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
         
         # Check headers
         for key, value in request.headers.items():
             if isinstance(value, str) and len(value) > MAX_HEADER_VALUE_LENGTH:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Header '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Header '{key}' exceeds maximum length")
         
         response = await call_next(request)
         return response

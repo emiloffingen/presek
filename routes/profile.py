@@ -17,6 +17,32 @@ from .security import validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+
+def _parse_embedding(value):
+    if isinstance(value, str):
+        value = json.loads(value)
+    if isinstance(value, (list, tuple)):
+        return [float(item) for item in value]
+    return []
+
+
+def _mean_embedding(vectors):
+    rows = [vec for vec in vectors if vec]
+    if not rows:
+        return []
+    width = len(rows[0])
+    totals = [0.0] * width
+    count = 0
+    for vec in rows:
+        if len(vec) != width:
+            continue
+        for idx, item in enumerate(vec):
+            totals[idx] += float(item)
+        count += 1
+    if count == 0:
+        return []
+    return [value / count for value in totals]
+
 def _normalize_delivery_preferences(prefs):
     prefs = prefs or {}
     return {
@@ -161,25 +187,34 @@ async def get_personalized_news_sync(request: Request):
     
     profile = _normalize_synced_profile(payload.get("profile") or {})
     recent = profile.get("recentClusters") or []
-    if not recent:
-        return {"status": "success", "results": []}
-
+    
     # 1. Fetch embeddings for recent clusters
     recent_ids = [r['cluster_id'] for r in recent[:10]] # Limit to last 10 for speed
-    vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
     
+    vec_rows = []
+    if recent_ids:
+        vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
+    
+    # 1b. Fallback: If no recent clusters, use followed topics to find recent popular clusters as seeds
+    if not vec_rows and profile.get("followedTopics"):
+        topics = profile.get("followedTopics")
+        seed_rows = await db.async_execute("""
+            SELECT embedding FROM articles 
+            WHERE (topic = ANY(%s) OR category = ANY(%s))
+            AND created_at >= NOW() - INTERVAL '72 hours'
+            AND embedding IS NOT NULL
+            ORDER BY created_at DESC
+            LIMIT 20
+        """, (topics, topics))
+        vec_rows = seed_rows
+
     if not vec_rows:
         return {"status": "success", "results": []}
 
-    import numpy as np
-    def parse_vec(v):
-        if isinstance(v, str):
-            import json
-            v = json.loads(v)
-        return np.array(v, dtype=np.float32)
-
-    vecs = [parse_vec(r['embedding']) for r in vec_rows]
-    interest_vec = np.mean(vecs, axis=0).tolist()
+    vecs = [_parse_embedding(r.get('embedding')) for r in vec_rows]
+    interest_vec = _mean_embedding(vecs)
+    if not interest_vec:
+        return {"status": "success", "results": []}
     vec_str = "[" + ",".join(map(str, interest_vec)) + "]"
 
     limit = payload.get("limit") or 6

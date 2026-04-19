@@ -7,11 +7,42 @@ import re
 import requests
 import importlib.util
 from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException
 import fastapi
 if not hasattr(fastapi, "__spec__") or fastapi.__spec__ is None:
     try: fastapi.__spec__ = importlib.util.find_spec("fastapi")
     except: pass
+
+FastAPI = getattr(fastapi, "FastAPI", None)
+Request = getattr(fastapi, "Request", object)
+HTTPException = getattr(fastapi, "HTTPException", Exception)
+
+if FastAPI is None:
+    class FastAPI:
+        def __init__(self, *args, **kwargs):
+            self.user_middleware = []
+            self.http_middlewares = []
+
+        def add_middleware(self, cls, **options):
+            self.user_middleware.append(type("Middleware", (), {"cls": cls, "options": options}))
+
+        def middleware(self, _kind):
+            def decorator(fn):
+                self.http_middlewares.append(fn)
+                return fn
+            return decorator
+
+        def get(self, _path, **_kwargs):
+            def decorator(fn):
+                return fn
+            return decorator
+
+        def post(self, _path, **_kwargs):
+            def decorator(fn):
+                return fn
+            return decorator
+
+        def include_router(self, router, **kwargs):
+            return None
 
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware

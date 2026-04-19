@@ -1,6 +1,8 @@
 import datetime
 import json
 import logging
+import os
+import sys
 from celery_app import celery_app
 from database import db_manager as db
 from ai_engine import (
@@ -19,12 +21,29 @@ from nlp import (
 )
 from api_helpers import normalize_summary_text, normalize_perspectives
 from utils import get_dominant_color
-from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log
+from tasks.utils import (
+    invalidate_public_data_caches,
+    invalidate_cluster_caches,
+    record_runtime_event,
+    get_celery_queue_depth,
+    log,
+)
+
+_BACKFILL_QUEUE_DEPTH_LIMIT = 100
 
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
-        "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+        "SELECT title, description, source, link, created_at, category, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
         (cluster_id,)
+    )
+
+
+def _build_cluster_synthesis_content(article_rows):
+    rows = article_rows or []
+    return "\n".join(
+        f"- [{row.get('source') or 'Извор'}]: {row.get('title') or ''}"
+        for row in rows[:10]
+        if row.get("title")
     )
 
 def _normalize_cluster_synthesis(summary, perspectives, article_rows):
@@ -225,9 +244,18 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             log.error(f"[tasks] Summarize failed for {article_id}: {e}")
 
 @celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
+def synthesize_cluster_task(cluster_id, content=None, retry_attempt=0):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
+    if not article_rows:
+        log.warning(f"[tasks] No articles found for cluster {cluster_id}, skipping synthesis")
+        return
+
+    if not content:
+        content = _build_cluster_synthesis_content(article_rows)
+    if not content:
+        log.warning(f"[tasks] No synthesis content could be built for cluster {cluster_id}")
+        return
     
     # 1. Fetch Historical Context (Cross-Story Memory)
     history_context = ""
@@ -328,7 +356,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                        verification_report = EXCLUDED.verification_report, 
                        quote = EXCLUDED.quote,
                        centroid = EXCLUDED.centroid""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid),
+                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, json.dumps(centroid) if centroid is not None else None),
                 fetch=False
             )
 
@@ -574,6 +602,9 @@ def auto_repair_sources_task():
 @celery_app.task(rate_limit='5/m')
 def backfill_cover_art_single_task(cluster_id, title):
     """Generate cover art for a single cluster without blocking a worker."""
+    if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
+        log.info("[tasks] Skipping cover art generation for %s while queue backlog is high.", cluster_id)
+        return
     try:
         img_url = generate_cover_art(cluster_id, title or '')
         if img_url:
@@ -587,6 +618,9 @@ def backfill_cover_art_single_task(cluster_id, title):
 @celery_app.task
 def backfill_cover_art_task():
     """Queue cover art generation for clusters that lack a strong visual."""
+    if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
+        log.info("[tasks] Skipping cover art backfill while queue backlog is high.")
+        return
     try:
         # Find clusters from last 24h that either:
         # 1. Have no representative image
@@ -606,7 +640,7 @@ def backfill_cover_art_task():
                   OR m.representative_image LIKE '%default%'
               )
               AND (m.representative_image IS NULL OR m.representative_image NOT LIKE '/static/generated/%.jpg')
-            LIMIT 50
+            LIMIT 12
         """)
         for idx, r in enumerate(rows):
             prompt_text = r['summary'] or r['title'] or ''

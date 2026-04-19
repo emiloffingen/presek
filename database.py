@@ -374,6 +374,11 @@ class DatabaseManager:
                     search_vector tsvector
                 )""")
                 cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS full_content TEXT")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS local_image_path TEXT")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_caption TEXT")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS entity_names TEXT[]")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT FALSE")
 
                 # Table for cluster summaries with FK to articles (via cluster_id)
                 # Note: cluster_id is not unique in articles, so we use it as a logical link
@@ -389,6 +394,7 @@ class DatabaseManager:
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS centroid JSONB")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
                     cluster_id TEXT PRIMARY KEY, 
@@ -485,6 +491,20 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_created ON suggestion_surface_events(created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_surface_kind ON suggestion_surface_events(surface, suggestion_kind, event_type, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)")
+
+                cur.execute("""CREATE TABLE IF NOT EXISTS failed_tasks (
+                    id SERIAL PRIMARY KEY,
+                    task_name TEXT NOT NULL,
+                    args JSONB DEFAULT '[]'::jsonb,
+                    kwargs JSONB DEFAULT '{}'::jsonb,
+                    error_message TEXT DEFAULT '',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                cur.execute("ALTER TABLE failed_tasks ADD COLUMN IF NOT EXISTS args JSONB DEFAULT '[]'::jsonb")
+                cur.execute("ALTER TABLE failed_tasks ADD COLUMN IF NOT EXISTS kwargs JSONB DEFAULT '{}'::jsonb")
+                cur.execute("ALTER TABLE failed_tasks ADD COLUMN IF NOT EXISTS error_message TEXT DEFAULT ''")
+                cur.execute("ALTER TABLE failed_tasks ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,

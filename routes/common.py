@@ -103,10 +103,8 @@ def _client_ip_for_request(request: Request) -> str:
 def _source_admin_authorized(request: Request) -> bool:
     token = (request.headers.get("X-Admin-Token") or "").strip()
     expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
-    client_host = _client_ip_for_request(request)
-    forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
     if not expected:
-        return client_host in {"127.0.0.1", "::1"} and not forwarded_for
+        return False
     if not token:
         return False
     return secrets.compare_digest(token, expected)
@@ -171,8 +169,7 @@ def _safe_tracking_redirect_path(path: str) -> str:
 
 def _is_rate_limited_path(path: str) -> bool:
     clean = str(path or "").strip()
-    if not clean.startswith("/api/"): return False
-    return clean in {
+    protected_paths = {
         "/api/news",
         "/api/trending",
         "/api/intelligence/top-entities",
@@ -180,7 +177,16 @@ def _is_rate_limited_path(path: str) -> bool:
         "/api/profile/sync",
         "/api/profile/delivery",
         "/api/profile/suggestion-event",
+        "/news",
+        "/trending",
+        "/intelligence/top-entities",
+        "/profile/sync/init",
+        "/profile/sync",
+        "/profile/delivery",
+        "/profile/suggestion-event",
     }
+    normalized = clean[4:] if clean.startswith("/api/") else clean
+    return clean in protected_paths or normalized in protected_paths
 
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}

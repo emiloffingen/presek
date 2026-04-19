@@ -1,6 +1,9 @@
 import os
 import sys
 import types
+import importlib
+import pytest
+from unittest.mock import MagicMock
 
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
@@ -178,3 +181,34 @@ def _install_playwright_stub():
 _install_starlette_stub()
 _install_trafilatura_stub()
 _install_playwright_stub()
+
+_REAL_DATABASE_MODULE = importlib.import_module("database")
+_MODULES_TO_RELOAD = (
+    "api_fast",
+    "routes.news",
+    "routes.profile",
+    "routes.stats",
+    "routes.system",
+    "routes.intelligence",
+    "routes.security",
+)
+
+
+@pytest.fixture(autouse=True)
+def _restore_runtime_modules(request):
+    module_name = getattr(request.module, "__name__", "")
+    preserve_fake_database = module_name.endswith("test_personalized_news") or module_name.endswith("test_api_fast")
+
+    if hasattr(request.module, "_get_fake_fastapi_modules"):
+        for name, mod in request.module._get_fake_fastapi_modules().items():
+            sys.modules[name] = mod
+
+    if module_name.endswith("test_personalized_news") and hasattr(request.module, "mock_db_manager"):
+        sys.modules["database"] = MagicMock(db_manager=request.module.mock_db_manager)
+    elif not preserve_fake_database:
+        sys.modules["database"] = _REAL_DATABASE_MODULE
+
+    for name in _MODULES_TO_RELOAD:
+        sys.modules.pop(name, None)
+
+    yield

@@ -1,12 +1,18 @@
 import logging
 import asyncio
 import httpx
+import os
+import sys
 from celery_app import celery_app
 from database import db_manager as db
 from crawler import crawler
 from image_service import image_service
 from health import record_refresh, record_task_event
 from tasks.utils import invalidate_public_data_caches, redis_client, log
+
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 @celery_app.task(rate_limit='20/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
@@ -74,7 +80,13 @@ def run_ingestion():
         log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
     try:
-        from ingestion import ingest_feeds
+        try:
+            from ingestion import ingest_feeds
+        except ModuleNotFoundError:
+            # Worker subprocesses occasionally lose the repo root on sys.path.
+            if _PROJECT_ROOT not in sys.path:
+                sys.path.insert(0, _PROJECT_ROOT)
+            from ingestion import ingest_feeds
         log.info("Presek 4.0: Starting unified ingestion cycle...")
         new_count, errors = ingest_feeds()
 

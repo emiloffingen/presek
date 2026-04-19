@@ -13,7 +13,20 @@ from api_helpers import normalize_perspectives
 from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
 from nlp.keywords import _extract_capitalized_phrases
-from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL
+from tasks.utils import (
+    invalidate_public_data_caches,
+    delete_cache,
+    record_runtime_event,
+    get_celery_queue_depth,
+    acquire_task_lock,
+    release_task_lock,
+    log,
+    _PUBLIC_SITE_URL,
+)
+
+_BREAKING_ALERT_TASK_LOCK = "presek:lock:send_profile_breaking_alerts_task"
+_BREAKING_ALERT_LOCK_TTL = 170
+_BREAKING_ALERT_QUEUE_DEPTH_LIMIT = 120
 
 _BRIEFING_PARTISAN_MARKERS = {
     "во очајна потрага", "крах систем", "слави победа", "предавство",
@@ -1512,9 +1525,17 @@ def send_profile_weekly_digests_task():
 @celery_app.task
 def send_profile_breaking_alerts_task():
     """Send breaking alerts for followed topics and sources through active synced subscriptions."""
+    if not acquire_task_lock(_BREAKING_ALERT_TASK_LOCK, ttl_seconds=_BREAKING_ALERT_LOCK_TTL):
+        log.info("[tasks] Skipping breaking alerts run because another run is already active.")
+        return
+
     sent = 0
 
     try:
+        if get_celery_queue_depth() >= _BREAKING_ALERT_QUEUE_DEPTH_LIMIT:
+            log.info("[tasks] Skipping breaking alerts run while queue backlog is high.")
+            return
+
         rows = _load_active_delivery_rows()
         for row in rows:
             if not row.get("breaking_topics") and not row.get("breaking_sources"):
@@ -1612,6 +1633,8 @@ def send_profile_breaking_alerts_task():
     else:
         if sent:
             log.info(f"[tasks] Sent {sent} profile breaking alerts.")
+    finally:
+        release_task_lock(_BREAKING_ALERT_TASK_LOCK)
 
 @celery_app.task
 def send_newsletter_task():
