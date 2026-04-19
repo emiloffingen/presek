@@ -117,7 +117,9 @@ function getTimeStr(dateStr: string) {
 			<span class="source-label">
 				{main.source}
 				{showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
-					<ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" title="Висока доверба" />
+					<span title="Висока доверба">
+						<ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" />
+					</span>
 				)}
 				</span>
 

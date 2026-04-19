@@ -204,8 +204,8 @@ export default function BriefingDeliveryIsland({
   const summaryLabel = syncToken
     ? serverDelivery.isActive
       ? 'Синхронизираната достава е активна'
-      : 'Sync е поврзан, но закажаната достава сè уште е исклучена'
-    : 'Креирајте клуч за синхронизација за ова да стане вистинска достава меѓу уреди';
+      : 'Профилот е синхронизиран, но известувањата се исклучени'
+    : 'Креирајте клуч за синхронизација за да добивате известувања на сите ваши уреди';
 
   if (variant === 'summary') {
     return (
@@ -224,11 +224,11 @@ export default function BriefingDeliveryIsland({
             <strong>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`}>
-            <span>Неделен дигест</span>
+            <span>Неделен преглед</span>
             <strong>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
           <div className={`delivery-toggle ${serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'is-active' : ''}`}>
-            <span>Итни известувања</span>
+            <span>Ударни вести</span>
             <strong>{serverDelivery.breakingTopics || serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
           </div>
         </div>
@@ -237,13 +237,13 @@ export default function BriefingDeliveryIsland({
           <a href="/settings" className="delivery-action">
             <Radio size={14} />
             <span className="delivery-action-content">
-              <span className="delivery-action-label">Отвори поставки за достава</span>
+              <span className="delivery-action-label">Отвори поставки</span>
             </span>
           </a>
           <button type="button" className="delivery-action" onClick={copyDigest}>
             <Copy size={14} />
             <span className="delivery-action-content">
-              <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај верзија за достава'}</span>
+              <span className="delivery-action-label">{copyState === 'done' ? 'Копирано' : copyState === 'error' ? 'Копирањето не успеа' : 'Копирај текстуална верзија'}</span>
             </span>
           </button>
         </div>
