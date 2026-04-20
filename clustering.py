@@ -320,11 +320,6 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             # If they have different scores but same teams, it's probably an update (score evolution)
             # If they have DIFFERENT scores and DIFFERENT teams, the entity check above already caught it.
 
-        # Entity Boosting
-        if shared_entity_support:
-            shared = potential_entities.intersection(cluster_entities[cid])
-            current_best_rep_score += min(0.35, len(shared) * 0.20)
-
         if current_best_rep_score > threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score
             best_cid = cid
