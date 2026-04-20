@@ -3,7 +3,7 @@ import asyncio
 from celery_app import celery_app
 from database import db_manager as db, prune_db
 from image_service import image_service
-from tasks.utils import log
+from tasks.utils import log, invalidate_public_data_caches
 
 @celery_app.task
 def run_prune_db():
