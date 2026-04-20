@@ -108,7 +108,7 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
 
     state = {
         "source": source_name,
@@ -160,7 +160,7 @@ def reset_source_policy(source_name: str):
 def record_refresh(article_count: int, errors: list[str] | None = None):
     """Call this after each RSS refresh cycle. Writes to Redis so all workers see it."""
     payload = {
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(timezone.utc),
         "count": article_count,
         "errors": errors or [],
     }
@@ -179,7 +179,7 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
         "task": task_name,
         "status": status,
         "detail": detail or "",
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(timezone.utc),
     }
     try:
         _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
@@ -199,7 +199,7 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         "fetched": int(fetched or 0),
         "accepted": int(accepted or 0),
         "error": (error or "")[:300],
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(timezone.utc),
     }
     payload.update(_source_quality_payload(status, fetched, accepted, error=error))
     payload.update(update_source_policy(source_name, status, fetched, accepted))

@@ -65,11 +65,25 @@ _PUBLIC_ARTICLE_FIELDS = {
 
 def _public_article_payload(article):
     from categories import normalize_headline
-    return {
-        key: (normalize_headline(value) if key == "title" else value)
-        for key, value in article.items()
-        if key in _PUBLIC_ARTICLE_FIELDS
-    }
+    import datetime
+    res = {}
+    for key, value in article.items():
+        if key not in _PUBLIC_ARTICLE_FIELDS:
+            continue
+        if key == "title":
+            res[key] = normalize_headline(value)
+        elif key == "created_at" and value:
+            if isinstance(value, (datetime.datetime, datetime.date)):
+                # If it's a naive datetime, assume UTC and append Z
+                if isinstance(value, datetime.datetime) and value.tzinfo is None:
+                    res[key] = value.isoformat() + "Z"
+                else:
+                    res[key] = value.isoformat()
+            else:
+                res[key] = str(value) + ("Z" if "Z" not in str(value) and "T" in str(value) else "")
+        else:
+            res[key] = value
+    return res
 
 @router.get("/news")
 async def get_news(

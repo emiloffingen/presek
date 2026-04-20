@@ -612,7 +612,8 @@ async def ingest_all_sources_async():
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles_batch", "count": len(inserted_ids), "time": cycle_now})
                 
-                from tasks import translate_article_task, summarize_article_task, crawl_article_task, standardize_article_style_task, detect_global_story_task
+                from tasks.ingestion_task import crawl_article_task
+                from tasks.intelligence import translate_article_task, summarize_article_task, standardize_article_style_task, detect_global_story_task
 
                 inserted_data = db.execute(
                     "SELECT a.id, a.title, a.description, a.link, a.country, s.credibility, a.source, a.cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
@@ -625,7 +626,7 @@ async def ingest_all_sources_async():
                         "title": art["title"],
                         "source": art["source"],
                         "cluster_id": art["cluster_id"],
-                        "time": cycle_now.isoformat()
+                        "time": cycle_now
                     })
 
                     # Always crawl for full content and better images

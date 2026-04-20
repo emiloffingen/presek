@@ -265,15 +265,6 @@ function getTimeStr(dateStr: string) {
 					/>
 				)}
 
-				{leadCluster && supportingClusters.length > 0 && (
-					<SupportingBand 
-						supportingFeatured={supportingFeatured}
-						supportingCompact={supportingCompact}
-					/>
-				)}
-
-				<AdUnit slot="home_top" />
-
 				{clusters.length > 6 && (
 					<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} />
 				)}
@@ -281,6 +272,34 @@ function getTimeStr(dateStr: string) {
 				{clusters.length > 4 && (
 					<ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
 				)}
+
+				<AdUnit slot="home_top" />
+
+				{leadCluster && supportingClusters.length > 0 && (
+					<SupportingBand 
+						supportingFeatured={supportingFeatured}
+						supportingCompact={supportingCompact}
+					/>
+				)}
+
+				<div class="pulse-band motion-rise">
+					<div class="pulse-stat-card">
+						<p class="pulse-stat-label">Медиумски Пулс</p>
+						<p class="pulse-stat-value">{(stats?.intelligence?.pluralism?.pluralism_pct || 0)}%</p>
+					</div>
+					<div class="pulse-stat-card">
+						<p class="pulse-stat-label">Синтеза</p>
+						<p class="pulse-stat-value">{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</p>
+					</div>
+					<div class="pulse-stat-card">
+						<p class="pulse-stat-label">Извори</p>
+						<p class="pulse-stat-value">{stats?.total_feeds || 0}</p>
+					</div>
+					<div class="pulse-stat-card">
+						<p class="pulse-stat-label">Објави / 24ч</p>
+						<p class="pulse-stat-value">{stats?.last_24h || 0}</p>
+					</div>
+				</div>
 
 				{feedClusters.length > 0 && (
 					<DevelopmentsSection
@@ -1172,6 +1191,44 @@ function getTimeStr(dateStr: string) {
 		.supporting-compact-grid,
 		.news-feed-grid-compact {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	.pulse-band {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
+		padding: 1.5rem 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		margin: 2.5rem 0;
+	}
+
+	.pulse-stat-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.pulse-stat-label {
+		font-family: var(--font-sans);
+		font-size: 0.65rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--muted-foreground);
+	}
+
+	.pulse-stat-value {
+		font-family: var(--font-serif);
+		font-size: 1.5rem;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	@media (min-width: 720px) {
+		.pulse-band {
+			grid-template-columns: repeat(4, 1fr);
 		}
 	}
 

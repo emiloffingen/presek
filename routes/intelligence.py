@@ -209,7 +209,7 @@ async def get_deep_research(cluster_id: str):
             "status": "success",
             "research": response,
             "provider": provider,
-            "timestamp": datetime.datetime.now().isoformat()
+            "timestamp": datetime.datetime.now()
         }
         
         set_cache(cache_key, result, ttl=3600) # Cache for 1 hour

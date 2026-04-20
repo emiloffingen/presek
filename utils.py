@@ -1167,6 +1167,8 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
             "tendency": tendency,
             "trend_label": trend_label,
             "trend_delta": trend_delta,
+            "last_fetched": row.get("last_fetched"),
+            "paused_at": row.get("paused_at"),
             "is_active": row.get("is_active", True)
         })
 

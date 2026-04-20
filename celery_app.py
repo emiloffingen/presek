@@ -38,7 +38,7 @@ celery_app = Celery(
     'presek',
     broker=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
     backend=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-    include=['tasks']
+    include=['tasks.ingestion_task', 'tasks.intelligence', 'tasks.delivery', 'tasks.maintenance']
 )
 
 celery_app.conf.update(
