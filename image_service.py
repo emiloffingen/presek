@@ -1,11 +1,10 @@
 import os
-import re
 import logging
 import time
 import httpx
 from io import BytesIO
 from PIL import Image
-from typing import Optional, Tuple
+from typing import Optional
 
 from utils import _resolve_public_ips, _peer_ip
 
@@ -45,17 +44,16 @@ class ImageService:
         try:
             safe_ips = _resolve_public_ips(url)
             async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
-                with client.stream("GET", url) as resp:
+                async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
                         log.warning(f"SSRF blocked for image {url}: {p_ip}")
                         return None
-                    
-                    resp.read()
+
+                    content = await resp.aread()
                     if resp.status_code != 200:
                         return None
-                    
-                    content = resp.content
+
                 if len(content) > _MAX_IMAGE_SIZE:
                     log.warning(f"Image too large: {url}")
                     return None
