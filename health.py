@@ -117,7 +117,7 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
         "auto_flagged": False,
         "should_auto_pause": False,
         "last_status": status,
-        "updated_at": now,
+        "updated_at": now.isoformat(),
     }
     try:
         raw = _get_redis().hget(_SOURCE_POLICY_REDIS_KEY, source_name)
@@ -140,7 +140,7 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
     state["auto_flagged"] = state["low_accept_streak"] >= AUTO_FLAG_LOW_ACCEPT_STREAK
     state["should_auto_pause"] = state["consecutive_errors"] >= AUTO_PAUSE_ERROR_STREAK
     state["last_status"] = status
-    state["updated_at"] = now
+    state["updated_at"] = now.isoformat()
 
     try:
         _get_redis().hset(_SOURCE_POLICY_REDIS_KEY, source_name, json.dumps(state))
@@ -160,7 +160,7 @@ def reset_source_policy(source_name: str):
 def record_refresh(article_count: int, errors: list[str] | None = None):
     """Call this after each RSS refresh cycle. Writes to Redis so all workers see it."""
     payload = {
-        "time": datetime.now(timezone.utc),
+        "time": datetime.now(timezone.utc).isoformat(),
         "count": article_count,
         "errors": errors or [],
     }
@@ -179,7 +179,7 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
         "task": task_name,
         "status": status,
         "detail": detail or "",
-        "time": datetime.now(timezone.utc),
+        "time": datetime.now(timezone.utc).isoformat(),
     }
     try:
         _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
@@ -199,7 +199,7 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         "fetched": int(fetched or 0),
         "accepted": int(accepted or 0),
         "error": (error or "")[:300],
-        "time": datetime.now(timezone.utc),
+        "time": datetime.now(timezone.utc).isoformat(),
     }
     payload.update(_source_quality_payload(status, fetched, accepted, error=error))
     payload.update(update_source_policy(source_name, status, fetched, accepted))
@@ -208,6 +208,7 @@ def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepte
         _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)
     except Exception:
         pass
+
 
 
 def get_source_statuses():
