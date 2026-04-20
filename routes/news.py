@@ -239,7 +239,7 @@ async def get_cluster_detail(cluster_id: str):
     try:
         rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
         if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
-        articles = annotate_cluster_articles(rows)
+        articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))
         public_articles = [_public_article_payload(article) for article in articles]
 
