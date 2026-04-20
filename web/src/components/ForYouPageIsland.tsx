@@ -118,7 +118,7 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
             <Sparkles className="text-nyt-accent" size={18} />
             <span className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent">Интелигенција</span>
           </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-black italic">Личен <span class="serif-display">Пресек</span></h1>
+          <h1 className="font-serif text-4xl md:text-5xl font-black italic">Личен <span className="serif-display">Пресек</span></h1>
           <p className="mt-4 font-nyt-body text-lg text-secondary-foreground leading-relaxed">
              Вашиот дневен преглед на вести, прецизно синтетизиран според темите, личностите и изворите што ги следите.
           </p>
@@ -158,22 +158,22 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
           <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-foreground mb-6 pb-2 border-b border-border">Ваши Интереси</h3>
           
           <div className="space-y-8">
-            {profile.followed_topics.length > 0 && (
+            {profile.followedTopics.length > 0 && (
                 <div>
                     <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Теми</p>
                     <div className="flex flex-wrap gap-2">
-                        {profile.followed_topics.map(t => (
+                        {profile.followedTopics.map(t => (
                             <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
                         ))}
                     </div>
                 </div>
             )}
 
-            {profile.followed_sources.length > 0 && (
+            {profile.followedSources.length > 0 && (
                 <div>
                     <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Извори</p>
                     <div className="flex flex-wrap gap-2">
-                        {profile.followed_sources.map(s => (
+                        {profile.followedSources.map(s => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
                         ))}
                     </div>
