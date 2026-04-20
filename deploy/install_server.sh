@@ -78,6 +78,10 @@ main() {
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT"
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/logs"
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/backups"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/hub"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/transformers"
+  install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/sentence_transformers"
   install -d /etc/systemd/system
 
   for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do

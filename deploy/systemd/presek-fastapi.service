@@ -9,6 +9,10 @@ StartLimitBurst=3
 [Service]
 Type=simple
 User=emiloffingen
+Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
+Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
+Environment=TRANSFORMERS_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/transformers
+Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
 ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && test -f api_fast.py'
 ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 1'
@@ -26,7 +30,7 @@ ProtectHome=read-only
 NoNewPrivileges=yes
 PrivateTmp=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-ReadWritePaths=/home/emiloffingen/presek-runtime/shared/logs /home/emiloffingen/presek-runtime/shared/static/generated /home/emiloffingen/presek-runtime/shared/static/uploads
+ReadWritePaths=/home/emiloffingen/presek-runtime/shared/logs /home/emiloffingen/presek-runtime/shared/static/generated /home/emiloffingen/presek-runtime/shared/static/uploads /home/emiloffingen/presek-runtime/shared/huggingface
 
 [Install]
 WantedBy=presek.target

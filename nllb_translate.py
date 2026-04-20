@@ -9,9 +9,9 @@ Runs on CPU with ~2.5 GB RAM. Typical headline translation takes 5-10s.
 Supports batching for higher throughput during ingestion cycles.
 """
 import logging
-import os
 import threading
 import time
+from hf_cache import configure_huggingface_cache
 
 log = logging.getLogger("presek")
 
@@ -41,6 +41,9 @@ LANG_CODES = {
     "ro": "ron_Latn",
     "mk": "mkd_Cyrl",
 }
+
+
+configure_huggingface_cache()
 
 
 def _load_model():
