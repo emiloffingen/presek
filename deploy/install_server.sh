@@ -40,7 +40,7 @@ replace_paths() {
   local dest="$2"
 
   sed \
-    -e "s|/home/emiloffingen/presek|$APP_ROOT|g" \
+    -e "s|/home/emiloffingen/presek-runtime|$APP_ROOT|g" \
     -e "s|User=emiloffingen|User=$SERVER_USER|g" \
     -e "s|/etc/ssl/cloudflare/presek.live/fullchain.pem|$CERT_FULLCHAIN|g" \
     -e "s|/etc/ssl/cloudflare/presek.live/privkey.pem|$CERT_PRIVKEY|g" \
@@ -50,7 +50,6 @@ replace_paths() {
 
 main() {
   need_cmd systemctl
-  need_cmd nginx
   need_cmd sed
   need_cmd curl
   require_root
@@ -73,6 +72,10 @@ main() {
     [ -f "$CERT_PRIVKEY" ] || { echo "Missing TLS private key at $CERT_PRIVKEY" >&2; exit 1; }
   fi
 
+  if [ "$INSTALL_NGINX" = "1" ] || [ "$INSTALL_NGINX" = "nossl" ] || [ "$INSTALL_NGINX" = "auto" ]; then
+    need_cmd nginx
+  fi
+
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$APP_ROOT"
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$APP_ROOT/releases"
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT"
@@ -80,11 +83,11 @@ main() {
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/backups"
   install -d /etc/systemd/system
 
-  for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in presek.target presek-worker.service presek-ingestion-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
-  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
+  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-ingestion-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
   systemctl daemon-reload
   systemctl enable presek.target
@@ -125,7 +128,9 @@ main() {
   echo "Deployment files installed."
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
+  echo "  sudo systemctl status presek-ingestion-worker.service"
   echo "  sudo journalctl -u presek-fastapi.service -f"
+  echo "  sudo journalctl -u presek-ingestion-worker.service -f"
   echo "Release root:"
   echo "  $APP_ROOT"
   if [ "$INSTALL_NGINX" = "1" ]; then

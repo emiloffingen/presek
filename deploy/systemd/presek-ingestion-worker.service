@@ -1,5 +1,5 @@
 [Unit]
-Description=Presek Celery worker
+Description=Presek Celery ingestion worker
 After=network-online.target presek-fastapi.service postgresql.service redis.service
 Wants=network-online.target
 PartOf=presek.target
@@ -11,17 +11,17 @@ Type=simple
 User=emiloffingen
 Environment=PYTHONPATH=/home/emiloffingen/presek-runtime/current
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=1 --queues default,delivery,intelligence,maintenance --max-memory-per-child=500000'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=1 --queues ingestion --max-memory-per-child=300000'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=presek-worker
-Nice=10
-CPUWeight=50
-MemoryHigh=900M
-MemoryMax=1200M
+SyslogIdentifier=presek-ingestion-worker
+Nice=5
+CPUWeight=150
+MemoryHigh=384M
+MemoryMax=640M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

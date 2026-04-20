@@ -114,6 +114,13 @@ Release deploy:
 APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
 ```
 
+If the release includes changes under `deploy/systemd/` or changes to `deploy/install_server.sh`, install the updated units first:
+
+```sh
+sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
+APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
+```
+
 Rollback to the previous release symlink:
 
 ```sh

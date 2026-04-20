@@ -21,6 +21,8 @@ Presek is a news aggregation and analysis app with:
   2. `sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh`
   3. `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh`
 
+If a change touches `deploy/systemd/*` or `deploy/install_server.sh`, run step 2 before step 3 so the installed units match the release code.
+
 ## Common Commands
 
 Backend tests:

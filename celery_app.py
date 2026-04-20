@@ -9,6 +9,7 @@ import logging
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
+from kombu import Queue
 
 log = logging.getLogger("presek_celery")
 
@@ -43,6 +44,22 @@ celery_app = Celery(
 
 celery_app.conf.update(
     timezone='UTC',
+    task_default_queue='default',
+    task_queues=(
+        Queue('default'),
+        Queue('ingestion'),
+        Queue('delivery'),
+        Queue('intelligence'),
+        Queue('maintenance'),
+    ),
+    task_routes={
+        'tasks.ingestion.run_ingestion': {'queue': 'ingestion'},
+        'tasks.ingestion.auto_repair_sources_task': {'queue': 'ingestion'},
+        'tasks.delivery.*': {'queue': 'delivery'},
+        'tasks.intelligence.*': {'queue': 'intelligence'},
+        'tasks.maintenance.*': {'queue': 'maintenance'},
+    },
+    worker_prefetch_multiplier=1,
     beat_schedule={
         'ingest-regular-feeds': {
             'task': 'tasks.ingestion.run_ingestion',

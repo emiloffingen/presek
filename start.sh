@@ -19,6 +19,7 @@ ENSURE_ASTRO_BUILD="$APP_DIR/deploy/ensure_astro_build.sh"
 
 WEB_LOG="$LOG_DIR/web.log"
 WORKER_LOG="$LOG_DIR/worker.log"
+INGESTION_WORKER_LOG="$LOG_DIR/ingestion-worker.log"
 BEAT_LOG="$LOG_DIR/beat.log"
 FASTAPI_LOG="$LOG_DIR/fastapi.log"
 ASTRO_LOG="$LOG_DIR/astro.log"
@@ -150,6 +151,7 @@ assert_manual_mode_safe() {
     presek-fastapi.service
     presek-astro.service
     presek-worker.service
+    presek-ingestion-worker.service
     presek-beat.service
   )
   local unit
@@ -419,6 +421,9 @@ fi
 info "Starting services in screen session '$SESSION'..."
 
 start_window "worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
+sleep 1
+
+start_window "ingestion-worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=1 --queues=ingestion --logfile='$INGESTION_WORKER_LOG'"
 sleep 1
 
 start_window "beat" "cd '$APP_DIR' && exec '$CELERY' -A celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
