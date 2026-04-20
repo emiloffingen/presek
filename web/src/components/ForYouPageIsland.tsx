@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Compass, Sparkles, BrainCircuit, Loader2, ArrowRight } from 'lucide-react';
+import { Compass, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
@@ -17,15 +17,20 @@ interface ForYouPageIslandProps {
   initialClusters: NewsCluster[];
 }
 
+interface ReaderProfile {
+  recentClusters: any[];
+  followedTopics: string[];
+  followedSources: string[];
+}
+
 export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandProps) {
-  const [profile, setProfile] = useState(loadReaderProfile());
+  const [profile, setProfile] = useState<ReaderProfile>(loadReaderProfile());
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // 1. Load Local Profile & Subscribe
   useEffect(() => {
-    const unsubscribe = subscribeToReaderProfile((nextProfile: any) => {
+    const unsubscribe = subscribeToReaderProfile((nextProfile: ReaderProfile) => {
       setProfile(nextProfile);
     });
     
@@ -69,11 +74,11 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
     // Combine semantic results (server-side brain) with local keyword matches
     return [
       ...semanticResults,
-      ...local.filter(item => !seen.has(item.cluster.cluster_id)).map(item => ({
-        ...item.cluster,
-        reason: item.reason,
-        has_synthesis: item.cluster.has_synthesis,
-        has_balanced: item.cluster.has_balanced
+      ...local.filter(item => item && item.cluster && !seen.has(item.cluster.cluster_id)).map(item => ({
+        ...item!.cluster,
+        reason: item!.reason,
+        has_synthesis: item!.cluster.has_synthesis,
+        has_balanced: item!.cluster.has_balanced
       }))
     ];
   }, [initialClusters, semanticResults, profile]);
@@ -81,8 +86,8 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
   const followSuggestions = useMemo(() => {
     const suggestions = buildSurfaceFollowSuggestions(profile, 'for_you', { topicLimit: 4, sourceLimit: 2 });
     return [
-      ...suggestions.topics.map(t => ({ ...t, kind: 'topic' })),
-      ...suggestions.sources.map(s => ({ ...s, kind: 'source' }))
+      ...suggestions.topics.map((t: any) => ({ ...t, kind: 'topic' })),
+      ...suggestions.sources.map((s: any) => ({ ...s, kind: 'source' }))
     ];
   }, [profile]);
 
@@ -120,7 +125,7 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
             <Sparkles className="text-nyt-accent" size={18} />
             <span className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent">Интелигенција</span>
           </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-black italic">Личен <span class="serif-display">Пресек</span></h1>
+          <h1 className="font-serif text-4xl md:text-5xl font-black italic">Личен <span className="serif-display">Пресек</span></h1>
           <p className="mt-4 font-nyt-body text-lg text-secondary-foreground leading-relaxed">
              Вашиот дневен преглед на вести, прецизно синтетизиран според темите, личностите и изворите што ги следите.
           </p>
@@ -160,22 +165,22 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
           <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-foreground mb-6 pb-2 border-b border-border">Ваши Интереси</h3>
           
           <div className="space-y-8">
-            {profile.followed_topics.length > 0 && (
+            {profile.followedTopics.length > 0 && (
                 <div>
                     <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Теми</p>
                     <div className="flex flex-wrap gap-2">
-                        {profile.followed_topics.map(t => (
+                        {profile.followedTopics.map((t: string) => (
                             <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
                         ))}
                     </div>
                 </div>
             )}
 
-            {profile.followed_sources.length > 0 && (
+            {profile.followedSources.length > 0 && (
                 <div>
                     <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Извори</p>
                     <div className="flex flex-wrap gap-2">
-                        {profile.followed_sources.map(s => (
+                        {profile.followedSources.map((s: string) => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
                         ))}
                     </div>
