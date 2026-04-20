@@ -30,16 +30,31 @@ class DateTimeEncoder(json.JSONEncoder):
 def get_dominant_color(url: str) -> str:
     """Extracts the dominant hex color from an image URL."""
     if not url: return ""
+    if not url.startswith("http"):
+        # If it's a relative path, we can't fetch it easily here without knowing the domain.
+        # However, many clusters use /static/generated/ URLs.
+        if url.startswith("/static/"):
+            # For local static files, we'd need to read from disk.
+            # For now, return empty to avoid logging noise.
+            return ""
+        return ""
+
     try:
         import httpx
+        # Ensure we have avif support if needed (pillow-avif-plugin)
+        # But we'll try-catch the open call.
+        try:
+            import pillow_avif
+        except ImportError:
+            pass
+
         with httpx.Client(timeout=5.0) as client:
             response = client.get(url)
         if response.status_code != 200: return ""
-        
+
         img = Image.open(BytesIO(response.content))
         img = img.convert("RGB")
-        img.thumbnail((100, 100))
-        
+        img.thumbnail((100, 100))        
         # Get dominant color
         colors = img.getcolors(10000) # (count, (r,g,b))
         if not colors: return ""

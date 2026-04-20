@@ -602,4 +602,35 @@ def _build_minimum_cluster_summary(articles, comparison=None):
 def generate_local_placeholder(cluster_id, title, category="Вести"):
     colors = {"Македонија": "#a63d40", "Балкан": "#3d6b63", "Европа": "#3f7d8a", "Америка": "#3e6282", "Свет": "#5f556f", "Спорт": "#b36b24", "Технологија": "#3e4954", "Економија": "#456a4f", "default": "#5f6470"}
     bg = colors.get(category, colors["default"])
-    return f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="{bg}" /><text x="400" y="225" font-family="serif" text-anchor="middle" font-size="44" fill="white">{title[:140]}</text></svg>'
+    
+    # Simple word-based wrapping for the SVG text
+    words = title.split()
+    lines = []
+    current_line = []
+    for w in words:
+        current_line.append(w)
+        if len(" ".join(current_line)) > 30:
+            lines.append(" ".join(current_line))
+            current_line = []
+    if current_line:
+        lines.append(" ".join(current_line))
+    
+    # Limit to top 3 lines
+    display_lines = lines[:3]
+    text_y_start = 225 - (len(display_lines) - 1) * 25
+    
+    tspans = ""
+    for i, line in enumerate(display_lines):
+        y = text_y_start + i * 50
+        tspans += f'<tspan x="400" y="{y}">{line}</tspan>'
+
+    return (
+        f'<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">'
+        f'<rect width="100%" height="100%" fill="{bg}" />'
+        f'<rect width="100%" height="100%" fill="black" opacity="0.1" />'
+        f'<text font-family="serif" text-anchor="middle" font-size="40" font-weight="bold" fill="white">'
+        f'{tspans}'
+        f'</text>'
+        f'<text x="40" y="410" font-family="sans-serif" font-size="20" font-weight="black" fill="white" opacity="0.5" letter-spacing="2">PRESEK</text>'
+        f'</svg>'
+    )
