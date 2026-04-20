@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Globe, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2, Sparkles } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -135,6 +135,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           {anyFactCheck(cluster.articles) && (
             <span className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
               ФАКТ-ЧЕК
+            </span>
+          )}
+
+          {cluster.has_synthesis && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-nyt-accent" title="Уредничка Синтеза достапна">
+              <Sparkles size={11} className="fill-nyt-accent/20" /> АНАЛИЗА
             </span>
           )}
 

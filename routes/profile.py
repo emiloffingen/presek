@@ -200,7 +200,7 @@ async def get_personalized_news_sync(request: Request):
                    (1 - (embedding <=> %s::vector)) as similarity
             FROM articles
             WHERE created_at >= NOW() - INTERVAL '72 hours'
-              AND cluster_id != ALL(%s)
+              AND cluster_id NOT IN (SELECT unnest(%s::text[]))
               AND embedding IS NOT NULL
         )
         SELECT DISTINCT ON (cluster_id) *

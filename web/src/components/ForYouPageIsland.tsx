@@ -71,7 +71,9 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
       ...semanticResults,
       ...local.filter(item => !seen.has(item.cluster.cluster_id)).map(item => ({
         ...item.cluster,
-        reason: item.reason
+        reason: item.reason,
+        has_synthesis: item.cluster.has_synthesis,
+        has_balanced: item.cluster.has_balanced
       }))
     ];
   }, [initialClusters, semanticResults, profile]);
