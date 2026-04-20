@@ -76,7 +76,7 @@ function getCardSummary(article: Article, lead = false) {
 const displaySummary = getCardSummary(main, isLead);
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
-const hasSynthesis = cluster.has_synthesis || cluster.articles?.some(a => a.summary && a.summary.length > 50);
+const hasSynthesis = cluster.has_synthesis;
 
 function getWhyItMatters() {
 	if (sourceSignal.role_label && totalSources >= 4) {

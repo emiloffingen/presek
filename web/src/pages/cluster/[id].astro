@@ -296,7 +296,7 @@ const sentimentData = cluster?.sentiment ? {
 								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
 							</section>
-						) : cluster.synthesis && (
+						) : cluster.has_synthesis && (
 							<section class="cluster-synthesis">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
@@ -320,7 +320,7 @@ const sentimentData = cluster?.sentiment ? {
 						)}
 
 						{/* Secondary Synthesis (Bullets if article exists) */}
-						{generatedArticle && cluster.synthesis && synthesisItems.length > 0 && (
+						{generatedArticle && cluster.has_synthesis && synthesisItems.length > 0 && (
 							<section class="cluster-synthesis mb-12">
 								<div class="cluster-module-head">
 									<h2 class="nyt-section-label tracking-[0.2em]">КЛУЧНИ ТОЧКИ</h2>

@@ -211,6 +211,9 @@ async def semantic_search(
         processed = [annotate_cluster_articles(arts) for arts in clusters.values()]
         processed.sort(key=lambda arts: arts[0].get('similarity', 0), reverse=True)
 
+        cid_list = list(clusters.keys())
+        synthesis_ids = set(await db.async_get_synthesis_ids(cid_list)) if cid_list else set()
+
         result = []
         for arts in processed:
             main = arts[0]
@@ -221,6 +224,7 @@ async def semantic_search(
                 "similarity": round(float(main.get('similarity', 0)), 4),
                 "reading_time": main.get('reading_time', 1),
                 "score": round(score_cluster(arts), 3),
+                "has_synthesis": cid in synthesis_ids,
                 "entities": main.get("entity_names", [])
             })
 
@@ -298,6 +302,7 @@ async def get_cluster_detail(cluster_id: str):
                 r_rows = await db.async_execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
                 r_grouped = defaultdict(list)
                 for r in r_rows: r_grouped[r["cluster_id"]].append(r)
+                synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
                 for cid in related_cids:
                     arts = r_grouped.get(cid)
                     if arts:
@@ -331,6 +336,7 @@ async def get_cluster_detail(cluster_id: str):
                             "shared_tags": shared_tags,
                             "shared_topics": shared_topics,
                             "shared_entities": shared_entities,
+                            "has_synthesis": cid in synthesis_ids,
                         })
 
         chrono = sorted(articles, key=lambda x: x['created_at'])
@@ -340,7 +346,8 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        return {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+
     except HTTPException:
         raise
     except Exception as e:
