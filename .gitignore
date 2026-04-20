@@ -28,3 +28,5 @@ web/.env.local
 .hypothesis/
 *.pem
 venv/
+.cache/
+.hf_cache/

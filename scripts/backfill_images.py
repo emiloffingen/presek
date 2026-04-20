@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from database import db_manager as db
-from tasks.ingestion import crawl_article_task
+from tasks.ingestion_task import crawl_article_task
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.backfill")

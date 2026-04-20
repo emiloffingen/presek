@@ -1,4 +1,4 @@
-from tasks.ingestion import *
+from tasks.ingestion_task import *
 from tasks.intelligence import *
 from tasks.delivery import *
 from tasks.maintenance import *

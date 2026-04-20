@@ -45,7 +45,7 @@ celery_app.conf.update(
     timezone='UTC',
     beat_schedule={
         'ingest-regular-feeds': {
-            'task': 'tasks.ingestion.run_ingestion',
+            'task': 'tasks.ingestion_task.run_ingestion',
             'schedule': 1200.0, # Every 20 minutes
         },
         'prune-database': {
@@ -82,7 +82,7 @@ celery_app.conf.update(
             'schedule': 1800.0,  # Every 30 minutes
         },
         'auto-repair-sources': {
-            'task': 'tasks.ingestion.auto_repair_sources_task',
+            'task': 'tasks.ingestion_task.auto_repair_sources_task',
             'schedule': crontab(hour='*/6', minute=30), # Every 6 hours
         },
         'discover-storylines': {

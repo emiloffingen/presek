@@ -568,7 +568,7 @@ def generate_cluster_metadata_task():
 @celery_app.task
 def auto_repair_sources_task():
     """Bridge to ingestion module for repair task."""
-    from tasks.ingestion import auto_repair_sources_task as _task
+    from tasks.ingestion_task import auto_repair_sources_task as _task
     return _task()
 
 @celery_app.task(rate_limit='5/m')
