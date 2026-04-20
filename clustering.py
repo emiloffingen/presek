@@ -111,7 +111,7 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.48  # Tuned threshold
+SIMILARITY_THRESHOLD = 0.52  # Increased from 0.48 to reduce keyword-based collisions
 MAX_CLUSTER_SIZE     = 35
 # Cosine-distance cutoff for pgvector semantic lookup. Tuned for the local
 # paraphrase-multilingual-MiniLM-L12-v2 model (384-dim, L2-normalized):
@@ -127,7 +127,7 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
         # Adaptive threshold based on category diversity
         threshold = VECTOR_THRESHOLD
         if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион"):
-            threshold = 0.22  # Stricter for international news
+            threshold = 0.18  # Even stricter for international news (was 0.22)
             
         params = [str(embedding), lookback_hours, str(embedding)]
         filters = []
