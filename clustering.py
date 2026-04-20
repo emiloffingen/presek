@@ -268,9 +268,15 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                 except:
                     source_penalty = 0.6
 
-        shared_entity_support = False
+        # 1. Shared Entity Boost
+        # If articles share multiple capitalized proper nouns, they are highly likely related.
+        entity_boost = 1.0
         if cid in cluster_entities and potential_entities:
-            shared_entity_support = bool(potential_entities.intersection(cluster_entities[cid]))
+            shared = potential_entities.intersection(cluster_entities[cid])
+            if len(shared) >= 2:
+                entity_boost = 1.25 # Significant boost for 2+ shared entities
+            elif len(shared) == 1:
+                entity_boost = 1.1
 
         current_best_rep_score = 0.0
         for rep in reps:
@@ -278,16 +284,23 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             lexical_score = get_cosine(vec1, text_to_vector(rep_title))
             phrase_score = _title_phrase_overlap(normalized_input, rep_title)
 
+            # Short title penalty: be stricter with very short headlines (under 30 chars)
+            # as they are prone to false positives.
+            if len(normalized_input) < 30 or len(_normalize_cluster_title(rep_title)) < 30:
+                lexical_score *= 0.85
+                phrase_score *= 0.85
+
             # Same-source follow-ups should only merge when the titles still
             # look like the same story, or when they share concrete entities.
             if same_source_cluster and input_fp != _get_fingerprint(rep_title):
-                if phrase_score < 0.26 and lexical_score < 0.58 and not shared_entity_support:
+                if phrase_score < 0.26 and lexical_score < 0.58 and not (len(shared) >= 1 if cid in cluster_entities else False):
                     continue
             
             # Weighted combine
             score = (lexical_score * 0.7) + (phrase_score * 0.3)
             score *= _temporal_decay(rep.get("created_at"))
             score *= source_penalty
+            score *= entity_boost
             
             if score > current_best_rep_score:
                 current_best_rep_score = score
