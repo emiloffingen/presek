@@ -46,8 +46,8 @@ def _get_model():
             return _model
         try:
             from sentence_transformers import SentenceTransformer
-        except ImportError:
-            log.error("[embeddings] sentence-transformers is not installed. Run: pip install sentence-transformers")
+        except Exception as e:
+            log.error(f"[embeddings] sentence-transformers import failed: {e}")
             return None
         try:
             log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on CPU")

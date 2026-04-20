@@ -24,3 +24,6 @@ fasttext==0.9.3
 pywebpush==1.14.0
 trafilatura==2.0.0
 playwright==1.58.0
+# CPU-only PyTorch (use PyTorch CPU wheels)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0+cpu

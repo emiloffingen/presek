@@ -279,7 +279,8 @@ class TestGenerateCoverArt:
         mock_db = MagicMock()
         mock_db.execute_one.return_value = {"category": "Вести"}
 
-        with patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+        with patch('ai_engine.POLLINATIONS_API_KEY', None), \
+             patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
              patch('os.makedirs'), \
              patch('database.db_manager', mock_db), \
              patch('builtins.open', MagicMock()):
