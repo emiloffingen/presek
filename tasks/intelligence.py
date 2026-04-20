@@ -12,7 +12,7 @@ from prompts import (
     TOPIC_SYSTEM_PROMPT, FACTCHECK_SYSTEM_PROMPT
 )
 from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
-from entities import extract_entities
+from entities import extract_entities, validate_person_names
 from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
     extract_cluster_tags_locally, filter_cluster_tags
@@ -191,6 +191,7 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             final_text = None
 
         if final_text:
+            final_text = validate_person_names(final_text)
             db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final_text, article_id), fetch=False)
             invalidate_public_data_caches()
             record_runtime_event("summary_path", mode=provider or "unknown", topic=topic or "unknown")
@@ -275,8 +276,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
             generated_article = res.get('article', '') if isinstance(res, dict) else ''
+            
+            # Sanitize for name hallucinations
+            summary = validate_person_names(summary)
+            generated_article = validate_person_names(generated_article)
+
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
-            quote = res.get('quote', '') if isinstance(res, dict) else ''
+            quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
 
             sentiment_data = {
                 "sentiment": res.get('sentiment', {}),

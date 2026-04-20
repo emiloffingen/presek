@@ -63,42 +63,43 @@ _SPACY_LABEL_MAP = {
 # Common Macedonian entities (VIPs) for exact matching
 KNOWN_ENTITIES = {
     # Politics - People
-    "Христијан Мицкоски": "PERSON",
-    "Димитар Ковачевски": "PERSON",
-    "Стево Пендаровски": "PERSON",
-    "Гордана Силјановска-Давкова": "PERSON",
     "Али Ахмети": "PERSON",
-    "Зијадин Села": "PERSON",
+    "Антонио Милошоски": "PERSON",
     "Арбен Таравари": "PERSON",
-    "Максим Димитриевски": "PERSON",
-    "Димитар Апасиев": "PERSON",
-    "Билал Касами": "PERSON",
-    "Венко Филипче": "PERSON",
-    "Оливер Спасовски": "PERSON",
-    "Бојан Маричиќ": "PERSON",
-    "Славјанка Петровска": "PERSON",
     "Артан Груби": "PERSON",
-    "Бујар Османи": "PERSON",
-    "Тимчо Муцунски": "PERSON",
-    "Никола Груевски": "PERSON",
-    "Зоран Заев": "PERSON",
+    "Африм Гаши": "PERSON",
+    "Билал Касами": "PERSON",
+    "Бојан Маричиќ": "PERSON",
     "Бранко Црвенковски": "PERSON",
-    "Сашо Мијалков": "PERSON",
-    "Јован Митрески": "PERSON",
-    "Игор Јанушев": "PERSON",
+    "Бујар Османи": "PERSON",
+    "Венко Филипче": "PERSON",
     "Владо Мисајловски": "PERSON",
-    "Фатмир Битиќи": "PERSON",
+    "Гордана Силјановска-Давкова": "PERSON",
+    "Дане Талески": "PERSON",
+    "Димитар Апасиев": "PERSON",
+    "Димитар Димовски": "PERSON",
+    "Димитар Ковачевски": "PERSON",
+    "Драган Ковачки": "PERSON",
+    "Зијадин Села": "PERSON",
+    "Зоран Заев": "PERSON",
+    "Изет Меџити": "PERSON",
+    "Игор Јанушев": "PERSON",
+    "Јован Митрески": "PERSON",
+    "Катерина Цаневска": "PERSON",
     "Крешник Бектеши": "PERSON",
     "Љупчо Николовски": "PERSON",
-    "Петар Богојески": "PERSON",
-    "Дане Талески": "PERSON",
-    "Антонио Милошоски": "PERSON",
-    "Драган Ковачки": "PERSON",
-    "Катерина Цаневска": "PERSON",
+    "Максим Димитриевски": "PERSON",
     "Миле Лефков": "PERSON",
-    "Изет Меџити": "PERSON",
-    "Африм Гаши": "PERSON",
+    "Никола Груевски": "PERSON",
+    "Оливер Спасовски": "PERSON",
+    "Петар Богојески": "PERSON",
+    "Сашо Мијалков": "PERSON",
+    "Славјанка Петровска": "PERSON",
+    "Стево Пендаровски": "PERSON",
+    "Тимчо Муцунски": "PERSON",
+    "Фатмир Битиќи": "PERSON",
     "Халил Снопче": "PERSON",
+    "Христијан Мицкоски": "PERSON",
     
     # Global - People
     "Доналд Трамп": "PERSON",
@@ -214,21 +215,12 @@ KNOWN_ENTITIES = {
     "УНЕСКО": "ORG",
     "Амнести интернешнал": "ORG",
     "Црвен крст": "ORG",
-    "СЗО": "ORG",
-    "Светска здравствена организација": "ORG",
-    "ММФ": "ORG",
-    "Светска банка": "ORG",
-    "Европски парламент": "ORG",
-    "Европска комисија": "ORG",
     "Стејт департмент": "ORG",
     "Кремљ": "ORG",
     "Белата куќа": "ORG",
     "Пентагон": "ORG",
     "ЦИА": "ORG",
     "ФБИ": "ORG",
-    "УНИЦЕФ": "ORG",
-    "ЕЦБ": "ORG",
-    "ОБСЕ": "ORG",
     "ХАМАС": "ORG",
     "ОПЕК": "ORG",
     "Ормуз": "LOC",
@@ -246,6 +238,9 @@ KNOWN_ENTITIES = {
     "Апасиев": "PERSON",
     "Макрон": "PERSON",
     "Курти": "PERSON",
+    "Филипче": "PERSON",
+    "Груевски": "PERSON",
+    "Јаневска": "PERSON",
     "ВМРО": "ORG",
     "ВМРО ДПМНЕ": "ORG",
 }
@@ -340,6 +335,42 @@ _ENTITY_ALIASES_CASEFOLDED = {
 }
 _KNOWN_ENTITIES_ORDERED = sorted(KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0]))
 _ENTITY_ALIASES_ORDERED = sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0]))
+
+_KNOWN_SURNAMES = {}
+_KNOWN_FIRSTNAMES = {}
+for _name, _etype in KNOWN_ENTITIES.items():
+    if _etype == "PERSON":
+        _parts = _name.split()
+        if len(_parts) >= 2:
+            _KNOWN_FIRSTNAMES[_parts[0]] = _name
+            _KNOWN_SURNAMES[_parts[-1]] = _name
+
+def validate_person_names(text: str) -> str:
+    """
+    Heuristic to fix AI hallucinations of famous names.
+    If it finds 'Dimitar Filipce' but 'Filipce' is known as 'Venko', and 'Dimitar' is known as 'Kovacevski',
+    it checks for likely mixups and restores canonical forms.
+    """
+    if not text:
+        return text
+    
+    # 1. Look for known surnames with wrong first names
+    # Patterns like "Dimitar Filipce" (hallucination)
+    words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ]+\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+\b", text)
+    for pair in words:
+        if pair in KNOWN_ENTITIES: continue
+        
+        first, last = pair.split()
+        # Case: Surname is famous (Filipce), but first name is wrong for that person
+        if last in _KNOWN_SURNAMES:
+            canonical = _KNOWN_SURNAMES[last]
+            if first != canonical.split()[0]:
+                # Strong signal: is the first name also a famous person's first name? (Dimitar)
+                if first in _KNOWN_FIRSTNAMES:
+                    text = text.replace(pair, canonical)
+                    log.info(f"[entities/fix] Hallucination detected: {pair} -> {canonical}")
+                    
+    return text
 
 
 def normalize_entity_name(name: str) -> str:
