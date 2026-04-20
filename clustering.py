@@ -243,6 +243,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         # Only allow same-source if it's a "series" (follow-up hours later) 
         # or if it's a fingerprint match (already handled above).
         source_penalty = 1.0
+        same_source_cluster = bool(source and source in cluster_sources.get(cid, set()))
         if source and source in cluster_sources.get(cid, set()):
             # Find time of earliest/latest article from same source in this cluster
             source_times = [
@@ -267,11 +268,21 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                 except:
                     source_penalty = 0.6
 
+        shared_entity_support = False
+        if cid in cluster_entities and potential_entities:
+            shared_entity_support = bool(potential_entities.intersection(cluster_entities[cid]))
+
         current_best_rep_score = 0.0
         for rep in reps:
             rep_title = rep["title"]
             lexical_score = get_cosine(vec1, text_to_vector(rep_title))
             phrase_score = _title_phrase_overlap(normalized_input, rep_title)
+
+            # Same-source follow-ups should only merge when the titles still
+            # look like the same story, or when they share concrete entities.
+            if same_source_cluster and input_fp != _get_fingerprint(rep_title):
+                if phrase_score < 0.26 and lexical_score < 0.58 and not shared_entity_support:
+                    continue
             
             # Weighted combine
             score = (lexical_score * 0.7) + (phrase_score * 0.3)
@@ -297,10 +308,9 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             # If they have DIFFERENT scores and DIFFERENT teams, the entity check above already caught it.
 
         # Entity Boosting
-        if cid in cluster_entities and potential_entities:
+        if shared_entity_support:
             shared = potential_entities.intersection(cluster_entities[cid])
-            if shared:
-                current_best_rep_score += min(0.35, len(shared) * 0.20)
+            current_best_rep_score += min(0.35, len(shared) * 0.20)
 
         if current_best_rep_score > threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score

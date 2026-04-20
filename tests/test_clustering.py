@@ -154,3 +154,28 @@ def test_phrase_overlap_helps_short_variants_join_same_cluster():
 
     cid = find_or_create_cluster(MagicMock(), "Владата со пакет мерки за економија", recent_articles)
     assert cid == "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Денес е Упокоение на Свети Методиј Солунски",
+            "created_at": datetime.datetime.now() - datetime.timedelta(hours=23),
+            "source": "Skopje Info",
+            "category": "Македонија",
+            "topic": "Вести",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Пишува „Скопски Херој“: Главен град без ноќен живот – каде исчезна урбаното Скопје?",
+        recent_articles,
+        category="Македонија",
+        source="Skopje Info",
+        topic="Вести",
+    )
+
+    assert cid != "c1"
