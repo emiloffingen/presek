@@ -21,7 +21,7 @@ try {
     
     if (briefRes.ok) {
         briefing = await briefRes.json();
-        if (briefing.error) briefing = null;
+        if (briefing.detail || briefing.error || !briefing.content) briefing = null;
     }
     if (statsRes.ok) {
         stats = await statsRes.json();
@@ -57,6 +57,10 @@ function esc(s: string) {
 }
 
 function renderBriefingLine(line: string) {
+    const stripped = line.trim();
+    if (stripped === '---') {
+        return `<hr class="my-12 border-t border-border" />`;
+    }
     if (line.startsWith('# ')) {
         return `<h1 class="briefing-content-title font-serif font-black text-4xl md:text-5xl mb-8 text-foreground tracking-tight">${esc(line.substring(2))}</h1>`;
     }
@@ -64,8 +68,8 @@ function renderBriefingLine(line: string) {
         let text = line.substring(4);
         let link = "";
         
-        // Match [[id]] at the end
-        const match = text.match(/\[\[([\w-]+)\]\]$/);
+        // Match [[id]] at the end (allowing for trailing spaces)
+        const match = text.match(/\[\[([\w-]+)\]\]\s*$/);
         if (match) {
             const id = match[1];
             text = text.replace(`[[${id}]]`, '').trim();

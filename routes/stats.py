@@ -247,6 +247,7 @@ async def _build_intelligence_summary_payload(last_24h: int) -> dict:
             "ai_ratio": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
         },
         "pluralism": {
+            "total_clusters": balance_stats["total_clusters"],
             "pluralism_pct": round((balance_stats["high_consensus"] + balance_stats["diverse_sources"]) / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
             "high_consensus_pct": round(balance_stats["high_consensus"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
             "diverse_sources_pct": round(balance_stats["diverse_sources"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0
@@ -277,12 +278,15 @@ async def get_stats_summary():
         LIMIT 1
     """)
     quote = _pick_quote_of_the_day(quote_row)
+    intelligence = await _build_intelligence_summary_payload(last_24h)
     res = {
         "last_24h": last_24h,
         "last_1h": last_1h,
         "total_feeds": total_feeds,
+        "total_articles": last_24h,
+        "total_clusters": intelligence["pluralism"]["total_clusters"],
         "quote_of_the_day": quote,
-        "intelligence": await _build_intelligence_summary_payload(last_24h),
+        "intelligence": intelligence,
     }
     set_cache(cache_key, res, ttl=300)
     return res
@@ -321,11 +325,11 @@ async def get_stats_full(request: Request):
         "db_size_mb": db_size,
         "total_feeds": (await db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"))["n"] or 0,
         "intelligence": await _build_intelligence_summary_payload(last_24h),
-        "oldest_article": dates["oldest"].isoformat() if dates["oldest"] else None,
-        "new_article": dates["newest"].isoformat() if dates["newest"] else None,
+        "oldest_article": dates["oldest"],
+        "new_article": dates["newest"],
         "by_source": await db.async_execute("SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"),
         "by_category": [{"category": r["category"] or "Друго", "n": r["n"]} for r in await db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8")],
-        "velocity": [{"t": r["t"].isoformat(), "n": r["n"]} for r in await db.async_execute("SELECT date_trunc('hour', created_at) AS t, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t")],
+        "velocity": [{"t": r["t"], "n": r["n"]} for r in await db.async_execute("SELECT date_trunc('hour', created_at) AS t, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t")],
         "speed_leaderboard": await db.async_execute("SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE created_at >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"),
         "editor_analytics": build_editor_analytics_payload(profile_stats, delivery_stats, await db.async_execute("SELECT value AS topic, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"), await db.async_execute("SELECT value AS source, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"), tracking_stats, await db.async_execute("SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"), await db.async_execute("SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"), await db.async_execute("SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"), await db.async_execute("SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at < NOW() - INTERVAL '7 days' AND created_at >= NOW() - INTERVAL '14 days') AS previous_impressions, COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at < NOW() - INTERVAL '7 days' AND created_at >= NOW() - INTERVAL '14 days') AS previous_follows FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '14 days' GROUP BY surface"))
     }
