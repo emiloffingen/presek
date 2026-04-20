@@ -102,9 +102,9 @@ async def serve_static_asset(filename: str):
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
     # This remains in main for redirect logic simplicity, or could move to stats
     # Fetch parent's context to inherit properties
-    p = db.execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
+    p = await db.async_execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
     if p:
-        db.execute(
+        await db.async_execute(
             "INSERT INTO delivery_tracking_events (parent_event_id, event_type, sync_token, delivery_kind, channel, target, cluster_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (event_id, event_type, p['sync_token'], p['delivery_kind'], p['channel'], p['target'], p['cluster_id']),
             fetch=False

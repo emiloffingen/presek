@@ -169,18 +169,24 @@ def _safe_tracking_redirect_path(path: str) -> str:
     if not any(clean.startswith(prefix) for prefix in _allowed) and clean != "/": return "/briefing"
     return clean
 
+_RATE_LIMITED_API_PATHS = {
+    "/api/news",
+    "/api/trending",
+    "/api/intelligence/top-entities",
+    "/api/profile/sync/init",
+    "/api/profile/sync",
+    "/api/profile/delivery",
+    "/api/profile/suggestion-event",
+}
+
 def _is_rate_limited_path(path: str) -> bool:
     clean = str(path or "").strip()
-    if not clean.startswith("/api/"): return False
-    return clean in {
-        "/api/news",
-        "/api/trending",
-        "/api/intelligence/top-entities",
-        "/api/profile/sync/init",
-        "/api/profile/sync",
-        "/api/profile/delivery",
-        "/api/profile/suggestion-event",
-    }
+    if not clean.startswith("/"):
+        return False
+    if clean in _RATE_LIMITED_API_PATHS:
+        return True
+    canonical = clean[4:] if clean.startswith("/api/") else clean
+    return f"/api{canonical}" in _RATE_LIMITED_API_PATHS
 
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}

@@ -237,13 +237,13 @@ async def get_cluster_detail(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
     try:
-        rows = db.execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
+        rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
         if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
         articles = annotate_cluster_articles(rows)
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))
         public_articles = [_public_article_payload(article) for article in articles]
 
-        s_row = db.execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
+        s_row = await db.async_execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
         synthesis = s_row["summary"] if s_row else None
         generated_article = s_row["generated_article"] if s_row else None
         
@@ -260,7 +260,7 @@ async def get_cluster_detail(cluster_id: str):
         if not perspectives: perspectives = []
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
-        m_row = db.execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
+        m_row = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
         tags = filter_cluster_tags((m_row.get("tags") or []) if m_row else [])
         topics = (m_row.get("topics") or []) if m_row else []
         rep_image = m_row.get("representative_image") if m_row else None
@@ -279,13 +279,13 @@ async def get_cluster_detail(cluster_id: str):
             from utils import get_dominant_color
             dominant_color = get_dominant_color(rep_image)
             if dominant_color:
-                db.execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
+                await db.async_execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
 
         related = []
         lead_article = articles[0] if articles else None
         if lead_article and lead_article.get("embedding"):
             lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
-            related_results = db.search_semantic(lead_vec, limit=8)
+            related_results = await db.async_search_semantic(lead_vec, limit=8)
             related_cids = []
             seen = {cluster_id}
             for r in related_results:
@@ -295,7 +295,7 @@ async def get_cluster_detail(cluster_id: str):
                     seen.add(cid)
                     if len(related_cids) >= 4: break
             if related_cids:
-                r_rows = db.execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
+                r_rows = await db.async_execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
                 r_grouped = defaultdict(list)
                 for r in r_rows: r_grouped[r["cluster_id"]].append(r)
                 for cid in related_cids:

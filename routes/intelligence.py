@@ -1,5 +1,6 @@
 import datetime
 import json
+import asyncio
 import logging
 import re
 from typing import Optional, List
@@ -63,7 +64,7 @@ async def get_pulse_overview():
     if cached: return cached
 
     # 1. Trending Entities (Last 48h)
-    trending = db.execute("""
+    trending = await db.async_execute("""
         SELECT name, total_mentions, sentiment_score, type
         FROM knowledge_entities
         WHERE last_seen >= NOW() - INTERVAL '48 hours'
@@ -72,7 +73,7 @@ async def get_pulse_overview():
     """)
 
     # 2. Sentiment Extremes
-    positives = db.execute("""
+    positives = await db.async_execute("""
         SELECT name, sentiment_score
         FROM knowledge_entities
         WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
@@ -80,7 +81,7 @@ async def get_pulse_overview():
         LIMIT 5
     """)
     
-    negatives = db.execute("""
+    negatives = await db.async_execute("""
         SELECT name, sentiment_score
         FROM knowledge_entities
         WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
@@ -89,7 +90,7 @@ async def get_pulse_overview():
     """)
 
     # 3. Hot Relationships (Duos)
-    relationships = db.execute("""
+    relationships = await db.async_execute("""
         SELECT entity_a, entity_b, weight
         FROM knowledge_relationships
         WHERE last_seen >= NOW() - INTERVAL '48 hours'
@@ -104,7 +105,7 @@ async def get_pulse_overview():
             "negatives": negatives
         },
         "relationships": relationships,
-        "updated_at": db.execute_one("SELECT MAX(last_seen) as last FROM knowledge_entities")["last"]
+        "updated_at": (await db.async_execute_one("SELECT MAX(last_seen) as last FROM knowledge_entities"))["last"]
     }
     
     set_cache(cache_key, result, ttl=600)
@@ -116,7 +117,7 @@ async def get_cluster_storyline_history(cluster_id: str):
     validate_cluster_id(cluster_id)
     
     # Get current cluster's embedding (avg of its articles)
-    rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
+    rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
     if not rows:
         return {"history": []}
     
@@ -135,7 +136,7 @@ async def get_cluster_storyline_history(cluster_id: str):
     
     # Search for similar clusters from the past 30 days
     # We group by cluster_id and join with metadata for images
-    related_clusters = db.execute("""
+    related_clusters = await db.async_execute("""
         SELECT a.cluster_id,
                MAX(a.title) as title,
                MIN(a.created_at) as first_seen,
@@ -164,7 +165,7 @@ async def get_deep_research(cluster_id: str):
     if cached: return cached
 
     # 1. Get cluster context
-    row = db.execute_one("""
+    row = await db.async_execute_one("""
         SELECT a.title, s.summary 
         FROM articles a 
         LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id 
@@ -193,11 +194,12 @@ async def get_deep_research(cluster_id: str):
 
     try:
         from ai_engine import sync_call_ai
-        response, provider = sync_call_ai(
+        response, provider = await asyncio.to_thread(
+            sync_call_ai,
             prompt=user_prompt,
             system=system_prompt,
             task_type="research",
-            max_tokens=1500
+            max_tokens=1500,
         )
         
         if not response:
@@ -230,7 +232,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     if cached: return cached
 
     # 1. Fetch all full content
-    arts = db.execute("SELECT title, full_content, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
+    arts = await db.async_execute("SELECT title, full_content, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
     if not arts:
         raise HTTPException(status_code=404, detail="Cluster not found")
 
@@ -261,11 +263,12 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     try:
         from ai_engine import sync_call_ai
         # Use mistral for high-quality formatting at low cost
-        response, provider = sync_call_ai(
+        response, provider = await asyncio.to_thread(
+            sync_call_ai,
             prompt=user_prompt,
             system=system_prompt,
-            task_type="default", # Standard editor mode
-            max_tokens=800
+            task_type="default",
+            max_tokens=800,
         )
         
         if not response:
@@ -310,7 +313,7 @@ async def get_source_pulse():
         GROUP BY a.source HAVING COUNT(DISTINCT a.cluster_id) >= 3
         ORDER BY cluster_count DESC
     """
-    rows = db.execute(sql)
+    rows = await db.async_execute(sql)
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
@@ -322,18 +325,18 @@ async def get_entity_profile(name: str):
     # Validate name parameter
     name = validate_string_param(name, "name", max_length=200, allow_empty=False)
     
-    entity = db.execute_one("SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score FROM knowledge_entities WHERE name = %s", (name,))
+    entity = await db.async_execute_one("SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score FROM knowledge_entities WHERE name = %s", (name,))
     if not entity:
-        if not db.execute_one("SELECT 1 FROM cluster_metadata WHERE %s = ANY(tags) LIMIT 1", (name,)):
+        if not await db.async_execute_one("SELECT 1 FROM cluster_metadata WHERE %s = ANY(tags) LIMIT 1", (name,)):
             raise HTTPException(status_code=404, detail="Entity not found")
         entity = {"name": name, "type": "ENTITY", "total_mentions": 0, "first_seen": None, "last_seen": None, "sentiment_score": 0}
     
-    relationships = db.execute("SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity, weight FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s ORDER BY weight DESC LIMIT 8", (name, name, name))
+    relationships = await db.async_execute("SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity, weight FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s ORDER BY weight DESC LIMIT 8", (name, name, name))
     # Use parameterized queries for array contains
-    media_stats = db.execute("SELECT a.source, COUNT(DISTINCT a.cluster_id) as mention_count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) GROUP BY a.source ORDER BY mention_count DESC LIMIT 5", (name,))
-    category_stats = db.execute("SELECT a.category, COUNT(DISTINCT a.cluster_id) as count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) AND a.category IS NOT NULL AND a.category != '' GROUP BY a.category ORDER BY count DESC LIMIT 5", (name,))
-    sentiment_history = db.execute("SELECT DATE(a.created_at) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE %s = ANY(m.tags) AND a.created_at >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC", (name,))
-    recent = db.execute("SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY created_at DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE %s = ANY(c.tags) ORDER BY c.updated_at DESC LIMIT 10", (name,))
+    media_stats = await db.async_execute("SELECT a.source, COUNT(DISTINCT a.cluster_id) as mention_count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) GROUP BY a.source ORDER BY mention_count DESC LIMIT 5", (name,))
+    category_stats = await db.async_execute("SELECT a.category, COUNT(DISTINCT a.cluster_id) as count FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE %s = ANY(m.tags) AND a.category IS NOT NULL AND a.category != '' GROUP BY a.category ORDER BY count DESC LIMIT 5", (name,))
+    sentiment_history = await db.async_execute("SELECT DATE(a.created_at) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE %s = ANY(m.tags) AND a.created_at >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC", (name,))
+    recent = await db.async_execute("SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY created_at DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE %s = ANY(c.tags) ORDER BY c.updated_at DESC LIMIT 10", (name,))
     
     processed = []
     for c in recent:
@@ -349,7 +352,7 @@ async def get_top_entities(limit: int = 10):
     cached = cached_response(cache_key)
     if cached: return cached
     fetch_limit = max(limit * 6, 40)
-    rows = db.execute("SELECT tag AS name, COUNT(*) AS total_mentions FROM (SELECT cm.cluster_id, UNNEST(cm.tags) AS tag FROM cluster_metadata cm JOIN articles a ON a.cluster_id = cm.cluster_id WHERE a.created_at >= NOW() - INTERVAL '48 hours' AND cm.tags IS NOT NULL GROUP BY cm.cluster_id, tag) t GROUP BY tag ORDER BY total_mentions DESC LIMIT %s", (fetch_limit,))
+    rows = await db.async_execute("SELECT tag AS name, COUNT(*) AS total_mentions FROM (SELECT cm.cluster_id, UNNEST(cm.tags) AS tag FROM cluster_metadata cm JOIN articles a ON a.cluster_id = cm.cluster_id WHERE a.created_at >= NOW() - INTERVAL '48 hours' AND cm.tags IS NOT NULL GROUP BY cm.cluster_id, tag) t GROUP BY tag ORDER BY total_mentions DESC LIMIT %s", (fetch_limit,))
     aggregated = {}
     for row in rows:
         norm = normalize_tag_name(normalize_entity_name(row["name"]))
@@ -368,11 +371,11 @@ async def get_top_entities(limit: int = 10):
 async def get_entity_topics(name: str):
     # Validate name parameter
     name = validate_string_param(name, "name", max_length=200, allow_empty=False)
-    return {"status": "success", "data": db.execute("SELECT a.topic, COUNT(*) as count FROM articles a JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id WHERE ce.entity_name = %s AND a.topic IS NOT NULL GROUP BY a.topic ORDER BY count DESC LIMIT 5", (name,))}
+    return {"status": "success", "data": await db.async_execute("SELECT a.topic, COUNT(*) as count FROM articles a JOIN cluster_entities ce ON a.cluster_id = ce.cluster_id WHERE ce.entity_name = %s AND a.topic IS NOT NULL GROUP BY a.topic ORDER BY count DESC LIMIT 5", (name,))}
 
 @router.get("/intelligence/live-map")
 async def get_live_map():
-    return {"status": "success", "data": db.execute("SELECT source, COUNT(*) as activity_score FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY activity_score DESC")}
+    return {"status": "success", "data": await db.async_execute("SELECT source, COUNT(*) as activity_score FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY activity_score DESC")}
 
 @router.get("/intelligence/compare-sources")
 async def compare_sources(s1: str, s2: str):
@@ -380,8 +383,8 @@ async def compare_sources(s1: str, s2: str):
     s1 = validate_string_param(s1, "s1", max_length=100, allow_empty=False)
     s2 = validate_string_param(s2, "s2", max_length=100, allow_empty=False)
     
-    rows = db.execute("SELECT a.source, AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment, AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity, AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism, COUNT(DISTINCT a.cluster_id) as cluster_count FROM cluster_summaries s JOIN articles a ON s.cluster_id = a.cluster_id WHERE a.source = ANY(%s) AND s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '30 days' GROUP BY a.source", ([s1, s2],))
-    overlap = db.execute_one("WITH src_c AS (SELECT source, cluster_id FROM articles WHERE source = ANY(%s) AND created_at >= NOW() - INTERVAL '30 days' GROUP BY source, cluster_id) SELECT COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NOT NULL) as shared_clusters, COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NULL) as s1_exclusive, COUNT(*) FILTER (WHERE s1.cluster_id IS NULL AND s2.cluster_id IS NOT NULL) as s2_exclusive FROM (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s1 FULL OUTER JOIN (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s2 ON s1.cluster_id = s2.cluster_id", ([s1, s2], s1, s2))
+    rows = await db.async_execute("SELECT a.source, AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment, AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity, AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism, COUNT(DISTINCT a.cluster_id) as cluster_count FROM cluster_summaries s JOIN articles a ON s.cluster_id = a.cluster_id WHERE a.source = ANY(%s) AND s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '30 days' GROUP BY a.source", ([s1, s2],))
+    overlap = await db.async_execute_one("WITH src_c AS (SELECT source, cluster_id FROM articles WHERE source = ANY(%s) AND created_at >= NOW() - INTERVAL '30 days' GROUP BY source, cluster_id) SELECT COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NOT NULL) as shared_clusters, COUNT(*) FILTER (WHERE s1.cluster_id IS NOT NULL AND s2.cluster_id IS NULL) as s1_exclusive, COUNT(*) FILTER (WHERE s1.cluster_id IS NULL AND s2.cluster_id IS NOT NULL) as s2_exclusive FROM (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s1 FULL OUTER JOIN (SELECT DISTINCT cluster_id FROM src_c WHERE source = %s) s2 ON s1.cluster_id = s2.cluster_id", ([s1, s2], s1, s2))
     return {"status": "success", "data": rows, "overlap": overlap}
 
 @router.post("/intelligence/recommendations")
@@ -396,7 +399,7 @@ async def get_personalized_recommendations(request: Request):
     if not recent_ids and not followed: return {"status": "success", "clusters": []}
     user_vectors = []
     if recent_ids:
-        rows = db.execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL LIMIT 20", (recent_ids,))
+        rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL LIMIT 20", (recent_ids,))
         for r in rows:
             if r["embedding"]: user_vectors.append(json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"]))
     from embeddings import generate_query_embedding
@@ -406,7 +409,7 @@ async def get_personalized_recommendations(request: Request):
     if not user_vectors: return {"status": "success", "clusters": []}
     import numpy as np
     avg_vec = np.mean(user_vectors, axis=0).tolist()
-    results = db.search_semantic(avg_vec, limit=limit * 3)
+    results = await db.async_search_semantic(avg_vec, limit=limit * 3)
     seen = set(recent_ids)
     cids = []
     for r in results:
@@ -416,14 +419,14 @@ async def get_personalized_recommendations(request: Request):
             seen.add(cid)
             if len(cids) >= limit: break
     if not cids: return {"status": "success", "clusters": []}
-    rows = db.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,))
+    rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,))
     cmap = {}
     for r in rows: cmap.setdefault(r["cluster_id"], []).append(r)
     formatted = []
     for cid in cids:
         arts = cmap.get(cid, [])
         if not arts: continue
-        s_row = db.execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,))
-        m_row = db.execute_one("SELECT representative_image FROM cluster_metadata WHERE cluster_id = %s", (cid,))
+        s_row = await db.async_execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,))
+        m_row = await db.async_execute_one("SELECT representative_image FROM cluster_metadata WHERE cluster_id = %s", (cid,))
         formatted.append({"cluster_id": cid, "articles": arts, "representative_image": m_row["representative_image"] if m_row else None, "score": score_cluster(arts), "has_synthesis": bool(s_row and s_row["summary"]), "is_breaking": any(a.get("is_breaking") for a in arts), "reason": "Предлог за Вас"})
     return {"status": "success", "clusters": formatted}

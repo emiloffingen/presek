@@ -313,6 +313,7 @@ def normalize_headline(title: str) -> str:
     # Handles (ВИДЕО), [ФОТО], ЖИВО:, BREAKING:, etc.
     tags_pattern = r'(\[(ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\]|\((ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\))'
     t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
+    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
     
     sensationalist = [
         "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", 

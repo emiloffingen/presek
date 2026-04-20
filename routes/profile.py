@@ -1,6 +1,7 @@
 import json
 import secrets
 import logging
+import asyncio
 from typing import Optional, List
 from fastapi import APIRouter, Request, HTTPException
 
@@ -82,14 +83,14 @@ def _normalize_server_delivery_row(row):
 async def init_profile_sync():
     token = secrets.token_urlsafe(18)
     empty = _normalize_synced_profile({})
-    db.execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
+    await db.async_execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
     return {"status": "success", "token": token, "profile": empty}
 
 @router.get("/profile/sync")
 async def get_profile_sync(request: Request):
     token = _extract_sync_token(request)
     if not token or len(token) < 12: raise HTTPException(status_code=400, detail="Missing sync token")
-    row = db.execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))
+    row = await db.async_execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not row: raise HTTPException(status_code=404, detail="Profile not found")
     return {"status": "success", "profile": _normalize_synced_profile(row.get("profile_data") or {}), "updated_at": row.get("updated_at")}
 
@@ -102,10 +103,10 @@ async def save_profile_sync(request: Request):
     token = str(payload.get("token") or "").strip()
     if not token: raise HTTPException(status_code=400, detail="Missing sync token")
     incoming = _normalize_synced_profile(payload.get("profile") or {})
-    existing = db.execute_one("SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s", (token,))
+    existing = await db.async_execute_one("SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not existing: raise HTTPException(status_code=404, detail="Profile not found")
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
-    db.execute("UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s", (json.dumps(merged), token), fetch=False)
+    await db.async_execute("UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s", (json.dumps(merged), token), fetch=False)
     return {"status": "success", "profile": merged}
 
 @router.get("/profile/vapid-key")
@@ -121,7 +122,7 @@ async def get_profile_delivery(request: Request):
     # Validate token length
     if len(token) < 12:
         raise HTTPException(status_code=400, detail="Invalid sync token format")
-    row = db.execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
+    row = await db.async_execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
     return {"status": "success", "subscription": _normalize_server_delivery_row(row), "updated_at": row.get("updated_at") if row else None}
 
 @router.post("/profile/delivery")
@@ -135,10 +136,10 @@ async def save_profile_delivery(request: Request):
     # Validate token length
     if len(token) < 12:
         raise HTTPException(status_code=400, detail="Invalid sync token format")
-    if not db.execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
+    if not await db.async_execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
         raise HTTPException(status_code=400, detail="Invalid sync token")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
-    db.execute("""INSERT INTO synced_delivery_subscriptions
+    await db.async_execute("""INSERT INTO synced_delivery_subscriptions
            (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
            ON CONFLICT (sync_token) DO UPDATE SET
@@ -171,15 +172,18 @@ async def get_personalized_news_sync(request: Request):
     if not vec_rows:
         return {"status": "success", "results": []}
 
-    import numpy as np
     def parse_vec(v):
         if isinstance(v, str):
             import json
             v = json.loads(v)
-        return np.array(v, dtype=np.float32)
+        return [float(item) for item in v]
 
     vecs = [parse_vec(r['embedding']) for r in vec_rows]
-    interest_vec = np.mean(vecs, axis=0).tolist()
+    dims = len(vecs[0]) if vecs else 0
+    interest_vec = [
+        sum(vec[idx] for vec in vecs) / len(vecs)
+        for idx in range(dims)
+    ]
     vec_str = "[" + ",".join(map(str, interest_vec)) + "]"
 
     limit = payload.get("limit") or 6
@@ -276,7 +280,7 @@ async def save_suggestion_events(request: Request):
         kind = _normalize_suggestion_kind(item.get("suggestionKind"))
         val = str(item.get("value") or "").strip()[:160]
         if surface and etype:
-            db.execute("INSERT INTO suggestion_surface_events (sync_token, client_id, surface, suggestion_kind, event_type, value, metadata) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
+            await db.async_execute("INSERT INTO suggestion_surface_events (sync_token, client_id, surface, suggestion_kind, event_type, value, metadata) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
                 (token or None, client_id, surface, kind or None, etype, val, json.dumps({})), fetch=False)
     delete_cache("stats:full")
     return {"status": "success"}

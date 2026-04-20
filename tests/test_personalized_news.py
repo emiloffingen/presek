@@ -65,14 +65,28 @@ def _get_fake_fastapi_modules():
         "starlette.status": MagicMock(),
     }
 
-for name, mod in _get_fake_fastapi_modules().items():
-    sys.modules[name] = mod
-
-# Global DB Mock
 mock_db_manager = MagicMock()
 mock_db_manager.async_execute = AsyncMock(return_value=[])
 mock_db_manager.async_get_synthesis_ids = AsyncMock(return_value=[])
-sys.modules["database"] = MagicMock(db_manager=mock_db_manager)
+
+@pytest.fixture(scope="module", autouse=True)
+def _install_test_module_mocks():
+    fake_modules = _get_fake_fastapi_modules()
+    fake_modules["database"] = MagicMock(db_manager=mock_db_manager)
+    original_modules = {name: sys.modules.get(name) for name in fake_modules}
+    sys.modules.update(fake_modules)
+    for name in ["routes", "routes.profile", "routes.news", "routes.security"]:
+        sys.modules.pop(name, None)
+    try:
+        yield
+    finally:
+        for name, original in original_modules.items():
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
+        for name in ["routes", "routes.profile", "routes.news", "routes.security"]:
+            sys.modules.pop(name, None)
 
 # --- End Mocks ---
 

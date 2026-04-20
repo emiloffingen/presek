@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import asyncio
 import logging
 import datetime
 import time
@@ -69,8 +70,9 @@ async def get_weather():
     if cached: return cached
     try:
         import httpx
-        with httpx.Client(timeout=3.0) as client:
-            r = client.get("https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true").json()
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            response = await client.get("https://api.open-meteo.com/v1/forecast?latitude=41.9965&longitude=21.4314&current_weather=true")
+        r = response.json()
         curr = r.get("current_weather", {})
         temp = curr.get("temperature")
         res = {"temp": round(temp) if temp is not None else None, "icon": _WMO_ICON.get(curr.get("weathercode"), "🌡️")}
@@ -102,7 +104,7 @@ async def get_navigation():
     # 1. ВО ЖИВО (Breaking) - Top 2 breaking clusters
     breaking_items = []
     # Find clusters updated in last 12h with high score
-    recent_clusters = db.execute("""
+    recent_clusters = await db.async_execute("""
         SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_metadata m
         WHERE m.updated_at >= NOW() - INTERVAL '12 hours'
@@ -111,7 +113,7 @@ async def get_navigation():
     """)
     
     for c in recent_clusters:
-        arts = db.execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
+        arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
             breaking_items.append({
                 "label": cleanAndDecode(c["title"])[:80] + ("..." if len(c["title"]) > 80 else ""),
@@ -155,10 +157,10 @@ async def get_cluster_share_card(cluster_id: str):
     
     try:
         # 1. Gather Cluster Info
-        arts = db.execute("SELECT title, source, category, image_url, local_image_path FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
+        arts = await db.async_execute("SELECT title, source, category, image_url, local_image_path FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
         if not arts: raise HTTPException(status_code=404)
         
-        meta = db.execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
+        meta = await db.async_execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
         headline = cleanAndDecode(arts[0]["title"])
         source_count = len(set(a['source'] for a in arts))
         cat = (arts[0]["category"] or "ВЕСТИ").upper()
@@ -179,8 +181,8 @@ async def get_cluster_share_card(cluster_id: str):
             if not bg_img and bg_url and bg_url.startswith("http"):
                 safe_ips = _resolve_public_ips(bg_url)
                 import httpx
-                with httpx.Client(timeout=3.0, follow_redirects=True) as client:
-                    resp = client.get(bg_url)
+                async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+                    resp = await client.get(bg_url)
                 p_ip = _peer_ip(resp)
                 if p_ip and p_ip in safe_ips and resp.status_code == 200:
                     bg_img = Image.open(BytesIO(resp.content))
@@ -301,7 +303,7 @@ async def proxy_image(
 
     try:
         # 1. Fast path: check if we have a locally saved version in the DB
-        local_img_row = db.execute_one(
+        local_img_row = await db.async_execute_one(
             "SELECT local_image_path FROM articles WHERE image_url = %s AND local_image_path IS NOT NULL LIMIT 1",
             (url,)
         )

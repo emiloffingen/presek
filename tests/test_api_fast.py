@@ -107,20 +107,37 @@ def _get_fake_fastapi_modules():
         "fastapi.middleware.gzip": mg,
     }
 
-for name, mod in _get_fake_fastapi_modules().items():
-    sys.modules[name] = mod
+@pytest.fixture(scope="module", autouse=True)
+def _install_fake_fastapi_modules():
+    original_modules = {name: sys.modules.get(name) for name in _get_fake_fastapi_modules()}
+    sys.modules.update(_get_fake_fastapi_modules())
+    for name in ["api_fast", "routes", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
+        sys.modules.pop(name, None)
+    try:
+        yield
+    finally:
+        for name, original in original_modules.items():
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
+        for name in ["api_fast", "routes", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
+            sys.modules.pop(name, None)
 
 @pytest.fixture
 def mock_all():
     import database
     m_db = MagicMock()
+    m_db.async_execute = AsyncMock(return_value=[])
+    m_db.async_execute_one = AsyncMock(return_value={})
+    m_db.async_get_synthesis_ids = AsyncMock(return_value=[])
+    m_db.async_search_articles = AsyncMock(return_value=[])
+    m_db.async_hybrid_search = AsyncMock(return_value=[])
     m_ai = AsyncMock(return_value=('{"answer":"ok"}', "prov"))
     
     # Patch everything - use importlib to patch database module
     with patch.dict("sys.modules", {"database": MagicMock(db_manager=m_db)}), \
          patch("ai_engine._call_ai_async", m_ai):
-        m_db.async_hybrid_search = AsyncMock(return_value=[])
-        m_db.async_search_articles = AsyncMock(return_value=[])
         m_db.hybrid_search.return_value = []
         yield {"db": m_db, "ai": m_ai}
 
@@ -136,12 +153,12 @@ def test_fastapi_profile_sync_init_creates_token(mock_all):
     with patch("secrets.token_urlsafe", return_value="token123"):
         data = asyncio.run(api_fast.init_profile_sync())
     assert data["token"] == "token123"
-    mock_all["db"].execute.assert_called()
+    mock_all["db"].async_execute.assert_called()
 
 def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
     import routes.intelligence as intelligence
 
-    mock_all["db"].execute.return_value = [
+    mock_all["db"].async_execute.return_value = [
         {"name": "МИА", "total_mentions": 12},
         {"name": "Ормуз", "total_mentions": 8},
         {"name": "Теснец", "total_mentions": 7},
@@ -273,7 +290,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
             return {"total_clusters": 20, "high_consensus": 5, "diverse_sources": 8}
         raise AssertionError(f"Unexpected query: {query}")
 
-    mock_all["db"].execute_one.side_effect = execute_one_side_effect
+    mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
 
     with patch("routes.stats.cached_response", return_value=None), \
          patch("routes.stats.set_cache"), \
