@@ -122,15 +122,31 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. Dynamic Activity (24h lookback to ensure links work)
+    # 2. Dynamic Activity (24h lookback using cluster_metadata for speed)
+    # We count clusters instead of individual articles for navigation weight
     activity = await db.async_execute("""
-        SELECT category, topic, subcategory, COUNT(*) as n 
-        FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'
-        GROUP BY category, topic, subcategory
+        SELECT category, unnest(topics) as topic, COUNT(*) as n 
+        FROM cluster_metadata 
+        WHERE updated_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY category, topic
     """)
-    cat_act = {r['category']: r['n'] for r in activity if r['category']}
-    top_act = {r['topic']: r['n'] for r in activity if r['topic']}
-    sub_act = {r['subcategory']: r['n'] for r in activity if r['subcategory']}
+    
+    # Subcategory still needs articles table but it's narrow
+    sub_activity = await db.async_execute("""
+        SELECT subcategory, COUNT(DISTINCT cluster_id) as n
+        FROM articles 
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+          AND subcategory IS NOT NULL AND subcategory != ''
+        GROUP BY subcategory
+    """)
+
+    cat_act = defaultdict(int)
+    top_act = defaultdict(int)
+    for r in activity:
+        if r['category']: cat_act[r['category']] += r['n']
+        if r['topic']: top_act[r['topic']] += r['n']
+    
+    sub_act = {r['subcategory']: r['n'] for r in sub_activity}
 
     # 3. CORE REGIONS (Always shown if count > 0)
     regions = []
