@@ -139,17 +139,19 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
         if topic == "Вести" or not topic:
             threshold = min(threshold, 0.21) # Cap distance for generic news
             
-        params = [str(embedding), lookback_hours, str(embedding)]
+        params = [str(embedding), lookback_hours]
         filters = []
         if category:
             filters.append("a.category = %s")
-            params.insert(1, category)
+            params.append(category)
         
         # We join with cluster_metadata to match against the Centroid (the stable center)
         # instead of individual articles. This prevents 'outlier pull'.
         where_clause = " AND ".join(filters)
         if where_clause:
             where_clause = "AND " + where_clause
+        
+        params.append(str(embedding))
 
         sql = f"""
             SELECT m.cluster_id, m.centroid <=> %s::vector as distance, m.updated_at
