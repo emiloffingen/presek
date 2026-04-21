@@ -210,7 +210,7 @@ def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
 
 async def build_intelligence_summary_payload(last_24h: int) -> dict:
-    \"\"\"Calculates AI transparency, pluralism and international share metrics.\"\"\"
+    """Calculates AI transparency, pluralism and international share metrics."""
     from utils import cached_response, set_cache, redis_client
     import asyncio
     
@@ -242,7 +242,7 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
             else:
                 ai_summaries += val
 
-    balance_stats = await db.async_execute_one(\"\"\"
+    balance_stats = await db.async_execute_one("""
         WITH cluster_tiers AS (
             SELECT cluster_id, COUNT(DISTINCT
                 CASE
@@ -260,21 +260,21 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
             COUNT(*) FILTER (WHERE group_count >= 3) as high_consensus,
             COUNT(*) FILTER (WHERE group_count = 2) as diverse_sources
         FROM cluster_tiers
-    \"\"\") or {\"total_clusters\": 0, \"high_consensus\": 0, \"diverse_sources\": 0}
+    """) or {"total_clusters": 0, "high_consensus": 0, "diverse_sources": 0}
 
     res = {
-        \"last_24h\": last_24h,
-        \"international_share_pct\": round((intl_articles / total_articles * 100), 1) if total_articles > 0 else 0,
-        \"ai_transparency\": {
-            \"ai_summaries\": ai_summaries,
-            \"local_summaries\": local_summaries,
-            \"ai_ratio\": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
+        "last_24h": last_24h,
+        "international_share_pct": round((intl_articles / total_articles * 100), 1) if total_articles > 0 else 0,
+        "ai_transparency": {
+            "ai_summaries": ai_summaries,
+            "local_summaries": local_summaries,
+            "ai_ratio": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
         },
-        \"pluralism\": {
-            \"total_clusters\": balance_stats[\"total_clusters\"],
-            \"pluralism_pct\": round((balance_stats[\"high_consensus\"] + balance_stats[\"diverse_sources\"]) / max(1, balance_stats[\"total_clusters\"]) * 100, 1),
-            \"high_consensus_pct\": round(balance_stats[\"high_consensus\"] / max(1, balance_stats[\"total_clusters\"]) * 100, 1),
-            \"diverse_sources_pct\": round(balance_stats[\"diverse_sources\"] / max(1, balance_stats[\"total_clusters\"]) * 100, 1)
+        "pluralism": {
+            "total_clusters": balance_stats["total_clusters"],
+            "pluralism_pct": round((balance_stats["high_consensus"] + balance_stats["diverse_sources"]) / max(1, balance_stats["total_clusters"]) * 100, 1),
+            "high_consensus_pct": round(balance_stats["high_consensus"] / max(1, balance_stats["total_clusters"]) * 100, 1),
+            "diverse_sources_pct": round(balance_stats["diverse_sources"] / max(1, balance_stats["total_clusters"]) * 100, 1)
         }
     }
     set_cache(cache_key, res, ttl=300)
