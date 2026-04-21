@@ -20,17 +20,15 @@ export default function PreferenceToggle({
   onChanged?: (isFollowing: boolean) => void;
   analyticsSurface?: string;
 }) {
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(() => isFollowingValue(kind, value));
   const [feedback, setFeedback] = useState('');
   const feedbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setIsFollowing(isFollowingValue(kind, value));
+    const sync = () => setIsFollowing(isFollowingValue(kind, value));
+    sync();
+    return subscribeToReaderProfile(sync);
   }, [kind, value]);
-
-  useEffect(() => subscribeToReaderProfile(() => {
-    setIsFollowing(isFollowingValue(kind, value));
-  }), [kind, value]);
 
   useEffect(() => () => {
     if (feedbackTimerRef.current) {

@@ -93,8 +93,8 @@ async def get_trending_route():
 
 @router.get("/navigation")
 async def get_navigation():
-    """Returns structured navigation items for the header facelift."""
-    cache_key = "api:navigation:v1"
+    """Returns structured navigation items with real-time discovery signals."""
+    cache_key = "api:navigation:v3"
     cached = cached_response(cache_key)
     if cached: return cached
 
@@ -102,18 +102,17 @@ async def get_navigation():
     from utils import score_cluster
     from .intelligence import get_top_entities
 
-    # 1. ВО ЖИВО (Breaking) - Top 2 breaking clusters
+    # 1. ВО ЖИВО (Breaking News)
     breaking_items = []
-    # Find clusters updated in last 12h with high score
     recent_clusters = await db.async_execute("""
         SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_metadata m
         WHERE m.updated_at >= NOW() - INTERVAL '12 hours'
-        ORDER BY m.updated_at DESC
-        LIMIT 20
+        ORDER BY m.updated_at DESC LIMIT 15
     """)
     
     for c in recent_clusters:
+        if not c.get("title"): continue
         arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
             breaking_items.append({
@@ -123,26 +122,59 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. ФОКУС — Display all core and thematic categories in one row
-    focus_items = [
-        {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "type": "focus"},
-        {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "type": "focus"},
-        {"label": "Европа", "href": f"/?category={urllib.parse.quote('Европа')}", "type": "focus"},
-        {"label": "Свет", "href": f"/?category={urllib.parse.quote('Свет')}", "type": "focus"},
-        {"label": "Политика", "href": f"/?topic={urllib.parse.quote('Политика')}", "type": "focus"},
-        {"label": "Економија", "href": f"/?topic={urllib.parse.quote('Економија')}", "type": "focus"},
-        {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "type": "focus"},
-        {"label": "Криминал", "href": f"/?topic={urllib.parse.quote('Криминал')}", "type": "focus"},
-        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}", "type": "focus"},
-        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}", "type": "focus"},
-        {"label": "Здравје", "href": f"/?topic={urllib.parse.quote('Здравје')}", "type": "focus"},
-        {"label": "Живот", "href": f"/?topic={urllib.parse.quote('Живот')}", "type": "focus"},
+    # 2. Activity Counts (Last 4h) for heat indicators
+    activity = await db.async_execute("""
+        SELECT category, topic, subcategory, COUNT(*) as n 
+        FROM articles WHERE created_at >= NOW() - INTERVAL '4 hours'
+        GROUP BY category, topic, subcategory
+    """)
+    cat_act = {r['category']: r['n'] for r in activity if r['category']}
+    top_act = {r['topic']: r['n'] for r in activity if r['topic']}
+    sub_act = {r['subcategory']: r['n'] for r in activity if r['subcategory']}
+
+    # 3. ФОКУС: Regions
+    regions = [
+        {"label": "Македонија", "href": f"/?category={urllib.parse.quote('Македонија')}", "count": cat_act.get("Македонија", 0)},
+        {"label": "Балкан", "href": f"/?category={urllib.parse.quote('Балкан')}", "count": cat_act.get("Балкан", 0)},
+        {"label": "Европа", "href": f"/?category={urllib.parse.quote('Европа')}", "count": cat_act.get("Европа", 0)},
+        {"label": "Америка", "href": f"/?category={urllib.parse.quote('Америка')}", "count": cat_act.get("Америка", 0)},
+        {"label": "Свет", "href": f"/?category={urllib.parse.quote('Свет')}", "count": cat_act.get("Свет", 0)},
+    ]
+
+    # 4. ФОКУС: Local/Municipal
+    local = [
+        {"label": "Скопје", "href": f"/?subcategory={urllib.parse.quote('Скопје')}", "count": sub_act.get("Скопје", 0)},
+        {"label": "Република", "href": f"/?subcategory={urllib.parse.quote('Република')}", "count": sub_act.get("Република", 0)},
+    ]
+
+    # 5. ФОКУС: Topics
+    topics = [
+        {"label": "Политика", "href": f"/?topic={urllib.parse.quote('Политика')}", "count": top_act.get("Политика", 0)},
+        {"label": "Економија", "href": f"/?topic={urllib.parse.quote('Економија')}", "count": top_act.get("Економија", 0)},
+        {"label": "Спорт", "href": f"/?topic={urllib.parse.quote('Спорт')}", "count": top_act.get("Спорт", 0)},
+        {"label": "Криминал", "href": f"/?topic={urllib.parse.quote('Криминал')}", "count": top_act.get("Криминал", 0)},
+        {"label": "Забава", "href": f"/?topic={urllib.parse.quote('Забава')}", "count": top_act.get("Забава", 0)},
+        {"label": "Технологија", "href": f"/?topic={urllib.parse.quote('Технологија')}", "count": top_act.get("Технологија", 0)},
+        {"label": "Здравје", "href": f"/?topic={urllib.parse.quote('Здравје')}", "count": top_act.get("Здравје", 0)},
+        {"label": "Живот", "href": f"/?topic={urllib.parse.quote('Живот')}", "count": top_act.get("Живот", 0)},
+    ]
+
+    # 6. ТРЕНДИНГ: Top Entities (People/Places/Orgs)
+    trending_entities = await get_top_entities(limit=6)
+    entities = [
+        {"label": e["name"], "href": f"/?entity={urllib.parse.quote(e['name'])}", "type": "entity"}
+        for e in trending_entities
     ]
 
     res = {
         "breaking": breaking_items,
-        "focus": focus_items,
-        "sections": []
+        "focus": regions + local + topics + entities,
+        "sections": [
+            {"label": "Региони", "items": regions},
+            {"label": "Локално", "items": local},
+            {"label": "Теми", "items": topics},
+            {"label": "Во Фокус", "items": entities}
+        ]
     }
     set_cache(cache_key, res, ttl=600)
     return res

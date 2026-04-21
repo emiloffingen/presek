@@ -266,7 +266,10 @@ async def get_cluster_detail(cluster_id: str):
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))
         public_articles = [_public_article_payload(article) for article in articles]
 
+        log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}'")
         s_row = await db.async_execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
+        log.debug(f"[debug] s_row found: {bool(s_row)}")
+        
         synthesis = s_row["summary"] if s_row else None
         generated_article = s_row["generated_article"] if s_row else None
         
