@@ -73,6 +73,10 @@ def _public_article_payload(article):
             continue
         if key == "title":
             res[key] = normalize_headline(value)
+        elif key == "description" and value and len(str(value)) > 400:
+            res[key] = str(value)[:397] + "..."
+        elif key == "summary" and value and len(str(value)) > 500:
+            res[key] = str(value)[:497] + "..."
         elif key == "created_at" and value:
             if isinstance(value, (datetime.datetime, datetime.date)):
                 # If it's a naive datetime, assume UTC and append Z

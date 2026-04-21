@@ -625,11 +625,11 @@ def prune_db():
     # Delete old articles
     db_manager.execute("DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s", (interval,), fetch=False)
     
-    # Clean up orphaned metadata/summaries (since we use logical cluster_ids instead of hard FKs)
+    # Clean up orphaned metadata/summaries efficiently using NOT EXISTS
     db_manager.execute("""
-        DELETE FROM cluster_summaries WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
-        DELETE FROM cluster_metadata WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
-        DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
-        DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
+        DELETE FROM cluster_summaries cs WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cs.cluster_id);
+        DELETE FROM cluster_metadata cm WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cm.cluster_id);
+        DELETE FROM cluster_entities ce WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = ce.cluster_id);
+        DELETE FROM reactions r WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = r.cluster_id);
         DELETE FROM failed_tasks WHERE created_at < NOW() - INTERVAL %s;
     """, (f"{int(DB_RETAIN_DAYS) * 2} days",), fetch=False)
