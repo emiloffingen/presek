@@ -232,33 +232,70 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     if cached: return cached
 
     # 1. Fetch all full content
-    arts = await db.async_execute("SELECT title, full_content, source, category FROM articles WHERE cluster_id = %s", (cluster_id,))
+    arts = await db.async_execute("SELECT title, full_content, source, category, embedding FROM articles WHERE cluster_id = %s", (cluster_id,))
     if not arts:
         raise HTTPException(status_code=404, detail="Cluster not found")
 
     combined_text = "\n\n".join([f"--- ИЗВОР: {a['source']} ---\n{a['full_content'] or a['title']}" for a in arts[:5]])
     
+    # 1.5 Fetch Data-Driven Context for 'context' mode
+    history_context = ""
+    if mode == "context":
+        try:
+            import numpy as np
+            import json
+            vecs = [json.loads(a['embedding']) if isinstance(a['embedding'], str) else list(a['embedding']) for a in arts if a.get('embedding')]
+            if vecs:
+                avg_vec = np.mean(vecs, axis=0).tolist()
+                vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
+                # Find historically similar clusters (excluding today)
+                past_events = await db.async_execute("""
+                    SELECT title, created_at, category
+                    FROM articles
+                    WHERE embedding IS NOT NULL AND cluster_id != %s
+                      AND created_at < NOW() - INTERVAL '24 hours'
+                    ORDER BY (embedding <=> %s::vector) ASC
+                    LIMIT 5
+                """, (cluster_id, vec_str))
+                if past_events:
+                    history_list = "\n".join([f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})" for p in past_events])
+                    history_context = f"\n\nРЕАЛНА ИСТОРИСКА ПОЗАДИНА ОД БАЗАТА (Користи го ова за контекст):\n{history_list}"
+        except Exception as e:
+            log.warning(f"Failed to fetch analyst history context: {e}")
+
     # 2. Select Prompt based on Mode
     prompts = {
         "facts": (
-            "Ти си Економски Аналитичар за 'Пресек'. Твоја задача е да извлечеш клучни бројки, датуми и статистика. "
-            "ПРАВИЛА: 1. Започни со еден концизен воведен пасус (Lead). 2. Користи БОЛД (на пр. **15%**) за сите важни бројки и имиња. "
-            "3. Не користи емоџи во текстот. 4. Биди професионален и објективен. Дај ги информациите во јасни булети со наслов '# Клучни показатели'."
+            "Ти си Економски Аналитичар за 'Пресек'. Твоја задача е да извлечеш клучни бројки, датуми и статистика.\n\n"
+            "СТРУКТУРА НА ОДГОВОРОТ:\n"
+            "1. # Сумарен преглед: Еден концизен воведен пасус (Lead).\n"
+            "2. # Клучни показатели: Јасни булети со најважните податоци. Користи БОЛД за сите бројки (пр. **15%**, **200 милиони**).\n"
+            "3. # Хронологија: Ако веста има временска рамка, претстави ја во булети.\n\n"
+            "ПРАВИЛА: Не измислувај бројки. Не користи емоџи. Биди професионален."
         ),
         "perspectives": (
-            "Ти си Политички Аналитичар за 'Пресек'. Анализирај ги ставовите на клучните актери. "
-            "ПРАВИЛА: 1. Идентификувај ги страните и нивните цитати. 2. Користи БОЛД за имињата на политичарите и институциите. "
-            "3. Нагласи ги контрадикторностите. 4. Без емоџи. 5. Започни со сумарен пасус со наслов '# Сумарен преглед'."
+            "Ти си Политички Аналитичар за 'Пресек'. Анализирај ги ставовите на клучните актери.\n\n"
+            "СТРУКТУРА НА ОДГОВОРОТ:\n"
+            "1. # Главниот спор: Опиши го јадрото на конфликтот или дебатата.\n"
+            "2. # Ставови на актерите: За секој клучен актер (личност или институција) наведи:\n"
+            "   - Клучна порака или цитат.\n"
+            "   - Мотив или интерес (што сакаат да постигнат).\n\n"
+            "ПРАВИЛА: Користи БОЛД за имињата. СТРОГО: Не го менувај родот на титулите (пр. не 'Министерката' за машко име). "
+            "Не измислувај изјави што ги нема во текстот."
         ),
         "context": (
-            "Ти си Главен Уредник и Историчар. Објасни ја пошироката слика на оваа вест. "
-            "ПРАВИЛА: 1. Напиши го ова како сериозна уредничка анализа. 2. Објасни ја историската позадина и можните последици. "
-            "3. Користи БОЛД за клучни термини и настани. 4. Без емоџи во телото на текстот. 5. Користи префинет новинарски јазик со наслов '# Аналитички контекст'."
+            "Ти си Главен Уредник и Историчар. Твоја задача е да ја објасниш пошироката слика.\n\n"
+            "СТРУКТУРА НА ОДГОВОРОТ:\n"
+            "1. # Аналитички контекст: Напиши го ова како сериозна уредничка анализа.\n"
+            "2. # Поврзаност со минатото: Објасни како оваа вест се надоврзува на претходни настани (ако се дадени во позадината).\n"
+            "3. # Значење и последици: Што значи ова за иднината?\n\n"
+            "ПРАВИЛА: Користи префинет новинарски јазик. БОЛД за клучни термини. Без емоџи. "
+            "СТРОГО: Не измислувај имиња или настани што не се присутни во материјалите."
         )
     }
     
     system_prompt = prompts.get(mode, prompts["facts"])
-    user_prompt = f"АНАЛИЗИРАЈ ГИ СЛЕДНИТЕ СТАТИИ:\n\n{combined_text[:12000]}" # Limit context to stay cheap
+    user_prompt = f"АНАЛИЗИРАЈ ГИ СЛЕДНИТЕ СТАТИИ:\n\n{combined_text[:12000]}{history_context}"
 
     try:
         from ai_engine import sync_call_ai
@@ -268,11 +305,15 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
             prompt=user_prompt,
             system=system_prompt,
             task_type="default",
-            max_tokens=800,
+            max_tokens=1000,
         )
         
         if not response:
             return {"status": "error", "message": "Аналитичарот е зафатен."}
+
+        # Apply final name validation on the report
+        from entities import validate_person_names
+        response = validate_person_names(response)
 
         result = {
             "status": "success",
