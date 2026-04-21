@@ -310,16 +310,20 @@ def normalize_headline(title: str) -> str:
     t = re.sub(r'<[^>]+>', '', t) # Strip HTML
     
     # 2. Aggressive Tag & Decorative Prefix Removal
-    # Handles (ВИДЕО), [ФОТО], ЖИВО:, BREAKING:, etc.
-    tags_pattern = r'(\[(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)\]|\((ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)\))'
+    # Handles (ВИДЕО), [ФОТО], [ФОТО/ВИДЕО], (ФОТО+ВИДЕО), ЖИВО:, BREAKING:, etc.
+    # More robust pattern for bracketed/parenthesized tags with slashes, pluses or combined words
+    tags_pattern = r'(\[[^\]]*(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)[^\]]*\]|\([^\)]*(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)[^\)]*\))'
     t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
-    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE|УЖИВО)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
+    
+    # Common prefix labels (standing alone or followed by colon/dash)
+    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE|УЖИВО|НОВО|ИТНО|ВНИМАНИЕ)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
     
     sensationalist = [
         "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", 
-        "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА", "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", 
+        "ИНТЕРВЈУ", "АНАЛИЗА", "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", 
         "ГЛЕДАЈТЕ", "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
-        "BREAKING", "EXCLUSIVE", "LIVE", "ОТКРИВАМЕ", "НОВО", "ИТНО", "ВНИМАНИЕ"
+        "BREAKING", "EXCLUSIVE", "ОТКРИВАМЕ", "ВОЗНЕМИРУВАЧКО", "ВИДЕОИНТЕРВЈУ",
+        "ВИДЕО-ИНТЕРВЈУ"
     ]
     prefix_pattern = r'^(' + '|'.join(sensationalist) + r')[\s\|:–—-]+'
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
@@ -337,15 +341,18 @@ def normalize_headline(title: str) -> str:
     t = re.sub(suffix_pattern, '', t, flags=re.IGNORECASE)
 
     # 4. De-Shouting (Sentence Case)
-    # If the headline is mostly uppercase (screaming), normalize it
-    # We ignore short words to protect acronyms like ЕУ, НАТО, САД
+    # Improved de-shouting: check if title has large all-caps segments even if not fully all-caps
     upper_count = sum(1 for c in t if c.isupper())
     alpha_count = sum(1 for c in t if c.isalpha())
-    if alpha_count >= 6 and (upper_count / alpha_count) > 0.65:
+    
+    # Also check for long all-caps prefixes (e.g. "POLICE REPORT: man arrested")
+    long_upper_prefix = re.match(r'^([А-ЯЀ-ӿ\s]{8,})[:\-]', t)
+    
+    if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
         # Convert to sentence case but try to preserve common acronyms
         t = t.capitalize()
         # Restore common Macedonian acronyms (this is a heuristic)
-        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП"]:
+        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП", "УЈП"]:
             t = re.sub(rf'\b{re.escape(acronym)}\b', acronym, t, flags=re.IGNORECASE)
 
     # 5. Macedonian Quote Standardization
@@ -360,7 +367,7 @@ def normalize_headline(title: str) -> str:
     t = " ".join(t.split()) # Standardize whitespace
     t = t.strip(" -–—:|") # Remove trailing/leading decorations
     
-    # 7. Professional Casing for first letter (if not already handled by de-shouting)
+    # 7. Professional Casing for first letter
     if t and t[0].islower():
         t = t[0].upper() + t[1:]
     
