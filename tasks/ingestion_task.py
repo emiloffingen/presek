@@ -6,7 +6,7 @@ from database import db_manager as db
 from crawler import crawler
 from image_service import image_service
 from health import record_refresh, record_task_event
-from tasks.utils import invalidate_public_data_caches, redis_client, log
+from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
 
 @celery_app.task(rate_limit='20/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
@@ -16,8 +16,7 @@ def crawl_article_task(article_id, url):
     """
     try:
         # Use our new resilient crawler
-        loop = asyncio.get_event_loop()
-        res = loop.run_until_complete(crawler.extract_all(url))
+        res = safe_async_run(crawler.extract_all(url))
         
         if res.get("error"):
             log.warning(f"Crawl failed for article {article_id}: {res['error']}")
@@ -37,8 +36,7 @@ def crawl_article_task(article_id, url):
             params.append(final_image_url)
 
             # 2. Process and save a local version for the lightning-fast proxy
-
-            local_path = loop.run_until_complete(image_service.process_and_save(final_image_url, article_id))
+            local_path = safe_async_run(image_service.process_and_save(final_image_url, article_id))
             if local_path:
                 updates.append("local_image_path = %s")
                 params.append(local_path)
@@ -126,10 +124,6 @@ def auto_repair_sources_task():
         if not paused_sources:
             return
 
-        import asyncio
-        import feedparser
-        loop = asyncio.get_event_loop()
-
         for source in paused_sources:
             name = source['name']
             current_url = source['url']
@@ -142,12 +136,13 @@ def auto_repair_sources_task():
             log.info(f"Attempting to repair source '{name}' via {homepage}")
             
             # 1. Find potential feeds
-            potential_feeds = loop.run_until_complete(crawler.find_feeds(homepage))
+            potential_feeds = safe_async_run(crawler.find_feeds(homepage))
             
             found_valid = False
             for feed_url in potential_feeds:
                 # 2. Validate feed
                 try:
+                    import feedparser
                     with httpx.Client(timeout=10.0) as client:
                         resp = client.get(feed_url, follow_redirects=True)
                         if resp.status_code == 200:

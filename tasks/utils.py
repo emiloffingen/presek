@@ -8,11 +8,25 @@ log = logging.getLogger("presek_celery")
 
 _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 
+import asyncio
+
 def invalidate_public_data_caches():
     delete_cache_prefix("v4:news:")
     delete_cache("ssr:index:top_clusters")
     delete_cache("trending")
     delete_cache("stats:full")
+
+def safe_async_run(coro):
+    """Helper to run a coroutine safely across different execution environments (Celery, scripts)."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, coro).result()
+        return loop.run_until_complete(coro)
+    except Exception:
+        return asyncio.run(coro)
 
 def invalidate_cluster_caches(cluster_id=None):
     if cluster_id:

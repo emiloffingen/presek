@@ -13,7 +13,7 @@ from api_helpers import normalize_perspectives
 from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
 from nlp.keywords import _extract_capitalized_phrases
-from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL
+from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL, redis_client
 
 _BRIEFING_PARTISAN_MARKERS = {
     "во очајна потрага", "крах систем", "слави победа", "предавство",
@@ -1301,6 +1301,14 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
 @celery_app.task
 def generate_daily_brief_task(retry_attempt=0):
     """Generate the flagship morning briefing with intelligence signals."""
+    lock_key = f"lock:daily_brief:{datetime.date.today()}"
+    try:
+        if not redis_client.set(lock_key, "1", nx=True, ex=3600):
+            log.info("Daily brief generation already in progress or completed for today.")
+            return
+    except Exception as e:
+        log.warning(f"Redis lock check failed for daily brief: {e}")
+
     try:
         from tasks.utils import record_task_event
         
@@ -1532,6 +1540,11 @@ def send_profile_breaking_alerts_task():
                 include_sources=bool(row.get("breaking_sources")),
             )
             if not candidate:
+                continue
+
+            # Per-cluster-profile lock to prevent race condition across multiple workers
+            alert_lock_key = f"lock:alert:{row['sync_token']}:{candidate['cluster_id']}"
+            if not redis_client.set(alert_lock_key, "1", nx=True, ex=3600):
                 continue
 
             title = f"Пресек · {candidate.get('alert_label') or 'Важно ажурирање'}"

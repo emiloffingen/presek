@@ -19,7 +19,7 @@ from nlp import (
 )
 from api_helpers import normalize_summary_text, normalize_perspectives
 from utils import get_dominant_color
-from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log
+from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, safe_async_run, redis_client
 
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
@@ -601,6 +601,14 @@ def backfill_cover_art_single_task(cluster_id, title):
 @celery_app.task
 def backfill_cover_art_task():
     """Queue cover art generation for clusters that lack a strong visual."""
+    lock_key = "lock:backfill_cover_art"
+    try:
+        if not redis_client.set(lock_key, "1", nx=True, ex=1200):
+            log.info("Cover art backfill already in progress, skipping duplicate dispatch.")
+            return
+    except Exception as e:
+        log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
+
     try:
         # Find clusters from last 24h that either:
         # 1. Have no representative image

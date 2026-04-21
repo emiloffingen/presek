@@ -502,6 +502,16 @@ class DatabaseManager:
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_surface_kind ON suggestion_surface_events(surface, suggestion_kind, event_type, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)")
 
+                cur.execute("""CREATE TABLE IF NOT EXISTS failed_tasks (
+                    id SERIAL PRIMARY KEY,
+                    task_name TEXT NOT NULL,
+                    args JSONB DEFAULT '[]'::jsonb,
+                    kwargs JSONB DEFAULT '{}'::jsonb,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)")
+
                 cur.execute("""CREATE TABLE IF NOT EXISTS sources (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,
@@ -621,4 +631,5 @@ def prune_db():
         DELETE FROM cluster_metadata WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
         DELETE FROM cluster_entities WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
         DELETE FROM reactions WHERE cluster_id NOT IN (SELECT DISTINCT cluster_id FROM articles);
-    """, fetch=False)
+        DELETE FROM failed_tasks WHERE created_at < NOW() - INTERVAL %s;
+    """, (f"{int(DB_RETAIN_DAYS) * 2} days",), fetch=False)
