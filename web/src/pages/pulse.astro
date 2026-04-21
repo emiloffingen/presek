@@ -22,13 +22,13 @@ type PulseRow = {
 
 const API_URL = apiBaseUrl();
 let pulseData: PulseRow[] = [];
-let stats: any = null;
+let globalPulse: any = null;
 let error = null;
 
 try {
-    const [pulseRes, statsRes] = await Promise.all([
+    const [pulseRes, globalRes] = await Promise.all([
         fetch(`${API_URL}/intelligence/source-pulse`),
-        fetch(`${API_URL}/stats/full`)
+        fetch(`${API_URL}/intelligence/global-pulse`)
     ]);
 
     if (pulseRes.ok) {
@@ -38,17 +38,21 @@ try {
         error = "Неуспешно вчитување на пулсот.";
     }
 
-    if (statsRes.ok) {
-        stats = await statsRes.json();
+    if (globalRes.ok) {
+        globalPulse = await globalRes.json();
     }
 } catch (e) {
     console.error(e);
     error = "Грешка при поврзување со серверот.";
 }
 
-const intelligence = stats?.intelligence ?? {};
+const intelligence = globalPulse?.intelligence ?? {};
 const pulseLeaders = pulseData.slice(0, 12);
 const pulseRemainder = pulseData.slice(12);
+
+const velocityData = globalPulse?.velocity ?? [];
+const categoryData = globalPulse?.by_category ?? [];
+const topEntities = globalPulse?.top_entities ?? [];
 
 function getSentimentLabel(score: number) {
     if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
@@ -58,6 +62,14 @@ function getSentimentLabel(score: number) {
 
 function formatStat(val: number) {
     return (val * 100).toFixed(0) + '%';
+}
+
+function getSentimentEmoji(score: number) {
+    if (score > 0.3) return '😊';
+    if (score > 0.1) return '🙂';
+    if (score < -0.3) return '😤';
+    if (score < -0.1) return '😟';
+    return '😐';
 }
 ---
 
@@ -83,45 +95,54 @@ function formatStat(val: number) {
             </div>
         )}
 
-        {stats && (
-            <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <div class="p-6 border border-border bg-card">
-                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><Activity size={12}/> ОБЕМ (24ч)</p>
-                    <p class="text-4xl font-serif font-black mt-2">{stats.last_24h.toLocaleString()}</p>
-                    <p class="text-xs text-muted-foreground mt-2">Нови објави низ {stats.total_feeds} извори.</p>
-                </div>
-                <div class="p-6 border border-border bg-card">
-                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
-                    <p class="text-4xl font-serif font-black mt-2">{intelligence.pluralism?.high_consensus_pct}%</p>
-                    <p class="text-xs text-muted-foreground mt-2">Стории со висок медиумски консензус.</p>
-                </div>
-                <div class="p-6 border border-border bg-card">
-                    <p class="nyt-section-label flex items-center gap-1 text-[10px]"><Globe size={12}/> СВЕТОТ КАЈ НАС</p>
-                    <p class="text-4xl font-serif font-black mt-2">{intelligence.international_share_pct}%</p>
-                    <p class="text-xs text-muted-foreground mt-2">Удел на вестите од светот во Македонија.</p>
-                </div>
-            </section>
-        )}
-
-        {intelligence.ai_transparency && (
-            <section class="mb-12 p-8 border border-nyt-accent/20 bg-nyt-accent/5 rounded-lg">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div class="max-w-md">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-nyt-accent mb-2 flex items-center gap-2">
-                            <Cpu size={16} /> Транспарентност на Системот
-                        </h2>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">
-                            Удел на вестите синтетизирани преку напредни јазични модели. Останатите се обработени преку локални алгоритми.
-                        </p>
+        {globalPulse && (
+            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="p-6 border border-border bg-card relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Activity size={48} />
                     </div>
-                    <div class="w-full md:w-64">
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-3xl font-serif font-black">{intelligence.ai_transparency.ai_ratio}%</span>
-                            <span class="nyt-section-label text-[10px]">Автоматска Синтеза</span>
-                        </div>
-                        <div class="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                            <div class="h-full bg-nyt-accent" style={`width: ${intelligence.ai_transparency.ai_ratio}%`}></div>
-                        </div>
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px] text-muted-foreground"><Activity size={12}/> ОБЕМ (24ч)</p>
+                    <p class="text-4xl font-serif font-black mt-2">{globalPulse.last_24h.toLocaleString()}</p>
+                    <div class="mt-4 flex items-end gap-1 h-8">
+                        {velocityData.slice(-12).map((v: any) => {
+                            const height = Math.max(15, (v.n / Math.max(...velocityData.map((d: any) => d.n))) * 100);
+                            return <div class="flex-1 bg-nyt-accent/20 hover:bg-nyt-accent transition-colors rounded-t-sm" style={`height: ${height}%`} title={`${v.n} вести`}></div>
+                        })}
+                    </div>
+                </div>
+
+                <div class="p-6 border border-border bg-card relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <ShieldCheck size={48} />
+                    </div>
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px] text-muted-foreground"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
+                    <p class="text-4xl font-serif font-black mt-2">{intelligence.pluralism?.pluralism_pct || 0}%</p>
+                    <p class="text-[10px] font-bold uppercase tracking-tight text-muted-foreground mt-2">
+                        {intelligence.pluralism?.high_consensus_pct}% висок консензус
+                    </p>
+                </div>
+
+                <div class="p-6 border border-border bg-card relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Globe size={48} />
+                    </div>
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px] text-muted-foreground"><Globe size={12}/> СВЕТОТ КАЈ НАС</p>
+                    <p class="text-4xl font-serif font-black mt-2">{intelligence.international_share_pct || 0}%</p>
+                    <p class="text-[10px] font-bold uppercase tracking-tight text-muted-foreground mt-2">Вести од меѓународни извори</p>
+                </div>
+
+                <div class="p-6 border border-border bg-card relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Zap size={48} />
+                    </div>
+                    <p class="nyt-section-label flex items-center gap-1 text-[10px] text-muted-foreground"><Zap size={12}/> ТРЕНДИНГ</p>
+                    <div class="mt-2 space-y-1">
+                        {topEntities.slice(0, 3).map((e: any) => (
+                            <div class="flex items-center justify-between">
+                                <span class="font-serif font-bold text-sm truncate pr-2">{e.name}</span>
+                                <span class="text-[10px] font-black opacity-60">+{e.total_mentions}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -129,173 +150,53 @@ function formatStat(val: number) {
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
+                <section class="mb-12">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-serif text-2xl font-black italic">Дистрибуција по категории</h2>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Последно деноноќие</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                        {categoryData.map((cat: any) => {
+                            const intensity = Math.min(1, cat.n / (globalPulse.last_24h / 4));
+                            return (
+                                <a href={`/?category=${encodeURIComponent(cat.category)}`} class="p-3 border border-border bg-card hover:border-nyt-accent transition-all group">
+                                    <p class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground mb-1 group-hover:text-nyt-accent">{cat.category}</p>
+                                    <p class="text-2xl font-serif font-black">{cat.n}</p>
+                                    <div class="mt-2 h-1 w-full bg-secondary rounded-full overflow-hidden">
+                                        <div class="h-full bg-nyt-accent transition-all duration-1000" style={`width: ${intensity * 100}%`}></div>
+                                    </div>
+                                </a>
+                            )
+                        })}
+                    </div>
+                </section>
+
                 <PulseLandscapeIsland client:visible data={pulseData} />
 
-                <section class="mb-12 border border-border rounded-[1.25rem] bg-card p-8">
-                    <header class="mb-8">
-                        <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Алатка</span>
-                        <h2 class="font-serif text-3xl font-black mb-3">Споредба на медиуми</h2>
-                        <p class="font-nyt-body text-secondary-foreground max-w-2xl">
-                            Почнете со директна споредба меѓу две редакции, па потоа влезете во целосниот ранг.
-                        </p>
-                    </header>
-                    <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
-                </section>
-
-                <section class="mb-12">
-                    <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Ранг</span>
-                            <h2 class="font-serif text-3xl font-black">Водечки редакции денес</h2>
-                        </div>
-                        <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-                            Прикажани се првите {pulseLeaders.length} медиуми
-                        </p>
-                    </header>
-
-                    <div class="pulse-compact-table border border-border rounded-lg overflow-hidden bg-card">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-secondary/50 border-bottom border-border">
-                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
-                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
-                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
-                                    <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border">
-                                {pulseLeaders.map((row: PulseRow) => {
-                                    const sent = getSentimentLabel(row.avg_sentiment);
-                                    return (
-                                        <tr class="hover:bg-secondary/20 transition-colors">
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="font-serif font-bold text-lg">{row.source}</span>
-                                                    {row.trust_label === 'Висока доверба' && (
-                                                        <ShieldCheck size={14} className="text-nyt-accent" />
-                                                    )}
-                                                </div>
-                                                <div class="flex items-center gap-2 mt-1">
-                                                    <p class="text-[10px] uppercase font-bold text-muted-foreground">{row.cluster_count} покриени теми</p>
-                                                    {row.first_report_count >= 3 && (
-                                                        <span class="flex items-center gap-0.5 text-[9px] font-black uppercase text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 rounded border border-amber-200/50">
-                                                            <Zap size={8} /> Најбрз
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
-                                                    {sent.label}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 text-right">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                        <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
-                                                    </div>
-                                                    <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 text-right">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                        <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
-                                                    </div>
-                                                    <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {pulseRemainder.length > 0 && (
-                        <details class="mt-5 border border-border rounded-lg bg-background">
-                            <summary class="cursor-pointer list-none px-6 py-4 flex items-center justify-between gap-4">
-                                <div>
-                                    <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Целосен ранг</p>
-                                    <p class="font-nyt-body text-sm text-secondary-foreground mt-1">Преостанати {pulseRemainder.length} редакции од дневната табела.</p>
-                                </div>
-                                <span class="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent">Отвори</span>
-                            </summary>
-                            <div class="border-t border-border">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr class="bg-secondary/40 border-bottom border-border">
-                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
-                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
-                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
-                                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-border">
-                                        {pulseRemainder.map((row: PulseRow) => {
-                                            const sent = getSentimentLabel(row.avg_sentiment);
-                                            return (
-                                                <tr class="hover:bg-secondary/20 transition-colors">
-                                                    <td class="px-6 py-4">
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="font-serif font-bold text-lg">{row.source}</span>
-                                                            {row.trust_label === 'Висока доверба' && (
-                                                                <ShieldCheck size={14} className="text-nyt-accent" />
-                                                            )}
-                                                        </div>
-                                                        <div class="flex items-center gap-2 mt-1">
-                                                            <p class="text-[10px] uppercase font-bold text-muted-foreground">{row.cluster_count} покриени теми</p>
-                                                            {row.first_report_count >= 3 && (
-                                                                <span class="flex items-center gap-0.5 text-[9px] font-black uppercase text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 rounded border border-amber-200/50">
-                                                                    <Zap size={8} /> Најбрз
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
-                                                            {sent.label}
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-6 py-4 text-right">
-                                                        <div class="flex items-center justify-end gap-2">
-                                                            <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                                <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
-                                                            </div>
-                                                            <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 text-right">
-                                                        <div class="flex items-center justify-end gap-2">
-                                                            <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                                <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
-                                                            </div>
-                                                            <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </details>
-                    )}
-                </section>
-
-                <div class="mt-20">
-                    <header class="mb-10">
-                        <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Интелигенција</span>
-                        <h2 class="font-serif text-3xl font-black mb-4">Медиумски Пулс на Субјектите</h2>
-                        <p class="font-nyt-body text-secondary-foreground max-w-2xl">
-                            Кој е најмногу во фокусот на јавноста и каков е емоционалниот полнеж на нивното медиумско присуство?
-                        </p>
-                    </header>
+                <div class="mt-12">
                     <KnowledgeGraphIsland client:load apiUrl={API_URL} />
                 </div>
             </div>
 
-            <aside class="space-y-6">
+            <aside class="space-y-8">
+                <section class="p-8 border-2 border-foreground bg-background shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.05)]">
+                    <h3 class="font-serif text-2xl font-black mb-6 border-b-4 border-nyt-red pb-2 inline-block">Субјекти во Фокус</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {topEntities.map((e: any) => (
+                            <a 
+                                href={`/?entity=${encodeURIComponent(e.name)}`} 
+                                class="px-3 py-1.5 border border-border bg-secondary/20 hover:bg-nyt-accent hover:text-white transition-all text-sm font-bold flex items-center gap-2"
+                            >
+                                {e.name}
+                                <span class="text-[10px] opacity-60">{getSentimentEmoji(e.sentiment_score)}</span>
+                            </a>
+                        ))}
+                    </div>
+                    <p class="mt-6 text-[11px] font-nyt-body text-muted-foreground leading-relaxed italic">
+                        Автоматски детектирани личности и организации со најголем медиумски интензитет во изминатите 24 часа.
+                    </p>
+                </section>
+
                 <div class="p-6 border border-nyt-accent bg-nyt-accent/5 rounded-lg shadow-sm">
                     <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2 text-nyt-accent">
                         <Zap size={14} className="fill-nyt-accent" /> Брзина на Известување
@@ -329,15 +230,151 @@ function formatStat(val: number) {
                         </ul>
                     </div>
                 </div>
-
-                <div class="p-6 border border-nyt-accent/20 bg-nyt-accent/5 rounded-lg">
-                    <h3 class="font-sans text-xs font-black uppercase tracking-widest mb-4 text-nyt-accent">Зошто ова е важно?</h3>
-                    <p class="font-nyt-body text-sm leading-relaxed italic">
-                        "Транспарентноста на медиумскиот тон им овозможува на читателите да препознаат кога една информација е пренесена суво, а кога со намера да се предизвика емоционална реакција."
-                    </p>
-                </div>
             </aside>
         </div>
+
+        <section class="mt-20 border-t border-border pt-12">
+            <header class="mb-12">
+                <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Алатка</span>
+                <h2 class="font-serif text-3xl font-black mb-3">Споредба на медиуми</h2>
+                <p class="font-nyt-body text-secondary-foreground max-w-2xl text-lg">
+                    Почнете со директна споредба меѓу две редакции за да ги видите разликите во објективноста и тонот.
+                </p>
+            </header>
+            <div class="bg-card border border-border rounded-[1.25rem] overflow-hidden">
+                <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
+            </div>
+        </section>
+
+        <section class="mt-20 mb-20">
+            <header class="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <span class="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Ранг</span>
+                    <h2 class="font-serif text-3xl font-black">Водечки редакции денес</h2>
+                </div>
+                <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                    Дневен ранг според обем и квалитет
+                </p>
+            </header>
+
+            <div class="pulse-compact-table border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-secondary/50 border-bottom border-border">
+                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Медиум</th>
+                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Тон</th>
+                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Објективност</th>
+                            <th class="px-6 py-4 font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground text-right">Сензационализам</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        {pulseLeaders.map((row: PulseRow) => {
+                            const sent = getSentimentLabel(row.avg_sentiment);
+                            return (
+                                <tr class="hover:bg-secondary/20 transition-colors group">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-serif font-bold text-lg group-hover:text-nyt-accent transition-colors">{row.source}</span>
+                                            {row.trust_label === 'Висока доверба' && (
+                                                <ShieldCheck size={14} className="text-nyt-accent" />
+                                            )}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <p class="text-[10px] uppercase font-bold text-muted-foreground">{row.cluster_count} покриени теми</p>
+                                            {row.first_report_count >= 3 && (
+                                                <span class="flex items-center gap-0.5 text-[9px] font-black uppercase text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 rounded border border-amber-200/50">
+                                                    <Zap size={8} /> Најбрз
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
+                                            {sent.label}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <div class="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                                                <div class="h-full bg-nyt-accent transition-all duration-1000" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                                            </div>
+                                            <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <div class="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                                                <div class="h-full bg-nyt-red transition-all duration-1000" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                            </div>
+                                            <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {pulseRemainder.length > 0 && (
+                <details class="mt-8 border border-border rounded-lg bg-background group">
+                    <summary class="cursor-pointer list-none px-6 py-4 flex items-center justify-between gap-4 hover:bg-secondary/10 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="p-2 rounded-full bg-secondary group-open:rotate-180 transition-transform">
+                                <Activity size={16} />
+                            </div>
+                            <div>
+                                <p class="font-sans text-[11px] font-black uppercase tracking-widest text-muted-foreground">Целосен ранг</p>
+                                <p class="font-nyt-body text-sm text-secondary-foreground mt-1">Преостанати {pulseRemainder.length} редакции од дневната табела.</p>
+                            </div>
+                        </div>
+                        <span class="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent px-4 py-2 border border-nyt-accent/20 rounded-full group-open:bg-nyt-accent group-open:text-white transition-all">Отвори</span>
+                    </summary>
+                    <div class="border-t border-border bg-card">
+                        <table class="w-full text-left border-collapse">
+                            <tbody class="divide-y divide-border">
+                                {pulseRemainder.map((row: PulseRow) => {
+                                    const sent = getSentimentLabel(row.avg_sentiment);
+                                    return (
+                                        <tr class="hover:bg-secondary/20 transition-colors">
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-serif font-bold text-lg">{row.source}</span>
+                                                    {row.trust_label === 'Висока доверба' && (
+                                                        <ShieldCheck size={14} className="text-nyt-accent" />
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span class={`font-sans text-xs font-black uppercase tracking-wider ${sent.color}`}>
+                                                    {sent.label}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                        <div class="h-full bg-nyt-accent" style={`width: ${row.avg_objectivity * 100}%`}></div>
+                                                    </div>
+                                                    <span class="font-sans text-xs font-bold w-8">{formatStat(row.avg_objectivity)}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <div class="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                                        <div class="h-full bg-nyt-red" style={`width: ${row.avg_sensationalism * 100}%`}></div>
+                                                    </div>
+                                                    <span class="font-sans text-xs font-bold w-8 text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            )}
+        </section>
     </main>
     <Footer />
 </Layout>

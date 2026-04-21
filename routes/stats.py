@@ -191,7 +191,7 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
 async def get_stats_route():
     return {"status": "success", "data": await asyncio.to_thread(db.get_stats)}
 
-async def _build_intelligence_summary_payload(last_24h: int) -> dict:
+async def build_intelligence_summary_payload(last_24h: int) -> dict:
     total_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0
     intl_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE is_global = TRUE"))["count"] or 0
 
