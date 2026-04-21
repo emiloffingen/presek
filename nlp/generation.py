@@ -197,8 +197,8 @@ def _extract_number_tokens(text):
                 try:
                     h, m = int(parts[0]), int(parts[1])
                     if 0 <= h <= 23 and 0 <= m <= 59:
-                        # Likely a time, skip unless it's a very low number that could be a score
-                        if h > 10: # Most scores aren't > 10 unless it's basketball/handball but those use '-' or ' '
+                        # Kickoff times usually end in :00, :15, :30, :45
+                        if m in (0, 15, 30, 45) and h >= 8:
                             continue
                 except ValueError:
                     pass
@@ -216,12 +216,22 @@ def _extract_sports_scores(text):
         if len(parts) == 2:
             try:
                 h, m = int(parts[0]), int(parts[1])
-                # Exclude clock times (e.g. 15:00)
-                if ":" in clean and h > 12: continue
+                
+                # Exclude clock times (e.g. 15:00, 20:00)
+                # Kickoff times usually end in :00, :15, :30, :45
+                if ":" in clean:
+                    if m == 0 and h >= 8: continue # 08:00, 20:00 etc
+                    if h > 23: pass # Definitely a score (e.g. 32:28 in handball)
+                    elif h >= 8 and m in (0, 15, 30, 45): continue # Likely time
+                
                 # Exclude common years/seasons (e.g. 2024-2025)
                 if "-" in clean and h > 1900 and m > 1900: continue
-                # Exclude likely kickoff times (e.g. 15:00, 20:00)
-                if ":" in clean and h >= 10 and m == 0: continue
+                
+                # If it's a very high number on one side and small on other, 
+                # might be a year or something else, but in sports it could be basketball.
+                # Max basketball score is around 150.
+                if h > 200 or m > 200: continue
+                
                 scores.append(clean)
             except ValueError:
                 pass

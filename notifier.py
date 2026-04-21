@@ -1,4 +1,5 @@
 import json, os, logging, httpx
+from utils import redis_client
 
 log = logging.getLogger("presek")
 
@@ -6,7 +7,20 @@ class BreakingNewsNotifier:
     def __init__(self, topic, threshold=3):
         self.topic             = topic
         self.threshold         = threshold
-        self._notified         = set()  # avoid re-notifying same cluster in same session
+
+    def _is_notified(self, key: str) -> bool:
+        """Check Redis to see if we already notified this event."""
+        try:
+            return bool(redis_client.get(f"notifier:sent:{key}"))
+        except:
+            return False
+
+    def _mark_as_notified(self, key: str, expiry: int = 86400):
+        """Mark event as notified in Redis with 24h expiry."""
+        try:
+            redis_client.set(f"notifier:sent:{key}", "1", ex=expiry)
+        except:
+            pass
 
     def send_ntfy(self, title, message, cluster_id=None):
         try:
@@ -26,9 +40,8 @@ class BreakingNewsNotifier:
 
     def notify_score_change(self, headline, score, cluster_id, teams=None):
         """Instant notification for match score updates."""
-        # We don't use _notified set here because we WANT to re-notify on score change
         score_key = f"score:{cluster_id}:{score}"
-        if score_key in self._notified:
+        if self._is_notified(score_key):
             return
 
         title = f"ГОЛ! {score}" if "0" not in score else f"Резултат: {score}"
@@ -48,13 +61,13 @@ class BreakingNewsNotifier:
             with httpx.Client(timeout=5.0) as client:
                 resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
                 resp.raise_for_status()
-            self._notified.add(score_key)
+            self._mark_as_notified(score_key)
             log.info(f"[notifier] Sent score update for {cluster_id}: {score}")
         except Exception as e:
             log.warning(f"[notifier] Score notification failed: {e}")
 
     def notify(self, headline, sources_count, cluster_id, description=None, sources=None, image_url=None):
-        if cluster_id in self._notified:
+        if self._is_notified(cluster_id):
             return
 
         parts = [f"<b>{headline}</b>"]
@@ -67,4 +80,4 @@ class BreakingNewsNotifier:
         msg = "\n\n".join(parts)
 
         self.send_ntfy("Важна вест — Пресек", f"{headline}\n({sources_count} извори известуваат)", cluster_id)
-        self._notified.add(cluster_id)
+        self._mark_as_notified(cluster_id)
