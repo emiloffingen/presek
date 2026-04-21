@@ -124,18 +124,32 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         <div class="masthead-nav-container">
             <div class="masthead-nav-shell hide-scrollbar">
                 <ul class="masthead-nav-list">
-                    {navigationData.focus.map((item) => {
-                        const isActive = item.href.includes('category=')
-                            ? category === item.label
-                            : q === item.label;
-                        return (
-                            <li>
-                                <a href={item.href} data-astro-reload class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                                    {item.label}
-                                </a>
-                            </li>
-                        );
-                    })}
+                    {navigationData.sections.map((section: any) => (
+                        <li class="nav-section-group">
+                            <span class="nav-section-label">{section.label}</span>
+                            <div class="nav-section-items">
+                                {section.items.map((item: any) => {
+                                    const isActive = item.href.includes('category=')
+                                        ? category === item.label
+                                        : item.href.includes('subcategory=')
+                                        ? Astro.url.searchParams.get('subcategory') === item.label
+                                        : item.href.includes('topic=')
+                                        ? topic === item.label
+                                        : q === item.label;
+                                    
+                                    // Skip items with 0 count if they are not the active selection
+                                    if (item.count === 0 && !isActive) return null;
+
+                                    return (
+                                        <a href={item.href} data-astro-reload class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
+                                            {item.label}
+                                            {item.count > 0 && <span class="nav-link-count">{item.count}</span>}
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        </li>
+                    ))}
                 </ul>
             </div>
             <div class="nav-fade-left"></div>
@@ -434,38 +448,80 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         list-style: none;
         padding: 0;
         margin: 0;
-        gap: 0;
+        gap: 1.5rem;
     }
 
-    .masthead-nav-list li {
+    .nav-section-group {
         display: flex;
         align-items: center;
-        white-space: nowrap;
+        gap: 0.75rem;
     }
 
-    .masthead-nav-list li + li::before {
+    .nav-section-label {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
+        opacity: 0.6;
+        user-select: none;
+    }
+
+    .nav-section-items {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .nav-section-group + .nav-section-group {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+
+    .nav-section-group + .nav-section-group::before {
         content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
         width: 1px;
-        height: 12px;
+        height: 14px;
         background-color: var(--border);
-        margin: 0 0.85rem;
-        flex-shrink: 0;
     }
 
     .masthead-nav-link {
         font-family: var(--font-sans);
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         font-weight: 800;
         text-transform: uppercase;
         color: var(--foreground);
         text-decoration: none;
         letter-spacing: 0.02em;
-        transition: color 0.15s;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
 
     .masthead-nav-link:hover,
     .masthead-nav-link.is-active {
         color: var(--nyt-accent);
+    }
+
+    .nav-link-count {
+        font-size: 0.55rem;
+        font-weight: 900;
+        opacity: 0.5;
+        background: var(--secondary);
+        padding: 0.05rem 0.25rem;
+        border-radius: 99px;
+    }
+
+    .masthead-nav-link.is-active .nav-link-count {
+        background: var(--nyt-accent);
+        color: white;
+        opacity: 1;
     }
 
     .nav-fade-left, .nav-fade-right {
@@ -476,22 +532,28 @@ const breakingItems = navigationData.breaking.slice(0, 4);
     .nav-fade-right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
     @media (max-width: 640px) {
-        .topbar-row { 
-            grid-template-columns: auto 1fr auto; 
+        .topbar-row {
+            grid-template-columns: auto 1fr auto;
             gap: 0.5rem;
         }
         .topbar-logo { height: 1.1rem; }
         .masthead-nav-shell {
             padding: 0.25rem 0;
         }
-        .masthead-nav-list li + li::before {
-            margin: 0 0.65rem;
+        .masthead-nav-list {
+            gap: 1.25rem;
+        }
+        .nav-section-group + .nav-section-group {
+            padding-left: 1.25rem;
         }
         .masthead-nav-link {
-            font-size: 0.64rem;
+            font-size: 0.62rem;
+            gap: 0.2rem;
+        }
+        .nav-section-label {
+            font-size: 0.5rem;
         }
     }
-
     @media (min-width: 1024px) {
         .topbar-logo { height: 1.6rem; }
         .topbar-emblem { 
