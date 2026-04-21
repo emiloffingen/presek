@@ -93,7 +93,7 @@ async def get_trending_route():
 
 @router.get("/navigation")
 async def get_navigation():
-    \"\"\"Returns high-intelligence dynamic navigation with activity thresholds.\"\"\"
+    """Returns high-intelligence dynamic navigation with activity thresholds."""
     cache_key = "api:navigation:v4"
     cached = cached_response(cache_key)
     if cached: return cached
@@ -104,83 +104,83 @@ async def get_navigation():
 
     # 1. LIVE / BREAKING (Last 24h)
     breaking_items = []
-    recent_clusters = await db.async_execute(\"\"\"
+    recent_clusters = await db.async_execute("""
         SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
         FROM cluster_metadata m
         WHERE m.updated_at >= NOW() - INTERVAL '24 hours'
         ORDER BY m.updated_at DESC LIMIT 15
-    \"\"\")
+    """)
     
     for c in recent_clusters:
-        if not c.get(\"title\"): continue
-        arts = await db.async_execute(\"SELECT * FROM articles WHERE cluster_id = %s\", (c[\"cluster_id\"],))
+        if not c.get("title"): continue
+        arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
             breaking_items.append({
-                \"label\": cleanAndDecode(c[\"title\"])[:80] + (\"...\" if len(c[\"title\"]) > 80 else \"\"),
-                \"href\": f\"/cluster/{c['cluster_id']}\",
-                \"type\": \"breaking\"
+                "label": cleanAndDecode(c["title"])[:80] + ("..." if len(c["title"]) > 80 else ""),
+                "href": f"/cluster/{c['cluster_id']}",
+                "type": "breaking"
             })
             if len(breaking_items) >= 4: break
 
     # 2. Dynamic Activity (24h lookback to ensure links work)
-    activity = await db.async_execute(\"\"\"
+    activity = await db.async_execute("""
         SELECT category, topic, subcategory, COUNT(*) as n 
         FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'
         GROUP BY category, topic, subcategory
-    \"\"\")
+    """)
     cat_act = {r['category']: r['n'] for r in activity if r['category']}
     top_act = {r['topic']: r['n'] for r in activity if r['topic']}
     sub_act = {r['subcategory']: r['n'] for r in activity if r['subcategory']}
 
     # 3. CORE REGIONS (Always shown if count > 0)
     regions = []
-    for label in [\"Македонија\", \"Балкан\", \"Европа\", \"Америка\", \"Свет\"]:
+    for label in ["Македонија", "Балкан", "Европа", "Америка", "Свет"]:
         count = cat_act.get(label, 0)
         if count > 0:
-            regions.append({\"label\": label, \"href\": f\"/?category={urllib.parse.quote(label)}\", \"count\": count})
+            regions.append({"label": label, "href": f"/?category={urllib.parse.quote(label)}", "count": count})
 
     # 4. ACTIVE TOPICS (Only show if threshold met or merge)
     active_topics = []
     life_innovation_count = 0
-    life_topics = [\"Технологија\", \"Здравје\", \"Живот\", \"Забава\"]
+    life_topics = ["Технологија", "Здравје", "Живот", "Забава"]
     
-    for label in [\"Политика\", \"Економија\", \"Спорт\", \"Криминал\"]:
+    for label in ["Политика", "Економија", "Спорт", "Криминал"]:
         count = top_act.get(label, 0)
         if count >= 3: # Threshold for standalone visibility
-            active_topics.append({\"label\": label, \"href\": f\"/?topic={urllib.parse.quote(label)}\", \"count\": count})
+            active_topics.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
             
     for lt in life_topics:
         life_innovation_count += top_act.get(lt, 0)
         
     if life_innovation_count > 0:
         active_topics.append({
-            \"label\": \"Живот & Иновации\", 
-            \"href\": \"/?topic=Живот,Технологија,Здравје,Забава\", 
-            \"count\": life_innovation_count,
-            \"is_merged\": True
+            "label": "Живот & Иновации", 
+            "href": "/?topic=Живот,Технологија,Здравје,Забава", 
+            "count": life_innovation_count,
+            "is_merged": True
         })
 
     # 5. LOCAL HEAT
     local = []
-    for label in [\"Скопје\", \"Република\"]:
+    for label in ["Скопје", "Република"]:
         count = sub_act.get(label, 0)
         if count > 0:
-            local.append({\"label\": label, \"href\": f\"/?subcategory={urllib.parse.quote(label)}\", \"count\": count})
+            local.append({"label": label, "href": f"/?subcategory={urllib.parse.quote(label)}", "count": count})
 
     # 6. TRENDING STORIES (Top Entities)
     trending_entities = await get_top_entities(limit=8)
     entities = [
-        {\"label\": f\"#{e['name']}\", \"href\": f\"/?q={urllib.parse.quote(e['name'])}\", \"type\": \"trending_tag\"}
+        {"label": f"#{e['name']}", "href": f"/?q={urllib.parse.quote(e['name'])}", "type": "trending_tag"}
         for e in trending_entities if e['total_mentions'] > 5
     ]
 
     res = {
-        \"breaking\": breaking_items,
-        \"sections\": [
-            {\"label\": \"Региони\", \"items\": regions, \"type\": \"core\"},
-            {\"label\": \"Теми\", \"items\": active_topics, \"type\": \"dynamic\"},
-            {\"label\": \"Локално\", \"items\": local, \"type\": \"heat\"},
-            {\"label\": \"Во Фокус\", \"items\": entities[:5], \"type\": \"trending\"}
+        "breaking": breaking_items,
+        "sections": [
+            {"label": "Региони", "items": regions, "type": "core"},
+            {"label": "Теми", "items": active_topics, "type": "dynamic"},
+            {"label": "Локално", "items": local, "type": "heat"},
+            {"label": "Во Фокус", "items": entities[:5], "type": "trending"}
         ]
     }
     set_cache(cache_key, res, ttl=300)
