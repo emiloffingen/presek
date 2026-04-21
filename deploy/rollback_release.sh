@@ -12,6 +12,14 @@ SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
+APP_SERVICES=(
+  presek-fastapi.service
+  presek-astro.service
+  presek-worker.service
+  presek-worker-ingestion.service
+  presek-worker-delivery.service
+  presek-beat.service
+)
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
@@ -87,8 +95,9 @@ EOF
     return 0
   fi
 
-  info "Restarting $SYSTEMD_TARGET"
-  sudo systemctl restart "$SYSTEMD_TARGET"
+  info "Restarting application services"
+  sudo systemctl restart "${APP_SERVICES[@]}"
+  sudo systemctl start "$SYSTEMD_TARGET"
 
   info "Running smoke checks"
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT"

@@ -143,6 +143,8 @@ class TestDeploymentIntegrity:
             "deploy/systemd/presek-astro.service",
             "deploy/systemd/presek-beat.service",
             "deploy/systemd/presek-worker.service",
+            "deploy/systemd/presek-worker-ingestion.service",
+            "deploy/systemd/presek-worker-delivery.service",
         ):
             content = _read(svc)
             assert "ProtectSystem=strict" in content, f"Missing ProtectSystem in {svc}"
@@ -155,6 +157,8 @@ class TestDeploymentIntegrity:
             "deploy/systemd/presek-astro.service",
             "deploy/systemd/presek-beat.service",
             "deploy/systemd/presek-worker.service",
+            "deploy/systemd/presek-worker-ingestion.service",
+            "deploy/systemd/presek-worker-delivery.service",
         ):
             content = _read(svc)
             assert "MemoryMax=" in content, f"Missing MemoryMax in {svc}"
@@ -181,7 +185,8 @@ class TestDeploymentIntegrity:
         deploy_script = _read("deploy/deploy_release.sh")
         assert "sudo nginx -t" in deploy_script
         assert "sudo systemctl reload \"$NGINX_SERVICE\"" in deploy_script
-        assert "sudo systemctl restart \"$SYSTEMD_TARGET\"" in deploy_script
+        assert 'sudo systemctl restart "${APP_SERVICES[@]}"' in deploy_script
+        assert 'sudo systemctl start "$SYSTEMD_TARGET"' in deploy_script
 
     def test_deploy_uses_file_locking(self):
         deploy_script = _read("deploy/deploy_release.sh")
@@ -198,6 +203,33 @@ class TestDeploymentIntegrity:
         assert "Public status page" in smoke
         assert "Content-Security-Policy" in smoke
         assert "Strict-Transport-Security" in smoke
+
+    def test_deploy_restarts_explicit_services_instead_of_restarting_target(self):
+        deploy_script = _read("deploy/deploy_release.sh")
+        rollback_script = _read("deploy/rollback_release.sh")
+        install_script = _read("deploy/install_server.sh")
+
+        assert 'sudo systemctl restart "${APP_SERVICES[@]}"' in deploy_script
+        assert 'sudo systemctl restart "${APP_SERVICES[@]}"' in rollback_script
+        assert 'systemctl restart "${APP_SERVICES[@]}"' in install_script
+        assert 'sudo systemctl restart "$SYSTEMD_TARGET"' not in deploy_script
+        assert 'sudo systemctl restart "$SYSTEMD_TARGET"' not in rollback_script
+        assert 'systemctl restart presek.target' not in install_script
+
+    def test_runtime_config_does_not_embed_seed_source_catalog(self):
+        config = _read("config.py")
+        seed_script = _read("scripts/seed_sources.py")
+        source_catalog = _read("source_catalog.py")
+
+        assert "RSS_FEEDS = [" not in config
+        assert "DEFAULT_SOURCE_CATALOG" in source_catalog
+        assert "from source_catalog import DEFAULT_SOURCE_CATALOG" in seed_script
+        assert "Lokalno" not in source_catalog
+
+    def test_health_route_uses_constant_time_admin_token_compare(self):
+        system_route = _read("routes/system.py")
+        assert "secrets.compare_digest" in system_route
+        assert "provided_token == admin_token" not in system_route
 
 
 class TestRuntimeDependencyIntegrity:

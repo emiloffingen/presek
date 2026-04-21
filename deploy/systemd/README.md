@@ -6,7 +6,9 @@ These units are the supported production runtime for `presek.live`.
 
 ## Services
 
-- `presek-worker.service`: Celery worker
+- `presek-worker.service`: Celery worker for `celery`, `intelligence`, and `maintenance`
+- `presek-worker-ingestion.service`: dedicated Celery worker for `ingestion`
+- `presek-worker-delivery.service`: dedicated Celery worker for `delivery`
 - `presek-beat.service`: Celery beat scheduler
 - `presek-fastapi.service`: FastAPI on `127.0.0.1:5001`
 - `presek-astro.service`: Astro frontend on `127.0.0.1:3000`
@@ -56,6 +58,8 @@ sudo systemctl status presek.target
 sudo systemctl status presek-fastapi.service
 sudo journalctl -u presek-fastapi.service -f
 sudo journalctl -u presek-worker.service -f
+sudo journalctl -u presek-worker-ingestion.service -f
+sudo journalctl -u presek-worker-delivery.service -f
 sudo systemctl restart presek-astro.service
 sudo systemctl stop presek.target
 bash deploy/smoke_check.sh
@@ -67,6 +71,7 @@ bash deploy/backup_postgres.sh
 - `presek-fastapi.service` is the public API service.
 - `presek-astro.service` runs from `current/web` and still guards against stale or broken `dist` output.
 - `presek-beat.service` stores scheduler state in `shared/celerybeat-schedule`, not inside a release.
+- Celery queues are split so `run_ingestion` cannot be buried behind delivery or downstream intelligence backlog.
 - These units do not manage PostgreSQL, Redis, or nginx. Keep those as separate system services.
 - After install or restart, run `deploy/smoke_check.sh` to verify the API and Astro locally before trusting the release.
 - Keep a regular backup cadence with `deploy/backup_postgres.sh` or a system cron/timer wrapper around it.

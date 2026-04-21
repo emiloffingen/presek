@@ -44,7 +44,8 @@ wait_http_ok() {
     sleep "$SLEEP_SECONDS"
   done
 
-  fail "$name did not become healthy (last HTTP code: ${code:-none})"
+  echo -e "${RED}x${RESET}  $name did not become healthy (last HTTP code: ${code:-none})" >&2
+  return 1
 }
 
 wait_header_contains() {
@@ -64,7 +65,8 @@ wait_header_contains() {
     sleep "$SLEEP_SECONDS"
   done
 
-  fail "$name header check failed for ${header_name}: ${expected_fragment}"
+  echo -e "${RED}x${RESET}  $name header check failed for ${header_name}: ${expected_fragment}" >&2
+  return 1
 }
 
 wait_health_ready() {
@@ -108,7 +110,8 @@ PY
     sleep "$SLEEP_SECONDS"
   done
 
-  fail "$name did not become healthy (last HTTP code: ${code:-none})"
+  echo -e "${RED}x${RESET}  $name did not become healthy (last HTTP code: ${code:-none})" >&2
+  return 1
 }
 
 main() {

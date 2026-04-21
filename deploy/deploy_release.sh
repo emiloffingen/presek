@@ -20,6 +20,14 @@ SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
 RELEASE_ID="${RELEASE_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
 RUN_TESTS="${RUN_TESTS:-0}"
+APP_SERVICES=(
+  presek-fastapi.service
+  presek-astro.service
+  presek-worker.service
+  presek-worker-ingestion.service
+  presek-worker-delivery.service
+  presek-beat.service
+)
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
@@ -200,16 +208,35 @@ restart_and_smoke() {
   fi
 
   info "Validating nginx configuration"
-  sudo nginx -t
+  sudo nginx -t || return 1
 
   info "Reloading $NGINX_SERVICE"
-  sudo systemctl reload "$NGINX_SERVICE"
+  sudo systemctl reload "$NGINX_SERVICE" || return 1
 
-  info "Restarting $SYSTEMD_TARGET"
-  sudo systemctl restart "$SYSTEMD_TARGET"
+  info "Restarting application services"
+  sudo systemctl restart "${APP_SERVICES[@]}" || return 1
+  sudo systemctl start "$SYSTEMD_TARGET" || return 1
 
   info "Running smoke checks"
-  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT"
+  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || return 1
+}
+
+rollback_release() {
+  local failed_release="$1"
+  local previous_target="$2"
+  local current_venv_target="$3"
+  local current_web_deps_target="$4"
+
+  [ -n "$previous_target" ] && [ -d "$previous_target" ] || return 1
+
+  warn "Deploy failed smoke checks; restoring previous release"
+  switch_current_link "$previous_target"
+  ln -sfn "$failed_release" "$PREVIOUS_LINK"
+  update_active_runtime_links "$current_venv_target" "$current_web_deps_target"
+  sudo systemctl restart "${APP_SERVICES[@]}" || return 1
+  sudo systemctl start "$SYSTEMD_TARGET" || return 1
+  info "Running post-rollback smoke checks"
+  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
 }
 
 main() {
@@ -266,15 +293,7 @@ main() {
   update_active_runtime_links "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
 
   if ! restart_and_smoke; then
-    if [ -n "$previous_target" ] && [ -d "$previous_target" ]; then
-      warn "Deploy failed smoke checks; restoring previous release"
-      switch_current_link "$previous_target"
-      ln -sfn "$RELEASE_DIR" "$PREVIOUS_LINK"
-      update_active_runtime_links "$current_venv_target" "$current_web_deps_target"
-      sudo systemctl restart "$SYSTEMD_TARGET"
-      info "Running post-rollback smoke checks"
-      ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
-    fi
+    rollback_release "$RELEASE_DIR" "$previous_target" "$current_venv_target" "$current_web_deps_target" || warn "Rollback did not complete cleanly"
     fail "Release deploy failed"
   fi
 

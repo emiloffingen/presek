@@ -6,6 +6,7 @@ import logging
 import datetime
 import time
 import urllib.parse
+import secrets
 from io import BytesIO
 from typing import Optional, List
 from fastapi import APIRouter, Request, Query, HTTPException
@@ -40,9 +41,9 @@ _WMO_ICON = {0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48
 
 @router.get("/health")
 async def health(request: Request):
-    admin_token = os.environ.get("PRESEK_ADMIN_TOKEN")
-    provided_token = request.headers.get("X-Admin-Token")
-    is_admin = admin_token and provided_token == admin_token
+    admin_token = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
+    provided_token = (request.headers.get("X-Admin-Token") or "").strip()
+    is_admin = bool(admin_token and provided_token and secrets.compare_digest(provided_token, admin_token))
     
     db_s = _probe_database(); rd_s = _probe_redis()
     

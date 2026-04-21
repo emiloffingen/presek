@@ -12,6 +12,19 @@ log = logging.getLogger("presek")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://localhost/presek")
 
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name, str(default))
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        log.warning("Invalid %s=%r; falling back to %s", name, raw, default)
+        return default
+
+
+DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
+DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 10))
+
 class DatabaseManager:
     """Centralized Database Access Layer (DAL) for Presek 4.0."""
     _instance = None
@@ -28,11 +41,14 @@ class DatabaseManager:
         for attempt in range(retries):
             try:
                 self._pool = ThreadedConnectionPool(
-                    minconn=5,
-                    maxconn=50,
+                    minconn=DB_POOL_MINCONN,
+                    maxconn=DB_POOL_MAXCONN,
                     dsn=DATABASE_URL
                 )
-                log.info("Presek 4.0: Database connection pool initialized.")
+                log.info(
+                    "Presek 4.0: Database connection pool initialized "
+                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN})."
+                )
                 return
             except Exception as e:
                 if attempt < retries - 1:

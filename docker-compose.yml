@@ -69,7 +69,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    command: celery -A celery_app worker --loglevel=info --concurrency=1
+    command: celery -A celery_app worker --loglevel=info --concurrency=1 --queues=celery,ingestion,intelligence,delivery,maintenance
     env_file: .env
     environment:
       - DATABASE_URL=postgresql://presek:${DB_PASSWORD:-presek_pass}@db:5432/presek

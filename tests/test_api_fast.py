@@ -186,6 +186,13 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
         data = asyncio.run(api_fast.health(_FakeRequest()))
     assert "url" not in data["redis"]
 
+
+def test_fastapi_only_registers_prefixed_routers(mock_all):
+    api_fast = importlib.import_module("api_fast")
+    content = open(os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8").read()
+    assert 'app.include_router(news.router, prefix="/api")' in content
+    assert "app.include_router(news.router)\n" not in content
+
 def test_fastapi_proxy_rejects_remote_svg_content(mock_all):
     import api_fast
     fake_resp = MagicMock(status_code=200, headers={"Content-Type": "image/svg+xml"})

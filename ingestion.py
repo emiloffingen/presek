@@ -26,6 +26,14 @@ log = logging.getLogger("presek")
 
 _OG_IMAGE_READ_LIMIT = 64 * 1024
 _OG_IMAGE_CONCURRENCY = 8
+_BROWSER_LIKE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
+}
+_OG_IMAGE_SKIP_DOMAINS = {
+    "fokus.mk",
+}
 
 _TRACKING_PARAMS = {
     "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
@@ -121,6 +129,16 @@ def normalize_feed_link(link: str) -> str:
         return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), normalized_path, urlencode(query_items), ""))
     except Exception:
         return link.strip()
+
+
+def canonical_hostname(url: str) -> str:
+    try:
+        host = (urlsplit(url).hostname or "").lower()
+    except Exception:
+        return ""
+    if host.startswith("www."):
+        host = host[4:]
+    return host
 
 
 def normalize_candidate_title(title: str) -> str:
@@ -341,9 +359,19 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
 
 async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dict[str, Any]]) -> int:
     """Backfill missing article images using og:image with bounded concurrency."""
-    no_image = [c for c in candidates if not c["image_url"]]
+    no_image = []
+    skipped_domains = 0
+    for candidate in candidates:
+        if candidate["image_url"]:
+            continue
+        if canonical_hostname(candidate["link"]) in _OG_IMAGE_SKIP_DOMAINS:
+            skipped_domains += 1
+            continue
+        no_image.append(candidate)
     if not no_image:
         return 0
+    if skipped_domains:
+        log.info(f"[ingest] Skipping og:image fetch for {skipped_domains} articles on bot-protected domains")
 
     log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
     semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
@@ -371,6 +399,8 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
     
     try:
         resp = await client.get(url, timeout=15.0, follow_redirects=True)
+        if resp.status_code == 403 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge":
+            raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
         resp.raise_for_status()
         
         # Parse RSS in a thread pool since feedparser is blocking/CPU heavy
@@ -434,7 +464,8 @@ async def ingest_all_sources_async():
     seen_titles_by_source = defaultdict(set)
     cycle_now = datetime.datetime.now()
     
-    headers = {'User-Agent': 'Presek/6.0 Async Reader (+https://presek.mk)'}
+    headers = dict(_BROWSER_LIKE_HEADERS)
+    headers["User-Agent"] += " Presek/6.0"
 
     async with httpx.AsyncClient(headers=headers, verify=True) as client:
         tasks = [fetch_feed_async(client, s) for s in sources]

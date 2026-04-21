@@ -14,6 +14,14 @@ CERT_PRIVKEY="${CERT_PRIVKEY:-/etc/ssl/cloudflare/presek.live/privkey.pem}"
 INSTALL_NGINX="${INSTALL_NGINX:-auto}"
 CURRENT_ROOT="$APP_ROOT/current"
 SHARED_ROOT="$APP_ROOT/shared"
+APP_SERVICES=(
+  presek-fastapi.service
+  presek-astro.service
+  presek-worker.service
+  presek-worker-ingestion.service
+  presek-worker-delivery.service
+  presek-beat.service
+)
 
 SITE_NAME="$DOMAIN.conf"
 SITE_AVAILABLE="/etc/nginx/sites-available/$SITE_NAME"
@@ -84,11 +92,11 @@ main() {
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/sentence_transformers"
   install -d /etc/systemd/system
 
-  for unit in presek.target presek-worker.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in presek.target presek-worker.service presek-worker-ingestion.service presek-worker-delivery.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
-  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
+  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-worker-ingestion.service /etc/systemd/system/presek-worker-delivery.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
   systemctl daemon-reload
   systemctl enable presek.target
@@ -121,7 +129,8 @@ main() {
     echo "Skipping nginx install/update (INSTALL_NGINX=$INSTALL_NGINX)." >&2
   fi
 
-  systemctl restart presek.target
+  systemctl restart "${APP_SERVICES[@]}"
+  systemctl start presek.target
 
   ENABLE_PUBLIC_CHECK=0 "$SMOKE_SCRIPT"
 

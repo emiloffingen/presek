@@ -137,6 +137,10 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
         if topic and topic != "Вести":
             filters.append("a.topic = %s")
             params.insert(1 + (1 if category else 0), topic)
+        else:
+            # If incoming is 'Вести', only match other 'Вести' articles 
+            # to prevent it from bridging into specific topics
+            filters.append("a.topic = 'Вести'")
 
         where_clause = " AND ".join(filters)
         if where_clause:
@@ -234,9 +238,15 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         rep_0 = reps[0]
         if category and rep_0.get("category") != category: continue
         
-        # Only block if both have specific (non-generic) topics and they don't match
+        # Strict Topic Isolation:
+        # 1. If incoming is 'Спорт', it can ONLY join a 'Спорт' cluster.
+        # 2. If cluster is 'Спорт', only 'Спорт' articles can join.
         rep_topic = rep_0.get("topic", "Вести")
-        if topic and topic != "Вести" and rep_topic != "Вести" and rep_topic != topic:
+        incoming_topic = topic or "Вести"
+        
+        if incoming_topic != rep_topic:
+            # If either side is a specific topic, they MUST match exactly.
+            # (i.e. 'Вести' can only join 'Вести', 'Спорт' only 'Спорт')
             continue
         
         # Source Exclusivity

@@ -72,6 +72,8 @@ main() {
   show_service_state "presek-fastapi.service"
   show_service_state "presek-astro.service"
   show_service_state "presek-worker.service"
+  show_service_state "presek-worker-ingestion.service"
+  show_service_state "presek-worker-delivery.service"
   show_service_state "presek-beat.service"
 }
 

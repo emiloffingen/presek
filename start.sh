@@ -150,6 +150,8 @@ assert_manual_mode_safe() {
     presek-fastapi.service
     presek-astro.service
     presek-worker.service
+    presek-worker-ingestion.service
+    presek-worker-delivery.service
     presek-beat.service
   )
   local unit

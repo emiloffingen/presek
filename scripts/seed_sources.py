@@ -1,12 +1,10 @@
 
-import os
-import sys
 from database import db_manager as db
-from config import RSS_FEEDS
+from source_catalog import DEFAULT_SOURCE_CATALOG
 
 def seed_sources():
-    print(f"Seeding {len(RSS_FEEDS)} sources from config.py...")
-    for name, url in RSS_FEEDS:
+    print(f"Seeding {len(DEFAULT_SOURCE_CATALOG)} sources from source_catalog.py...")
+    for name, url in DEFAULT_SOURCE_CATALOG:
         # Check if source already exists
         exists = db.execute_one("SELECT name FROM sources WHERE name = %s", (name,))
         if not exists:
