@@ -190,6 +190,7 @@ class TestLocalProvider:
 class TestTranslateToMacedonian:
     @patch('ai_engine.record_runtime_event')
     @patch('nllb_translate.translate')
+    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
     def test_records_nllb_translation_path(self, mock_nllb_translate, mock_record_runtime_event):
         from ai_engine import translate_to_macedonian
         mock_nllb_translate.return_value = "Владата најави нов пакет мерки."
@@ -199,6 +200,7 @@ class TestTranslateToMacedonian:
         mock_record_runtime_event.assert_any_call("translation_path", source_lang="en", mode="nllb")
 
     @patch('nllb_translate.translate')
+    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
     def test_prefers_nllb_when_it_returns_valid_macedonian(self, mock_nllb_translate):
         from ai_engine import translate_to_macedonian
         mock_nllb_translate.return_value = "Владата најави нов пакет мерки."
@@ -209,6 +211,7 @@ class TestTranslateToMacedonian:
 
     @patch('nllb_translate.translate')
     @patch('ai_engine._call_ai')
+    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
     def test_ignores_unchanged_nllb_output_and_uses_ai_translation(self, mock_call_ai, mock_nllb_translate):
         from ai_engine import translate_to_macedonian
         mock_nllb_translate.return_value = "Government announced a new package of measures."

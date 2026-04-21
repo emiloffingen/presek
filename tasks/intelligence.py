@@ -71,6 +71,10 @@ def translate_article_task(article_id, title, description):
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def standardize_article_style_task(article_id):
     """Refines article linguistic style using NLLB round-trip (Style Normalization)."""
+    from config import ENABLE_EXPENSIVE_STYLE_TASKS
+    if not ENABLE_EXPENSIVE_STYLE_TASKS:
+        return
+
     row = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (article_id,))
     if not row: return
 
@@ -106,6 +110,10 @@ def standardize_article_style_task(article_id):
 @celery_app.task(rate_limit='15/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def detect_global_story_task(article_id):
     """Detects if a Macedonian article is a translation of a foreign global report."""
+    from config import LOCAL_TRANSLATION_ENABLED
+    if not LOCAL_TRANSLATION_ENABLED:
+        return
+
     row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))
     if not row or not row.get("title"): return
 

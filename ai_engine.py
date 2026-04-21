@@ -369,17 +369,19 @@ def translate_to_macedonian(text: str) -> str | None:
             return normalized or candidate
         return None
 
-    # 1. Try self-hosted NLLB (free, no API cost)
-    try:
-        from nllb_translate import translate as nllb_translate
-        result = nllb_translate(text, lang)
-        translated = _normalize_translation_candidate(result)
-        if translated:
-            record_runtime_event("translation_path", source_lang=lang, mode="nllb")
-            log.info(f"[translate] {lang}→mk via nllb: {text[:60]}...")
-            return translated
-    except Exception as e:
-        log.warning(f"[translate] NLLB failed for {lang} text: {e}")
+    # 1. Try self-hosted NLLB (free, no API cost, but heavy on RAM)
+    from config import LOCAL_TRANSLATION_ENABLED
+    if LOCAL_TRANSLATION_ENABLED:
+        try:
+            from nllb_translate import translate as nllb_translate
+            result = nllb_translate(text, lang)
+            translated = _normalize_translation_candidate(result)
+            if translated:
+                record_runtime_event("translation_path", source_lang=lang, mode="nllb")
+                log.info(f"[translate] {lang}→mk via nllb: {text[:60]}...")
+                return translated
+        except Exception as e:
+            log.warning(f"[translate] NLLB failed for {lang} text: {e}")
 
     # 2. Fallback to AI API
     try:

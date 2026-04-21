@@ -37,9 +37,11 @@ class ImageService:
         ext = "webp"
         filename = f"art_{article_id}.{ext}"
         local_path = os.path.join(_UPLOAD_ROOT, filename)
+        rel_path = filename
         
-        # If we already have it, don't re-download (unless we want to force refresh)
-        # For now, let's keep it simple.
+        # If we already have it and it's not empty, skip processing
+        if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
+            return rel_path
         
         try:
             safe_ips = _resolve_public_ips(url)

@@ -149,3 +149,9 @@ BALANCED_COVERAGE_THRESHOLD = 3 # clusters with 3+ diverse sources get a badge
 
 # ── Image Generation Configuration ──────────────────────────────
 POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
+
+# ── Performance & Resource Management ───────────────────────────
+# Large models (NLLB, spaCy) take 2GB+ RAM and can slow down the server.
+# Set to False to disable local translation/style normalization.
+LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "false").lower() == "true"
+ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
