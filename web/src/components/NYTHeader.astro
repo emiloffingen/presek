@@ -134,6 +134,8 @@ const breakingItems = navigationData.breaking.slice(0, 4);
                                     ? Astro.url.searchParams.get('subcategory') === item.label
                                     : item.href.includes('topic=')
                                     ? topic === item.label
+                                    : item.href.includes('entity=')
+                                    ? Astro.url.searchParams.get('entity') === item.label.replace('#', '')
                                     : q === item.label || q === item.label.replace('#', '');
 
                                 return (
@@ -620,7 +622,7 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         };
 
         const initFades = () => {
-            const navShell = document.querySelector('.masthead-nav-shell');
+            const navShell = document.querySelector('.discovery-nav-container');
             const fadeLeft = document.querySelector('.nav-fade-left');
             const fadeRight = document.querySelector('.nav-fade-right');
             if (!navShell || !fadeLeft || !fadeRight) return;

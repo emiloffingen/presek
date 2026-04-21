@@ -170,7 +170,7 @@ async def get_navigation():
     # 6. TRENDING STORIES (Top Entities)
     trending_entities = await get_top_entities(limit=8)
     entities = [
-        {"label": f"#{e['name']}", "href": f"/?q={urllib.parse.quote(e['name'])}", "type": "trending_tag"}
+        {"label": f"#{e['name']}", "href": f"/?entity={urllib.parse.quote(e['name'])}", "type": "trending_tag"}
         for e in trending_entities if e['total_mentions'] > 5
     ]
 
