@@ -118,41 +118,41 @@ async def get_news(
             query_vec = generate_query_embedding(q)
             rows = await db.async_hybrid_search(q, query_vec, limit=row_limit) if query_vec else await db.async_search_articles(q, limit=row_limit)
         elif entity:
-            rows = await db.async_execute(\"\"\"
+            rows = await db.async_execute("""
                 SELECT cluster_id, updated_at as last_article 
                 FROM cluster_metadata m
                 JOIN cluster_entities ce USING (cluster_id)
                 WHERE ce.entity_name = %s 
                 ORDER BY updated_at DESC LIMIT %s
-            \"\"\", (entity, page_size * (page + 1)))
+            """, (entity, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = await db.async_execute(\"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC\", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
-            rows = await db.async_execute(\"\"\"
+            rows = await db.async_execute("""
                 SELECT cluster_id, updated_at as last_article 
                 FROM cluster_metadata m
                 WHERE %s = ANY(topics)
                 ORDER BY updated_at DESC LIMIT %s
-            \"\"\", (topic, page_size * (page + 1)))
+            """, (topic, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = await db.async_execute(\"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC\", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:
-            rows = await db.async_execute(\"\"\"
+            rows = await db.async_execute("""
                 SELECT cluster_id, updated_at as last_article 
                 FROM cluster_metadata m
                 WHERE category = %s
                 ORDER BY updated_at DESC LIMIT %s
-            \"\"\", (category, page_size * (page + 1)))
+            """, (category, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = await db.async_execute(\"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC\", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         else:
-            rows = await db.async_execute(\"\"\"
+            rows = await db.async_execute("""
                 SELECT cluster_id, updated_at as last_article 
                 FROM cluster_metadata m
                 ORDER BY updated_at DESC LIMIT %s
-            \"\"\", (page_size * (page + 1),))
+            """, (page_size * (page + 1),))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            rows = await db.async_execute(\"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC\", (cids,)) if cids else []
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
 
         clusters = defaultdict(list)
         cluster_relevance = {}
