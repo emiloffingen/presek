@@ -291,7 +291,7 @@ def detect_topic(title: str, description: str = "") -> str:
         if score > best_score:
             best_topic = topic_name
             best_score = score
-    if best_topic and best_score >= 1.0:
+    if best_topic and best_score >= 2.0:
         return best_topic
     return "Вести"
 
