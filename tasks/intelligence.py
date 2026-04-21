@@ -358,11 +358,24 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             except Exception as e:
                 log.warning(f"[tasks/sports] Score alert failed: {e}")
 
-            any_img = db.execute_one("SELECT 1 FROM articles WHERE cluster_id = %s AND image_url IS NOT NULL LIMIT 1", (cluster_id,))
-            if not any_img:
+            # Improved image logic: if no image or ONLY weak visuals exist, generate art
+            strong_img = db.execute_one("""
+                SELECT 1 FROM articles 
+                WHERE cluster_id = %s 
+                  AND image_url IS NOT NULL 
+                  AND image_url NOT LIKE '%%placeholder%%'
+                  AND image_url NOT LIKE '%%logo%%'
+                  AND image_url NOT LIKE '%%default%%'
+                  AND image_url NOT LIKE '%%.svg'
+                LIMIT 1
+            """, (cluster_id,))
+            
+            if not strong_img:
+                # Trigger cover art generation
                 img_url = generate_cover_art(cluster_id, summary)
                 if img_url:
-                    db.execute("UPDATE articles SET image_url = %s WHERE id = (SELECT id FROM articles WHERE cluster_id = %s LIMIT 1)", (img_url, cluster_id), fetch=False)
+                    # Update all articles without images to use this generated one
+                    db.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s AND (image_url IS NULL OR image_url LIKE '%%placeholder%%')", (img_url, cluster_id), fetch=False)
             invalidate_cluster_caches(cluster_id)
             generate_cluster_metadata_task.delay()
             record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
@@ -506,38 +519,33 @@ def generate_cluster_metadata_task():
             
             # Smart image selection: prefer high-quality sources and non-placeholder URLs
             img_row = db.execute_one("""
-                SELECT image_url 
+                SELECT image_url, source
                 FROM articles 
                 WHERE cluster_id = %s 
                   AND image_url IS NOT NULL 
                   AND image_url NOT LIKE '%%placeholder%%'
                   AND image_url NOT LIKE '%%default%%'
                   AND image_url NOT LIKE '%%.svg'
+                  AND image_url NOT LIKE '%%logo%%'
                 ORDER BY 
                     (
-                        CASE WHEN image_url ~* '(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small)' THEN -12 ELSE 0 END +
-                        CASE WHEN image_url ~* '(hero|lead|main|large|full|original)' THEN 4 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.(avif|webp)(\\?|$)' THEN 3 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.(jpe?g)(\\?|$)' THEN 2 ELSE 0 END +
-                        CASE WHEN image_url ~* '\\.png(\\?|$)' THEN -1 ELSE 0 END +
-                        CASE WHEN image_url ~* '(^|[^0-9])(1[2-9][0-9]{2}|[2-9][0-9]{3})x(1[2-9][0-9]{2}|[2-9][0-9]{3})([^0-9]|$)' THEN 4 ELSE 0 END +
+                        CASE WHEN image_url ~* '(thumb|thumbnail|sprite|logo|icon|avatar|favicon|pixel|small|social)' THEN -15 ELSE 0 END +
+                        CASE WHEN image_url ~* '(hero|lead|main|large|full|original)' THEN 5 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.(avif|webp)(\\?|$)' THEN 4 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.(jpe?g)(\\?|$)' THEN 3 ELSE 0 END +
+                        CASE WHEN image_url ~* '\\.png(\\?|$)' THEN -2 ELSE 0 END +
+                        CASE WHEN image_url ~* '(^|[^0-9])(1[2-9][0-9]{2}|[2-9][0-9]{3})x(1[2-9][0-9]{2}|[2-9][0-9]{3})([^0-9]|$)' THEN 6 ELSE 0 END +
                         CASE 
-                            WHEN source ILIKE '%%sdk%%' THEN 3
-                            WHEN source ILIKE '%%360stepeni%%' THEN 3
-                            WHEN source ILIKE '%%prizma%%' THEN 3
-                            WHEN source ILIKE '%%slobodnaevropa%%' THEN 3
-                            WHEN source ILIKE '%%dw%%' THEN 3
+                            WHEN source ILIKE '%%sdk%%' THEN 4
+                            WHEN source ILIKE '%%360stepeni%%' THEN 4
+                            WHEN source ILIKE '%%prizma%%' THEN 4
+                            WHEN source ILIKE '%%sitel%%' THEN 2
+                            WHEN source ILIKE '%%kanal5%%' THEN 2
+                            WHEN source ILIKE '%%telma%%' THEN 3
+                            WHEN source ILIKE '%%dw%%' THEN 4
                             ELSE 0
                         END
                     ) DESC,
-                    CASE 
-                        WHEN source ILIKE '%%sdk%%' THEN 1
-                        WHEN source ILIKE '%%360stepeni%%' THEN 1
-                        WHEN source ILIKE '%%prizma%%' THEN 1
-                        WHEN source ILIKE '%%slobodnaevropa%%' THEN 1
-                        WHEN source ILIKE '%%dw%%' THEN 1
-                        ELSE 2
-                    END,
                     created_at DESC 
                 LIMIT 1
             """, (r['cluster_id'],))
