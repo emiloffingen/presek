@@ -88,6 +88,9 @@ def _public_article_payload(article):
                 res[key] = str(value) + ("Z" if "Z" not in str(value) and "T" in str(value) else "")
         else:
             res[key] = value
+    
+    # Check if the article is from a global category
+    res["is_global"] = article.get("category") in ("Америка", "Германија")
     return res
 
 @router.get("/news")
@@ -165,17 +168,34 @@ async def get_news(
         start = page * page_size
         paged_clusters = ranked_clusters[start:start + page_size]
         cid_list = [c[0]["cluster_id"] for c in paged_clusters]
-        meta_rows = await db.async_execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cid_list,)) if cid_list else []
-        meta_map = {r['cluster_id']: r for r in meta_rows}
-        synthesis_ids = set(await db.async_get_synthesis_ids(cid_list)) if cid_list else set()
+        
+        # --- NEW: Fetch Global Clusters (America & Germany) for homepage highlights ---
+        global_clusters_raw = []
+        if not q and not category and not topic and not entity and page == 0:
+            g_rows = await db.async_execute("""
+                SELECT * FROM articles 
+                WHERE category IN ('Америка', 'Германија') 
+                  AND created_at >= NOW() - INTERVAL '48 hours'
+                ORDER BY created_at DESC LIMIT 100
+            """)
+            if g_rows:
+                g_grouped = defaultdict(list)
+                for r in g_rows: g_grouped[r['cluster_id']].append(r)
+                g_ranked = [annotate_cluster_articles(arts) for arts in g_grouped.values()]
+                g_ranked.sort(key=score_cluster_for_homepage, reverse=True)
+                global_clusters_raw = g_ranked[:6] # Top 6 global stories
 
-        result = []
-        for arts in paged_clusters:
+        all_cids = cid_list + [c[0]['cluster_id'] for c in global_clusters_raw]
+        meta_rows = await db.async_execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (all_cids,)) if all_cids else []
+        meta_map = {r['cluster_id']: r for r in meta_rows}
+        synthesis_ids = set(await db.async_get_synthesis_ids(all_cids)) if all_cids else set()
+
+        def _format_cluster(arts):
             main = arts[0]
             cid = main["cluster_id"]
             s = score_cluster(arts)
             meta = meta_map.get(cid, {})
-            result.append({
+            return {
                 "cluster_id": cid,
                 "articles": [_public_article_payload(article) for article in arts],
                 "representative_image": meta.get("representative_image"),
@@ -188,9 +208,18 @@ async def get_news(
                 "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
                 "entities": main.get("entity_names", [])
-            })
+            }
 
-        final_response = {"status": "success", "clusters": result, "page": page, "has_more": len(ranked_clusters) > start + page_size}
+        result = [_format_cluster(arts) for arts in paged_clusters]
+        global_result = [_format_cluster(arts) for arts in global_clusters_raw]
+
+        final_response = {
+            "status": "success", 
+            "clusters": result, 
+            "global": global_result,
+            "page": page, 
+            "has_more": len(ranked_clusters) > start + page_size
+        }
         set_cache(cache_key, final_response, ttl=180)
         return final_response
     except Exception as e:

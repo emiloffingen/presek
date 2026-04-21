@@ -29,6 +29,7 @@ const topic = searchParams.get('topic');
 const q = searchParams.get('q');
 
 let clusters: NewsCluster[] = [];
+let globalClusters: NewsCluster[] = [];
 let trending = [];
 let topEntities = [];
 let stats = null;
@@ -61,6 +62,7 @@ const [newsResult, trendResult, entityResult, statsResult, briefingResult] = awa
 
 if (newsResult.status === 'fulfilled') {
     clusters = newsResult.value?.clusters || [];
+    globalClusters = newsResult.value?.global || [];
 } else {
     console.error('News fetch error:', newsResult.reason);
     error = 'Грешка при вчитување на вестите.';
@@ -294,6 +296,15 @@ function getBriefingSnippet(content: string) {
 					<SupportingBand 
 						supportingFeatured={supportingFeatured}
 						supportingCompact={supportingCompact}
+					/>
+				)}
+
+				{globalClusters.length > 0 && (
+					<DevelopmentsSection
+						title="Глобален Пулс"
+						note="Најважните светски вести од Америка и Германија, видени низ призмата на македонските медиуми."
+						developmentsFeatured={globalClusters.slice(0, 2)}
+						developmentsCompact={globalClusters.slice(2)}
 					/>
 				)}
 
