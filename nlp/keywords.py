@@ -73,22 +73,33 @@ def normalize_tag_name(name):
     if not clean:
         return ""
     
-    # Handle specific common typos or bad lemmatizations
+    # 1. Handle specific common typos or bad lemmatizations/truncations
     mapping = {
         "теснеце": "Теснец",
         "ормускиот": "Ормуз",
         "ормутскиот": "Ормуз",
+        "полициј": "Полиција",
+        "милијард": "Милијарди",
+        "преговор": "Преговори",
+        "автомобил": "Автомобили",
+        "владин": "Влада",
+        "полициск": "Полиција",
     }
     lowered = clean.lower()
     if lowered in mapping:
         return mapping[lowered]
         
-    # Strip common adjective suffixes
-    clean = re.sub(r"(скиот|ската|ското|ските|ски)$", "", clean, flags=re.IGNORECASE)
+    # 2. Selective suffix stripping (adjectives -> nouns where clear)
+    # Only strip if the remaining word is long enough and it's a known adjective ending
+    if len(clean) > 7:
+        # Avoid stripping if it's a common noun ending that looks like an adjective (e.g. "Македонија")
+        if not clean.lower().endswith("нија"):
+            clean = re.sub(r"(скиот|ската|ското|ските|ски)$", "", clean, flags=re.IGNORECASE)
 
+    # 3. Capitalization fallback
     if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
         clean = " ".join(part.capitalize() for part in clean.split(" "))
-    return clean
+    return clean.strip()
 
 def is_valid_focus_entity(name, entity_type=None):
     clean = normalize_tag_name(name)
