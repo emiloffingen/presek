@@ -35,9 +35,11 @@ export default function SettingsProfileIsland() {
     if (recentItems.length === 0) return null;
     const counts: Record<string, number> = {};
     recentItems.forEach(item => {
-        counts[item.topic] = (counts[item.topic] || 0) + 1;
+        const t = item.topic || 'Вести';
+        counts[t] = (counts[t] || 0) + 1;
     });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return entries.length > 0 ? entries[0][0] : null;
   }, [recentItems]);
 
   const recommendations = useMemo(

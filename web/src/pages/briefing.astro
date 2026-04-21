@@ -170,6 +170,7 @@ function getSentimentEmoji(score: number) {
     if (score < -0.2) return '😤';
     return '😐';
 }
+const DispatchIcon = dispatchIcon;
 ---
 
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
@@ -191,7 +192,7 @@ function getSentimentEmoji(score: number) {
 				<div class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-10">
                     <div class="flex items-center gap-4">
                         <div class="p-2.5 bg-secondary/30 border border-border rounded-full">
-                            <DispatchIconComp size={26} className="text-nyt-accent" />
+                            <DispatchIcon size={26} className="text-nyt-accent" />
                         </div>
                         <h1 class="stats-headline editorial-headline !my-0">
                             Дневен <span class="italic font-serif serif-display">Брифинг</span>
