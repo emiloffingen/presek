@@ -106,12 +106,14 @@ const breakingItems = navigationData.breaking.slice(0, 4);
                     <a href="/archive" data-astro-reload class="topbar-link">Архива</a>
                 </div>
                 <div class="flex items-center gap-3">
-                    {stats?.last_1h && stats.last_1h > 0 && (
-                        <span class="topbar-stat">
-                            <span class="topbar-stat-dot"></span>
-                            +{stats.last_1h}
-                        </span>
-                    )}
+                    <div class="topbar-stat-container">
+                        {stats?.last_1h && stats.last_1h > 0 && (
+                            <span class="topbar-stat">
+                                <span class="topbar-stat-dot"></span>
+                                +{stats.last_1h}
+                            </span>
+                        )}
+                    </div>
                     <ThemeIsland client:load />
                 </div>
             </div>
@@ -569,6 +571,43 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         initHeader();
         initFades();
         initHints();
-        document.addEventListener('astro:page-load', () => { initHeader(); initFades(); initHints(); });
+
+        const initPolling = () => {
+            if (window._presek_pollInterval) clearInterval(window._presek_pollInterval);
+            
+            const updateCounter = async () => {
+                try {
+                    // Client-side apiBaseUrl equivalent
+                    const apiBase = (window as any).PUBLIC_API_URL || '/api';
+                    const res = await fetch(`${apiBase}/stats/summary`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    
+                    const count = data.last_1h;
+                    const container = document.querySelector('.topbar-stat-container');
+                    if (!container) return;
+
+                    if (count && count > 0) {
+                        container.innerHTML = `
+                            <span class="topbar-stat">
+                                <span class="topbar-stat-dot"></span>
+                                +${count}
+                            </span>
+                        `;
+                    } else {
+                        container.innerHTML = '';
+                    }
+                } catch (e) {
+                    // Silent fail for polling
+                }
+            };
+
+            window._presek_pollInterval = setInterval(updateCounter, 120000); // 2 minutes
+        };
+        initPolling();
+
+        document.addEventListener('astro:page-load', () => { 
+            initHeader(); initFades(); initHints(); initPolling();
+        });
     })();
 </script>

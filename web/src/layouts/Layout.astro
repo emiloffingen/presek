@@ -201,6 +201,43 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         font-family: var(--font-sans);
     }
 
+    /* Skeleton Loading */
+    .skeleton {
+        position: relative;
+        overflow: hidden;
+        background-color: var(--muted);
+        border-radius: 4px;
+    }
+
+    .skeleton::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.08),
+            transparent
+        );
+        animation: shimmer 2s infinite;
+    }
+
+    .dark .skeleton::after {
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.05),
+            transparent
+        );
+    }
+
+    @keyframes shimmer {
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
     /* Selection Color */
     ::selection {
         background-color: #326891;
