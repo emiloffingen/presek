@@ -280,8 +280,8 @@ const sentimentData = cluster?.sentiment ? {
 							<SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source })) as any} client:visible />
 						)}
 
-						{/* Lead Article Section */}
-						{generatedArticle ? (
+						{/* Lead Article Section - Only for major clusters (4+ sources) */}
+						{generatedArticle && cluster.articles.length >= 4 ? (
 							<section class="cluster-article-hero">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
@@ -296,7 +296,7 @@ const sentimentData = cluster?.sentiment ? {
 								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
 							</section>
-						) : cluster.has_synthesis && (
+						) : (cluster.has_synthesis || generatedArticle) && (
 							<section class="cluster-synthesis">
 								<div class="cluster-module-head">
 									<Sparkles size={18} className="text-nyt-accent" />
@@ -304,7 +304,7 @@ const sentimentData = cluster?.sentiment ? {
 								</div>
 								<div class="prose-nyt text-lg leading-relaxed text-foreground font-serif">
 									<ul class="list-none p-0 m-0 space-y-4">
-										{synthesisItems.map(item => (
+										{(synthesisItems.length > 0 ? synthesisItems : (generatedArticle || '').split('\n').slice(0, 3).map(p => ({source: null, content: p}))).map(item => (
 											<li class="flex gap-3 items-start">
 												<span class="text-nyt-accent font-black mt-1">●</span>
 												<span>
