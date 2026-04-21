@@ -23,9 +23,10 @@ from nlp import (
     filter_cluster_tags,
 )
 from api_helpers import (
-    normalize_perspectives as _parse_perspectives_blob,
+    normalize_summary_text, normalize_perspectives
 )
-from .common import cleanAndDecode, _news_row_limit
+from .common import _source_admin_authorized, _error_json, cleanAndDecode, _news_row_limit
+
 from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")

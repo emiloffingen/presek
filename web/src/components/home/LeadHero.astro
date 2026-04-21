@@ -1,6 +1,6 @@
 ---
 import { sanitizeHtml } from '../../lib/sanitize';
-import { cleanAndDecode } from '../../utils/textUtils';
+import { cleanAndDecode, highlightScores } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
 
 interface Props {
@@ -94,8 +94,8 @@ const tintColor = dominantColor || '#1e40af';
                         <a 
                             href={`/cluster/${leadCluster.cluster_id}`}
                             class="font-sans text-sm md:text-base font-semibold text-zinc-800 dark:text-zinc-200 block py-3 hover:text-nyt-accent transition-colors [&_*]:font-sans [&_*]:text-sm [&_*]:md:text-base [&_*]:text-zinc-800 [&_*]:dark:text-zinc-200"
+                            set:html={sanitizeHtml(highlightScores(cleanAndDecode(article.title)))}
                         >
-                            {cleanAndDecode(article.title)}
                         </a>
                     </li>
                 ))}

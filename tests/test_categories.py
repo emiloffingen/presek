@@ -168,4 +168,23 @@ class TestNormalizeHeadline:
         assert normalize_headline("Нормален наслов без префикси") == "Нормален наслов без префикси"
 
     def test_case_insensitive_prefix(self):
-        assert normalize_headline("видео: мал наслов") == "мал наслов"
+        assert normalize_headline("видео: мал наслов") == "Мал наслов"
+
+    def test_strip_sources_suffix(self):
+        assert normalize_headline("Наслов - 360 степени") == "Наслов"
+        assert normalize_headline("Вест | Сител") == "Вест"
+        assert normalize_headline("Информација – SDK.mk") == "Информација"
+
+    def test_de_shouting(self):
+        assert normalize_headline("ОВА Е ЦЕЛОСНО ГЛАСЕН НАСЛОВ") == "Ова е целосно гласен наслов"
+        # Prefix "СКАНДАЛ" is stripped first, then the rest is de-shouted if it was screaming
+        assert normalize_headline("СКАНДАЛ ВО МВР И ВМРО") == "Во МВР и ВМРО"
+
+    def test_quote_standardization(self):
+        assert normalize_headline('Наслов со "цитат"') == "Наслов со „цитат“"
+        assert normalize_headline("Наслов со ''цитат''") == "Наслов со „цитат“"
+        assert normalize_headline("Наслов со 'цитат'") == "Наслов со „цитат“"
+
+    def test_professional_polish(self):
+        assert normalize_headline("Дали е ова крај???") == "Дали е ова крај?"
+        assert normalize_headline("ова почнува со мала") == "Ова почнува со мала"

@@ -14,8 +14,10 @@ class TestBackfillCoverArtTask:
         ]
 
         with patch("tasks.intelligence.db") as mock_db, \
+             patch("tasks.intelligence.redis_client") as mock_redis, \
              patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
             mock_db.execute.return_value = rows
+            mock_redis.set.return_value = True
             tasks.backfill_cover_art_task()
 
         assert mock_apply.call_count == 3
@@ -740,7 +742,9 @@ class TestProfileDeliveryTasks:
              patch("tasks.delivery._select_breaking_cluster_for_profile", return_value=candidate), \
              patch("tasks.delivery._record_delivery_tracking_event", return_value=33), \
              patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send, \
+             patch("tasks.delivery.redis_client") as mock_redis, \
              patch("tasks.delivery.db") as mock_db:
+            mock_redis.set.return_value = True
             tasks.send_profile_breaking_alerts_task()
 
         mock_send.assert_called_once()

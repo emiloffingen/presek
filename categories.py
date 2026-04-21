@@ -311,22 +311,29 @@ def normalize_headline(title: str) -> str:
     
     # 2. Aggressive Tag & Decorative Prefix Removal
     # Handles (ВИДЕО), [ФОТО], ЖИВО:, BREAKING:, etc.
-    tags_pattern = r'(\[(ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\]|\((ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)\))'
+    tags_pattern = r'(\[(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)\]|\((ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)\))'
     t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
-    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|VIDEO|PHOTO|GALLERY)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
+    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE|УЖИВО)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
     
     sensationalist = [
         "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", 
         "ВО ЖИВО", "ИНТЕРВЈУ", "АНАЛИЗА", "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", 
         "ГЛЕДАЈТЕ", "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
-        "BREAKING", "EXCLUSIVE", "LIVE"
+        "BREAKING", "EXCLUSIVE", "LIVE", "ОТКРИВАМЕ", "НОВО", "ИТНО", "ВНИМАНИЕ"
     ]
     prefix_pattern = r'^(' + '|'.join(sensationalist) + r')[\s\|:–—-]+'
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
 
     # 3. Suffix / Source Attribution Cleanup
     # Remove things like "- ПРЕСЕК", "| 360 степени" at the end
-    suffix_pattern = r'[\s\|:–—-]+(360 степени|Слободен печат|Макфакс|Фокус|Канал 5|Сител|Телма|МРТ|A1on|Локално|Lokalno|Вечер|Vecer|Nezavisen|Независен|Republika|Република)$'
+    sources = [
+        "360 степени", "Слободен печат", "Макфакс", "Фокус", "Канал 5", "Сител", "Телма", 
+        "МРТ", "A1on", "Локално", "Lokalno", "Вечер", "Vecer", "Nezavisen", "Независен", 
+        "Republika", "Република", "Курир", "Kurir", "Денешен", "Denesen", "Meta.mk", 
+        "МЕТА", "Плусинфо", "Plusinfo", "Сакам да кажам", "SDK", "SDK.mk", "Deutsche Welle", 
+        "DW", "DW.com", "Радио Слободна Европа", "RSE", "РСЕ", "Нова Македонија", "Брифинг"
+    ]
+    suffix_pattern = r'[\s\|:–—-]+(' + '|'.join(sources) + r')$'
     t = re.sub(suffix_pattern, '', t, flags=re.IGNORECASE)
 
     # 4. De-Shouting (Sentence Case)
@@ -334,22 +341,27 @@ def normalize_headline(title: str) -> str:
     # We ignore short words to protect acronyms like ЕУ, НАТО, САД
     upper_count = sum(1 for c in t if c.isupper())
     alpha_count = sum(1 for c in t if c.isalpha())
-    if alpha_count > 10 and (upper_count / alpha_count) > 0.65:
+    if alpha_count >= 6 and (upper_count / alpha_count) > 0.65:
         # Convert to sentence case but try to preserve common acronyms
         t = t.capitalize()
         # Restore common Macedonian acronyms (this is a heuristic)
-        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ"]:
-            t = re.sub(re.escape(acronym), acronym, t, flags=re.IGNORECASE)
+        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП"]:
+            t = re.sub(rf'\b{re.escape(acronym)}\b', acronym, t, flags=re.IGNORECASE)
 
     # 5. Macedonian Quote Standardization
     # Convert "...", '...', and other variants to literary „...“
-    t = re.sub(r'["\'\']([^"\']+)["\'\']', r'„\1“', t)
-    # Fix common cases where portals use double single-quotes
-    t = t.replace("''", "„").replace("''", "“") 
+    # Handle double single quotes often found in portals
+    t = t.replace("''", '"')
+    # Use standard Macedonian literary quotes
+    t = re.sub(r'["\']([^"\']+)["\']', r'„\1“', t)
 
     # 6. Technical Polish
     t = re.sub(r'[\?\!]{2,}', lambda m: m.group(0)[0], t) # No !!! or ???
     t = " ".join(t.split()) # Standardize whitespace
     t = t.strip(" -–—:|") # Remove trailing/leading decorations
+    
+    # 7. Professional Casing for first letter (if not already handled by de-shouting)
+    if t and t[0].islower():
+        t = t[0].upper() + t[1:]
     
     return t.strip()
