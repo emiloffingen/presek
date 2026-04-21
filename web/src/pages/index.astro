@@ -8,6 +8,7 @@ import ForYouIsland from '../components/ForYouIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import HomeLiveUpdatesIsland from '../components/HomeLiveUpdatesIsland.tsx';
+import EditorialBriefing from '../components/home/EditorialBriefing.astro';
 import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
@@ -31,6 +32,7 @@ let clusters: NewsCluster[] = [];
 let trending = [];
 let topEntities = [];
 let stats = null;
+let briefing = null;
 let error = null;
 async function fetchJson(url: string) {
     const response = await fetch(url);
@@ -49,11 +51,12 @@ if (q) newsUrl.searchParams.set('q', q);
 
 // Fan out every SSR request in parallel — the news call is the only one
 // the page can't usefully render without, so we still surface its failure.
-const [newsResult, trendResult, entityResult, statsResult] = await Promise.allSettled([
+const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
     fetchJson(newsUrl.toString()),
     fetchJson(`${API_URL}/trending`),
     fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
     fetchJson(`${API_URL}/stats/summary`),
+    fetchJson(`${API_URL}/briefing`),
 ]);
 
 if (newsResult.status === 'fulfilled') {
@@ -70,6 +73,7 @@ topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.
     ? entityResult.value
     : [];
 stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
 
 function normalizeFocusName(name: string) {
     const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
@@ -181,6 +185,17 @@ function getTimeStr(dateStr: string) {
         return '';
     }
 }
+
+function getBriefingSnippet(content: string) {
+    if (!content) return '';
+    // Look for the first paragraph after "## Што го движи денот" or just the first paragraph
+    const match = content.match(/## Што го движи денот\n+([^#]+)/) || content.match(/^([^#]+)/);
+    if (match && match[1]) {
+        const text = match[1].trim().split('\n')[0];
+        return text.length > 150 ? text.substring(0, 147) + '...' : text;
+    }
+    return '';
+}
 ---
 
 <Layout
@@ -250,6 +265,10 @@ function getTimeStr(dateStr: string) {
 							)}
 						</div>
 					)}
+
+				{briefing && briefing.content && (
+					<EditorialBriefing content={briefing.content} date={briefing.date} />
+				)}
 
 				{leadCluster && (
 					<LeadHero
@@ -341,6 +360,19 @@ function getTimeStr(dateStr: string) {
 						Целосна Аналитика
 					</a>
 				</section>
+
+				{briefing && briefing.content && (
+					<section class="rail-module motion-rise-fast">
+						<p class="rail-kicker">Дневен контекст</p>
+						<h3 class="rail-title">КЛУЧНО ЗА ДЕНЕС</h3>
+						<p class="font-serif text-[0.92rem] leading-relaxed italic text-foreground/90 mb-4">
+							{getBriefingSnippet(briefing.content)}
+						</p>
+						<a href="/briefing" class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline flex items-center gap-1">
+							Целосен брифинг <TrendingUp size={10} />
+						</a>
+					</section>
+				)}
 
 				<HomeRailSuggestionsIsland client:visible />
 
@@ -504,54 +536,6 @@ function getTimeStr(dateStr: string) {
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--muted-foreground);
-	}
-
-	.editor-brief {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
-		padding: 1.1rem 0 1.5rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.editor-brief-intro {
-		display: grid;
-		gap: 0.35rem;
-		max-width: 40rem;
-	}
-
-	.editor-brief-intro h2 {
-		margin: 0;
-		font-size: clamp(1.28rem, 1.05rem + 0.7vw, 1.7rem);
-		line-height: 1.06;
-	}
-
-	.editor-brief-grid {
-		display: grid;
-		grid-template-columns: repeat(1, minmax(0, 1fr));
-		gap: 0.8rem;
-	}
-
-	.editor-brief-card {
-		padding: 0.9rem 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 93%, var(--secondary) 7%);
-	}
-
-	.editor-brief-card strong {
-		display: block;
-		margin: 0.25rem 0 0.45rem;
-		font-family: var(--font-serif);
-		font-size: clamp(1.75rem, 1.45rem + 0.7vw, 2.3rem);
-		line-height: 1;
-	}
-
-	.editor-brief-card p {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.94rem;
-		line-height: 1.5;
-		color: var(--secondary-foreground);
 	}
 
 	.lead-hero {

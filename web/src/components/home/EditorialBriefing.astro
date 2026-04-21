@@ -1,0 +1,215 @@
+---
+import { sanitizeHtml } from '../../lib/sanitize';
+
+interface Props {
+    content: string;
+    date: string;
+}
+
+const { content, date } = Astro.props;
+
+// Parse the content if it's markdown or has specific sections
+function parseBriefing(text: string) {
+    if (!text) return null;
+    
+    // Split by ## sections
+    const sections = text.split(/(?=## )/);
+    const parsed: Record<string, string[]> = {};
+    
+    let currentSection = 'intro';
+    
+    sections.forEach(section => {
+        const lines = section.trim().split('\n');
+        const titleLine = lines[0];
+        
+        if (titleLine.startsWith('## ')) {
+            currentSection = titleLine.replace('## ', '').trim();
+            parsed[currentSection] = lines.slice(1).map(l => l.trim()).filter(Boolean);
+        } else {
+            if (!parsed[currentSection]) parsed[currentSection] = [];
+            parsed[currentSection].push(...lines.map(l => l.trim()).filter(Boolean));
+        }
+    });
+    
+    return parsed;
+}
+
+const briefingData = parseBriefing(content);
+
+function formatDate(dateStr: string) {
+    try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('mk-MK', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    } catch {
+        return dateStr;
+    }
+}
+---
+
+{content && (
+    <section class="editorial-briefing motion-rise">
+        <div class="briefing-header">
+            <div class="briefing-kicker">
+                <span class="live-dot"></span>
+                Уреднички брифинг
+            </div>
+            <h2 class="briefing-date">{formatDate(date)}</h2>
+        </div>
+
+        <div class="briefing-content">
+            {briefingData && Object.entries(briefingData).map(([section, lines]) => (
+                <div class="briefing-section">
+                    <h3 class="section-label">{section}</h3>
+                    <div class="section-body">
+                        {lines.map(line => {
+                            if (line.startsWith('### ')) {
+                                return <h4 class="story-title" set:html={sanitizeHtml(line.replace('### ', ''))}></h4>;
+                            }
+                            if (line.startsWith('- ') || line.startsWith('• ')) {
+                                return <p class="story-detail" set:html={sanitizeHtml(line.substring(2))}></p>;
+                            }
+                            return <p class="briefing-text" set:html={sanitizeHtml(line)}></p>;
+                        })}
+                    </div>
+                </div>
+            ))}
+        </div>
+        
+        <div class="briefing-footer">
+            <p>Генерирано со помош на Пресек AI Интелигенција • Базирано на денешните водечки кластери</p>
+        </div>
+    </section>
+)}
+
+<style>
+    .editorial-briefing {
+        margin-bottom: 2.5rem;
+        padding: 1.5rem;
+        background: color-mix(in srgb, var(--background) 96%, #efe8de 4%);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--nyt-accent);
+        position: relative;
+    }
+
+    .dark .editorial-briefing {
+        background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+    }
+
+    .briefing-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.75rem;
+    }
+
+    .briefing-kicker {
+        font-family: var(--font-sans);
+        font-size: 0.7rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--nyt-accent);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .live-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--nyt-accent);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+    }
+
+    .briefing-date {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        font-weight: 800;
+        font-style: italic;
+        margin: 0;
+        color: var(--foreground);
+    }
+
+    .briefing-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .briefing-content {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        /* First section (Pulse of the day) spans both columns */
+        .briefing-section:first-child {
+            grid-column: span 2;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 1rem;
+        }
+    }
+
+    .section-label {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
+        margin: 0 0 0.75rem 0;
+    }
+
+    .briefing-text {
+        font-family: var(--font-nyt-body);
+        font-size: 1rem;
+        line-height: 1.55;
+        color: var(--foreground);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .story-title {
+        font-family: var(--font-serif);
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0.75rem 0 0.4rem 0;
+        color: var(--foreground);
+    }
+
+    .story-detail {
+        font-family: var(--font-nyt-body);
+        font-size: 0.94rem;
+        line-height: 1.5;
+        color: var(--secondary-foreground);
+        margin: 0 0 0.4rem 0;
+        padding-left: 1rem;
+        border-left: 2px solid color-mix(in srgb, var(--border) 50%, transparent);
+    }
+
+    .briefing-footer {
+        margin-top: 1.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted-foreground);
+        opacity: 0.7;
+    }
+
+    :global(.editorial-briefing b), :global(.editorial-briefing strong) {
+        font-weight: 800;
+        color: var(--foreground);
+    }
+</style>
