@@ -389,7 +389,7 @@ async def get_entity_profile(name: str):
 
 @router.get("/intelligence/global-pulse")
 async def get_global_pulse():
-    \"\"\"Public high-level intelligence stats for the Pulse page.\"\"\"
+    """Public high-level intelligence stats for the Pulse page."""
     cache_key = "api:intelligence:global-pulse:v1"
     cached = cached_response(cache_key)
     if cached: return cached
@@ -398,42 +398,42 @@ async def get_global_pulse():
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
     # 1. News Velocity (Volume per hour)
-    velocity = await db.async_execute(\"\"\"
+    velocity = await db.async_execute("""
         SELECT date_trunc('hour', created_at) AS t, COUNT(*) AS n 
         FROM articles 
         WHERE created_at >= NOW() - INTERVAL '24 hours'
         GROUP BY t ORDER BY t
-    \"\"\")
+    """)
     
     # 2. Category Distribution
-    by_category = await db.async_execute(\"\"\"
+    by_category = await db.async_execute("""
         SELECT category, COUNT(*) AS n 
         FROM articles 
         WHERE created_at >= NOW() - INTERVAL '24 hours'
         GROUP BY category ORDER BY n DESC
-    \"\"\")
+    """)
     
     # 3. Pluralism & AI Metrics (Aggregated)
     from routes.stats import build_intelligence_summary_payload
     intel = await build_intelligence_summary_payload(last_24h)
     
     # 4. Top Trending Entities
-    top_entities = await db.async_execute(\"\"\"
+    top_entities = await db.async_execute("""
         SELECT name, total_mentions, sentiment_score, type
         FROM knowledge_entities
         WHERE last_seen >= NOW() - INTERVAL '24 hours'
         ORDER BY total_mentions DESC
         LIMIT 8
-    \"\"\")
+    """)
 
     res = {
-        \"status\": \"success\",
-        \"timestamp\": datetime.datetime.now(),
-        \"last_24h\": last_24h,
-        \"velocity\": velocity,
-        \"by_category\": by_category,
-        \"intelligence\": intel,
-        \"top_entities\": top_entities
+        "status": "success",
+        "timestamp": datetime.datetime.now(),
+        "last_24h": last_24h,
+        "velocity": velocity,
+        "by_category": by_category,
+        "intelligence": intel,
+        "top_entities": top_entities
     }
     set_cache(cache_key, res, ttl=300)
     return res

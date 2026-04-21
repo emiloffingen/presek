@@ -208,3 +208,74 @@ def _is_rate_limited_path(path: str) -> bool:
 
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
+
+async def build_intelligence_summary_payload(last_24h: int) -> dict:
+    \"\"\"Calculates AI transparency, pluralism and international share metrics.\"\"\"
+    from utils import cached_response, set_cache, redis_client
+    import asyncio
+    
+    cache_key = f"stats:intel_summary:{last_24h}"
+    cached = cached_response(cache_key, ttl=300)
+    if cached: return cached
+
+    total_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0
+    intl_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE is_global = TRUE"))["count"] or 0
+
+    bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
+    
+    # Robustly count summaries (AI vs Local)
+    ai_summaries = 0
+    local_summaries = 0
+    
+    for k, v in ai_events.items():
+        if k.decode().startswith("synthesis_path"):
+            val = int(v)
+            if b"mode=local" in k:
+                local_summaries += val
+            else:
+                ai_summaries += val
+        elif k.decode().startswith("summary_path"):
+            val = int(v)
+            if b"mode=local" in k:
+                local_summaries += val
+            else:
+                ai_summaries += val
+
+    balance_stats = await db.async_execute_one(\"\"\"
+        WITH cluster_tiers AS (
+            SELECT cluster_id, COUNT(DISTINCT
+                CASE
+                    WHEN s.category IN ('Агенциски', 'Јавен Сервис', 'Главни') THEN 'M'
+                    WHEN s.category IN ('Незавинци', 'Истражувачки') THEN 'I'
+                    ELSE 'R'
+                END) as group_count
+            FROM articles a
+            JOIN sources s ON a.source = s.name
+            WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+            GROUP BY cluster_id
+        )
+        SELECT
+            COUNT(*) as total_clusters,
+            COUNT(*) FILTER (WHERE group_count >= 3) as high_consensus,
+            COUNT(*) FILTER (WHERE group_count = 2) as diverse_sources
+        FROM cluster_tiers
+    \"\"\") or {\"total_clusters\": 0, \"high_consensus\": 0, \"diverse_sources\": 0}
+
+    res = {
+        \"last_24h\": last_24h,
+        \"international_share_pct\": round((intl_articles / total_articles * 100), 1) if total_articles > 0 else 0,
+        \"ai_transparency\": {
+            \"ai_summaries\": ai_summaries,
+            \"local_summaries\": local_summaries,
+            \"ai_ratio\": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
+        },
+        \"pluralism\": {
+            \"total_clusters\": balance_stats[\"total_clusters\"],
+            \"pluralism_pct\": round((balance_stats[\"high_consensus\"] + balance_stats[\"diverse_sources\"]) / max(1, balance_stats[\"total_clusters\"]) * 100, 1),
+            \"high_consensus_pct\": round(balance_stats[\"high_consensus\"] / max(1, balance_stats[\"total_clusters\"]) * 100, 1),
+            \"diverse_sources_pct\": round(balance_stats[\"diverse_sources\"] / max(1, balance_stats[\"total_clusters\"]) * 100, 1)
+        }
+    }
+    set_cache(cache_key, res, ttl=300)
+    return res

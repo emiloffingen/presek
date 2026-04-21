@@ -191,67 +191,6 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
 async def get_stats_route():
     return {"status": "success", "data": await asyncio.to_thread(db.get_stats)}
 
-async def build_intelligence_summary_payload(last_24h: int) -> dict:
-    total_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0
-    intl_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE is_global = TRUE"))["count"] or 0
-
-    bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
-    ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
-    
-    # Robustly count summaries (AI vs Local)
-    ai_summaries = 0
-    local_summaries = 0
-    
-    for k, v in ai_events.items():
-        if k.startswith("synthesis_path"):
-            val = int(v)
-            if "mode=local" in k:
-                local_summaries += val
-            else:
-                ai_summaries += val
-        elif k.startswith("summary_path"):
-            val = int(v)
-            if "mode=local" in k:
-                local_summaries += val
-            else:
-                ai_summaries += val
-
-    balance_stats = await db.async_execute_one("""
-        WITH cluster_tiers AS (
-            SELECT cluster_id, COUNT(DISTINCT
-                CASE
-                    WHEN s.category IN ('Агенциски', 'Јавен Сервис', 'Главни') THEN 'M'
-                    WHEN s.category IN ('Незавинци', 'Истражувачки') THEN 'I'
-                    ELSE 'R'
-                END) as group_count
-            FROM articles a
-            JOIN sources s ON a.source = s.name
-            WHERE a.created_at >= NOW() - INTERVAL '24 hours'
-            GROUP BY cluster_id
-        )
-        SELECT
-            COUNT(*) as total_clusters,
-            COUNT(*) FILTER (WHERE group_count >= 3) as high_consensus,
-            COUNT(*) FILTER (WHERE group_count = 2) as diverse_sources
-        FROM cluster_tiers
-    """) or {"total_clusters": 0, "high_consensus": 0, "diverse_sources": 0}
-
-    return {
-        "last_24h": last_24h,
-        "international_share_pct": round((intl_articles / total_articles * 100), 1) if total_articles > 0 else 0,
-        "ai_transparency": {
-            "ai_summaries": ai_summaries,
-            "local_summaries": local_summaries,
-            "ai_ratio": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
-        },
-        "pluralism": {
-            "total_clusters": balance_stats["total_clusters"],
-            "pluralism_pct": round((balance_stats["high_consensus"] + balance_stats["diverse_sources"]) / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
-            "high_consensus_pct": round(balance_stats["high_consensus"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0,
-            "diverse_sources_pct": round(balance_stats["diverse_sources"] / balance_stats["total_clusters"] * 100, 1) if balance_stats["total_clusters"] > 0 else 0
-        }
-    }
-
 @router.get("/stats/summary")
 async def get_stats_summary():
     cache_key = "api:stats:summary:v2"
@@ -276,7 +215,10 @@ async def get_stats_summary():
         LIMIT 1
     """)
     quote = _pick_quote_of_the_day(quote_row)
-    intelligence = await _build_intelligence_summary_payload(last_24h)
+    
+    from .common import build_intelligence_summary_payload
+    intelligence = await build_intelligence_summary_payload(last_24h)
+    
     res = {
         "last_24h": last_24h,
         "last_1h": last_1h,
@@ -326,12 +268,13 @@ async def get_stats_full(request: Request):
         delivery_stats = await db.async_execute_one("SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts FROM synced_delivery_subscriptions") or {}
         tracking_stats = await db.async_execute_one("SELECT COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '7 days'") or {}
 
+        from .common import build_intelligence_summary_payload
         res = {
             "total_articles": (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0,
             "last_24h": last_24h,
             "db_size_mb": db_size,
             "total_feeds": (await db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"))["n"] or 0,
-            "intelligence": await _build_intelligence_summary_payload(last_24h),
+            "intelligence": await build_intelligence_summary_payload(last_24h),
             "oldest_article": dates["oldest"] if dates else None,
             "new_article": dates["newest"] if dates else None,
             "by_source": await db.async_execute("SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"),
