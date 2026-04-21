@@ -500,13 +500,20 @@ def recategorize_clusters_task():
 
 @celery_app.task
 def generate_cluster_metadata_task():
-    """Tag recent clusters with metadata (entities, source count, and representative image)."""
+    """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
         from tasks.utils import record_task_event
-        # Remove the HAVING COUNT(*) >= 2 restriction to ensure all clusters get metadata/images
+        import numpy as np
+        def parse_vec(v):
+            if isinstance(v, str):
+                import json
+                v = json.loads(v)
+            return np.array(v, dtype=np.float32)
+
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
-            SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles
+            SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
+                   array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
             FROM articles WHERE created_at >= %s
             GROUP BY cluster_id
         """, (cutoff,))
@@ -525,6 +532,16 @@ def generate_cluster_metadata_task():
             if not final_tags:
                 final_tags = filter_cluster_tags(r['sources'], limit=4)
             
+            # Calculate Centroid (Semantic Center)
+            centroid = None
+            if r['embeddings']:
+                try:
+                    vec_pool = [parse_vec(v) for v in r['embeddings']]
+                    if vec_pool:
+                        centroid = np.mean(vec_pool, axis=0).tolist()
+                except Exception as ve:
+                    log.warning(f"[tasks] Centroid calculation failed for {r['cluster_id']}: {ve}")
+
             # Smart image selection: prefer high-quality sources and non-placeholder URLs
             img_row = db.execute_one("""
                 SELECT image_url, source
@@ -571,14 +588,15 @@ def generate_cluster_metadata_task():
                 dominant_color = get_dominant_color(rep_image)
 
             db.execute(
-                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, dominant_color, updated_at)
-                   VALUES (%s, %s, %s, %s, NOW())
+                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, dominant_color, updated_at, centroid)
+                   VALUES (%s, %s, %s, %s, NOW(), %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                    tags = EXCLUDED.tags, 
                    representative_image = EXCLUDED.representative_image,
                    dominant_color = EXCLUDED.dominant_color,
-                   updated_at = NOW()""",
-                (r['cluster_id'], final_tags, rep_image, dominant_color), fetch=False
+                   updated_at = NOW(),
+                   centroid = EXCLUDED.centroid""",
+                (r['cluster_id'], final_tags, rep_image, dominant_color, centroid), fetch=False
             )
         invalidate_public_data_caches()
         record_task_event("cluster_metadata", "ok", "clusters:recent")

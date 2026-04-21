@@ -120,7 +120,7 @@ MAX_CLUSTER_SIZE     = 35
 # strict that it misses near-duplicate stories from different sources.
 VECTOR_THRESHOLD     = 0.26
 
-def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None) -> str | None:
+def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
     if not embedding: return None
     try:
         from psycopg2.extras import DictCursor
@@ -144,43 +144,60 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
         if category:
             filters.append("a.category = %s")
             params.insert(1, category)
-        if topic and topic != "Вести":
-            filters.append("a.topic = %s")
-            params.insert(1 + (1 if category else 0), topic)
-        else:
-            # If incoming is 'Вести', only match other 'Вести' articles 
-            # to prevent it from bridging into specific topics
-            filters.append("a.topic = 'Вести'")
-
+        
+        # We join with cluster_metadata to match against the Centroid (the stable center)
+        # instead of individual articles. This prevents 'outlier pull'.
         where_clause = " AND ".join(filters)
         if where_clause:
             where_clause = "AND " + where_clause
 
-        # 1. Find the best candidate leveraging HNSW index
         sql = f"""
-            SELECT a.cluster_id, a.embedding <=> %s::vector as distance
-            FROM articles a
-            WHERE a.embedding IS NOT NULL
+            SELECT m.cluster_id, m.centroid <=> %s::vector as distance, m.updated_at
+            FROM cluster_metadata m
+            JOIN (
+                SELECT DISTINCT cluster_id, category FROM articles
+                WHERE created_at >= NOW() - %s * INTERVAL '1 hour'
+            ) a ON a.cluster_id = m.cluster_id
+            WHERE m.centroid IS NOT NULL
               {where_clause}
-              AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
-            ORDER BY a.embedding <=> %s::vector
+            ORDER BY m.centroid <=> %s::vector
             LIMIT 1
         """
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql, tuple(params))
             row = cur.fetchone()
         
-        if row and float(row['distance']) < threshold:
-            # 2. Only check size for the single winner
+        if row:
+            dist = float(row['distance'])
             cid = row['cluster_id']
-            with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,))
-                size_row = cur.fetchone()
-            if size_row and int(size_row['n']) < MAX_CLUSTER_SIZE:
-                return cid
+            
+            # Temporal Tightening: As a cluster gets older, we require it to be
+            # MORE similar (stricter threshold) to accept new members.
+            age_hours = (datetime.datetime.now() - row['updated_at']).total_seconds() / 3600.0
+            if age_hours > 12:
+                threshold *= 0.85 # 15% stricter
+            if age_hours > 24:
+                threshold *= 0.75 # 25% stricter
+                
+            if dist < threshold:
+                # Entity Gating: For generic topics, if the distance is borderline,
+                # require at least one shared proper noun (Entity).
+                if (topic == "Вести" or not topic) and dist > (threshold * 0.7):
+                    from database import db_manager
+                    ents = db_manager.get_cluster_entities([cid]).get(cid, set())
+                    input_ents = set(re.findall(r'[А-ЯЀ-ӿ][а-яѐ-ӿ]+', title or ""))
+                    if ents and input_ents and not input_ents.intersection(ents):
+                        return None # Block join if no shared entities on borderline match
+
+                # Final Size Check
+                with conn.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("SELECT count(*) as n FROM articles WHERE cluster_id = %s", (cid,))
+                    size_row = cur.fetchone()
+                if size_row and int(size_row['n']) < MAX_CLUSTER_SIZE:
+                    return cid
     except Exception as e:
         import logging
-        logging.getLogger("presek").error(f"[clustering] Semantic lookup failed: {e}")
+        logging.getLogger("presek").error(f"[clustering] Centroid lookup failed: {e}")
     return None
 
 def find_or_create_cluster(conn, title: str, recent_articles: list, 
@@ -200,7 +217,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     
     # 2. Semantic Search
     if embedding:
-        cid = find_cluster_semantic(conn, embedding, category=category, topic=topic)
+        cid = find_cluster_semantic(conn, embedding, category=category, topic=topic, title=title)
         if cid: return cid
 
     # 3. TF-IDF Hybrid Fallback
