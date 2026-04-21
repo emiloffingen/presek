@@ -48,7 +48,7 @@ replace_paths() {
   local dest="$2"
 
   sed \
-    -e "s|/home/emiloffingen/presek|$APP_ROOT|g" \
+    -e "s|/home/emiloffingen/presek-runtime|$APP_ROOT|g" \
     -e "s|User=emiloffingen|User=$SERVER_USER|g" \
     -e "s|/etc/ssl/cloudflare/presek.live/fullchain.pem|$CERT_FULLCHAIN|g" \
     -e "s|/etc/ssl/cloudflare/presek.live/privkey.pem|$CERT_PRIVKEY|g" \
