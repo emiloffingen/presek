@@ -125,9 +125,19 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
     try:
         from psycopg2.extras import DictCursor
         # Adaptive threshold based on category diversity
+        # High-entropy categories need STRICTER thresholds (lower distance) 
+        # to avoid bridging unrelated stories.
         threshold = VECTOR_THRESHOLD
+        
+        # 1. Stricter for international/regional news where stories are often broad
         if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион"):
-            threshold = 0.18  # Even stricter for international news (was 0.22)
+            threshold = 0.18  # Was 0.22, now very strict
+            
+        # 2. EVEN STRICTER for the generic 'Вести' topic (the catch-all)
+        # Articles tagged only as 'Вести' often lack specific keywords, causing
+        # vector-based 'gravitational' pull for unrelated content.
+        if topic == "Вести" or not topic:
+            threshold = min(threshold, 0.21) # Cap distance for generic news
             
         params = [str(embedding), lookback_hours, str(embedding)]
         filters = []
@@ -330,7 +340,13 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             # If they have different scores but same teams, it's probably an update (score evolution)
             # If they have DIFFERENT scores and DIFFERENT teams, the entity check above already caught it.
 
-        if current_best_rep_score > threshold and current_best_rep_score > best_score:
+        # Adaptive Lexical Threshold
+        # Generic topics should require higher similarity to merge.
+        current_threshold = threshold
+        if incoming_topic == "Вести":
+            current_threshold = max(threshold, 0.58) # Be more demanding for 'Вести'
+
+        if current_best_rep_score > current_threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score
             best_cid = cid
 
