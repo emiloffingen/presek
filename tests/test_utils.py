@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import datetime
 import math
@@ -15,6 +16,7 @@ from utils import (
     get_source_trust_label,
     build_read_next_clusters,
     build_source_reputation_rows,
+    event_stream,
 )
 
 @pytest.fixture(autouse=True)
@@ -69,6 +71,50 @@ class TestScoreCluster:
         high_cred = [_make_article("MIA")]
         low_cred = [_make_article("Press24")]
         assert score_cluster(high_cred) > score_cluster(low_cred)
+
+
+def test_event_stream_stops_when_client_disconnects():
+    class _FakePubSub:
+        def __init__(self):
+            self.closed = False
+            self.unsubscribed = False
+            self.calls = 0
+
+        def subscribe(self, _channel):
+            return None
+
+        def get_message(self, ignore_subscribe_messages=True, timeout=1.0):
+            self.calls += 1
+            return None
+
+        def unsubscribe(self, _channel):
+            self.unsubscribed = True
+
+        def close(self):
+            self.closed = True
+
+    class _FakeRequest:
+        def __init__(self):
+            self.calls = 0
+
+        async def is_disconnected(self):
+            self.calls += 1
+            return self.calls > 1
+
+    async def _collect():
+        pubsub = _FakePubSub()
+        request = _FakeRequest()
+        with patch.object(utils.redis_client, "pubsub", return_value=pubsub):
+            stream = event_stream("updates", request=request)
+            first = await stream.__anext__()
+            with pytest.raises(StopAsyncIteration):
+                await stream.__anext__()
+        return first, pubsub
+
+    first, pubsub = asyncio.run(_collect())
+    assert first == "retry: 10000\n\n"
+    assert pubsub.unsubscribed is True
+    assert pubsub.closed is True
 
     @patch("utils.get_source_health_map", return_value={})
     def test_duplicate_sources_counted_once(self, _mock_health):

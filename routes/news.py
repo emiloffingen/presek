@@ -432,5 +432,5 @@ async def get_historical_events(cluster_id: str):
         return JSONResponse(status_code=500, content={"message": "Internal server error"})
 
 @router.get("/live")
-async def get_live_route():
-    return StreamingResponse(event_stream("updates"), media_type="text/event-stream")
+async def get_live_route(request: Request):
+    return StreamingResponse(event_stream("updates", request=request), media_type="text/event-stream")

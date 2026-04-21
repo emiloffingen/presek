@@ -133,6 +133,7 @@ class TestDeploymentIntegrity:
 
         assert "uvicorn api_fast:app" in fastapi_service
         assert "--port 5001" in fastapi_service
+        assert "TimeoutStopSec=30" in fastapi_service
         assert "ensure_astro_build.sh" in astro_service
         assert "node ./dist/server/entry.mjs" in astro_service
         assert "PORT=3000" in astro_service
@@ -230,6 +231,12 @@ class TestDeploymentIntegrity:
         system_route = _read("routes/system.py")
         assert "secrets.compare_digest" in system_route
         assert "provided_token == admin_token" not in system_route
+
+    def test_live_route_uses_request_aware_event_stream(self):
+        news_route = _read("routes/news.py")
+        utils_module = _read("utils.py")
+        assert 'event_stream("updates", request=request)' in news_route
+        assert "await request.is_disconnected()" in utils_module
 
 
 class TestRuntimeDependencyIntegrity:

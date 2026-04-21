@@ -1,4 +1,5 @@
 import datetime
+import asyncio
 import logging
 import math
 import redis
@@ -1066,17 +1067,32 @@ def publish_event(channel: str, data: dict):
     except Exception as e:
         log.warning(f"[pubsub] publish error on {channel}: {e}")
 
-def event_stream(channel: str):
-    """Generator for Server-Sent Events (SSE) subscribing to a Redis channel."""
+async def event_stream(channel: str, request=None):
+    """Async generator for SSE that exits cleanly on disconnect or shutdown."""
     pubsub = redis_client.pubsub()
     pubsub.subscribe(channel)
-    # Send an initial "ping" to keep connection alive
+    last_keepalive = time.monotonic()
     yield "retry: 10000\n\n"
     try:
-        for message in pubsub.listen():
-            if message['type'] == 'message':
-                data = message['data']
+        while True:
+            if request is not None and await request.is_disconnected():
+                break
+
+            message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            if message and message.get("type") == "message":
+                data = message["data"]
                 yield f"data: {data}\n\n"
+                last_keepalive = time.monotonic()
+                continue
+
+            if time.monotonic() - last_keepalive >= 15:
+                yield ": keepalive\n\n"
+                last_keepalive = time.monotonic()
+
+            await asyncio.sleep(0.1)
+    except asyncio.CancelledError:
+        log.info(f"[pubsub] stream cancelled on {channel}")
+        raise
     except Exception as e:
         log.error(f"[pubsub] stream error on {channel}: {e}")
     finally:

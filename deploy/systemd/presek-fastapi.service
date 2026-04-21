@@ -19,6 +19,7 @@ ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a 
 Restart=always
 RestartSec=5
 TimeoutStartSec=90
+TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-fastapi
