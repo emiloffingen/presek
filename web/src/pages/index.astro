@@ -54,13 +54,32 @@ if (q) newsUrl.searchParams.set('q', q);
 
 // Fan out every SSR request in parallel — the news call is the only one
 // the page can't usefully render without, so we still surface its failure.
-const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
+const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
     fetchJson(newsUrl.toString()),
     fetchJson(`${API_URL}/trending`),
     fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
     fetchJson(`${API_URL}/stats/summary`),
     fetchJson(`${API_URL}/briefing`),
+    fetchJson(`${API_URL}/news?sort=recent&page_size=15`),
 ]);
+
+let wireArticles = [];
+if (wireResult.status === 'fulfilled') {
+    // Extract unique articles from the most recent clusters
+    const seenLinks = new Set();
+    const raw = wireResult.value?.clusters || [];
+    for (const c of raw) {
+        for (const a of c.articles) {
+            if (!seenLinks.has(a.link)) {
+                wireArticles.push(a);
+                seenLinks.add(a.link);
+            }
+        }
+    }
+    wireArticles = wireArticles.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ).slice(0, 15);
+}
 
 if (newsResult.status === 'fulfilled') {
     clusters = newsResult.value?.clusters || [];
@@ -351,6 +370,38 @@ function getBriefingSnippet(content: string) {
 			</div>
 
 			<aside class="front-rail">
+                {/* Live Wire */}
+                <section class="rail-module motion-rise-fast">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-foreground/10">
+                        <h3 class="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-red flex items-center gap-2">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
+                            </span>
+                            ПОСЛЕДНО НА ПРЕСЕК
+                        </h3>
+                        <a href="/pulse" class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground">СИТЕ</a>
+                    </div>
+                    <div class="space-y-4">
+                        {wireArticles.map((art: any) => (
+                            <a href={`/cluster/${art.cluster_id}`} class="wire-item group block border-b border-border/40 pb-4 last:border-0">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="space-y-1">
+                                        <p class="font-serif text-[13.5px] font-black leading-[1.3] group-hover:text-nyt-accent transition-colors line-clamp-2">
+                                            {cleanAndDecode(art.title)}
+                                        </p>
+                                        <div class="flex items-center gap-1.5 font-sans text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                                            <span class="text-foreground/80">{art.source}</span>
+                                            <span>·</span>
+                                            <span>{getTimeStr(art.created_at)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                </section>
+
 				<section class="rail-module rail-module-featured motion-rise-fast">
 					<p class="rail-kicker">Интелигенција</p>
 					<h3 class="rail-title flex items-center gap-2">
