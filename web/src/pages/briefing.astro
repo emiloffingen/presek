@@ -115,6 +115,7 @@ function formatBriefing(content: string) {
 
     const out: string[] = [];
     let buffer: string[] = [];
+    let firstParagraphFound = false;
 
     const flushList = () => {
         if (buffer.length === 0) return;
@@ -122,23 +123,42 @@ function formatBriefing(content: string) {
         buffer = [];
     };
 
-    for (const line of content.split('\n')) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const stripped = line.trim();
+        
         if (!stripped) {
             flushList();
             continue;
         }
+
         if (line.startsWith('- ') || line.startsWith('• ')) {
             buffer.push(renderBriefingListItem(line));
             continue;
         }
+
         flushList();
-        out.push(renderBriefingLine(line));
+        
+        let rendered = renderBriefingLine(line);
+        
+        // Add drop-cap to the first paragraph that isn't a header
+        if (!firstParagraphFound && !line.startsWith('#') && !line.startsWith('**') && stripped.length > 50) {
+            rendered = rendered.replace('<p class="', '<p class="first-paragraph ');
+            firstParagraphFound = true;
+        }
+        
+        out.push(rendered);
     }
     flushList();
 
     return out.join('\n');
 }
+
+// Extract sections for TOC
+const sectionHighlights = (briefing?.content || '').split('\n')
+    .filter(l => l.startsWith('## '))
+    .map(l => l.substring(3).trim());
 
 const readingTime = briefing ? Math.max(2, Math.ceil(briefing.content.split(' ').length / 180)) : 0;
 const intelligence = stats?.intelligence ?? {};
@@ -162,8 +182,8 @@ function getSentimentEmoji(score: number) {
                     <span class="h-px w-8 bg-border"></span>
                     <span class="flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
                         <span class="flex items-center gap-1.5"><Timer size={10} /> {readingTime} мин. читање</span>
-                        <button class="flex items-center gap-1.5 hover:text-nyt-accent transition-colors cursor-not-allowed opacity-60">
-                            <Activity size={10} /> Слушај (наскоро)
+                        <button id="briefing-audio-trigger" class="flex items-center gap-1.5 hover:text-nyt-accent transition-colors group">
+                            <Activity size={10} className="group-hover:animate-pulse" /> <span id="audio-label">Слушај го брифингот</span>
                         </button>
                     </span>
                 </div>
@@ -182,6 +202,19 @@ function getSentimentEmoji(score: number) {
                         <p class="text-[10px] text-nyt-accent font-bold mt-1">ВЕРЗИЈА 4.0 · СИНТЕТИЗИРАНО</p>
                     </div>
                 </div>
+
+                {sectionHighlights.length > 0 && (
+                    <nav class="briefing-toc py-4 border-y border-border flex items-center gap-4 overflow-x-auto hide-scrollbar">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Денес во фокус:</span>
+                        <div class="flex items-center gap-6">
+                            {sectionHighlights.map((title: string) => (
+                                <span class="text-[11px] font-bold text-foreground/70 hover:text-nyt-accent cursor-default whitespace-nowrap">
+                                    {title}
+                                </span>
+                            ))}
+                        </div>
+                    </nav>
+                )}
 			</header>
 
             {briefing && (
@@ -217,6 +250,19 @@ function getSentimentEmoji(score: number) {
 						<article class="briefing-view prose-nyt max-w-none">
 							<div class="briefing-body border-t-2 border-foreground pt-12" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
                             
+                            <div class="mt-16 pb-16 border-b border-border flex flex-col items-center text-center">
+                                <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mb-4 border border-border">
+                                    <Sparkles size={20} className="text-nyt-accent" />
+                                </div>
+                                <p class="font-serif italic text-lg text-muted-foreground">„Ние ги наоѓаме фактите, вие го градите мислењето.“</p>
+                                <p class="font-sans text-[10px] font-black uppercase tracking-[0.2em] mt-6 text-foreground">Верификувано од Пресек AI Уредник</p>
+                                <div class="mt-4 opacity-30 select-none pointer-events-none">
+                                    <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M10 25C20 20 30 35 45 25C60 15 75 30 110 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                    </svg>
+                                </div>
+                            </div>
+
                             <div class="mt-16 p-1 bg-gradient-to-br from-[#ff5e5b] to-[#ff8a71] rounded-3xl shadow-lg">
                                 <div class="bg-card rounded-[calc(1.5rem-1px)] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div class="text-center md:text-left">
@@ -289,6 +335,48 @@ function getSentimentEmoji(score: number) {
 	<Footer />
 </Layout>
 
+<script>
+    const initAudio = () => {
+        const btn = document.getElementById('briefing-audio-trigger');
+        const label = document.getElementById('audio-label');
+        if (!btn || !label) return;
+
+        let isPlaying = false;
+        let utterance: SpeechSynthesisUtterance | null = null;
+
+        btn.addEventListener('click', () => {
+            if (isPlaying) {
+                window.speechSynthesis.cancel();
+                isPlaying = false;
+                label.innerText = 'Слушај го брифингот';
+                return;
+            }
+
+            const content = document.querySelector('.briefing-body')?.innerText || '';
+            if (!content) return;
+
+            utterance = new SpeechSynthesisUtterance(content);
+            utterance.lang = 'mk-MK'; // Basic support, browser dependent
+            utterance.rate = 1.0;
+            
+            utterance.onstart = () => {
+                isPlaying = true;
+                label.innerText = 'Паузирај го аудиото';
+            };
+
+            utterance.onend = () => {
+                isPlaying = false;
+                label.innerText = 'Слушај го брифингот';
+            };
+
+            window.speechSynthesis.speak(utterance);
+        });
+    };
+
+    initAudio();
+    document.addEventListener('astro:page-load', initAudio);
+</script>
+
 <style>
 	.briefing-meta-box {
 		text-align: right;
@@ -309,6 +397,25 @@ function getSentimentEmoji(score: number) {
 
     .briefing-body {
         column-count: 1;
+    }
+
+    .first-paragraph::first-letter {
+        float: left;
+        font-family: var(--font-serif);
+        font-size: 4.8rem;
+        font-weight: 900;
+        line-height: 0.8;
+        padding-top: 0.4rem;
+        padding-right: 0.8rem;
+        padding-left: 0.1rem;
+        color: var(--foreground);
+    }
+
+    .briefing-toc {
+        scrollbar-width: none;
+    }
+    .briefing-toc::-webkit-scrollbar {
+        display: none;
     }
 
 	.rail-card-title {

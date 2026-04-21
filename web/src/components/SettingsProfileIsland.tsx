@@ -30,6 +30,16 @@ export default function SettingsProfileIsland() {
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
   const recentItems = useMemo(() => summarizeRecent(profile), [profile]);
+  
+  const topFocusTopic = useMemo(() => {
+    if (recentItems.length === 0) return null;
+    const counts: Record<string, number> = {};
+    recentItems.forEach(item => {
+        counts[item.topic] = (counts[item.topic] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  }, [recentItems]);
+
   const recommendations = useMemo(
     () => buildSurfaceFollowSuggestions(profile, 'settings', { topicLimit: 3, sourceLimit: 2 }),
     [profile]
@@ -93,6 +103,18 @@ export default function SettingsProfileIsland() {
             <strong>{(profile?.recentClusters || []).length}</strong>
           </div>
         </div>
+
+        {topFocusTopic && (
+            <div className="mt-8 p-4 bg-nyt-accent/5 border border-nyt-accent/20 rounded-lg flex items-center justify-between">
+                <div>
+                    <p className="text-[10px] font-black uppercase text-nyt-accent tracking-widest mb-1">Вашиот примарен фокус</p>
+                    <h4 className="font-serif font-black text-xl italic">{topFocusTopic}</h4>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] font-bold text-muted-foreground leading-tight">Врз основа на последното читање.<br/>Го користиме за „За Вас“.</p>
+                </div>
+            </div>
+        )}
       </section>
 
       <section className="settings-grid">
