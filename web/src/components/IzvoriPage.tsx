@@ -130,11 +130,12 @@ export const IzvoriPage: React.FC = () => {
 
   const renderSourceCard = (source: SourceRow) => {
     const health = getHealthStatus(source.last_fetched);
+    const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
     
     return (
-      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card">
+      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card group">
         <div className="source-reputation-top">
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-2">
               <div className={`w-1.5 h-1.5 rounded-full ${
                 health === 'active' ? 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 
@@ -143,66 +144,70 @@ export const IzvoriPage: React.FC = () => {
                 health === 'active' ? 'Активен (ажуриран неодамна)' : 
                 health === 'stale' ? 'Во мирување (нема сигнал >1ч)' : 'Неактивен (нема сигнал >6ч)'
               }></div>
-              <h3 className="source-reputation-name">{source.source}</h3>
+              <h3 className="source-reputation-name group-hover:text-nyt-accent transition-colors">{source.source}</h3>
             </div>
-            <div className="flex flex-wrap gap-1 mt-1">
-                <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-bold uppercase">{source.country || 'MK'}</span>
-                {source.top_categories?.map(cat => (
-                    <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-bold uppercase opacity-70">{cat}</span>
+            <div className="flex flex-wrap gap-1 mt-1.5">
+                <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-black uppercase tracking-tighter">{source.country || 'MK'}</span>
+                {source.top_categories?.slice(0, 2).map(cat => (
+                    <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-black uppercase tracking-tighter opacity-70 bg-background">{cat}</span>
                 ))}
             </div>
           </div>
-          <span className={`source-tier ${tierClass(source.trust_tier)}`}>{source.trust_tier}</span>
+          <div className="text-right flex flex-col items-end gap-1">
+            <span className={`source-tier ${tierClass(source.trust_tier)} text-[10px]`}>{source.trust_tier}</span>
+            <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-black uppercase opacity-40">QI:</span>
+                <span className="text-[11px] font-black text-nyt-accent">{reliabilityIndex}</span>
+            </div>
+          </div>
         </div>
 
-        <p className="source-reputation-copy">{source.tendency}</p>
+        <p className="source-reputation-copy line-clamp-2">{source.tendency}</p>
         
         {/* Reliability Mini-Chart */}
         <div className="mt-4 mb-2">
-            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-tighter mb-1 opacity-60">
+            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-tighter mb-1.5 opacity-60">
                 <div className="flex items-center gap-1">
                   <span>Сигурност на водство</span>
-                  <span title="Зелено: Прв на вест и потврден од други. Портокалово: Прв на вест но останал единствен.">
-                    <Info size={10} className="cursor-help" />
-                  </span>
                 </div>
                 <span>{formatPercent(source.corroboration_rate)}</span>
             </div>
             <div className="flex h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-green-500" 
+                  className="h-full bg-nyt-accent shadow-[0_0_8px_rgba(var(--nyt-accent-rgb),0.4)]" 
                   title="Води и е потврден"
                   style={{ width: `${(source.corroboration_rate || 0) * 100}%` }} 
                 />
                 <div 
-                  className="h-full bg-orange-400" 
+                  className="h-full bg-orange-400 opacity-50" 
                   title="Води сам"
                   style={{ width: `${(source.lone_lead_rate || 0) * 100}%` }} 
                 />
             </div>
         </div>
 
-      <p className={`source-trend-note ${trendClass(source.trend_label)}`}>
-        <span>{source.trend_label}</span>
-        <strong>{source.trend_delta >= 0 ? `+${source.trend_delta}` : source.trend_delta} во 7 дена</strong>
-      </p>
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
+        <div className="flex flex-col">
+            <span className="text-[9px] font-black uppercase opacity-50">7д Тренд</span>
+            <p className={`source-trend-note ${trendClass(source.trend_label)} !m-0 !p-0 border-0 bg-transparent`}>
+                <span className="font-black">{source.trend_label}</span>
+                <strong className="text-[10px] ml-1">{source.trend_delta >= 0 ? `+${source.trend_delta}` : source.trend_delta}</strong>
+            </p>
+        </div>
 
-      <div className="source-reputation-stats">
-        <div>
-          <span>24ч обем</span>
-          <strong>{source.recent_volume}</strong>
-        </div>
-        <div>
-          <span>Прв на сторија</span>
-          <strong>{source.speed_first_count}</strong>
-        </div>
-        <div>
-          <span>Тежина</span>
-          <strong>{source.effective_weight.toFixed(2)}</strong>
+        <div className="flex gap-4">
+            <div className="text-right">
+                <span className="text-[9px] font-black uppercase opacity-50 block">24ч Обем</span>
+                <span className="text-xs font-black">{source.recent_volume}</span>
+            </div>
+            <div className="text-right">
+                <span className="text-[9px] font-black uppercase opacity-50 block">Прв</span>
+                <span className="text-xs font-black text-nyt-accent">{source.speed_first_count}</span>
+            </div>
         </div>
       </div>
 
-      <div className="source-reputation-footer">
+      <div className="source-reputation-footer mt-4">
         <span>{formatLastFetched(source.last_fetched)}</span>
         {!source.is_active && <span className="source-status-paused">Паузиран</span>}
       </div>

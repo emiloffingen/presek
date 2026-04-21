@@ -57,10 +57,39 @@ async def get_briefing():
     try:
         row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE")
         if not row: row = await db.async_execute_one("SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1")
+        
+        # Fetch key subjects for the day (PERSON)
+        subjects = await db.async_execute("""
+            SELECT name, total_mentions, sentiment_score
+            FROM knowledge_entities
+            WHERE type = 'PERSON' AND last_seen >= NOW() - INTERVAL '24 hours'
+            ORDER BY total_mentions DESC LIMIT 5
+        """)
+        
+        # Fetch top locations (GPE)
+        locations = await db.async_execute("""
+            SELECT name, total_mentions
+            FROM knowledge_entities
+            WHERE type = 'GPE' AND last_seen >= NOW() - INTERVAL '24 hours'
+            ORDER BY total_mentions DESC LIMIT 5
+        """)
+
         if not row:
             fallback = await db.async_execute("SELECT cluster_id, title, description, source, category, topic, created_at FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10")
-            return {"date": datetime.date.today().isoformat(), "content": generate_daily_brief_fallback(fallback), "generated_locally": True}
-        return {"date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]), "content": row["content"] or ""}
+            return {
+                "date": datetime.date.today().isoformat(), 
+                "content": generate_daily_brief_fallback(fallback), 
+                "generated_locally": True,
+                "subjects": subjects,
+                "locations": locations
+            }
+            
+        return {
+            "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]), 
+            "content": row["content"] or "",
+            "subjects": subjects,
+            "locations": locations
+        }
     except Exception as e:
         log.error(f"Briefing Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch briefing")

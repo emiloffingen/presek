@@ -141,7 +141,15 @@ function formatBriefing(content: string) {
 }
 
 const readingTime = briefing ? Math.max(2, Math.ceil(briefing.content.split(' ').length / 180)) : 0;
-const DispatchIconComp = dispatchIcon;
+const intelligence = stats?.intelligence ?? {};
+const subjects = briefing?.subjects || [];
+const locations = briefing?.locations || [];
+
+function getSentimentEmoji(score: number) {
+    if (score > 0.2) return '😊';
+    if (score < -0.2) return '😤';
+    return '😐';
+}
 ---
 
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
@@ -152,8 +160,11 @@ const DispatchIconComp = dispatchIcon;
 				<div class="flex items-center gap-2 mb-4">
                     <span class="page-kicker">Премиум Диспач</span>
                     <span class="h-px w-8 bg-border"></span>
-                    <span class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
-                        <Timer size={10} /> {readingTime} мин. читање
+                    <span class="flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
+                        <span class="flex items-center gap-1.5"><Timer size={10} /> {readingTime} мин. читање</span>
+                        <button class="flex items-center gap-1.5 hover:text-nyt-accent transition-colors cursor-not-allowed opacity-60">
+                            <Activity size={10} /> Слушај (наскоро)
+                        </button>
                     </span>
                 </div>
 				
@@ -239,14 +250,35 @@ const DispatchIconComp = dispatchIcon;
 
 				<aside class="briefing-rail">
 					<div class="rail-card editorial-panel-strong">
-							<h3 class="rail-card-title flex items-center gap-2"><Sparkles size={14} className="text-nyt-accent" /> Како да го користите</h3>
-							<p class="rail-copy text-sm">
-								Прочитајте го брифингот како прв слој на денот, а потоа отворете само темите што навистина бараат подлабока проверка низ кластерите.
-							</p>
+							<h3 class="rail-card-title flex items-center gap-2"><Sparkles size={14} className="text-nyt-accent" /> Клучни ликови</h3>
+							<div class="space-y-4">
+                                {subjects.map((s: any) => (
+                                    <div class="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                                        <div class="flex flex-col">
+                                            <span class="font-serif font-bold text-sm">{s.name}</span>
+                                            <span class="text-[9px] uppercase font-black opacity-60 tracking-tighter">{s.total_mentions} споменувања</span>
+                                        </div>
+                                        <span title="Тон на известување">{getSentimentEmoji(s.sentiment_score)}</span>
+                                    </div>
+                                ))}
+                                {subjects.length === 0 && <p class="text-xs italic text-muted-foreground">Нема детектирано специфични субјекти.</p>}
+                            </div>
+					</div>
+
+                    <div class="rail-card editorial-panel">
+							<h3 class="rail-card-title flex items-center gap-2"><Activity size={14} /> Жаришта</h3>
+							<div class="flex flex-wrap gap-2">
+                                {locations.map((l: any) => (
+                                    <span class="px-2 py-1 bg-secondary/50 rounded border border-border text-[10px] font-bold uppercase tracking-tight">
+                                        {l.name}
+                                    </span>
+                                ))}
+                                {locations.length === 0 && <p class="text-xs italic text-muted-foreground">Нема детектирано специфични локации.</p>}
+                            </div>
 					</div>
 
 					<div class="rail-card editorial-panel">
-						<h4 class="rail-card-title flex items-center gap-2"><Timer size={14}/> Поставки за известувања</h4>
+						<h4 class="rail-card-title flex items-center gap-2"><Timer size={14}/> Достава</h4>
 						<p class="text-xs text-muted-foreground mb-6">Добивајте го утринскиот брифинг директно преку ntfy.sh или Web Push.</p>
                         <BriefingDeliveryIsland client:load variant="summary" content={briefing?.content || ''} dateLabel={currentDate} />
 					</div>
