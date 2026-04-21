@@ -224,25 +224,6 @@ KNOWN_ENTITIES = {
     "ХАМАС": "ORG",
     "ОПЕК": "ORG",
     "Ормуз": "LOC",
-    
-    # Short names / Aliases
-    "Мицкоски": "PERSON",
-    "Ковачевски": "PERSON",
-    "Пендаровски": "PERSON",
-    "Силјановска": "PERSON",
-    "Силјановска-Давкова": "PERSON",
-    "Трамп": "PERSON",
-    "Путин": "PERSON",
-    "Вучиќ": "PERSON",
-    "Зеленски": "PERSON",
-    "Апасиев": "PERSON",
-    "Макрон": "PERSON",
-    "Курти": "PERSON",
-    "Филипче": "PERSON",
-    "Груевски": "PERSON",
-    "Јаневска": "PERSON",
-    "ВМРО": "ORG",
-    "ВМРО ДПМНЕ": "ORG",
 }
 
 # Regex for detecting Macedonian proper nouns (starts with capital letter)
@@ -266,6 +247,8 @@ ENTITY_ALIASES = {
     "Пендаровски": "Стево Пендаровски",
     "Силјановска": "Гордана Силјановска-Давкова",
     "Силјановска-Давкова": "Гордана Силјановска-Давкова",
+    "Сиљановска": "Гордана Силјановска-Давкова",
+    "Сиљановска-Давкова": "Гордана Силјановска-Давкова",
     "Трамп": "Доналд Трамп",
     "Путин": "Владимир Путин",
     "Вучиќ": "Александар Вучиќ",
@@ -276,6 +259,8 @@ ENTITY_ALIASES = {
     "Филипче": "Венко Филипче",
     "Груевски": "Никола Груевски",
     "Јаневска": "Весна Јаневска",
+    "Османи": "Бујар Османи",
+    "Османоска": "Бујар Османи",
     "ВМРО": "ВМРО-ДПМНЕ",
     "ВМРО ДПМНЕ": "ВМРО-ДПМНЕ",
     "Ормускиот": "Ормуз",
@@ -320,8 +305,10 @@ for _name, _etype in KNOWN_ENTITIES.items():
     _parts = [part for part in re.split(r"[\s-]+", _name) if part]
     if len(_parts) < 2:
         continue
-    _surname = _parts[-1]
-    _surname_to_person.setdefault(_surname, set()).add(_name)
+    # Consider all parts except first name as potential surnames for mix-up detection
+    for _part in _parts[1:]:
+        if len(_part) >= 4:
+            _surname_to_person.setdefault(_part, set()).add(_name)
 
 for _surname, _people in _surname_to_person.items():
     if len(_people) == 1 and _surname not in ENTITY_ALIASES:
@@ -340,10 +327,24 @@ _KNOWN_SURNAMES = {}
 _KNOWN_FIRSTNAMES = {}
 for _name, _etype in KNOWN_ENTITIES.items():
     if _etype == "PERSON":
-        _parts = _name.split()
+        _parts = [part for part in re.split(r"[\s-]+", _name) if part]
         if len(_parts) >= 2:
             _KNOWN_FIRSTNAMES[_parts[0]] = _name
-            _KNOWN_SURNAMES[_parts[-1]] = _name
+            # All parts except the first are considered surnames for the fix logic
+            for _part in _parts[1:]:
+                if len(_part) >= 4:
+                    _KNOWN_SURNAMES[_part] = _name
+            # Also add the full multi-part surname if it has a hyphen
+            if "-" in _name:
+                _surname_part = _name.split(None, 1)[-1]
+                if len(_surname_part) >= 4:
+                    _KNOWN_SURNAMES[_surname_part] = _name
+
+# Include common single-word aliases as potential surnames for the fix logic
+for _alias, _canonical in ENTITY_ALIASES.items():
+    if " " not in _alias and len(_alias) >= 4 and _canonical in KNOWN_ENTITIES:
+        if KNOWN_ENTITIES[_canonical] == "PERSON":
+            _KNOWN_SURNAMES[_alias] = _canonical
 
 def validate_person_names(text: str) -> str:
     """
@@ -354,19 +355,25 @@ def validate_person_names(text: str) -> str:
     if not text:
         return text
     
-    # 1. Look for known surnames with wrong first names
+    # Look for known surnames with wrong first names
     # Patterns like "Dimitar Filipce" (hallucination)
-    words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ]+\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+\b", text)
+    # We use a regex that handles hyphenated surnames as a single unit
+    words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ]+\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+(?:-[А-ЯЀ-ӿ][а-яѐ-ӿ]+)*\b", text)
     for pair in words:
         if pair in KNOWN_ENTITIES: continue
         
-        first, last = pair.split()
+        parts = pair.split()
+        if len(parts) != 2: continue
+        first, last = parts
+        
         # Case: Surname is famous (Filipce), but first name is wrong for that person
         if last in _KNOWN_SURNAMES:
             canonical = _KNOWN_SURNAMES[last]
             if first != canonical.split()[0]:
                 # Strong signal: is the first name also a famous person's first name? (Dimitar)
                 if first in _KNOWN_FIRSTNAMES:
+                    # Avoid double names if already partially fixed
+                    if canonical in text: continue
                     text = text.replace(pair, canonical)
                     log.info(f"[entities/fix] Hallucination detected: {pair} -> {canonical}")
                     
