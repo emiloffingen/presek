@@ -355,27 +355,67 @@ def validate_person_names(text: str) -> str:
     if not text:
         return text
     
-    # Look for known surnames with wrong first names
-    # Patterns like "Dimitar Filipce" (hallucination)
-    # We use a regex that handles hyphenated surnames as a single unit
-    words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ]+\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+(?:-[А-ЯЀ-ӿ][а-яѐ-ӿ]+)*\b", text)
-    for pair in words:
+    # 1. Look for known name phrases (2 or 3 parts)
+    # This regex matches 2 to 3 capitalized words, where each word can contain internal hyphens
+    all_words = re.findall(r"\b[А-ЯЀ-ӿ][а-яѐ-ӿ-]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ-]+){1,2}\b", text)
+    # print(f"DEBUG: all_words={all_words}")
+    all_words.sort(key=len, reverse=True)
+    
+    for pair in all_words:
         if pair in KNOWN_ENTITIES: continue
         
-        parts = pair.split()
-        if len(parts) != 2: continue
-        first, last = parts
+        # Normalize whitespace
+        clean_pair = re.sub(r"\s+", " ", pair).strip()
+        parts = clean_pair.split()
+        if len(parts) < 2: continue
         
-        # Case: Surname is famous (Filipce), but first name is wrong for that person
-        if last in _KNOWN_SURNAMES:
-            canonical = _KNOWN_SURNAMES[last]
-            if first != canonical.split()[0]:
-                # Strong signal: is the first name also a famous person's first name? (Dimitar)
-                if first in _KNOWN_FIRSTNAMES:
-                    # Avoid double names if already partially fixed
-                    if canonical in text: continue
-                    text = text.replace(pair, canonical)
-                    log.info(f"[entities/fix] Hallucination detected: {pair} -> {canonical}")
+        first = parts[0]
+        # Check if ANY part of the phrase (except the first) is a known surname
+        canonical = None
+        matched_part = None
+        for part in parts[1:]:
+            last_variants = [part]
+            if "-" in part:
+                last_variants.extend(part.split("-"))
+            
+            for variant in sorted(last_variants, key=len, reverse=True):
+                if len(variant) >= 4 and variant in _KNOWN_SURNAMES:
+                    canonical = _KNOWN_SURNAMES[variant]
+                    matched_part = part
+                    break
+            if canonical: break
+        
+        # Fallback for very specific high-profile mixups
+        if not canonical:
+            if first == "Бујар" and ("Силјановска" in clean_pair or "Сиљановска" in clean_pair):
+                canonical = "Гордана Силјановска-Давкова"
+                matched_part = parts[-1]
+
+        if canonical:
+            canonical_parts = canonical.split()
+            # Canonical's last part (might be hyphenated)
+            canonical_last = canonical_parts[-1]
+            
+            # Improvement: Replace if first name is wrong OR if surname is an alias/variant (like Osmanoska)
+            # is_wrong_first: Bujar (m) used with Siljanovska (f)
+            is_wrong_first = (first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES)
+            
+            # Special logic for Bujar + Siljanovska
+            if first == "Бујар" and ("Силјановска" in (matched_part or "") or "Сиљановска" in (matched_part or "")):
+                is_wrong_first = True
+                canonical = "Гордана Силјановска-Давкова"
+                canonical_parts = canonical.split()
+                canonical_last = canonical_parts[-1]
+
+            is_alias_surname = (matched_part != canonical_last)
+            
+            if is_wrong_first or is_alias_surname:
+                # Use word boundaries and ensure we match the ENTIRE pair
+                # Using clean_pair which is what split into parts
+                pattern = rf"(?<![А-ЯЀ-ӿа-яѐ-ӿ-]){re.escape(clean_pair)}(?![А-ЯЀ-ӿа-яѐ-ӿ-])"
+                if re.search(pattern, text):
+                    text = re.sub(pattern, canonical, text)
+                    log.info(f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}")
                     
     return text
 
