@@ -87,9 +87,8 @@ const breakingItems = navigationData.breaking.slice(0, 4);
             <div class="topbar-left">
                 <div class="search-trigger-wrap">
                     <SearchIsland initialQuery={q} client:idle />
-                    <kbd class="search-hint hidden lg:inline"></kbd>
                 </div>
-                <span class="topbar-date hidden md:inline">{currentDate}</span>
+                <span class="topbar-date hidden lg:inline">{currentDate}</span>
             </div>
 
             <div class="topbar-center">
@@ -100,10 +99,12 @@ const breakingItems = navigationData.breaking.slice(0, 4);
             </div>
 
             <div class="topbar-right">
-                <div class="topbar-links hidden sm:flex">
-                    <a href="/for-you" data-astro-reload class="topbar-link flex items-center gap-1.5"><Sparkles size={11} className="text-nyt-accent" /> За Вас</a>
-                    <a href="/briefing" data-astro-reload class="topbar-link">Брифинг</a>
-                    <a href="/archive" data-astro-reload class="topbar-link">Архива</a>
+                <div class="topbar-modes hidden sm:flex">
+                    <a href="/briefing" data-astro-reload class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
+                        <Sparkles size={14} /> Брифинг
+                    </a>
+                    <a href="/pulse" data-astro-reload class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>Пулс</a>
+                    <a href="/for-you" data-astro-reload class={`mode-link ${Astro.url.pathname === '/for-you' ? 'is-active' : ''}`}>За Вас</a>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="topbar-stat-container">
@@ -120,40 +121,32 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         </div>
     </header>
 
-    <nav class="site-layout masthead-nav" aria-label="Навигација">
-        <div class="masthead-nav-container">
-            <div class="masthead-nav-shell hide-scrollbar">
-                <ul class="masthead-nav-list">
-                    {navigationData.sections.map((section: any) => (
-                        <li class="nav-section-group">
-                            <span class="nav-section-label">{section.label}</span>
-                            <div class="nav-section-items">
-                                {section.items.map((item: any) => {
-                                    const isActive = item.href.includes('category=')
-                                        ? category === item.label
-                                        : item.href.includes('subcategory=')
-                                        ? Astro.url.searchParams.get('subcategory') === item.label
-                                        : item.href.includes('topic=')
-                                        ? topic === item.label
-                                        : q === item.label;
-                                    
-                                    // Skip items with 0 count if they are not the active selection
-                                    if (item.count === 0 && !isActive) return null;
+    <nav class="site-layout discovery-nav" aria-label="Навигација">
+        <div class="discovery-nav-container hide-scrollbar">
+            <ul class="discovery-nav-list">
+                {navigationData.sections.map((section: any) => (
+                    <li class={`nav-group group-type-${section.type}`}>
+                        <div class="nav-items">
+                            {section.items.map((item: any) => {
+                                const isActive = item.href.includes('category=')
+                                    ? category === item.label
+                                    : item.href.includes('subcategory=')
+                                    ? Astro.url.searchParams.get('subcategory') === item.label
+                                    : item.href.includes('topic=')
+                                    ? topic === item.label
+                                    : q === item.label || q === item.label.replace('#', '');
 
-                                    return (
-                                        <a href={item.href} data-astro-reload class={`masthead-nav-link ${isActive ? 'is-active' : ''}`}>
-                                            {item.label}
-                                            {item.count > 0 && <span class="nav-link-count">{item.count}</span>}
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <div class="nav-fade-left"></div>
-            <div class="nav-fade-right"></div>
+                                return (
+                                    <a href={item.href} data-astro-reload class={`nav-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
+                                        {item.label}
+                                        {item.count > 10 && <span class="nav-heat-dot" title="Висока активност"></span>}
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    </li>
+                ))}
+            </ul>
         </div>
     </nav>
 </div>
@@ -425,24 +418,18 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         animation: ticker-pulse 1.5s ease-in-out infinite;
     }
 
-    /* ── Navigation Bar ───────────────────────────────── */
-    .masthead-nav {
+    /* ── Navigation Bar (Discovery Style) ────────────────── */
+    .discovery-nav {
         border-bottom: 1px solid var(--foreground);
     }
 
-    .masthead-nav-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .masthead-nav-shell {
+    .discovery-nav-container {
         width: 100%;
         overflow-x: auto;
-        padding: 0.35rem 0;
+        padding: 0.5rem 0;
     }
 
-    .masthead-nav-list {
+    .discovery-nav-list {
         display: flex;
         align-items: center;
         list-style: none;
@@ -451,35 +438,24 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         gap: 1.5rem;
     }
 
-    .nav-section-group {
+    .nav-group {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
     }
 
-    .nav-section-label {
-        font-family: var(--font-sans);
-        font-size: 0.55rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--muted-foreground);
-        opacity: 0.6;
-        user-select: none;
-    }
-
-    .nav-section-items {
+    .nav-items {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
     }
 
-    .nav-section-group + .nav-section-group {
+    .nav-group + .nav-group {
         position: relative;
         padding-left: 1.5rem;
     }
 
-    .nav-section-group + .nav-section-group::before {
+    .nav-group + .nav-group::before {
         content: "";
         position: absolute;
         left: 0;
@@ -488,9 +464,10 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         width: 1px;
         height: 14px;
         background-color: var(--border);
+        opacity: 0.6;
     }
 
-    .masthead-nav-link {
+    .nav-link {
         font-family: var(--font-sans);
         font-size: 0.68rem;
         font-weight: 800;
@@ -501,27 +478,69 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         transition: all 0.15s;
         display: flex;
         align-items: center;
-        gap: 0.25rem;
+        gap: 0.35rem;
+        white-space: nowrap;
     }
 
-    .masthead-nav-link:hover,
-    .masthead-nav-link.is-active {
+    .nav-link:hover,
+    .nav-link.is-active {
         color: var(--nyt-accent);
     }
 
-    .nav-link-count {
-        font-size: 0.55rem;
-        font-weight: 900;
-        opacity: 0.5;
-        background: var(--secondary);
-        padding: 0.05rem 0.25rem;
-        border-radius: 99px;
+    .nav-link.is-tag {
+        color: var(--muted-foreground);
+        font-style: italic;
+        text-transform: none;
+        font-size: 0.72rem;
     }
 
-    .masthead-nav-link.is-active .nav-link-count {
-        background: var(--nyt-accent);
-        color: white;
-        opacity: 1;
+    .nav-link.is-tag:hover {
+        color: var(--nyt-accent);
+        text-decoration: underline;
+    }
+
+    .nav-heat-dot {
+        width: 4px;
+        height: 4px;
+        background-color: var(--nyt-red);
+        border-radius: 50%;
+        box-shadow: 0 0 4px var(--nyt-red);
+    }
+
+    /* ── Mode Links (Tier 1) ── */
+    .topbar-modes {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: 1.25rem;
+        padding-right: 1.25rem;
+        border-right: 1px solid var(--border);
+    }
+
+    .mode-link {
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted-foreground);
+        text-decoration: none;
+        padding: 0.35rem 0.6rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .mode-link:hover {
+        color: var(--foreground);
+        background: var(--secondary);
+    }
+
+    .mode-link.is-active {
+        color: var(--nyt-accent);
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
     }
 
     .nav-fade-left, .nav-fade-right {
@@ -537,21 +556,17 @@ const breakingItems = navigationData.breaking.slice(0, 4);
             gap: 0.5rem;
         }
         .topbar-logo { height: 1.1rem; }
-        .masthead-nav-shell {
-            padding: 0.25rem 0;
+        .discovery-nav-container {
+            padding: 0.4rem 0;
         }
-        .masthead-nav-list {
+        .discovery-nav-list {
             gap: 1.25rem;
         }
-        .nav-section-group + .nav-section-group {
+        .nav-group + .nav-group {
             padding-left: 1.25rem;
         }
-        .masthead-nav-link {
+        .nav-link {
             font-size: 0.62rem;
-            gap: 0.2rem;
-        }
-        .nav-section-label {
-            font-size: 0.5rem;
         }
     }
     @media (min-width: 1024px) {
