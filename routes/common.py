@@ -229,15 +229,16 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
     local_summaries = 0
     
     for k, v in ai_events.items():
-        if k.decode().startswith("synthesis_path"):
+        key = k.decode() if isinstance(k, bytes) else k
+        if key.startswith("synthesis_path"):
             val = int(v)
-            if b"mode=local" in k:
+            if "mode=local" in key:
                 local_summaries += val
             else:
                 ai_summaries += val
-        elif k.decode().startswith("summary_path"):
+        elif key.startswith("summary_path"):
             val = int(v)
-            if b"mode=local" in k:
+            if "mode=local" in key:
                 local_summaries += val
             else:
                 ai_summaries += val
