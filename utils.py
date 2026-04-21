@@ -31,59 +31,66 @@ class DateTimeEncoder(json.JSONEncoder):
 def get_dominant_color(url: str) -> str:
     """Extracts the dominant hex color from an image URL."""
     if not url: return ""
+    
+    # Recursion Guard: Prevent the system from calling its own proxy to extract colors
+    # which can lead to infinite request loops and worker exhaustion.
+    internal_proxy_markers = ["/api/proxy", "presek.live/proxy", "localhost:5001/proxy", "api:5001/proxy"]
+    if any(marker in url for marker in internal_proxy_markers):
+        log.warning(f"[utils] color extraction blocked for recursive/internal URL: {url}")
+        return ""
+
     if not url.startswith("http"):
-        # If it's a relative path, we can't fetch it easily here without knowing the domain.
-        # However, many clusters use /static/generated/ URLs.
         if url.startswith("/static/"):
-            # For local static files, we'd need to read from disk.
-            # For now, return empty to avoid logging noise.
             return ""
         return ""
 
     try:
         import httpx
-        # Ensure we have avif support if needed (pillow-avif-plugin)
-        # But we'll try-catch the open call.
         try:
             import pillow_avif
         except ImportError:
             pass
 
-        with httpx.Client(timeout=5.0) as client:
-            response = client.get(url)
+        # Use a dedicated timeout and restrict redirects to prevent SSRF/DoS
+        with httpx.Client(timeout=4.0, follow_redirects=True, max_redirects=2) as client:
+            # Security: Resolve IPs first to prevent DNS Rebinding/SSRF
+            try:
+                safe_ips = _resolve_public_ips(url)
+            except Exception:
+                return ""
+            
+            response = client.get(url, headers={"User-Agent": "PresekColorBot/1.0"})
+            
+            # Post-connection IP verification
+            p_ip = _peer_ip(response)
+            if not p_ip or p_ip not in safe_ips:
+                log.warning(f"[utils] color extraction blocked: IP mismatch/private for {url}")
+                return ""
+
         if response.status_code != 200: return ""
 
         img = Image.open(BytesIO(response.content))
         img = img.convert("RGB")
-        img.thumbnail((100, 100))        
-        # Get dominant color
-        colors = img.getcolors(10000) # (count, (r,g,b))
+        img.thumbnail((60, 60)) # Reduced size for speed
+        
+        colors = img.getcolors(3600)
         if not colors: return ""
         
-        # Filter out white and very dark colors to get a "vibrant" or "editorial" color
         def is_usable(rgb):
             r, g, b = rgb
-            # Too bright?
             if r > 245 and g > 245 and b > 245: return False
-            # Too dark?
             if r < 15 and g < 15 and b < 15: return False
-            # Too neutral? (low saturation)
             avg = (r + g + b) / 3
-            if abs(r-avg) < 10 and abs(g-avg) < 10 and abs(b-avg) < 10: return False
+            if abs(r-avg) < 12 and abs(g-avg) < 12 and abs(b-avg) < 12: return False
             return True
 
         sorted_colors = sorted(colors, key=lambda x: x[0], reverse=True)
         usable = [c for c in sorted_colors if is_usable(c[1])]
-        
-        if not usable:
-            # Fallback to the most frequent if nothing vibrant found
-            dominant = sorted_colors[0][1]
-        else:
-            dominant = usable[0][1]
+        dominant = usable[0][1] if usable else sorted_colors[0][1]
             
         return '#{:02x}{:02x}{:02x}'.format(*dominant)
     except Exception as e:
-        log.warning(f"[utils] color extraction failed for {url}: {e}")
+        log.debug(f"[utils] color extraction failed for {url}: {e}")
         return ""
 
 _CACHE_MISS = object()  # sentinel to distinguish cache miss from Redis error
@@ -155,18 +162,23 @@ def _resolve_public_ips(candidate_url: str):
 
 def _peer_ip(response):
     try:
-        # httpx support
-        stream = getattr(response, "extensions", {}).get("network_stream")
+        # 1. httpx support (preferred)
+        # We look into the internal stream info which is the most reliable way 
+        # to get the ACTUAL socket peer address after the connection is established.
+        extensions = getattr(response, "extensions", {})
+        stream = extensions.get("network_stream")
         if stream:
-            return stream.get_extra_info("server_addr")[0]
+            addr = stream.get_extra_info("server_addr")
+            if addr: return addr[0]
         
-        # requests support
-        sock = None
+        # 2. requests support (fallback)
         raw = getattr(response, "raw", None)
         if raw is not None:
+            # For urllib3/requests, we drill down into the low-level socket
             conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
-            if conn is not None: sock = getattr(conn, "sock", None)
-        if sock is not None: return sock.getpeername()[0]
+            if conn is not None:
+                sock = getattr(conn, "sock", None)
+                if sock is not None: return sock.getpeername()[0]
     except Exception: pass
     return None
 
@@ -835,22 +847,22 @@ def score_cluster_for_homepage(arts):
 
 def _coerce_datetime(value):
     if isinstance(value, datetime.datetime):
-        return value.replace(tzinfo=None) if value.tzinfo else value
+        # Normalize to UTC for consistent comparisons across the app
+        if value.tzinfo is not None:
+            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return value
     if not value:
         return None
     try:
-        # Standardize and parse
-        s = str(value).replace(" ", "T").replace("Z", "")
-        # Cut at + or last - if it looks like a timezone offset
-        if "+" in s: s = s.split("+")[0]
-        # Only split on - if it's in the time part (after T)
-        time_part = s.split("T")[1] if "T" in s else ""
-        if "-" in time_part: s = s[:s.rfind("-")]
-        
-        return datetime.datetime.fromisoformat(s)
+        # 1. Try standard ISO format (handles offsets like +02:00 correctly in Python 3.7+)
+        s = str(value).replace(" ", "T")
+        dt = datetime.datetime.fromisoformat(s)
+        if dt.tzinfo is not None:
+            return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return dt
     except Exception:
         try:
-            # Last resort: just the date-time part
+            # 2. Fallback: manually strip offset ONLY if fromisoformat failed
             import re
             m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
             if m: return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
@@ -1213,3 +1225,4 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
         reverse=True,
     )
     return results
+

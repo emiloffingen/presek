@@ -94,10 +94,28 @@ def _parse_ip_literal(value: str) -> str:
         return ""
 
 def _client_ip_for_request(request: Request) -> str:
+    """Extracts the best-guess client IP address, trusting proxies if source is internal."""
     client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
-    real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
-    if client_host in {"127.0.0.1", "::1"} and real_ip:
-        return real_ip
+    
+    # In production/Docker environments, we trust the X-Forwarded headers if the connection
+    # comes from 127.0.0.1 or the Docker bridge network (typically 172.16.0.0/12).
+    # This ensures that rate-limiting identifies the true user, not the Nginx container.
+    is_trusted_proxy = False
+    try:
+        addr = ipaddress.ip_address(client_host)
+        is_trusted_proxy = addr.is_loopback or addr.is_private
+    except:
+        pass
+
+    if is_trusted_proxy:
+        # Trust X-Real-IP or the first entry in X-Forwarded-For
+        real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
+        if not real_ip:
+            real_ip = _parse_ip_literal((request.headers.get("X-Forwarded-For") or "").split(",")[0].strip())
+        
+        if real_ip:
+            return real_ip
+            
     return client_host or "0.0.0.0"
 
 def _source_admin_authorized(request: Request) -> bool:
