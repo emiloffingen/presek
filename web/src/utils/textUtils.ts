@@ -53,6 +53,39 @@ export function cleanAndDecode(text: any): string {
         .trim();
 }
 
+export function extractCleanSummaryText(input: any): string {
+    let text = input || '';
+    if (typeof text !== 'string') text = String(text);
+
+    const trimmed = text.trim();
+    if (
+        trimmed.startsWith('{') ||
+        trimmed.startsWith('&lt;%') ||
+        trimmed.includes('&quot;summary&quot;')
+    ) {
+        try {
+            const decoded = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
+            if (decoded.startsWith('{')) {
+                const parsed = JSON.parse(decoded);
+                if (parsed?.summary) text = parsed.summary;
+                else if (parsed?.text) text = parsed.text;
+            }
+        } catch {
+            // Leave the original text in place if it's not valid JSON.
+        }
+    }
+
+    return cleanAndDecode(text);
+}
+
+export function getDisplayTitle(article: any, fallback = ''): string {
+    return article?.display_title || cleanAndDecode(article?.title || fallback);
+}
+
+export function getDisplaySummary(article: any): string {
+    return article?.display_summary || extractCleanSummaryText(article?.summary || article?.description || '');
+}
+
 export function isMostlyCyrillic(text: any): boolean {
     if (!text) return false;
 

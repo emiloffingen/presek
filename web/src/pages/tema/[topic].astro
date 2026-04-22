@@ -8,7 +8,7 @@ import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import TopicFollowSuggestionsIsland from '../../components/TopicFollowSuggestionsIsland.tsx';
 import { buildTopicConnections } from '../../lib/topicDiscovery.js';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode } from '../../utils/textUtils';
+import { cleanAndDecode, getDisplaySummary } from '../../utils/textUtils';
 import { ArrowRight, Clock3, Newspaper, Sparkles } from 'lucide-react';
 
 const rawTopicParam = Astro.params.topic || '';
@@ -154,8 +154,7 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://presek.live').href.replace(/\/+$/, "");
 
 const leadSummary =
-	cleanText(leadCluster?.articles?.[0]?.summary) ||
-	cleanText(leadCluster?.articles?.[0]?.description) ||
+	getDisplaySummary(leadCluster?.articles?.[0] || {}) ||
 	'Најсилните кластери во оваа тема се подредени според тежина, доверба и развој.';
 
 const keyAngles = normalizePerspectives(leadDetail?.perspectives || []).slice(0, 3);

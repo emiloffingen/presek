@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldCheck, Globe, CheckCircle2, Sparkles } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import type { NewsCluster, Article } from '../types';
 
@@ -35,28 +35,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const thumbSrc = selectedImage.proxiedUrl;
   const isFallbackArt = selectedImage.isWeak;
 
-  const displayTitle = highlightScores(cleanAndDecode(main.title));
+  const displayTitle = highlightScores(getDisplayTitle(main));
   const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
   const getCardSummary = (article: Article, lead = false) => {
-    let text = article?.summary || article?.description || '';
-    const trimmed = typeof text === 'string' ? text.trim() : '';
-    if (
-      trimmed.startsWith('{') ||
-      trimmed.startsWith('&lt;%') ||
-      trimmed.includes('&quot;summary&quot;')
-    ) {
-      try {
-        const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
-        if (toParse.startsWith('{')) {
-          const parsed = JSON.parse(toParse);
-          if (parsed.summary) text = parsed.summary;
-          else if (parsed.text) text = parsed.text;
-        }
-      } catch (e) {}
-    }
-
-    text = cleanAndDecode(text);
+    const text = getDisplaySummary(article);
     if (!text) return '';
     const limit = lead ? 300 : 180;
     const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
@@ -179,7 +162,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <li key={idx}>
                 <a
                   href={`/cluster/${cluster.cluster_id}`}
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(cleanAndDecode(sub.title)) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(getDisplayTitle(sub)) }}
                 ></a>
               </li>
             ))}
@@ -245,4 +228,3 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 function anyFactCheck(articles: Article[]) {
   return articles.some(a => a.is_fact_check);
 }
-

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { navigate } from 'astro:transitions/client';
 import { Search, X, Zap, ArrowUpRight, LoaderCircle } from 'lucide-react';
-import { cleanAndDecode } from '../utils/textUtils';
+import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
 type Suggestion = {
   cluster_id: string;
@@ -138,16 +138,16 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.slice(0, 6).map((cluster: any) => {
-              const rawTitle = cluster.articles?.[0]?.title || '';
-              const title = cleanAndDecode(rawTitle) || 'Наслов';
+              const article = cluster.articles?.[0] || {};
+              const title = getDisplayTitle(article, 'Наслов') || 'Наслов';
               const lowered = title.toLowerCase();
               const queryLower = trimmed.toLowerCase();
               return {
                 cluster_id: cluster.cluster_id,
                 title,
-                source: cluster.articles?.[0]?.source || '',
-                category: cluster.articles?.[0]?.category || '',
-                description: cleanAndDecode(cluster.articles?.[0]?.description || ''),
+                source: article.source || '',
+                category: article.category || '',
+                description: getDisplaySummary(article),
                 sourceCount: Array.isArray(cluster.articles) ? cluster.articles.length : 0,
                 matchLabel:
                   lowered === queryLower

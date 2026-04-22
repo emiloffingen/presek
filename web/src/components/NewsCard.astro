@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { cleanAndDecode, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { ShieldCheck, Globe, CheckCircle2, Sparkles } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
@@ -29,7 +29,7 @@ const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 
-const displayTitle = highlightScores(cleanAndDecode(main.title));
+const displayTitle = highlightScores(getDisplayTitle(main));
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
@@ -48,25 +48,7 @@ const slimCluster = {
 };
 
 function getCardSummary(article: Article, lead = false) {
-	let text = article?.summary || article?.description || '';
-	
-	// Safety check for JSON leakage - can be raw or double-escaped from DB
-	const trimmed = typeof text === 'string' ? text.trim() : '';
-	if (trimmed.startsWith('{') || trimmed.startsWith('&lt;%') || trimmed.includes('&quot;summary&quot;')) {
-		try {
-			// If it contains &quot;, it's already been through an escaping cycle
-			const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
-			if (toParse.startsWith('{')) {
-				const parsed = JSON.parse(toParse);
-				if (parsed.summary) text = parsed.summary;
-				else if (parsed.text) text = parsed.text;
-			}
-		} catch (e) {
-			// Not valid JSON
-		}
-	}
-	
-	text = cleanAndDecode(text);
+	const text = getDisplaySummary(article);
 	if (!text) return '';
 	const limit = lead ? 300 : 180;
 	const truncated = text.length > limit ? `${text.slice(0, limit).trimEnd()}...` : text;
@@ -199,7 +181,7 @@ function getTimeStr(dateStr: string) {
             <ul class="sub-headlines">
                 {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
-                        <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(cleanAndDecode(sub.title))}>
+                        <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(getDisplayTitle(sub))}>
                         </a>
                     </li>
                 ))}

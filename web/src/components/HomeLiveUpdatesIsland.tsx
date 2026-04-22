@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { cleanAndDecode } from '../utils/textUtils';
+import { getDisplayTitle } from '../utils/textUtils';
 
 interface ArticleLike {
   source?: string;
   title?: string;
+  display_title?: string;
   created_at?: string;
 }
 
@@ -140,13 +141,14 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialC
       <div className="live-now-grid">
         {clusters.map((cluster) => {
           const article = cluster.articles?.[0] || {};
+          const title = getDisplayTitle(article);
           return (
             <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="live-now-card group">
               <div className="live-now-meta flex items-center justify-between gap-2 mb-2">
                 <span className="live-now-source text-[10px] font-black uppercase tracking-widest text-nyt-accent group-hover:text-foreground transition-colors">{article.source || 'Извор'}</span>
                 <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{getTimeStr(article.created_at)}</span>
               </div>
-              <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{cleanAndDecode(article.title || '')}</h3>
+              <h3 className="text-sm font-bold leading-snug group-hover:text-nyt-accent transition-colors line-clamp-3">{title}</h3>
               <div className="mt-3 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                  <RefreshCcw size={12} className="text-nyt-accent animate-spin-slow" />
               </div>

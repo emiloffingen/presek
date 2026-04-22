@@ -11,11 +11,16 @@ import {
   sendSuggestionEvents,
   subscribeToReaderProfile,
 } from '../lib/personalization.js';
-import { cleanAndDecode, highlightScores } from '../utils/textUtils';
+import { getDisplaySummary, getDisplayTitle, highlightScores } from '../utils/textUtils';
 
 function getSummary(cluster: any) {
   const article = cluster?.articles?.[0];
-  return cleanAndDecode(article?.summary || article?.description || '');
+  return getDisplaySummary(article);
+}
+
+function getTitle(cluster: any) {
+  const article = cluster?.articles?.[0];
+  return getDisplayTitle(article);
 }
 
 interface ForYouIslandProps {
@@ -165,15 +170,16 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
             const cluster = item.cluster || item; // Handle both Local (item.cluster) and Semantic (item itself) formats
             const article = cluster.articles?.[0] || {};
             const summary = getSummary(cluster);
+            const title = getTitle(cluster);
             const isSemantic = Boolean(item.similarity);
 
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${cleanAndDecode(article.title)}`}>
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${title}`}>
                 <p className={`for-you-card-kicker ${isSemantic ? 'text-nyt-accent' : ''}`}>
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
                   <span>{isSemantic ? 'Семантичка препорака' : (item.reason || 'Сродна тема')}</span>
                 </p>
-                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(cleanAndDecode(article.title)) }}></h3>
+                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(title) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
@@ -211,13 +217,14 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
           {fallbackItems.map((cluster) => {
             const article = cluster.articles?.[0] || {};
             const summary = getSummary(cluster);
+            const title = getTitle(cluster);
             return (
-              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${cleanAndDecode(article.title)}`}>
+              <a key={cluster.cluster_id} href={`/cluster/${cluster.cluster_id}`} className="for-you-card" aria-label={`Отвори кластер: ${title}`}>
                 <p className="for-you-card-kicker">
                   <Clock3 size={12} />
                   <span>Актуелно во моментот</span>
                 </p>
-                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(cleanAndDecode(article.title)) }}></h3>
+                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(title) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">

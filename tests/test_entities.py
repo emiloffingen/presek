@@ -40,3 +40,15 @@ def test_extract_entities_regex_fallback_rejects_generic_sentence_fragments(monk
     assert "Голем Успех" not in names
     assert "Нова Анализа" not in names
     assert "Доналд Трамп" in names
+
+
+def test_normalize_person_surface_name_title_cases_lowercase_person():
+    assert entities.normalize_person_surface_name("hristijan mickoski") == "Hristijan Mickoski"
+
+
+def test_normalize_person_surface_name_restores_known_surname_first_person():
+    assert entities.normalize_person_surface_name("мицкоски христијан") == "Христијан Мицкоски"
+
+
+def test_normalize_person_surface_name_keeps_non_person_tags_stable():
+    assert entities.normalize_person_surface_name("економија") == "Економија"

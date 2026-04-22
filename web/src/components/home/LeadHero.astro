@@ -1,6 +1,6 @@
 ---
 import { sanitizeHtml } from '../../lib/sanitize';
-import { cleanAndDecode, highlightScores } from '../../utils/textUtils';
+import { getDisplayTitle, highlightScores } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
 
 interface Props {
@@ -28,6 +28,8 @@ const {
 } = Astro.props;
 
 const tintColor = dominantColor || '#1e40af';
+const primaryArticle = leadCluster.articles?.[0] || {};
+const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
 ---
 
 <section class="lead-hero motion-rise">
@@ -38,7 +40,7 @@ const tintColor = dominantColor || '#1e40af';
                 <>
                     <img
                         src={leadVisual.proxiedUrl}
-                        alt={leadTitle}
+                        alt={primaryDisplayTitle || leadTitle}
                         width="1200"
                         height="1000"
                         loading="eager"
@@ -94,7 +96,7 @@ const tintColor = dominantColor || '#1e40af';
                         <a 
                             href={`/cluster/${leadCluster.cluster_id}`}
                             class="font-sans text-sm md:text-base font-semibold text-zinc-800 dark:text-zinc-200 block py-3 hover:text-nyt-accent transition-colors [&_*]:font-sans [&_*]:text-sm [&_*]:md:text-base [&_*]:text-zinc-800 [&_*]:dark:text-zinc-200"
-                            set:html={sanitizeHtml(highlightScores(cleanAndDecode(article.title)))}
+                            set:html={sanitizeHtml(highlightScores(getDisplayTitle(article)))}
                         >
                         </a>
                     </li>
@@ -111,7 +113,7 @@ const tintColor = dominantColor || '#1e40af';
                         src={leadVisual.proxiedUrl}
                         srcset={`${leadVisual.proxiedUrl.replace('w=1200', 'w=600')} 600w, ${leadVisual.proxiedUrl} 1200w`}
                         sizes="(max-width: 768px) 100vw, 1200px"
-                        alt={cleanAndDecode(leadCluster.articles?.[0].title || 'Водечка приказна')}
+                        alt={primaryDisplayTitle}
                         width="1200"
                         height="1000"
                         loading="eager"

@@ -1,8 +1,8 @@
 import logging
 import re
 from fastapi import APIRouter
-
 from utils import cached_response, set_cache
+from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import get_news
 from .stats import get_briefing, get_stats_summary
@@ -35,7 +35,7 @@ def _primary_article(cluster):
 
 
 def _title_looks_like_feature(title):
-    clean = str(title or "").strip()
+    clean = cleanAndDecode(title)
     if not clean:
         return True
     if len(clean) > 180:
@@ -43,6 +43,26 @@ def _title_looks_like_feature(title):
     if "?" in clean:
         return True
     return any(pattern.search(clean) for pattern in _FEATURE_PATTERNS)
+
+
+def _extract_preview_summary(article):
+    text = str((article or {}).get("summary") or (article or {}).get("description") or "")
+    trimmed = text.strip()
+    if (
+        trimmed.startswith("{")
+        or trimmed.startswith("&lt;%")
+        or "&quot;summary&quot;" in trimmed
+    ):
+        try:
+            decoded = cleanAndDecode(trimmed) if "&quot;" in trimmed else trimmed
+            if decoded.startswith("{"):
+                import json
+
+                parsed = json.loads(decoded)
+                text = str(parsed.get("summary") or parsed.get("text") or text)
+        except Exception:
+            pass
+    return cleanAndDecode(text)
 
 
 def _parse_time(value):
@@ -59,9 +79,9 @@ def _is_live_now_candidate(cluster):
     if "live_now_fit" in (cluster or {}):
         return bool(cluster.get("live_now_fit"))
     article = _primary_article(cluster)
-    title = str(article.get("title") or "").strip()
-    topic = str(article.get("topic") or "").strip()
-    category = str(article.get("category") or "").strip()
+    title = cleanAndDecode(article.get("title") or "")
+    topic = cleanAndDecode(article.get("topic") or "")
+    category = cleanAndDecode(article.get("category") or "")
 
     if not title:
         return False
@@ -92,7 +112,7 @@ def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
             )
         return (
             1 if cluster.get("is_breaking") else 0,
-            1 if str(article.get("topic") or "").strip() in _HARD_NEWS_TOPICS else 0,
+            1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,
             _parse_time(article.get("created_at")),
         )
 
@@ -118,9 +138,9 @@ def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
 
 
 def _is_latest_wire_article_candidate(article):
-    title = str((article or {}).get("title") or "").strip()
-    topic = str((article or {}).get("topic") or "").strip()
-    category = str((article or {}).get("category") or "").strip()
+    title = cleanAndDecode((article or {}).get("title") or "")
+    topic = cleanAndDecode((article or {}).get("topic") or "")
+    category = cleanAndDecode((article or {}).get("category") or "")
     if not title or _title_looks_like_feature(title):
         return False
     if topic in _SOFT_EXCLUDE_TOPICS:
@@ -137,7 +157,7 @@ def _rank_latest_wire_articles(items, limit=15):
     for article in items or []:
         if not _is_latest_wire_article_candidate(article):
             continue
-        title = str(article.get("title") or "").strip().lower()
+        title = cleanAndDecode(article.get("title") or "").casefold()
         if not title or title in seen_titles:
             continue
         seen_titles.add(title)
@@ -145,7 +165,7 @@ def _rank_latest_wire_articles(items, limit=15):
 
     candidates.sort(
         key=lambda article: (
-            1 if str(article.get("topic") or "").strip() in _HARD_NEWS_TOPICS else 0,
+            1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,
             _parse_time(article.get("created_at")),
         ),
         reverse=True,
@@ -163,14 +183,52 @@ def _rank_latest_wire_articles(items, limit=15):
     return selected
 
 
-def _normalize_focus_name(name):
-    clean = re.sub(r"\s+", " ", str(name or "")).strip()
-    clean = re.sub(r'^[-–—,.;:!?()[\]{}"\' ]+|[-–—,.;:!?()[\]{}"\' ]+$', "", clean)
-    if not clean:
-        return ""
-    if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean == clean.lower():
-        return " ".join(part[:1].upper() + part[1:] if part else part for part in clean.split(" "))
-    return clean
+def _build_lead_display(cluster):
+    article = _primary_article(cluster)
+    if not article:
+        return {}
+    source_count = len((cluster or {}).get("articles") or [])
+    if cluster.get("is_breaking"):
+        signal = "Најбрз развој во денот"
+    elif source_count >= 6:
+        signal = "Приказна што ја движи домашната агенда"
+    elif source_count >= 4:
+        signal = "Тема што брзо се шири низ редакциите"
+    else:
+        signal = "Развој што вреди да се следи"
+    return {
+        "title": cleanAndDecode(article.get("title") or ""),
+        "summary": _extract_preview_summary(article),
+        "signal": signal,
+    }
+
+
+def _decorate_article_display(article):
+    if not isinstance(article, dict):
+        return article
+    decorated = dict(article)
+    decorated["display_title"] = cleanAndDecode(article.get("title") or "")
+    decorated["display_summary"] = _extract_preview_summary(article)
+    return decorated
+
+
+def _decorate_cluster_display(cluster):
+    if not isinstance(cluster, dict):
+        return cluster
+    decorated = dict(cluster)
+    decorated["articles"] = [
+        _decorate_article_display(article)
+        for article in (cluster.get("articles") or [])
+    ]
+    return decorated
+
+
+def _decorate_articles_display(articles):
+    return [_decorate_article_display(article) for article in (articles or [])]
+
+
+def _decorate_clusters_display(clusters):
+    return [_decorate_cluster_display(cluster) for cluster in (clusters or [])]
 
 
 @router.get("/home")
@@ -233,20 +291,21 @@ async def get_home():
         focus_entities = []
         for entity in top_entities if isinstance(top_entities, list) else []:
             normalized = dict(entity)
-            normalized["name"] = _normalize_focus_name(entity.get("name", ""))
+            normalized["name"] = str(entity.get("name") or "").strip()
             if normalized["name"] and len(normalized["name"]) >= 3:
                 focus_entities.append(normalized)
 
         response = {
             "status": "success",
-            "lead": lead,
-            "supporting": supporting,
-            "live_now": live_now,
-            "for_you_pool": for_you_pool,
-            "developing": developing,
-            "wire": wire,
-            "latest_wire": latest_wire,
-            "global": global_clusters,
+            "lead": _decorate_cluster_display(lead),
+            "lead_display": _build_lead_display(lead),
+            "supporting": _decorate_clusters_display(supporting),
+            "live_now": _decorate_clusters_display(live_now),
+            "for_you_pool": _decorate_clusters_display(for_you_pool),
+            "developing": _decorate_clusters_display(developing),
+            "wire": _decorate_clusters_display(wire),
+            "latest_wire": _decorate_articles_display(latest_wire),
+            "global": _decorate_clusters_display(global_clusters),
             "stats": stats,
             "briefing": briefing,
             "trending": trending if isinstance(trending, list) else [],

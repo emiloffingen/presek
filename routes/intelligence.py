@@ -10,7 +10,7 @@ from database import db_manager as db
 from embeddings import generate_query_embedding
 from utils import cached_response, set_cache, score_cluster
 from nlp import normalize_tag_name
-from entities import normalize_entity_name
+from entities import normalize_entity_name, normalize_person_surface_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
 
@@ -447,7 +447,7 @@ async def get_top_entities(limit: int = 10):
     rows = await db.async_execute("SELECT tag AS name, COUNT(*) AS total_mentions FROM (SELECT cm.cluster_id, UNNEST(cm.tags) AS tag FROM cluster_metadata cm JOIN articles a ON a.cluster_id = cm.cluster_id WHERE a.created_at >= NOW() - INTERVAL '48 hours' AND cm.tags IS NOT NULL GROUP BY cm.cluster_id, tag) t GROUP BY tag ORDER BY total_mentions DESC LIMIT %s", (fetch_limit,))
     aggregated = {}
     for row in rows:
-        norm = normalize_tag_name(normalize_entity_name(row["name"]))
+        norm = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(row["name"])))
         if not _is_valid_focus_entity(norm, None): continue
         key = norm.casefold()
         aggregated[key] = {

@@ -346,6 +346,71 @@ for _alias, _canonical in ENTITY_ALIASES.items():
         if KNOWN_ENTITIES[_canonical] == "PERSON":
             _KNOWN_SURNAMES[_alias] = _canonical
 
+_NAME_SURFACE_RE = re.compile(r"^[A-Za-zА-Яа-яЀ-ӿѐ-ӿ' .-]+$")
+
+
+def _title_case_name_part(part: str) -> str:
+    def _fix_piece(piece: str) -> str:
+        if not piece:
+            return ""
+        return piece[:1].upper() + piece[1:].lower()
+
+    hyphenated = [
+        "'".join(_fix_piece(piece) for piece in apostrophe.split("'"))
+        for apostrophe in part.split("-")
+    ]
+    return "-".join(hyphenated)
+
+
+def normalize_person_surface_name(name: str) -> str:
+    """
+    Normalize human-readable person names without disturbing generic tags.
+
+    Handles:
+    - exact alias/canonical matches via the curated entity tables
+    - all-lowercase / all-uppercase names -> title case
+    - known two-part surname-first forms -> canonical first-name-first form
+    """
+    clean = re.sub(r"\s+", " ", str(name or "")).strip(" -–—,.;:!?()[]{}\"'")
+    if not clean:
+        return ""
+
+    canonical = _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold())
+    if canonical and KNOWN_ENTITIES.get(canonical) == "PERSON":
+        return canonical
+
+    if not _NAME_SURFACE_RE.fullmatch(clean):
+        return clean
+
+    parts = [part for part in clean.split(" ") if part]
+    if not parts:
+        return ""
+
+    formatted_parts = [_title_case_name_part(part) for part in parts]
+    formatted = " ".join(formatted_parts)
+
+    if KNOWN_ENTITIES.get(formatted) == "PERSON":
+        return formatted
+
+    canonical = _ENTITY_ALIASES_CASEFOLDED.get(formatted.casefold())
+    if canonical and KNOWN_ENTITIES.get(canonical) == "PERSON":
+        return canonical
+
+    if len(formatted_parts) == 2:
+        first_part, second_part = formatted_parts
+        reversed_candidate = f"{second_part} {first_part}"
+        if (
+            first_part in _KNOWN_SURNAMES
+            and second_part in _KNOWN_FIRSTNAMES
+            and KNOWN_ENTITIES.get(reversed_candidate) == "PERSON"
+        ):
+            return reversed_candidate
+
+    if clean == clean.lower() or clean == clean.upper():
+        return formatted
+
+    return clean
+
 def validate_person_names(text: str) -> str:
     """
     Heuristic to fix AI hallucinations of famous names.
