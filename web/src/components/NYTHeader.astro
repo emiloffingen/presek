@@ -444,88 +444,90 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         animation: ticker-pulse 1.5s ease-in-out infinite;
     }
 
-    /* ── Navigation Bar (NYT-Style Rails) ───────────────── */
+    /* ── Navigation Bar (BBC-style) ───────────────── */
     .discovery-nav {
-        border-bottom: 1px solid var(--border);
-        background: color-mix(in srgb, var(--background) 98%, transparent);
+        background: #ffffff;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 1px 0 rgba(0,0,0,0.03);
     }
 
     .discovery-nav-container {
         width: 100%;
         overflow-x: auto;
-        padding: 0.35rem 0;
+        padding: 0;
         position: relative;
     }
 
     .discovery-nav-list {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.25rem;
         white-space: nowrap;
+        padding: 0.25rem 1rem;
     }
 
     .discovery-section-label {
         font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: none;
         color: var(--muted-foreground);
-        padding: 0.25rem 0.6rem;
-        margin-right: 0.25rem;
-        background: transparent;
+        padding: 0 0.5rem;
+        margin-right: 0.5rem;
     }
+
+    :root { --bbc-red: #bb1919; }
 
     .discovery-link {
         font-family: var(--font-sans);
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-transform: none;
+        color: var(--foreground);
         text-decoration: none;
-        letter-spacing: 0.02em;
-        transition: all 0.15s;
+        letter-spacing: 0;
+        transition: color 0.12s, border-color 0.12s;
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
         white-space: nowrap;
-        padding: 0.25rem 0.5rem;
-        border-radius: 2px;
+        padding: 0.6rem 0.75rem;
+        border-bottom: 4px solid transparent;
     }
 
     .discovery-link:hover {
-        color: var(--foreground);
-        background: var(--secondary);
+        color: var(--nyt-accent);
     }
 
     .discovery-link.is-active {
-        color: var(--foreground);
-        background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+        color: var(--bbc-red);
+        border-bottom-color: var(--bbc-red);
+        background: transparent;
     }
 
     .discovery-tag {
         font-style: normal;
         text-transform: lowercase;
-        font-size: 0.72rem;
-        font-weight: 500;
+        font-size: 0.85rem;
+        font-weight: 600;
         color: var(--muted-foreground);
-        opacity: 0.8;
+        opacity: 0.9;
     }
 
     .discovery-tag:hover {
-        color: var(--nyt-accent);
+        color: var(--bbc-red);
         opacity: 1;
         background: transparent;
     }
 
     .discovery-count {
         font-family: var(--font-sans);
-        font-size: 0.55rem;
+        font-size: 0.7rem;
         font-weight: 700;
         color: var(--muted-foreground);
-        background: var(--secondary);
+        background: transparent;
         padding: 0.05rem 0.35rem;
-        border-radius: 10px;
+        border-radius: 8px;
         line-height: 1;
     }
 
