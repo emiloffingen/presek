@@ -121,6 +121,13 @@ MAX_CLUSTER_SIZE     = 35
 # strict that it misses near-duplicate stories from different sources.
 VECTOR_THRESHOLD     = 0.26
 
+def _extract_title_entities(title: str) -> set[str]:
+    return {
+        match.strip()
+        for match in re.findall(r'[А-ЯЀ-ӿ][а-яѐ-ӿ]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+)*', str(title or ""))
+        if match.strip()
+    }
+
 def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
     if not embedding: return None
     try:
@@ -185,12 +192,14 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
             if dist < threshold:
                 # Entity Gating: For generic topics, if the distance is borderline,
                 # require at least one shared proper noun (Entity).
-                if (topic == "Вести" or not topic) and dist > (threshold * 0.7):
+                if topic == "Вести" or not topic:
                     from database import db_manager
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
-                    input_ents = set(re.findall(r'[А-ЯЀ-ӿ][а-яѐ-ӿ]+', title or ""))
+                    input_ents = _extract_title_entities(title or "")
                     if ents and input_ents and not input_ents.intersection(ents):
-                        return None # Block join if no shared entities on borderline match
+                        return None # Hard block for generic-news joins without entity overlap
+                    if dist > (threshold * 0.7) and not input_ents:
+                        return None # Borderline generic matches need concrete evidence
 
                 # Final Size Check
                 with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -227,7 +236,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     vec1 = text_to_vector(title)
     if not vec1: return str(uuid.uuid4())[:8]
 
-    potential_entities = set(re.findall(r'[А-ЯЀ-ӿ][а-яѐ-ӿ]+', title))
+    potential_entities = _extract_title_entities(title)
     normalized_input = _normalize_cluster_title(title)
 
     cluster_docs = {}
@@ -277,6 +286,10 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         if incoming_topic != rep_topic:
             # If either side is a specific topic, they MUST match exactly.
             # (i.e. 'Вести' can only join 'Вести', 'Спорт' only 'Спорт')
+            continue
+
+        rep_entities = cluster_entities.get(cid, set())
+        if incoming_topic == "Вести" and potential_entities and rep_entities and not potential_entities.intersection(rep_entities):
             continue
         
         # Source Exclusivity
@@ -349,7 +362,6 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         if topic == "Спорт" and rep_0.get("topic") == "Спорт":
             from nlp.generation import _extract_sports_scores
             # We check if they share any common "team-like" entities
-            rep_entities = cluster_entities.get(cid, set())
             if potential_entities and rep_entities:
                 shared_entities = potential_entities.intersection(rep_entities)
                 # If they both have distinct entities but NONE are shared, they are likely different matches

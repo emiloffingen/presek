@@ -11,7 +11,7 @@ from database import db_manager as db
 from utils import (
     score_cluster, rank_articles_in_cluster, calculate_reading_time,
     cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
-    annotate_cluster_articles, score_cluster_for_homepage,
+    annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
     event_stream, record_runtime_event, get_source_effective_weight, _coerce_datetime,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
@@ -516,7 +516,7 @@ async def get_cluster_detail(cluster_id: str):
         lead_article = articles[0] if articles else None
         if lead_article and lead_article.get("embedding"):
             lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
-            related_results = await db.async_search_semantic(lead_vec, limit=8)
+            related_results = await db.async_search_semantic(lead_vec, limit=24)
             related_cids = []
             seen = {cluster_id}
             for r in related_results:
@@ -524,47 +524,30 @@ async def get_cluster_detail(cluster_id: str):
                 if cid and cid not in seen:
                     related_cids.append(cid)
                     seen.add(cid)
-                    if len(related_cids) >= 4: break
+                    if len(related_cids) >= 12:
+                        break
             if related_cids:
                 r_rows = await db.async_execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
-                r_grouped = defaultdict(list)
-                for r in r_rows: r_grouped[r["cluster_id"]].append(r)
                 synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
-                for cid in related_cids:
-                    arts = r_grouped.get(cid)
-                    if arts:
-                        main = annotate_cluster_articles(arts)[0]
-                        candidate_tags = {
-                            str(tag or "").strip()
-                            for article in arts
-                            for tag in (article.get("cluster_tags") or [])
-                            if str(tag or "").strip()
-                        }
-                        candidate_topics = {
-                            str(article.get("topic") or "").strip()
-                            for article in arts
-                            if str(article.get("topic") or "").strip()
-                        }
-                        candidate_entities = {
-                            str(entity or "").strip()
-                            for article in arts
-                            for entity in (article.get("entity_names") or [])
-                            if str(entity or "").strip()
-                        }
-                        shared_tags = sorted(current_tags & candidate_tags)[:3]
-                        shared_topics = sorted(current_topics & candidate_topics)[:2]
-                        shared_entities = sorted(current_entities & candidate_entities)[:3]
-                        related.append({
-                            "cluster_id": cid,
-                            "title": main["title"],
-                            "image_url": main.get("image_url"),
-                            "tags": filter_cluster_tags(main.get("cluster_tags", [])),
-                            "relationship_label": "Сродна тема",
-                            "shared_tags": shared_tags,
-                            "shared_topics": shared_topics,
-                            "shared_entities": shared_entities,
-                            "has_synthesis": cid in synthesis_ids,
-                        })
+                scored_related = build_read_next_clusters(
+                    cluster_id,
+                    articles,
+                    tags,
+                    r_rows,
+                    limit=5,
+                )
+                for item in scored_related:
+                    related.append({
+                        "cluster_id": item["cluster_id"],
+                        "title": item["title"],
+                        "image_url": item.get("image_url"),
+                        "tags": item.get("shared_tags", []),
+                        "relationship_label": item.get("relationship_label") or "Сродна тема",
+                        "shared_tags": item.get("shared_tags", []),
+                        "shared_topics": item.get("shared_topics", []),
+                        "shared_entities": item.get("shared_entities", []),
+                        "has_synthesis": item["cluster_id"] in synthesis_ids,
+                    })
 
         chrono = sorted(articles, key=lambda x: x['created_at'])
         timeline = []

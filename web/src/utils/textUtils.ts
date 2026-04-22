@@ -7,6 +7,20 @@ const NAMED_ENTITIES: Record<string, string> = {
     copy: '©', reg: '®', trade: '™', middot: '·',
 };
 
+const TITLE_PROPER_NOUNS: Array<[RegExp, string]> = [
+    [/\bмакедонија\b/gi, 'Македонија'],
+    [/\bмосква\b/gi, 'Москва'],
+    [/\bданиел христов\b/gi, 'Даниел Христов'],
+    [/\bбудимпешта\b/gi, 'Будимпешта'],
+    [/\bунгарска\b/gi, 'Унгарска'],
+    [/\bкрива паланка\b/gi, 'Крива Паланка'],
+    [/\bердоган\b/gi, 'Ердоган'],
+    [/\bруте\b/gi, 'Руте'],
+    [/\bтурција\b/gi, 'Турција'],
+    [/\bрусија\b/gi, 'Русија'],
+    [/\bукраина\b/gi, 'Украина'],
+];
+
 export function decodeHtmlEntities(text: any): string {
     if (!text) return '';
     if (typeof text !== 'string') text = String(text);
@@ -78,8 +92,16 @@ export function extractCleanSummaryText(input: any): string {
     return cleanAndDecode(text);
 }
 
+function normalizeDisplayTitle(text: string): string {
+    let value = text;
+    for (const [pattern, replacement] of TITLE_PROPER_NOUNS) {
+        value = value.replace(pattern, replacement);
+    }
+    return value;
+}
+
 export function getDisplayTitle(article: any, fallback = ''): string {
-    return article?.display_title || cleanAndDecode(article?.title || fallback);
+    return normalizeDisplayTitle(article?.display_title || cleanAndDecode(article?.title || fallback));
 }
 
 export function getDisplaySummary(article: any): string {

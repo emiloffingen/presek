@@ -573,7 +573,7 @@ async def ingest_all_sources_async():
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
 
-        from clustering import VECTOR_THRESHOLD
+        from clustering import VECTOR_THRESHOLD, _cluster_title_overlap, _extract_title_entities
         prepared_rows = []
         batch_clusters = []
         international_ids = []
@@ -593,8 +593,21 @@ async def ingest_all_sources_async():
                 cluster_id = None
                 if emb:
                     for bc in batch_clusters:
-                        # Group within batch using same criteria (Category + Topic)
-                        if bc['category'] == category and bc['topic'] == topic and cosine_dist(emb, bc['embedding']) < VECTOR_THRESHOLD:
+                        # Batch-time merges must be stricter than persisted clustering,
+                        # especially for generic domestic news where adjacent stories
+                        # often arrive together in the same fetch cycle.
+                        if bc['category'] != category or bc['topic'] != topic:
+                            continue
+                        dist = cosine_dist(emb, bc['embedding'])
+                        if dist >= (VECTOR_THRESHOLD * 0.78):
+                            continue
+                        if topic == "Вести" or not topic:
+                            incoming_entities = _extract_title_entities(display_title)
+                            batch_entities = bc.get('entities', set())
+                            shared_entities = incoming_entities.intersection(batch_entities) if incoming_entities and batch_entities else set()
+                            phrase_overlap = _cluster_title_overlap(display_title, bc['title'])
+                            if not shared_entities and phrase_overlap < 0.34:
+                                continue
                             cluster_id = bc['cid']
                             break
                 
@@ -615,7 +628,14 @@ async def ingest_all_sources_async():
                 ))
 
                 if emb:
-                    batch_clusters.append({'cid': cluster_id, 'embedding': emb, 'category': category, 'topic': topic})
+                    batch_clusters.append({
+                        'cid': cluster_id,
+                        'embedding': emb,
+                        'category': category,
+                        'topic': topic,
+                        'title': display_title,
+                        'entities': _extract_title_entities(display_title),
+                    })
                 recent_articles.insert(0, {"title": display_title, "cluster_id": cluster_id, "created_at": created_at, "category": category, "topic": topic})
                 if len(recent_articles) > CLUSTER_LOOKBACK: recent_articles.pop()
 
