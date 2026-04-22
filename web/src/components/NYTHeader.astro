@@ -122,50 +122,90 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         </div>
     </header>
 
-    <nav class="site-layout discovery-nav" aria-label="Навигација">
-        <div class="discovery-nav-container hide-scrollbar">
-            <div class="discovery-nav-list">
-                {visibleSections.map((section: any) => {
-                    const tagItems = section.items.filter((i: any) => i.type === 'trending_tag');
-                    const regularItems = section.items.filter((i: any) => i.type !== 'trending_tag');
-                    
-                    if (regularItems.length === 0) return null;
+    {/* ── NYT-Style Discovery Bar ──────────────────────── */}
+    <nav class="site-layout nyt-discovery-nav" aria-label="Навигација">
+        <div class="nyt-nav-wrapper">
+            <div class="nyt-nav-container hide-scrollbar">
+                <div class="nyt-nav-list">
+                    {visibleSections.map((section: any, sectionIndex) => {
+                        const tagItems = section.items.filter((i: any) => i.type === 'trending_tag');
+                        const regularItems = section.items.filter((i: any) => i.type !== 'trending_tag');
+                        
+                        if (regularItems.length === 0 && tagItems.length === 0) return null;
+                        
+                        const isSectionsSection = section.label.toLowerCase().includes('секција') || sectionIndex === 0;
+                        
+                        return (
+                            <div class="nyt-nav-section" key={section.label}>
+                                {regularItems.length > 0 && (
+                                    <>
+                                        {isSectionsSection ? (
+                                            <span class="nyt-section-header">
+                                                <svg class="nyt-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M3 12h18M3 6h18M3 18h18" />
+                                                </svg>
+                                                Секции
+                                            </span>
+                                        ) : (
+                                            <span class="nyt-section-label">{section.label}</span>
+                                        )}
+                                        <div class="nyt-section-items">
+                                            {regularItems.map((item: any, index: number) => {
+                                                const isActive = item.href.includes('category=')
+                                                    ? category === item.label
+                                                    : item.href.includes('subcategory=')
+                                                    ? Astro.url.searchParams.get('subcategory') === item.label
+                                                    : item.href.includes('topic=')
+                                                    ? topic === item.label
+                                                    : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
 
-                    return (
-                        <>
-                            <span class="discovery-section-label">{section.label}</span>
-                            {regularItems.map((item: any) => {
-                                const isActive = item.href.includes('category=')
-                                    ? category === item.label
-                                    : item.href.includes('subcategory=')
-                                    ? Astro.url.searchParams.get('subcategory') === item.label
-                                    : item.href.includes('topic=')
-                                    ? topic === item.label
-                                    : false;
+                                                const isFirst = index === 0;
+                                                const isFeatured = item.count > 50;
 
-                                return (
-                                    <a href={item.href} data-astro-reload class={`discovery-link ${isActive ? 'is-active' : ''}`}>
-                                        {item.label}
-                                        {item.count > 10 && <span class="discovery-count">{item.count}</span>}
-                                    </a>
-                                );
-                            })}
-                        </>
-                    );
-                })}
-                {visibleSections.flatMap((s: any) => s.items.filter((i: any) => i.type === 'trending_tag')).length > 0 && (
-                    <>
-                        <span class="discovery-section-label"> voce </span>
-                        {visibleSections.flatMap((s: any) => s.items.filter((i: any) => i.type === 'trending_tag')).map((item: any) => (
-                            <a href={item.href} data-astro-reload class="discovery-link discovery-tag">
-                                {item.label.replace('#', '')}
-                            </a>
-                        ))}
-                    </>
-                )}
+                                                return (
+                                                    <a 
+                                                        href={item.href} 
+                                                        data-astro-reload 
+                                                        class={`nyt-nav-link ${isActive ? 'is-active' : ''} ${isFeatured ? 'is-featured' : ''} ${isFirst ? 'is-first' : ''}`}
+                                                    >
+                                                        <span class="nyt-link-text">{item.label}</span>
+                                                        {item.count > 0 && (
+                                                            <span class="nyt-nav-count">
+                                                                {item.count > 99 ? '99+' : item.count}
+                                                            </span>
+                                                        )}
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {tagItems.length > 0 && isSectionsSection && (
+                                    <div class="nyt-tag-section">
+                                        <span class="nyt-tag-label">
+                                            <svg class="nyt-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" />
+                                            </svg>
+                                            Тренд тагови
+                                        </span>
+                                        <div class="nyt-tag-items">
+                                            {tagItems.map((item: any) => (
+                                                <a href={item.href} data-astro-reload class="nyt-nav-tag" key={item.href}>
+                                                    <span class="nyt-tag-hash">#</span>
+                                                    {item.label.replace('#', '')}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                <div class="nyt-nav-fade left" aria-hidden="true"></div>
+                <div class="nyt-nav-fade right" aria-hidden="true"></div>
             </div>
-            <div class="nav-fade-left" aria-hidden="true"></div>
-            <div class="nav-fade-right" aria-hidden="true"></div>
         </div>
     </nav>
 </div>
@@ -444,91 +484,229 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         animation: ticker-pulse 1.5s ease-in-out infinite;
     }
 
-    /* ── Navigation Bar (BBC-style) ───────────────── */
-    .discovery-nav {
-        background: #ffffff;
-        border-bottom: 1px solid rgba(0,0,0,0.08);
-        box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    /* ── NYT-Style Discovery Navigation ─────────────── */
+    :root {
+        --nyt-dark: #121212;
+        --nyt-light-gray: #f0f0f0;
+        --nyt-medium-gray: #e0e0e0;
+        --nyt-red: #d50000;
+        --nyt-text: #333;
+        --nyt-text-light: #666;
+        --nyt-accent: #0066cc;
     }
 
-    .discovery-nav-container {
-        width: 100%;
-        overflow-x: auto;
-        padding: 0;
+    .nyt-discovery-nav {
+        background: var(--nyt-light-gray);
+        border-bottom: 1px solid var(--nyt-medium-gray);
         position: relative;
     }
 
-    .discovery-nav-list {
+    .nyt-nav-wrapper {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .nyt-nav-container {
+        width: 100%;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .nyt-nav-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nyt-nav-list {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        white-space: nowrap;
+        padding: 0.5rem 0;
+        min-width: 100%;
+    }
+
+    .nyt-nav-section {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0 1rem;
+        border-right: 1px solid var(--nyt-medium-gray);
+    }
+
+    .nyt-nav-section:last-child {
+        border-right: none;
+    }
+
+    .nyt-section-header {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        white-space: nowrap;
-        padding: 0.25rem 1rem;
-    }
-
-    .discovery-section-label {
-        font-family: var(--font-sans);
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: none;
-        color: var(--muted-foreground);
-        padding: 0 0.5rem;
-        margin-right: 0.5rem;
-    }
-
-    :root { --bbc-red: #bb1919; }
-
-    .discovery-link {
-        font-family: var(--font-sans);
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-transform: none;
-        color: var(--foreground);
-        text-decoration: none;
-        letter-spacing: 0;
-        transition: color 0.12s, border-color 0.12s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        white-space: nowrap;
-        padding: 0.6rem 0.75rem;
-        border-bottom: 4px solid transparent;
-    }
-
-    .discovery-link:hover {
-        color: var(--nyt-accent);
-    }
-
-    .discovery-link.is-active {
-        color: var(--bbc-red);
-        border-bottom-color: var(--bbc-red);
-        background: transparent;
-    }
-
-    .discovery-tag {
-        font-style: normal;
-        text-transform: lowercase;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--muted-foreground);
-        opacity: 0.9;
-    }
-
-    .discovery-tag:hover {
-        color: var(--bbc-red);
-        opacity: 1;
-        background: transparent;
-    }
-
-    .discovery-count {
+        gap: 0.5rem;
         font-family: var(--font-sans);
         font-size: 0.7rem;
         font-weight: 700;
-        color: var(--muted-foreground);
-        background: transparent;
-        padding: 0.05rem 0.35rem;
-        border-radius: 8px;
+        color: var(--nyt-text);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.25rem;
+    }
+
+    .nyt-section-icon {
+        width: 12px;
+        height: 12px;
+        color: var(--nyt-red);
+    }
+
+    .nyt-section-label {
+        font-family: var(--font-serif);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--nyt-text);
+        text-transform: capitalize;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    .nyt-section-items {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.125rem;
+    }
+
+    .nyt-nav-link {
+        font-family: var(--font-serif);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--nyt-text);
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 0.375rem 0.75rem;
+        border-radius: 2px;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        position: relative;
+    }
+
+    .nyt-nav-link .nyt-link-text {
+        line-height: 1.2;
+    }
+
+    .nyt-nav-link:hover {
+        background: rgba(0, 0, 0, 0.04);
+        color: var(--nyt-red);
+    }
+
+    .nyt-nav-link.is-active {
+        background: var(--nyt-dark);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .nyt-nav-link.is-featured {
+        font-weight: 600;
+    }
+
+    .nyt-nav-link.is-first {
+        font-weight: 600;
+    }
+
+    .nyt-nav-count {
+        font-family: var(--font-sans);
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--nyt-text-light);
+        background: rgba(213, 0, 0, 0.08);
+        padding: 0.125rem 0.375rem;
+        border-radius: 10px;
         line-height: 1;
+        min-width: 1.5em;
+        text-align: center;
+    }
+
+    .nyt-nav-link.is-active .nyt-nav-count {
+        background: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .nyt-tag-section {
+        margin-top: 0.5rem;
+    }
+
+    .nyt-tag-label {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-family: var(--font-sans);
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--nyt-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.375rem;
+    }
+
+    .nyt-tag-icon {
+        width: 10px;
+        height: 10px;
+        color: var(--nyt-red);
+    }
+
+    .nyt-tag-items {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.375rem;
+    }
+
+    .nyt-nav-tag {
+        font-family: var(--font-sans);
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: var(--nyt-text-light);
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid var(--nyt-medium-gray);
+        border-radius: 12px;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.125rem;
+    }
+
+    .nyt-nav-tag:hover {
+        background: var(--nyt-dark);
+        color: #fff;
+        border-color: var(--nyt-dark);
+    }
+
+    .nyt-tag-hash {
+        color: var(--nyt-red);
+        font-weight: 700;
+    }
+
+    .nyt-nav-fade {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 60px;
+        z-index: 2;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .nyt-nav-fade.left {
+        left: 0;
+        background: linear-gradient(to right, var(--background) 30%, transparent 100%);
+    }
+
+    .nyt-nav-fade.right {
+        right: 0;
+        background: linear-gradient(to left, var(--background) 30%, transparent 100%);
     }
 
     /* ── Mode Links (Tier 1) ── */
@@ -573,14 +751,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
     }
 
-    .nav-fade-left, .nav-fade-right {
-        position: absolute;
-        top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-    .nav-fade-left { left: 0; background: linear-gradient(to right, var(--background), transparent 70%); }
-    .nav-fade-right { right: 0; background: linear-gradient(to left, var(--background), transparent 70%); }
+
 
     @media (max-width: 640px) {
         .topbar-row {
@@ -588,23 +759,36 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
             gap: 0.5rem;
         }
         .topbar-logo { height: 1.1rem; }
-        .discovery-nav-container {
+        .nyt-nav-container {
             padding: 0.25rem 0;
         }
-        .discovery-nav-list {
-            gap: 0.4rem;
+        .nyt-nav-section {
+            padding: 0 0.5rem;
         }
-        .discovery-section-label {
-            font-size: 0.55rem;
-            padding: 0.15rem 0.4rem;
+        .nyt-section-header,
+        .nyt-section-label {
+            font-size: 0.625rem;
+            margin-bottom: 0.125rem;
         }
-        .discovery-link {
+        .nyt-nav-link {
             font-size: 0.7rem;
-            padding: 0.15rem 0.4rem;
+            padding: 0.25rem 0.5rem;
         }
-        .discovery-count {
+        .nyt-nav-count {
             font-size: 0.5rem;
-            padding: 0.05rem 0.25rem;
+            padding: 0.125rem 0.25rem;
+            min-width: 1.2em;
+        }
+        .nyt-tag-label {
+            font-size: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .nyt-nav-tag {
+            font-size: 0.5rem;
+            padding: 0.125rem 0.375rem;
+        }
+        .nyt-nav-fade {
+            width: 30px;
         }
     }
     @media (min-width: 1024px) {
@@ -658,9 +842,9 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         };
 
         const initFades = () => {
-            const navShell = document.querySelector('.discovery-nav-container');
-            const fadeLeft = document.querySelector('.nav-fade-left');
-            const fadeRight = document.querySelector('.nav-fade-right');
+            const navShell = document.querySelector('.nyt-nav-container');
+            const fadeLeft = document.querySelector('.nyt-nav-fade.left');
+            const fadeRight = document.querySelector('.nyt-nav-fade.right');
             if (!navShell || !fadeLeft || !fadeRight) return;
 
             if (window._presek_fadeResizeHandler) window.removeEventListener('resize', window._presek_fadeResizeHandler);
