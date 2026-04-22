@@ -319,12 +319,27 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             try:
                 import numpy as np
                 def parse_vec(v):
+                    if v is None: return None
+                    if isinstance(v, (list, tuple)):
+                        return np.array(v, dtype=np.float32)
                     if isinstance(v, str):
-                        import json
-                        v = json.loads(v)
-                    return np.array(v, dtype=np.float32)
+                        try:
+                            # pgvector string format "[1.2, 3.4]" is valid JSON
+                            import json
+                            return np.array(json.loads(v), dtype=np.float32)
+                        except json.JSONDecodeError:
+                            # Fallback: strip brackets and split by comma
+                            cleaned = v.strip("[]")
+                            if not cleaned: return None
+                            return np.array([float(x) for x in cleaned.split(",")], dtype=np.float32)
+                    # If it's a psycopg2 vector object or something else, try to iterate it
+                    try:
+                        return np.array(list(v), dtype=np.float32)
+                    except Exception:
+                        return None
 
                 vec_pool = [parse_vec(a['embedding']) for a in article_rows if a.get('embedding')]
+                vec_pool = [v for v in vec_pool if v is not None]
                 if vec_pool:
                     centroid = np.mean(vec_pool, axis=0).tolist()
             except Exception as ve:
@@ -504,11 +519,6 @@ def generate_cluster_metadata_task():
     try:
         from tasks.utils import record_task_event
         import numpy as np
-        def parse_vec(v):
-            if isinstance(v, str):
-                import json
-                v = json.loads(v)
-            return np.array(v, dtype=np.float32)
 
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
@@ -536,7 +546,26 @@ def generate_cluster_metadata_task():
             centroid = None
             if r['embeddings']:
                 try:
+                    import numpy as np
+                    def parse_vec(v):
+                        if v is None: return None
+                        if isinstance(v, (list, tuple)):
+                            return np.array(v, dtype=np.float32)
+                        if isinstance(v, str):
+                            try:
+                                import json
+                                return np.array(json.loads(v), dtype=np.float32)
+                            except json.JSONDecodeError:
+                                cleaned = v.strip("[]")
+                                if not cleaned: return None
+                                return np.array([float(x) for x in cleaned.split(",")], dtype=np.float32)
+                        try:
+                            return np.array(list(v), dtype=np.float32)
+                        except Exception:
+                            return None
+
                     vec_pool = [parse_vec(v) for v in r['embeddings']]
+                    vec_pool = [v for v in vec_pool if v is not None]
                     if vec_pool:
                         centroid = np.mean(vec_pool, axis=0).tolist()
                 except Exception as ve:
