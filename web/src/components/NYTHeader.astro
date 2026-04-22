@@ -124,32 +124,46 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
 
     <nav class="site-layout discovery-nav" aria-label="Навигација">
         <div class="discovery-nav-container hide-scrollbar">
-            <ul class="discovery-nav-list">
-                {visibleSections.map((section: any) => (
-                    <li class={`nav-group group-type-${section.type}`}>
-                        <div class="nav-items">
-                            {section.items.map((item: any) => {
+            <div class="discovery-nav-list">
+                {visibleSections.map((section: any) => {
+                    const tagItems = section.items.filter((i: any) => i.type === 'trending_tag');
+                    const regularItems = section.items.filter((i: any) => i.type !== 'trending_tag');
+                    
+                    if (regularItems.length === 0) return null;
+
+                    return (
+                        <>
+                            <span class="discovery-section-label">{section.label}</span>
+                            {regularItems.map((item: any) => {
                                 const isActive = item.href.includes('category=')
                                     ? category === item.label
                                     : item.href.includes('subcategory=')
                                     ? Astro.url.searchParams.get('subcategory') === item.label
                                     : item.href.includes('topic=')
                                     ? topic === item.label
-                                    : item.href.includes('entity=')
-                                    ? Astro.url.searchParams.get('entity') === item.label.replace('#', '')
-                                    : q === item.label || q === item.label.replace('#', '');
+                                    : false;
 
                                 return (
-                                    <a href={item.href} data-astro-reload class={`nav-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
+                                    <a href={item.href} data-astro-reload class={`discovery-link ${isActive ? 'is-active' : ''}`}>
                                         {item.label}
-                                        {item.count > 10 && <span class="nav-heat-dot" title="Висока активност"></span>}
+                                        {item.count > 10 && <span class="discovery-count">{item.count}</span>}
                                     </a>
                                 );
                             })}
-                        </div>
-                    </li>
-                ))}
-            </ul>
+                        </>
+                    );
+                })}
+                {visibleSections.flatMap((s: any) => s.items.filter((i: any) => i.type === 'trending_tag')).length > 0 && (
+                    <>
+                        <span class="discovery-section-label"> voce </span>
+                        {visibleSections.flatMap((s: any) => s.items.filter((i: any) => i.type === 'trending_tag')).map((item: any) => (
+                            <a href={item.href} data-astro-reload class="discovery-link discovery-tag">
+                                {item.label.replace('#', '')}
+                            </a>
+                        ))}
+                    </>
+                )}
+            </div>
             <div class="nav-fade-left" aria-hidden="true"></div>
             <div class="nav-fade-right" aria-hidden="true"></div>
         </div>
@@ -430,105 +444,89 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         animation: ticker-pulse 1.5s ease-in-out infinite;
     }
 
-    /* ── Navigation Bar (Discovery Style) ────────────────── */
+    /* ── Navigation Bar (NYT-Style Rails) ───────────────── */
     .discovery-nav {
-        border-bottom: 1px solid var(--foreground);
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 98%, transparent);
     }
 
     .discovery-nav-container {
         width: 100%;
         overflow-x: auto;
-        padding: 0.5rem 0;
+        padding: 0.35rem 0;
         position: relative;
     }
 
     .discovery-nav-list {
         display: flex;
         align-items: center;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        gap: 1.5rem;
+        gap: 0.5rem;
+        white-space: nowrap;
     }
 
-    .nav-group {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+    .discovery-section-label {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
+        padding: 0.25rem 0.6rem;
+        margin-right: 0.25rem;
+        background: transparent;
     }
 
-    .nav-items {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .nav-group + .nav-group {
-        position: relative;
-        padding-left: 1.5rem;
-    }
-
-    .nav-group + .nav-group::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 1px;
-        height: 12px;
-        background-color: var(--border);
-        opacity: 0.4;
-        margin-left: 0.25rem;
-    }
-
-    .nav-link {
+    .discovery-link {
         font-family: var(--font-sans);
         font-size: 0.75rem;
-        font-weight: 700;
+        font-weight: 600;
         text-transform: uppercase;
         color: var(--muted-foreground);
         text-decoration: none;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.02em;
         transition: all 0.15s;
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.4rem;
         white-space: nowrap;
         padding: 0.25rem 0.5rem;
-        opacity: 0.9;
+        border-radius: 2px;
     }
 
-    .nav-link:hover {
+    .discovery-link:hover {
         color: var(--foreground);
-        opacity: 1;
+        background: var(--secondary);
     }
 
-    .nav-link.is-active {
+    .discovery-link.is-active {
         color: var(--foreground);
-        border-bottom: 2px solid var(--nyt-accent);
-        padding-bottom: 2px;
-        opacity: 1;
+        background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
     }
 
-    .nav-link.is-tag {
-        color: var(--muted-foreground);
+    .discovery-tag {
         font-style: normal;
-        text-transform: none;
+        text-transform: lowercase;
         font-size: 0.72rem;
-        opacity: 0.7;
+        font-weight: 500;
+        color: var(--muted-foreground);
+        opacity: 0.8;
     }
 
-    .nav-link.is-tag:hover {
-        color: var(--foreground);
+    .discovery-tag:hover {
+        color: var(--nyt-accent);
         opacity: 1;
+        background: transparent;
     }
 
-    .nav-heat-dot {
-        width: 4px;
-        height: 4px;
-        background-color: var(--nyt-red);
-        border-radius: 50%;
-        box-shadow: 0 0 4px var(--nyt-red);
+    .discovery-count {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: var(--muted-foreground);
+        background: var(--secondary);
+        padding: 0.05rem 0.35rem;
+        border-radius: 10px;
+        line-height: 1;
     }
 
     /* ── Mode Links (Tier 1) ── */
@@ -589,16 +587,22 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         }
         .topbar-logo { height: 1.1rem; }
         .discovery-nav-container {
-            padding: 0.4rem 0;
+            padding: 0.25rem 0;
         }
         .discovery-nav-list {
-            gap: 1.25rem;
+            gap: 0.4rem;
         }
-        .nav-group + .nav-group {
-            padding-left: 1.25rem;
+        .discovery-section-label {
+            font-size: 0.55rem;
+            padding: 0.15rem 0.4rem;
         }
-        .nav-link {
+        .discovery-link {
             font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+        }
+        .discovery-count {
+            font-size: 0.5rem;
+            padding: 0.05rem 0.25rem;
         }
     }
     @media (min-width: 1024px) {
