@@ -252,6 +252,18 @@ async def get_news(
                 ORDER BY updated_at DESC LIMIT %s
             """, (entity, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            
+            # Fallback: if no clusters found for this entity name, try searching for it
+            if not cids and page == 0:
+                rows = await db.async_execute("""
+                    SELECT cluster_id, MAX(created_at) as last_article
+                    FROM articles
+                    WHERE title ILIKE %s OR summary ILIKE %s OR description ILIKE %s
+                    GROUP BY cluster_id
+                    ORDER BY last_article DESC LIMIT %s
+                """, (f"%{entity}%", f"%{entity}%", f"%{entity}%", page_size))
+                cids = [r['cluster_id'] for r in rows]
+
             rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
             rows = await db.async_execute("""
@@ -261,6 +273,18 @@ async def get_news(
                 ORDER BY updated_at DESC LIMIT %s
             """, (topic, page_size * (page + 1)))
             cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            
+            # Fallback for topics like 'Политика' which might be in the article's topic column but not metadata topics array
+            if not cids and page == 0:
+                rows = await db.async_execute("""
+                    SELECT cluster_id, MAX(created_at) as last_article
+                    FROM articles
+                    WHERE topic = %s OR category = %s
+                    GROUP BY cluster_id
+                    ORDER BY last_article DESC LIMIT %s
+                """, (topic, topic, page_size))
+                cids = [r['cluster_id'] for r in rows]
+
             rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:
             rows = await db.async_execute("""

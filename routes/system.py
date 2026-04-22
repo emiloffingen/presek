@@ -106,7 +106,9 @@ async def get_navigation():
     # 1. LIVE / BREAKING (Last 24h)
     breaking_items = []
     recent_clusters = await db.async_execute("""
-        SELECT m.cluster_id, (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title
+        SELECT m.cluster_id, 
+               (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
+               (SELECT created_at FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as created_at
         FROM cluster_metadata m
         WHERE m.updated_at >= NOW() - INTERVAL '24 hours'
         ORDER BY m.updated_at DESC LIMIT 15
@@ -116,10 +118,12 @@ async def get_navigation():
         if not c.get("title"): continue
         arts = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s", (c["cluster_id"],))
         if score_cluster(arts) >= BREAKING_SCORE_THRESHOLD:
+            created_at = c.get("created_at")
             breaking_items.append({
                 "label": cleanAndDecode(c["title"])[:80] + ("..." if len(c["title"]) > 80 else ""),
                 "href": f"/cluster/{c['cluster_id']}",
-                "type": "breaking"
+                "type": "breaking",
+                "created_at": created_at.isoformat() if created_at else None
             })
             if len(breaking_items) >= 4: break
 

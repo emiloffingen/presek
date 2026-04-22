@@ -50,6 +50,27 @@ try {
 const hasBreaking = navigationData.breaking.length > 0;
 const breakingItems = navigationData.breaking.slice(0, 5);
 const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
+
+function getRelativeTimeStr(dateStr?: string) {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+
+        if (diffMins < 1) return 'ШТОТУКУ';
+        if (diffMins < 60) return `${diffMins} МИН`;
+        
+        return date.toLocaleTimeString('mk-MK', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'Europe/Skopje' 
+        });
+    } catch {
+        return '';
+    }
+}
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
@@ -62,15 +83,17 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
                 </span>
                 <div class="live-ticker-track-wrap">
                     <div class="live-ticker-track">
-                        {breakingItems.map((item) => (
+                        {breakingItems.map((item: any) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">•</span>
+                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
                                 {item.label}
                             </a>
                         ))}
-                        {breakingItems.map((item) => (
+                        {breakingItems.map((item: any) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline" aria-hidden="true">
                                 <span class="ticker-sep" aria-hidden="true">•</span>
+                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
                                 {item.label}
                             </a>
                         ))}
@@ -177,6 +200,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
     .live-ticker-track { display: flex; width: max-content; animation: ticker-scroll 30s linear infinite; }
     @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     .live-ticker-headline { font-family: var(--font-serif); font-size: 0.64rem; font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; white-space: nowrap; }
+    .ticker-time { font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; margin-right: 0.5rem; background: rgba(0,0,0,0.2); padding: 1px 4px; border-radius: 2px; }
     .ticker-sep { margin: 0 0.75rem; opacity: 0.4; }
 
     /* ── Editorial Topbar ─────────────────────────────── */
