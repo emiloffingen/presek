@@ -17,7 +17,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, Quote, Sparkles, ChevronRight, Activity } from 'lucide-react';
+import { TrendingUp, Sparkles, ChevronRight, Activity } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
@@ -205,6 +205,12 @@ const supportingFeatured = supportingClusters.slice(0, 2);
 const supportingCompact = supportingClusters.slice(2);
 const developmentsFeatured = continuingClusters.slice(0, 6);
 const developmentsCompact = continuingClusters.slice(6, 18);
+const homepageSnapshot = [
+    { label: 'Плурализам', value: `${stats?.intelligence?.pluralism?.pluralism_pct || 0}%`, note: 'Колку различни редакциски агли се вклучени денес.' },
+    { label: 'Синтеза', value: `${stats?.intelligence?.ai_transparency?.ai_ratio || 0}%`, note: 'Колкав дел од прегледот е структуриран за побрзо читање.' },
+    { label: 'Извори', value: `${stats?.total_feeds || 0}`, note: 'Активни редакции и извори што ја хранат лентата.' },
+    { label: 'Објави/24ч', value: `${stats?.last_24h || 0}`, note: 'Обемот на нови објави низ последниот ден.' },
+];
 
 if (!isHomepage) {
     excludedClusterIds = [
@@ -321,6 +327,12 @@ function getBriefingSnippet(content: string) {
 
 				<AdUnit slot="home_top" />
 
+                {isHomepage && briefing?.content && (
+                    <div class="section-wrapper editorial-briefing-wrap">
+                        <EditorialBriefing content={briefing.content} date={briefing.date || new Date().toISOString()} />
+                    </div>
+                )}
+
 				{leadCluster && supportingClusters.length > 0 && (
 					<div class="section-wrapper">
 						<SupportingBand 
@@ -330,23 +342,24 @@ function getBriefingSnippet(content: string) {
 					</div>
 				)}
 
-				{globalClusters.length > 0 && (
-					<div class="section-wrapper">
-						<DevelopmentsSection
-							title="Глобален Пулс"
-							note="Најважните светски вести од Америка и Германија."
-							developmentsFeatured={globalClusters.slice(0, 2)}
-							developmentsCompact={globalClusters.slice(2)}
-						/>
-					</div>
-				)}
-
-				<div class="pulse-stats-bar">
-					<div class="p-stat"><span>Плурализам</span><strong>{(stats?.intelligence?.pluralism?.pluralism_pct || 0)}%</strong></div>
-					<div class="p-stat"><span>Синтеза</span><strong>{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</strong></div>
-					<div class="p-stat"><span>Извори</span><strong>{stats?.total_feeds || 0}</strong></div>
-					<div class="p-stat"><span>Објави/24ч</span><strong>{stats?.last_24h || 0}</strong></div>
-				</div>
+				<section class="newsroom-snapshot section-wrapper">
+                    <div class="snapshot-heading">
+                        <div>
+                            <p class="snapshot-kicker">Слика од редакцијата</p>
+                            <h2 class="snapshot-title">ШТО ЈА ДВИЖИ ЛЕНТАТА</h2>
+                        </div>
+                        <p class="snapshot-note">Брз преглед на обемот, разновидноста и темпото зад денешниот избор.</p>
+                    </div>
+                    <div class="snapshot-grid">
+                        {homepageSnapshot.map((item) => (
+                            <div class="snapshot-card">
+                                <span>{item.label}</span>
+                                <strong>{item.value}</strong>
+                                <p>{item.note}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
 
 				{feedClusters.length > 0 && (
 					<div class="section-wrapper">
@@ -355,6 +368,7 @@ function getBriefingSnippet(content: string) {
 							note="Приказни што ја обликуваат јавната дебата."
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
+                            tone="developing"
 						/>
 					</div>
 				)}
@@ -365,6 +379,18 @@ function getBriefingSnippet(content: string) {
                     </div>
 				)}
 
+				{globalClusters.length > 0 && (
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Глобален Пулс"
+							note="Најважните светски вести од Америка и Германија."
+							developmentsFeatured={globalClusters.slice(0, 2)}
+							developmentsCompact={globalClusters.slice(2)}
+                            tone="global"
+						/>
+					</div>
+				)}
+
 				{wireClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
@@ -373,13 +399,15 @@ function getBriefingSnippet(content: string) {
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"
+                            tone="wire"
 						/>
 					</div>
 				)}
 			</div>
 
 			<aside class="broadsheet-rail">
-                <section class="rail-block">
+                <section class="rail-block rail-priority-block">
+                    <p class="rail-kicker">Деск монитор</p>
                     <div class="rail-head-red">
                         <Activity size={12} strokeWidth={3} />
                         <h3>ПОСЛЕДНО НА ПРЕСЕК</h3>
@@ -396,7 +424,7 @@ function getBriefingSnippet(content: string) {
                 </section>
 
 				{briefing && briefing.content && (
-					<section class="rail-block rail-block-alt">
+					<section class="rail-block rail-block-alt rail-priority-block">
 						<p class="rail-kicker">Брифинг</p>
 						<h3 class="rail-title">КЛУЧНО ЗА ДЕНЕС</h3>
 						<p class="rail-brief-text">
@@ -457,6 +485,7 @@ function getBriefingSnippet(content: string) {
     .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
     .section-wrapper:last-child { border-bottom: none; }
     .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .editorial-briefing-wrap { padding-bottom: 2.25rem; }
 
     /* ── Filtering Status ─────────────────────────────── */
     .filter-header { padding: 2rem 0; border-bottom: 3px solid var(--foreground); }
@@ -472,6 +501,7 @@ function getBriefingSnippet(content: string) {
     .rail-block { margin-bottom: 2.5rem; }
     .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
     .rail-block-quiet { opacity: 0.85; }
+    .rail-priority-block { padding: 1.15rem 1.2rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 95%, #efe5d6 5%); }
     
     .rail-head-red { display: flex; align-items: center; gap: 0.5rem; color: var(--nyt-red); margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .rail-head-red h3 { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.08em; }
@@ -500,12 +530,20 @@ function getBriefingSnippet(content: string) {
     .rail-tag-cloud a { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; }
     .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); }
 
-    .pulse-stats-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; padding: 1.5rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 2.5rem 0; }
-    .p-stat span { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); display: block; margin-bottom: 0.3rem; }
-    .p-stat strong { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; line-height: 1; }
+    .newsroom-snapshot { padding: 1.75rem; background: linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, #efe5d6 4%), var(--background)); border: 1px solid var(--border); border-top: 3px solid var(--foreground); }
+    .snapshot-heading { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .snapshot-kicker { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nyt-accent); margin-bottom: 0.45rem; }
+    .snapshot-title { font-family: var(--font-sans); font-size: 0.92rem; font-weight: 950; letter-spacing: 0.06em; text-transform: uppercase; }
+    .snapshot-note { max-width: 40rem; font-family: var(--font-nyt-body); font-size: 0.96rem; line-height: 1.55; color: var(--secondary-foreground); }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+    .snapshot-card { padding: 1rem 1.05rem; border: 1px solid var(--border); background: var(--background); }
+    .snapshot-card span { display: block; margin-bottom: 0.45rem; font-family: var(--font-sans); font-size: 0.56rem; font-weight: 950; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); }
+    .snapshot-card strong { display: block; margin-bottom: 0.45rem; font-family: var(--font-serif); font-size: 1.5rem; font-weight: 900; line-height: 1; }
+    .snapshot-card p { font-family: var(--font-nyt-body); font-size: 0.86rem; line-height: 1.5; color: var(--secondary-foreground); }
 
     @media (min-width: 768px) {
-        .pulse-stats-bar { grid-template-columns: repeat(4, 1fr); }
+        .snapshot-heading { grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 0.8fr); align-items: end; }
+        .snapshot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
     .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); margin: 2rem 0; }
@@ -516,5 +554,12 @@ function getBriefingSnippet(content: string) {
 
     @media (max-width: 768px) {
         .broadsheet-main { border-right: none; padding-right: 0; }
+        .newsroom-snapshot { padding: 1.1rem; }
+        .snapshot-title { font-size: 0.8rem; }
+        .snapshot-note { font-size: 0.9rem; }
+        .snapshot-grid { gap: 0.7rem; }
+        .snapshot-card { padding: 0.85rem 0.8rem; }
+        .snapshot-card strong { font-size: 1.2rem; }
+        .rail-priority-block { padding: 1rem; }
     }
 </style>

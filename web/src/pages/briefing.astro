@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
-import { Sparkles, Coffee, Moon, Sun, Timer, Activity, ChevronRight } from 'lucide-react';
+import { Sparkles, Coffee, Moon, Sun, Timer, Activity } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 
@@ -55,6 +55,17 @@ function esc(s: string) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function slugifyHeading(value: string) {
+    return value
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\u0400-\u04ff\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+}
+
 function renderBriefingLine(line: string) {
     const stripped = line.trim();
     if (stripped === '---') {
@@ -77,7 +88,8 @@ function renderBriefingLine(line: string) {
     }
     if (line.startsWith('## ')) {
         const text = line.substring(3).trim();
-        return `<h2 class="briefing-section-title">${esc(text)}</h2>`;
+        const slug = slugifyHeading(text);
+        return `<h2 id="${esc(slug)}" class="briefing-section-title">${esc(text)}</h2>`;
     }
     if (line.startsWith('**') && line.endsWith('**')) {
         return `<p class="briefing-kicker">${esc(line.substring(2, line.length - 2))}</p>`;
@@ -130,10 +142,28 @@ function formatBriefing(content: string) {
 
 const sectionHighlights = (briefing?.content || '').split('\n')
     .filter(l => l.startsWith('## '))
-    .map(l => l.substring(3).trim());
+    .map((l, index) => {
+        const title = l.substring(3).trim();
+        return {
+            index: index + 1,
+            title,
+            slug: slugifyHeading(title)
+        };
+    });
 
 const readingTime = briefing ? Math.max(2, Math.ceil(briefing.content.split(' ').length / 180)) : 0;
 const DispatchIcon = dispatchIcon;
+const subjectPreview = (briefing?.subjects || []).slice(0, 4);
+const sectionPreview = sectionHighlights.slice(0, 3);
+const totalSubjects = briefing?.subjects?.length || 0;
+const articleCount = stats?.total_articles || 0;
+const editionLabel = hour >= 5 && hour < 12 ? 'Утринско издание' : hour >= 12 && hour < 18 ? 'Пладневно издание' : 'Вечерно издание';
+const editionStandfirst = hour >= 5 && hour < 12
+    ? 'Кондензиран утрински преглед на денот: што навистина се придвижи, кои актери ја носат тежината на приказната и каде вреди да се задржи вниманието пред остатокот од вестите да ве оттуркаат во шум.'
+    : hour >= 12 && hour < 18
+        ? 'Кондензиран пладневен преглед: што се зацврсти, кои линии на известување се издвојуваат и каде вреди да се остане внимателен до крајот на денот.'
+        : 'Кондензиран вечерен преглед: што навистина се помести денес, кои актери ја носеа тежината на приказната и што останува важно по првиот бран на шум.';
+const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон на теми' : sectionHighlights.length >= 4 ? 'Фокусиран дневен избор' : 'Покондензирано издание';
 ---
 
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
@@ -159,11 +189,24 @@ const DispatchIcon = dispatchIcon;
                 </div>
             </div>
 
+            <div class="masthead-standfirst">
+                <p>{editionStandfirst}</p>
+            </div>
+
+            <div class="masthead-deck">
+                <span>{coverageTone}</span>
+                <span>{totalSubjects} издвоени актери</span>
+                <span>{articleCount.toLocaleString('mk-MK')} следени објави</span>
+            </div>
+
             {sectionHighlights.length > 0 && (
                 <nav class="masthead-nav hide-scrollbar">
                     <span class="nav-label">ВО ФОКУС:</span>
-                    {sectionHighlights.map((title: string) => (
-                        <span class="nav-link">{title}</span>
+                    {sectionHighlights.map((section) => (
+                        <a class="nav-link" href={`#${section.slug}`}>
+                            <span>{String(section.index).padStart(2, '0')}</span>
+                            {section.title}
+                        </a>
                     ))}
                 </nav>
             )}
@@ -174,10 +217,33 @@ const DispatchIcon = dispatchIcon;
                 {briefing ? (
                     <article class="briefing-container">
                         <div class="briefing-intro">
-                            <h2 class="intro-greeting">{hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}</h2>
-                            <p class="intro-copy">
-                                Денешната синтеза ги групира <span class="font-bold">{(stats?.total_articles || 0).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор во 6 клучни линии кои ја дефинираат агендата на денот.
-                            </p>
+                            <div class="intro-lede">
+                                <p class="intro-kicker">{editionLabel}</p>
+                                <h2 class="intro-greeting">{hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}</h2>
+                                <p class="intro-copy">
+                                    Денешната синтеза ги собира <span class="font-bold">{articleCount.toLocaleString('mk-MK')} објави</span> во јасна редакциска линија:
+                                    што е водечко, што е споредно и кои теми заслужуваат второ читање наместо брзо скролање.
+                                </p>
+                            </div>
+
+                            <div class="intro-ledger">
+                                <div class="ledger-card">
+                                    <span class="ledger-label">Издание</span>
+                                    <strong>{readingTime} минути</strong>
+                                    <p>Доволно кратко за едно кафе, доволно густо за да не пропуштите ништо суштинско.</p>
+                                </div>
+                                <div class="ledger-card">
+                                    <span class="ledger-label">Редакциски темпо</span>
+                                    <strong>{sectionHighlights.length || 6} главни линии</strong>
+                                    <p>Поделени според агенда, а не според суров редослед на објавување.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="intro-notes">
+                            <span class="intro-note">Уреднички избор</span>
+                            <span class="intro-note">{coverageTone}</span>
+                            <span class="intro-note">{totalSubjects} активни актери</span>
                         </div>
 
                         <div class="briefing-content" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
@@ -201,33 +267,81 @@ const DispatchIcon = dispatchIcon;
 
             <aside class="broadsheet-rail">
                 <section class="rail-block rail-block-featured">
-                    <p class="rail-kicker">Интелигенција</p>
-                    <h3 class="rail-title">КЛУЧНИ СУБЈЕКТИ</h3>
-                    <div class="rail-subject-list">
-                        {(briefing?.subjects || []).map((s: any) => (
-                            <div class="subject-row">
-                                <div class="subject-info">
-                                    <span class="subject-name">{s.name}</span>
-                                    <span class="subject-count">{s.total_mentions} споменувања</span>
+                    <p class="rail-kicker">Редакциски индекс</p>
+                    <h3 class="rail-title">АКТЕРИ НА ДЕНОТ</h3>
+                    <p class="rail-text rail-text-tight">
+                        Лицата, институциите и групите што најмногу ја туркаат дневната рамка на приказната.
+                    </p>
+                    {subjectPreview.length > 0 ? (
+                        <div class="rail-subject-list">
+                            {subjectPreview.map((s: any) => (
+                                <div class="subject-row">
+                                    <div class="subject-info">
+                                        <span class="subject-name">{s.name}</span>
+                                        <span class="subject-count">{s.total_mentions} споменувања</span>
+                                    </div>
+                                    <span class="subject-sentiment">{s.sentiment_score > 0.2 ? '😊' : s.sentiment_score < -0.2 ? '😤' : '😐'}</span>
                                 </div>
-                                <span class="subject-sentiment">{s.sentiment_score > 0.2 ? '😊' : s.sentiment_score < -0.2 ? '😤' : '😐'}</span>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p class="rail-text">Актерите ќе се појават тука кога системот ќе издвои доволно јасен дневен сигнал.</p>
+                    )}
                 </section>
 
+                <section class="rail-block rail-metrics">
+                    <p class="rail-kicker">Во бројки</p>
+                    <h3 class="rail-title">ДНЕВЕН ОПСЕГ</h3>
+                    <div class="rail-metric-grid">
+                        <div class="rail-metric-card">
+                            <span class="rail-metric-value">{articleCount.toLocaleString('mk-MK')}</span>
+                            <span class="rail-metric-label">објави</span>
+                        </div>
+                        <div class="rail-metric-card">
+                            <span class="rail-metric-value">{sectionHighlights.length || 6}</span>
+                            <span class="rail-metric-label">линии</span>
+                        </div>
+                        <div class="rail-metric-card">
+                            <span class="rail-metric-value">{totalSubjects}</span>
+                            <span class="rail-metric-label">актери</span>
+                        </div>
+                    </div>
+                    <p class="rail-text">{coverageTone}. Изборот е подреден според уредничка тежина, не според гласност.</p>
+                </section>
+
+                {sectionPreview.length > 0 && (
+                    <section class="rail-block rail-agenda">
+                        <p class="rail-kicker">Како да читате</p>
+                        <h3 class="rail-title">БРЗ ВОДИЧ</h3>
+                        <div class="rail-agenda-list">
+                            {sectionPreview.map((section) => (
+                                <a class="rail-agenda-item" href={`#${section.slug}`}>
+                                    <span class="rail-agenda-index">{String(section.index).padStart(2, '0')}</span>
+                                    <span class="rail-agenda-copy">
+                                        <strong>{section.title}</strong>
+                                        <span>Отвори ја оваа линија во текстот</span>
+                                    </span>
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 <section class="rail-block">
-                    <p class="rail-kicker">Инструменти</p>
-                    <h3 class="rail-title">ДОСТАВА</h3>
-                    <p class="rail-text">Добивајте го брифингот секое утро преку вашите омилени канали.</p>
+                    <p class="rail-kicker">Издание</p>
+                    <h3 class="rail-title">ДОСТАВА И СПОДЕЛУВАЊЕ</h3>
+                    <p class="rail-text">
+                        Оваа верзија може да ја понесете надвор од страницата како краток редакциски преглед за читање, копирање или утринска достава.
+                    </p>
                     <div class="mt-6">
                         <BriefingDeliveryIsland client:load variant="summary" content={briefing?.content || ''} dateLabel={currentDate} />
                     </div>
                 </section>
 
                 <div class="rail-support-card">
+                    <p class="rail-kicker mb-2">Независно издание</p>
                     <h4 class="font-serif font-bold text-lg mb-2">Поддржи го Пресек</h4>
-                    <p class="text-xs opacity-80 mb-4">Вашата поддршка ни помага овој сервис да остане бесплатен и независен.</p>
+                    <p class="text-xs opacity-80 mb-4">Поддршката помага овој дневен брифинг да остане бесплатен, јасен и уреднички самостоен.</p>
                     <a href="https://ko-fi.com/presek" target="_blank" class="support-btn">
                         <Coffee size={14} /> Ko-fi
                     </a>
@@ -241,21 +355,27 @@ const DispatchIcon = dispatchIcon;
 
 <style>
     /* ── Editorial Masthead ──────────────────────────── */
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 1.5rem; }
-    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 1rem; }
+    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-meta { display: flex; gap: 1.25rem; }
     .meta-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; color: var(--muted-foreground); letter-spacing: 0.05em; }
 
-    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; }
+    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.9rem; }
     .masthead-branding { display: flex; align-items: center; gap: 1rem; }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; letter-spacing: -0.02em; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.35rem, 5.5vw, 4rem); font-weight: 900; line-height: 0.92; letter-spacing: -0.02em; }
     .masthead-title span { italic: true; font-weight: 400; font-family: var(--font-serif); }
     .masthead-date { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-align: right; }
+    .masthead-standfirst { max-width: 46rem; margin-bottom: 1rem; }
+    .masthead-standfirst p { font-family: var(--font-nyt-body); font-size: 1rem; line-height: 1.58; color: var(--secondary-foreground); text-wrap: pretty; }
+    .masthead-deck { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 1rem; }
+    .masthead-deck span { display: inline-flex; align-items: center; min-height: 1.8rem; padding: 0.2rem 0.6rem; border: 1px solid color-mix(in srgb, var(--border) 88%, transparent); background: color-mix(in srgb, var(--background) 92%, #efe5d6 8%); font-family: var(--font-sans); font-size: 0.56rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--foreground); }
 
-    .masthead-nav { display: flex; align-items: center; gap: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); overflow-x: auto; }
+    .masthead-nav { display: flex; align-items: center; gap: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--border); overflow-x: auto; }
     .nav-label { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--muted-foreground); white-space: nowrap; }
-    .nav-link { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; white-space: nowrap; cursor: default; }
+    .nav-link { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--font-sans); font-size: 0.62rem; font-weight: 800; white-space: nowrap; text-decoration: none; color: var(--foreground); padding: 0.35rem 0; border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s; }
+    .nav-link span { font-size: 0.54rem; font-weight: 950; letter-spacing: 0.08em; color: var(--muted-foreground); }
+    .nav-link:hover { color: var(--nyt-accent); border-color: color-mix(in srgb, var(--nyt-accent) 35%, transparent); }
 
     /* ── Broadsheet Grid ────────────────────────────── */
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
@@ -266,18 +386,28 @@ const DispatchIcon = dispatchIcon;
     }
 
     /* ── Briefing Content ────────────────────────────── */
-    .intro-greeting { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 900; italic: true; margin-bottom: 1rem; }
-    .intro-copy { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; margin-bottom: 3.5rem; }
+    .briefing-intro { display: grid; grid-template-columns: 1fr; gap: 1.35rem; margin-bottom: 2rem; }
+    .intro-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.14em; color: var(--nyt-accent); margin-bottom: 0.75rem; }
+    .intro-greeting { font-family: var(--font-serif); font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 900; italic: true; margin-bottom: 0.75rem; line-height: 0.95; }
+    .intro-copy { font-family: var(--font-nyt-body); font-size: 1.04rem; line-height: 1.62; color: var(--secondary-foreground); max-width: 39rem; text-wrap: pretty; }
+    .intro-ledger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .ledger-card { padding: 0.85rem 0.95rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%); }
+    .ledger-label { display: block; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin-bottom: 0.55rem; }
+    .ledger-card strong { display: block; font-family: var(--font-serif); font-size: 1.18rem; font-weight: 900; margin-bottom: 0.35rem; }
+    .ledger-card p { font-family: var(--font-nyt-body); font-size: 0.84rem; line-height: 1.45; color: var(--secondary-foreground); }
+    .intro-notes { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 1.35rem; }
+    .intro-note { display: inline-flex; align-items: center; padding: 0.3rem 0.65rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--border) 86%, transparent); background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%); font-family: var(--font-sans); font-size: 0.56rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary-foreground); }
 
-    .briefing-content { border-top: 2px solid var(--foreground); padding-top: 3rem; }
+    .briefing-content { border-top: 3px solid var(--foreground); border-bottom: 1px solid var(--border); padding-top: 2rem; padding-bottom: 1.5rem; column-gap: 2.25rem; counter-reset: briefing-sections; }
     :global(.briefing-masthead-title) { font-family: var(--font-serif); font-size: 3rem; font-weight: 900; margin-bottom: 2rem; line-height: 1; }
-    :global(.briefing-section-title) { font-family: var(--font-serif); font-size: 2rem; font-weight: 900; italic: true; margin: 3.5rem 0 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    :global(.briefing-section-title) { counter-increment: briefing-sections; display: grid; grid-template-columns: auto 1fr; gap: 0.8rem; align-items: end; font-family: var(--font-serif); font-size: 2rem; font-weight: 900; italic: true; margin: 4rem 0 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    :global(.briefing-section-title::before) { content: counter(briefing-sections, decimal-leading-zero); font-family: var(--font-sans); font-size: 0.62rem; font-style: normal; font-weight: 950; letter-spacing: 0.12em; color: var(--nyt-accent); transform: translateY(-0.2rem); }
     :global(.briefing-item-title) { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 850; margin: 2.5rem 0 1rem; line-height: 1.2; }
     :global(.briefing-item-title a) { text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
     :global(.briefing-item-title a span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); opacity: 0; transition: opacity 0.2s; }
     :global(.briefing-item-title a:hover span) { opacity: 1; }
     
-    :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
+    :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.82; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
     :global(.first-paragraph::first-letter) { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
     
     :global(.briefing-list) { list-style: none; padding: 0; margin-bottom: 2rem; }
@@ -294,10 +424,11 @@ const DispatchIcon = dispatchIcon;
 
     /* ── Rail Blocks ─────────────────────────────────── */
     .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-featured { padding: 1.5rem; background: var(--secondary); border-radius: 4px; }
+    .rail-block-featured { padding: 1.5rem; background: color-mix(in srgb, var(--background) 86%, #efe5d6 14%); border: 1px solid var(--border); border-top: 3px solid var(--foreground); }
     .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.05em; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
     .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; color: var(--secondary-foreground); line-height: 1.5; }
+    .rail-text-tight { margin-bottom: 1rem; }
 
     .rail-subject-list { display: flex; flex-direction: column; gap: 1rem; }
     .subject-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
@@ -305,14 +436,77 @@ const DispatchIcon = dispatchIcon;
     .subject-name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 800; display: block; }
     .subject-count { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; opacity: 0.6; }
     .subject-sentiment { font-size: 1.1rem; }
+    .rail-metrics { padding: 1.25rem 1.35rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%); }
+    .rail-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+    .rail-metric-card { padding: 0.75rem 0.6rem; border: 1px solid var(--border); background: var(--background); text-align: center; }
+    .rail-metric-value { display: block; font-family: var(--font-serif); font-size: 1.15rem; font-weight: 900; line-height: 1; margin-bottom: 0.3rem; }
+    .rail-metric-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); }
+    .rail-agenda { padding: 1.25rem 1.35rem; border: 1px solid var(--border); background: linear-gradient(180deg, color-mix(in srgb, var(--background) 94%, #efe5d6 6%), var(--background)); }
+    .rail-agenda-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .rail-agenda-item { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; padding: 0.8rem 0; border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent); text-decoration: none; color: inherit; }
+    .rail-agenda-item:first-child { border-top: none; padding-top: 0; }
+    .rail-agenda-index { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; letter-spacing: 0.12em; color: var(--nyt-accent); }
+    .rail-agenda-copy strong { display: block; font-family: var(--font-serif); font-size: 0.92rem; line-height: 1.2; margin-bottom: 0.2rem; }
+    .rail-agenda-copy span { display: block; font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
+    .rail-agenda-item:hover .rail-agenda-copy strong { color: var(--nyt-accent); }
 
-    .rail-support-card { padding: 1.5rem; border: 1px solid var(--border); background: var(--background); }
+    .rail-support-card { padding: 1.5rem; border: 1px solid var(--border); border-top: 3px solid var(--foreground); background: linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, #efe5d6 4%), var(--background)); }
     .support-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; background: var(--foreground); color: var(--background); font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; text-decoration: none; border-radius: 4px; }
+    .support-btn:hover { opacity: 0.92; }
 
     @media (max-width: 640px) {
+        .editorial-masthead { padding-bottom: 0.75rem; }
+        .masthead-top { margin-bottom: 0.75rem; }
+        .masthead-meta { gap: 0.8rem; flex-wrap: wrap; }
+        .meta-item { font-size: 0.54rem; }
         .masthead-main { flex-direction: column; align-items: flex-start; gap: 1rem; }
         .masthead-date { text-align: left; }
-        .intro-greeting { font-size: 1.85rem; }
+        .masthead-title { font-size: clamp(1.95rem, 10.8vw, 3rem); }
+        .masthead-standfirst { margin-bottom: 0.8rem; }
+        .masthead-standfirst p { font-size: 0.92rem; line-height: 1.52; }
+        .masthead-deck { gap: 0.4rem; margin-bottom: 0.8rem; }
+        .masthead-deck span { min-height: 1.6rem; padding: 0.2rem 0.45rem; font-size: 0.5rem; }
+        .masthead-nav { gap: 0.75rem; padding-top: 0.7rem; }
+        .nav-label { display: none; }
+        .nav-link { font-size: 0.58rem; }
+        .nav-link span { font-size: 0.5rem; }
+        .briefing-intro { gap: 1rem; margin-bottom: 1.5rem; }
+        .intro-greeting { font-size: 1.7rem; margin-bottom: 0.55rem; }
+        .intro-copy { font-size: 0.96rem; line-height: 1.52; }
+        .intro-ledger { grid-template-columns: 1fr 1fr; }
+        .ledger-card { padding: 0.75rem 0.8rem; }
+        .ledger-card strong { font-size: 1rem; }
+        .ledger-card p { display: none; }
+        .intro-notes { gap: 0.4rem; margin-bottom: 1rem; }
+        .intro-note { font-size: 0.5rem; padding: 0.25rem 0.55rem; }
+        .briefing-content { padding-top: 1.4rem; }
+        :global(.briefing-section-title) { gap: 0.55rem; font-size: 1.55rem; margin: 2.75rem 0 1rem; }
+        :global(.briefing-section-title::before) { font-size: 0.54rem; transform: translateY(-0.08rem); }
+        :global(.briefing-item-title) { font-size: 1.18rem; margin: 1.8rem 0 0.75rem; }
+        :global(.briefing-paragraph) { font-size: 1rem; line-height: 1.72; }
+        :global(.first-paragraph::first-letter) { font-size: 4rem; padding-right: 0.55rem; }
         .briefing-signature { padding: 3rem 0; }
+        .broadsheet-rail { display: grid; gap: 1.1rem; }
+        .rail-block { margin-bottom: 0; }
+        .rail-block-featured,
+        .rail-metrics,
+        .rail-agenda,
+        .rail-support-card { padding: 1rem; }
+        .rail-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .rail-metric-card { padding: 0.65rem 0.4rem; }
+        .rail-metric-value { font-size: 1rem; }
+        .rail-agenda-item { gap: 0.55rem; padding: 0.65rem 0; }
+        .rail-agenda-copy strong { font-size: 0.86rem; }
+    }
+
+    @media (min-width: 960px) {
+        .briefing-intro { grid-template-columns: minmax(0, 1.6fr) minmax(14rem, 0.8fr); align-items: start; }
+        .briefing-content { column-count: 2; }
+        :global(.briefing-section-title),
+        :global(.briefing-masthead-title),
+        :global(.briefing-item-title),
+        :global(.briefing-list),
+        :global(.briefing-divider) { break-inside: avoid; }
+        :global(.briefing-paragraph) { orphans: 3; widows: 3; }
     }
 </style>

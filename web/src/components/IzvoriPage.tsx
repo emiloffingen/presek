@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Search, ShieldCheck, Zap, Activity, ChevronRight } from 'lucide-react';
 
 interface SourceRow {
   source: string;

@@ -8,13 +8,17 @@ interface Props {
     developmentsFeatured: NewsCluster[];
     developmentsCompact: NewsCluster[];
     variant?: "compact" | "wire";
+    tone?: "default" | "global" | "developing" | "wire";
 }
 
-const { title, note, developmentsFeatured, developmentsCompact, variant = "compact" } = Astro.props;
+const { title, note, developmentsFeatured, developmentsCompact, variant = "compact", tone = "default" } = Astro.props;
 ---
 
-<section class="feed-section motion-rise motion-delay-3">
+<section class:list={["feed-section motion-rise motion-delay-3", `feed-tone-${tone}`]}>
     <div class="section-heading-row">
+        <p class="section-kicker">
+            {tone === 'global' ? 'Меѓународен избор' : tone === 'wire' ? 'Брза лента' : tone === 'developing' ? 'Домашна агенда' : 'Уреднички избор'}
+        </p>
         <h2 class="section-title">{title}</h2>
         <p class="section-note">{note}</p>
     </div>
@@ -45,3 +49,67 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
         </>
     )}
 </section>
+
+<style>
+    .feed-section .section-heading-row {
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-kicker {
+        margin: 0 0 0.25rem;
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--nyt-accent);
+    }
+
+    .feed-section .section-title {
+        font-family: var(--font-serif);
+        font-size: clamp(1.45rem, 1.15rem + 0.8vw, 2rem);
+        font-weight: 900;
+        font-style: italic;
+        line-height: 0.98;
+    }
+
+    .feed-section .section-note {
+        max-width: 42rem;
+        font-family: var(--font-nyt-body);
+        font-size: 0.94rem;
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: none;
+        line-height: 1.55;
+    }
+
+    .feed-tone-global .section-kicker {
+        color: #0f766e;
+    }
+
+    .feed-tone-wire .section-kicker {
+        color: var(--nyt-red);
+    }
+
+    .feed-tone-developing .section-kicker {
+        color: #9a3412;
+    }
+
+    @media (max-width: 640px) {
+        .feed-section .section-heading-row {
+            margin-bottom: 1rem;
+            padding-bottom: 0.7rem;
+        }
+
+        .feed-section .section-title {
+            font-size: 1.4rem;
+        }
+
+        .feed-section .section-note {
+            font-size: 0.9rem;
+            line-height: 1.48;
+        }
+    }
+</style>

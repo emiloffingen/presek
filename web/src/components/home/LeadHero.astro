@@ -30,6 +30,7 @@ const {
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
+const relatedArticles = leadCluster.articles.slice(1, 4);
 ---
 
 <section class="lead-hero motion-rise">
@@ -72,6 +73,10 @@ const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка пр
         </div>
     </a>
     <div class="lead-copy">
+        <div class="lead-edition-bar">
+            <span class="lead-edition-label">Водечка приказна</span>
+            <span class="lead-edition-note">{leadCluster.articles.length} извори ја туркаат темата напред</span>
+        </div>
         <div class="lead-kicker">
             <span class="source-label">{leadCluster.articles?.[0].source}</span>
             {leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
@@ -89,19 +94,22 @@ const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка пр
             <span>{leadCluster.articles.length} извора</span>
         </div>
 
-        {leadCluster.articles.length > 1 && (
-            <ul class="lead-related">
-                {leadCluster.articles.slice(1, 4).map((article: any) => (
-                    <li class="border-b border-gray-200 dark:border-gray-800 last:border-0">
-                        <a 
-                            href={`/cluster/${leadCluster.cluster_id}`}
-                            class="font-sans text-sm md:text-base font-semibold text-zinc-800 dark:text-zinc-200 block py-3 hover:text-nyt-accent transition-colors [&_*]:font-sans [&_*]:text-sm [&_*]:md:text-base [&_*]:text-zinc-800 [&_*]:dark:text-zinc-200"
-                            set:html={sanitizeHtml(highlightScores(getDisplayTitle(article)))}
-                        >
-                        </a>
-                    </li>
-                ))}
-            </ul>
+        {relatedArticles.length > 0 && (
+            <div class="lead-follow-strip">
+                <p class="lead-follow-kicker">Следно во кластерот</p>
+                <ul class="lead-related">
+                    {relatedArticles.map((article: any, index: number) => (
+                        <li>
+                            <span class="lead-related-index">{String(index + 1).padStart(2, '0')}</span>
+                            <a 
+                                href={`/cluster/${leadCluster.cluster_id}`}
+                                set:html={sanitizeHtml(highlightScores(getDisplayTitle(article)))}
+                            >
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         )}
     </div>
 
@@ -191,6 +199,34 @@ const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка пр
 		z-index: 1;
 	}
 
+	.lead-edition-bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.55rem 0.8rem;
+		margin-bottom: 0.75rem;
+		padding-bottom: 0.65rem;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+	}
+
+	.lead-edition-label {
+		font-family: var(--font-sans);
+		font-size: 0.56rem;
+		font-weight: 950;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--nyt-accent);
+	}
+
+	.lead-edition-note {
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground) 12%);
+	}
+
 	.source-label {
 		font-family: var(--font-sans);
 		font-size: 0.68rem;
@@ -253,26 +289,55 @@ const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка пр
 	.lead-related {
 		list-style: none;
 		padding: 0;
-		margin: 0.65rem 0 0;
-		border-top: 1px solid var(--border);
+		margin: 0;
 	}
 
 	.lead-related li {
-		border-bottom: 1px solid var(--border);
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.75rem;
+		align-items: start;
+		border-top: 1px solid var(--border);
 	}
 
 	.lead-related a {
 		display: block;
-		padding: 0.75rem 0;
-		font-family: var(--font-serif);
-		font-size: 0.98rem;
+		padding: 0.7rem 0;
+		font-family: var(--font-sans);
+		font-size: 0.96rem;
 		font-weight: 700;
-		line-height: 1.2;
+		line-height: 1.28;
 		color: var(--foreground);
 		text-decoration: none;
 	}
 
 	.lead-related a:hover {
+		color: var(--nyt-accent);
+	}
+
+	.lead-follow-strip {
+		margin-top: 0.95rem;
+		padding: 0.85rem 1rem 0;
+		background: color-mix(in srgb, var(--background) 96%, #efe5d6 4%);
+		border: 1px solid var(--border);
+	}
+
+	.lead-follow-kicker {
+		margin: 0 0 0.2rem;
+		font-family: var(--font-sans);
+		font-size: 0.56rem;
+		font-weight: 950;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+
+	.lead-related-index {
+		padding-top: 0.84rem;
+		font-family: var(--font-sans);
+		font-size: 0.54rem;
+		font-weight: 950;
+		letter-spacing: 0.12em;
 		color: var(--nyt-accent);
 	}
 
@@ -501,13 +566,27 @@ const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка пр
 			font-size: 0.65rem;
 		}
 
-		.lead-related {
-			margin-top: 0.25rem;
+		.lead-edition-bar {
+			margin-bottom: 0.65rem;
+			padding-bottom: 0.55rem;
+		}
+
+		.lead-follow-strip {
+			margin-top: 0.65rem;
+			padding: 0.75rem 0.8rem 0;
+		}
+
+		.lead-related li {
+			gap: 0.55rem;
 		}
 
 		.lead-related a {
 			padding: 0.6rem 0;
 			font-size: 0.9rem;
+		}
+
+		.lead-related-index {
+			padding-top: 0.72rem;
 		}
 	}
 </style>
