@@ -162,32 +162,28 @@ async def get_navigation():
 
     # 4. ACTIVE TOPICS (Lower threshold + always include key topics)
     active_topics = []
-    life_innovation_count = 0
-    life_topics = ["Технологија", "Здравје", "Живот", "Забава"]
     
     # Core topics - always show with count
-    core_topics = ["Политика", "Економија", "Спорт", "Криминал", "Култура"]
+    core_topics = ["Политика", "Економија", "Спорт", "Криминал", "Култура", "Живот"]
     for label in core_topics:
         count = top_act.get(label, 0)
         active_topics.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
             
-    for lt in life_topics:
-        life_innovation_count += top_act.get(lt, 0)
-        
-    if life_innovation_count > 0:
-        active_topics.append({
-            "label": "Живот & Иновации", 
-            "href": "/?topic=Живот,Технологија,Здравје,Забава", 
-            "count": life_innovation_count,
-            "is_merged": True
-        })
-    else:
-        active_topics.append({
-            "label": "Живот & Иновации", 
-            "href": "/?topic=Живот,Технологија,Здравје,Забава", 
-            "count": 0,
-            "is_merged": True
-        })
+    # Grouped/Dynamic topics for the remaining categories
+    innovation_health_count = top_act.get("Технологија", 0) + top_act.get("Здравје", 0)
+    active_topics.append({
+        "label": "Иновации & Здравје", 
+        "href": "/?topic=Технологија,Здравје", 
+        "count": innovation_health_count,
+        "is_merged": True
+    })
+
+    entertainment_count = top_act.get("Забава", 0)
+    active_topics.append({
+        "label": "Забава", 
+        "href": "/?topic=Забава", 
+        "count": entertainment_count
+    })
 
     # 5. LOCAL HEAT - Include all Macedonian regions
     local = []
