@@ -495,6 +495,15 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         --nyt-accent: #0066cc;
     }
 
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --nyt-light-gray: #1a1a1a;
+            --nyt-medium-gray: #333;
+            --nyt-text: #e0e0e0;
+            --nyt-text-light: #999;
+        }
+    }
+
     .nyt-discovery-nav {
         background: var(--nyt-light-gray);
         border-bottom: 1px solid var(--nyt-medium-gray);
@@ -547,7 +556,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         font-family: var(--font-sans);
         font-size: 0.7rem;
         font-weight: 700;
-        color: var(--nyt-text);
+        color: var(--Foreground);
         text-transform: uppercase;
         letter-spacing: 0.08em;
         margin-bottom: 0.25rem;
@@ -567,6 +576,13 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         text-transform: capitalize;
         margin-bottom: 0.25rem;
         display: block;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .nyt-section-header,
+        .nyt-section-label {
+            color: var(--foreground);
+        }
     }
 
     .nyt-section-items {
@@ -596,13 +612,13 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
     }
 
     .nyt-nav-link:hover {
-        background: rgba(0, 0, 0, 0.04);
+        background: var(--muted);
         color: var(--nyt-red);
     }
 
     .nyt-nav-link.is-active {
-        background: var(--nyt-dark);
-        color: #fff;
+        background: var(--foreground);
+        color: var(--background);
         font-weight: 600;
     }
 
@@ -628,8 +644,19 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
     }
 
     .nyt-nav-link.is-active .nyt-nav-count {
-        background: rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .nyt-nav-count {
+            background: rgba(213, 0, 0, 0.15);
+            color: var(--nyt-text-light);
+        }
+        .nyt-nav-link.is-active .nyt-nav-count {
+            background: rgba(0, 0, 0, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+        }
     }
 
     .nyt-tag-section {
@@ -655,6 +682,12 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         color: var(--nyt-red);
     }
 
+    @media (prefers-color-scheme: dark) {
+        .nyt-tag-label {
+            color: var(--muted-foreground);
+        }
+    }
+
     .nyt-tag-items {
         display: flex;
         flex-wrap: nowrap;
@@ -678,14 +711,26 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
     }
 
     .nyt-nav-tag:hover {
-        background: var(--nyt-dark);
-        color: #fff;
-        border-color: var(--nyt-dark);
+        background: var(--foreground);
+        color: var(--background);
+        border-color: var(--foreground);
     }
 
     .nyt-tag-hash {
         color: var(--nyt-red);
         font-weight: 700;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .nyt-nav-tag {
+            color: var(--muted-foreground);
+            border-color: var(--border);
+        }
+        .nyt-nav-tag:hover {
+            background: var(--background);
+            color: var(--foreground);
+            border-color: var(--foreground);
+        }
     }
 
     .nyt-nav-fade {
@@ -701,12 +746,21 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
 
     .nyt-nav-fade.left {
         left: 0;
-        background: linear-gradient(to right, var(--background) 30%, transparent 100%);
+        background: linear-gradient(to right, var(--nyt-light-gray) 30%, transparent 100%);
     }
 
     .nyt-nav-fade.right {
         right: 0;
-        background: linear-gradient(to left, var(--background) 30%, transparent 100%);
+        background: linear-gradient(to left, var(--nyt-light-gray) 30%, transparent 100%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .nyt-nav-fade.left {
+            background: linear-gradient(to right, var(--background) 30%, transparent 100%);
+        }
+        .nyt-nav-fade.right {
+            background: linear-gradient(to left, var(--background) 30%, transparent 100%);
+        }
     }
 
     /* ── Mode Links (Tier 1) ── */
