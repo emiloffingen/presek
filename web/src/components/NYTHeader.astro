@@ -89,7 +89,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
                 <div class="search-trigger-wrap">
                     <SearchIsland initialQuery={q} client:idle />
                 </div>
-                <span class="topbar-date hidden lg:inline">{currentDate}</span>
+                <span class="topbar-date">{currentDate}</span>
             </div>
 
             <div class="topbar-center">
@@ -100,7 +100,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
             </div>
 
             <div class="topbar-right">
-                <div class="topbar-modes hidden sm:flex">
+                <div class="topbar-modes">
                     <a href="/briefing" data-astro-reload class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
                         <Sparkles size={14} /> Брифинг
                     </a>
@@ -382,6 +382,13 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         text-transform: uppercase;
         letter-spacing: 0.05em;
         font-weight: 500;
+        display: none;
+    }
+
+    @media (min-width: 1024px) {
+        .topbar-date {
+            display: inline;
+        }
     }
 
     .topbar-links {
@@ -515,12 +522,18 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
 
     /* ── Mode Links (Tier 1) ── */
     .topbar-modes {
-        display: flex;
+        display: none;
         align-items: center;
         gap: 0.75rem;
         margin-right: 1.25rem;
         padding-right: 1.25rem;
         border-right: 1px solid var(--border);
+    }
+
+    @media (min-width: 640px) {
+        .topbar-modes {
+            display: flex;
+        }
     }
 
     .mode-link {
