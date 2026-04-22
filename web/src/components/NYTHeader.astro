@@ -155,6 +155,8 @@ function getRelativeTimeStr(dateStr?: string) {
                                             ? category === item.label
                                             : item.href.includes('topic=')
                                             ? topic === item.label
+                                            : item.href.includes('subcategory=')
+                                            ? (Astro.url.searchParams.get('subcategory') === item.label)
                                             : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
                                         return (
                                             <a href={item.href} class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>

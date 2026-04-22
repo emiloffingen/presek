@@ -218,11 +218,12 @@ async def get_news(
     category: Optional[str] = None,
     topic: Optional[str] = None,
     entity: Optional[str] = None,
+    subcategory: Optional[str] = None,
     sort: str = "recent",
     page: int = 0,
     page_size: int = 24
 ):
-    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{sort}:{page}:{page_size}"
+    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached: return cached
 
@@ -243,6 +244,16 @@ async def get_news(
             from embeddings import generate_query_embedding
             query_vec = generate_query_embedding(q)
             rows = await db.async_hybrid_search(q, query_vec, limit=row_limit) if query_vec else await db.async_search_articles(q, limit=row_limit)
+        elif subcategory:
+            rows = await db.async_execute("""
+                SELECT cluster_id, MAX(created_at) as last_article
+                FROM articles
+                WHERE subcategory = %s
+                GROUP BY cluster_id
+                ORDER BY last_article DESC LIMIT %s
+            """, (subcategory, page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
+            rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif entity:
             rows = await db.async_execute("""
                 SELECT cluster_id, updated_at as last_article 
