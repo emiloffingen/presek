@@ -149,22 +149,23 @@ async def get_navigation():
     
     sub_act = {r['subcategory']: r['n'] for r in sub_activity}
 
-    # 3. CORE REGIONS (Always shown if count > 0)
+    # 3. CORE REGIONS (Always shown, populate from existing content)
     regions = []
-    for label in ["Македонија", "Балкан", "Европа", "Америка", "Свет"]:
+    for label, display in [("Макeдонија", "Македонија"), ("Балкан", "Балкан"), ("Европа", "Европа"), ("Свет", "Свет")]:
         count = cat_act.get(label, 0)
-        if count > 0:
-            regions.append({"label": label, "href": f"/?category={urllib.parse.quote(label)}", "count": count})
+        # Always show core regions but mark inactive if count is 0
+        regions.append({"label": display, "href": f"/?category={urllib.parse.quote(display)}", "count": count})
 
-    # 4. ACTIVE TOPICS (Only show if threshold met or merge)
+    # 4. ACTIVE TOPICS (Lower threshold + always include key topics)
     active_topics = []
     life_innovation_count = 0
     life_topics = ["Технологија", "Здравје", "Живот", "Забава"]
     
-    for label in ["Политика", "Економија", "Спорт", "Криминал"]:
+    # Core topics - always show with count
+    core_topics = ["Политика", "Економија", "Спорт", "Криминал", "Култура"]
+    for label in core_topics:
         count = top_act.get(label, 0)
-        if count >= 3: # Threshold for standalone visibility
-            active_topics.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
+        active_topics.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
             
     for lt in life_topics:
         life_innovation_count += top_act.get(lt, 0)
@@ -176,13 +177,20 @@ async def get_navigation():
             "count": life_innovation_count,
             "is_merged": True
         })
+    else:
+        active_topics.append({
+            "label": "Живот & Иновации", 
+            "href": "/?topic=Живот,Технологија,Здравје,Забава", 
+            "count": 0,
+            "is_merged": True
+        })
 
-    # 5. LOCAL HEAT
+    # 5. LOCAL HEAT - Include all Macedonian regions
     local = []
-    for label in ["Скопје", "Република"]:
-        count = sub_act.get(label, 0)
-        if count > 0:
-            local.append({"label": label, "href": f"/?subcategory={urllib.parse.quote(label)}", "count": count})
+    macedonian_subcategories = ["Скопје", "Република", "Битоља", "Куманово", "Тетово", "Штип", "Охрид", "Струмица", "Велес", " Прилеп"]
+    for label in macedonian_subcategories:
+        count = sub_act.get(label.strip(), 0)
+        local.append({"label": label.strip(), "href": f"/?subcategory={urllib.parse.quote(label.strip())}", "count": count})
 
     # 6. TRENDING STORIES (Top Entities)
     trending_entities = await get_top_entities(limit=8)
