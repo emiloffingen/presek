@@ -93,29 +93,42 @@ def _parse_ip_literal(value: str) -> str:
     except ValueError:
         return ""
 
-def _client_ip_for_request(request: Request) -> str:
-    """Extracts the best-guess client IP address, trusting proxies if source is internal."""
-    client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
-    
-    # In production/Docker environments, we trust the X-Forwarded headers if the connection
-    # comes from 127.0.0.1 or the Docker bridge network (typically 172.16.0.0/12).
-    # This ensures that rate-limiting identifies the true user, not the Nginx container.
-    is_trusted_proxy = False
+
+def _trusted_proxy_networks():
+    """Return the configured proxy CIDRs allowed to supply forwarding headers."""
+    raw = os.environ.get("TRUSTED_PROXY_CIDRS", "").strip()
+    cidrs = [item.strip() for item in raw.split(",") if item.strip()]
+    if not cidrs:
+        cidrs = ["127.0.0.1/32", "::1/128"]
+
+    networks = []
+    for cidr in cidrs:
+        try:
+            networks.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError:
+            log.warning("Ignoring invalid TRUSTED_PROXY_CIDRS entry: %s", cidr)
+    return networks
+
+
+def _is_trusted_proxy_ip(client_host: str) -> bool:
     try:
         addr = ipaddress.ip_address(client_host)
-        is_trusted_proxy = addr.is_loopback or addr.is_private
-    except:
-        pass
+    except ValueError:
+        return False
+    return any(addr in network for network in _trusted_proxy_networks())
 
-    if is_trusted_proxy:
+def _client_ip_for_request(request: Request) -> str:
+    """Extract the best-guess client IP address from known trusted proxies only."""
+    client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
+
+    if _is_trusted_proxy_ip(client_host):
         # Trust X-Real-IP or the first entry in X-Forwarded-For
         real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
         if not real_ip:
             real_ip = _parse_ip_literal((request.headers.get("X-Forwarded-For") or "").split(",")[0].strip())
-        
         if real_ip:
             return real_ip
-            
+
     return client_host or "0.0.0.0"
 
 def _source_admin_authorized(request: Request) -> bool:
@@ -190,6 +203,8 @@ def _safe_tracking_redirect_path(path: str) -> str:
 _RATE_LIMITED_API_PATHS = {
     "/api/news",
     "/api/trending",
+    "/api/intelligence/cluster/{cluster_id}/research",
+    "/api/intelligence/cluster/{cluster_id}/analyst",
     "/api/intelligence/top-entities",
     "/api/profile/sync/init",
     "/api/profile/sync",
@@ -202,6 +217,8 @@ def _is_rate_limited_path(path: str) -> bool:
     if not clean.startswith("/"):
         return False
     if clean in _RATE_LIMITED_API_PATHS:
+        return True
+    if re.fullmatch(r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean):
         return True
     canonical = clean[4:] if clean.startswith("/api/") else clean
     return f"/api{canonical}" in _RATE_LIMITED_API_PATHS
@@ -248,7 +265,7 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
             SELECT cluster_id, COUNT(DISTINCT
                 CASE
                     WHEN s.category IN ('Агенциски', 'Јавен Сервис', 'Главни') THEN 'M'
-                    WHEN s.category IN ('Незавинци', 'Истражувачки') THEN 'I'
+                    WHEN s.category IN ('Независни', 'Истражувачки') THEN 'I'
                     ELSE 'R'
                 END) as group_count
             FROM articles a

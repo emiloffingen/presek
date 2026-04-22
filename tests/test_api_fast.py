@@ -37,7 +37,11 @@ class _FakeFastAPI:
 class _FakeRequest:
     def __init__(self, payload=None, headers=None, client_host="127.0.0.1"):
         self._payload = payload or {}
-        self.headers = {k.lower(): v for k, v in (headers or {}).items()}
+        class _CIHeaders(dict):
+            def get(self, key, default=None):
+                return super().get(str(key).lower(), default)
+
+        self.headers = _CIHeaders({k.lower(): v for k, v in (headers or {}).items()})
         self.client = types.SimpleNamespace(host=client_host)
         self.url = types.SimpleNamespace(path="/", path_params={})
         self.cookies = {}
@@ -179,12 +183,65 @@ def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
     assert "Ормуски Теснец" in names
     assert "Иран" in names
 
+
+def test_client_ip_only_trusts_configured_proxies(mock_all):
+    import routes.common as common
+
+    spoofed = _FakeRequest(
+        headers={"x-forwarded-for": "8.8.8.8"},
+        client_host="172.18.0.9",
+    )
+    assert common._client_ip_for_request(spoofed) == "172.18.0.9"
+
+    with patch.dict(os.environ, {"TRUSTED_PROXY_CIDRS": "172.18.0.0/16"}, clear=False):
+        trusted = _FakeRequest(
+            headers={"x-forwarded-for": "8.8.8.8"},
+            client_host="172.18.0.9",
+        )
+        assert common._client_ip_for_request(trusted) == "8.8.8.8"
+
+
+def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
+    import routes.common as common
+
+    assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
+    assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
+
 def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     import api_fast
     with patch("routes.system._probe_database", return_value={"ok": True, "article_count": 8}), \
          patch("routes.system._probe_redis", return_value={"ok": False, "url": "secret"}):
         data = asyncio.run(api_fast.health(_FakeRequest()))
     assert "url" not in data["redis"]
+
+
+def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
+    import routes.intelligence as intelligence
+
+    async def async_execute_one_side_effect(query, params=None):
+        if "COUNT(*) FROM articles" in query:
+            return {"count": 12}
+        raise AssertionError(f"Unexpected query: {query}")
+
+    async def async_execute_side_effect(query, params=None, fetch=True):
+        if "GROUP BY t ORDER BY t" in query:
+            return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
+        if "GROUP BY category ORDER BY n DESC" in query:
+            return [{"category": "Македонија", "n": 12}]
+        if "FROM knowledge_entities" in query:
+            return [{"name": "Иран", "total_mentions": 9, "sentiment_score": 0.1, "type": "GPE"}]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute_one.side_effect = async_execute_one_side_effect
+    mock_all["db"].async_execute.side_effect = async_execute_side_effect
+
+    with patch("routes.intelligence.cached_response", return_value=None), \
+         patch("routes.intelligence.set_cache"), \
+         patch("routes.common.build_intelligence_summary_payload", new=AsyncMock(return_value={"pluralism": {"total_clusters": 5}, "ai_transparency": {}, "last_24h": 12})):
+        data = asyncio.run(intelligence.get_global_pulse())
+
+    assert data["status"] == "success"
+    assert data["intelligence"]["pluralism"]["total_clusters"] == 5
 
 
 def test_fastapi_only_registers_prefixed_routers(mock_all):

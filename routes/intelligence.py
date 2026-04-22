@@ -414,7 +414,7 @@ async def get_global_pulse():
     """)
     
     # 3. Pluralism & AI Metrics (Aggregated)
-    from routes.stats import build_intelligence_summary_payload
+    from .common import build_intelligence_summary_payload
     intel = await build_intelligence_summary_payload(last_24h)
     
     # 4. Top Trending Entities
