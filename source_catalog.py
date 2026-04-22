@@ -73,4 +73,11 @@ DEFAULT_SOURCE_CATALOG = [
     ("PopUp", "https://popup.mk/feed/"),
     ("Kultura.mk", "https://www.kultura.mk/feed"),
     ("Reper", "https://reper.net.mk/feed/"),
+    ("Cooltura", "https://cooltura.mk/feed/"),
+    ("Doktori.mk", "https://doktori.mk/feed/"),
+    ("Smartportal", "https://smartportal.mk/feed/"),
+    ("USB.mk", "https://usb.mk/feed/"),
+    ("Hashtag", "https://hashtag.mk/feed/"),
+    ("Crnobelo", "https://www.crnobelo.com/feed"),
+    ("Femina", "https://www.femina.mk/feed"),
 ]
