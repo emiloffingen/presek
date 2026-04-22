@@ -187,7 +187,7 @@ async def get_navigation():
 
     # 5. LOCAL HEAT - Include all Macedonian regions
     local = []
-    macedonian_subcategories = ["Скопје", "Република", "Битоља", "Куманово", "Тетово", "Штип", "Охрид", "Струмица", "Велес", " Прилеп"]
+    macedonian_subcategories = ["Скопје", "Република", "Битола", "Куманово", "Тетово", "Штип", "Охрид", "Струмица", "Велес", "Прилеп"]
     for label in macedonian_subcategories:
         count = sub_act.get(label.strip(), 0)
         local.append({"label": label.strip(), "href": f"/?subcategory={urllib.parse.quote(label.strip())}", "count": count})
