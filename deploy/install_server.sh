@@ -22,6 +22,7 @@ APP_SERVICES=(
   presek-worker-delivery.service
   presek-beat.service
 )
+HAS_CURRENT_RELEASE=0
 
 SITE_NAME="$DOMAIN.conf"
 SITE_AVAILABLE="/etc/nginx/sites-available/$SITE_NAME"
@@ -65,8 +66,9 @@ main() {
 
   [ -d "$APP_ROOT/venv" ] || { echo "Missing Python virtualenv at $APP_ROOT/venv" >&2; exit 1; }
   [ -f "$SHARED_ROOT/.env" ] || { echo "Missing shared env file at $SHARED_ROOT/.env" >&2; exit 1; }
-  [ -f "$CURRENT_ROOT/api_fast.py" ] || { echo "Missing current release at $CURRENT_ROOT" >&2; exit 1; }
-  [ -f "$CURRENT_ROOT/web/dist/server/entry.mjs" ] || { echo "Missing Astro server build at $CURRENT_ROOT/web/dist/server/entry.mjs" >&2; exit 1; }
+  if [ -f "$CURRENT_ROOT/api_fast.py" ] && [ -f "$CURRENT_ROOT/web/dist/server/entry.mjs" ]; then
+    HAS_CURRENT_RELEASE=1
+  fi
 
   if [ "$INSTALL_NGINX" = "auto" ]; then
     if [ -f "$CERT_FULLCHAIN" ] && [ -f "$CERT_PRIVKEY" ]; then
@@ -129,10 +131,14 @@ main() {
     echo "Skipping nginx install/update (INSTALL_NGINX=$INSTALL_NGINX)." >&2
   fi
 
-  systemctl restart "${APP_SERVICES[@]}"
-  systemctl start presek.target
-
-  ENABLE_PUBLIC_CHECK=0 "$SMOKE_SCRIPT"
+  if [ "$HAS_CURRENT_RELEASE" = "1" ]; then
+    systemctl restart "${APP_SERVICES[@]}"
+    systemctl start presek.target
+    ENABLE_PUBLIC_CHECK=0 "$SMOKE_SCRIPT"
+  else
+    echo "Skipping service start and smoke checks because no built current release exists at $CURRENT_ROOT." >&2
+    echo "Deploy a release first, then start services with: systemctl start presek.target" >&2
+  fi
 
   echo ""
   echo "Deployment files installed."
