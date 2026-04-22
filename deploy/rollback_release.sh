@@ -37,17 +37,54 @@ cleanup_listener_port() {
   pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
   [ -n "$pids" ] || return 0
 
-  info "Stopping existing $label listener(s) on port $port: $pids"
-  sudo kill $pids 2>/dev/null || true
+  local runtime_pids=()
+  local pid=""
+  for pid in $pids; do
+    if pid_belongs_to_runtime "$pid"; then
+      runtime_pids+=("$pid")
+    else
+      info "Leaving non-Presek $label listener on port $port (pid $pid)"
+    fi
+  done
+
+  [ "${#runtime_pids[@]}" -gt 0 ] || return 0
+
+  info "Stopping existing $label listener(s) on port $port: ${runtime_pids[*]}"
+  sudo kill "${runtime_pids[@]}" 2>/dev/null || true
   sleep 1
 
   local remaining=""
   remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
   if [ -n "$remaining" ]; then
-    info "Force killing stubborn $label listener(s) on port $port: $remaining"
-    sudo kill -9 $remaining 2>/dev/null || true
-    sleep 1
+    local stubborn_pids=()
+    for pid in $remaining; do
+      if pid_belongs_to_runtime "$pid"; then
+        stubborn_pids+=("$pid")
+      fi
+    done
+    if [ "${#stubborn_pids[@]}" -gt 0 ]; then
+      info "Force killing stubborn $label listener(s) on port $port: ${stubborn_pids[*]}"
+      sudo kill -9 "${stubborn_pids[@]}" 2>/dev/null || true
+      sleep 1
+    fi
   fi
+}
+
+pid_belongs_to_runtime() {
+  local pid="$1"
+  [ -d "/proc/$pid" ] || return 1
+
+  local cwd=""
+  local exe=""
+  local cmd=""
+  cwd="$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)"
+  exe="$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)"
+  cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+
+  [[ "$cwd" == "$APP_ROOT/"* ]] && return 0
+  [[ "$exe" == "$APP_ROOT/"* ]] && return 0
+  [[ "$cmd" == *"$APP_ROOT/"* ]] && return 0
+  return 1
 }
 
 cleanup_orphaned_runtime_listeners() {
@@ -85,8 +122,11 @@ main() {
   flock -n 9 || fail "Another deploy or rollback is already in progress (lock: $LOCK_FILE)"
 
   local current_target rollback_target
+  local current_schema_updated current_backup_created
   current_target="$(readlink -f "$CURRENT_LINK")"
   rollback_target="$(readlink -f "$PREVIOUS_LINK")"
+  current_schema_updated="$(read_release_runtime_meta "$current_target" "SCHEMA_UPDATED" || true)"
+  current_backup_created="$(read_release_runtime_meta "$current_target" "DB_BACKUP_CREATED" || true)"
 
   [ -d "$rollback_target" ] || fail "Previous release target is missing: $rollback_target"
 
@@ -125,6 +165,14 @@ EOF
   cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}"
   sudo systemctl start "$SYSTEMD_TARGET"
+
+  if [ "$current_schema_updated" = "1" ]; then
+    if [ "$current_backup_created" = "1" ]; then
+      info "Code rollback completed after schema updates. Restore the pre-deploy database backup if the restored release is not schema-compatible."
+    else
+      info "Code rollback completed after schema updates without an automatic backup. Verify backward compatibility before trusting the restored release."
+    fi
+  fi
 
   info "Running smoke checks"
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT"

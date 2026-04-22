@@ -17,9 +17,11 @@ NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
+BACKUP_SCRIPT="$SOURCE_ROOT/deploy/backup_postgres.sh"
 RELEASE_ID="${RELEASE_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
 RUN_TESTS="${RUN_TESTS:-0}"
+BACKUP_BEFORE_MIGRATIONS="${BACKUP_BEFORE_MIGRATIONS:-1}"
 APP_SERVICES=(
   presek-fastapi.service
   presek-astro.service
@@ -46,17 +48,54 @@ cleanup_listener_port() {
   pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
   [ -n "$pids" ] || return 0
 
-  warn "Stopping existing $label listener(s) on port $port: $pids"
-  sudo kill $pids 2>/dev/null || true
+  local runtime_pids=()
+  local pid=""
+  for pid in $pids; do
+    if pid_belongs_to_runtime "$pid"; then
+      runtime_pids+=("$pid")
+    else
+      warn "Leaving non-Presek $label listener on port $port (pid $pid)"
+    fi
+  done
+
+  [ "${#runtime_pids[@]}" -gt 0 ] || return 0
+
+  warn "Stopping existing $label listener(s) on port $port: ${runtime_pids[*]}"
+  sudo kill "${runtime_pids[@]}" 2>/dev/null || true
   sleep 1
 
   local remaining=""
   remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
   if [ -n "$remaining" ]; then
-    warn "Force killing stubborn $label listener(s) on port $port: $remaining"
-    sudo kill -9 $remaining 2>/dev/null || true
-    sleep 1
+    local stubborn_pids=()
+    for pid in $remaining; do
+      if pid_belongs_to_runtime "$pid"; then
+        stubborn_pids+=("$pid")
+      fi
+    done
+    if [ "${#stubborn_pids[@]}" -gt 0 ]; then
+      warn "Force killing stubborn $label listener(s) on port $port: ${stubborn_pids[*]}"
+      sudo kill -9 "${stubborn_pids[@]}" 2>/dev/null || true
+      sleep 1
+    fi
   fi
+}
+
+pid_belongs_to_runtime() {
+  local pid="$1"
+  [ -d "/proc/$pid" ] || return 1
+
+  local cwd=""
+  local exe=""
+  local cmd=""
+  cwd="$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)"
+  exe="$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)"
+  cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+
+  [[ "$cwd" == "$APP_ROOT/"* ]] && return 0
+  [[ "$exe" == "$APP_ROOT/"* ]] && return 0
+  [[ "$cmd" == *"$APP_ROOT/"* ]] && return 0
+  return 1
 }
 
 cleanup_orphaned_runtime_listeners() {
@@ -138,6 +177,8 @@ persist_release_runtime_meta() {
   cat > "$target_dir/.runtime-meta" <<EOF
 VENV_TARGET=$venv_target
 WEB_NODE_MODULES_TARGET=$web_target
+SCHEMA_UPDATED=${SCHEMA_UPDATED:-0}
+DB_BACKUP_CREATED=${DB_BACKUP_CREATED:-0}
 EOF
 }
 
@@ -216,8 +257,17 @@ run_release_checks() {
 }
 
 run_migrations() {
+  if [ "$BACKUP_BEFORE_MIGRATIONS" = "1" ]; then
+    info "Creating database backup before schema updates"
+    APP_ROOT="$APP_ROOT" bash "$BACKUP_SCRIPT"
+    DB_BACKUP_CREATED=1
+  else
+    warn "Skipping pre-migration database backup (BACKUP_BEFORE_MIGRATIONS=0)"
+  fi
+
   info "Running database schema updates"
   (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()")
+  SCHEMA_UPDATED=1
 }
 
 switch_current_link() {
@@ -254,8 +304,13 @@ rollback_release() {
   local previous_target="$2"
   local current_venv_target="$3"
   local current_web_deps_target="$4"
+  local failed_release_schema_updated=""
+  local failed_release_backup_created=""
 
   [ -n "$previous_target" ] && [ -d "$previous_target" ] || return 1
+
+  failed_release_schema_updated="$(read_release_runtime_meta "$failed_release" "SCHEMA_UPDATED" || true)"
+  failed_release_backup_created="$(read_release_runtime_meta "$failed_release" "DB_BACKUP_CREATED" || true)"
 
   warn "Deploy failed smoke checks; restoring previous release"
   switch_current_link "$previous_target"
@@ -264,6 +319,13 @@ rollback_release() {
   cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
+  if [ "$failed_release_schema_updated" = "1" ]; then
+    if [ "$failed_release_backup_created" = "1" ]; then
+      warn "Code rollback completed after schema updates. Restore the pre-deploy database backup if the previous release is not schema-compatible."
+    else
+      warn "Code rollback completed after schema updates without an automatic backup. Verify backward compatibility before trusting the restored release."
+    fi
+  fi
   info "Running post-rollback smoke checks"
   ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
 }
@@ -291,6 +353,8 @@ main() {
   local previous_target=""
   local current_venv_target=""
   local current_web_deps_target=""
+  DB_BACKUP_CREATED=0
+  SCHEMA_UPDATED=0
   if [ -L "$CURRENT_LINK" ]; then
     previous_target="$(readlink -f "$CURRENT_LINK" || true)"
   fi
