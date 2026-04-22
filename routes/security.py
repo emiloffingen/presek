@@ -131,11 +131,8 @@ def require_admin_token(request: Request) -> None:
 
 def verify_sync_token(request: Request) -> str:
     """Extract and validate sync token from request."""
-    from .common import _extract_sync_token
-    token = _extract_sync_token(request)
-    if not token or len(token) < 12:
-        raise HTTPException(status_code=400, detail="Missing or invalid sync token")
-    return token
+    from .common import _extract_sync_token, _validate_sync_token_value
+    return _validate_sync_token_value(_extract_sync_token(request))
 
 
 # =============================================================================

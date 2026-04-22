@@ -66,3 +66,21 @@ class TestCheckRateLimit:
         from utils import check_rate_limit
         mock_redis.pipeline.side_effect = Exception("Connection refused")
         assert check_rate_limit("1.2.3.4") is True
+
+    @patch('utils.redis_client')
+    def test_ai_path_uses_daily_limit(self, mock_redis):
+        from utils import check_rate_limit
+        pipe = MagicMock()
+        pipe.execute.return_value = [0, 0, 1, True]
+        mock_redis.pipeline.return_value = pipe
+        mock_redis.incr.return_value = 101
+        assert check_rate_limit("1.2.3.4", path="/api/intelligence/cluster/abc123/research") is False
+
+    @patch('utils.redis_client')
+    def test_ai_path_uses_tighter_window_limit(self, mock_redis):
+        from utils import check_rate_limit
+        pipe = MagicMock()
+        pipe.execute.return_value = [0, 12, 1, True]
+        mock_redis.pipeline.return_value = pipe
+        mock_redis.incr.return_value = 1
+        assert check_rate_limit("1.2.3.4", path="/api/intelligence/cluster/abc123/analyst") is False

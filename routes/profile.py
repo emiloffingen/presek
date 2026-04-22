@@ -12,7 +12,7 @@ from utils import (
 )
 from config import BREAKING_SCORE_THRESHOLD
 from api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
-from .common import _normalize_sync_list, _extract_sync_token, _normalize_suggestion_surface, _normalize_suggestion_kind, _normalize_suggestion_event_type
+from .common import _normalize_sync_list, _extract_sync_token, _normalize_suggestion_surface, _normalize_suggestion_kind, _normalize_suggestion_event_type, _validate_sync_token_value
 from .security import validate_string_param
 
 log = logging.getLogger("presek")
@@ -81,15 +81,14 @@ def _normalize_server_delivery_row(row):
 
 @router.post("/profile/sync/init")
 async def init_profile_sync():
-    token = secrets.token_urlsafe(18)
+    token = _validate_sync_token_value(secrets.token_urlsafe(24))
     empty = _normalize_synced_profile({})
     await db.async_execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
     return {"status": "success", "token": token, "profile": empty}
 
 @router.get("/profile/sync")
 async def get_profile_sync(request: Request):
-    token = _extract_sync_token(request)
-    if not token or len(token) < 12: raise HTTPException(status_code=400, detail="Missing sync token")
+    token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not row: raise HTTPException(status_code=404, detail="Profile not found")
     return {"status": "success", "profile": _normalize_synced_profile(row.get("profile_data") or {}), "updated_at": row.get("updated_at")}
@@ -100,8 +99,7 @@ async def save_profile_sync(request: Request):
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    token = str(payload.get("token") or "").strip()
-    if not token: raise HTTPException(status_code=400, detail="Missing sync token")
+    token = _validate_sync_token_value(payload.get("token"))
     incoming = _normalize_synced_profile(payload.get("profile") or {})
     existing = await db.async_execute_one("SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not existing: raise HTTPException(status_code=404, detail="Profile not found")
@@ -117,11 +115,7 @@ async def get_vapid_key():
 
 @router.get("/profile/delivery")
 async def get_profile_delivery(request: Request):
-    token = _extract_sync_token(request)
-    if not token: raise HTTPException(status_code=400, detail="Missing sync token")
-    # Validate token length
-    if len(token) < 12:
-        raise HTTPException(status_code=400, detail="Invalid sync token format")
+    token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
     return {"status": "success", "subscription": _normalize_server_delivery_row(row), "updated_at": row.get("updated_at") if row else None}
 
@@ -131,11 +125,7 @@ async def save_profile_delivery(request: Request):
         payload = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    token = str(payload.get("token") or "").strip()
-    if not token: raise HTTPException(status_code=400, detail="Missing sync token")
-    # Validate token length
-    if len(token) < 12:
-        raise HTTPException(status_code=400, detail="Invalid sync token format")
+    token = _validate_sync_token_value(payload.get("token"))
     if not await db.async_execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
         raise HTTPException(status_code=400, detail="Invalid sync token")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})

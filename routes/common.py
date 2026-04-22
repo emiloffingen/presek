@@ -33,6 +33,7 @@ _CLEAN_ARTIFACTS = [
 
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024
+SYNC_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
 
 def cleanAndDecode(text: str) -> str:
     if not text:
@@ -57,6 +58,17 @@ def _normalize_sync_list(values, limit=24):
         if len(cleaned) >= limit:
             break
     return cleaned
+
+
+def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
+    token = str(value or "").strip()
+    if not token:
+        if required:
+            raise HTTPException(status_code=400, detail="Missing sync token")
+        return ""
+    if not SYNC_TOKEN_PATTERN.fullmatch(token):
+        raise HTTPException(status_code=400, detail="Invalid sync token format")
+    return token
 
 def _looks_macedonian_headline(text: str) -> bool:
     value = str(text or "").strip()

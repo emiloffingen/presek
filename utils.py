@@ -217,6 +217,11 @@ RATE_LIMIT_MAX_AI = 12  # requests per window (AI synthesis endpoints)
 RATE_LIMIT_DAILY_AI = 100  # max AI calls per IP per day
 AI_QUERY_MAX_LENGTH = 500  # max characters for AI query input
 
+
+def _is_ai_analysis_path(path: str) -> bool:
+    clean = str(path or "").strip()
+    return clean.endswith("/research") or clean.endswith("/analyst")
+
 def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) -> bool:
     """Redis-backed rate limiter using a sliding window approach.
     Authenticated users get double the capacity."""
@@ -226,14 +231,31 @@ def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) ->
 
     # Determine limit tier
     max_requests = RATE_LIMIT_MAX
+    scope = "general"
+    daily_limit = None
+    if _is_ai_analysis_path(path):
+        scope = "ai"
+        max_requests = RATE_LIMIT_MAX_AI
+        daily_limit = RATE_LIMIT_DAILY_AI
     if is_authenticated:
         max_requests *= 2
+        if daily_limit is not None:
+            daily_limit *= 2
 
     tier = "auth" if is_authenticated else "anon"
-    key = f"rate_limit:{tier}:{ip}"
+    key = f"rate_limit:{tier}:{scope}:{ip}"
     now = time.time()
 
     try:
+        if daily_limit is not None:
+            bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+            daily_key = f"rate_limit_daily:{tier}:{scope}:{ip}:{bucket}"
+            daily_count = redis_client.incr(daily_key)
+            if daily_count == 1:
+                redis_client.expire(daily_key, 60 * 60 * 24 * 2)
+            if daily_count > daily_limit:
+                return False
+
         pipe = redis_client.pipeline()
         pipe.zremrangebyscore(key, 0, now - RATE_LIMIT_WINDOW)
         pipe.zcard(key)
@@ -1225,4 +1247,3 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
         reverse=True,
     )
     return results
-
