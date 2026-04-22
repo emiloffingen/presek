@@ -50,6 +50,7 @@ try {
 
 const hasBreaking = navigationData.breaking.length > 0;
 const breakingItems = navigationData.breaking.slice(0, 4);
+const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
 ---
 
 {/* ── Sticky header ───────────────────────────────────── */}
@@ -124,7 +125,7 @@ const breakingItems = navigationData.breaking.slice(0, 4);
     <nav class="site-layout discovery-nav" aria-label="Навигација">
         <div class="discovery-nav-container hide-scrollbar">
             <ul class="discovery-nav-list">
-                {navigationData.sections.map((section: any) => (
+                {visibleSections.map((section: any) => (
                     <li class={`nav-group group-type-${section.type}`}>
                         <div class="nav-items">
                             {section.items.map((item: any) => {
@@ -149,6 +150,8 @@ const breakingItems = navigationData.breaking.slice(0, 4);
                     </li>
                 ))}
             </ul>
+            <div class="nav-fade-left" aria-hidden="true"></div>
+            <div class="nav-fade-right" aria-hidden="true"></div>
         </div>
     </nav>
 </div>
@@ -429,6 +432,7 @@ const breakingItems = navigationData.breaking.slice(0, 4);
         width: 100%;
         overflow-x: auto;
         padding: 0.5rem 0;
+        position: relative;
     }
 
     .discovery-nav-list {
@@ -656,8 +660,7 @@ const breakingItems = navigationData.breaking.slice(0, 4);
             
             const updateCounter = async () => {
                 try {
-                    // Client-side apiBaseUrl equivalent
-                    const apiBase = (window as any).PUBLIC_API_URL || '/api';
+                    const apiBase = window.PUBLIC_API_URL || '/api';
                     const res = await fetch(`${apiBase}/stats/summary`);
                     if (!res.ok) return;
                     const data = await res.json();
