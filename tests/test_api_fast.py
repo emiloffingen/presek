@@ -115,7 +115,7 @@ def _get_fake_fastapi_modules():
 def _install_fake_fastapi_modules():
     original_modules = {name: sys.modules.get(name) for name in _get_fake_fastapi_modules()}
     sys.modules.update(_get_fake_fastapi_modules())
-    for name in ["api_fast", "routes", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
+    for name in ["api_fast", "routes", "routes.home", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
         sys.modules.pop(name, None)
     try:
         yield
@@ -125,7 +125,7 @@ def _install_fake_fastapi_modules():
                 sys.modules.pop(name, None)
             else:
                 sys.modules[name] = original
-        for name in ["api_fast", "routes", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
+        for name in ["api_fast", "routes", "routes.home", "routes.news", "routes.profile", "routes.stats", "routes.system", "routes.intelligence", "routes.security"]:
             sys.modules.pop(name, None)
 
 @pytest.fixture
@@ -155,8 +155,17 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import api_fast
     with patch("secrets.token_urlsafe", return_value="token123"):
+        with pytest.raises(_FakeHTTPException) as exc:
+            asyncio.run(api_fast.init_profile_sync())
+    assert exc.value.status_code == 400
+
+
+def test_fastapi_profile_sync_init_creates_strong_token(mock_all):
+    import api_fast
+    strong_token = "A_valid_sync_token_value_12345"
+    with patch("secrets.token_urlsafe", return_value=strong_token):
         data = asyncio.run(api_fast.init_profile_sync())
-    assert data["token"] == "token123"
+    assert data["token"] == strong_token
     mock_all["db"].async_execute.assert_called()
 
 def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
@@ -207,6 +216,22 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
 
+
+def test_profile_sync_rejects_weak_token_headers(mock_all):
+    import routes.profile as profile
+
+    with pytest.raises(_FakeHTTPException) as exc:
+        asyncio.run(profile.get_profile_sync(_FakeRequest(headers={"x-sync-token": "short-token"})))
+    assert exc.value.status_code == 400
+
+
+def test_profile_sync_rejects_invalid_body_token(mock_all):
+    import routes.profile as profile
+
+    with pytest.raises(_FakeHTTPException) as exc:
+        asyncio.run(profile.save_profile_sync(_FakeRequest(payload={"token": "bad token with spaces", "profile": {}})))
+    assert exc.value.status_code == 400
+
 def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     import api_fast
     with patch("routes.system._probe_database", return_value={"ok": True, "article_count": 8}), \
@@ -248,7 +273,119 @@ def test_fastapi_only_registers_prefixed_routers(mock_all):
     api_fast = importlib.import_module("api_fast")
     content = open(os.path.join(os.path.dirname(__file__), "..", "api_fast.py"), encoding="utf-8").read()
     assert 'app.include_router(news.router, prefix="/api")' in content
+    assert 'app.include_router(home.router, prefix="/api")' in content
     assert "app.include_router(news.router)\n" not in content
+
+
+def test_home_route_composes_named_slots(mock_all):
+    import routes.home as home
+
+    news_payload = {
+        "status": "success",
+        "clusters": [
+            {"cluster_id": "lead", "articles": [{"title": "Lead", "source": "MIA", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:00:00Z"}], "is_breaking": True},
+            {"cluster_id": "support-1", "articles": [{"title": "Support 1", "source": "Alsat", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T17:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "support-2", "articles": [{"title": "Support 2", "source": "Telma", "topic": "Економија", "category": "Македонија", "created_at": "2026-04-22T16:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "support-3", "articles": [{"title": "Support 3", "source": "Kanal 5", "topic": "Криминал", "category": "Македонија", "created_at": "2026-04-22T15:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "support-4", "articles": [{"title": "Support 4", "source": "360", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T14:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-1", "articles": [{"title": "For you 1", "source": "MRT", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T13:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-2", "articles": [{"title": "For you 2", "source": "Nova", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T12:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-3", "articles": [{"title": "For you 3", "source": "Factor", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T11:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-4", "articles": [{"title": "For you 4", "source": "Vecer", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T10:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-5", "articles": [{"title": "For you 5", "source": "Makfax", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T09:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "foryou-6", "articles": [{"title": "For you 6", "source": "Plusinfo", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T08:00:00Z"}], "is_breaking": False},
+            {"cluster_id": "developing-1", "articles": [{"title": "Developing 1", "source": "MIA", "topic": "Економија", "category": "Македонија", "created_at": "2026-04-22T07:00:00Z"}, {"title": "Developing 1 / corroboration", "source": "Telma", "topic": "Економија", "category": "Македонија", "created_at": "2026-04-22T06:55:00Z"}], "is_breaking": False},
+            {"cluster_id": "wire-1", "articles": [{"title": "Обвинителството отвори истрага", "source": "Press24", "topic": "Криминал", "category": "Македонија", "created_at": "2026-04-22T06:00:00Z", "link": "https://a/1"}], "is_breaking": False},
+        ],
+        "global": [{"cluster_id": "global-1", "articles": [{"title": "Global", "source": "CNN", "topic": "Политика", "category": "Америка", "created_at": "2026-04-22T05:00:00Z"}], "is_breaking": False}],
+    }
+    recent_payload = {
+        "status": "success",
+        "clusters": [
+            {"cluster_id": "lead", "articles": [{"title": "Lead", "source": "MIA", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:00:00Z", "link": "https://lead"}], "is_breaking": True},
+            {"cluster_id": "live-1", "articles": [{"title": "Собранието отвори расправа за буџетот", "source": "Kanal 5", "topic": "Економија", "category": "Македонија", "created_at": "2026-04-22T18:10:00Z", "link": "https://live-1"}], "is_breaking": False},
+            {"cluster_id": "junk-1", "articles": [{"title": "Издание на 360°: интервју со министерот", "source": "360", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:11:00Z", "link": "https://junk-1"}], "is_breaking": False},
+            {"cluster_id": "wire-2", "articles": [{"title": "Тешка сообраќајка на експресниот пат кај Ранковце", "source": "Press24", "topic": "Криминал", "category": "Македонија", "created_at": "2026-04-22T18:12:00Z", "link": "https://wire-2"}], "is_breaking": False},
+            {"cluster_id": "wire-3", "articles": [{"title": "Постојано сте уморни, проверете дали ви недостига овој минерал", "source": "Expres", "topic": "Здравје", "category": "Македонија", "created_at": "2026-04-22T18:13:00Z", "link": "https://wire-3"}], "is_breaking": False},
+        ],
+    }
+
+    with patch("routes.home.get_news", new=AsyncMock(side_effect=[news_payload, recent_payload])), \
+         patch("routes.home.get_trending_route", new=AsyncMock(return_value=[{"word": "Буџет", "trend": "↑"}])), \
+         patch("routes.home.get_top_entities", new=AsyncMock(return_value=[{"name": "влада", "total_mentions": 7, "type": "ORG"}])), \
+         patch("routes.home.get_stats_summary", new=AsyncMock(return_value={"last_24h": 120, "intelligence": {"pluralism": {"pluralism_pct": 64}, "ai_transparency": {"ai_ratio": 52}}})), \
+         patch("routes.home.get_briefing", new=AsyncMock(return_value={"content": "Briefing"})):
+        data = asyncio.run(home.get_home())
+
+    assert data["status"] == "success"
+    assert data["lead"]["cluster_id"] == "lead"
+    assert [item["cluster_id"] for item in data["supporting"]] == ["support-1", "support-2", "support-3", "support-4"]
+    assert [item["cluster_id"] for item in data["for_you_pool"]] == ["foryou-1", "foryou-2", "foryou-3", "foryou-4", "foryou-5", "foryou-6"]
+    assert [item["cluster_id"] for item in data["developing"]] == ["developing-1"]
+    assert [item["cluster_id"] for item in data["wire"]] == ["wire-1"]
+    assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1"]
+    assert [item["title"] for item in data["latest_wire"]] == ["Тешка сообраќајка на експресниот пат кај Ранковце", "Собранието отвори расправа за буџетот", "Lead"]
+    assert data["focus_entities"][0]["name"] == "Влада"
+
+
+def test_home_live_now_route_uses_backend_selection(mock_all):
+    import routes.home as home
+
+    recent_payload = {
+        "status": "success",
+        "clusters": [
+            {"cluster_id": "excluded", "live_now_fit": True, "live_now_score": 9.0, "articles": [{"title": "Excluded", "source": "MIA", "created_at": "2026-04-22T18:20:00Z"}]},
+            {"cluster_id": "live-1", "live_now_fit": True, "live_now_score": 8.0, "articles": [{"title": "Live 1", "source": "Kanal 5", "created_at": "2026-04-22T18:15:00Z"}]},
+            {"cluster_id": "live-2", "live_now_fit": True, "live_now_score": 7.5, "articles": [{"title": "Live 2", "source": "Alsat", "created_at": "2026-04-22T18:12:00Z"}]},
+            {"cluster_id": "junk", "live_now_fit": False, "live_now_score": 10.0, "articles": [{"title": "Junk", "source": "Expres", "created_at": "2026-04-22T18:25:00Z"}]},
+        ],
+    }
+
+    with patch("routes.home.get_news", new=AsyncMock(return_value=recent_payload)):
+        data = asyncio.run(home.get_home_live_now(exclude="excluded"))
+
+    assert data["status"] == "success"
+    assert [item["cluster_id"] for item in data["clusters"]] == ["live-1", "live-2"]
+
+
+def test_home_latest_wire_route_uses_backend_selection(mock_all):
+    import routes.home as home
+
+    recent_payload = {
+        "status": "success",
+        "clusters": [
+            {"cluster_id": "wire-1", "articles": [{"title": "Тешка сообраќајка на експресниот пат кај Ранковце", "source": "Press24", "topic": "Криминал", "category": "Македонија", "created_at": "2026-04-22T18:12:00Z", "link": "https://wire-1"}]},
+            {"cluster_id": "junk-1", "articles": [{"title": "Издание на 360°: интервју со министерот", "source": "360", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:11:00Z", "link": "https://junk-1"}]},
+            {"cluster_id": "wire-2", "articles": [{"title": "Собранието отвори расправа за буџетот", "source": "Kanal 5", "topic": "Економија", "category": "Македонија", "created_at": "2026-04-22T18:10:00Z", "link": "https://wire-2"}]},
+            {"cluster_id": "wire-3", "articles": [{"title": "Постојано сте уморни, проверете дали ви недостига овој минерал", "source": "Expres", "topic": "Здравје", "category": "Македонија", "created_at": "2026-04-22T18:13:00Z", "link": "https://wire-3"}]},
+        ],
+    }
+
+    with patch("routes.home.get_news", new=AsyncMock(return_value=recent_payload)):
+        data = asyncio.run(home.get_home_latest_wire(limit=10))
+
+    assert data["status"] == "success"
+    assert [item["title"] for item in data["articles"]] == [
+        "Тешка сообраќајка на експресниот пат кај Ранковце",
+        "Собранието отвори расправа за буџетот",
+    ]
+
+
+def test_news_editorial_signals_classify_story_state(mock_all):
+    import routes.news as news
+
+    arts = [
+        {"title": "Собранието отвори расправа за буџетот", "source": "MIA", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:10:00Z"},
+        {"title": "Телма: расправата за буџетот продолжува", "source": "Telma", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:05:00Z"},
+        {"title": "Канал 5: нови детали од расправата", "source": "Kanal 5", "topic": "Политика", "category": "Македонија", "created_at": "2026-04-22T18:00:00Z"},
+    ]
+
+    signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
+
+    assert signals["story_state"] in {"developing", "confirmed"}
+    assert signals["live_now_fit"] is True
+    assert signals["importance_score"] > 0
+    assert signals["trust_score"] > 0
 
 def test_fastapi_proxy_rejects_remote_svg_content(mock_all):
     import api_fast

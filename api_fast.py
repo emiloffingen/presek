@@ -33,7 +33,7 @@ from routes.security import (
     SecurityHeadersMiddleware, RequestSizeMiddleware, EnhancedRateLimitMiddleware,
     validate_cluster_id, validate_date, validate_email, verify_admin_token, require_admin_token
 )
-from routes import news, intelligence, profile, stats, system
+from routes import home, news, intelligence, profile, stats, system
 from routes.news import (
     get_news, 
 )
@@ -113,6 +113,7 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
 
 # Include routers with /api prefix (for Nginx/Public)
 app.include_router(news.router, prefix="/api")
+app.include_router(home.router, prefix="/api")
 app.include_router(intelligence.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")

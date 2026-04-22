@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { rankLiveNowClusters } from '../lib/liveNow.js';
 import { cleanAndDecode } from '../utils/textUtils';
 
 interface ArticleLike {
@@ -18,6 +17,7 @@ interface ClusterLike {
 
 interface HomeLiveUpdatesIslandProps {
   excludeClusterIds?: string[];
+  initialClusters?: ClusterLike[];
 }
 
 interface LiveState {
@@ -36,10 +36,10 @@ function getTimeStr(dateStr?: string) {
   }
 }
 
-export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLiveUpdatesIslandProps) {
-  const [clusters, setClusters] = useState<ClusterLike[]>([]);
+export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [] }: HomeLiveUpdatesIslandProps) {
+  const [clusters, setClusters] = useState<ClusterLike[]>(initialClusters);
   const [liveState, setLiveState] = useState<LiveState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialClusters.length === 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,15 +47,12 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
 
     const loadLatest = async () => {
       try {
-        const res = await fetch(`${API_URL}/news?page_size=24&sort=recent&t=${Date.now()}`);
+        const exclude = encodeURIComponent(excludeClusterIds.join(','));
+        const res = await fetch(`${API_URL}/home/live-now?exclude=${exclude}&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        const latest = rankLiveNowClusters(
-          Array.isArray(data?.clusters) ? data.clusters : [],
-          excludeClusterIds
-        ).slice(0, 4);
-        setClusters(latest);
+        setClusters(Array.isArray(data?.clusters) ? data.clusters : []);
       } catch (err) {
         console.error('[HomeLiveUpdates] Failed to load latest clusters:', err);
       } finally {

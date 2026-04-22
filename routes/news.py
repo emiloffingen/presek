@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import datetime
 from typing import Optional, List
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
@@ -8,10 +9,10 @@ from fastapi.responses import StreamingResponse, JSONResponse
 
 from database import db_manager as db
 from utils import (
-    score_cluster, rank_articles_in_cluster, calculate_reading_time, 
+    score_cluster, rank_articles_in_cluster, calculate_reading_time,
     cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage,
-    event_stream, record_runtime_event,
+    event_stream, record_runtime_event, get_source_effective_weight, _coerce_datetime,
 )
 from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from config import (
@@ -31,6 +32,24 @@ from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+_SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
+_HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
+_HARD_NEWS_CATEGORIES = {"Македонија", "Балкан", "Европа", "Германија", "Америка", "Свет"}
+_FEATURE_PATTERNS = [
+    re.compile(r"издание на", re.IGNORECASE),
+    re.compile(r"интервју со", re.IGNORECASE),
+    re.compile(r"интервју\b", re.IGNORECASE),
+    re.compile(r"проверете дали", re.IGNORECASE),
+    re.compile(r"пред да ", re.IGNORECASE),
+    re.compile(r"постојано сте уморни", re.IGNORECASE),
+    re.compile(r"овој минерал", re.IGNORECASE),
+    re.compile(r"хороскоп", re.IGNORECASE),
+    re.compile(r"рецепт", re.IGNORECASE),
+    re.compile(r"фото\b", re.IGNORECASE),
+    re.compile(r"видео\b", re.IGNORECASE),
+    re.compile(r"галерија", re.IGNORECASE),
+]
 
 _PUBLIC_ARTICLE_FIELDS = {
     "id",
@@ -92,6 +111,106 @@ def _public_article_payload(article):
     # Check if the article is from a global category
     res["is_global"] = article.get("category") in ("Америка", "Германија")
     return res
+
+
+def _title_looks_like_feature(title):
+    clean = str(title or "").strip()
+    if not clean:
+        return True
+    if len(clean) > 180:
+        return True
+    if "?" in clean:
+        return True
+    return any(pattern.search(clean) for pattern in _FEATURE_PATTERNS)
+
+
+def _compute_editorial_signals(arts, cluster_score, homepage_score):
+    ranked = list(arts or [])
+    if not ranked:
+        return {
+            "source_count": 0,
+            "importance_score": 0.0,
+            "freshness_score": 0.0,
+            "development_score": 0.0,
+            "trust_score": 0.0,
+            "novelty_score": 0.0,
+            "story_state": "stale",
+            "live_now_fit": False,
+            "latest_wire_fit": False,
+            "live_now_score": 0.0,
+            "latest_wire_score": 0.0,
+        }
+
+    main = ranked[0]
+    unique_sources = {str(a.get("source") or "").strip() for a in ranked if str(a.get("source") or "").strip()}
+    source_count = len(unique_sources)
+    latest_dt = max((_coerce_datetime(a.get("created_at")) for a in ranked), default=None)
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    hours_since_latest = max(0.0, ((now - latest_dt).total_seconds() / 3600.0)) if latest_dt else 999.0
+    recent_cutoff = now - datetime.timedelta(hours=6)
+    recent_developments = sum(
+        1
+        for article in ranked
+        if (_coerce_datetime(article.get("created_at")) or datetime.datetime.min) >= recent_cutoff
+    )
+
+    top_weights = [get_source_effective_weight(str(article.get("source") or "")) for article in ranked[:3]]
+    avg_top_weight = (sum(top_weights) / len(top_weights)) if top_weights else 0.0
+    freshness_score = min(10.0, max(0.0, 10.0 - (hours_since_latest * 1.1)) + min(1.6, max(0, recent_developments - 1) * 0.45))
+    development_score = min(10.0, max(0, source_count - 1) * 1.85 + min(2.0, recent_developments * 0.6))
+    trust_score = min(10.0, avg_top_weight * 5.0)
+    importance_score = min(10.0, float(homepage_score or 0.0) * 3.0)
+    novelty_score = min(10.0, freshness_score * (1.0 if source_count <= 2 else 0.65) + (1.25 if source_count == 1 else 0.0))
+
+    if hours_since_latest >= 24:
+        story_state = "stale"
+    elif cluster_score >= BREAKING_SCORE_THRESHOLD:
+        story_state = "breaking"
+    elif source_count >= 3 and recent_developments >= 2:
+        story_state = "developing"
+    elif source_count >= 2:
+        story_state = "confirmed"
+    else:
+        story_state = "singleton"
+
+    title = str(main.get("title") or "").strip()
+    topic = str(main.get("topic") or "").strip()
+    category = str(main.get("category") or "").strip()
+    hard_news = topic in _HARD_NEWS_TOPICS or category in _HARD_NEWS_CATEGORIES
+    feature_like = _title_looks_like_feature(title)
+    soft_topic = topic in _SOFT_EXCLUDE_TOPICS
+
+    live_now_fit = (
+        not feature_like
+        and not soft_topic
+        and hard_news
+        and story_state in {"breaking", "developing", "confirmed"}
+        and freshness_score >= 2.0
+    ) or bool(cluster_score >= BREAKING_SCORE_THRESHOLD)
+    latest_wire_fit = (
+        not feature_like
+        and not soft_topic
+        and hard_news
+        and story_state in {"singleton", "confirmed", "breaking"}
+        and source_count <= 2
+        and freshness_score >= 1.0
+    )
+    live_now_score = max(0.0, freshness_score + development_score + (2.5 if story_state == "breaking" else 0.0) + (1.2 if topic in _HARD_NEWS_TOPICS else 0.0))
+    latest_wire_score = max(0.0, freshness_score + novelty_score + (1.0 if source_count <= 1 else 0.0) + (1.0 if topic in _HARD_NEWS_TOPICS else 0.0))
+
+    return {
+        "source_count": source_count,
+        "importance_score": round(importance_score, 3),
+        "freshness_score": round(freshness_score, 3),
+        "development_score": round(development_score, 3),
+        "trust_score": round(trust_score, 3),
+        "novelty_score": round(novelty_score, 3),
+        "story_state": story_state,
+        "live_now_fit": bool(live_now_fit),
+        "latest_wire_fit": bool(latest_wire_fit),
+        "live_now_score": round(live_now_score, 3),
+        "latest_wire_score": round(latest_wire_score, 3),
+    }
 
 @router.get("/news")
 async def get_news(
@@ -176,8 +295,7 @@ async def get_news(
                 lead_art = cluster_arts[0]
                 dt = _coerce_datetime(lead_art.get('created_at'))
                 return dt.timestamp() if dt else 0
-            
-            from utils import _coerce_datetime
+
             ranked_clusters.sort(key=get_recent_sort_key, reverse=True)
         elif q:
             # Relevance-first for search results
@@ -214,6 +332,8 @@ async def get_news(
             main = arts[0]
             cid = main["cluster_id"]
             s = score_cluster(arts)
+            homepage_score = score_cluster_for_homepage(arts)
+            editorial = _compute_editorial_signals(arts, s, homepage_score)
             meta = meta_map.get(cid, {})
             return {
                 "cluster_id": cid,
@@ -222,12 +342,13 @@ async def get_news(
                 "dominant_color": meta.get("dominant_color"),
                 "reading_time": main.get('reading_time', 1),
                 "score": round(s, 3),
-                "homepage_score": round(score_cluster_for_homepage(arts), 3),
+                "homepage_score": round(homepage_score, 3),
                 "is_breaking": s >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": cid in synthesis_ids,
                 "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
-                "entities": main.get("entity_names", [])
+                "entities": main.get("entity_names", []),
+                **editorial,
             }
 
         result = [_format_cluster(arts) for arts in paged_clusters]

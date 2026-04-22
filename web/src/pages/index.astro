@@ -17,7 +17,6 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
-import { rankLatestWireArticles } from '../lib/liveNow.js';
 import { TrendingUp, Quote, Sparkles } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
@@ -37,6 +36,14 @@ let topEntities = [];
 let stats = null;
 let briefing = null;
 let error = null;
+let liveNowClusters: NewsCluster[] = [];
+let supportingClusters: NewsCluster[] = [];
+let forYouClusters = [];
+let feedClusters: NewsCluster[] = [];
+let wireClusters: NewsCluster[] = [];
+let wireArticles = [];
+let excludedClusterIds: string[] = [];
+
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -45,57 +52,90 @@ async function fetchJson(url: string) {
     return response.json();
 }
 
-// Build the fetch URL with params
-const newsUrl = new URL(`${API_URL}/news`);
-newsUrl.searchParams.set('page_size', '48');
-if (category) newsUrl.searchParams.set('category', category);
-if (topic) newsUrl.searchParams.set('topic', topic);
-if (entity) newsUrl.searchParams.set('entity', entity);
-if (q) newsUrl.searchParams.set('q', q);
+const isHomepage = !(category || topic || entity || q);
 
-// Fan out every SSR request in parallel — the news call is the only one
-// the page can't usefully render without, so we still surface its failure.
-const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
-    fetchJson(newsUrl.toString()),
-    fetchJson(`${API_URL}/trending`),
-    fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
-    fetchJson(`${API_URL}/stats/summary`),
-    fetchJson(`${API_URL}/briefing`),
-    fetchJson(`${API_URL}/news?sort=recent&page_size=15`),
-]);
+if (isHomepage) {
+    const homeResult = await Promise.allSettled([
+        fetchJson(`${API_URL}/home`),
+    ]);
+    const homePayload = homeResult[0];
 
-let wireArticles = [];
-if (wireResult.status === 'fulfilled') {
-    // Extract unique articles from the most recent clusters
-    const seenLinks = new Set();
-    const raw = wireResult.value?.clusters || [];
-    for (const c of raw) {
-        for (const a of c.articles) {
-            if (!seenLinks.has(a.link)) {
-                wireArticles.push(a);
-                seenLinks.add(a.link);
-            }
-        }
+    if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
+        const home = homePayload.value;
+        const lead = home?.lead ? [home.lead] : [];
+        supportingClusters = Array.isArray(home?.supporting) ? home.supporting : [];
+        liveNowClusters = Array.isArray(home?.live_now) ? home.live_now : [];
+        forYouClusters = Array.isArray(home?.for_you_pool) ? home.for_you_pool.map((c: any) => {
+            const a = c.articles?.[0] || {};
+            return {
+                cluster_id: c.cluster_id,
+                is_breaking: c.is_breaking,
+                topics: c.topics,
+                tags: c.tags,
+                homepage_score: c.homepage_score,
+                articles: [{
+                    title: a.title,
+                    source: a.source,
+                    summary: a.summary,
+                    description: a.description,
+                    category: a.category,
+                }],
+                sources_count: c.articles?.length || 0,
+            };
+        }) : [];
+        const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
+        wireClusters = Array.isArray(home?.wire) ? home.wire : [];
+        wireArticles = Array.isArray(home?.latest_wire) ? home.latest_wire : [];
+        globalClusters = Array.isArray(home?.global) ? home.global : [];
+        trending = Array.isArray(home?.trending) ? home.trending : [];
+        topEntities = Array.isArray(home?.focus_entities) ? home.focus_entities : [];
+        stats = home?.stats || null;
+        briefing = home?.briefing || null;
+        excludedClusterIds = Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [];
+        feedClusters = [...developingClusters, ...wireClusters];
+        clusters = [...lead, ...supportingClusters, ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []), ...feedClusters];
+    } else {
+        console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
+        error = 'Грешка при вчитување на вестите.';
     }
-    wireArticles = rankLatestWireArticles(wireArticles, 15);
-}
-
-if (newsResult.status === 'fulfilled') {
-    clusters = newsResult.value?.clusters || [];
-    globalClusters = newsResult.value?.global || [];
 } else {
-    console.error('News fetch error:', newsResult.reason);
-    error = 'Грешка при вчитување на вестите.';
-}
+    const newsUrl = new URL(`${API_URL}/news`);
+    newsUrl.searchParams.set('page_size', '48');
+    if (category) newsUrl.searchParams.set('category', category);
+    if (topic) newsUrl.searchParams.set('topic', topic);
+    if (entity) newsUrl.searchParams.set('entity', entity);
+    if (q) newsUrl.searchParams.set('q', q);
 
-trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
-    ? trendResult.value
-    : [];
-topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-    ? entityResult.value
-    : [];
-stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+        fetchJson(newsUrl.toString()),
+        fetchJson(`${API_URL}/trending`),
+        fetchJson(`${API_URL}/intelligence/top-entities?limit=12`),
+        fetchJson(`${API_URL}/stats/summary`),
+        fetchJson(`${API_URL}/briefing`),
+        fetchJson(`${API_URL}/home/latest-wire?limit=15`),
+    ]);
+
+    if (wireResult.status === 'fulfilled') {
+        wireArticles = Array.isArray(wireResult.value?.articles) ? wireResult.value.articles : [];
+    }
+
+    if (newsResult.status === 'fulfilled') {
+        clusters = newsResult.value?.clusters || [];
+        globalClusters = newsResult.value?.global || [];
+    } else {
+        console.error('News fetch error:', newsResult.reason);
+        error = 'Грешка при вчитување на вестите.';
+    }
+
+    trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
+        ? trendResult.value
+        : [];
+    topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
+    stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    briefing = briefingResult.status === 'fulfilled' ? briefingResult.value : null;
+}
 
 function normalizeFocusName(name: string) {
     const clean = (name || '').replace(/\s+/g, ' ').trim().replace(/^[-–—,.;:!?()[\]{}"' ]+|[-–—,.;:!?()[\]{}"' ]+$/g, '');
@@ -115,7 +155,9 @@ const focusEntities = topEntities
     .slice(0, 10);
 
 const leadCluster = clusters[0] ?? null;
-const supportingClusters = clusters.slice(1, 5);
+if (!isHomepage) {
+    supportingClusters = clusters.slice(1, 5);
+}
 
 function getLeadSignal(cluster: NewsCluster) {
 	const count = cluster?.articles?.length || 0;
@@ -159,45 +201,42 @@ const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 
-// Reserve a smaller personalization pool so the homepage can surface more live
-// backend activity in the visible editorial feed instead of hiding it behind
-// recommendation logic.
-const FOR_YOU_START = 5;
-const FOR_YOU_END = 11;
-const forYouClusters = clusters.slice(FOR_YOU_START, FOR_YOU_END).map((c: any) => {
-    const a = c.articles?.[0] || {};
-    return {
-        cluster_id: c.cluster_id,
-        is_breaking: c.is_breaking,
-        topics: c.topics,
-        tags: c.tags,
-        homepage_score: c.homepage_score,
-        articles: [{
-            title: a.title,
-            source: a.source,
-            summary: a.summary,
-            description: a.description,
-            category: a.category,
-        }],
-        sources_count: c.articles?.length || 0,
-    };
-});
-
-// Start the main feed immediately after the reserved personalization pool so
-// more fresh clusters remain visible on the homepage by default.
-const feedClusters = clusters.slice(FOR_YOU_END);
+if (!isHomepage) {
+    const FOR_YOU_START = 5;
+    const FOR_YOU_END = 11;
+    forYouClusters = clusters.slice(FOR_YOU_START, FOR_YOU_END).map((c: any) => {
+        const a = c.articles?.[0] || {};
+        return {
+            cluster_id: c.cluster_id,
+            is_breaking: c.is_breaking,
+            topics: c.topics,
+            tags: c.tags,
+            homepage_score: c.homepage_score,
+            articles: [{
+                title: a.title,
+                source: a.source,
+                summary: a.summary,
+                description: a.description,
+                category: a.category,
+            }],
+            sources_count: c.articles?.length || 0,
+        };
+    });
+    feedClusters = clusters.slice(FOR_YOU_END);
+    wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 12);
+}
 const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
-const wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 12);
 const supportingFeatured = supportingClusters.slice(0, 2);
 const supportingCompact = supportingClusters.slice(2);
 const developmentsFeatured = continuingClusters.slice(0, 6);
 const developmentsCompact = continuingClusters.slice(6, 18);
 
-// Extract cluster IDs to exclude from ForYou personalization to prevent duplication
-const excludedClusterIds = [
-  leadCluster?.cluster_id,
-  ...supportingClusters.map((c: any) => c.cluster_id)
-].filter(Boolean);
+if (!isHomepage) {
+    excludedClusterIds = [
+      leadCluster?.cluster_id,
+      ...supportingClusters.map((c: any) => c.cluster_id)
+    ].filter(Boolean);
+}
 
 function getTimeStr(dateStr: string) {
     try {
@@ -304,7 +343,7 @@ function getBriefingSnippet(content: string) {
 				)}
 
 				{clusters.length > 6 && (
-					<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} />
+					<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} initialClusters={liveNowClusters} />
 				)}
 
 				{clusters.length > 4 && (
