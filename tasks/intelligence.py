@@ -531,6 +531,7 @@ def generate_cluster_metadata_task():
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
+                   array_agg(DISTINCT topic) as topics,
                    array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
             FROM articles WHERE created_at >= %s
             GROUP BY cluster_id
@@ -625,15 +626,16 @@ def generate_cluster_metadata_task():
                 dominant_color = get_dominant_color(rep_image)
 
             db.execute(
-                """INSERT INTO cluster_metadata (cluster_id, tags, representative_image, dominant_color, updated_at, centroid)
-                   VALUES (%s, %s, %s, %s, NOW(), %s)
+                """INSERT INTO cluster_metadata (cluster_id, tags, topics, representative_image, dominant_color, updated_at, centroid)
+                   VALUES (%s, %s, %s, %s, %s, NOW(), %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                    tags = EXCLUDED.tags, 
+                   topics = EXCLUDED.topics,
                    representative_image = EXCLUDED.representative_image,
                    dominant_color = EXCLUDED.dominant_color,
                    updated_at = NOW(),
                    centroid = EXCLUDED.centroid""",
-                (r['cluster_id'], final_tags, rep_image, dominant_color, centroid), fetch=False
+                (r['cluster_id'], final_tags, r['topics'], rep_image, dominant_color, centroid), fetch=False
             )
         invalidate_public_data_caches()
         record_task_event("cluster_metadata", "ok", "clusters:recent")
