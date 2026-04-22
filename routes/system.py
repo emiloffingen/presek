@@ -153,25 +153,32 @@ async def get_navigation():
     
     sub_act = {r['subcategory']: r['n'] for r in sub_activity}
 
-    # 3. CORE REGIONS (Always shown, populate from existing content)
-    regions = []
-    for label, display in [("Макeдонија", "Македонија"), ("Балкан", "Балкан"), ("Европа", "Европа"), ("Свет", "Свет")]:
+    # 3. GEOGRAPHY (Excluding Macedonia as it's the home default)
+    geography = []
+    for label, display in [("Балкан", "Балкан"), ("Европа", "Европа"), ("Свет", "Свет")]:
         count = cat_act.get(label, 0)
-        # Always show core regions but mark inactive if count is 0
-        regions.append({"label": display, "href": f"/?category={urllib.parse.quote(display)}", "count": count})
+        geography.append({"label": display, "href": f"/?category={urllib.parse.quote(display)}", "count": count})
 
-    # 4. ACTIVE TOPICS (Lower threshold + always include key topics)
-    active_topics = []
-    
-    # Core topics - always show with count
-    core_topics = ["Политика", "Економија", "Спорт", "Криминал", "Култура", "Живот"]
-    for label in core_topics:
+    # 4. CORE NEWS (The Pillars + Skopje)
+    news_items = []
+    core_news = ["Политика", "Економија", "Спорт", "Криминал"]
+    for label in core_news:
         count = top_act.get(label, 0)
-        active_topics.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
-            
-    # Grouped/Dynamic topics for the remaining categories
+        news_items.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
+    
+    # Add Skopje as the local anchor
+    skopje_count = sub_act.get("Скопје", 0)
+    news_items.append({"label": "Скопје", "href": "/?subcategory=Скопје", "count": skopje_count})
+
+    # 5. MAGAZINE (Lifestyle & Culture)
+    magazine_items = []
+    magazine_topics = ["Култура", "Живот"]
+    for label in magazine_topics:
+        count = top_act.get(label, 0)
+        magazine_items.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
+    
     innovation_health_count = top_act.get("Технологија", 0) + top_act.get("Здравје", 0)
-    active_topics.append({
+    magazine_items.append({
         "label": "Иновации & Здравје", 
         "href": "/?topic=Технологија,Здравје", 
         "count": innovation_health_count,
@@ -179,18 +186,11 @@ async def get_navigation():
     })
 
     entertainment_count = top_act.get("Забава", 0)
-    active_topics.append({
+    magazine_items.append({
         "label": "Забава", 
         "href": "/?topic=Забава", 
         "count": entertainment_count
     })
-
-    # 5. LOCAL HEAT - Include all Macedonian regions
-    local = []
-    macedonian_subcategories = ["Скопје", "Република", "Битола", "Куманово", "Тетово", "Штип", "Охрид", "Струмица", "Велес", "Прилеп"]
-    for label in macedonian_subcategories:
-        count = sub_act.get(label.strip(), 0)
-        local.append({"label": label.strip(), "href": f"/?subcategory={urllib.parse.quote(label.strip())}", "count": count})
 
     # 6. TRENDING STORIES (Top Entities)
     trending_entities = await get_top_entities(limit=8)
@@ -202,8 +202,9 @@ async def get_navigation():
     res = {
         "breaking": breaking_items,
         "sections": [
-            {"label": "Региони", "items": regions, "type": "core"},
-            {"label": "Теми", "items": active_topics, "type": "dynamic"},
+            {"label": "Географија", "items": geography, "type": "core"},
+            {"label": "Вести", "items": news_items, "type": "dynamic"},
+            {"label": "Магазин", "items": magazine_items, "type": "magazine"},
             {"label": "Во Фокус", "items": entities[:5], "type": "trending"}
         ]
     }

@@ -143,9 +143,10 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="nav-rail-scroll hide-scrollbar">
                 <div class="nav-rail-content">
                     {visibleSections.map((section: any, idx) => {
-                        const isRegions = section.label.toLowerCase().includes('регион') || idx === 0;
+                        const isCore = section.type === 'core' || idx === 0;
+                        const isMagazine = section.type === 'magazine';
                         return (
-                            <div class={`nav-rail-group ${isRegions ? 'group-regions' : 'group-topics'}`} key={section.label}>
+                            <div class={`nav-rail-group ${isCore ? 'group-core' : isMagazine ? 'group-magazine' : 'group-dynamic'}`} key={section.label}>
                                 <div class="group-header">
                                     <span class="group-label">{section.label}</span>
                                 </div>
@@ -248,8 +249,10 @@ function getRelativeTimeStr(dateStr?: string) {
     .nav-rail-link { display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.55rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
     .nav-rail-link:hover { background: var(--secondary); }
     .nav-rail-link.is-active { background: var(--foreground); color: var(--background); }
-    .group-regions .link-label { font-family: var(--font-sans); font-size: 0.66rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.02em; }
-    .group-topics .link-label { font-family: var(--font-serif); font-size: 0.78rem; font-weight: 800; line-height: 1.15; }
+    
+    .group-core .link-label, .group-dynamic .link-label { font-family: var(--font-sans); font-size: 0.66rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.02em; }
+    .group-magazine .link-label { font-family: var(--font-serif); font-size: 0.78rem; font-weight: 800; line-height: 1.15; }
+    
     .link-count { font-size: 0.54rem; background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 8px; opacity: 0.75; }
     .nav-fade { position: absolute; top: 0; bottom: 0; width: 30px; pointer-events: none; z-index: 5; }
     .nav-fade.left { left: 0; background: linear-gradient(to right, var(--background), transparent); opacity: 0; }
