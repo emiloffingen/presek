@@ -177,13 +177,11 @@ async def get_navigation():
         count = top_act.get(label, 0)
         magazine_items.append({"label": label, "href": f"/?topic={urllib.parse.quote(label)}", "count": count})
     
-    innovation_health_count = top_act.get("Технологија", 0) + top_act.get("Здравје", 0)
-    magazine_items.append({
-        "label": "Иновации & Здравје", 
-        "href": "/?topic=Технологија,Здравје", 
-        "count": innovation_health_count,
-        "is_merged": True
-    })
+    tech_count = top_act.get("Технологија", 0)
+    magazine_items.append({"label": "Технологија", "href": "/?topic=Технологија", "count": tech_count})
+    
+    health_count = top_act.get("Здравје", 0)
+    magazine_items.append({"label": "Здравје", "href": "/?topic=Здравје", "count": health_count})
 
     entertainment_count = top_act.get("Забава", 0)
     magazine_items.append({
