@@ -103,7 +103,7 @@ export default function BriefingDeliveryIsland({
 
   const mailHref = useMemo(() => {
     const subject = encodeURIComponent(`Пресек брифинг · ${dateLabel}`);
-    const body = encodeURIComponent(`${digest}\n\nhttps://presek.live/briefing`);
+    const body = encodeURIComponent(`${digest}\n\nhttps://presek.mk/briefing`);
     return `mailto:?subject=${subject}&body=${body}`;
   }, [dateLabel, digest]);
 
@@ -157,7 +157,7 @@ export default function BriefingDeliveryIsland({
 
   const copyDigest = async () => {
     try {
-      await navigator.clipboard.writeText(`${dateLabel}\n\n${digest}\n\nhttps://presek.live/briefing`);
+      await navigator.clipboard.writeText(`${dateLabel}\n\n${digest}\n\nhttps://presek.mk/briefing`);
       setCopyState('done');
       window.setTimeout(() => setCopyState('idle'), 1800);
     } catch {
