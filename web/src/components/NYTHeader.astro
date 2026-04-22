@@ -475,41 +475,52 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         top: 50%;
         transform: translateY(-50%);
         width: 1px;
-        height: 14px;
+        height: 12px;
         background-color: var(--border);
-        opacity: 0.6;
+        opacity: 0.4;
+        margin-left: 0.25rem;
     }
 
     .nav-link {
         font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 800;
+        font-size: 0.75rem;
+        font-weight: 700;
         text-transform: uppercase;
-        color: var(--foreground);
+        color: var(--muted-foreground);
         text-decoration: none;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.06em;
         transition: all 0.15s;
         display: flex;
         align-items: center;
         gap: 0.35rem;
         white-space: nowrap;
+        padding: 0.25rem 0.5rem;
+        opacity: 0.9;
     }
 
-    .nav-link:hover,
+    .nav-link:hover {
+        color: var(--foreground);
+        opacity: 1;
+    }
+
     .nav-link.is-active {
-        color: var(--nyt-accent);
+        color: var(--foreground);
+        border-bottom: 2px solid var(--nyt-accent);
+        padding-bottom: 2px;
+        opacity: 1;
     }
 
     .nav-link.is-tag {
         color: var(--muted-foreground);
-        font-style: italic;
+        font-style: normal;
         text-transform: none;
         font-size: 0.72rem;
+        opacity: 0.7;
     }
 
     .nav-link.is-tag:hover {
-        color: var(--nyt-accent);
-        text-decoration: underline;
+        color: var(--foreground);
+        opacity: 1;
     }
 
     .nav-heat-dot {
@@ -564,10 +575,12 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
 
     .nav-fade-left, .nav-fade-right {
         position: absolute;
-        top: 0; bottom: 0; width: 30px; z-index: 2; pointer-events: none;
+        top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
     }
-    .nav-fade-left { left: 0; background: linear-gradient(to right, var(--background), transparent); opacity: 0; }
-    .nav-fade-right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
+    .nav-fade-left { left: 0; background: linear-gradient(to right, var(--background), transparent 70%); }
+    .nav-fade-right { right: 0; background: linear-gradient(to left, var(--background), transparent 70%); }
 
     @media (max-width: 640px) {
         .topbar-row {
@@ -585,7 +598,7 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
             padding-left: 1.25rem;
         }
         .nav-link {
-            font-size: 0.62rem;
+            font-size: 0.7rem;
         }
     }
     @media (min-width: 1024px) {
