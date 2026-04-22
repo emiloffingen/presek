@@ -204,7 +204,6 @@ async def get_navigation():
         "sections": [
             {"label": "Региони", "items": regions, "type": "core"},
             {"label": "Теми", "items": active_topics, "type": "dynamic"},
-            {"label": "Локално", "items": local, "type": "heat"},
             {"label": "Во Фокус", "items": entities[:5], "type": "trending"}
         ]
     }
