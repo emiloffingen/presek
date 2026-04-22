@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
-import { Sparkles, Coffee, Moon, Sun, Timer, Activity } from 'lucide-react';
+import { Sparkles, Coffee, Moon, Sun, Timer, Activity, ChevronRight } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 
@@ -45,7 +45,6 @@ const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString(
     timeZone: 'Europe/Skopje'
 });
 
-// Dynamic Title and Icon based on time
 const nowSkopje = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Skopje"}));
 const hour = nowSkopje.getHours();
 let dispatchIcon = Sun;
@@ -59,45 +58,31 @@ function esc(s: string) {
 function renderBriefingLine(line: string) {
     const stripped = line.trim();
     if (stripped === '---') {
-        return `<hr class="my-12 border-t border-border" />`;
+        return `<div class="briefing-divider"></div>`;
     }
     if (line.startsWith('# ')) {
-        return `<h1 class="briefing-content-title font-serif font-black text-4xl md:text-5xl mb-8 text-foreground tracking-tight">${esc(line.substring(2))}</h1>`;
+        return `<h1 class="briefing-masthead-title">${esc(line.substring(2))}</h1>`;
     }
     if (line.startsWith('### ')) {
         let text = line.substring(4);
-        let link = "";
-        
-        // Match [[id]] at the end (allowing for trailing spaces)
         const match = text.match(/\[\[([\w-]+)\]\]\s*$/);
         if (match) {
             const id = match[1];
             text = text.replace(`[[${id}]]`, '').trim();
-            return `<h3 class="font-serif font-black text-xl md:text-2xl mt-12 mb-4 text-foreground border-b border-border pb-3 group">
-                <a href="/cluster/${id}" class="hover:text-nyt-accent transition-colors flex items-center justify-between">
-                    <span>${esc(text)}</span>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity">Истражи приказна →</span>
-                </a>
+            return `<h3 class="briefing-item-title">
+                <a href="/cluster/${id}">${esc(text)} <span>Истражи приказна →</span></a>
             </h3>`;
         }
-        
-        return `<h3 class="font-serif font-black text-xl md:text-2xl mt-12 mb-4 text-foreground border-b border-border pb-3">${esc(text)}</h3>`;
+        return `<h3 class="briefing-item-title">${esc(text)}</h3>`;
     }
     if (line.startsWith('## ')) {
         const text = line.substring(3).trim();
-        const headerMap: Record<string, string> = {
-            'Накусо: Пулсот на денот': 'Накусо',
-            'Клучни случувања': 'Клучни случувања',
-            'Медиумски агли и разлики': 'Перспективи',
-            'Сигнали за следење': 'Најави'
-        };
-        const label = headerMap[text] || text;
-        return `<h2 class="font-serif font-bold text-2xl md:text-3xl mt-12 mb-6 text-foreground italic border-l-4 border-nyt-accent pl-4 py-1">${esc(label)}</h2>`;
+        return `<h2 class="briefing-section-title">${esc(text)}</h2>`;
     }
     if (line.startsWith('**') && line.endsWith('**')) {
-        return `<p class="font-black mt-8 mb-3 text-nyt-accent uppercase text-[10px] tracking-[0.2em]">${esc(line.substring(2, line.length - 2))}</p>`;
+        return `<p class="briefing-kicker">${esc(line.substring(2, line.length - 2))}</p>`;
     }
-    return `<p class="mb-6 text-lg md:text-xl leading-relaxed text-foreground/90 font-nyt-body">${esc(line)}</p>`;
+    return `<p class="briefing-paragraph">${esc(line)}</p>`;
 }
 
 function renderBriefingListItem(line: string) {
@@ -105,21 +90,20 @@ function renderBriefingListItem(line: string) {
     const parts = item.split(':');
     if (parts.length > 1) {
         const label = parts.shift()!;
-        return `<li class="ml-2 mb-4 text-lg md:text-xl leading-relaxed text-foreground/90 font-nyt-body"><strong class="font-black text-foreground">${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
+        return `<li class="briefing-li"><strong>${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
     }
-    return `<li class="ml-2 mb-4 text-lg md:text-xl leading-relaxed text-foreground/90 font-nyt-body">${esc(item)}</li>`;
+    return `<li class="briefing-li">${esc(item)}</li>`;
 }
 
 function formatBriefing(content: string) {
     if (!content) return "";
-
     const out: string[] = [];
     let buffer: string[] = [];
     let firstParagraphFound = false;
 
     const flushList = () => {
         if (buffer.length === 0) return;
-        out.push(`<ul class="briefing-list space-y-2 mb-8">${buffer.join('')}</ul>`);
+        out.push(`<ul class="briefing-list">${buffer.join('')}</ul>`);
         buffer = [];
     };
 
@@ -127,360 +111,208 @@ function formatBriefing(content: string) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const stripped = line.trim();
-        
-        if (!stripped) {
-            flushList();
-            continue;
-        }
-
+        if (!stripped) { flushList(); continue; }
         if (line.startsWith('- ') || line.startsWith('• ')) {
             buffer.push(renderBriefingListItem(line));
             continue;
         }
-
         flushList();
-        
         let rendered = renderBriefingLine(line);
-        
-        // Add drop-cap to the first paragraph that isn't a header
         if (!firstParagraphFound && !line.startsWith('#') && !line.startsWith('**') && stripped.length > 50) {
-            rendered = rendered.replace('<p class="', '<p class="first-paragraph ');
+            rendered = rendered.replace('briefing-paragraph', 'briefing-paragraph first-paragraph');
             firstParagraphFound = true;
         }
-        
         out.push(rendered);
     }
     flushList();
-
     return out.join('\n');
 }
 
-// Extract sections for TOC
 const sectionHighlights = (briefing?.content || '').split('\n')
     .filter(l => l.startsWith('## '))
     .map(l => l.substring(3).trim());
 
 const readingTime = briefing ? Math.max(2, Math.ceil(briefing.content.split(' ').length / 180)) : 0;
-const intelligence = stats?.intelligence ?? {};
-const subjects = briefing?.subjects || [];
-const locations = briefing?.locations || [];
-
-function getSentimentEmoji(score: number) {
-    if (score > 0.2) return '😊';
-    if (score < -0.2) return '😤';
-    return '😐';
-}
 const DispatchIcon = dispatchIcon;
 ---
 
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
     <NYTHeader />
 
-	<main class="site-layout py-[var(--page-py)]">
-			<header class="briefing-header editorial-header motion-rise">
-				<div class="flex items-center gap-2 mb-4">
-                    <span class="page-kicker">Премиум Диспач</span>
-                    <span class="h-px w-8 bg-border"></span>
-                    <span class="flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
-                        <span class="flex items-center gap-1.5"><Timer size={10} /> {readingTime} мин. читање</span>
-                        <button id="briefing-audio-trigger" class="flex items-center gap-1.5 hover:text-nyt-accent transition-colors group">
-                            <Activity size={10} className="group-hover:animate-pulse" /> <span id="audio-label">Слушај го брифингот</span>
-                        </button>
-                    </span>
+	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead motion-rise">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
+                <div class="masthead-meta">
+                    <span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
+                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
                 </div>
-				
-				<div class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-10">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-secondary/30 border border-border rounded-full">
-                            <DispatchIcon size={26} className="text-nyt-accent" />
-                        </div>
-                        <h1 class="stats-headline editorial-headline !my-0">
-                            Дневен <span class="italic font-serif serif-display">Брифинг</span>
-                        </h1>
-                    </div>
-                    <div class="briefing-meta-box">
-                        <p class="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{currentDate}</p>
-                        <p class="text-[10px] text-nyt-accent font-bold mt-1">ВЕРЗИЈА 4.0 · СИНТЕТИЗИРАНО</p>
-                    </div>
+            </div>
+
+            <div class="masthead-main">
+                <div class="masthead-branding">
+                    <DispatchIcon size={32} className="text-nyt-accent" />
+                    <h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
                 </div>
+                <div class="masthead-date">
+                    <p>{currentDate}</p>
+                </div>
+            </div>
 
-                {sectionHighlights.length > 0 && (
-                    <nav class="briefing-toc py-4 border-y border-border flex items-center gap-4 overflow-x-auto hide-scrollbar">
-                        <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Денес во фокус:</span>
-                        <div class="flex items-center gap-6">
-                            {sectionHighlights.map((title: string) => (
-                                <span class="text-[11px] font-bold text-foreground/70 hover:text-nyt-accent cursor-default whitespace-nowrap">
-                                    {title}
-                                </span>
-                            ))}
-                        </div>
-                    </nav>
-                )}
-			</header>
+            {sectionHighlights.length > 0 && (
+                <nav class="masthead-nav hide-scrollbar">
+                    <span class="nav-label">ВО ФОКУС:</span>
+                    {sectionHighlights.map((title: string) => (
+                        <span class="nav-link">{title}</span>
+                    ))}
+                </nav>
+            )}
+        </header>
 
-            {briefing && (
-                <section class="briefing-morning-context mt-8 p-8 border border-border bg-card/40 rounded-2xl motion-rise motion-delay-1">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                        <div class="max-w-xl">
-                            <h2 class="font-serif text-2xl md:text-3xl font-black mb-2 italic">
-                                {hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}
-                            </h2>
-                            <p class="font-nyt-body text-secondary-foreground leading-relaxed">
-                                Системот денес обработи <span class="font-bold text-foreground">{(stats?.total_articles || 0).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор. Овој брифинг е синтеза на <span class="font-bold text-foreground">6-те највлијателни развои</span> кои го обликуваат денот.
+        <div class="broadsheet-grid mt-12">
+            <div class="broadsheet-main">
+                {briefing ? (
+                    <article class="briefing-container">
+                        <div class="briefing-intro">
+                            <h2 class="intro-greeting">{hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}</h2>
+                            <p class="intro-copy">
+                                Денешната синтеза ги групира <span class="font-bold">{(stats?.total_articles || 0).toLocaleString('mk-MK')} објави</span> низ македонскиот медиумски простор во 6 клучни линии кои ја дефинираат агендата на денот.
                             </p>
                         </div>
-                        <div class="flex gap-8">
-                            <div class="text-center">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Фокус</p>
-                                <p class="font-serif font-black text-2xl">{(stats?.total_clusters || 0).toLocaleString('mk-MK')}</p>
-                                <p class="text-[9px] font-bold text-nyt-accent">ТЕМИ</p>
+
+                        <div class="briefing-content" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
+                        
+                        <div class="briefing-signature">
+                            <div class="sig-mark">
+                                <Sparkles size={24} className="text-nyt-accent" />
                             </div>
-                            <div class="text-center border-l border-border pl-8">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Ритам</p>
-                                <p class="font-serif font-black text-2xl">{(stats?.total_feeds || 0)}</p>
-                                <p class="text-[9px] font-bold text-nyt-accent">ИЗВОРИ</p>
-                            </div>
+                            <p class="sig-quote">„Ние ги наоѓаме фактите, вие го градите мислењето.“</p>
+                            <p class="sig-label">ПРЕСЕК AI УРЕДНИК</p>
                         </div>
+                    </article>
+                ) : (
+                    <div class="briefing-empty">
+                        <Activity className="animate-pulse opacity-30 text-nyt-accent" size={48} />
+                        <h3>Синтетизирање во тек</h3>
+                        <p>Нашиот дигитален уредник ги обработува утринските вести за да ви понуди најпрецизен диспач.</p>
+                    </div>
+                )}
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-featured">
+                    <p class="rail-kicker">Интелигенција</p>
+                    <h3 class="rail-title">КЛУЧНИ СУБЈЕКТИ</h3>
+                    <div class="rail-subject-list">
+                        {(briefing?.subjects || []).map((s: any) => (
+                            <div class="subject-row">
+                                <div class="subject-info">
+                                    <span class="subject-name">{s.name}</span>
+                                    <span class="subject-count">{s.total_mentions} споменувања</span>
+                                </div>
+                                <span class="subject-sentiment">{s.sentiment_score > 0.2 ? '😊' : s.sentiment_score < -0.2 ? '😤' : '😐'}</span>
+                            </div>
+                        ))}
                     </div>
                 </section>
-            )}
 
-			<div class="briefing-grid mt-10">
-				<div class="briefing-main">
-					{briefing ? (
-						<article class="briefing-view prose-nyt max-w-none">
-							<div class="briefing-body border-t-2 border-foreground pt-12" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
-                            
-                            <div class="mt-16 pb-16 border-b border-border flex flex-col items-center text-center">
-                                <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mb-4 border border-border">
-                                    <Sparkles size={20} className="text-nyt-accent" />
-                                </div>
-                                <p class="font-serif italic text-lg text-muted-foreground">„Ние ги наоѓаме фактите, вие го градите мислењето.“</p>
-                                <p class="font-sans text-[10px] font-black uppercase tracking-[0.2em] mt-6 text-foreground">Верификувано од Пресек AI Уредник</p>
-                                <div class="mt-4 opacity-30 select-none pointer-events-none">
-                                    <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M10 25C20 20 30 35 45 25C60 15 75 30 110 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <div class="mt-16 p-1 bg-gradient-to-br from-[#ff5e5b] to-[#ff8a71] rounded-3xl shadow-lg">
-                                <div class="bg-card rounded-[calc(1.5rem-1px)] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                                    <div class="text-center md:text-left">
-                                        <h4 class="font-serif font-bold text-2xl mb-2">Ви се допадна денешниот брифинг?</h4>
-                                        <p class="text-sm text-secondary-foreground leading-relaxed max-w-md">
-                                            Вашата поддршка ни помага овој сервис да остане бесплатен, независен и достапен за сите.
-                                        </p>
-                                    </div>
-                                    <a 
-                                        href="https://ko-fi.com/presek" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        class="group flex items-center gap-3 px-8 py-4 bg-[#ff5e5b] text-white font-black text-xs uppercase tracking-widest rounded-full hover:bg-[#e54b48] hover:scale-105 transition-all shadow-md"
-                                    >
-                                        <img src="https://ko-fi.com/img/cup-border.png" alt="Ko-fi" class="h-5 w-auto brightness-0 invert transition-transform group-hover:rotate-12" />
-                                        <span>Поддржи на Ko-fi</span>
-                                    </a>
-                                </div>
-                            </div>
-						</article>
-					) : (
-						<div class="briefing-empty editorial-panel p-16 text-center">
-							<Activity className="animate-pulse mx-auto mb-6 opacity-30 text-nyt-accent" size={48} />
-							<h3 class="font-black text-foreground mb-3 uppercase tracking-[0.2em] text-sm">Синтетизирање во тек</h3>
-								<p class="text-muted-foreground text-sm leading-relaxed font-serif italic max-w-sm mx-auto">
-									Нашиот дигитален уредник ги обработува утринските вести за да ви понуди најпрецизен диспач.
-								</p>
-						</div>
-					)}
-				</div>
-
-				<aside class="briefing-rail">
-					<div class="rail-card editorial-panel-strong">
-							<h3 class="rail-card-title flex items-center gap-2"><Sparkles size={14} className="text-nyt-accent" /> Клучни ликови</h3>
-							<div class="space-y-4">
-                                {subjects.map((s: any) => (
-                                    <div class="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
-                                        <div class="flex flex-col">
-                                            <span class="font-serif font-bold text-sm">{s.name}</span>
-                                            <span class="text-[9px] uppercase font-black opacity-60 tracking-tighter">{s.total_mentions} споменувања</span>
-                                        </div>
-                                        <span title="Тон на известување">{getSentimentEmoji(s.sentiment_score)}</span>
-                                    </div>
-                                ))}
-                                {subjects.length === 0 && <p class="text-xs italic text-muted-foreground">Нема детектирано специфични субјекти.</p>}
-                            </div>
-					</div>
-
-                    <div class="rail-card editorial-panel">
-							<h3 class="rail-card-title flex items-center gap-2"><Activity size={14} /> Жаришта</h3>
-							<div class="flex flex-wrap gap-2">
-                                {locations.map((l: any) => (
-                                    <span class="px-2 py-1 bg-secondary/50 rounded border border-border text-[10px] font-bold uppercase tracking-tight">
-                                        {l.name}
-                                    </span>
-                                ))}
-                                {locations.length === 0 && <p class="text-xs italic text-muted-foreground">Нема детектирано специфични локации.</p>}
-                            </div>
-					</div>
-
-					<div class="rail-card editorial-panel">
-						<h4 class="rail-card-title flex items-center gap-2"><Timer size={14}/> Достава</h4>
-						<p class="text-xs text-muted-foreground mb-6">Добивајте го утринскиот брифинг директно преку ntfy.sh или Web Push.</p>
+                <section class="rail-block">
+                    <p class="rail-kicker">Инструменти</p>
+                    <h3 class="rail-title">ДОСТАВА</h3>
+                    <p class="rail-text">Добивајте го брифингот секое утро преку вашите омилени канали.</p>
+                    <div class="mt-6">
                         <BriefingDeliveryIsland client:load variant="summary" content={briefing?.content || ''} dateLabel={currentDate} />
-					</div>
-				</aside>
-			</div>
+                    </div>
+                </section>
+
+                <div class="rail-support-card">
+                    <h4 class="font-serif font-bold text-lg mb-2">Поддржи го Пресек</h4>
+                    <p class="text-xs opacity-80 mb-4">Вашата поддршка ни помага овој сервис да остане бесплатен и независен.</p>
+                    <a href="https://ko-fi.com/presek" target="_blank" class="support-btn">
+                        <Coffee size={14} /> Ko-fi
+                    </a>
+                </div>
+            </aside>
+        </div>
 	</main>
 
 	<Footer />
 </Layout>
 
-<script>
-    const initAudio = () => {
-        const btn = document.getElementById('briefing-audio-trigger');
-        const label = document.getElementById('audio-label');
-        if (!btn || !label) return;
-
-        let isPlaying = false;
-        let utterance: SpeechSynthesisUtterance | null = null;
-
-        btn.addEventListener('click', () => {
-            if (isPlaying) {
-                window.speechSynthesis.cancel();
-                isPlaying = false;
-                label.innerText = 'Слушај го брифингот';
-                return;
-            }
-
-            const content = document.querySelector('.briefing-body')?.innerText || '';
-            if (!content) return;
-
-            utterance = new SpeechSynthesisUtterance(content);
-            utterance.lang = 'mk-MK'; // Basic support, browser dependent
-            utterance.rate = 1.0;
-            
-            utterance.onstart = () => {
-                isPlaying = true;
-                label.innerText = 'Паузирај го аудиото';
-            };
-
-            utterance.onend = () => {
-                isPlaying = false;
-                label.innerText = 'Слушај го брифингот';
-            };
-
-            window.speechSynthesis.speak(utterance);
-        });
-    };
-
-    initAudio();
-    document.addEventListener('astro:page-load', initAudio);
-</script>
-
 <style>
-	.briefing-meta-box {
-		text-align: right;
-	}
+    /* ── Editorial Masthead ──────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 1.5rem; }
+    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-meta { display: flex; gap: 1.25rem; }
+    .meta-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; color: var(--muted-foreground); letter-spacing: 0.05em; }
 
-	.briefing-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 3rem;
-	}
+    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; }
+    .masthead-branding { display: flex; align-items: center; gap: 1rem; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; letter-spacing: -0.02em; }
+    .masthead-title span { italic: true; font-weight: 400; font-family: var(--font-serif); }
+    .masthead-date { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-align: right; }
 
-	.briefing-main,
-	.briefing-rail {
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
-	}
+    .masthead-nav { display: flex; align-items: center; gap: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); overflow-x: auto; }
+    .nav-label { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--muted-foreground); white-space: nowrap; }
+    .nav-link { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; white-space: nowrap; cursor: default; }
 
-    .briefing-body {
-        column-count: 1;
+    /* ── Broadsheet Grid ────────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .first-paragraph::first-letter {
-        float: left;
-        font-family: var(--font-serif);
-        font-size: 4.8rem;
-        font-weight: 900;
-        line-height: 0.8;
-        padding-top: 0.4rem;
-        padding-right: 0.8rem;
-        padding-left: 0.1rem;
-        color: var(--foreground);
-    }
+    /* ── Briefing Content ────────────────────────────── */
+    .intro-greeting { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 900; italic: true; margin-bottom: 1rem; }
+    .intro-copy { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; margin-bottom: 3.5rem; }
 
-    .briefing-toc {
-        scrollbar-width: none;
-    }
-    .briefing-toc::-webkit-scrollbar {
-        display: none;
-    }
+    .briefing-content { border-top: 2px solid var(--foreground); padding-top: 3rem; }
+    :global(.briefing-masthead-title) { font-family: var(--font-serif); font-size: 3rem; font-weight: 900; margin-bottom: 2rem; line-height: 1; }
+    :global(.briefing-section-title) { font-family: var(--font-serif); font-size: 2rem; font-weight: 900; italic: true; margin: 3.5rem 0 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    :global(.briefing-item-title) { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 850; margin: 2.5rem 0 1rem; line-height: 1.2; }
+    :global(.briefing-item-title a) { text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    :global(.briefing-item-title a span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); opacity: 0; transition: opacity 0.2s; }
+    :global(.briefing-item-title a:hover span) { opacity: 1; }
+    
+    :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
+    :global(.first-paragraph::first-letter) { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    
+    :global(.briefing-list) { list-style: none; padding: 0; margin-bottom: 2rem; }
+    :global(.briefing-li) { font-family: var(--font-nyt-body); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
+    :global(.briefing-li::before) { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
+    :global(.briefing-divider) { height: 1px; background: var(--border); margin: 3rem 0; }
+    :global(.briefing-kicker) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
 
-	.rail-card-title {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin: 0 0 1rem;
-		padding-bottom: 0.8rem;
-		border-bottom: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.74rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
+    /* ── Signature ───────────────────────────────────── */
+    .briefing-signature { margin-top: 5rem; padding: 4rem 0; border-top: 1px solid var(--border); text-align: center; }
+    .sig-mark { margin-bottom: 1.5rem; display: flex; justify-content: center; }
+    .sig-quote { font-family: var(--font-serif); font-size: 1.25rem; italic: true; color: var(--muted-foreground); margin-bottom: 1rem; }
+    .sig-label { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.2em; text-transform: uppercase; }
 
-	.rail-copy {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		line-height: 1.6;
-		color: var(--secondary-foreground);
-	}
+    /* ── Rail Blocks ─────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-featured { padding: 1.5rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.05em; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; color: var(--secondary-foreground); line-height: 1.5; }
 
-    .briefing-list {
-        list-style: none;
-        padding-left: 0;
-    }
+    .rail-subject-list { display: flex; flex-direction: column; gap: 1rem; }
+    .subject-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    .subject-row:last-child { border-bottom: none; }
+    .subject-name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 800; display: block; }
+    .subject-count { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; opacity: 0.6; }
+    .subject-sentiment { font-size: 1.1rem; }
 
-    .briefing-list :global(li)::before {
-        content: "—";
-        margin-right: 0.75rem;
-        color: var(--nyt-accent);
-        font-weight: black;
-    }
-
-	@media (min-width: 960px) {
-		.briefing-grid {
-			grid-template-columns: minmax(0, 1.8fr) minmax(18rem, 0.7fr);
-			gap: 4rem;
-		}
-
-        .briefing-rail {
-            position: sticky;
-            top: 2rem;
-        }
-
-        .briefing-body {
-            column-count: 1;
-            column-gap: 3rem;
-        }
-	}
+    .rail-support-card { padding: 1.5rem; border: 1px solid var(--border); background: var(--background); }
+    .support-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; background: var(--foreground); color: var(--background); font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; text-decoration: none; border-radius: 4px; }
 
     @media (max-width: 640px) {
-        .briefing-meta-box {
-            text-align: left;
-        }
-
-        .briefing-grid {
-            gap: 2rem;
-        }
-
-        .briefing-main,
-        .briefing-rail {
-            gap: 1.25rem;
-        }
+        .masthead-main { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        .masthead-date { text-align: left; }
+        .intro-greeting { font-size: 1.85rem; }
+        .briefing-signature { padding: 3rem 0; }
     }
 </style>

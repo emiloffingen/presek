@@ -1,7 +1,7 @@
 ---
 import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BarChart3, Radio } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 
 interface Props {
@@ -31,7 +31,7 @@ interface NavItem {
     href: string;
 }
 
-let navigationData: { breaking: NavItem[]; focus: NavItem[]; sections: NavItem[] } = { breaking: [], focus: [], sections: [] };
+let navigationData: { breaking: NavItem[]; sections: any[] } = { breaking: [], sections: [] };
 let stats = propStats;
 
 try {
@@ -49,31 +49,29 @@ try {
 }
 
 const hasBreaking = navigationData.breaking.length > 0;
-const breakingItems = navigationData.breaking.slice(0, 4);
+const breakingItems = navigationData.breaking.slice(0, 5);
 const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
 ---
 
-{/* ── Sticky header ───────────────────────────────────── */}
 <div class="header-sticky-wrapper" id="main-header">
-    {/* ── Live ticker ─────────────────────────────────────── */}
     {hasBreaking && (
         <div class="live-ticker" id="live-ticker">
             <div class="live-ticker-container site-layout">
                 <span class="live-ticker-badge">
-                    <span class="live-ticker-dot"></span>
-                    Во живо
+                    <Radio size={12} className="animate-pulse" />
+                    ВО ЖИВО
                 </span>
                 <div class="live-ticker-track-wrap">
                     <div class="live-ticker-track">
                         {breakingItems.map((item) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline">
-                                <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                                <span class="ticker-sep" aria-hidden="true">•</span>
                                 {item.label}
                             </a>
                         ))}
                         {breakingItems.map((item) => (
                             <a href={item.href} data-astro-reload class="live-ticker-headline" aria-hidden="true">
-                                <span class="ticker-sep" aria-hidden="true">&bull;</span>
+                                <span class="ticker-sep" aria-hidden="true">•</span>
                                 {item.label}
                             </a>
                         ))}
@@ -83,129 +81,80 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
         </div>
     )}
 
-    <header class="site-layout topbar">
-        <div class="topbar-row">
-            <div class="topbar-left">
-                <div class="search-trigger-wrap">
+    <header class="editorial-topbar site-layout">
+        <div class="topbar-main">
+            <div class="topbar-left-stack">
+                <div class="search-entry">
                     <SearchIsland initialQuery={q} client:idle />
                 </div>
-                <span class="topbar-date">{currentDate}</span>
+                <time class="topbar-date-display">{currentDate}</time>
             </div>
 
-            <div class="topbar-center">
-                <a href="/" data-astro-reload class="topbar-brand-link">
-                    <img src="/img/presek_emblem.svg?v=3" alt="ПРЕСЕК.мк Емблем" class="topbar-emblem site-emblem" />
-                    <img src="/logo.svg?v=3" alt="ПРЕСЕК.мк" class="topbar-logo site-logo" />
+            <div class="topbar-branding">
+                <a href="/" data-astro-reload class="brand-link">
+                    <img src="/img/presek_emblem.svg?v=3" alt="" class="brand-emblem site-emblem" />
+                    <img src="/logo.svg?v=3" alt="ПРЕСЕК.мк" class="brand-logo site-logo" />
                 </a>
             </div>
 
-            <div class="topbar-right">
-                <div class="topbar-modes">
+            <div class="topbar-actions">
+                <div class="topbar-modes-rail">
                     <a href="/briefing" data-astro-reload class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
-                        <Sparkles size={14} /> Брифинг
+                        <Sparkles size={13} strokeWidth={2.5} /> Брифинг
                     </a>
-                    <a href="/pulse" data-astro-reload class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>Пулс</a>
+                    <a href="/pulse" data-astro-reload class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
+                        <BarChart3 size={13} strokeWidth={2.5} /> Пулс
+                    </a>
                     <a href="/for-you" data-astro-reload class={`mode-link ${Astro.url.pathname === '/for-you' ? 'is-active' : ''}`}>За Вас</a>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="topbar-stat-container">
-                        {stats?.last_1h && stats.last_1h > 0 && (
-                            <span class="topbar-stat">
-                                <span class="topbar-stat-dot"></span>
-                                +{stats.last_1h}
-                            </span>
-                        )}
-                    </div>
+                
+                <div class="topbar-util">
+                    {stats?.last_1h && stats.last_1h > 0 && (
+                        <div class="activity-chip" title="Нови вести во последен час">
+                            <span class="activity-dot"></span>
+                            +{stats.last_1h}
+                        </div>
+                    )}
                     <ThemeIsland client:load />
                 </div>
             </div>
         </div>
     </header>
 
-    {/* ── NYT-Style Discovery Bar ──────────────────────── */}
-    <nav class="site-layout nyt-discovery-nav" aria-label="Навигација">
-        <div class="nyt-nav-wrapper">
-            <div class="nyt-nav-container hide-scrollbar">
-                <div class="nyt-nav-list">
-                    {visibleSections.map((section: any, sectionIndex) => {
-                        const tagItems = section.items.filter((i: any) => i.type === 'trending_tag');
-                        const regularItems = section.items.filter((i: any) => i.type !== 'trending_tag');
-                        
-                        if (regularItems.length === 0 && tagItems.length === 0) return null;
-                        
-                        const isSectionsSection = section.label.toLowerCase().includes('секција') || sectionIndex === 0;
-                        
+    <nav class="site-layout discovery-nav-v2" aria-label="Брза навигација">
+        <div class="nav-rail-wrapper">
+            <div class="nav-rail-scroll hide-scrollbar">
+                <div class="nav-rail-content">
+                    {visibleSections.map((section: any, idx) => {
+                        const isRegions = section.label.toLowerCase().includes('регион') || idx === 0;
                         return (
-                            <div class="nyt-nav-section" key={section.label}>
-                                {regularItems.length > 0 && (
-                                    <>
-                                        {isSectionsSection ? (
-                                            <span class="nyt-section-header">
-                                                <svg class="nyt-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M3 12h18M3 6h18M3 18h18" />
-                                                </svg>
-                                                Секции
-                                            </span>
-                                        ) : (
-                                            <span class="nyt-section-label">{section.label}</span>
-                                        )}
-                                        <div class="nyt-section-items">
-                                            {regularItems.map((item: any, index: number) => {
-                                                const isActive = item.href.includes('category=')
-                                                    ? category === item.label
-                                                    : item.href.includes('subcategory=')
-                                                    ? Astro.url.searchParams.get('subcategory') === item.label
-                                                    : item.href.includes('topic=')
-                                                    ? topic === item.label
-                                                    : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
-
-                                                const isFirst = index === 0;
-                                                const isFeatured = item.count > 50;
-
-                                                return (
-                                                    <a 
-                                                        href={item.href} 
-                                                        data-astro-reload 
-                                                        class={`nyt-nav-link ${isActive ? 'is-active' : ''} ${isFeatured ? 'is-featured' : ''} ${isFirst ? 'is-first' : ''}`}
-                                                    >
-                                                        <span class="nyt-link-text">{item.label}</span>
-                                                        {item.count > 0 && (
-                                                            <span class="nyt-nav-count">
-                                                                {item.count > 99 ? '99+' : item.count}
-                                                            </span>
-                                                        )}
-                                                    </a>
-                                                );
-                                            })}
-                                        </div>
-                                    </>
-                                )}
-                                
-                                {tagItems.length > 0 && isSectionsSection && (
-                                    <div class="nyt-tag-section">
-                                        <span class="nyt-tag-label">
-                                            <svg class="nyt-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" />
-                                            </svg>
-                                            Тренд тагови
-                                        </span>
-                                        <div class="nyt-tag-items">
-                                            {tagItems.map((item: any) => (
-                                                <a href={item.href} data-astro-reload class="nyt-nav-tag" key={item.href}>
-                                                    <span class="nyt-tag-hash">#</span>
-                                                    {item.label.replace('#', '')}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                            <div class={`nav-rail-group ${isRegions ? 'group-regions' : 'group-topics'}`} key={section.label}>
+                                <div class="group-header">
+                                    <span class="group-label">{section.label}</span>
+                                </div>
+                                <div class="group-links">
+                                    {section.items.map((item: any) => {
+                                        const isActive = item.href.includes('category=')
+                                            ? category === item.label
+                                            : item.href.includes('topic=')
+                                            ? topic === item.label
+                                            : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
+                                        return (
+                                            <a href={item.href} data-astro-reload class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
+                                                {item.type === 'trending_tag' && <span class="tag-prefix">#</span>}
+                                                <span class="link-label">{item.label.replace('#', '')}</span>
+                                                {item.count > 0 && <span class="link-count">{item.count}</span>}
+                                            </a>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         );
                     })}
                 </div>
-                <div class="nyt-nav-fade left" aria-hidden="true"></div>
-                <div class="nyt-nav-fade right" aria-hidden="true"></div>
             </div>
+            <div class="nav-fade left"></div>
+            <div class="nav-fade right"></div>
         </div>
     </nav>
 </div>
@@ -215,751 +164,104 @@ const visibleSections = (navigationData.sections || []).filter((section: any) =>
     .live-ticker {
         background: var(--nyt-red);
         color: #fff;
-        overflow: hidden;
-        position: relative;
-        height: 1.55rem;
-        box-shadow: inset 0 -2px 10px rgba(0,0,0,0.1);
-    }
-
-    .live-ticker-container {
+        height: 1.65rem;
         display: flex;
         align-items: center;
-        height: 100%;
-        gap: 0;
+        overflow: hidden;
     }
-
+    .live-ticker-container { display: flex; align-items: center; width: 100%; gap: 1rem; }
     .live-ticker-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 950;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        white-space: nowrap;
-        flex-shrink: 0;
-        z-index: 5;
-        padding: 0 1rem;
-        background: var(--nyt-red);
-        box-shadow: 10px 0 15px var(--nyt-red);
+        display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.56rem; font-weight: 900;
+        letter-spacing: 0.12em; color: #fff; padding-right: 1.25rem; border-right: 1px solid rgba(255,255,255,0.25);
     }
+    .live-ticker-track-wrap { flex: 1; overflow: hidden; }
+    .live-ticker-track { display: flex; width: max-content; animation: ticker-scroll 25s linear infinite; }
+    @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.68rem; font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; }
+    .ticker-sep { margin: 0 1rem; opacity: 0.45; }
 
-    .live-ticker-dot {
-        width: 6px;
-        height: 6px;
-        background: #fff;
-        border-radius: 50%;
-        animation: ticker-pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes ticker-pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.7); }
-    }
-
-    .live-ticker-track-wrap {
-        flex: 1;
-        overflow: hidden;
-        mask-image: linear-gradient(to right, transparent, black 0.5rem, black calc(100% - 1rem), transparent);
-        display: flex;
-        align-items: center;
-    }
-
-    .live-ticker-track {
-        display: flex;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-        width: max-content;
-        animation: ticker-scroll 20s linear infinite;
-    }
-
-    .live-ticker-track:hover {
-        animation-play-state: paused;
-    }
-
-    @keyframes ticker-scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-    }
-
-    .live-ticker-headline {
-        display: inline-flex;
-        align-items: center;
-        font-family: var(--font-serif);
-        font-size: 0.68rem;
-        font-weight: 600;
-        color: #fff;
-        text-decoration: none;
-        white-space: nowrap;
-        padding: 0 0.25rem;
-        flex-shrink: 0;
-    }
-
-    .live-ticker-headline:hover {
-        text-decoration: underline;
-        text-underline-offset: 2px;
-    }
-
-    .ticker-sep {
-        margin: 0 0.75rem;
-        opacity: 0.5;
-        font-size: 0.5rem;
-    }
-
-    /* ── Sticky Header ────────────────────────────────── */
+    /* ── Editorial Topbar ─────────────────────────────── */
     .header-sticky-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: color-mix(in srgb, var(--background) 95%, transparent);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        position: sticky; top: 0; z-index: 100; background: var(--background);
+        border-bottom: 1px solid var(--border); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .editorial-topbar { padding: 0.75rem 0 0.85rem; }
+    .topbar-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+    
+    .topbar-left-stack { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+    .topbar-date-display { font-family: var(--font-sans); font-size: 0.62rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
 
-    .header-hidden {
-        transform: translateY(-100%);
-    }
+    .topbar-branding { display: flex; justify-content: center; }
+    .brand-link { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+    .brand-emblem { height: 1.6rem; }
+    .brand-logo { height: 2rem; }
 
-    /* ── Topbar ───────────────────────────────────────── */
-    .topbar {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .topbar-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        position: relative;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    @media (max-width: 640px) {
-        .live-ticker {
-            display: none;
-        }
-
-        .topbar-row { 
-            display: grid;
-            grid-template-columns: auto 1fr auto; 
-            gap: 0.5rem;
-        }
-        .topbar-logo { height: 1.1rem; }
-    }
-
-    .topbar-left, .topbar-right {
-        flex: 0 0 auto;
-        z-index: 1;
-        min-width: 0;
-    }
-
-    .topbar-left {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-    }
-
-    .topbar-center {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        max-width: 40%;
-    }
-
-    @media (max-width: 1024px) {
-        .topbar-center {
-            position: relative;
-            left: 0;
-            transform: none;
-            flex: 1;
-            max-width: none;
-        }
-    }
-
-    .topbar-brand-link {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-decoration: none;
-        pointer-events: auto;
-        min-width: 0;
-        overflow: hidden;
-    }
-
-    .topbar-emblem {
-        height: 1.2rem;
-        flex-shrink: 0;
-    }
-
-    .topbar-logo {
-        height: 1.45rem;
-        flex-shrink: 0;
-    }
-
-    @media (max-width: 768px) {
-        .topbar-logo, .topbar-emblem {
-            display: none;
-        }
-        .topbar-brand-link::after {
-            content: "ПРЕСЕК.мк";
-            display: block;
-            font-family: var(--font-serif);
-            font-weight: 900;
-            font-size: clamp(0.9rem, 4vw, 1.2rem);
-            letter-spacing: 0.05em;
-            color: var(--foreground);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    }
-
-    .topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .topbar-date {
-        font-family: var(--font-sans);
-        color: var(--muted-foreground);
-        font-size: 0.6rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 500;
-        display: none;
-    }
-
-    @media (min-width: 1024px) {
-        .topbar-date {
-            display: inline;
-        }
-    }
-
-    .topbar-links {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-    }
-
-    .topbar-link {
-        color: var(--foreground);
-        text-decoration: none;
-        font-family: var(--font-sans);
-        font-size: 0.58rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        opacity: 0.7;
-        transition: opacity 0.15s;
-    }
-
-    .topbar-link:hover { opacity: 1; }
-
-    .topbar-stat {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: var(--nyt-red);
-        white-space: nowrap;
-    }
-
-    .topbar-stat-dot {
-        width: 5px;
-        height: 5px;
-        background: var(--nyt-red);
-        border-radius: 50%;
-        animation: ticker-pulse 1.5s ease-in-out infinite;
-    }
-
-    /* ── NYT-Style Discovery Navigation ─────────────── */
-    :root {
-        --nyt-dark: #121212;
-        --nyt-light-gray: #f0f0f0;
-        --nyt-medium-gray: #e0e0e0;
-        --nyt-red: #d50000;
-        --nyt-text: #333;
-        --nyt-text-light: #666;
-        --nyt-accent: #0066cc;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --nyt-light-gray: #1a1a1a;
-            --nyt-medium-gray: #333;
-            --nyt-text: #e0e0e0;
-            --nyt-text-light: #999;
-        }
-    }
-
-    .nyt-discovery-nav {
-        background: var(--nyt-light-gray);
-        border-bottom: 1px solid var(--nyt-medium-gray);
-        position: relative;
-    }
-
-    .nyt-nav-wrapper {
-        width: 100%;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .nyt-nav-container {
-        width: 100%;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    .nyt-nav-container::-webkit-scrollbar {
-        display: none;
-    }
-
-    .nyt-nav-list {
-        display: flex;
-        align-items: flex-start;
-        gap: 0;
-        white-space: nowrap;
-        padding: 0.5rem 0;
-        min-width: 100%;
-    }
-
-    .nyt-nav-section {
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        padding: 0 1rem;
-        border-right: 1px solid var(--nyt-medium-gray);
-    }
-
-    .nyt-nav-section:last-child {
-        border-right: none;
-    }
-
-    .nyt-section-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-family: var(--font-sans);
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--Foreground);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.25rem;
-    }
-
-    .nyt-section-icon {
-        width: 12px;
-        height: 12px;
-        color: var(--nyt-red);
-    }
-
-    .nyt-section-label {
-        font-family: var(--font-serif);
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--nyt-text);
-        text-transform: capitalize;
-        margin-bottom: 0.25rem;
-        display: block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .nyt-section-header,
-        .nyt-section-label {
-            color: var(--foreground);
-        }
-    }
-
-    .nyt-section-items {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 0.125rem;
-    }
-
-    .nyt-nav-link {
-        font-family: var(--font-serif);
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--nyt-text);
-        text-decoration: none;
-        white-space: nowrap;
-        padding: 0.375rem 0.75rem;
-        border-radius: 2px;
-        transition: all 0.15s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        position: relative;
-    }
-
-    .nyt-nav-link .nyt-link-text {
-        line-height: 1.2;
-    }
-
-    .nyt-nav-link:hover {
-        background: var(--muted);
-        color: var(--nyt-red);
-    }
-
-    .nyt-nav-link.is-active {
-        background: var(--foreground);
-        color: var(--background);
-        font-weight: 600;
-    }
-
-    .nyt-nav-link.is-featured {
-        font-weight: 600;
-    }
-
-    .nyt-nav-link.is-first {
-        font-weight: 600;
-    }
-
-    .nyt-nav-count {
-        font-family: var(--font-sans);
-        font-size: 0.625rem;
-        font-weight: 700;
-        color: var(--nyt-text-light);
-        background: rgba(213, 0, 0, 0.08);
-        padding: 0.125rem 0.375rem;
-        border-radius: 10px;
-        line-height: 1;
-        min-width: 1.5em;
-        text-align: center;
-    }
-
-    .nyt-nav-link.is-active .nyt-nav-count {
-        background: rgba(255, 255, 255, 0.2);
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .nyt-nav-count {
-            background: rgba(213, 0, 0, 0.15);
-            color: var(--nyt-text-light);
-        }
-        .nyt-nav-link.is-active .nyt-nav-count {
-            background: rgba(0, 0, 0, 0.3);
-            color: rgba(255, 255, 255, 0.9);
-        }
-    }
-
-    .nyt-tag-section {
-        margin-top: 0.5rem;
-    }
-
-    .nyt-tag-label {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-family: var(--font-sans);
-        font-size: 0.625rem;
-        font-weight: 700;
-        color: var(--nyt-text-light);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.375rem;
-    }
-
-    .nyt-tag-icon {
-        width: 10px;
-        height: 10px;
-        color: var(--nyt-red);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .nyt-tag-label {
-            color: var(--muted-foreground);
-        }
-    }
-
-    .nyt-tag-items {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 0.375rem;
-    }
-
-    .nyt-nav-tag {
-        font-family: var(--font-sans);
-        font-size: 0.625rem;
-        font-weight: 600;
-        color: var(--nyt-text-light);
-        text-decoration: none;
-        white-space: nowrap;
-        padding: 0.25rem 0.5rem;
-        border: 1px solid var(--nyt-medium-gray);
-        border-radius: 12px;
-        transition: all 0.15s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.125rem;
-    }
-
-    .nyt-nav-tag:hover {
-        background: var(--foreground);
-        color: var(--background);
-        border-color: var(--foreground);
-    }
-
-    .nyt-tag-hash {
-        color: var(--nyt-red);
-        font-weight: 700;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .nyt-nav-tag {
-            color: var(--muted-foreground);
-            border-color: var(--border);
-        }
-        .nyt-nav-tag:hover {
-            background: var(--background);
-            color: var(--foreground);
-            border-color: var(--foreground);
-        }
-    }
-
-    .nyt-nav-fade {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 60px;
-        z-index: 2;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .nyt-nav-fade.left {
-        left: 0;
-        background: linear-gradient(to right, var(--nyt-light-gray) 30%, transparent 100%);
-    }
-
-    .nyt-nav-fade.right {
-        right: 0;
-        background: linear-gradient(to left, var(--nyt-light-gray) 30%, transparent 100%);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .nyt-nav-fade.left {
-            background: linear-gradient(to right, var(--background) 30%, transparent 100%);
-        }
-        .nyt-nav-fade.right {
-            background: linear-gradient(to left, var(--background) 30%, transparent 100%);
-        }
-    }
-
-    /* ── Mode Links (Tier 1) ── */
-    .topbar-modes {
-        display: none;
-        align-items: center;
-        gap: 0.75rem;
-        margin-right: 1.25rem;
-        padding-right: 1.25rem;
-        border-right: 1px solid var(--border);
-    }
-
-    @media (min-width: 640px) {
-        .topbar-modes {
-            display: flex;
-        }
-    }
-
+    .topbar-actions { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+    .topbar-modes-rail { display: flex; align-items: center; gap: 0.4rem; }
     .mode-link {
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--muted-foreground);
-        text-decoration: none;
-        padding: 0.35rem 0.6rem;
-        border-radius: 4px;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
+        display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.65rem; border-radius: 4px;
+        font-family: var(--font-sans); font-size: 0.66rem; font-weight: 850; text-transform: uppercase;
+        color: var(--foreground); text-decoration: none; transition: all 0.2s; border: 1px solid transparent;
     }
+    .mode-link:hover { background: var(--secondary); }
+    .mode-link.is-active { background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background)); border-color: color-mix(in srgb, var(--nyt-accent) 30%, transparent); color: var(--nyt-accent); }
 
-    .mode-link:hover {
-        color: var(--foreground);
-        background: var(--secondary);
+    .topbar-util { display: flex; align-items: center; gap: 1rem; }
+    .activity-chip {
+        display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; border: 1px solid var(--border);
+        font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; color: var(--nyt-accent); border-radius: 4px;
     }
+    .activity-dot { width: 5px; height: 5px; background: var(--nyt-accent); border-radius: 50%; }
 
-    .mode-link.is-active {
-        color: var(--nyt-accent);
-        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+    /* ── Discovery Navigation ────────────────────────── */
+    .discovery-nav-v2 { border-top: 1px solid var(--border); background: var(--background); }
+    .nav-rail-wrapper { position: relative; overflow: hidden; }
+    .nav-rail-scroll { overflow-x: auto; scrollbar-width: none; }
+    .nav-rail-content { display: flex; padding: 0.35rem 0; align-items: stretch; }
+    .nav-rail-group { display: flex; align-items: center; padding: 0 1.25rem; border-right: 1px solid var(--border); gap: 0.85rem; }
+    .nav-rail-group:last-child { border-right: none; }
+    .group-header { opacity: 0.8; flex-shrink: 0; }
+    .group-label { font-family: var(--font-sans); font-size: 0.56rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
+    .group-links { display: flex; align-items: center; gap: 0.3rem; }
+    .nav-rail-link { display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; }
+    .nav-rail-link:hover { background: var(--secondary); }
+    .nav-rail-link.is-active { background: var(--foreground); color: var(--background); }
+    .group-regions .link-label { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.02em; }
+    .group-topics .link-label {
+        font-family: var(--font-serif);
+        font-size: 0.84rem;
+        font-weight: 800;
+        line-height: 1.15;
     }
+    .link-count { font-size: 0.58rem; background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 10px; opacity: 0.75; }
+    .nav-fade { position: absolute; top: 0; bottom: 0; width: 40px; pointer-events: none; z-index: 5; }
+    .nav-fade.left { left: 0; background: linear-gradient(to right, var(--background), transparent); opacity: 0; }
+    .nav-fade.right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
-
-
-    @media (max-width: 640px) {
-        .topbar-row {
-            grid-template-columns: auto 1fr auto;
-            gap: 0.5rem;
-        }
-        .topbar-logo { height: 1.1rem; }
-        .nyt-nav-container {
-            padding: 0.25rem 0;
-        }
-        .nyt-nav-section {
-            padding: 0 0.5rem;
-        }
-        .nyt-section-header,
-        .nyt-section-label {
-            font-size: 0.625rem;
-            margin-bottom: 0.125rem;
-        }
-        .nyt-nav-link {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .nyt-nav-count {
-            font-size: 0.5rem;
-            padding: 0.125rem 0.25rem;
-            min-width: 1.2em;
-        }
-        .nyt-tag-label {
-            font-size: 0.5rem;
-            margin-bottom: 0.25rem;
-        }
-        .nyt-nav-tag {
-            font-size: 0.5rem;
-            padding: 0.125rem 0.375rem;
-        }
-        .nyt-nav-fade {
-            width: 30px;
-        }
-    }
-    @media (min-width: 1024px) {
-        .topbar-logo { height: 1.6rem; }
-        .topbar-emblem { 
-            display: block;
-            height: 1.25rem; 
-        }
-    }
-
-    .search-trigger-wrap {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .search-hint {
-        font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 600;
-        color: var(--muted-foreground);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0.1rem 0.35rem;
-        line-height: 1.4;
+    @media (max-width: 960px) {
+        .topbar-main { grid-template-columns: 1fr; gap: 1rem; }
+        .topbar-left-stack, .topbar-actions { align-items: center; }
+        .topbar-branding { order: -1; }
+        .topbar-date-display { display: none; }
+        .nav-rail-group { padding: 0 0.85rem; }
     }
 </style>
 
 <script is:inline>
     (function() {
-        const initHeader = () => {
-            if (window._presek_scrollHandler) window.removeEventListener('scroll', window._presek_scrollHandler);
-
-            let lastScrollY = window.scrollY;
-            const header = document.getElementById('main-header');
-            if (!header) return;
-
-            window._presek_scrollHandler = () => {
-                const currentScrollY = window.scrollY;
-                if (currentScrollY < 100) {
-                    header.classList.remove('header-hidden');
-                } else if (currentScrollY > lastScrollY + 50) {
-                    header.classList.add('header-hidden');
-                } else if (currentScrollY < lastScrollY - 50) {
-                    header.classList.remove('header-hidden');
-                }
-                lastScrollY = currentScrollY;
-            };
-
-            window.addEventListener('scroll', window._presek_scrollHandler, { passive: true });
-        };
-
         const initFades = () => {
-            const navShell = document.querySelector('.nyt-nav-container');
-            const fadeLeft = document.querySelector('.nyt-nav-fade.left');
-            const fadeRight = document.querySelector('.nyt-nav-fade.right');
+            const navShell = document.querySelector('.nav-rail-scroll');
+            const fadeLeft = document.querySelector('.nav-fade.left');
+            const fadeRight = document.querySelector('.nav-fade.right');
             if (!navShell || !fadeLeft || !fadeRight) return;
-
-            if (window._presek_fadeResizeHandler) window.removeEventListener('resize', window._presek_fadeResizeHandler);
-
             const update = () => {
-                fadeLeft.style.opacity = navShell.scrollLeft > 10 ? '1' : '0';
-                fadeRight.style.opacity = navShell.scrollLeft < navShell.scrollWidth - navShell.clientWidth - 10 ? '1' : '0';
+                fadeLeft.style.opacity = navShell.scrollLeft > 15 ? '1' : '0';
+                fadeRight.style.opacity = navShell.scrollLeft < navShell.scrollWidth - navShell.clientWidth - 15 ? '1' : '0';
             };
-            window._presek_fadeResizeHandler = update;
-            
             navShell.addEventListener('scroll', update, { passive: true });
-            window.addEventListener('resize', update, { passive: true });
             update();
         };
-
-        const initHints = () => {
-            var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
-            document.querySelectorAll('.search-hint').forEach(function(el) {
-                el.textContent = isMac ? '⌘K' : 'Ctrl+K';
-            });
-        };
-
-        initHeader();
         initFades();
-        initHints();
-
-        const initPolling = () => {
-            if (window._presek_pollInterval) clearInterval(window._presek_pollInterval);
-            
-            const updateCounter = async () => {
-                try {
-                    const apiBase = window.PUBLIC_API_URL || '/api';
-                    const res = await fetch(`${apiBase}/stats/summary`);
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    
-                    const count = data.last_1h;
-                    const container = document.querySelector('.topbar-stat-container');
-                    if (!container) return;
-
-                    if (count && count > 0) {
-                        container.innerHTML = `
-                            <span class="topbar-stat">
-                                <span class="topbar-stat-dot"></span>
-                                +${count}
-                            </span>
-                        `;
-                    } else {
-                        container.innerHTML = '';
-                    }
-                } catch (e) {
-                    // Silent fail for polling
-                }
-            };
-
-            window._presek_pollInterval = setInterval(updateCounter, 120000); // 2 minutes
-        };
-        initPolling();
-
-        document.addEventListener('astro:page-load', () => { 
-            initHeader(); initFades(); initHints(); initPolling();
-        });
+        document.addEventListener('astro:page-load', initFades);
     })();
 </script>

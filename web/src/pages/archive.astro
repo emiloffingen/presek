@@ -6,7 +6,7 @@ import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
-import { CalendarDays, Info, ChevronRight, Hash, Building2 } from 'lucide-react';
+import { CalendarDays, ChevronRight, Hash, Building2 } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const source = Astro.url.searchParams.get('source') || '';
@@ -14,36 +14,8 @@ const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
-let archive = {
-  clusters: [],
-  total: 0,
-  sources: 0,
-  date,
-  page,
-  page_size: 50,
-  has_more: false,
-  total_clusters: 0,
-  top_sources: [],
-  top_topics: [],
-};
+let archive = { clusters: [], total: 0, sources: 0, date, page, page_size: 50, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
 let error = null;
-
-function normalizeArchivePayload(data: any) {
-  return {
-    clusters: Array.isArray(data?.clusters) ? data.clusters : [],
-    total: Number(data?.total ?? 0),
-    sources: Number(data?.sources ?? 0),
-    date: data?.date || date,
-    source: data?.source || source,
-    topic: data?.topic || topic,
-    page: Number(data?.page ?? page),
-    page_size: Number(data?.page_size ?? 50),
-    has_more: Boolean(data?.has_more),
-    total_clusters: Number(data?.total_clusters ?? 0),
-    top_sources: Array.isArray(data?.top_sources) ? data.top_sources : [],
-    top_topics: Array.isArray(data?.top_topics) ? data.top_topics : [],
-  };
-}
 
 try {
   const archiveUrl = new URL(`${API_URL}/archive`);
@@ -52,241 +24,112 @@ try {
   archiveUrl.searchParams.set('page_size', '50');
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
-
   const res = await fetch(archiveUrl);
-  if (res.ok) {
-    archive = normalizeArchivePayload(await res.json());
-  } else {
-    error = 'Архивата моментално не е достапна.';
-  }
+  if (res.ok) archive = await res.json();
+  else error = 'Архивата моментално не е достапна.';
 } catch (err) {
-  console.error(err);
   error = 'Грешка при вчитување на архивата.';
 }
 
-function buildFilterHref(kind: 'source' | 'topic', value: string) {
+const buildFilterHref = (kind: 'source' | 'topic', value: string) => {
   const params = new URLSearchParams({ date });
-  if (kind === 'source') {
-    if (value && value !== source) params.set('source', value);
-    if (topic) params.set('topic', topic);
-  } else {
-    if (source) params.set('source', source);
-    if (value && value !== topic) params.set('topic', value);
-  }
+  if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); }
+  else { if (source) params.set('source', source); if (value) params.set('topic', value); }
   return `/archive?${params.toString()}`;
-}
+};
 
-function buildClearHref() {
-  return `/archive?${new URLSearchParams({ date }).toString()}`;
-}
-
-const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', { 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-});
+const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
 
-<Layout title="Архива" description="Дневен преглед на медиумската покриеност — пребарувајте по датум, извор и тема за да видите што доминирало во вестите.">
+<Layout title="Архива — Пресек" description="Пребарувајте низ историјата на македонските медиуми.">
   <NYTHeader />
   
-  <main class="site-layout archive-page-shell py-[var(--page-py)]">
-    {/* ── Section 1: The Index Masthead ──────────────────────── */}
-    <header class="archive-masthead motion-rise">
+  <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <header class="editorial-masthead mb-12">
+        <div class="masthead-top">
+            <span class="masthead-kicker">МЕДИУМСКА МЕМОРИЈА</span>
+        </div>
         <div class="masthead-main">
-            <span class="nyt-section-label text-nyt-accent tracking-[0.25em] mb-4 block">Медиумска Меморија</span>
-            <h1 class="archive-main-headline">Архива на <span class="italic font-serif">Изданија</span></h1>
-            
-            <div class="masthead-controls mt-8">
-                <form method="get" class="inline-date-picker">
-                    <div class="date-selector-frame">
-                        <CalendarDays size={16} className="text-nyt-accent" />
-                        <span class="dateline-label hidden sm:inline">Издание за:</span>
-                        <input type="date" name="date" value={date} class="archive-dateline-input" onchange="this.form.submit()" />
-                        <button type="submit" class="dateline-submit sm:hidden">Оди</button>
-                    </div>
-                    {source && <input type="hidden" name="source" value={source} />}
-                    {topic && <input type="hidden" name="topic" value={topic} />}
-                </form>
+            <h1 class="masthead-title">Архива на <span>Изданија</span></h1>
+            <div class="masthead-data-bar">
+                <div class="m-stat"><span>Објави</span><strong>{archive.total.toLocaleString('mk-MK')}</strong></div>
+                <div class="m-stat"><span>Редакции</span><strong>{archive.sources}</strong></div>
+                <div class="m-stat"><span>Теми</span><strong>{archive.total_clusters}</strong></div>
             </div>
         </div>
 
-        <div class="masthead-data-box hidden lg:grid">
-            <div class="data-box-row">
-                <span class="data-label">Вкупно Објави</span>
-                <strong class="data-value">{archive.total.toLocaleString('mk-MK')}</strong>
-            </div>
-            <div class="data-box-row">
-                <span class="data-label">Активни Редакции</span>
-                <a href="#archive-sources" class="data-value-anchor">
-                    <strong class="data-value">{archive.sources.toLocaleString('mk-MK')}</strong>
-                </a>
-            </div>
-            <div class="data-box-row border-none">
-                <span class="data-label">Групирани Теми</span>
-                <a href="#archive-topics" class="data-value-anchor">
-                    <strong class="data-value">{archive.total_clusters.toLocaleString('mk-MK')}</strong>
-                </a>
-            </div>
+        <div class="archive-controls mt-10">
+            <form method="get" class="date-form">
+                <div class="date-input-wrap">
+                    <CalendarDays size={16} />
+                    <input type="date" name="date" value={date} onchange="this.form.submit()" />
+                </div>
+                <p class="date-display-label">{formattedDisplayDate}</p>
+            </form>
         </div>
     </header>
 
-    {/* ── Section 2: The Time Machine (Heatmap) ────────────────── */}
-    <details class="archive-timeline-wrap mt-8 mb-10 motion-rise motion-delay-1">
-        <summary class="archive-timeline-summary">
-            <div>
-                <h2 class="nyt-section-label !text-foreground">Интензитет на циклусот</h2>
-                <p class="archive-timeline-note">Отворете го 180-дневниот преглед кога ви треба поширок контекст.</p>
-            </div>
-            <span class="archive-timeline-toggle">Прикажи</span>
-        </summary>
-        <div class="archive-timeline-panel">
+    <details class="archive-heatmap-toggle mb-12">
+        <summary>Интензитет на циклусот <span>Отвори преглед ↓</span></summary>
+        <div class="heatmap-panel pt-8">
             <ArchiveHeatmapIsland client:load />
         </div>
     </details>
 
-    {/* ── Section 3: The Front Page Grid ──────────────────────── */}
-    <div class:list={[
-        "archive-content-grid motion-rise motion-delay-2",
-        (source || topic) ? "is-filtered" : ""
-    ]}>
-        
-        {/* Main Feed Column */}
-        <section class="archive-feed-col">
-            <div class="feed-editorial-header mb-12">
-                <div class="flex items-center gap-4 mb-4">
-                    <span class="h-px flex-1 bg-foreground"></span>
-                    <h2 class="font-serif italic font-bold text-2xl px-4">{formattedDisplayDate}</h2>
-                    <span class="h-px flex-1 bg-foreground"></span>
+    <div class="broadsheet-grid">
+        <section class="broadsheet-main">
+            {source || topic ? (
+                <div class="filter-status-bar mb-8">
+                    <span class="label">АКТИВЕН ФИЛТЕР:</span>
+                    <div class="chips">
+                        {source && <span class="chip">🏢 {source} <a href={buildFilterHref('source', '')}>×</a></span>}
+                        {topic && <span class="chip"># {topic} <a href={buildFilterHref('topic', '')}>×</a></span>}
+                    </div>
+                    <a href={`/archive?date=${date}`} class="clear">Исчисти сè</a>
                 </div>
+            ) : null}
 
-                {(!error && (source || topic)) && (
-                    <div class="active-filters-bar flex flex-wrap items-center gap-3 bg-secondary/30 p-4 border border-border">
-                        <span class="text-[10px] font-black uppercase tracking-widest">Активен Филтер:</span>
-                        {source && (
-                            <span class="filter-stark-badge">
-                                <Building2 size={10} /> {source}
-                                <a href={buildFilterHref('source', '')} class="close-btn">×</a>
-                            </span>
-                        )}
-                        {topic && (
-                            <span class="filter-stark-badge">
-                                <Hash size={10} /> {topic}
-                                <a href={buildFilterHref('topic', '')} class="close-btn">×</a>
-                            </span>
-                        )}
-                        <a href={buildClearHref()} class="clear-all-link">Исчисти сè</a>
-                    </div>
-                )}
-            </div>
-
-            <div class="feed-results">
+            <div class="archive-results">
                 {error ? (
-                    <div class="archive-error-panel">
-                        <p>{error}</p>
-                    </div>
+                    <div class="empty-state"><p>{error}</p></div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland
-                        client:load
-                        initialClusters={archive.clusters.map((c: any) => ({
-                            cluster_id: c.cluster_id,
-                            is_breaking: c.is_breaking,
-                            representative_image: c.representative_image,
-                            articles: (c.articles || []).map((a: any, idx: number) => {
-                                const trim = (s: any) => (typeof s === 'string' && s.length > 280 ? s.slice(0, 280) : s);
-                                const sig = a.source_signal ? {
-                                    role_label: a.source_signal.role_label,
-                                    trust_label: a.source_signal.trust_label,
-                                } : undefined;
-                                if (idx === 0) {
-                                    return {
-                                        source: a.source,
-                                        title: a.title,
-                                        summary: trim(a.summary),
-                                        description: trim(a.description),
-                                        category: a.category,
-                                        created_at: a.created_at,
-                                        image_url: a.image_url,
-                                        image_caption: a.image_caption,
-                                        is_fact_check: a.is_fact_check,
-                                        source_signal: sig,
-                                    };
-                                }
-                                return {
-                                    source: a.source,
-                                    title: a.title,
-                                    image_url: a.image_url,
-                                    is_fact_check: a.is_fact_check,
-                                };
-                            }),
-                        }))}
-                        initialHasMore={archive.has_more}
-                        date={date}
-                        source={source}
-                        topic={topic}
-                        pageSize={50}
-                    />
+                    <ArchiveFeedIsland client:load initialClusters={archive.clusters} initialHasMore={archive.has_more} date={date} source={source} topic={topic} />
                 ) : (
-                    <div class="archive-empty-state">
-                        <div class="p-12 border-2 border-dashed border-border text-center">
-                            <p class="font-serif italic text-muted-foreground text-xl">Нема пронајдени вести за овој датум со избраните филтри.</p>
-                            <div class="archive-empty-actions mt-6 flex flex-wrap justify-center gap-3">
-                                <a href={buildClearHref()} class="archive-empty-link">Исчисти ги филтрите</a>
-                                <a href="/briefing" class="archive-empty-link archive-empty-link-secondary">Отвори брифинг</a>
-                            </div>
-                        </div>
+                    <div class="empty-state">
+                        <h2>Нема пронајдени вести.</h2>
+                        <p>Пробајте со друг датум или исчистете ги филтрите.</p>
                     </div>
                 )}
             </div>
         </section>
 
-        {/* Rail Column (Directories) */}
-        {!(source || topic) && (
-            <aside class="archive-rail-col">
-            <div class="rail-module sticky top-24">
-                <div class="rail-section mb-10" id="archive-topics">
-                    <h3 class="rail-title"><Hash size={14} /> Индекс на Теми</h3>
-                    {!error && archive.top_topics?.length > 0 ? (
-                        <div class="directory-list">
-                            {archive.top_topics.slice(0, 15).map((item: any) => (
-                                <a href={buildFilterHref('topic', item.topic)} class={`directory-item ${topic === item.topic ? 'is-active' : ''}`}>
-                                    <span class="dir-label">{item.topic}</span>
-                                    <span class="dir-count">{item.n}</span>
-                                    <ChevronRight size={10} className="dir-arrow" />
-                                </a>
-                            ))}
-                        </div>
-                    ) : (
-                        <p class="text-xs italic text-muted-foreground">Нема податоци за теми.</p>
-                    )}
+        <aside class="broadsheet-rail">
+            <div class="rail-block rail-block-featured">
+                <p class="rail-kicker">Индекс</p>
+                <h3 class="rail-title">ТЕМИ</h3>
+                <div class="rail-directory">
+                    {archive.top_topics?.slice(0, 12).map((item: any) => (
+                        <a href={buildFilterHref('topic', item.topic)} class="dir-link">
+                            <span class="name">{item.topic}</span>
+                            <span class="val">{item.n}</span>
+                        </a>
+                    ))}
                 </div>
+            </div>
 
-                <div class="rail-section" id="archive-sources">
-                    <h3 class="rail-title"><Building2 size={14} /> Активни Редакции</h3>
-                    {!error && archive.top_sources?.length > 0 ? (
-                        <div class="directory-list">
-                            {archive.top_sources.slice(0, 15).map((item: any) => (
-                                <a href={buildFilterHref('source', item.source)} class={`directory-item ${source === item.source ? 'is-active' : ''}`}>
-                                    <span class="dir-label">{item.source}</span>
-                                    <span class="dir-count">{item.n}</span>
-                                    <ChevronRight size={10} className="dir-arrow" />
-                                </a>
-                            ))}
-                        </div>
-                    ) : (
-                        <p class="text-xs italic text-muted-foreground">Нема податоци за извори.</p>
-                    )}
-                </div>
-
-                <div class="rail-footer mt-12 pt-8 border-t border-border opacity-60">
-                    <p class="text-[10px] font-black uppercase tracking-widest mb-4">Методологија</p>
-                    <p class="text-xs leading-relaxed font-nyt-body">
-                        Архивата ги содржи сите кластерирани вести обработени од системот. Податоците се рефрешираат на секои 15 минути.
-                    </p>
+            <div class="rail-block">
+                <p class="rail-kicker">Канали</p>
+                <h3 class="rail-title">РЕДАКЦИИ</h3>
+                <div class="rail-directory">
+                    {archive.top_sources?.slice(0, 12).map((item: any) => (
+                        <a href={buildFilterHref('source', item.source)} class="dir-link">
+                            <span class="name">{item.source}</span>
+                            <span class="val">{item.n}</span>
+                        </a>
+                    ))}
                 </div>
             </div>
         </aside>
-        )}
     </div>
   </main>
 
@@ -294,510 +137,54 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 </Layout>
 
 <style>
-    /* ── Masthead ─────────────────────────────────────── */
-    .archive-page-shell {
-        max-width: none;
-        width: 100%;
-        margin-inline: auto;
-        padding-inline: clamp(1rem, 2vw, 2rem);
-        overflow-x: hidden; /* Prevent horizontal scroll */
-    }
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; italic: true; }
+    
+    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem; }
+    .masthead-data-bar { display: flex; gap: 2rem; }
+    .m-stat span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); display: block; margin-bottom: 0.2rem; }
+    .m-stat strong { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; }
 
-    @media (max-width: 640px) {
-        .archive-page-shell {
-            padding-inline: 1rem;
-        }
-        main.site-layout {
-            padding-inline: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            overflow-x: hidden !important;
-        }
-    }
+    .date-form { display: flex; align-items: center; gap: 1.5rem; }
+    .date-input-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); }
+    .date-input-wrap input { background: transparent; border: 0; font-family: var(--font-serif); font-size: 1rem; font-weight: 800; outline: none; }
+    .date-display-label { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 900; italic: true; }
 
-    .archive-masthead {
-        display: grid;
-        width: 100%;
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-        align-items: end;
-        border-bottom: 4px double var(--foreground);
-        padding-bottom: 2rem;
-        box-sizing: border-box;
-    }
+    /* ── Heatmap Toggle ──────────────────────────────── */
+    .archive-heatmap-toggle { border: 1px solid var(--border); background: var(--secondary); }
+    .archive-heatmap-toggle summary { list-style: none; padding: 1rem 1.5rem; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 900; text-transform: uppercase; cursor: pointer; display: flex; justify-content: space-between; }
+    .archive-heatmap-toggle summary span { color: var(--nyt-accent); }
 
+    /* ── Broadsheet Grid ────────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) {
-        .archive-masthead {
-            grid-template-columns: 1fr auto;
-        }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .archive-main-headline {
-        font-family: var(--font-serif);
-        font-size: clamp(2.1rem, 7vw, 4.6rem);
-        line-height: 0.92;
-        letter-spacing: -0.03em;
-        margin: 0;
-        word-break: break-word;
-    }
+    /* ── Filter Bar ──────────────────────────────────── */
+    .filter-status-bar { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--foreground); }
+    .filter-status-bar .label { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; }
+    .filter-status-bar .chips { display: flex; gap: 0.5rem; }
+    .filter-status-bar .chip { padding: 0.25rem 0.5rem; background: var(--foreground); color: var(--background); font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem; }
+    .filter-status-bar .chip a { color: inherit; text-decoration: none; font-size: 1rem; line-height: 1; }
+    .filter-status-bar .clear { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-decoration: underline; color: var(--nyt-accent); }
 
-    .archive-timeline-wrap {
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--background) 96%, var(--secondary) 4%);
-    }
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-featured { padding: 1.5rem; background: var(--secondary); }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-directory { display: flex; flex-direction: column; }
+    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+    .dir-link:last-child { border-bottom: none; }
+    .dir-link .name { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700; }
+    .dir-link .val { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; background: var(--border); padding: 2px 6px; }
+    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
 
-    .archive-timeline-summary {
-        list-style: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.5rem;
-        padding: 1rem 1.25rem;
-        cursor: pointer;
-    }
-
-    .archive-timeline-summary::-webkit-details-marker {
-        display: none;
-    }
-
-    .archive-timeline-note {
-        margin: 0.3rem 0 0;
-        font-family: var(--font-sans);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        color: var(--muted-foreground);
-    }
-
-    .archive-timeline-toggle {
-        flex-shrink: 0;
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--nyt-accent);
-    }
-
-    .archive-timeline-wrap[open] .archive-timeline-toggle {
-        color: var(--foreground);
-    }
-
-    .archive-timeline-wrap[open] .archive-timeline-toggle::after {
-        content: " \2191";
-    }
-
-    .archive-timeline-wrap:not([open]) .archive-timeline-toggle::after {
-        content: " \2193";
-    }
-
-    .archive-timeline-panel {
-        padding: 0 1.25rem 1.25rem;
-        border-top: 1px solid var(--border);
-    }
-
-    .inline-date-picker {
-        display: block;
-        width: 100%;
-        max-width: 400px;
-    }
-
-    .date-selector-frame {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid var(--foreground);
-        background: var(--background);
-        transition: border-color 0.2s;
-    }
-
-    @media (min-width: 640px) {
-        .date-selector-frame {
-            gap: 0.75rem;
-            padding: 0.65rem 1.25rem;
-            width: auto;
-            display: inline-flex;
-        }
-        .inline-date-picker {
-            display: inline-block;
-            width: auto;
-        }
-    }
-
-    .date-selector-frame:focus-within {
-        border-color: var(--nyt-accent);
-    }
-
-    .dateline-label {
-        font-family: var(--font-sans);
-        font-size: 0.72rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
-
-    .archive-dateline-input {
-        background: transparent;
-        border: 0;
-        font-family: var(--font-serif);
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--foreground);
-        outline: none;
-        cursor: pointer;
-        flex: 1;
-        min-width: 0;
-    }
-
-    @media (min-width: 640px) {
-        .archive-dateline-input {
-            font-size: 1.15rem;
-            flex: none;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .archive-timeline-summary {
-            align-items: start;
-            flex-direction: column;
-            gap: 0.65rem;
-        }
-
-        .archive-timeline-panel {
-            padding: 0 0.9rem 0.9rem;
-        }
-    }
-
-    .dateline-submit {
-        background: var(--foreground);
-        color: var(--background);
-        font-size: 0.65rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        padding: 0.4rem 0.75rem;
-        border: 0;
-        flex-shrink: 0;
-    }
-
-    /* ── Weather Box (Data Box) ───────────────────────── */
-    .masthead-data-box {
-        border: 1px solid var(--foreground);
-        padding: 1rem;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        min-width: 0;
-        width: 100%;
-    }
-
-    @media (min-width: 1024px) {
-        .masthead-data-box {
-            min-width: 280px;
-            width: auto;
-        }
-    }
-
-    .data-box-row {
-        border-right: 1px solid var(--border);
-        padding-right: 1.5rem;
-    }
-
-    .data-label {
-        display: block;
-        font-family: var(--font-sans);
-        font-size: 0.55rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--muted-foreground);
-        margin-bottom: 0.35rem;
-    }
-
-    .data-value {
-        font-family: var(--font-serif);
-        font-size: 1.25rem;
-        line-height: 1;
-        font-weight: 900;
-    }
-
-    .data-value-anchor {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-        transition: color 0.2s;
-    }
-
-    .data-value-anchor:hover {
-        color: var(--nyt-accent);
-    }
-
-    @media (min-width: 768px) {
-        .data-label { font-size: 0.6rem; }
-        .data-value { font-size: 1.65rem; }
-    }
-
-    /* ── Grid Layout ──────────────────────────────────── */
-    .archive-content-grid {
-        display: grid;
-        width: 100%;
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        align-items: start;
-    }
-
-    @media (max-width: 768px) {
-        .feed-editorial-header {
-            margin-bottom: 2rem;
-        }
-        .feed-editorial-header h2 {
-            font-size: 1.25rem;
-            padding-inline: 0.75rem;
-        }
-        .active-filters-bar {
-            padding: 0.75rem;
-            gap: 0.5rem;
-        }
-        .filter-stark-badge {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.6rem;
-        }
-    }
-
-    .archive-content-grid > * {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .archive-feed-col,
-    .archive-rail-col,
-    .archive-feed-container {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .archive-feed-col :global(.archive-feed-container),
-    .archive-feed-col :global(.archive-clusters),
-    .archive-feed-col :global(.archive-cluster-row) {
-        width: 100%;
-        min-width: 0;
-    }
-
-    @media (min-width: 960px) {
-        .archive-content-grid:not(.is-filtered) {
-            grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
-            gap: 3rem;
-        }
-
-        .archive-content-grid.is-filtered {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-    }
-
-    @media (min-width: 1280px) {
-        .archive-content-grid:not(.is-filtered) {
-            gap: 4.5rem;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .archive-feed-col :global(.nyt-article:not(.lead-story)) {
-            display: grid;
-            grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 22rem);
-            gap: 1.5rem;
-            align-items: start;
-        }
-
-        .archive-feed-col :global(.nyt-article:not(.lead-story) .article-body) {
-            grid-column: 1;
-            min-width: 0;
-        }
-
-        .archive-feed-col :global(.nyt-article:not(.lead-story) .image-wrap) {
-            grid-column: 2;
-            width: 100%;
-            aspect-ratio: 4 / 3;
-        }
-
-        .archive-feed-col :global(.nyt-article:not(.lead-story) .card-content-stack) {
-            display: flex;
-            flex-direction: column;
-            gap: 0.65rem;
-            align-items: stretch;
-        }
-
-        .archive-feed-col :global(.nyt-article:not(.lead-story) .why-it-matters) {
-            width: 100%;
-            margin-bottom: 0;
-        }
-
-        .archive-feed-col :global(.nyt-article.variant-featured:not(.lead-story)) {
-            grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 24rem);
-            padding: 1rem;
-        }
-
-        .archive-feed-col :global(.nyt-article.variant-compact:not(.lead-story)) {
-            grid-template-columns: minmax(0, 1.4fr) minmax(9rem, 12rem);
-            gap: 1rem;
-        }
-    }
-
-    .archive-empty-link {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.7rem 1rem;
-        border: 1px solid var(--foreground);
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--background);
-        background: var(--foreground);
-    }
-
-    .archive-empty-link-secondary {
-        color: var(--foreground);
-        background: transparent;
-        border-color: var(--border);
-    }
-
-    /* ── Filters ──────────────────────────────────────── */
-    .filter-stark-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.35rem 0.75rem;
-        background: var(--foreground);
-        color: var(--background);
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .filter-stark-badge .close-btn {
-        margin-left: 0.25rem;
-        opacity: 0.6;
-        font-size: 1.1rem;
-        line-height: 1;
-        transition: opacity 0.2s;
-    }
-
-    .filter-stark-badge .close-btn:hover {
-        opacity: 1;
-    }
-
-    .clear-all-link {
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        text-decoration: underline;
-        text-underline-offset: 4px;
-        color: var(--nyt-accent);
-    }
-
-    /* ── Directory Lists ─────────────────────────────── */
-    .rail-title {
-        font-family: var(--font-sans);
-        font-size: 0.74rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        padding-bottom: 0.8rem;
-        border-bottom: 2px solid var(--foreground);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-    }
-
-    .directory-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .directory-item {
-        display: flex;
-        align-items: center;
-        padding: 0.85rem 0;
-        border-bottom: 1px solid var(--border);
-        text-decoration: none;
-        color: var(--foreground);
-        group: true;
-        transition: background 0.15s;
-    }
-
-    .directory-item:hover {
-        padding-left: 0.5rem;
-        color: var(--nyt-accent);
-    }
-
-    .directory-item.is-active {
-        font-weight: 900;
-        color: var(--nyt-accent);
-    }
-
-    .dir-label {
-        flex: 1;
-        font-family: var(--font-serif);
-        font-size: 0.95rem;
-        font-weight: 600;
-    }
-
-    .dir-count {
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 900;
-        background: var(--secondary);
-        padding: 0.15rem 0.45rem;
-        margin-right: 0.75rem;
-    }
-
-    .dir-arrow {
-        opacity: 0;
-        transform: translateX(-5px);
-        transition: all 0.2s;
-    }
-
-    .directory-item:hover .dir-arrow {
-        opacity: 1;
-        transform: translateX(0);
-    }
-
-    /* ── Empty & Error states ────────────────────────── */
-    .archive-error-panel {
-        padding: 4rem;
-        background: var(--nyt-red)/5;
-        border: 1px dashed var(--nyt-red);
-        text-align: center;
-        font-family: var(--font-serif);
-        italic: true;
-        color: var(--nyt-red);
-    }
-
-    /* ── Timeline & Heatmap ────────────────────────── */
-    .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .hide-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    @media (max-width: 768px) {
-        .timeline-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-    }
+    .empty-state { text-align: center; padding: 5rem 1rem; border: 1px dashed var(--border); }
 </style>

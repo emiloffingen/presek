@@ -232,6 +232,13 @@ async def get_news(
         row_limit = _news_row_limit(page, page_size)
         if q: q = q.strip()[:API_MAX_Q_LEN]
 
+        # Handle legacy or thematic categories requested as 'category'
+        # If 'category' is actually a theme (e.g., Politics), move it to 'topic'
+        from categories import THEMATIC_TOPICS
+        if category and category in THEMATIC_TOPICS and not topic:
+            topic = category
+            category = None
+
         if q:
             from embeddings import generate_query_embedding
             query_vec = generate_query_embedding(q)

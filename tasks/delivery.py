@@ -294,14 +294,19 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
     text = str(brief or "").strip()
     if not text:
         return False
-    required_sections = (
+    # More flexible check to match modern prompts
+    required_patterns = [
         "## Што го движи денот",
         "## Каде се разликува известувањето",
         "## Што да се следи понатаму",
-    )
-    if not all(section in text for section in required_sections):
+    ]
+    # Check if all required main headers are present
+    if not all(p in text for p in required_patterns):
         return False
-    return any(f"### {index}." in text for index in range(1, 4))
+    
+    # Check for at least 3 numbered items (### 1., ### 2., etc.)
+    has_items = any(f"### {index}." in text for index in range(1, 4))
+    return has_items
 
 def _normalize_synced_profile_for_delivery(profile):
     profile = profile or {}

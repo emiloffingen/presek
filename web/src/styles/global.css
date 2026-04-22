@@ -901,13 +901,19 @@ button:active,
     color: var(--nyt-accent);
 }
 
-/* Headline Tightening */
+/* Headline Tightening & Cyrillic Optimization */
 .headline, .editorial-headline, .cluster-headline {
     font-kerning: normal;
     font-variant-ligatures: common-ligatures;
     font-feature-settings: "kern" 1, "liga" 1, "pnum" 1, "onum" 1;
 }
 
+.headline-cyrillic, 
+.editorial-headline-cyrillic {
+    line-height: 1.12; /* Slightly more air for Cyrillic heights */
+    letter-spacing: -0.01em; /* Less aggressive tracking for Cyrillic */
+    text-wrap: pretty;
+}
 /* Hero Parallax */
 @media (min-width: 1024px) {
     .lead-media-image, .cluster-visual-image {

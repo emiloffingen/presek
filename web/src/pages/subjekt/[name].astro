@@ -6,7 +6,7 @@ import EntityIsland from '../../components/EntityIsland';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import Footer from '../../components/Footer.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
 import { sanitizeHtml } from '../../lib/sanitize';
 
 const { name } = Astro.params;
@@ -31,167 +31,114 @@ try {
 const clusters = entityData?.clusters || [];
 const featuredClusters = clusters.slice(0, 4);
 const compactClusters = clusters.slice(4, 10);
-const hiddenClusterCount = Math.max(0, clusters.length - (featuredClusters.length + compactClusters.length));
+const nameIsCyrillic = isMostlyCyrillic(decodedName);
 ---
 
 <Layout
     title={`${decodedName} | Профил`}
-    description={`Медиумска анализа, тон на известување и најнови вести за ${decodedName} на Пресек — кластери, извори и покриеност.`}
+    description={`Медиумска анализа, тон на известување и најнови вести за ${decodedName} на Пресек.`}
 >
 	<NYTHeader />
 
-	<main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "Субјекти", href: "/izvori" }, { label: decodedName }]} />
+	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ИНТЕЛЕКТУАЛЕН ПРОФИЛ</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class:list={["masthead-title", { "headline-cyrillic": nameIsCyrillic }]}>{decodedName}</h1>
+            </div>
+        </header>
 
-        <div class="entity-shell editorial-shell">
-            {error ? (
-                <div class="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
-                    <p class="text-nyt-red font-serif italic mb-4">{error}</p>
-                    <a href="/" class="nyt-section-label text-nyt-accent underline">Назад на почеток</a>
-                </div>
-            ) : (
-                <>
+        {error ? (
+            <div class="empty-state">
+                <p class="empty-kicker">ГРЕШКА</p>
+                <h2>{error}</h2>
+                <a href="/" class="clear-filter mt-4">Врати се на почетна</a>
+            </div>
+        ) : (
+            <div class="broadsheet-grid">
+                <div class="broadsheet-main">
                     <div class="motion-rise">
                         <EntityIsland client:load name={decodedName} initialData={entityData} />
                     </div>
 
-                    <section class="entity-news editorial-panel motion-rise motion-delay-1">
-                        <div class="entity-news-head">
-                            <span class="page-kicker">Архива</span>
-                            <h2>Неодамнешни Кластери</h2>
-                            <p>Сите свежи стории каде {decodedName} влегува како дел од развојот или контекстот.</p>
-                            {hiddenClusterCount > 0 && (
-                                <p class="entity-news-note">Прикажани се најрелевантните {featuredClusters.length + compactClusters.length} кластери. За поширок преглед, побарајте го името преку почетната страница или архивата.</p>
-                            )}
+                    <section class="mt-16">
+                        <h2 class="section-title-italic mb-8">Поврзани настани</h2>
+                        
+                        <div class="broadsheet-feed">
+                            {featuredClusters.map((cluster: any) => (
+                                <div class="feed-item-wrap">
+                                    <NewsCard cluster={cluster} variant="featured" />
+                                </div>
+                            ))}
                         </div>
-                        <div class="news-feed-grid entity-feed-grid entity-feed-grid-featured">
-                            {featuredClusters.map((cluster: any) => {
-                                if (cluster.articles && cluster.articles.length > 0) {
-                                    return <NewsCard cluster={cluster} variant="featured" />;
-                                }
-                                return (
-                                    <article class="nyt-article variant-featured">
-                                        <div class="article-body">
-                                            <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-                                                <h2 class="headline headline-standard" set:html={sanitizeHtml(cleanAndDecode(cluster.title || ''))}></h2>
-                                            </a>
-                                            {cluster.bullets && cluster.bullets.length > 0 && (
-                                                <p class="summary">{cluster.bullets[0]}</p>
-                                            )}
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
+
                         {compactClusters.length > 0 && (
-                            <div class="news-feed-grid entity-feed-grid entity-feed-grid-compact">
-                                {compactClusters.map((cluster: any) => {
-                                    if (cluster.articles && cluster.articles.length > 0) {
-                                        return <NewsCard cluster={cluster} variant="compact" />;
-                                    }
-                                    return (
-                                        <article class="nyt-article variant-compact">
-                                            <div class="article-body">
-                                                <a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
-                                                    <h2 class="headline headline-standard" set:html={sanitizeHtml(cleanAndDecode(cluster.title || ''))}></h2>
-                                                </a>
-                                                {cluster.bullets && cluster.bullets.length > 0 && (
-                                                    <p class="summary">{cluster.bullets[0]}</p>
-                                                )}
-                                            </div>
-                                        </article>
-                                    );
-                                })}
+                            <div class="broadsheet-feed mt-8">
+                                {compactClusters.map((cluster: any) => (
+                                    <div class="feed-item-wrap">
+                                        <NewsCard cluster={cluster} variant="compact" />
+                                    </div>
+                                ))}
                             </div>
                         )}
+
                         {clusters.length === 0 && (
-                            <div class="entity-empty">
-                                <p class="text-muted font-bold uppercase tracking-widest text-sm">Нема пронајдени вести за овој субјект.</p>
+                            <div class="empty-state">
+                                <p>Нема пронајдени вести за овој субјект.</p>
                             </div>
                         )}
                     </section>
-                </>
-            )}
-        </div>
+                </div>
+
+                <aside class="broadsheet-rail">
+                    <section class="rail-block rail-block-alt">
+                        <p class="rail-kicker">За профилот</p>
+                        <h3 class="rail-title">ПОВРЗАНОСТ</h3>
+                        <p class="rail-text">
+                            Овој профил е автоматски генериран преку анализа на медиумскиот интензитет. Ги прикажуваме само настаните каде {decodedName} е клучен актер или значаен дел од контекстот.
+                        </p>
+                    </section>
+                </aside>
+            </div>
+        )}
 	</main>
 
     <Footer />
 </Layout>
 
 <style>
-    .entity-news {
-        margin-top: 4rem;
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+
+    /* ── Broadsheet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .entity-news-head {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
-    }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
 
-    .entity-news-head h2 {
-        margin: 0;
-        font-size: clamp(1.6rem, 1.2rem + 1vw, 2.4rem);
-        line-height: 1;
-        font-weight: 900;
-    }
+    /* ── Feed Styling ────────────────────────────────── */
+    .broadsheet-feed { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 768px) { .broadsheet-feed { grid-template-columns: repeat(2, 1fr); } }
+    .feed-item-wrap { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+    .feed-item-wrap:last-child { border-bottom: none; }
 
-    .entity-news-head p {
-        margin: 0;
-        font-family: var(--font-nyt-body);
-        font-size: 1rem;
-        color: var(--secondary-foreground);
-    }
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
 
-    .entity-news-note {
-        font-family: var(--font-sans);
-        font-size: 0.72rem !important;
-        font-weight: 800;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: var(--muted-foreground) !important;
-    }
-
-    .entity-empty {
-        padding: 4rem;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--card) 84%, var(--surface-soft) 16%);
-        text-align: center;
-    }
-
-    .entity-feed-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .entity-feed-grid + .entity-feed-grid {
-        margin-top: 1rem;
-    }
-
-    @media (min-width: 720px) {
-        .entity-feed-grid-compact {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (min-width: 980px) {
-        .entity-feed-grid-featured,
-        .entity-feed-grid-compact {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 640px) {
-        .entity-news {
-            margin-top: 2.5rem;
-        }
-
-        .entity-news-head {
-            margin-bottom: 1.4rem;
-        }
-    }
+    /* ── States ──────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); }
+    .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); margin-bottom: 1rem; }
+    .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-decoration: underline; color: var(--foreground); }
 </style>

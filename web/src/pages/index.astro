@@ -17,7 +17,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
-import { TrendingUp, Quote, Sparkles } from 'lucide-react';
+import { TrendingUp, Quote, Sparkles, ChevronRight, Activity } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
 const API_URL = apiBaseUrl();
@@ -167,30 +167,20 @@ function getLeadSignal(cluster: NewsCluster) {
 	return 'Развој што вреди да се следи';
 }
 
-function cleanLeadSummary(text?: string) {
-	return cleanAndDecode(text);
-}
-
 function getLeadSummary(cluster: NewsCluster) {
 	const article = cluster?.articles?.[0];
 	let text = article?.summary || article?.description || '';
-	
-	// Safety check for JSON leakage - can be raw or double-escaped from DB
 	const trimmed = typeof text === 'string' ? text.trim() : '';
 	if (trimmed.startsWith('{') || trimmed.startsWith('&lt;%') || trimmed.includes('&quot;summary&quot;')) {
 		try {
-			// If it contains &quot;, it's already been through an escaping cycle
 			const toParse = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
 			if (toParse.startsWith('{')) {
 				const parsed = JSON.parse(toParse);
 				if (parsed.summary) text = parsed.summary;
 				else if (parsed.text) text = parsed.text;
 			}
-		} catch (e) {
-			// Not valid JSON
-		}
+		} catch (e) {}
 	}
-	
 	return cleanAndDecode(text);
 }
 
@@ -249,7 +239,6 @@ function getTimeStr(dateStr: string) {
 
 function getBriefingSnippet(content: string) {
     if (!content) return '';
-    // Look for the first paragraph after "## Што го движи денот" or just the first paragraph
     const match = content.match(/## Што го движи денот\n+([^#]+)/) || content.match(/^([^#]+)/);
     if (match && match[1]) {
         const text = match[1].trim().split('\n')[0];
@@ -267,209 +256,157 @@ function getBriefingSnippet(content: string) {
 >
     <NYTHeader q={q} category={category} topic={topic} stats={stats} />
 
-	<main class="site-layout py-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
 		{/* Filtering Status */}
 		{(q || category || topic || entity) && (
-			<div class="mb-10 py-6 border-y border-nyt-gray-300 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-secondary/30 px-4 -mx-4 sm:mx-0 sm:px-0">
-				<div class="flex flex-col gap-1.5">
-					<p class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Резултати од пребарување</p>
-					<h2 class="font-serif text-3xl font-black italic leading-none">
-						{q ? `"${q}"` : `${entity || category || topic}`}
-					</h2>
-					<div class="flex flex-wrap gap-2 mt-1">
+			<div class="filter-header mb-12">
+				<p class="filter-kicker">Резултати за</p>
+				<h1 class="filter-title">{q ? `"${q}"` : `${entity || category || topic}`}</h1>
+				<div class="filter-meta-row">
+					<div class="filter-chips">
 						{q && <span class="filter-chip">Пребарување</span>}
-						{entity && <span class="filter-chip">Личност/Тема</span>}
-						{category && <span class="filter-chip">Категорија</span>}
+						{entity && <span class="filter-chip">Субјект</span>}
+						{category && <span class="filter-chip">Регион</span>}
 						{topic && <span class="filter-chip">Тема</span>}
 					</div>
 					{(q || entity) && (
-						<div class="flex items-center gap-2 text-nyt-accent mt-1">
-							<Sparkles size={12} strokeWidth={2.5} />
-							<span class="font-sans text-[10px] font-black uppercase tracking-widest">Семантичка интелигенција активна</span>
-							<span class="text-[9px] text-muted-foreground lowercase opacity-70 italic hidden md:inline">— ги наоѓаме и поврзаните концепти</span>
+						<div class="ai-status">
+							<Sparkles size={11} strokeWidth={3} />
+							<span>Семантичка Интелигенција</span>
 						</div>
 					)}
+					<a href="/" class="clear-filter">СИТЕ ВЕСТИ <ChevronRight size={10} strokeWidth={3} /></a>
 				</div>
-				<a href="/" class="nyt-section-label inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full hover:bg-foreground hover:text-background transition-all">
-					Сите главни вести <TrendingUp size={12} />
-				</a>
 			</div>
 		)}
 
-		<div class="front-page-grid">
-			<div class="front-main">
-					{error && (
-						<div class="p-12 text-center bg-nyt-gray-100 border border-nyt-gray-300">
-							<p class="font-serif italic text-nyt-red font-black uppercase tracking-widest">{error}</p>
-						</div>
-					)}
+		<div class="broadsheet-grid">
+			<div class="broadsheet-main">
+                {error && (
+                    <div class="error-panel">
+                        <p>{error}</p>
+                    </div>
+                )}
 
-					{!error && clusters.length === 0 && (
-						<div class="empty-feed py-16 px-8 rounded-sm bg-gradient-to-b from-secondary/40 to-background border-dashed">
-							<p class="empty-feed-kicker">Тивко на лентата</p>
-							<h2 class="empty-feed-title mb-4">Нема нови вести за "{q || entity || category || topic}".</h2>
-							<p class="empty-feed-copy mb-10 text-balance">
-								Нашите алгоритми сè уште не откриле нови групирани објави за оваа специфична тема. Пробајте со поопшт поим или пребарајте нешто што е актуелно:
-							</p>
-							<div class="empty-feed-actions">
-								<a href="/" class="empty-feed-action">Сите главни вести</a>
-								<a href="/archive" class="empty-feed-action empty-feed-action-secondary">Побарај во архива</a>
-							</div>
-							
-							{trending.length > 0 && (
-								<div class="flex flex-wrap justify-center gap-3 max-w-2xl">
-									{trending.slice(0, 8).map((t: any) => (
-										<a href={`/?q=${encodeURIComponent(t.word)}`} class="px-4 py-2 bg-background border border-border hover:border-nyt-accent hover:text-nyt-accent transition-all font-serif font-bold italic text-lg shadow-sm">
-											{t.word} {t.trend === '↑' && <span class="text-nyt-red text-xs">↑</span>}
-										</a>
-									))}
-								</div>
-							)}
-						</div>
-					)}
+                {!error && clusters.length === 0 && (
+                    <div class="empty-state">
+                        <p class="empty-kicker">ТИВКО НА ЛЕНТАТА</p>
+                        <h2>Нема нови вести за оваа тема.</h2>
+                        <p class="empty-copy">Пробајте со поопшт поим или пребарајте нешто актуелно:</p>
+                        <div class="trend-links">
+                            {trending.slice(0, 8).map((t: any) => (
+                                <a href={`/?q=${encodeURIComponent(t.word)}`}>{t.word}</a>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
 				{leadCluster && (
-					<LeadHero
-						leadCluster={leadCluster}
-						leadTitle={leadTitle}
-						leadTitleIsCyrillic={leadTitleIsCyrillic}
-						leadSignal={leadSignal}
-						leadSummary={leadSummary}
-						leadSummaryIsCyrillic={leadSummaryIsCyrillic}
-						leadVisual={leadVisual}
-						dominantColor={leadCluster.dominant_color}
-						getTimeStr={getTimeStr}
-					/>
+					<div class="section-wrapper lead-wrapper">
+						<LeadHero
+							leadCluster={leadCluster}
+							leadTitle={leadTitle}
+							leadTitleIsCyrillic={leadTitleIsCyrillic}
+							leadSignal={leadSignal}
+							leadSummary={leadSummary}
+							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
+							leadVisual={leadVisual}
+							dominantColor={leadCluster.dominant_color}
+							getTimeStr={getTimeStr}
+						/>
+					</div>
 				)}
 
 				{clusters.length > 6 && (
-					<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} initialClusters={liveNowClusters} />
-				)}
-
-				{clusters.length > 4 && (
-					<ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+					<div class="section-wrapper">
+						<HomeLiveUpdatesIsland client:load excludeClusterIds={excludedClusterIds} initialClusters={liveNowClusters} />
+					</div>
 				)}
 
 				<AdUnit slot="home_top" />
 
 				{leadCluster && supportingClusters.length > 0 && (
-					<SupportingBand 
-						supportingFeatured={supportingFeatured}
-						supportingCompact={supportingCompact}
-					/>
+					<div class="section-wrapper">
+						<SupportingBand 
+							supportingFeatured={supportingFeatured}
+							supportingCompact={supportingCompact}
+						/>
+					</div>
 				)}
 
 				{globalClusters.length > 0 && (
-					<DevelopmentsSection
-						title="Глобален Пулс"
-						note="Најважните светски вести од Америка и Германија, видени низ призмата на македонските медиуми."
-						developmentsFeatured={globalClusters.slice(0, 2)}
-						developmentsCompact={globalClusters.slice(2)}
-					/>
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Глобален Пулс"
+							note="Најважните светски вести од Америка и Германија."
+							developmentsFeatured={globalClusters.slice(0, 2)}
+							developmentsCompact={globalClusters.slice(2)}
+						/>
+					</div>
 				)}
 
-				<div class="pulse-band motion-rise">
-					<div class="pulse-stat-card">
-						<p class="pulse-stat-label">Медиумски Пулс</p>
-						<p class="pulse-stat-value">{(stats?.intelligence?.pluralism?.pluralism_pct || 0)}%</p>
-					</div>
-					<div class="pulse-stat-card">
-						<p class="pulse-stat-label">Синтеза</p>
-						<p class="pulse-stat-value">{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</p>
-					</div>
-					<div class="pulse-stat-card">
-						<p class="pulse-stat-label">Извори</p>
-						<p class="pulse-stat-value">{stats?.total_feeds || 0}</p>
-					</div>
-					<div class="pulse-stat-card">
-						<p class="pulse-stat-label">Објави / 24ч</p>
-						<p class="pulse-stat-value">{stats?.last_24h || 0}</p>
-					</div>
+				<div class="pulse-stats-bar">
+					<div class="p-stat"><span>Плурализам</span><strong>{(stats?.intelligence?.pluralism?.pluralism_pct || 0)}%</strong></div>
+					<div class="p-stat"><span>Синтеза</span><strong>{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</strong></div>
+					<div class="p-stat"><span>Извори</span><strong>{stats?.total_feeds || 0}</strong></div>
+					<div class="p-stat"><span>Објави/24ч</span><strong>{stats?.last_24h || 0}</strong></div>
 				</div>
 
 				{feedClusters.length > 0 && (
-					<DevelopmentsSection
-						title="Теми во развој"
-						note="Приказни за кои веќе известуваат повеќе медиуми и кои вреди да се следат."
-						developmentsFeatured={developmentsFeatured}
-						developmentsCompact={developmentsCompact}
-					/>
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Теми во развој"
+							note="Приказни што ја обликуваат јавната дебата."
+							developmentsFeatured={developmentsFeatured}
+							developmentsCompact={developmentsCompact}
+						/>
+					</div>
+				)}
+
+                {clusters.length > 4 && (
+					<div class="section-wrapper">
+					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+                    </div>
 				)}
 
 				{wireClusters.length > 0 && (
-					<DevelopmentsSection
-						title="Најнови вести"
-						note="Свежи поединечни објави што сè уште чекаат пошироко покривање од други извори."
-						developmentsFeatured={wireClusters}
-						developmentsCompact={[]}
-						variant="wire"
-					/>
+					<div class="section-wrapper">
+						<DevelopmentsSection
+							title="Најнови вести"
+							note="Свежи поединечни објави."
+							developmentsFeatured={wireClusters}
+							developmentsCompact={[]}
+							variant="wire"
+						/>
+					</div>
 				)}
 			</div>
 
-			<aside class="front-rail">
-                {/* Live Wire */}
-                <section class="rail-module motion-rise-fast">
-                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-foreground/10">
-                        <h3 class="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-red flex items-center gap-2">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
-                            </span>
-                            ПОСЛЕДНО НА ПРЕСЕК
-                        </h3>
-                        <a href="/pulse" class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground">СИТЕ</a>
+			<aside class="broadsheet-rail">
+                <section class="rail-block">
+                    <div class="rail-head-red">
+                        <Activity size={12} strokeWidth={3} />
+                        <h3>ПОСЛЕДНО НА ПРЕСЕК</h3>
                     </div>
-                    <div class="space-y-4">
-                        {wireArticles.map((art: any) => (
-                            <a href={`/cluster/${art.cluster_id}`} class="wire-item group block border-b border-border/40 pb-4 last:border-0">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="space-y-1">
-                                        <p class="font-serif text-[13.5px] font-black leading-[1.3] group-hover:text-nyt-accent transition-colors line-clamp-2">
-                                            {cleanAndDecode(art.title)}
-                                        </p>
-                                        <div class="flex items-center gap-1.5 font-sans text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            <span class="text-foreground/80">{art.source}</span>
-                                            <span>·</span>
-                                            <span>{getTimeStr(art.created_at)}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="rail-wire-list">
+                        {wireArticles.slice(0, 10).map((art: any) => (
+                            <a href={`/cluster/${art.cluster_id}`} class="rail-wire-item">
+                                <p>{cleanAndDecode(art.title)}</p>
+                                <div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.created_at)}</div>
                             </a>
                         ))}
                     </div>
+                    <a href="/pulse" class="rail-cta-plain">СИТЕ ВЕСТИ</a>
                 </section>
 
-				<section class="rail-module rail-module-featured motion-rise-fast">
-					<p class="rail-kicker">Интелигенција</p>
-					<h3 class="rail-title flex items-center gap-2">
-						<Sparkles size={14} className="text-nyt-accent" /> МЕДИУМСКИ ПУЛС
-					</h3>
-					<div class="space-y-4 mt-4">
-						<div class="flex justify-between items-end border-b border-border pb-2">
-							<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Плурализам</span>
-								<span class="font-serif font-black text-xl leading-none">{(stats?.intelligence?.pluralism?.pluralism_pct || 0)}%</span>
-						</div>
-						<div class="flex justify-between items-end border-b border-border pb-2">
-							<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Уредничка Синтеза</span>
-							<span class="font-serif font-black text-xl leading-none">{(stats?.intelligence?.ai_transparency?.ai_ratio || 0)}%</span>
-						</div>
-					</div>
-					<a href="/pulse" class="block text-center mt-4 py-2 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
-						Целосна Аналитика
-					</a>
-				</section>
-
 				{briefing && briefing.content && (
-					<section class="rail-module motion-rise-fast">
-						<p class="rail-kicker">Дневен контекст</p>
+					<section class="rail-block rail-block-alt">
+						<p class="rail-kicker">Брифинг</p>
 						<h3 class="rail-title">КЛУЧНО ЗА ДЕНЕС</h3>
-						<p class="font-serif text-[0.92rem] leading-relaxed italic text-foreground/90 mb-4">
+						<p class="rail-brief-text">
 							{getBriefingSnippet(briefing.content)}
 						</p>
-						<a href="/briefing" class="text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline flex items-center gap-1">
-							Целосен брифинг <TrendingUp size={10} />
-						</a>
+						<a href="/briefing" class="rail-cta">ЦЕЛОСЕН ПРЕГЛЕД <TrendingUp size={10} /></a>
 					</section>
 				)}
 
@@ -478,41 +415,29 @@ function getBriefingSnippet(content: string) {
 				<NewsletterIsland client:visible />
 
 				{stats?.quote_of_the_day && (
-					<section class="rail-module rail-quote motion-rise-fast">
-						<p class="rail-kicker">Од денешната слика</p>
-						<h3 class="rail-title flex items-center gap-2">
-							<Quote size={14} className="text-nyt-accent" /> ЦИТАТ НА ДЕНОТ
-						</h3>
-						<blockquote class="mt-4">
-							<p class="font-serif text-lg leading-snug italic text-foreground mb-3">
-								"{stats.quote_of_the_day.quote}"
-							</p>
-							<cite class="block border-t border-border pt-3">
-								<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`} class="group">
-									<span class="micro-label block mb-1">Поврзана вест</span>
-									<span class="font-serif font-bold text-xs group-hover:text-nyt-accent transition-colors leading-tight block">
-										{stats.quote_of_the_day.title}
-									</span>
+					<section class="rail-block">
+						<p class="rail-kicker">Цитат на денот</p>
+						<blockquote class="rail-quote-block">
+							<p>"{stats.quote_of_the_day.quote}"</p>
+							<cite>
+                                <span>Поврзана вест</span>
+								<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`}>
+									{stats.quote_of_the_day.title}
 								</a>
 							</cite>
 						</blockquote>
 					</section>
 				)}
 
-				<section class="rail-module rail-module-quiet motion-rise-fast motion-delay-2">
-					<p class="rail-kicker">Што најчесто се повторува</p>
-					<h3 class="rail-title">ТЕМИ ВО ФОКУС</h3>
-					<div class="focus-cloud">
+				<section class="rail-block rail-block-quiet">
+					<p class="rail-kicker">Теми во фокус</p>
+					<div class="rail-tag-cloud">
 						{focusEntities.map((ent: any) => (
-							<a href={`/subjekt/${encodeURIComponent(ent.name)}`} class="focus-chip group">
-								<span class="opacity-60 mr-1.5 group-hover:opacity-100 transition-opacity">
-									{ent.type === 'ORG' ? '🏢' : ent.type === 'PERSON' ? '👤' : '🏷️'}
-								</span>
+							<a href={`/subjekt/${encodeURIComponent(ent.name)}`}>
 								{ent.name}
 							</a>
 						))}
 					</div>
-					<p class="rail-note">Имиња и теми што најупорно се враќаат низ денешните објави и реакции.</p>
 				</section>
 			</aside>
 		</div>
@@ -521,850 +446,79 @@ function getBriefingSnippet(content: string) {
 	<Footer />
 </Layout>
 
-<script>
-	// Personalization 2.0: Implicit "Click-Stream" Re-ranking
-	import { scoreClusterForReader, loadReaderProfile, hasPersonalizationSignal } from '../lib/personalization.js';
-
-	document.addEventListener('astro:page-load', () => {
-		const profile = loadReaderProfile();
-		if (!hasPersonalizationSignal(profile)) return;
-
-		const grids = document.querySelectorAll('.news-feed-grid');
-		grids.forEach(grid => {
-			const cards = Array.from(grid.querySelectorAll('.news-card'));
-			if (cards.length < 2) return;
-
-			const scoredCards = cards.map(card => {
-				const clusterDataStr = card.getAttribute('data-cluster');
-				if (!clusterDataStr) return { card, score: 0 };
-				try {
-					const cluster = JSON.parse(clusterDataStr);
-					const result = scoreClusterForReader(cluster, profile);
-					// Base score + implicit bonus
-					const finalScore = (cluster.homepage_score || 0) + (result?.score || 0) * 2;
-					
-					// Add visual indicator if strongly personalized
-					if (result && result.score > 1.5 && !card.querySelector('.personalized-badge')) {
-						const metaRow = card.querySelector('.footer-meta');
-						if (metaRow) {
-							const badge = document.createElement('span');
-							badge.className = 'personalized-badge text-[9px] font-black text-nyt-accent uppercase tracking-widest ml-auto opacity-80 flex items-center gap-1';
-							const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-							svg.setAttribute('width', '10');
-							svg.setAttribute('height', '10');
-							svg.setAttribute('viewBox', '0 0 24 24');
-							svg.setAttribute('fill', 'none');
-							svg.setAttribute('stroke', 'currentColor');
-							svg.setAttribute('stroke-width', '2.5');
-							svg.setAttribute('stroke-linecap', 'round');
-							svg.setAttribute('stroke-linejoin', 'round');
-							const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-							path.setAttribute('d', 'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z');
-							svg.appendChild(path);
-							badge.appendChild(svg);
-							badge.appendChild(document.createTextNode(` ${result.reason}`));
-							metaRow.appendChild(badge);
-						}
-					}
-					
-					return { card, score: finalScore };
-				} catch (e) {
-					return { card, score: 0 };
-				}
-			});
-
-			scoredCards.sort((a, b) => b.score - a.score);
-			
-			// Re-append in new order
-			scoredCards.forEach(({ card }) => grid.appendChild(card));
-		});
-	});
-</script>
-
 <style>
-	.front-page-grid {
-		--front-page-cache-bust-20260409: 1;
-	}
-
-	.front-page-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: var(--grid-gap);
-		padding-bottom: var(--page-py);
-	}
-
-	.front-main {
-		min-width: 0;
-	}
-
-	.editor-note {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1.5rem;
-		padding: 1.5rem 0 2rem;
-		border-bottom: 1px solid var(--border);
-		margin-bottom: 2.5rem;
-	}
-
-	.editor-note h2 {
-		font-size: clamp(1.6rem, 1.2rem + 1vw, 2.25rem);
-		line-height: 1.02;
-		max-width: 16ch;
-		margin: 0.35rem 0 0;
-	}
-
-	.editor-note-meta {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-		max-width: 24rem;
-	}
-
-	.editor-note-meta strong {
-		display: block;
-		font-family: var(--font-serif);
-		font-size: 1.5rem;
-		line-height: 1;
-		margin-top: 0.35rem;
-	}
-
-	.micro-label {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-	}
-
-	.lead-hero {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.8rem;
-		padding-bottom: 1.2rem;
-		border-bottom: 1px solid var(--border);
-		position: relative;
-		overflow: hidden;
-	}
-
-	.lead-hero-tint {
-		position: absolute;
-		top: -20%;
-		right: -10%;
-		width: 60%;
-		height: 140%;
-		background: radial-gradient(circle at center, var(--tint-color), transparent 70%);
-		opacity: 0.04;
-		filter: blur(80px);
-		pointer-events: none;
-		z-index: 0;
-		transform: rotate(-15deg);
-	}
-
-	.dark .lead-hero-tint {
-		opacity: 0.12;
-		filter: blur(120px);
-	}
-
-	.lead-media-mobile {
-		display: block;
-	}
-
-	.lead-media-desktop {
-		display: none;
-	}
-
-	.empty-feed {
-		padding: 3rem 1.5rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 88%, var(--surface-soft) 12%);
-		text-align: center;
-		display: grid;
-		gap: 0.75rem;
-		justify-items: center;
-	}
-
-	.empty-feed-kicker {
-		margin: 0;
-		font-family: var(--font-sans);
-		font-size: 0.66rem;
-		font-weight: 900;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.empty-feed-title {
-		margin: 0;
-		font-size: clamp(1.4rem, 1.1rem + 1vw, 1.85rem);
-		max-width: 28ch;
-		line-height: 1.1;
-	}
-
-	.empty-feed-copy {
-		margin: 0;
-		max-width: 48ch;
-		font-family: var(--font-nyt-body);
-		font-size: 0.98rem;
-		line-height: 1.55;
-		color: var(--secondary-foreground);
-	}
-
-	.empty-feed-copy a {
-		color: var(--nyt-accent);
-		text-decoration: underline;
-		text-underline-offset: 0.2em;
-	}
-
-	.empty-feed-actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.empty-feed-action,
-	.filter-chip {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.45rem 0.7rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		text-decoration: none;
-	}
-
-	.empty-feed-action {
-		color: var(--background);
-		background: var(--foreground);
-		border-color: var(--foreground);
-	}
-
-	.empty-feed-action-secondary {
-		color: var(--foreground);
-		background: transparent;
-		border-color: var(--border);
-	}
-
-	.filter-chip {
-		color: var(--muted-foreground);
-		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
-	}
-
-	.lead-kicker,
-	.lead-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		flex-wrap: wrap;
-	}
-
-	.lead-ask-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.55rem;
-		margin-top: 0.85rem;
-	}
-
-	.lead-ask-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.38rem;
-		padding: 0.45rem 0.75rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
-		font-family: var(--font-sans);
-		font-size: 0.72rem;
-		font-weight: 800;
-		line-height: 1.2;
-		color: var(--foreground);
-		text-decoration: none;
-		transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-	}
-
-	.lead-ask-chip:hover {
-		border-color: var(--nyt-accent);
-		color: var(--nyt-accent);
-		background: color-mix(in srgb, var(--background) 86%, var(--secondary) 14%);
-	}
-
-	.source-label {
-		font-family: var(--font-sans);
-		font-size: 0.68rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.live-pill {
-		border: 1px solid var(--nyt-red);
-		color: var(--nyt-red);
-		padding: 0.1rem 0.4rem;
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.freshness-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-top: 1rem;
-		padding: 0.35rem 0.55rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-
-	.freshness-chip strong {
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-	}
-
-	.freshness-fresh {
-		color: #2f855a;
-		border-color: color-mix(in srgb, #2f855a 36%, var(--border) 64%);
-	}
-
-	.freshness-aging {
-		color: #9a6700;
-		border-color: color-mix(in srgb, #9a6700 36%, var(--border) 64%);
-	}
-
-	.freshness-stale {
-		color: var(--nyt-red);
-		border-color: color-mix(in srgb, var(--nyt-red) 36%, var(--border) 64%);
-	}
-
-	.supporting-band {
-		display: grid;
-		gap: 1rem;
-		padding: 1.1rem 0 1.4rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.supporting-featured-grid,
-	.supporting-compact-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
-	}
-
-	.feed-section {
-		padding-top: var(--section-py);
-	}
-
-	.live-now-module {
-		padding: 1.1rem 0 1.3rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.live-now-head {
-		display: flex;
-		flex-direction: column;
-		gap: 0.65rem;
-		margin-bottom: 1rem;
-	}
-
-	.live-now-kicker {
-		margin: 0 0 0.35rem;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--nyt-red);
-	}
-
-	.live-now-head h2 {
-		margin: 0;
-		font-size: clamp(1.18rem, 1rem + 0.75vw, 1.6rem);
-		line-height: 1.06;
-	}
-
-	.live-now-status {
-		display: inline-flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.6rem;
-	}
-
-	.live-now-badge,
-	.live-now-time {
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
-	.live-now-badge {
-		padding: 0.3rem 0.55rem;
-		border: 1px solid color-mix(in srgb, var(--nyt-red) 40%, var(--border) 60%);
-		color: var(--nyt-red);
-		background: color-mix(in srgb, var(--nyt-red) 6%, var(--background) 94%);
-	}
-
-	.live-now-time {
-		color: var(--muted-foreground);
-	}
-
-	.live-now-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.85rem;
-	}
-
-	.live-now-card {
-		display: grid;
-		gap: 0.55rem;
-		padding: 0.9rem 1rem;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--background) 95%, var(--secondary) 5%);
-		text-decoration: none;
-		color: var(--foreground);
-		transition: border-color 160ms ease, transform 160ms ease, color 160ms ease;
-	}
-
-	.live-now-card:hover {
-		border-color: var(--nyt-accent);
-		color: var(--nyt-accent);
-		transform: translateY(-1px);
-	}
-
-	.live-now-meta,
-	.live-now-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-	}
-
-	.live-now-source,
-	.live-now-flash,
-	.live-now-footer {
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-
-	.live-now-source {
-		color: var(--nyt-accent);
-	}
-
-	.live-now-flash {
-		color: var(--nyt-red);
-	}
-
-	.live-now-card h3 {
-		margin: 0;
-		font-family: var(--font-serif);
-		font-size: 1rem;
-		line-height: 1.2;
-		font-weight: 800;
-	}
-
-	.live-now-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		color: var(--muted-foreground);
-	}
-
-	.live-now-open {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-	}
-
-	@media (max-width: 640px) {
-		.front-page-grid {
-			gap: calc(var(--grid-gap) * 0.7);
-			padding-bottom: calc(var(--page-py) * 0.6);
-		}
-
-		.editor-brief {
-			padding: 0.85rem 0 1rem;
-			gap: 0.75rem;
-		}
-
-		.editor-brief-card {
-			padding: 0.8rem 0.85rem;
-		}
-
-		.editor-brief-card p {
-			font-size: 0.86rem;
-			line-height: 1.42;
-		}
-
-		.section-heading-row {
-			margin-bottom: 0.8rem;
-		}
-
-		.section-note {
-			font-size: 0.68rem;
-		}
-
-		.supporting-band,
-		.feed-section {
-			padding-top: calc(var(--section-py) * 0.6);
-		}
-
-		.live-now-module {
-			padding: 0.95rem 0 1rem;
-		}
-
-		.supporting-band {
-			gap: 0.8rem;
-			padding-bottom: 1rem;
-		}
-
-		.supporting-featured-grid,
-		.supporting-compact-grid,
-		.news-feed-grid-compact,
-		.news-feed-grid-featured,
-		.wire-stack {
-			gap: 0.8rem;
-		}
-
-		.feed-section-wire {
-			padding-top: 0.85rem;
-		}
-	}
-
-	@media (min-width: 768px) {
-		.live-now-head {
-			flex-direction: row;
-			align-items: end;
-			justify-content: space-between;
-		}
-
-		.live-now-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1280px) {
-		.live-now-grid {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-		}
-	}
-
-	.section-heading-row {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.section-title {
-		font-size: clamp(1.32rem, 1.08rem + 0.72vw, 1.82rem);
-		line-height: 1.04;
-		letter-spacing: -0.02em;
-		margin: 0;
-	}
-
-	.section-note {
-		font-family: var(--font-sans);
-		font-size: 0.78rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--muted-foreground);
-		margin: 0;
-	}
-
-	.front-rail {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1.35rem;
-		align-content: start;
-	}
-
-	.rail-module {
-		padding: 1rem;
-		border: 1px solid var(--border);
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, var(--secondary) 5%), color-mix(in srgb, var(--background) 89%, var(--secondary) 11%));
-		box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
-	}
-
-	.rail-module-featured {
-		padding: 1.2rem;
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 98%, var(--secondary) 2%), color-mix(in srgb, var(--background) 90%, #efe8de 10%));
-	}
-
-	.rail-module-quiet {
-		background:
-			linear-gradient(180deg, color-mix(in srgb, var(--background) 99%, var(--secondary) 1%), color-mix(in srgb, var(--background) 95%, var(--secondary) 5%));
-	}
-
-	.rail-kicker {
-		margin: 0 0 0.55rem;
-		font-family: var(--font-sans);
-		font-size: 0.58rem;
-		font-weight: 900;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--nyt-accent);
-	}
-
-	.rail-title {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 900;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		padding-bottom: 0.6rem;
-		margin: 0 0 0.65rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.rail-note {
-		margin: 0;
-		font-family: var(--font-nyt-body);
-		font-size: 0.88rem;
-		line-height: 1.45;
-		color: var(--secondary-foreground);
-	}
-
-	@media (min-width: 960px) {
-		.front-rail {
-			gap: 1rem;
-		}
-
-		.rail-module {
-			padding: 0.95rem;
-			background:
-				linear-gradient(180deg, color-mix(in srgb, var(--background) 97%, var(--secondary) 3%), color-mix(in srgb, var(--background) 92%, var(--secondary) 8%));
-			box-shadow: none;
-		}
-
-		.rail-kicker {
-			font-size: 0.56rem;
-			margin-bottom: 0.45rem;
-		}
-
-		.rail-title {
-			padding-bottom: 0.55rem;
-			margin-bottom: 0.65rem;
-			font-size: 0.68rem;
-		}
-	}
-
-	.rail-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.rail-item {
-		display: grid;
-		grid-template-columns: 2rem 1fr;
-		gap: 0.75rem;
-		padding: 0.8rem 0;
-		text-decoration: none;
-		border-top: 1px solid var(--border);
-	}
-
-	.rail-item:first-child {
-		border-top: 0;
-		padding-top: 0;
-	}
-
-	.rail-item p {
-		font-family: var(--font-serif);
-		font-size: 1.05rem;
-		font-weight: 800;
-		line-height: 1.1;
-		color: var(--foreground);
-		margin: 0 0 0.3rem;
-	}
-
-	.rail-rank {
-		font-family: var(--font-serif);
-		font-size: 2rem;
-		line-height: 1;
-		font-weight: 900;
-		color: var(--nyt-gray-500);
-		text-align: center;
-	}
-
-	.rail-state {
-		font-family: var(--font-sans);
-		font-size: 0.64rem;
-		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--nyt-gray-500);
-	}
-
-	.rail-state.is-up {
-		color: var(--nyt-accent);
-	}
-
-	.pulse-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-	}
-
-	.pulse-grid strong {
-		display: block;
-		font-family: var(--font-serif);
-		font-size: 1.85rem;
-		line-height: 1;
-		margin-top: 0.45rem;
-	}
-
-	.focus-cloud {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.55rem;
-		overflow: hidden;
-	}
-
-	.focus-chip {
-		padding: 0.45rem 0.62rem;
-		border: 1px solid var(--border);
-		font-family: var(--font-sans);
-		font-size: 0.62rem;
-		font-weight: 900;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--foreground);
-		text-decoration: none;
-		max-width: 100%;
-		overflow-wrap: anywhere;
-		background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
-	}
-
-	.focus-chip:hover {
-		background: var(--foreground);
-		color: var(--background);
-	}
-
-	@media (min-width: 720px) {
-		.editor-brief-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-
-		.supporting-featured-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.supporting-compact-grid,
-		.news-feed-grid-compact {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	.pulse-band {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1.5rem;
-		padding: 1.5rem 0;
-		border-top: 1px solid var(--border);
-		border-bottom: 1px solid var(--border);
-		margin: 2.5rem 0;
-	}
-
-	.pulse-stat-card {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.pulse-stat-label {
-		font-family: var(--font-sans);
-		font-size: 0.65rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: var(--muted-foreground);
-	}
-
-	.pulse-stat-value {
-		font-family: var(--font-serif);
-		font-size: 1.5rem;
-		font-weight: 900;
-		line-height: 1;
-	}
-
-	@media (min-width: 720px) {
-		.pulse-band {
-			grid-template-columns: repeat(4, 1fr);
-		}
-	}
-
-	@media (min-width: 960px) {
-		.front-page-grid {
-			grid-template-columns: minmax(0, 1.56fr) minmax(16.5rem, 0.62fr);
-			gap: 1.85rem;
-		}
-
-		.news-feed-grid-featured {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.front-rail {
-			position: sticky;
-			top: 1.5rem;
-		}
-	}
-
-	@media (min-width: 1280px) {
-		.front-page-grid {
-			grid-template-columns: minmax(0, 1.74fr) minmax(17.5rem, 0.7fr);
-			gap: 2.2rem;
-		}
-	}
-
-	@media (max-width: 639px) {
-		.editor-note-meta,
-		.pulse-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.lead-headline {
-			max-width: none;
-		}
-
-		.focus-cloud {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 0.45rem;
-		}
-
-		.focus-chip {
-			display: block;
-			text-align: center;
-			padding: 0.5rem 0.45rem;
-			font-size: 0.58rem;
-			line-height: 1.25;
-		}
-	}
-
-	.wire-stack {
-		display: grid;
-		grid-template-columns: 1fr;
-	}
+    /* ── Broadsheet Layout ───────────────────────────── */
+    .broadsheet-layout { background: var(--background); }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+    
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 2rem; }
+        .broadsheet-rail { position: sticky; top: 7rem; align-self: start; }
+    }
+
+    /* ── Section Dividers ────────────────────────────── */
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
+    .section-wrapper:last-child { border-bottom: none; }
+    .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+
+    /* ── Filtering Status ─────────────────────────────── */
+    .filter-header { padding: 2rem 0; border-bottom: 3px solid var(--foreground); }
+    .filter-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted-foreground); margin-bottom: 0.4rem; }
+    .filter-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; italic: true; line-height: 1; margin: 0 0 1.25rem; }
+    .filter-meta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+    .filter-chips { display: flex; gap: 0.5rem; }
+    .filter-chip { padding: 0.35rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
+    .ai-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
+    .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
+
+    /* ── Broadsheet Rail ──────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-block-quiet { opacity: 0.85; }
+    
+    .rail-head-red { display: flex; align-items: center; gap: 0.5rem; color: var(--nyt-red); margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .rail-head-red h3 { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.08em; }
+    
+    .rail-wire-item { display: block; padding: 0.85rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--foreground); }
+    .rail-wire-item:last-child { border-bottom: none; }
+    .rail-wire-item p { font-family: var(--font-serif); font-size: 0.86rem; font-weight: 750; line-height: 1.3; margin-bottom: 0.35rem; }
+    .rail-wire-meta { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); }
+    .rail-wire-meta span { opacity: 0.5; margin: 0 0.3rem; }
+    .rail-wire-item:hover p { color: var(--nyt-accent); text-decoration: underline; }
+
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    .rail-brief-text { font-family: var(--font-serif); font-size: 0.88rem; line-height: 1.5; color: var(--secondary-foreground); font-style: italic; margin-bottom: 1rem; }
+    .rail-cta { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--nyt-accent); text-decoration: none; border-bottom: 1px solid transparent; }
+    .rail-cta:hover { border-bottom-color: var(--nyt-accent); }
+    .rail-cta-plain { display: block; text-align: center; padding: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--muted-foreground); text-decoration: none; }
+
+    .rail-quote-block p { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; font-style: italic; line-height: 1.4; margin-bottom: 1rem; }
+    .rail-quote-block cite { display: block; border-top: 1px solid var(--border); padding-top: 0.75rem; font-style: normal; }
+    .rail-quote-block cite span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; display: block; color: var(--muted-foreground); margin-bottom: 0.25rem; }
+    .rail-quote-block cite a { font-family: var(--font-serif); font-size: 0.72rem; font-weight: 800; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; }
+    .rail-quote-block cite a:hover { color: var(--nyt-accent); }
+
+    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .rail-tag-cloud a { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; }
+    .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); }
+
+    .pulse-stats-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; padding: 1.5rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 2.5rem 0; }
+    .p-stat span { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); display: block; margin-bottom: 0.3rem; }
+    .p-stat strong { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; line-height: 1; }
+
+    @media (min-width: 768px) {
+        .pulse-stats-bar { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); margin: 2rem 0; }
+    .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--nyt-accent); margin-bottom: 1rem; }
+    .empty-state h2 { font-family: var(--font-serif); font-size: 1.75rem; margin-bottom: 1rem; }
+    .trend-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.5rem; }
+    .trend-links a { font-family: var(--font-serif); font-weight: 700; font-style: italic; font-size: 1.1rem; text-decoration: underline; color: var(--foreground); }
+
+    @media (max-width: 768px) {
+        .broadsheet-main { border-right: none; padding-right: 0; }
+    }
 </style>
