@@ -21,13 +21,16 @@ function getRelativeTimeStr(dateStr: string) {
         const date = new Date(dateStr);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
+        const diffMins = Math.floor(diffMs / (1000 * 60));
 
-        if (diffMins < 60) return `пред ${diffMins} ${diffMins === 1 ? 'минута' : 'минути'}`;
-        if (diffHours < 24) return `пред ${diffHours} ${diffHours === 1 ? 'час' : 'часа'}`;
-        return `пред ${diffDays} ${diffDays === 1 ? 'ден' : 'дена'}`;
+        if (diffMins < 1) return 'ШТОТУКУ';
+        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+        
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `ПРЕД ${diffHours} ${diffHours === 1 ? 'ЧАС' : 'ЧАСА'}`;
+
+        const diffDays = Math.floor(diffHours / 24);
+        return `ПРЕД ${diffDays} ${diffDays === 1 ? 'ДЕН' : 'ДЕНА'}`;
     } catch (e) {
         return '';
     }

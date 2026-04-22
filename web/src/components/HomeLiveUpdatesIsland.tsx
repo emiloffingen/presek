@@ -30,7 +30,19 @@ const API_URL = apiBaseUrl();
 function getTimeStr(dateStr?: string) {
   if (!dateStr) return '';
   try {
-    return new Date(dateStr).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+
+    if (diffMins < 1) return 'ШТОТУКУ';
+    if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+    
+    return date.toLocaleTimeString('mk-MK', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Europe/Skopje' 
+    });
   } catch {
     return '';
   }
