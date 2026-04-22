@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Radio, RefreshCcw } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { rankLiveNowClusters } from '../lib/liveNow.js';
 import { cleanAndDecode } from '../utils/textUtils';
 
 interface ArticleLike {
@@ -46,22 +47,14 @@ export default function HomeLiveUpdatesIsland({ excludeClusterIds = [] }: HomeLi
 
     const loadLatest = async () => {
       try {
-        const res = await fetch(`${API_URL}/news?page_size=12&sort=recent&t=${Date.now()}`);
+        const res = await fetch(`${API_URL}/news?page_size=24&sort=recent&t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        const exclude = new Set(excludeClusterIds);
-        const sourceCount: Record<string, number> = {};
-        
-        const latest = (Array.isArray(data?.clusters) ? data.clusters : [])
-          .filter((cluster: ClusterLike) => {
-            if (exclude.has(cluster.cluster_id)) return false;
-            const src = cluster.articles?.[0]?.source || 'unknown';
-            sourceCount[src] = (sourceCount[src] || 0) + 1;
-            // Limit to 2 per source in the live view to ensure diversity
-            return sourceCount[src] <= 2;
-          })
-          .slice(0, 4);
+        const latest = rankLiveNowClusters(
+          Array.isArray(data?.clusters) ? data.clusters : [],
+          excludeClusterIds
+        ).slice(0, 4);
         setClusters(latest);
       } catch (err) {
         console.error('[HomeLiveUpdates] Failed to load latest clusters:', err);

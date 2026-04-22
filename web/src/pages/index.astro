@@ -17,6 +17,7 @@ import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
+import { rankLatestWireArticles } from '../lib/liveNow.js';
 import { TrendingUp, Quote, Sparkles } from 'lucide-react';
 import type { NewsCluster } from '../types';
 
@@ -76,9 +77,7 @@ if (wireResult.status === 'fulfilled') {
             }
         }
     }
-    wireArticles = wireArticles.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    ).slice(0, 15);
+    wireArticles = rankLatestWireArticles(wireArticles, 15);
 }
 
 if (newsResult.status === 'fulfilled') {
