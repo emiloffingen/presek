@@ -7,96 +7,114 @@ import { Heart, Coffee, ShieldCheck, Cpu, Globe } from 'lucide-react';
 ---
 
 <Layout 
-    title="Поддржи го проектот" 
-    description="Пресек е независен сервис за вести. Помогнете ни да ги покриеме трошоците за AI и серверите."
+    title="Поддржи го Проектот — Пресек" 
+    description="Пресек е независен сервис за вести. Помогнете ни да ја зачуваме чистата информираност."
 >
     <NYTHeader />
-    <main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "Поддршка" }]} />
-        
-        <article class="max-w-3xl mx-auto py-12">
-            <header class="text-center mb-16">
-                <div class="inline-flex items-center justify-center p-4 bg-nyt-accent/10 rounded-full mb-6">
-                    <Heart className="text-nyt-accent animate-pulse" size={32} />
-                </div>
-                <h1 class="font-serif text-4xl md:text-5xl font-black mb-4">Поддржи го <span class="italic">Пресек</span></h1>
-                <p class="text-xl text-secondary-foreground font-nyt-body leading-relaxed">
-                    Ние сме независен проект посветен на чиста и објективна информираност преку технологија.
-                </p>
-            </header>
-
-            <div class="prose-nyt mb-12">
-                <p class="text-lg leading-relaxed">
-                    Пресек работи без претплати и без агресивни реклами. За да платформата остане бесплатна, брза и постојано достапна, се потпираме на заедницата која ја користи.
-                </p>
-                <p class="text-lg leading-relaxed">
-                    Вашата донација директно помага во:
-                </p>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-10 not-prose">
-                    <div class="p-5 border border-border bg-card rounded-xl">
-                        <Cpu className="text-nyt-accent mb-2" size={20} />
-                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">AI Модели</h3>
-                        <p class="text-[12px] text-secondary-foreground leading-snug">Обработка на илјадници објави дневно.</p>
-                    </div>
-                    <div class="p-5 border border-border bg-card rounded-xl">
-                        <Globe className="text-nyt-accent mb-2" size={20} />
-                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">Инфраструктура</h3>
-                        <p class="text-[12px] text-secondary-foreground leading-snug">Брзи сервери за моментално вчитување.</p>
-                    </div>
-                    <div class="p-5 border border-border bg-card rounded-xl">
-                        <ShieldCheck className="text-nyt-accent mb-2" size={20} />
-                        <h3 class="font-bold mb-1 uppercase text-[10px] tracking-widest">Независност</h3>
-                        <p class="text-[12px] text-secondary-foreground leading-snug">Отпорност на надворешни притисоци.</p>
-                    </div>
-                </div>
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ПОДДРШКА & ЗАЕДНИЦА</span>
             </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Поддржи го <span>Пресек</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Ние сме независен проект посветен на чиста и објективна информираност преку технологија. Вашиот придонес директно го овозможува опстанокот на овој сервис.
+            </p>
+        </header>
 
-            <div class="relative overflow-hidden p-1 bg-gradient-to-br from-[#ff5e5b] to-[#ff8a71] rounded-3xl shadow-2xl transition-transform hover:scale-[1.01]">
-                <div class="bg-card rounded-[calc(1.5rem-1px)] p-8 md:p-12 text-center relative z-10">
-                    <div class="inline-flex items-center justify-center w-16 h-16 bg-[#ff5e5b]/10 rounded-2xl mb-6">
-                        <Coffee className="text-[#ff5e5b]" size={32} />
-                    </div>
-                    
-                    <h2 class="font-serif text-3xl md:text-4xl font-black mb-4">Стани поддржувач на Пресек</h2>
-                    <p class="max-w-md mx-auto mb-10 text-secondary-foreground leading-relaxed">
-                        Секој придонес е значаен за опстанокот на овој дигитален јавен сервис. Поддржете нѐ со еднократно „кафе“ или месечна претплата.
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Пресек работи без претплати и без агресивни реклами. За да платформата остане бесплатна, брза и постојано достапна за сите граѓани, се потпираме на заедницата која ја користи и ја вреднува нашата работа.
                     </p>
-                    
-                    <div class="flex flex-col items-center gap-6">
-                        <a 
-                            href="https://ko-fi.com/presek" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            class="group relative inline-flex items-center gap-3 px-10 py-5 bg-[#ff5e5b] text-white font-black text-sm uppercase tracking-widest rounded-full transition-all hover:bg-[#e54b48] hover:shadow-[0_0_30px_rgba(255,94,91,0.4)]"
-                        >
-                            <img src="https://ko-fi.com/img/cup-border.png" alt="Ko-fi" class="h-6 w-auto brightness-0 invert transition-transform group-hover:rotate-12" />
-                            <span>Чести кафе на Ko-fi</span>
-                        </a>
-                        
-                        <div class="flex items-center gap-8 py-4 px-8 border border-border/50 rounded-2xl bg-secondary/5">
-                            <div class="text-center">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Безбедно</p>
-                                <p class="text-[11px] font-bold">Stripe / PayPal</p>
-                            </div>
-                            <div class="w-px h-6 bg-border/50"></div>
-                            <div class="text-center">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Директно</p>
-                                <p class="text-[11px] font-bold">100% за проектот</p>
-                            </div>
+
+                    <div class="support-pillars my-12">
+                        <div class="pillar">
+                            <Cpu size={24} className="text-nyt-accent" />
+                            <h3>AI МОДЕЛИ</h3>
+                            <p>Покривање на трошоците за пресметка и јазична обработка на илјадници објави дневно.</p>
+                        </div>
+                        <div class="pillar">
+                            <Globe size={24} className="text-nyt-accent" />
+                            <h3>ИНФРАСТРУКТУРА</h3>
+                            <p>Одржување на брзи и сигурни сервери за моментален пристап до информациите.</p>
+                        </div>
+                        <div class="pillar">
+                            <ShieldCheck size={24} className="text-nyt-accent" />
+                            <h3>НЕЗАВИСНОСТ</h3>
+                            <p>Зачувување на уредничката неутралност и отпорност на надворешни притисоци.</p>
                         </div>
                     </div>
-                    
-                    <p class="mt-8 text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] opacity-60">
-                        Официјална страница за поддршка • Ko-fi.com/presek
-                    </p>
-                </div>
-                
-                {/* Decorative background elements */}
-                <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#ff5e5b]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="support-box">
+                        <div class="support-box-content">
+                            <Coffee size={40} className="text-[#ff5e5b] mb-6" />
+                            <h2 class="font-serif text-3xl font-black mb-4">Стани поддржувач</h2>
+                            <p class="text-lg opacity-80 mb-10">Секој придонес е значаен. Поддржете нѐ со еднократно „кафе“ преку Ko-fi платформата.</p>
+                            
+                            <a href="https://ko-fi.com/presek" target="_blank" rel="noopener noreferrer" class="support-cta">
+                                <img src="https://ko-fi.com/img/cup-border.png" alt="" class="h-6" />
+                                <span>ЧЕСТИ КАФЕ НА KO-FI</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
             </div>
-        </article>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Зошто сега?</p>
+                    <h3 class="rail-title">МИСИЈА</h3>
+                    <p class="rail-text">Дигиталниот јавен простор има потреба од алатки кои внесуваат ред, а не хаос. Пресек е нашиот придонес кон таа цел.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">БЕЗБЕДНОСТ</p>
+                    <p class="text-xs leading-relaxed">Донациите се обработуваат преку Ko-fi (Stripe/PayPal) и се 100% наменети за развој и одржување на Пресек.мк.</p>
+                </div>
+            </aside>
+        </div>
     </main>
     <Footer />
 </Layout>
+
+<style>
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+    }
+
+    /* ── Prose & Content ─────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    
+    .support-pillars { display: grid; grid-template-columns: 1fr; gap: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 3rem 0; }
+    @media (min-width: 640px) { .support-pillars { grid-template-columns: repeat(3, 1fr); } }
+    .pillar h3 { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; letter-spacing: 0.1em; margin: 1rem 0 0.5rem; color: var(--foreground); }
+    .pillar p { font-size: 0.85rem; line-height: 1.5; margin: 0; }
+
+    .support-box { padding: 4rem 2rem; border: 1px solid var(--border); background: var(--secondary); text-align: center; }
+    .support-cta { display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 2.5rem; background: #ff5e5b; color: white; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 950; letter-spacing: 0.1em; text-decoration: none; border-radius: 4px; transition: transform 0.2s, background 0.2s; }
+    .support-cta:hover { transform: scale(1.02); background: #e54b48; }
+
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
+</style>

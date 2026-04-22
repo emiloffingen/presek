@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert, Info } from 'lucide-react';
+import { Search, ShieldCheck, Zap, Activity, LineChart, ShieldAlert, ChevronRight } from 'lucide-react';
 
 interface SourceRow {
   source: string;
@@ -29,12 +29,6 @@ interface SourceRow {
   pause_reason?: string | null;
 }
 
-function tierClass(tier: string) {
-  if (tier === 'Висока доверба') return 'source-tier-high';
-  if (tier === 'Потврден извор') return 'source-tier-medium';
-  return 'source-tier-low';
-}
-
 function formatLastFetched(value?: string) {
   if (!value) return 'Нема свеж сигнал';
   try {
@@ -47,12 +41,6 @@ function formatLastFetched(value?: string) {
 
 function formatPercent(value: number) {
   return `${Math.round((value || 0) * 100)}%`;
-}
-
-function trendClass(label?: string) {
-  if (label === 'Расте') return 'source-trend-up';
-  if (label === 'Слабее') return 'source-trend-down';
-  return 'source-trend-flat';
 }
 
 function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' {
@@ -80,17 +68,13 @@ export const IzvoriPage: React.FC = () => {
       try {
         const res = await fetch(`${apiBaseUrl()}/sources?_t=${Date.now()}`);
         if (!res.ok) {
-          setError('Неуспешно поврзување со серверот.');
+          setError('Неуспешно поврзување.');
           return;
         }
         const allRes = await res.json();
-        if (!Array.isArray(allRes)) {
-          setError('Грешка при вчитување на податоците.');
-          return;
-        }
         setSources(allRes);
       } catch {
-        setError('Неуспешно поврзување со серверот.');
+        setError('Неуспешно поврзување.');
       } finally {
         setLoading(false);
       }
@@ -100,315 +84,194 @@ export const IzvoriPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     let results = sources;
-    
     const q = searchTerm.trim().toLowerCase();
-    if (q) {
-      results = results.filter((source) => source.source?.toLowerCase().includes(q));
-    }
-    
-    if (filterTier === 'high') {
-      results = results.filter(s => s.trust_tier === 'Висока доверба');
-    } else if (filterTier === 'verified') {
-      results = results.filter(s => s.trust_tier === 'Потврден извор');
-    }
-    
+    if (q) results = results.filter((s) => s.source?.toLowerCase().includes(q));
+    if (filterTier === 'high') results = results.filter(s => s.trust_tier === 'Висока доверба');
+    else if (filterTier === 'verified') results = results.filter(s => s.trust_tier === 'Потврден извор');
     return results;
   }, [sources, searchTerm, filterTier]);
 
   const mkSources = filtered.filter((s) => s.country === 'MK' || !s.country);
   const intSources = filtered.filter((s) => s.country && s.country !== 'MK');
-  const highTrust = filtered.filter((s) => s.trust_tier === 'Висока доверба').length;
-  const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 5);
-  const bestCorroborated = [...filtered]
-    .filter((s) => s.lead_count_30d >= 3)
-    .sort((a, b) => b.corroboration_rate - a.corroboration_rate)
-    .slice(0, 5);
-  const loneLeaders = [...filtered]
-    .filter((s) => s.lead_count_30d >= 3)
-    .sort((a, b) => b.lone_lead_rate - a.lone_lead_rate)
-    .slice(0, 5);
+  const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 6);
 
-  const renderSourceCard = (source: SourceRow) => {
+  const renderSourceRow = (source: SourceRow) => {
     const health = getHealthStatus(source.last_fetched);
     const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
     
     return (
-      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="source-reputation-card group">
-        <div className="source-reputation-top">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                health === 'active' ? 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 
-                health === 'stale' ? 'bg-amber-400' : 'bg-red-500'
-              }`} title={
-                health === 'active' ? 'Активен (ажуриран неодамна)' : 
-                health === 'stale' ? 'Во мирување (нема сигнал >1ч)' : 'Неактивен (нема сигнал >6ч)'
-              }></div>
-              <h3 className="source-reputation-name group-hover:text-nyt-accent transition-colors">{source.source}</h3>
-            </div>
-            <div className="flex flex-wrap gap-1 mt-1.5">
-                <span className="source-reputation-meta px-1.5 py-0.5 bg-secondary rounded text-[9px] font-black uppercase tracking-tighter">{source.country || 'MK'}</span>
-                {source.top_categories?.slice(0, 2).map(cat => (
-                    <span key={cat} className="source-reputation-meta px-1.5 py-0.5 border border-border rounded text-[9px] font-black uppercase tracking-tighter opacity-70 bg-background">{cat}</span>
-                ))}
-            </div>
+      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="editorial-source-item group">
+        <div className="item-main">
+          <div className="item-head">
+            <div className={`health-dot ${health}`}></div>
+            <h3 className="item-title">{source.source}</h3>
+            <span className="item-tier">{source.trust_tier}</span>
           </div>
-          <div className="text-right flex flex-col items-end gap-1">
-            <span className={`source-tier ${tierClass(source.trust_tier)} text-[10px]`}>{source.trust_tier}</span>
-            <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-black uppercase opacity-40">QI:</span>
-                <span className="text-[11px] font-black text-nyt-accent">{reliabilityIndex}</span>
-            </div>
+          <p className="item-tendency">{source.tendency}</p>
+          <div className="item-meta">
+            <span className="meta-tag">{source.country || 'MK'}</span>
+            {source.top_categories?.slice(0, 2).map(cat => <span key={cat} className="meta-tag-outline">{cat}</span>)}
+            <span className="meta-time">{formatLastFetched(source.last_fetched)}</span>
           </div>
         </div>
-
-        <p className="source-reputation-copy line-clamp-2">{source.tendency}</p>
-        
-        {/* Reliability Mini-Chart */}
-        <div className="mt-4 mb-2">
-            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-tighter mb-1.5 opacity-60">
-                <div className="flex items-center gap-1">
-                  <span>Сигурност на водство</span>
-                </div>
-                <span>{formatPercent(source.corroboration_rate)}</span>
-            </div>
-            <div className="flex h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-nyt-accent shadow-[0_0_8px_rgba(var(--nyt-accent-rgb),0.4)]" 
-                  title="Води и е потврден"
-                  style={{ width: `${(source.corroboration_rate || 0) * 100}%` }} 
-                />
-                <div 
-                  className="h-full bg-orange-400 opacity-50" 
-                  title="Води сам"
-                  style={{ width: `${(source.lone_lead_rate || 0) * 100}%` }} 
-                />
-            </div>
+        <div className="item-stats">
+          <div className="stat-box">
+            <span>QI</span>
+            <strong>{reliabilityIndex}</strong>
+          </div>
+          <div className="stat-box">
+            <span>24ч</span>
+            <strong>{source.recent_volume}</strong>
+          </div>
+          <div className="stat-box accent">
+            <span>ПРВ</span>
+            <strong>{source.speed_first_count}</strong>
+          </div>
         </div>
-
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
-        <div className="flex flex-col">
-            <span className="text-[9px] font-black uppercase opacity-50">7д Тренд</span>
-            <p className={`source-trend-note ${trendClass(source.trend_label)} !m-0 !p-0 border-0 bg-transparent`}>
-                <span className="font-black">{source.trend_label}</span>
-                <strong className="text-[10px] ml-1">{source.trend_delta >= 0 ? `+${source.trend_delta}` : source.trend_delta}</strong>
-            </p>
-        </div>
-
-        <div className="flex gap-4">
-            <div className="text-right">
-                <span className="text-[9px] font-black uppercase opacity-50 block">24ч Обем</span>
-                <span className="text-xs font-black">{source.recent_volume}</span>
-            </div>
-            <div className="text-right">
-                <span className="text-[9px] font-black uppercase opacity-50 block">Прв</span>
-                <span className="text-xs font-black text-nyt-accent">{source.speed_first_count}</span>
-            </div>
-        </div>
-      </div>
-
-      <div className="source-reputation-footer mt-4">
-        <span>{formatLastFetched(source.last_fetched)}</span>
-        {!source.is_active && <span className="source-status-paused">Паузиран</span>}
-      </div>
-    </a>
-  );
-};
+      </a>
+    );
+  };
 
   return (
-    <div className="sources-container">
-      <div className="py-2 md:py-4">
-        <header className="sources-header">
-          <span className="sources-kicker">Репутација</span>
-          <h1 className="sources-headline">Медиумски Извори</h1>
-          <p className="sources-intro">
-            Преглед на изворите што Пресек ги следи, со ниво на доверба, дневен ритам, сигнал за брзина и присуство во покривањето.
-          </p>
-          <div className="max-w-xl mt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Пребарај извори..."
-                className="w-full bg-secondary border border-border pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:border-nyt-accent transition-colors rounded-full"
-              />
-            </div>
-            
-            {/* Quick Filters */}
-            <div className="flex flex-wrap gap-2 mt-4">
-               {[
-                 { id: 'all', label: 'Сите' },
-                 { id: 'high', label: 'Висока доверба' },
-                 { id: 'verified', label: 'Потврдени' }
-               ].map(btn => (
-                 <button
-                   key={btn.id}
-                   onClick={() => setFilterTier(btn.id)}
-                   className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
-                     filterTier === btn.id 
-                       ? 'bg-nyt-accent text-white border-nyt-accent shadow-sm' 
-                       : 'bg-card text-muted-foreground border-border hover:border-nyt-accent hover:text-nyt-accent'
-                   }`}
-                 >
-                   {btn.label}
-                 </button>
-               ))}
-            </div>
-          </div>
-        </header>
-
-        <div className="sources-grid">
-          <div className="sources-main">
-            <section className="mb-12 p-6 border border-border bg-secondary/30 rounded-lg">
-              <h2 className="text-sm font-black uppercase tracking-widest text-nyt-accent mb-4 flex items-center gap-2">
-                <ShieldCheck size={16} /> Методологија на Доверба
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-secondary-foreground leading-relaxed">
-                <div>
-                  <h3 className="font-bold text-foreground mb-2">1. Категоризација</h3>
-                  <p>Изворите се делат на Агенциски, Јавни сервиси, Независни и Алтернативни. Секоја категорија има различен влезен 'кредибилитет'.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground mb-2">2. Квалитетен Индекс (QI)</h3>
-                  <p>QI ги спојува брзината, точноста и плурализмот. Оценката 1.00 претставува оптимален баланс меѓу прва објава и кохерентност со другите извори.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground mb-2">3. Пондериран Влез</h3>
-                  <p>Вестите од извори со 'Висока доверба' имаат поголема тежина при формирање на водечката приказна на насловната страна.</p>
-                </div>
-              </div>
-            </section>
-
-            {loading ? (
-              <div className="space-y-12">
-                <section>
-                  <div className="h-6 w-48 bg-secondary/50 rounded animate-pulse mb-6"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="p-6 border border-border bg-card rounded-lg space-y-4">
-                        <div className="flex justify-between">
-                          <div className="space-y-2">
-                            <div className="h-5 w-32 bg-secondary/50 rounded animate-pulse"></div>
-                            <div className="h-3 w-20 bg-secondary/50 rounded animate-pulse"></div>
-                          </div>
-                          <div className="h-6 w-24 bg-secondary/50 rounded animate-pulse"></div>
-                        </div>
-                        <div className="h-16 w-full bg-secondary/30 rounded animate-pulse"></div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
-                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
-                          <div className="h-10 bg-secondary/20 rounded animate-pulse"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            ) : error ? (
-              <div className="py-20 text-center border border-dashed border-nyt-red/30 bg-nyt-red/5">
-                <p className="text-nyt-red font-serif italic mb-4">{error}</p>
-                <button onClick={() => window.location.reload()} className="nyt-section-label text-nyt-accent underline">
-                  Обидете се повторно
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-12">
-                <section className="sources-section">
-                  <div className="mb-5 border-b border-border pb-3">
-                    <h2 className="sources-section-title">Македонски Медиуми</h2>
-                    <p className="mt-2 max-w-2xl font-nyt-body text-sm leading-relaxed text-secondary-foreground">
-                      Главниот домашен екосистем што најчесто ја поставува дневната слика, од агенциски до телевизиски и независни редакции.
-                    </p>
-                  </div>
-                  <div className="source-reputation-grid">
-                    {mkSources.map(renderSourceCard)}
-                    {mkSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
-                  </div>
-                </section>
-
-                <section className="sources-section">
-                  <div className="mb-5 border-b border-border pb-3">
-                    <h2 className="sources-section-title">Меѓународни Медиуми</h2>
-                    <p className="mt-2 max-w-2xl font-nyt-body text-sm leading-relaxed text-secondary-foreground">
-                      Извори што внесуваат надворешен сигнал и поширок контекст, особено кога домашното покривање се потпира на агенции и глобални редакции.
-                    </p>
-                  </div>
-                  <div className="source-reputation-grid">
-                    {intSources.map(renderSourceCard)}
-                    {intSources.length === 0 && <p className="text-muted-foreground text-xs italic">Нема пронајдени извори</p>}
-                  </div>
-                </section>
-              </div>
-            )}
-          </div>
-
-          <aside className="sources-rail lg:sticky lg:top-28 self-start">
-            <div className="rail-card">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><ShieldCheck size={14} /> Доверба</h3>
-              <p className="rail-copy">
-                Нивоата на репутација ги комбинираат основната credibility оценка, моменталниот quality сигнал и реалното присуство во покривањето.
-              </p>
-              <div className="source-mini-stats">
-                <div><span>Висока доверба</span><strong>{highTrust}</strong></div>
-                <div><span>Вкупно извори</span><strong>{filtered.length}</strong></div>
-              </div>
-            </div>
-
-            <div className="rail-card rail-card-accent">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><Zap size={14} /> Први На Приказната</h3>
-              <p className="rail-copy mb-4">
-                Овие извори најчесто први отвораат тема во последниот период.
-              </p>
-              <div className="source-fast-list">
-                {fastMovers.map((source) => (
-                  <div key={source.source} className="source-fast-row">
-                    <span>{source.source}</span>
-                    <strong>{source.speed_first_count}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rail-card">
-              <h3 className="rail-card-title flex items-center gap-2 mb-4"><LineChart size={14} /> Како Да Се Чита</h3>
-              <p className="rail-copy mb-5">
-                Висока доверба не значи секогаш прв извор. Гледајте ги заедно: колку често водат, колку често подоцна се потврдуваат и колку често остануваат сами.
-              </p>
-              <div className="space-y-5">
-                <div>
-                  <p className="mb-2 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <ShieldCheck size={12} /> Најчесто потврдени
-                  </p>
-                  <div className="source-fast-list">
-                    {bestCorroborated.map((source) => (
-                      <div key={source.source} className="source-fast-row">
-                        <span>{source.source}</span>
-                        <strong>{formatPercent(source.corroboration_rate)}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-2 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <ShieldAlert size={12} /> Често остануваат сами
-                  </p>
-                  <div className="source-fast-list">
-                    {loneLeaders.map((source) => (
-                      <div key={source.source} className="source-fast-row">
-                        <span>{source.source}</span>
-                        <strong>{formatPercent(source.lone_lead_rate)}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
+    <div className="broadsheet-sources">
+      <header className="editorial-masthead mb-12">
+        <div className="masthead-top">
+          <span className="masthead-kicker">МЕДИУМСКА РЕПУТАЦИЈА</span>
         </div>
+        <div className="masthead-main">
+          <h1 className="masthead-title">Медиумски <span>Извори</span></h1>
+        </div>
+        <div className="masthead-controls">
+          <div className="search-wrap">
+            <Search size={16} />
+            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Пребарај редакции..." />
+          </div>
+          <div className="filter-group">
+            {['all', 'high', 'verified'].map(t => (
+              <button key={t} onClick={() => setFilterTier(t)} className={filterTier === t ? 'active' : ''}>
+                {t === 'all' ? 'СИТЕ' : t === 'high' ? 'ВИСОКА ДОВЕРБА' : 'ПОТВРДЕНИ'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <div className="broadsheet-grid">
+        <div className="broadsheet-main">
+          {loading ? (
+            <div className="p-12 text-center opacity-30"><Activity className="animate-pulse mx-auto" /></div>
+          ) : error ? (
+            <div className="empty-state"><h2>{error}</h2></div>
+          ) : (
+            <div className="space-y-16">
+              <section>
+                <h2 className="section-title-italic mb-6">Македонски Медиуми</h2>
+                <div className="editorial-list">
+                  {mkSources.map(renderSourceRow)}
+                </div>
+              </section>
+              <section>
+                <h2 className="section-title-italic mb-6">Меѓународни Сигнали</h2>
+                <div className="editorial-list">
+                  {intSources.map(renderSourceRow)}
+                </div>
+              </section>
+            </div>
+          )}
+        </div>
+
+        <aside className="broadsheet-rail">
+          <section className="rail-block rail-block-alt">
+            <p className="rail-kicker">Интелигенција</p>
+            <h3 className="rail-title">КВАЛИТЕТЕН ИНДЕКС</h3>
+            <p className="rail-text">QI ги спојува брзината, точноста и плурализмот. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
+          </section>
+
+          <section className="rail-block">
+            <p className="rail-kicker">Сигнал</p>
+            <h3 className="rail-title">НАЈБРЗИ ДЕНЕС</h3>
+            <div className="rail-directory">
+              {fastMovers.map(s => (
+                <div key={s.source} className="dir-row">
+                  <span className="name">{s.source}</span>
+                  <span className="val">+{s.speed_first_count}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="rail-methodology">
+            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-2 mb-3">МЕТОДОЛОГИЈА</h4>
+            <ul className="space-y-3 text-xs opacity-80 leading-relaxed font-nyt-body">
+              <li><strong>Доверба:</strong> Пондериран влез според историска точност.</li>
+              <li><strong>Водство:</strong> Колку често медиумот прв отвора тема.</li>
+              <li><strong>Потврда:</strong> Стапка на прифаќање на веста од другите.</li>
+            </ul>
+          </div>
+        </aside>
       </div>
+
+      <style>{`
+        .broadsheet-sources { width: 100%; }
+        .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+        .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+        .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+        .masthead-title span { font-weight: 400; font-style: italic; }
+        
+        .masthead-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-top: 2rem; }
+        .search-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); background: var(--background); flex: 1; max-width: 400px; }
+        .search-wrap input { background: transparent; border: 0; outline: none; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 700; width: 100%; }
+        .filter-group { display: flex; gap: 0.5rem; }
+        .filter-group button { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--background); transition: all 0.2s; }
+        .filter-group button.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+
+        .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+        @media (min-width: 1024px) {
+          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+          .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+          .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+        }
+
+        .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+
+        .editorial-list { display: flex; flex-direction: column; }
+        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
+        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%); }
+        .item-main { flex: 1; }
+        .item-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+        .health-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .health-dot.active { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .health-dot.stale { background: #f59e0b; }
+        .health-dot.critical { background: #ef4444; }
+        .item-title { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 850; }
+        .item-tier { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); padding: 0.1rem 0.4rem; border: 1px solid var(--nyt-accent); }
+        .item-tendency { font-family: var(--font-nyt-body); font-size: 0.95rem; color: var(--secondary-foreground); margin-bottom: 0.75rem; line-height: 1.4; }
+        .item-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .meta-tag { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; background: var(--foreground); color: var(--background); padding: 0.1rem 0.4rem; }
+        .meta-tag-outline { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; border: 1px solid var(--border); padding: 0.1rem 0.4rem; color: var(--muted-foreground); }
+        .meta-time { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 800; opacity: 0.5; }
+
+        .item-stats { display: flex; gap: 1.5rem; }
+        .stat-box { text-align: center; min-width: 3rem; }
+        .stat-box span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--muted-foreground); display: block; margin-bottom: 0.2rem; }
+        .stat-box strong { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 900; }
+        .stat-box.accent strong { color: var(--nyt-accent); }
+
+        .rail-block { margin-bottom: 2.5rem; }
+        .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+        .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+        .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .rail-directory { display: flex; flex-direction: column; }
+        .dir-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+        .dir-row .name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 700; }
+        .dir-row .val { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); }
+
+        @media (max-width: 640px) {
+          .item-stats { display: none; }
+          .masthead-controls { flex-direction: column; align-items: stretch; }
+          .editorial-source-item { padding: 1.25rem 0; }
+        }
+      `}</style>
     </div>
   );
 };

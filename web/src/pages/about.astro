@@ -6,234 +6,127 @@ import Breadcrumbs from '../components/Breadcrumbs.astro';
 ---
 
 <Layout
-    title="За Проектот"
-    description="Пресек е македонски информативен агрегатор што ги собира вестите, ги групира во приказни и им помага на читателите побрзо да споредуваат извори и контекст."
+    title="За Проектот — Пресек"
+    description="Пресек е македонски информативен агрегатор што ви овозможува да ја видите целата слика."
 >
     <NYTHeader />
-    <main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "За проектот" }]} />
-        <article class="about-shell">
-            <header class="about-header">
-                <span class="page-kicker">За проектот</span>
-                <h1 class="about-headline">Појасен преглед на денот</h1>
-                <p class="about-intro">
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ЗА ПРОЕКТОТ</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Појасен преглед <span>на денот</span></h1>
+            </div>
+            <p class="masthead-intro">
                 Пресек е македонски информативен агрегатор што ги собира објавите, ги групира во приказни и ви покажува каде изворите се совпаѓаат, а каде се разликуваат.
-                </p>
-            </header>
+            </p>
+        </header>
 
-            <div class="about-grid">
-                <div class="about-main">
-                    <div class="about-body">
-                <p>
-                    Во денови исполнети со повторувања, преувеличувања и брзи наслови, Пресек служи како дисциплиниран преглед на она што навистина се следи. Сличните објави ги групира во „кластери“ за да можете една приказна да ја видите низ повеќе извори, наместо да ја ловите парче по парче.
-                </p>
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Во денови исполнети со повторувања, преувеличувања и брзи наслови, Пресек служи како дисциплиниран преглед на она што навистина се следи. Сличните објави ги групира во „кластери“ за да можете една приказна да ја видите низ повеќе извори, наместо да ја ловите парче по парче.
+                    </p>
 
-                <p>
-                    Наместо да тврди дека ја заменува редакцијата, Пресек прави нешто покорисно: ви дава структура. Од таа структура произлегуваат неколку клучни слоја:
-                </p>
+                    <p>
+                        Наместо да тврди дека ја заменува редакцијата, Пресек прави нешто покорисно: ви дава структура. Од таа структура произлегуваат неколку клучни слоја кои ја обликуваат вашата информираност.
+                    </p>
 
-                <ul class="list-disc pl-6 space-y-2">
-                    <li><strong class="text-foreground">Пресек сублимат:</strong> краток синтетизиран преглед на клучните точки од една приказна.</li>
-                    <li><strong class="text-foreground">Различни перспективи:</strong> преглед на различните агли, нагласоци и празнини во известувањето.</li>
-                    <li><strong class="text-foreground">Дневен брифинг:</strong> утрински преглед на темите што најсилно го обликуваат денот.</li>
-                </ul>
+                    <div class="editorial-divider"></div>
 
-                <p>
-                    Намерата е едноставна: помалку шум, повеќе контекст. Пресек не ви кажува што да мислите; ви помага побрзо да видите што се случува, кој како известува и што сè уште останува нејасно.
-                </p>
+                    <h2 class="section-title-italic">Клучни столбови</h2>
+                    <ul class="editorial-list">
+                        <li><strong>Пресек сублимат:</strong> Краток синтетизиран преглед на клучните точки од една приказна, верификуван преглед на фактите.</li>
+                        <li><strong>Различни перспективи:</strong> Преглед на различните агли, нагласоци и празнини во известувањето на медиумите.</li>
+                        <li><strong>Дневен брифинг:</strong> Секојдневно утринско издание на темите што најсилно го обликуваат денот.</li>
+                    </ul>
 
-                <div class="h-px bg-border my-8"></div>
+                    <p>
+                        Намерата е едноставна: помалку шум, повеќе контекст. Пресек не ви кажува што да мислите; ви помага побрзо да видите што се случува, кој како известува и што сè уште останува нејасно.
+                    </p>
 
-                <h2 class="text-sm font-black uppercase tracking-widest text-nyt-accent mb-6">Тим и Развој</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="font-serif font-bold text-xl mb-2">Технолошка Архитектура</h3>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">
-                            Пресек е развиен од тим на инженери посветени на обработка на македонскиот јазик (NLP). Системот е изграден да биде автономен, но под постојан надзор за квалитет и прецизност.
-                        </p>
-                    </div>
-                    <div>
-                        <h3 class="font-serif font-bold text-xl mb-2">Мисија</h3>
-                        <p class="text-sm text-secondary-foreground leading-relaxed">
-                            Нашата цел е да изградиме дигитален простор каде вестите се вреднуваат според нивната содржина и поткрепа од повеќе извори, промовирајќи информирано граѓанство.
-                        </p>
-                    </div>
-                </div>
-                    </div>
-                </div>
+                    <div class="editorial-divider"></div>
 
-                <aside class="about-rail">
-                    <div class="rail-card rail-card-accent">
-                        <h2 class="rail-card-title">Брз преглед</h2>
-                        <p class="rail-copy">Ги собира вестите, ги групира сродните приказни и ви помага побрзо да споредите што е факт, што е нагласок и што недостасува.</p>
-                    </div>
-
-                    <div class="rail-card">
-                        <h2 class="rail-card-title">Главна намера</h2>
-                        <p class="rail-copy">Помалку шум, повеќе контекст. Помалку расфрлани наслови, повеќе јасност за тоа што навистина го обликува денот.</p>
-                    </div>
-
-                    <div class="rail-card">
-                        <h2 class="rail-card-title">Понатаму</h2>
-                        <div class="rail-links">
-                            <a href="/editorial" class="rail-link">Стандарди</a>
-                            <a href="/briefing" class="rail-link">Брифинг</a>
-                            <a href="/contact" class="rail-link">Контакт</a>
+                    <h2 class="section-title-italic">Тим и Мисија</h2>
+                    <div class="two-col-grid">
+                        <div class="grid-item">
+                            <h3>Архитектура</h3>
+                            <p>Пресек е развиен од тим на инженери посветени на обработка на македонскиот јазик (NLP). Системот е изграден да биде автономен, но под постојан надзор за квалитет.</p>
+                        </div>
+                        <div class="grid-item">
+                            <h3>Визија</h3>
+                            <p>Нашата цел е да изградиме дигитален простор каде вестите се вреднуваат според нивната содржина и поткрепа од повеќе извори, промовирајќи информирано граѓанство.</p>
                         </div>
                     </div>
-                </aside>
+                </article>
             </div>
-        </article>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Накусо</p>
+                    <h3 class="rail-title">ГЛАВНА НАМЕРА</h3>
+                    <p class="rail-text">Помалку шум, повеќе контекст. Помалку расфрлани наслови, повеќе јасност за тоа што навистина го обликува денот.</p>
+                </section>
+
+                <section class="rail-block">
+                    <p class="rail-kicker">Понатаму</p>
+                    <div class="rail-directory">
+                        <a href="/editorial" class="dir-link"><span class="name">Стандарди</span></a>
+                        <a href="/briefing" class="dir-link"><span class="name">Брифинг</span></a>
+                        <a href="/izvori" class="dir-link"><span class="name">Извори</span></a>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </main>
 
 	<Footer />
 </Layout>
 
 <style>
-    .about-shell {
-        max-width: 76rem;
-        margin: 0 auto;
+    /* ── Masthead ────────────────────────────────────── */
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; italic: true; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    /* ── Broadstreet Layout ───────────────────────────── */
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .about-header {
-        padding-bottom: 2rem;
-        margin-bottom: 2.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-    .about-headline {
-        font-size: clamp(2.5rem, 1.9rem + 1.9vw, 4.8rem);
-        line-height: 0.95;
-        margin: 0 0 1rem;
-        max-width: 12ch;
-    }
+    /* ── Prose ───────────────────────────────────────── */
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .prose-editorial p { margin-bottom: 1.5rem; text-wrap: pretty; }
+    
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
+    .editorial-divider { height: 1px; background: var(--border); margin: 3rem 0; }
 
-    .about-intro {
-        margin: 0;
-        max-width: 48rem;
-        font-family: var(--font-nyt-body);
-        font-size: 1.08rem;
-        line-height: 1.7;
-        color: var(--secondary-foreground);
-    }
+    .editorial-list { list-style: none; padding: 0; margin-bottom: 2rem; }
+    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
 
-    .about-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
+    .two-col-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem; }
+    @media (min-width: 640px) { .two-col-grid { grid-template-columns: 1fr 1fr; } }
+    .grid-item h3 { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .grid-item p { font-size: 0.95rem; line-height: 1.6; }
 
-    .about-body,
-    .rail-card {
-        padding: 1.4rem;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
-    }
-
-    .about-body {
-        font-family: var(--font-nyt-body);
-        font-size: 1.06rem;
-        line-height: 1.8;
-        color: var(--secondary-foreground);
-    }
-
-    .about-body p {
-        margin: 0 0 1.3rem;
-    }
-
-    .about-body ul {
-        margin: 0 0 1.3rem;
-    }
-
-    .about-main,
-    .about-rail {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .rail-links {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .rail-card-title {
-        margin: 0 0 0.85rem;
-        padding-bottom: 0.8rem;
-        border-bottom: 1px solid var(--border);
-        font-family: var(--font-sans);
-        font-size: 0.74rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    .rail-copy {
-        margin: 0;
-        font-family: var(--font-nyt-body);
-        font-size: 1rem;
-        line-height: 1.7;
-        color: var(--secondary-foreground);
-    }
-
-    .rail-link {
-        display: inline-flex;
-        margin-top: 1rem;
-        padding: 0.65rem 0.9rem;
-        border: 1px solid var(--foreground);
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--foreground);
-    }
-
-    .rail-link:hover {
-        background: var(--foreground);
-        color: var(--background);
-    }
-
-    .rail-card-accent {
-        background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
-    }
-
-    @media (min-width: 960px) {
-        .about-grid {
-            grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 0.8fr);
-            gap: 2rem;
-        }
-
-        .about-rail {
-            position: sticky;
-            top: 7rem;
-            align-self: start;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .about-header {
-            padding-bottom: 1.4rem;
-            margin-bottom: 1.6rem;
-        }
-
-        .about-headline {
-            font-size: clamp(2rem, 9vw, 2.8rem);
-            line-height: 0.98;
-            max-width: 10ch;
-        }
-
-        .about-intro,
-        .about-body,
-        .rail-copy {
-            font-size: 0.98rem;
-            line-height: 1.65;
-        }
-
-        .about-body,
-        .rail-card {
-            padding: 1rem;
-        }
-    }
+    /* ── Rail ────────────────────────────────────────── */
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    
+    .rail-directory { display: flex; flex-direction: column; }
+    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+    .dir-link .name { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; }
+    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
 </style>
