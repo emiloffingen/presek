@@ -420,10 +420,10 @@ fi
 
 info "Starting services in screen session '$SESSION'..."
 
-start_window "worker" "cd '$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
+start_window "worker" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A celery_app worker --loglevel=info --concurrency=4 --logfile='$WORKER_LOG'"
 sleep 1
 
-start_window "beat" "cd '$APP_DIR' && exec '$CELERY' -A celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
+start_window "beat" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CELERY' -A celery_app beat --loglevel=info --logfile='$BEAT_LOG'"
 sleep 1
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
