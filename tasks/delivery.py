@@ -271,13 +271,22 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
 
     allowed_singletons = {
         "македонија", "скопје", "албанија", "еу", "вмро-дпмне",
-        "ирaн", "ормускиот теснец", "дојран", "сад"
+        "ирaн", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
+        "обединетите нации", "он", "украина", "русија", "сдсм"
     }
 
     for phrase in _extract_capitalized_phrases(brief_text):
         clean = str(phrase or "").strip()
         if len(clean) < 4:
             continue
+            
+        # Filter out common prepositions that might be capitalized at start of sentence
+        if clean.split()[0].lower() in {"од", "во", "на", "со", "за", "низ"}:
+            clean_parts = clean.split()[1:]
+            if not clean_parts: continue
+            clean = " ".join(clean_parts)
+            if len(clean) < 3: continue
+            
         words = [part for part in clean.replace("-", " ").split() if part]
         is_acronym = clean.isupper()
         if len(words) < 2 and not is_acronym:
@@ -287,6 +296,8 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
             continue
         if "## " in clean or clean in {"Што", "Зошто", "Каде"}:
             continue
+            
+        log.warning(f"[briefing-grounding] Hallucination detected: {clean}")
         return False
     return True
 
@@ -294,21 +305,28 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
     text = str(brief or "").strip()
     if not text:
         return False
-    # Use regex for headers to allow optional bolding or trailing whitespace
+    # Use regex for headers to allow optional bolding, varying spacing or trailing markers
     required_regex = [
-        r"##\s*(\*\*)?Што го движи денот(\*\*)?",
-        r"##\s*(\*\*)?Каде се разликува известувањето(\*\*)?",
-        r"##\s*(\*\*)?Што да се следи понатаму(\*\*)?",
-        r"##\s*(\*\*)?(Подетално за главните теми|Клучни случувања)(\*\*)?",
+        r"##.*Што го движи денот",
+        r"##.*Каде се разликува известувањето",
+        r"##.*Што да се следи понатаму",
+        r"##.*(Подетално за главните теми|Клучни случувања|Главни теми|Клучни вести|Клучни случувања)",
     ]
     # Check if all required main headers are present
     for pattern in required_regex:
         if not re.search(pattern, text):
+            log.warning(f"[briefing-debug] Header missing: {pattern}")
             return False
     
-    # Check for at least 3 numbered items (### 1., ### 2., etc.)
-    has_items = any(f"### {index}." in text for index in range(1, 4))
-    return has_items
+    # Check for at least 3 numbered items (### 1., ### 2., etc.) or bullet points (•)
+    has_numbered = any(f"### {index}." in text for index in range(1, 4))
+    has_bullets = text.count("•") >= 3 or text.count("\n- ") >= 3
+    
+    if not (has_numbered or has_bullets):
+        log.warning("[briefing-debug] No numbered items or sufficient bullets found")
+        return False
+        
+    return True
 
 def _is_high_quality_briefing(brief: str) -> bool:
     """Scan briefing for editorial quality and generic fillers."""
