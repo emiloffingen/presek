@@ -30,6 +30,32 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+cleanup_listener_port() {
+  local port="$1"
+  local label="$2"
+  local pids=""
+  pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  [ -n "$pids" ] || return 0
+
+  info "Stopping existing $label listener(s) on port $port: $pids"
+  sudo kill $pids 2>/dev/null || true
+  sleep 1
+
+  local remaining=""
+  remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  if [ -n "$remaining" ]; then
+    info "Force killing stubborn $label listener(s) on port $port: $remaining"
+    sudo kill -9 $remaining 2>/dev/null || true
+    sleep 1
+  fi
+}
+
+cleanup_orphaned_runtime_listeners() {
+  info "Clearing any orphaned runtime listeners before restart"
+  cleanup_listener_port 5001 "FastAPI"
+  cleanup_listener_port 3000 "Astro"
+}
+
 switch_link() {
   local link_path="$1"
   local target="$2"
@@ -96,6 +122,7 @@ EOF
   fi
 
   info "Restarting application services"
+  cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}"
   sudo systemctl start "$SYSTEMD_TARGET"
 

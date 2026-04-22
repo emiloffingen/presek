@@ -39,6 +39,32 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+cleanup_listener_port() {
+  local port="$1"
+  local label="$2"
+  local pids=""
+  pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  [ -n "$pids" ] || return 0
+
+  warn "Stopping existing $label listener(s) on port $port: $pids"
+  sudo kill $pids 2>/dev/null || true
+  sleep 1
+
+  local remaining=""
+  remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  if [ -n "$remaining" ]; then
+    warn "Force killing stubborn $label listener(s) on port $port: $remaining"
+    sudo kill -9 $remaining 2>/dev/null || true
+    sleep 1
+  fi
+}
+
+cleanup_orphaned_runtime_listeners() {
+  info "Clearing any orphaned runtime listeners before restart"
+  cleanup_listener_port 5001 "FastAPI"
+  cleanup_listener_port 3000 "Astro"
+}
+
 hash_file() {
   local path="$1"
   sha256sum "$path" | awk '{print $1}'
@@ -213,6 +239,8 @@ restart_and_smoke() {
   info "Reloading $NGINX_SERVICE"
   sudo systemctl reload "$NGINX_SERVICE" || return 1
 
+  cleanup_orphaned_runtime_listeners
+
   info "Restarting application services"
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
@@ -233,6 +261,7 @@ rollback_release() {
   switch_current_link "$previous_target"
   ln -sfn "$failed_release" "$PREVIOUS_LINK"
   update_active_runtime_links "$current_venv_target" "$current_web_deps_target"
+  cleanup_orphaned_runtime_listeners
   sudo systemctl restart "${APP_SERVICES[@]}" || return 1
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
   info "Running post-rollback smoke checks"

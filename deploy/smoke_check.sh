@@ -6,6 +6,7 @@ PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5001/api/health}"
 ASTRO_URL="${ASTRO_URL:-http://127.0.0.1:3000}"
 FASTAPI_URL="${FASTAPI_URL:-http://127.0.0.1:5001/api/health}"
+HOME_API_URL="${HOME_API_URL:-http://127.0.0.1:5001/api/home}"
 ENABLE_FASTAPI_CHECK="${ENABLE_FASTAPI_CHECK:-1}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-15}"
@@ -123,6 +124,7 @@ main() {
 
   if [ "$ENABLE_FASTAPI_CHECK" = "1" ]; then
     wait_health_ready "FastAPI health" "$FASTAPI_URL" 1 1
+    wait_http_ok "Homepage API" "$HOME_API_URL" 200 "\"status\":\"success\""
   fi
 
   if [ "$ENABLE_PUBLIC_CHECK" = "1" ]; then
