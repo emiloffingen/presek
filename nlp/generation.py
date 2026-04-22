@@ -472,11 +472,11 @@ def generate_daily_brief_fallback(clusters):
     # 1. Editorial Intro: explicitly state the lead story and second story
     if len(display_clusters) >= 1:
         lead_title = _clean_briefing_snippet(display_clusters[0].get("title"))
-        intro_line = f"Денешниот преглед го одбележа: **{lead_title}**."
+        intro_line = f"Денешниот преглед го одбележа: {lead_title}."
         
         if len(display_clusters) >= 2:
             sec_title = _clean_briefing_snippet(display_clusters[1].get("title"))
-            intro_line = f"Денешниот ден го одбележа **{lead_title}**, додека внимание предизвика и **{sec_title}**."
+            intro_line = f"Денешниот ден го одбележа {lead_title}, додека внимание предизвика и {sec_title}."
             
         lines.append(intro_line)
         lines.append("")
@@ -487,12 +487,14 @@ def generate_daily_brief_fallback(clusters):
     for cluster in display_clusters[:3]:
         diff = _normalize_briefing_line(cluster.get("difference_point"))
         if diff:
-            lines.append(f"• **{cluster.get('title')}**: {diff}")
+            short_t = _condense_briefing_update(cluster.get('title'), max_chars=80)
+            lines.append(f"• {short_t}: {diff}")
             difference_added = True
     if not difference_added and display_clusters[:3]:
         fallback_cluster = display_clusters[0]
+        short_t = _condense_briefing_update(fallback_cluster.get('title'), max_chars=80)
         lines.append(
-            f"• **{fallback_cluster.get('title')}**: "
+            f"• {short_t}: "
             f"{_extract_briefing_importance(fallback_cluster)}."
         )
     lines.append("")
@@ -503,12 +505,14 @@ def generate_daily_brief_fallback(clusters):
     for cluster in display_clusters[:3]:
         open_p = _normalize_briefing_line(cluster.get("open_point"))
         if open_p:
-            lines.append(f"• **{cluster.get('title')}**: {open_p}")
+            short_t = _condense_briefing_update(cluster.get('title'), max_chars=80)
+            lines.append(f"• {short_t}: {open_p}")
             open_added = True
     if not open_added and display_clusters[:3]:
         fallback_cluster = display_clusters[0]
+        short_t = _condense_briefing_update(fallback_cluster.get('title'), max_chars=80)
         lines.append(
-            f"• **{fallback_cluster.get('title')}**: "
+            f"• {short_t}: "
             f"Вреди да се следат следните потврди и официјални реакции околу развојот."
         )
     lines.append("")
