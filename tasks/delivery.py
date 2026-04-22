@@ -294,15 +294,17 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
     text = str(brief or "").strip()
     if not text:
         return False
-    # More flexible check to match modern prompts
-    required_patterns = [
-        "## Што го движи денот",
-        "## Каде се разликува известувањето",
-        "## Што да се следи понатаму",
+    # Use regex for headers to allow optional bolding or trailing whitespace
+    required_regex = [
+        r"##\s*(\*\*)?Што го движи денот(\*\*)?",
+        r"##\s*(\*\*)?Каде се разликува известувањето(\*\*)?",
+        r"##\s*(\*\*)?Што да се следи понатаму(\*\*)?",
+        r"##\s*(\*\*)?(Подетално за главните теми|Клучни случувања)(\*\*)?",
     ]
     # Check if all required main headers are present
-    if not all(p in text for p in required_patterns):
-        return False
+    for pattern in required_regex:
+        if not re.search(pattern, text):
+            return False
     
     # Check for at least 3 numbered items (### 1., ### 2., etc.)
     has_items = any(f"### {index}." in text for index in range(1, 4))
@@ -1402,14 +1404,14 @@ def generate_daily_brief_task(retry_attempt=0):
 
         brief, _ = _call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
         if brief and not _has_valid_daily_brief_structure(brief):
-            log.warning("[tasks] Daily brief rejected for invalid structure; using local fallback")
+            log.warning(f"[tasks] Daily brief rejected for invalid structure; using local fallback. Text start: {brief[:400]}")
             brief = ""
         if brief and not _is_grounded_daily_brief(brief, full_context):
-            log.warning("[tasks] Daily brief rejected as ungrounded; using local fallback")
+            log.warning(f"[tasks] Daily brief rejected as ungrounded; using local fallback. Text start: {brief[:400]}")
             brief = ""
             
         if brief and not _is_high_quality_briefing(brief):
-            log.warning("[tasks] Daily brief rejected by editorial quality gate; using local fallback")
+            log.warning(f"[tasks] Daily brief rejected by editorial quality gate; using local fallback. Text start: {brief[:400]}")
             brief = ""
 
         final_brief = brief or generate_daily_brief_fallback(clusters)

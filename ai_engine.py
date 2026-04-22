@@ -68,7 +68,7 @@ class MistralProvider(AIProvider):
             "Authorization": f"Bearer {MISTRAL_API_KEY}",
         }
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=60.0) as client:
                 resp = client.post(url, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -76,7 +76,6 @@ class MistralProvider(AIProvider):
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/mistral] Call failed (URL: {url}): {e}")
             return None
-
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
@@ -109,7 +108,7 @@ class OpenAICompatibleProvider(AIProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=60.0) as client:
                 resp = client.post(self.api_url, json=payload, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
