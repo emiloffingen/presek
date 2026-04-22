@@ -309,23 +309,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                     <p class="rail-text">{coverageTone}. Изборот е подреден според уредничка тежина, не според гласност.</p>
                 </section>
 
-                {sectionPreview.length > 0 && (
-                    <section class="rail-block rail-agenda">
-                        <p class="rail-kicker">Како да читате</p>
-                        <h3 class="rail-title">БРЗ ВОДИЧ</h3>
-                        <div class="rail-agenda-list">
-                            {sectionPreview.map((section) => (
-                                <a class="rail-agenda-item" href={`#${section.slug}`}>
-                                    <span class="rail-agenda-index">{String(section.index).padStart(2, '0')}</span>
-                                    <span class="rail-agenda-copy">
-                                        <strong>{section.title}</strong>
-                                        <span>Отвори ја оваа линија во текстот</span>
-                                    </span>
-                                </a>
-                            ))}
-                        </div>
-                    </section>
-                )}
 
                 <section class="rail-block">
                     <p class="rail-kicker">Издание</p>
