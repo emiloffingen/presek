@@ -9,7 +9,7 @@ import Footer from '../components/Footer.astro';
 <Layout title="Извори" description="Комплетен преглед на сите медиумски извори што Пресек ги следи — рангирани по активност и доверливост.">
     <NYTHeader />
 
-	<main class="site-layout py-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
 		<Breadcrumbs items={[{ label: "Извори" }]} />
 		<IzvoriPage client:load />
 	</main>

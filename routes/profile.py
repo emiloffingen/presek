@@ -18,6 +18,20 @@ from .security import validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+
+async def _prune_recent_clusters(items):
+    recent = _normalize_recent_clusters(items)
+    if not recent:
+        return []
+
+    cluster_ids = [item["cluster_id"] for item in recent]
+    rows = await db.async_execute(
+        "SELECT DISTINCT cluster_id FROM articles WHERE cluster_id = ANY(%s)",
+        (cluster_ids,),
+    )
+    valid_ids = {str(row.get("cluster_id") or "").strip() for row in rows if row.get("cluster_id")}
+    return [item for item in recent if item["cluster_id"] in valid_ids]
+
 def _normalize_delivery_preferences(prefs):
     prefs = prefs or {}
     return {
@@ -91,7 +105,16 @@ async def get_profile_sync(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not row: raise HTTPException(status_code=404, detail="Profile not found")
-    return {"status": "success", "profile": _normalize_synced_profile(row.get("profile_data") or {}), "updated_at": row.get("updated_at")}
+    profile = _normalize_synced_profile(row.get("profile_data") or {})
+    pruned_recent = await _prune_recent_clusters(profile.get("recentClusters") or [])
+    if len(pruned_recent) != len(profile.get("recentClusters") or []):
+        profile["recentClusters"] = pruned_recent
+        await db.async_execute(
+            "UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s",
+            (json.dumps(profile), token),
+            fetch=False,
+        )
+    return {"status": "success", "profile": profile, "updated_at": row.get("updated_at")}
 
 @router.post("/profile/sync")
 async def save_profile_sync(request: Request):
@@ -104,6 +127,7 @@ async def save_profile_sync(request: Request):
     existing = await db.async_execute_one("SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s", (token,))
     if not existing: raise HTTPException(status_code=404, detail="Profile not found")
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
+    merged["recentClusters"] = await _prune_recent_clusters(merged.get("recentClusters") or [])
     await db.async_execute("UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s", (json.dumps(merged), token), fetch=False)
     return {"status": "success", "profile": merged}
 

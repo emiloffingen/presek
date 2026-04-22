@@ -34,14 +34,9 @@ let navigationData: { breaking: NavItem[]; sections: any[] } = { breaking: [], s
 let stats = propStats;
 
 try {
-    const promises = [fetch(`${API_URL}/navigation`)];
-    if (!stats) promises.push(fetch(`${API_URL}/stats/summary`));
-    const results = await Promise.allSettled(promises);
+    const results = await Promise.allSettled([fetch(`${API_URL}/navigation`)]);
     if (results[0].status === 'fulfilled' && results[0].value.ok) {
         navigationData = await results[0].value.json();
-    }
-    if (!stats && results[1]?.status === 'fulfilled' && results[1].value.ok) {
-        stats = await results[1].value.json();
     }
 } catch (e) {
     console.error('[Header] Fetch error:', e);
@@ -84,14 +79,14 @@ function getRelativeTimeStr(dateStr?: string) {
                 <div class="live-ticker-track-wrap">
                     <div class="live-ticker-track">
                         {breakingItems.map((item: any) => (
-                            <a href={item.href} data-astro-reload class="live-ticker-headline">
+                            <a href={item.href} class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">•</span>
                                 <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
                                 {item.label}
                             </a>
                         ))}
                         {breakingItems.map((item: any) => (
-                            <a href={item.href} data-astro-reload class="live-ticker-headline" aria-hidden="true">
+                            <a href={item.href} class="live-ticker-headline" aria-hidden="true">
                                 <span class="ticker-sep" aria-hidden="true">•</span>
                                 <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
                                 {item.label}
@@ -113,7 +108,7 @@ function getRelativeTimeStr(dateStr?: string) {
             </div>
 
             <div class="topbar-branding">
-                <a href="/" data-astro-reload class="brand-link">
+                <a href="/" class="brand-link">
                     <img src="/img/presek_emblem.svg?v=3" alt="" class="brand-emblem site-emblem" />
                     <img src="/logo.svg?v=3" alt="ПРЕСЕК.мк" class="brand-logo site-logo" />
                 </a>
@@ -121,13 +116,13 @@ function getRelativeTimeStr(dateStr?: string) {
 
             <div class="topbar-actions">
                 <div class="topbar-modes-rail">
-                    <a href="/briefing" data-astro-reload class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
+                    <a href="/briefing" class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
                         <Sparkles size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Брифинг</span>
                     </a>
-                    <a href="/pulse" data-astro-reload class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
+                    <a href="/pulse" class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
                         <BarChart3 size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Пулс</span>
                     </a>
-                    <a href="/for-you" data-astro-reload class={`mode-link ${Astro.url.pathname === '/for-you' ? 'is-active' : ''}`}>За Вас</a>
+                    <a href="/for-you" class={`mode-link ${Astro.url.pathname === '/for-you' ? 'is-active' : ''}`}>За Вас</a>
                 </div>
                 
                 <div class="topbar-util">
@@ -162,7 +157,7 @@ function getRelativeTimeStr(dateStr?: string) {
                                             ? topic === item.label
                                             : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
                                         return (
-                                            <a href={item.href} data-astro-reload class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
+                                            <a href={item.href} class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
                                                 {item.type === 'trending_tag' && <span class="tag-prefix">#</span>}
                                                 <span class="link-label">{item.label.replace('#', '')}</span>
                                                 {item.count > 0 && <span class="link-count">{item.count}</span>}

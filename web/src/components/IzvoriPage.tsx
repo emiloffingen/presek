@@ -56,7 +56,7 @@ function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' 
   }
 }
 
-export const IzvoriPage: React.FC = () => {
+const IzvoriPage: React.FC = () => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export const IzvoriPage: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`${apiBaseUrl()}/sources?_t=${Date.now()}`);
+        const res = await fetch(`${apiBaseUrl()}/sources?t=${Date.now()}`);
         if (!res.ok) {
           setError('Неуспешно поврзување.');
           return;

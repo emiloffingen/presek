@@ -281,9 +281,9 @@ function getBriefingSnippet(content: string) {
 						{topic && <span class="filter-chip">Тема</span>}
 					</div>
 					{(q || entity) && (
-						<div class="ai-status">
-							<Sparkles size={11} strokeWidth={3} />
-							<span>Семантичка Интелигенција</span>
+						<div class="system-status">
+							<Sparkles size={10} strokeWidth={3} />
+							<span>Семантичка Синтеза</span>
 						</div>
 					)}
 					<a href="/" class="clear-filter">СИТЕ ВЕСТИ <ChevronRight size={10} strokeWidth={3} /></a>
@@ -480,7 +480,7 @@ function getBriefingSnippet(content: string) {
     .filter-meta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
     .filter-chips { display: flex; gap: 0.5rem; }
     .filter-chip { padding: 0.35rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
-    .ai-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
+    .system-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
     .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
 
     /* ── Broadsheet Rail ──────────────────────────────── */

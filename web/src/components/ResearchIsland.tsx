@@ -84,7 +84,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
   ];
 
   return (
-    <section className="ai-analyst-container mt-12 mb-16 border border-border bg-card/50 p-5 md:p-6">
+    <section className="research-analyst-container mt-12 mb-16 border border-border bg-card/50 p-5 md:p-6">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="mb-2 flex items-center gap-2 font-sans text-[10px] font-black uppercase tracking-[0.18em] text-nyt-accent">
@@ -96,7 +96,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
           </p>
         </div>
         <p className="max-w-sm font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-          Интелигенција по барање
+          Анализа по барање
         </p>
       </div>
 

@@ -2,6 +2,7 @@ import logging
 import re
 from fastapi import APIRouter
 
+from utils import cached_response, set_cache
 from .intelligence import get_top_entities
 from .news import get_news
 from .stats import get_briefing, get_stats_summary
@@ -174,6 +175,10 @@ def _normalize_focus_name(name):
 
 @router.get("/home")
 async def get_home():
+    cache_key = "api:home:v1"
+    cached = cached_response(cache_key, ttl=120)
+    if cached:
+        return cached
     try:
         news_result = await get_news(page_size=48)
         recent_result = await get_news(sort="recent", page_size=24)
@@ -232,7 +237,7 @@ async def get_home():
             if normalized["name"] and len(normalized["name"]) >= 3:
                 focus_entities.append(normalized)
 
-        return {
+        response = {
             "status": "success",
             "lead": lead,
             "supporting": supporting,
@@ -248,6 +253,8 @@ async def get_home():
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
         }
+        set_cache(cache_key, response, ttl=120)
+        return response
     except Exception as exc:
         log.error(f"Home Route Error: {exc}", exc_info=True)
         return {"status": "error", "message": "Failed to load homepage"}
@@ -255,6 +262,10 @@ async def get_home():
 
 @router.get("/home/live-now")
 async def get_home_live_now(exclude: str = ""):
+    cache_key = f"api:home:live-now:v1:{exclude}"
+    cached = cached_response(cache_key, ttl=60)
+    if cached:
+        return cached
     try:
         recent_result = await get_news(sort="recent", page_size=24)
         exclude_cluster_ids = [
@@ -263,10 +274,12 @@ async def get_home_live_now(exclude: str = ""):
             if token.strip() and len(token.strip()) <= 80
         ]
         recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
-        return {
+        response = {
             "status": "success",
             "clusters": _rank_live_now_clusters(recent_clusters, exclude_cluster_ids=exclude_cluster_ids, limit=4),
         }
+        set_cache(cache_key, response, ttl=60)
+        return response
     except Exception as exc:
         log.error(f"Home Live Route Error: {exc}", exc_info=True)
         return {"status": "error", "clusters": []}
@@ -274,8 +287,12 @@ async def get_home_live_now(exclude: str = ""):
 
 @router.get("/home/latest-wire")
 async def get_home_latest_wire(limit: int = 15):
+    bounded_limit = max(1, min(int(limit or 15), 30))
+    cache_key = f"api:home:latest-wire:v1:{bounded_limit}"
+    cached = cached_response(cache_key, ttl=120)
+    if cached:
+        return cached
     try:
-        bounded_limit = max(1, min(int(limit or 15), 30))
         recent_result = await get_news(sort="recent", page_size=24)
         recent_clusters = recent_result.get("clusters") if isinstance(recent_result, dict) else []
         raw_wire_articles = []
@@ -288,10 +305,12 @@ async def get_home_latest_wire(limit: int = 15):
                 if link:
                     seen_links.add(link)
                 raw_wire_articles.append(article)
-        return {
+        response = {
             "status": "success",
             "articles": _rank_latest_wire_articles(raw_wire_articles, limit=bounded_limit),
         }
+        set_cache(cache_key, response, ttl=120)
+        return response
     except Exception as exc:
         log.error(f"Home Latest Wire Route Error: {exc}", exc_info=True)
         return {"status": "error", "articles": []}

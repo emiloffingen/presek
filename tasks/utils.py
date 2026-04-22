@@ -12,6 +12,7 @@ import asyncio
 
 def invalidate_public_data_caches():
     delete_cache_prefix("v4:news:")
+    delete_cache_prefix("api:home:")
     delete_cache("ssr:index:top_clusters")
     delete_cache("trending")
     delete_cache("stats:full")

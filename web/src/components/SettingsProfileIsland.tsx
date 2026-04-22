@@ -5,6 +5,7 @@ import {
   loadReaderProfile,
   recordSuggestionFollow,
   recordSuggestionImpressions,
+  saveReaderProfile,
   sendSuggestionEvents,
   subscribeToReaderProfile,
   toggleFollowedValue,
@@ -26,6 +27,43 @@ export default function SettingsProfileIsland() {
   useEffect(() => {
     return subscribeToReaderProfile(setProfile);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const recent = Array.isArray(profile?.recentClusters) ? profile.recentClusters.slice(0, 5) : [];
+    if (recent.length === 0) return;
+
+    const validateRecent = async () => {
+      try {
+        const checks = await Promise.all(
+          recent.map(async (item: any) => {
+            const clusterId = String(item?.cluster_id || '').trim();
+            if (!clusterId) return { clusterId, ok: false };
+            const res = await fetch(`/api/cluster/${clusterId}`);
+            return { clusterId, ok: res.ok };
+          })
+        );
+        if (cancelled) return;
+
+        const invalidIds = new Set(checks.filter((item) => !item.ok).map((item) => item.clusterId));
+        if (invalidIds.size === 0) return;
+
+        const nextProfile = {
+          ...profile,
+          recentClusters: (profile?.recentClusters || []).filter((item: any) => !invalidIds.has(String(item?.cluster_id || '').trim())),
+        };
+        const saved = saveReaderProfile(nextProfile);
+        setProfile(saved);
+      } catch {
+        // Ignore cleanup failures; they should not block the settings view.
+      }
+    };
+
+    validateRecent();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile]);
 
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
