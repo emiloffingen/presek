@@ -80,42 +80,32 @@ def _extract_briefing_importance(cluster):
 
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
-    title = clean_title.casefold()
-    description = clean_description.casefold()
-    haystack = f"{title} {description}".strip()
-    if "избор" in haystack:
-        return "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
-
-    description_lines = _briefing_lines_from_text(clean_description, max_lines=2)
+    # 1. Fact Extraction: Find the most informative sentence in description that adds new info
+    description_lines = _briefing_lines_from_text(clean_description, max_lines=4)
     title_terms = set(_extract_terms(clean_title))
+    
+    best_fact = ""
     for line in description_lines:
         line_terms = set(_extract_terms(line))
-        overlap = len(title_terms & line_terms) / max(1, min(len(title_terms or {""}), len(line_terms or {""})))
-        if line_terms and overlap < 0.75:
-            return _condense_briefing_update(line, max_chars=160)
+        if not line_terms: continue
+        overlap = len(title_terms & line_terms) / len(line_terms)
+        # We want a line that isn't just repeating the title (overlap < 0.6)
+        # but is substantial (len > 30)
+        if overlap < 0.6 and len(line) > 30:
+            best_fact = _condense_briefing_update(line, max_chars=160)
+            break
+            
+    if best_fact:
+        return best_fact
 
-    topic = str(cluster.get("topic") or cluster.get("category") or "Вести").strip()
-    topic_lower = topic.lower()
-
-    if any(marker in haystack for marker in {"ракет", "балистичк", "лансира"}):
-        return "Потегот може да поттикне нови воени сигнали, предупредувања и дипломатски реакции"
-    if any(marker in haystack for marker in {"либан", "мировник", "он", "обединетите нации"}):
-        return "Случајот повторно отвора прашања за безбедноста на меѓународните мисии и регионалната стабилност"
-    if any(marker in haystack for marker in {"напад", "безбед"}):
-        return "Развојот може да предизвика нови безбедносни реакции и дипломатски притисок"
-    if any(marker in haystack for marker in {"суд", "правосуд", "одлука", "закон"}):
-        return "Следните правни и политички реакции ќе покажат колку широко ќе се прелее последицата"
-    if any(marker in haystack for marker in {"влада", "собрание", "референдум", "министер"}):
-        return "Следните институционални потези ќе покажат дали темата ќе прерасне во поширок политички спор"
-    if topic_lower == "политика":
-        return "Развојот може брзо да влијае врз следните политички позиции и јавната дебата"
-    if topic_lower == "економија":
-        return "Следните одлуки и реакции ќе покажат дали ефектот ќе се прелее врз цените, буџетот или бизнис-климата"
-    if topic_lower == "спорт":
-        return "Следните резултати и реакции ќе одредат како ќе се менува натпреварувачката слика"
-    if topic_lower in {"вести", "свет"}:
-        return "Развојот останува важен затоа што може брзо да добие пошироки последици или нови реакции"
-    return f"Следните реакции ќе покажат колку овој развој ќе влијае врз {topic_lower} темите"
+    # 2. Coverage-based fallback (last resort, better than "remains important")
+    source_count = cluster.get("source_count") or 1
+    source_name = cluster.get("source") or "повеќе извори"
+    
+    if source_count >= 3:
+        return f"Темата предизвика широк интерес кај медиумите, со потврдени извештаи од {source_count} различни извори"
+    
+    return f"Развојот на настанот го следат медиумите, со првични детални информации објавени од {source_name}"
 
 def _condense_briefing_update(text, *, max_chars=180):
     clean = _normalize_briefing_line(text)
@@ -479,15 +469,16 @@ def generate_daily_brief_fallback(clusters):
     )
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4)
     lines = ["## Што го движи денот", ""]
-    intro_candidates = [
-        item for item in display_clusters[:5]
-        if _extract_briefing_focus_point(item)
-    ]
-    preferred_intro = [item for item in intro_candidates if not _is_penalized_briefing_title(item.get("title"))]
-    intro_pool = preferred_intro[:3] if len(preferred_intro) >= 2 else intro_candidates[:3]
-    intro_points = [_extract_briefing_focus_point(item) for item in intro_pool if _extract_briefing_focus_point(item)]
-    if intro_points:
-        lines.append("Во фокус се: " + "; ".join(intro_points[:3]) + ".")
+    # 1. Editorial Intro: explicitly state the lead story and second story
+    if len(display_clusters) >= 1:
+        lead_title = _clean_briefing_snippet(display_clusters[0].get("title"))
+        intro_line = f"Денешниот преглед го одбележа: **{lead_title}**."
+        
+        if len(display_clusters) >= 2:
+            sec_title = _clean_briefing_snippet(display_clusters[1].get("title"))
+            intro_line = f"Денешниот ден го одбележа **{lead_title}**, додека внимание предизвика и **{sec_title}**."
+            
+        lines.append(intro_line)
         lines.append("")
 
     lines.append("## Каде се разликува известувањето")

@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import math
 import re
 import urllib.parse
 import httpx
@@ -175,14 +176,26 @@ def _load_daily_brief_clusters(limit=6):
                     difference_point = content
                 if not open_point and ("отвор" in angle or "нејас" in angle):
                     open_point = content
+        
         source_count = len({a.get("source") for a in ranked if a.get("source")})
-        has_editorial_depth = bool(difference_point or open_point)
         cluster_summary = (synthesis_row or {}).get("summary") or ""
-        has_synthesis = bool(str(cluster_summary).strip())
         description = lead.get("summary") or lead.get("description") or ""
-        has_public_interest = _has_public_interest_signal(lead.get("title"), description, cluster_summary)
+        
+        # New Diversity Signal: Extract Actors (Entities)
+        entities = set(_extract_capitalized_phrases(f"{lead.get('title')} {description}"))
+        
         is_low_signal = _is_low_signal_briefing_cluster(lead.get("title"), description, cluster_summary)
         is_routine_weather = _is_routine_weather_cluster(lead.get("title"), description, cluster_summary)
+        has_public_interest = _has_public_interest_signal(lead.get("title"), description, cluster_summary)
+        
+        # Briefing-Specific Score: Higher weight on source diversity (Breadth)
+        # and penalty for single-source items
+        base_score = score_cluster_for_homepage(ranked)
+        briefing_score = base_score + (math.log2(source_count) * 1.5)
+        if source_count == 1: briefing_score -= 5.0
+        if cluster_summary: briefing_score += 1.2
+        if has_public_interest: briefing_score += 1.5
+        
         ranked_clusters.append({
             "cluster_id": cluster_id,
             "title": lead.get("title"),
@@ -190,50 +203,37 @@ def _load_daily_brief_clusters(limit=6):
             "source": lead.get("source"),
             "category": lead.get("category"),
             "topic": lead.get("topic"),
-            "created_at": lead.get("created_at"),
             "source_count": source_count,
             "difference_point": difference_point,
             "open_point": open_point,
             "cluster_summary": cluster_summary,
-            "is_party_press_release": _is_party_press_release_title(lead.get("title")),
-            "has_public_interest": has_public_interest,
-            "is_low_signal": is_low_signal,
+            "entities": entities,
+            "score": max(0.0, briefing_score),
             "is_routine_weather": is_routine_weather,
-            "score": max(
-                0.0,
-                score_cluster_for_homepage(ranked)
-                - _briefing_title_penalty(
-                    lead.get("title"),
-                    source_count=source_count,
-                    has_editorial_depth=has_editorial_depth,
-                )
-                - (2.0 if is_low_signal and not has_public_interest else 0.0)
-                - (3.0 if is_routine_weather else 0.0)
-                + (1.1 if has_public_interest else 0.0),
-            ),
-            "other_titles": [str(item.get("title") or "").strip() for item in ranked[1:4] if str(item.get("title") or "").strip()],
+            "is_low_signal": is_low_signal,
+            "has_public_interest": has_public_interest
         })
 
     ranked_clusters.sort(key=lambda item: item["score"], reverse=True)
-    non_weather = [item for item in ranked_clusters if not item.get("is_routine_weather")]
-    weather_fallback = [item for item in ranked_clusters if item.get("is_routine_weather")]
-    preferred = [
-        item for item in non_weather
-        if not item.get("is_low_signal") or item.get("has_public_interest")
-    ]
-    secondary = [
-        item for item in ranked_clusters
-        if item in preferred
-        if _allow_partisan_briefing_cluster(
-            item.get("title"),
-            int(item.get("source_count") or 0),
-            bool(item.get("difference_point") or item.get("open_point")),
-            bool(item.get("cluster_summary")),
-            bool(item.get("has_public_interest")),
-        )
-    ]
-    fallback = [item for item in non_weather if item not in secondary] + weather_fallback
-    return (secondary + fallback)[:limit]
+    
+    # Selection with Entity-Based Diversity Enforcement
+    selected = []
+    seen_entities = set()
+    
+    for cluster in ranked_clusters:
+        if len(selected) >= limit: break
+        if cluster["is_routine_weather"] and len(selected) > 0: continue # No weather in top unless empty
+        
+        # Stronger Diversity Gate: If cluster shares too many entities with already selected top stories, skip it
+        if len(selected) < 3:
+            overlap = cluster["entities"] & seen_entities
+            if len(overlap) >= 2: # High actor overlap
+                continue
+        
+        selected.append(cluster)
+        seen_entities.update(cluster["entities"])
+        
+    return selected
 
 def _build_daily_brief_context(clusters):
     blocks = []
@@ -307,6 +307,37 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
     # Check for at least 3 numbered items (### 1., ### 2., etc.)
     has_items = any(f"### {index}." in text for index in range(1, 4))
     return has_items
+
+def _is_high_quality_briefing(brief: str) -> bool:
+    """Scan briefing for editorial quality and generic fillers."""
+    text = str(brief or "").strip()
+    if not text: return False
+    
+    # 1. Reject if too many vague markers (filler speak)
+    vague_markers = [
+        "ќе покаже", "останува важно", "може да влијае", 
+        "вреди да се следи", "останува да се види",
+        "допрва ќе", "времето ќе покаже"
+    ]
+    
+    lines = [l.strip() for l in text.splitlines() if l.strip() and not l.startswith("#")]
+    if not lines: return False
+    
+    vague_count = sum(1 for line in lines if any(marker in line.lower() for marker in vague_markers))
+    vague_pct = (vague_count / len(lines)) * 100
+    
+    if vague_pct > 25: # Reject if > 25% of lines are generic filler
+        log.warning(f"[editorial] Briefing rejected: too vague ({vague_pct:.1f}% filler)")
+        return False
+        
+    # 2. Check for minimal diversity in sentence starters
+    sentence_starts = [l[:15].lower() for l in lines if len(l) > 15]
+    unique_starts = len(set(sentence_starts))
+    if len(sentence_starts) > 5 and unique_starts < 3:
+        log.warning(f"[editorial] Briefing rejected: repetitive sentence structure")
+        return False
+        
+    return True
 
 def _normalize_synced_profile_for_delivery(profile):
     profile = profile or {}
@@ -1375,6 +1406,10 @@ def generate_daily_brief_task(retry_attempt=0):
             brief = ""
         if brief and not _is_grounded_daily_brief(brief, full_context):
             log.warning("[tasks] Daily brief rejected as ungrounded; using local fallback")
+            brief = ""
+            
+        if brief and not _is_high_quality_briefing(brief):
+            log.warning("[tasks] Daily brief rejected by editorial quality gate; using local fallback")
             brief = ""
 
         final_brief = brief or generate_daily_brief_fallback(clusters)
