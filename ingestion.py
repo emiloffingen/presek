@@ -21,6 +21,7 @@ from database import db_manager as db, get_db
 from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
 from health import record_source_fetch, get_source_statuses
+from language import is_cyrillic_south_slavic
 
 log = logging.getLogger("presek")
 
@@ -113,6 +114,12 @@ def clean_rss_footer(text: str) -> str:
     text = re.sub(r'Continue reading\s*\.*$', '', text, flags=re.IGNORECASE)
     
     return text.strip()
+
+
+def is_supported_display_language(title: str, description: str = "") -> bool:
+    """Only ingest articles that can be displayed naturally without translation."""
+    sample = f"{title or ''}. {description or ''}".strip()
+    return is_cyrillic_south_slavic(sample)
 
 
 def normalize_feed_link(link: str) -> str:
@@ -501,6 +508,9 @@ async def ingest_all_sources_async():
                         continue
                     
                     desc = e.get("summary", "") or e.get("description", "")
+                    if not is_supported_display_language(title, desc):
+                        continue
+
                     if is_junk(title, desc):
                         continue
 

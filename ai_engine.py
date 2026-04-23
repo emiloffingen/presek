@@ -338,6 +338,12 @@ def translate_to_macedonian(text: str) -> str | None:
     # Already Macedonian — just normalize locally
     if lang == "mk":
         record_runtime_event("translation_path", source_lang=lang, mode="already_mk")
+        # If it's already Cyrillic, don't use the rewrite engine which might rephrase/damage it.
+        # Just do basic whitespace normalization.
+        cyrillic_chars = len(re.findall(r"[А-Яа-яЀ-ӿ]", text))
+        latin_chars = len(re.findall(r"[A-Za-z]", text))
+        if cyrillic_chars > latin_chars:
+            return re.sub(r"\s+", " ", text).strip()
         return rewrite_to_macedonian_locally(text)
 
     def _is_usable_macedonian_translation(candidate: str | None) -> bool:

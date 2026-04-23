@@ -92,24 +92,35 @@ def _cyrillic_heuristic(text: str) -> str:
     """Distinguish Macedonian from Bulgarian and Serbian in Cyrillic text."""
     lower = text.lower()
 
-    # Bulgarian-only letters: ъ, щ (not used in MK or SR)
-    bg_markers = sum(1 for ch in lower if ch in "ъщ")
+    # Unique letters check (Strongest signal)
+    # Bulgarian-only vs MK: ъ, щ, ю, я (MK uses ј + vowel)
+    bg_markers = sum(1 for ch in lower if ch in "ъщюя")
+    
+    # Serbian-only vs MK: ђ, ћ (MK uses ѓ, ќ)
+    sr_markers = sum(1 for ch in lower if ch in "ђћ")
+
+    if bg_markers >= 1: return "bg"
+    if sr_markers >= 1: return "sr"
+
     # Bulgarian function words not used in MK
-    bg_words = sum(1 for w in ("също", "защото", "обаче", "няма", "може",
-                               "трябва", "каза", "която", "който", "което",
-                               "бъде", "ще", "още", "след", "този", "тази")
+    # 'ще' is very strong BG (MK uses 'ќе')
+    # 'бъде' is BG (MK uses 'биде')
+    # 'върху' is BG (MK uses 'на')
+    bg_words = sum(1 for w in ("също", "защото", "обаче", "няма",
+                               "трябва", "която", "който", "което",
+                               "ще", "бъде", "върху", "след")
                    if f" {w} " in f" {lower} ")
-    if bg_markers >= 1 or bg_words >= 2:
+    if bg_words >= 1:
         return "bg"
 
-    # Serbian: ђ and ћ are not used in Macedonian (MK uses ѓ and ќ instead)
-    sr_letters = sum(1 for ch in lower if ch in "ђћ")
-    sr_words = sum(1 for w in ("такође", "односно", "јер", "ипак", "него",
-                               "већ", "затим", "стога", "међутим", "након",
-                               "саопштио", "изјавио", "наводи", "рекао",
-                               "или", "али", "још", "може")
+    # Serbian function words not used in MK
+    # 'da li' is very SR (MK uses 'дали')
+    # 'tokom' is SR (MK uses 'за време на')
+    sr_words = sum(1 for w in ("такође", "односно", "ипак",
+                               "међутим", "након", "током",
+                               "саопштио", "изјавио", "наводи")
                    if f" {w} " in f" {lower} ")
-    if sr_letters >= 1 or sr_words >= 2:
+    if sr_words >= 1:
         return "sr"
 
     return "mk"

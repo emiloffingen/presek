@@ -92,6 +92,13 @@ def standardize_article_style_task(article_id):
     if not title or len(title) < 25: return # Skip very short headlines
 
     try:
+        from language import detect_language
+        lang = detect_language(title)
+        if lang == "mk":
+            # If it's already Macedonian, don't do the round-trip translation.
+            # It often degrades quality/meaning for low-credibility but natively written MK news.
+            return
+
         from nllb_translate import translate as nllb_translate
         from ai_engine import rewrite_to_macedonian_locally
         

@@ -23,6 +23,7 @@ from config import (
 from nlp import (
     filter_cluster_tags,
 )
+from language import is_cyrillic_south_slavic
 from api_helpers import (
     normalize_summary_text, normalize_perspectives
 )
@@ -50,6 +51,12 @@ _FEATURE_PATTERNS = [
     re.compile(r"видео\b", re.IGNORECASE),
     re.compile(r"галерија", re.IGNORECASE),
 ]
+
+
+def _is_publicly_displayable_article(article):
+    if article.get("is_translated"):
+        return True
+    return is_cyrillic_south_slavic(f"{article.get('title') or ''}. {article.get('description') or ''}")
 
 _PUBLIC_ARTICLE_FIELDS = {
     "id",
@@ -488,6 +495,8 @@ async def get_cluster_detail(cluster_id: str):
         return cached
     try:
         rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
+        if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
+        rows = [row for row in rows if _is_publicly_displayable_article(row)]
         if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))

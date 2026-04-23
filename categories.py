@@ -142,6 +142,19 @@ CATEGORIES = [
     ]),
 ]
 
+TITLE_PROPER_NOUNS = [
+    (re.compile(r"\bсрпската опозиција\b", re.IGNORECASE), "Српската опозиција"),
+    (re.compile(r"\bиран\b", re.IGNORECASE), "Иран"),
+    (re.compile(r"\bданска\b", re.IGNORECASE), "Данска"),
+    (re.compile(r"\bевропа\b", re.IGNORECASE), "Европа"),
+    (re.compile(r"\bјугославија\b", re.IGNORECASE), "Југославија"),
+    (re.compile(r"\bмакедонија\b", re.IGNORECASE), "Македонија"),
+    (re.compile(r"\bтито\b", re.IGNORECASE), "Тито"),
+    (re.compile(r"\bзаев\b", re.IGNORECASE), "Заев"),
+    (re.compile(r"\bбашановиќ\b", re.IGNORECASE), "Башановиќ"),
+    (re.compile(r"\bбашановик\b", re.IGNORECASE), "Башановиќ"),
+]
+
 
 def detect_category(title: str, description: str = "", source: str = "",
                     forced_category: str | None = None) -> str:
@@ -383,6 +396,8 @@ def normalize_headline(title: str) -> str:
     t = re.sub(r'[\?\!]{2,}', lambda m: m.group(0)[0], t) # No !!! or ???
     t = " ".join(t.split()) # Standardize whitespace
     t = t.strip(" -–—:|") # Remove trailing/leading decorations
+    for pattern, replacement in TITLE_PROPER_NOUNS:
+        t = pattern.sub(replacement, t)
     
     # 7. Professional Casing for first letter
     if t and t[0].islower():

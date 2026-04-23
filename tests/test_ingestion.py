@@ -9,6 +9,7 @@ from ingestion import (
     clean_rss_footer,
     normalize_feed_link,
     normalize_candidate_title,
+    is_supported_display_language,
     parse_entry_timestamp,
     extract_image_url,
     fetch_og_image,
@@ -48,6 +49,17 @@ def test_clean_rss_footer_empty():
 def test_clean_rss_footer_no_match():
     text = "Normal text with no footer patterns at all"
     assert clean_rss_footer(text) == text
+
+
+def test_supported_display_language_rejects_albanian_rss_items():
+    assert is_supported_display_language(
+        "Interi vendos për rinovimin me mesfushorin turk",
+        "Klubi zikaltër e kishte marrë vendimin para dopietës kundër Como.",
+    ) is False
+    assert is_supported_display_language(
+        "Директен судир на возови во Данска",
+        "Неколку лица беа повредени во несреќата.",
+    ) is True
 
 
 def test_normalize_headline_multiple_prefixes():

@@ -129,6 +129,14 @@ class TestAstroFrontendIntegrity:
         assert "set:html={sanitizeHtml(parseFootnotes(item.content))}" in cluster_page
         assert "set:html={parseFootnotes(paragraph)}" not in cluster_page
         assert "timeZone: 'Europe/Skopje'" in text_utils
+        assert "'Заев'" in text_utils
+        assert "'Башановиќ'" in text_utils
+        assert "'Српската опозиција'" in text_utils
+        assert "'Иран'" in text_utils
+        assert "'Данска'" in text_utils
+        assert "'Европа'" in text_utils
+        assert "'Југославија'" in text_utils
+        assert "'Тито'" in text_utils
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
         source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
