@@ -22,10 +22,12 @@ try {
         entityData = await entityRes.json();
     } else {
         error = "Профилот не е пронајден.";
+        Astro.response.status = entityRes.status === 404 ? 404 : 500;
     }
 } catch (e) {
     console.error(e);
     error = "Грешка при поврзување.";
+    Astro.response.status = 500;
 }
 
 const clusters = entityData?.clusters || [];

@@ -39,7 +39,9 @@ let error: string | null = null;
 async function fetchJson(url: string) {
 	const response = await fetch(url);
 	if (!response.ok) {
-		throw new Error(`Request failed: ${response.status} ${url}`);
+		const err: any = new Error(`Request failed: ${response.status} ${url}`);
+		err.status = response.status;
+		throw err;
 	}
 	return response.json();
 }
@@ -114,9 +116,10 @@ try {
 			}
 		});
 	}
-} catch (e) {
+} catch (e: any) {
 	console.error(e);
 	error = 'Темата моментално не е достапна.';
+	Astro.response.status = e.status || 500;
 }
 
 const leadCluster = clusters[0] ?? null;

@@ -26,9 +26,13 @@ try {
   if (topic) archiveUrl.searchParams.set('topic', topic);
   const res = await fetch(archiveUrl);
   if (res.ok) archive = await res.json();
-  else error = 'Архивата моментално не е достапна.';
+  else {
+    error = 'Архивата моментално не е достапна.';
+    Astro.response.status = 500;
+  }
 } catch (err) {
   error = 'Грешка при вчитување на архивата.';
+  Astro.response.status = 500;
 }
 
 const buildFilterHref = (kind: 'source' | 'topic', value: string) => {

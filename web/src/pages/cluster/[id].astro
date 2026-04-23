@@ -52,15 +52,17 @@ try {
     if (!res.ok) {
         if (res.status === 404) {
             error = 'Кластерот не е пронајден.';
+            Astro.response.status = 404;
         } else {
             error = 'Грешка при вчитување на податоците.';
+            Astro.response.status = 500;
         }
     } else {
       const payload = await res.json();
       cluster = payload.data;
     }
     } catch (e) {
-
+    Astro.response.status = 500;
     error = 'Неуспешно поврзување со серверот.';
 }
 

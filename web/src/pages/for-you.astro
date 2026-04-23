@@ -18,10 +18,12 @@ try {
         initialClusters = data.clusters || [];
     } else {
         initialError = "Не можеме да ги вчитаме почетните препораки во моментов.";
+        Astro.response.status = 500;
     }
 } catch (e) {
     console.error("ForYou page fetch error:", e);
     initialError = "Не можеме да ги вчитаме почетните препораки во моментов.";
+    Astro.response.status = 500;
 }
 ---
 

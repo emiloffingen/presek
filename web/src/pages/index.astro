@@ -46,7 +46,9 @@ let homepageLeadDisplay: { title?: string; summary?: string; signal?: string } |
 async function fetchJson(url: string) {
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`Request failed: ${response.status} ${url}`);
+        const err: any = new Error(`Request failed: ${response.status} ${url}`);
+        err.status = response.status;
+        throw err;
     }
     return response.json();
 }
@@ -96,6 +98,7 @@ if (isHomepage) {
     } else {
         console.error('Home fetch error:', homePayload.status === 'rejected' ? homePayload.reason : homePayload.value);
         error = 'Грешка при вчитување на вестите.';
+        Astro.response.status = 500;
     }
 } else {
     const newsUrl = new URL(`${API_URL}/news`);
@@ -125,6 +128,7 @@ if (isHomepage) {
     } else {
         console.error('News fetch error:', newsResult.reason);
         error = 'Грешка при вчитување на вестите.';
+        Astro.response.status = 500;
     }
 
     trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)

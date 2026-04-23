@@ -35,16 +35,19 @@ try {
         pulseData = json.data || [];
     } else {
         error = "Медиумскиот пулс моментално не е достапен.";
+        Astro.response.status = 500;
     }
     if (globalRes.ok) {
         globalPulse = await globalRes.json();
     } else {
         error = error || "Медиумскиот пулс моментално не е достапен.";
+        Astro.response.status = 500;
     }
-} catch (e) {
+    } catch (e) {
     console.error(e);
-    error = "Грешка при поврзување со серверот.";
-}
+    error = "Грешка при вчитување на пулсот.";
+    Astro.response.status = 500;
+    }
 
 const intelligence = globalPulse?.intelligence ?? {};
 const pulseLeaders = pulseData.slice(0, 15);

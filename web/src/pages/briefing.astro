@@ -23,9 +23,14 @@ try {
     
     if (briefRes.ok) {
         briefing = await briefRes.json();
-        if (briefing.detail || briefing.error || !briefing.content) briefing = null;
+        if (briefing.detail || briefing.error || !briefing.content) {
+            briefing = null;
+            error = "Брифингот моментално не е достапен.";
+            Astro.response.status = 500;
+        }
     } else {
         error = "Брифингот моментално не е достапен.";
+        Astro.response.status = 500;
     }
     if (statsRes.ok) {
         stats = await statsRes.json();
@@ -36,6 +41,7 @@ try {
 } catch (e) {
     console.error("Fetch error:", e);
     error = "Грешка при вчитување на брифингот.";
+    Astro.response.status = 500;
 }
 
 const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString('mk-MK', { 
