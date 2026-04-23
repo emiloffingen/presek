@@ -93,7 +93,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
                 {error ? (
                     <div class="empty-state"><p>{error}</p></div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland client:load initialClusters={archive.clusters} initialHasMore={archive.has_more} date={date} source={source} topic={topic} />
+                    <ArchiveFeedIsland client:load initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} source={source} topic={topic} />
                 ) : (
                     <div class="empty-state">
                         <h2>Нема пронајдени вести.</h2>

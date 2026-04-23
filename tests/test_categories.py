@@ -100,6 +100,11 @@ class TestDetectCategory:
         assert detect_category("White House announces new tariffs") == "Америка"
         assert detect_category("European Commission opens new Brussels talks") == "Европа"
 
+    def test_foreign_sports_clubs_do_not_default_to_macedonia(self):
+        assert detect_category("Лиам Розениор веќе не е тренер на Челзи") == "Европа"
+        assert detect_category("ПСЖ го победи Нант со 3:0") == "Европа"
+        assert detect_category("Леброн го предводеше Лејкерс до победа над Хјустон") == "Америка"
+
 
 # ── detect_subcategory ────────────────────────────────────────────
 

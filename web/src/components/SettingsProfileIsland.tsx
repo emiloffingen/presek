@@ -72,7 +72,7 @@ export default function SettingsProfileIsland() {
   const topFocusTopic = useMemo(() => {
     if (recentItems.length === 0) return null;
     const counts: Record<string, number> = {};
-    recentItems.forEach(item => {
+    recentItems.forEach((item: any) => {
         const t = item.topic || 'Вести';
         counts[t] = (counts[t] || 0) + 1;
     });

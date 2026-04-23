@@ -20,9 +20,12 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
   const topicMap = new Map();
 
   details.forEach((detail, index) => {
-    const detailTopics = unique(detail?.topics || []);
-    const detailTags = unique(detail?.tags || []);
     const cluster = clusters[index] || {};
+    const visibleClusterTopics = new Set(unique((cluster?.articles || []).map((article) => article?.topic)));
+    const detailTopics = unique(detail?.topics || []).filter(
+      (topic) => visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)
+    );
+    const detailTags = unique(detail?.tags || []);
     const clusterSources = unique((cluster?.articles || []).map((article) => article?.source));
     const sharedSourceCount = clusterSources.filter((source) => currentSources.has(source)).length;
     const sharedTagCount = detailTags.filter((tag) => currentTags.has(tag)).length;
@@ -93,4 +96,3 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
 
   return ranked.slice(0, limit);
 }
-

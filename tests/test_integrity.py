@@ -81,6 +81,9 @@ class TestAstroFrontendIntegrity:
         header = _read("web/src/components/NYTHeader.astro")
         assert "shouldFetchStats" in header
         assert "fetch(`${API_URL}/stats/summary`)" in header
+        assert "const hasDispatchStats = Boolean(stats && intel?.pluralism);" in header
+        assert "Math.max(12" not in header
+        assert "{hasDispatchStats && (" in header
 
     def test_schema_and_ingestion_track_ingestion_time(self):
         schema = _read("database.py")
@@ -117,6 +120,24 @@ class TestAstroFrontendIntegrity:
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
         assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
+
+    def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
+        cluster_page = _read("web/src/pages/cluster/[id].astro")
+        text_utils = _read("web/src/utils/textUtils.ts")
+
+        assert "set:html={sanitizeHtml(parseFootnotes(paragraph))}" in cluster_page
+        assert "set:html={sanitizeHtml(parseFootnotes(item.content))}" in cluster_page
+        assert "set:html={parseFootnotes(paragraph)}" not in cluster_page
+        assert "timeZone: 'Europe/Skopje'" in text_utils
+
+    def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
+        source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
+        research = _read("web/src/components/ResearchIsland.tsx")
+
+        assert "\n...\n" not in source_comparison
+        assert "const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);" in source_comparison
+        assert "Math.max(0, Math.min(100" in source_comparison
+        assert "String(data.report || '').toLowerCase()" in research
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
@@ -170,6 +191,8 @@ class TestAstroFrontendIntegrity:
         assert "ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC" in stats
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in system
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in system
+        assert "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in system
+        assert "FROM articles" in system
 
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage = _read("web/src/pages/index.astro")
@@ -203,6 +226,15 @@ class TestAstroFrontendIntegrity:
         assert '"articles": public_articles' in news
         assert '"image_caption"' in news
         assert '"is_redundant"' in news
+
+    def test_topic_pages_do_not_surface_mixed_topic_articles(self):
+        news = _read("routes/news.py")
+        topic_discovery = _read("web/src/lib/topicDiscovery.js")
+
+        assert 'if topic and r.get("topic") != topic and r.get("category") != topic:' in news
+        assert 'if category and r.get("category") != category:' in news
+        assert "visibleClusterTopics" in topic_discovery
+        assert "visibleClusterTopics.size === 0 || visibleClusterTopics.has(topic)" in topic_discovery
 
     def test_cluster_related_payload_preserves_shared_metadata(self):
         news = _read("routes/news.py")

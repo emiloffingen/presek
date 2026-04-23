@@ -311,6 +311,8 @@ def test_home_route_composes_named_slots(mock_all):
     }
 
     with patch("routes.home.get_news", new=AsyncMock(side_effect=[news_payload, recent_payload])), \
+         patch("routes.home.cached_response", return_value=None), \
+         patch("routes.home.set_cache"), \
          patch("routes.home.get_trending_route", new=AsyncMock(return_value=[{"word": "Буџет", "trend": "↑"}])), \
          patch("routes.home.get_top_entities", new=AsyncMock(return_value=[{"name": "влада", "total_mentions": 7, "type": "ORG"}])), \
          patch("routes.home.get_stats_summary", new=AsyncMock(return_value={"last_24h": 120, "intelligence": {"pluralism": {"pluralism_pct": 64}, "ai_transparency": {"ai_ratio": 52}}})), \
@@ -370,6 +372,102 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
         "Тешка сообраќајка на експресниот пат кај Ранковце",
         "Собранието отвори расправа за буџетот",
     ]
+
+
+def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
+    import routes.news as news
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "FROM cluster_metadata m" in query and "%s = ANY(topics)" in query:
+            return [{"cluster_id": "mixed", "last_article": "2026-04-22T20:00:00Z"}]
+        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+            return [
+                {
+                    "id": 1,
+                    "cluster_id": "mixed",
+                    "source": "Vecer",
+                    "title": "Екс-фудбалерот на Челзи ќе биде наследникот на Розениор?",
+                    "description": "",
+                    "topic": "Вести",
+                    "category": "Македонија",
+                    "created_at": "2026-04-22T20:00:00Z",
+                },
+                {
+                    "id": 2,
+                    "cluster_id": "mixed",
+                    "source": "SportSport",
+                    "title": "Екс-фудбалерот на Челзи ќе биде наследникот на Розениор?",
+                    "description": "",
+                    "topic": "Спорт",
+                    "category": "Европа",
+                    "created_at": "2026-04-22T19:55:00Z",
+                },
+            ]
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
+            return [{"cluster_id": "mixed", "representative_image": None, "dominant_color": None}]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+    mock_all["db"].async_get_synthesis_ids.return_value = []
+
+    with patch("routes.news.cached_response", return_value=None), \
+         patch("routes.news.set_cache"), \
+         patch("routes.news.score_cluster", return_value=1.0), \
+         patch("routes.news.score_cluster_for_homepage", return_value=1.0):
+        data = asyncio.run(news.get_news(topic="Спорт", page_size=10))
+
+    assert data["status"] == "success"
+    assert len(data["clusters"]) == 1
+    assert [article["topic"] for article in data["clusters"][0]["articles"]] == ["Спорт"]
+    assert data["clusters"][0]["articles"][0]["source"] == "SportSport"
+
+
+def test_news_category_response_filters_mixed_cluster_articles(mock_all):
+    import routes.news as news
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "FROM cluster_metadata m" in query and "WHERE category = %s" in query:
+            return [{"cluster_id": "mixed-geo", "last_article": "2026-04-22T20:00:00Z"}]
+        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+            return [
+                {
+                    "id": 1,
+                    "cluster_id": "mixed-geo",
+                    "source": "Domestic",
+                    "title": "Домашна реакција",
+                    "description": "",
+                    "topic": "Политика",
+                    "category": "Македонија",
+                    "created_at": "2026-04-22T20:00:00Z",
+                },
+                {
+                    "id": 2,
+                    "cluster_id": "mixed-geo",
+                    "source": "Foreign",
+                    "title": "Европска реакција",
+                    "description": "",
+                    "topic": "Политика",
+                    "category": "Европа",
+                    "created_at": "2026-04-22T19:55:00Z",
+                },
+            ]
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
+            return [{"cluster_id": "mixed-geo", "representative_image": None, "dominant_color": None}]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+    mock_all["db"].async_get_synthesis_ids.return_value = []
+
+    with patch("routes.news.cached_response", return_value=None), \
+         patch("routes.news.set_cache"), \
+         patch("routes.news.score_cluster", return_value=1.0), \
+         patch("routes.news.score_cluster_for_homepage", return_value=1.0):
+        data = asyncio.run(news.get_news(category="Европа", page_size=10))
+
+    assert data["status"] == "success"
+    assert len(data["clusters"]) == 1
+    assert [article["category"] for article in data["clusters"][0]["articles"]] == ["Европа"]
+    assert data["clusters"][0]["articles"][0]["source"] == "Foreign"
 
 
 def test_news_editorial_signals_classify_story_state(mock_all):
@@ -567,6 +665,38 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(m
 
     assert data["last_24h"] == 12
     assert data["by_category"][0]["category"] == "Македонија"
+
+
+def test_navigation_counts_use_article_level_classifications(mock_all):
+    import routes.system as system
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "FROM cluster_metadata m" in query and "score_cluster" not in query:
+            return []
+        if "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in query:
+            assert "FROM articles" in query
+            assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query
+            return [
+                {"category": "Европа", "topic": "Спорт", "n": 3},
+                {"category": "Македонија", "topic": "Политика", "n": 4},
+            ]
+        if "SELECT subcategory, COUNT(DISTINCT cluster_id) as n" in query:
+            return [{"subcategory": "Скопје", "n": 2}]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    with patch("routes.system.cached_response", return_value=None), \
+         patch("routes.system.set_cache"), \
+         patch("routes.intelligence.get_top_entities", new=AsyncMock(return_value=[])):
+        data = asyncio.run(system.get_navigation())
+
+    geography = data["sections"][0]["items"]
+    news_items = data["sections"][1]["items"]
+    assert next(item for item in geography if item["label"] == "Европа")["count"] == 3
+    assert next(item for item in news_items if item["label"] == "Спорт")["count"] == 3
+    assert next(item for item in news_items if item["label"] == "Политика")["count"] == 4
+
 
 def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
     import routes.news as news

@@ -20,6 +20,7 @@ export interface Article {
     role_label?: string;
     trust_level?: number;
   };
+  is_breaking?: boolean;
   is_fact_check?: boolean;
   image_caption?: string;
   is_global?: boolean;

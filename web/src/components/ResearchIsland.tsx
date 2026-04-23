@@ -160,7 +160,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 <span className="text-[8px] font-black uppercase tracking-wider text-muted-foreground">Комплексност:</span>
                 <div className="flex gap-1">
                     {[1, 2, 3].map((step) => {
-                        const content = data.report.toLowerCase();
+                        const content = String(data.report || '').toLowerCase();
                         const level = (content.includes('разлики') || content.includes('контрадикторни')) ? 3 : 
                                       (content.includes('дел од изворите') || content.includes('нејасно')) ? 2 : 1;
                         const isActive = step <= level;

@@ -144,8 +144,8 @@ function formatBriefing(content: string) {
 }
 
 const sectionHighlights = (briefing?.content || '').split('\n')
-    .filter(l => l.startsWith('## '))
-    .map((l, index) => {
+    .filter((l: string) => l.startsWith('## '))
+    .map((l: string, index: number) => {
         const title = l.substring(3).trim();
         return {
             index: index + 1,
@@ -204,7 +204,7 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
             {sectionHighlights.length > 0 && (
                 <nav class="masthead-nav hide-scrollbar">
                     <span class="nav-label">ВО ФОКУС:</span>
-                    {sectionHighlights.map((section) => (
+                    {sectionHighlights.map((section: any) => (
                         <a class="nav-link" href={`#${section.slug}`}>
                             <span>{String(section.index).padStart(2, '0')}</span>
                             {section.title}

@@ -325,6 +325,10 @@ async def get_news(
         clusters = defaultdict(list)
         cluster_relevance = {}
         for r in rows:
+            if topic and r.get("topic") != topic and r.get("category") != topic:
+                continue
+            if category and r.get("category") != category:
+                continue
             r['reading_time'] = calculate_reading_time(r.get('description', ''))
             cid = r['cluster_id']
             clusters[cid].append(r)

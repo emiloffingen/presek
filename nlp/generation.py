@@ -80,6 +80,10 @@ def _extract_briefing_importance(cluster):
 
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
+    context = f"{clean_title} {clean_description}".casefold()
+    if any(term in context for term in ("избори", "парламентарни избори", "гласање", "гласаат")):
+        return "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
+
     # 1. Fact Extraction: Find the most informative sentence in description that adds new info
     description_lines = _briefing_lines_from_text(clean_description, max_lines=4)
     title_terms = set(_extract_terms(clean_title))
@@ -97,6 +101,11 @@ def _extract_briefing_importance(cluster):
             
     if best_fact:
         return best_fact
+
+    if any(term in context for term in ("балистич", "ракета", "ракети", "северна кореја", "пјонгјанг")):
+        return "нови воени сигнали, предупредувања и дипломатски реакции"
+    if any(term in context for term in ("мировник", "мировници", "он", "либан", "унифил", "меѓународните мисии")):
+        return "безбедноста на меѓународните мисии и регионалната стабилност"
 
     # 2. Coverage-based fallback (last resort, better than "remains important")
     source_count = cluster.get("source_count") or 1
@@ -471,11 +480,11 @@ def generate_daily_brief_fallback(clusters):
     lines = ["## Што го движи денот", ""]
     # 1. Editorial Intro: explicitly state the lead story and second story
     if len(display_clusters) >= 1:
-        lead_title = _clean_briefing_snippet(display_clusters[0].get("title"))
+        lead_title = _condense_briefing_update(_extract_briefing_update(display_clusters[0]), max_chars=150)
         intro_line = f"Денешниот преглед го одбележа: {lead_title}."
         
         if len(display_clusters) >= 2:
-            sec_title = _clean_briefing_snippet(display_clusters[1].get("title"))
+            sec_title = _condense_briefing_update(_extract_briefing_update(display_clusters[1]), max_chars=150)
             intro_line = f"Денешниот ден го одбележа {lead_title}, додека внимание предизвика и {sec_title}."
             
         lines.append(intro_line)

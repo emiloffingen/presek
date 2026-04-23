@@ -60,9 +60,10 @@ const intel = stats?.intelligence;
 const totalClusters = intel?.pluralism?.total_clusters || 0;
 const highConsensusPct = intel?.pluralism?.high_consensus_pct || 0;
 const pluralismPct = intel?.pluralism?.pluralism_pct || 0;
+const hasDispatchStats = Boolean(stats && intel?.pluralism);
 
-const confirmedFacts = Math.max(12, Math.round(totalClusters * (highConsensusPct / 100) * 3));
-const activeConflicts = Math.max(1, Math.round(totalClusters * (1 - pluralismPct / 100)));
+const confirmedFacts = Math.max(0, Math.round(totalClusters * (highConsensusPct / 100) * 3));
+const activeConflicts = Math.max(0, Math.round(totalClusters * (1 - pluralismPct / 100)));
 const totalFeeds = stats?.total_feeds || 0;
 
 function getRelativeTimeStr(dateStr?: string) {
@@ -88,6 +89,7 @@ function getRelativeTimeStr(dateStr?: string) {
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
+    {hasDispatchStats && (
     <div class="dispatch-bar">
         <div class="dispatch-container site-layout">
             <div class="dispatch-content">
@@ -100,6 +102,7 @@ function getRelativeTimeStr(dateStr?: string) {
             </div>
         </div>
     </div>
+    )}
 
     {hasBreaking && (
         <div class="live-ticker" id="live-ticker">
@@ -184,7 +187,7 @@ function getRelativeTimeStr(dateStr?: string) {
                         const isCore = section.type === 'core' || idx === 0;
                         const isMagazine = section.type === 'magazine';
                         return (
-                            <div class={`nav-rail-group ${isCore ? 'group-core' : isMagazine ? 'group-magazine' : 'group-dynamic'}`} key={section.label}>
+                            <div class={`nav-rail-group ${isCore ? 'group-core' : isMagazine ? 'group-magazine' : 'group-dynamic'}`}>
                                 <div class="group-header">
                                     <span class="group-label">{section.label}</span>
                                 </div>

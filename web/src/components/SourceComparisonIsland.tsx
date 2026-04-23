@@ -44,23 +44,22 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
   useEffect(() => {
     fetchData();
   }, [s1, s2]);
-const renderMetric = (label: string, val1: number, val2: number, inverse = false) => {
-  const p1 = Math.round(val1 * 100);
-  const p2 = Math.round(val2 * 100);
 
-  const tooltip = label === "Индекс на Објективност" 
+  const renderMetric = (label: string, val1: number, val2: number, inverse = false) => {
+    const p1 = Math.max(0, Math.min(100, Math.round((Number(val1) || 0) * 100)));
+    const p2 = Math.max(0, Math.min(100, Math.round((Number(val2) || 0) * 100)));
+
+    const tooltip = label === "Индекс на Објективност"
       ? "Мерка за непристрасност и присуство на фактички верификувани изјави."
       : "Ниво на емотивен набој и употреба на реторика за привлекување внимание.";
 
-  // For inverse (sensationalism), lower is better/accented
-  const isWinner1 = inverse ? p1 < p2 : p1 > p2;
-  const isWinner2 = inverse ? p2 < p1 : p2 > p1;
+    const isWinner1 = inverse ? p1 < p2 : p1 > p2;
+    const isWinner2 = inverse ? p2 < p1 : p2 > p1;
 
-  return (
-    <div className="space-y-3">
-      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center" title={tooltip}>{label}</p>
-      <div className="flex items-center gap-4">
-...
+    return (
+      <div className="space-y-3">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center" title={tooltip}>{label}</p>
+        <div className="flex items-center gap-4">
           <div className="flex-1 text-right">
             <span className={`font-serif font-black text-xl ${isWinner1 ? 'text-nyt-accent' : 'text-foreground/60'}`}>{p1}%</span>
           </div>
@@ -115,30 +114,34 @@ const renderMetric = (label: string, val1: number, val2: number, inverse = false
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center mb-4">Тематско Преклопување</p>
               
               <div className="flex w-full h-8 rounded-lg overflow-hidden border border-border">
-                {/* s1 exclusive */}
-                <div 
-                  className="h-full bg-nyt-accent/80 flex items-center justify-center text-xs font-bold text-white transition-all"
-                  style={{ width: `${Math.max((overlap.s1_exclusive / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 10)}%` }}
-                  title={`${s1} ексклузивно: ${overlap.s1_exclusive} теми`}
-                >
-                  {overlap.s1_exclusive}
-                </div>
-                {/* shared */}
-                <div 
-                  className="h-full bg-secondary flex items-center justify-center text-xs font-bold text-foreground transition-all border-x border-background/20"
-                  style={{ width: `${Math.max((overlap.shared_clusters / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 15)}%` }}
-                  title={`Заеднички: ${overlap.shared_clusters} теми`}
-                >
-                  {overlap.shared_clusters} заеднички
-                </div>
-                {/* s2 exclusive */}
-                <div 
-                  className="h-full bg-nyt-red/80 flex items-center justify-center text-xs font-bold text-white transition-all"
-                  style={{ width: `${Math.max((overlap.s2_exclusive / (overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive)) * 100, 10)}%` }}
-                  title={`${s2} ексклузивно: ${overlap.s2_exclusive} теми`}
-                >
-                  {overlap.s2_exclusive}
-                </div>
+                {(() => {
+                  const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);
+                  return (
+                    <>
+                      <div
+                        className="h-full bg-nyt-accent/80 flex items-center justify-center text-xs font-bold text-white transition-all"
+                        style={{ width: `${Math.max((overlap.s1_exclusive / totalOverlap) * 100, 10)}%` }}
+                        title={`${s1} ексклузивно: ${overlap.s1_exclusive} теми`}
+                      >
+                        {overlap.s1_exclusive}
+                      </div>
+                      <div
+                        className="h-full bg-secondary flex items-center justify-center text-xs font-bold text-foreground transition-all border-x border-background/20"
+                        style={{ width: `${Math.max((overlap.shared_clusters / totalOverlap) * 100, 15)}%` }}
+                        title={`Заеднички: ${overlap.shared_clusters} теми`}
+                      >
+                        {overlap.shared_clusters} заеднички
+                      </div>
+                      <div
+                        className="h-full bg-nyt-red/80 flex items-center justify-center text-xs font-bold text-white transition-all"
+                        style={{ width: `${Math.max((overlap.s2_exclusive / totalOverlap) * 100, 10)}%` }}
+                        title={`${s2} ексклузивно: ${overlap.s2_exclusive} теми`}
+                      >
+                        {overlap.s2_exclusive}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               
               <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter text-muted-foreground">

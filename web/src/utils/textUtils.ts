@@ -173,7 +173,11 @@ export function getEditionStr(dateInput: any): string {
         return 'ВОНРЕДНО ИЗДАНИЕ';
     }
 
-    const hour = date.getHours();
+    const hour = Number(new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        hour12: false,
+        timeZone: 'Europe/Skopje',
+    }).format(date));
     
     if (hour >= 5 && hour < 12) return 'УТРИНСКО ИЗДАНИЕ';
     if (hour >= 12 && hour < 18) return 'ПЛАДНЕВНО ИЗДАНИЕ';

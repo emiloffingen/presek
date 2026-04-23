@@ -129,12 +129,15 @@ async def get_navigation():
             })
             if len(breaking_items) >= 4: break
 
-    # 2. Dynamic Activity (24h lookback using cluster_metadata for speed)
-    # We count clusters instead of individual articles for navigation weight
-    activity = await db.async_execute("""
-        SELECT category, unnest(topics) as topic, COUNT(*) as n 
-        FROM cluster_metadata 
-        WHERE updated_at >= NOW() - INTERVAL '24 hours'
+    # 2. Dynamic Activity (24h lookback)
+    # Count article-level classifications so navigation does not inherit stale
+    # mixed-topic/category arrays from cluster metadata.
+    activity = await db.async_execute(f"""
+        SELECT category, topic, COUNT(DISTINCT cluster_id) as n
+        FROM articles
+        WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'
+          AND category IS NOT NULL AND category != ''
+          AND topic IS NOT NULL AND topic != ''
         GROUP BY category, topic
     """)
     
