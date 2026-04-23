@@ -150,12 +150,12 @@ const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.
                 </section>
 
                 <section class="mb-16">
-                    <h2 class="section-title-italic">Редакциски Хоризонт</h2>
+                    <h2 class="section-title-italic masthead-double-rule">Редакциски Хоризонт</h2>
                     <PulseLandscapeIsland client:visible data={pulseData} />
                 </section>
 
                 <section class="mb-16">
-                    <h2 class="section-title-italic">Тематски Корелации</h2>
+                    <h2 class="section-title-italic masthead-double-rule">Тематски Корелации</h2>
                     <KnowledgeGraphIsland client:load apiUrl={API_URL} />
                 </section>
             </div>
@@ -191,7 +191,7 @@ const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.
 
         {!error || pulseLeaders.length > 0 ? (
         <section class="mt-20">
-            <h2 class="section-title-italic mb-8">Ранг на редакции (24ч)</h2>
+            <h2 class="section-title-italic mb-8 masthead-double-rule">Ранг на редакции (24ч)</h2>
             <div class="broadsheet-table-wrapper">
                 <table class="broadsheet-table">
                     <thead>

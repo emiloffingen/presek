@@ -4,11 +4,12 @@ import { Sparkles, BrainCircuit, BarChart3, Users, BookOpen, Loader2, X, CheckCi
 interface ResearchIslandProps {
   clusterId: string;
   initialHeadline: string;
+  sources?: string[];
 }
 
 type ResearchMode = 'facts' | 'perspectives' | 'context';
 
-export default function ResearchIsland({ clusterId, initialHeadline }: ResearchIslandProps) {
+export default function ResearchIsland({ clusterId, initialHeadline, sources = [] }: ResearchIslandProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,17 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
     return lines.map((line, i) => {
       const trimmed = line.trim();
       
+      // Pull Quotes Detection
+      if ((trimmed.startsWith('„') && trimmed.endsWith('“')) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+          return (
+            <div key={i} className="my-12 py-8 border-y-2 border-double border-border text-center">
+                <blockquote className="font-serif italic text-2xl md:text-3xl text-foreground/90 leading-tight px-4">
+                    {parseBoldText(trimmed)}
+                </blockquote>
+            </div>
+          );
+      }
+
       // Headers
       if (trimmed.startsWith('#')) {
           return <h3 key={i} className="font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight">{parseBoldText(trimmed.replace(/^#+\s*/, ''))}</h3>;
@@ -150,6 +162,22 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
           <div className="p-5 md:p-8 relative">
              <div className="max-w-3xl">
                 {formatText(data.report)}
+
+                {sources.length > 0 && (
+                  <div className="mt-16 pt-8 border-t border-border/40">
+                    <p className="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
+                      РЕДАКЦИИ КОНСУЛТИРАНИ ЗА ОВАА СИНТЕЗА
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {[...new Set(sources)].map((s, idx, arr) => (
+                        <span key={s} className="font-sans text-[10px] font-extrabold text-foreground/70 uppercase tracking-wider flex items-center">
+                          {s}
+                          {idx < arr.length - 1 && <span className="ml-4 opacity-30 text-muted-foreground">•</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
              </div>
              
              <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 opacity-60">

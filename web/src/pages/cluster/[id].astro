@@ -473,7 +473,7 @@ const articleSchema = cluster ? {
 						</section>
 
 						{/* Deep Research */}
-						<ResearchIsland client:load clusterId={id || ''} initialHeadline={displayHeadline || ''} />
+						<ResearchIsland client:load clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={cluster.articles.map((a: any) => a.source)} />
 
 						{/* Storyline History */}
 						<StorylineHistoryIsland client:load clusterId={id || ''} apiUrl={API_URL} />
