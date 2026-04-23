@@ -49,6 +49,7 @@ from routes.system import (
     health, serve_sw, robots_txt, serve_manifest, proxy_image,
     get_cluster_share_card as og_cluster_image
 )
+from version import APP_VERSION
 
 # Dummy for missing og_image
 async def og_image():
@@ -58,7 +59,7 @@ log = logging.getLogger("presek")
 log.setLevel(logging.INFO)
 
 validate_required_env()
-app = FastAPI(title="Presek API 6.0", version="6.0.0")
+app = FastAPI(title=f"Presek API {APP_VERSION}", version=APP_VERSION)
 _start_time = datetime.datetime.now(datetime.timezone.utc)
 
 _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live").rstrip("/")

@@ -27,6 +27,7 @@ from health import _probe_database, _probe_redis
 from nlp import generate_local_placeholder
 from ai_engine import _call_ai_async
 from prompts import SYNTHESIS_SYSTEM_PROMPT
+from version import version_payload
 from .common import (
     _error_json, _resolve_public_ips, _peer_ip, 
     _preferred_cluster_headline, cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
@@ -35,6 +36,7 @@ from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
+_STARTED_AT = time.time()
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 
@@ -57,7 +59,13 @@ async def health(request: Request):
             probe.pop("error", None)
             probe.pop("config", None)
             
-    return {"status": "ok" if db_s["ok"] and rd_s["ok"] else "degraded", "database": db_s, "redis": rd_s}
+    return {
+        "status": "ok" if db_s["ok"] and rd_s["ok"] else "degraded",
+        **version_payload(),
+        "uptime_seconds": int(time.time() - _STARTED_AT),
+        "database": db_s,
+        "redis": rd_s,
+    }
 
 @router.get("/sw.js")
 async def serve_sw(): return FileResponse("sw.js", media_type="application/javascript")

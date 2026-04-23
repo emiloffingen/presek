@@ -11,12 +11,14 @@ const API_URL = apiBaseUrl();
 
 let briefing = null;
 let stats: any = null;
+let health: any = null;
 let error = null;
 
 try {
-    const [briefRes, statsRes] = await Promise.all([
+    const [briefRes, statsRes, healthRes] = await Promise.all([
         fetch(`${API_URL}/briefing`),
-        fetch(`${API_URL}/stats/summary`)
+        fetch(`${API_URL}/stats/summary`),
+        fetch(`${API_URL}/health`)
     ]);
     
     if (briefRes.ok) {
@@ -27,6 +29,9 @@ try {
     }
     if (statsRes.ok) {
         stats = await statsRes.json();
+    }
+    if (healthRes.ok) {
+        health = await healthRes.json();
     }
 } catch (e) {
     console.error("Fetch error:", e);
@@ -160,6 +165,7 @@ const subjectPreview = (briefing?.subjects || []).slice(0, 4);
 const sectionPreview = sectionHighlights.slice(0, 3);
 const totalSubjects = briefing?.subjects?.length || 0;
 const articleCount = stats?.total_articles || 0;
+const versionLabel = health?.version_label || health?.version || '4.2';
 const editionLabel = hour >= 5 && hour < 12 ? 'Утринско издание' : hour >= 12 && hour < 18 ? 'Пладневно издание' : 'Вечерно издание';
 const editionStandfirst = hour >= 5 && hour < 12
     ? 'Кондензиран утрински преглед на денот: што навистина се придвижи, кои актери ја носат тежината на приказната и каде вреди да се задржи вниманието пред остатокот од вестите да ве оттуркаат во шум.'
@@ -177,7 +183,7 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
 	        <div class="masthead-top">                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
                     <span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
-                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
+                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА {versionLabel}</span>
                 </div>
             </div>
 

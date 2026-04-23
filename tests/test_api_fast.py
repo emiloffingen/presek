@@ -238,6 +238,9 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
          patch("routes.system._probe_redis", return_value={"ok": False, "url": "secret"}):
         data = asyncio.run(api_fast.health(_FakeRequest()))
     assert "url" not in data["redis"]
+    assert data["version"] == "4.2.0"
+    assert data["version_label"] == "4.2"
+    assert isinstance(data["uptime_seconds"], int)
 
 
 def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
