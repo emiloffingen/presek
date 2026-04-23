@@ -587,6 +587,42 @@ async def get_cluster_detail(cluster_id: str):
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@router.get("/cluster/{cluster_id}/history")
+async def get_cluster_history(cluster_id: str):
+    """
+    Returns the historical versions of a cluster synthesis.
+    """
+    validate_cluster_id(cluster_id)
+    try:
+        rows = await db.async_execute("""
+            SELECT summary, generated_article, perspectives, verification_report, created_at 
+            FROM cluster_summary_history 
+            WHERE cluster_id = %s 
+            ORDER BY created_at DESC 
+            LIMIT 20
+        """, (cluster_id,))
+        
+        def _parse_maybe_json(val):
+            if not val: return None
+            if isinstance(val, (dict, list)): return val
+            try: return json.loads(val)
+            except Exception: return None
+
+        history = []
+        for r in rows:
+            history.append({
+                "summary": r["summary"],
+                "generated_article": r["generated_article"],
+                "perspectives": _parse_maybe_json(r["perspectives"]),
+                "verification_report": _parse_maybe_json(r["verification_report"]),
+                "created_at": r["created_at"]
+            })
+            
+        return {"status": "success", "history": history}
+    except Exception as e:
+        log.error(f"Cluster History Error: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"message": "Internal server error"})
+
 @router.get("/cluster/{cluster_id}/historical")
 async def get_historical_events(cluster_id: str):
     """

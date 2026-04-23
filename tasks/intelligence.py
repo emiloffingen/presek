@@ -353,6 +353,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             except Exception as ve:
                 log.warning(f"[tasks] Centroid calculation failed for {cluster_id}: {ve}")
 
+            # Archive current summary before updating (Evolution Log)
+            db.execute(
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, verification_report, created_at)
+                   SELECT cluster_id, summary, perspectives, generated_article, verification_report, created_at 
+                   FROM cluster_summaries WHERE cluster_id = %s""",
+                (cluster_id,), fetch=False
+            )
+
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote, centroid)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)

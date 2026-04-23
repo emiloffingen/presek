@@ -405,6 +405,18 @@ class DatabaseManager:
                     sentiment JSONB DEFAULT '{}',
                     created_at TIMESTAMP
                 )""")
+                
+                # History table for evolution log
+                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summary_history (
+                    id SERIAL PRIMARY KEY,
+                    cluster_id TEXT NOT NULL,
+                    summary TEXT,
+                    generated_article TEXT,
+                    perspectives JSONB DEFAULT '[]',
+                    verification_report JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )""")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_summary_history_cid ON cluster_summary_history(cluster_id)")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS generated_article TEXT")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB")

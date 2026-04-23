@@ -179,3 +179,13 @@ export function getEditionStr(dateInput: any): string {
     if (hour >= 12 && hour < 18) return 'ПЛАДНЕВНО ИЗДАНИЕ';
     return 'ВЕЧЕРНО ИЗДАНИЕ';
 }
+
+/**
+ * Converts [1], [2] citations into superscript links.
+ */
+export function parseFootnotes(text: string): string {
+    if (!text) return '';
+    return text.replace(/\[(\d+)\]/g, (match, num) => {
+        return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="Извор ${num}">${num}</sup>`;
+    });
+}

@@ -9,11 +9,12 @@ import PreferenceToggle from '../../components/PreferenceToggle.tsx';
 import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
+import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import AdUnit from '../../components/AdUnit.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes } from '../../utils/textUtils';
 
 function getRelativeTimeStr(dateStr: string) {
     if (!dateStr) return '';
@@ -135,6 +136,22 @@ const sentimentData = cluster?.sentiment ? {
     tone_analysis: cluster.sentiment.tone_analysis || { sensationalism: 0, objectivity: 0, emotional_charge: 0 }
 } : null;
 
+// --- Momentum Kicker Logic ---
+const conflictsCount = verificationReport?.conflicts?.length || 0;
+const totalSourcesCount = cluster?.articles?.length || 0;
+const isBreakingFlag = cluster?.articles?.some(a => a.is_breaking) || false;
+
+let momentumKicker = { label: 'УРЕДНИЧКИ ПРЕГЛЕД', color: 'text-muted-foreground' };
+if (isBreakingFlag && totalSourcesCount >= 4) {
+    momentumKicker = { label: 'УДАРЕН РАЗВОЈ', color: 'text-nyt-red' };
+} else if (conflictsCount >= 3) {
+    momentumKicker = { label: 'ПРОТИВРЕЧЕН РАЗВОЈ', color: 'text-amber-600' };
+} else if (totalSourcesCount >= 6) {
+    momentumKicker = { label: 'ЗАСИЛЕН ИНТЕРЕС', color: 'text-emerald-700 dark:text-emerald-500' };
+} else if (totalSourcesCount >= 2 && !synthesisFreshness.is_stale) {
+    momentumKicker = { label: 'ДЕФИНИТИВЕН ПРЕГЛЕД', color: 'text-blue-700 dark:text-blue-500' };
+}
+
 // --- SEO & Schema ---
 const ogImageUrl = id ? `/og/cluster/${id}.svg` : null;
 const articleSchema = cluster ? {
@@ -199,7 +216,8 @@ const articleSchema = cluster ? {
 					<div class="cluster-header-grid">
 						<div class="cluster-header-content">
 							<div class="cluster-header-meta mb-6">
-								<span class="nyt-section-label text-nyt-red mr-4">{cluster.articles?.[0].category || 'ВЕСТИ'}</span>
+								<span class:list={["font-black uppercase tracking-[0.2em] text-[10px] mr-4", momentumKicker.color]}>{momentumKicker.label}</span>
+								<span class="nyt-section-label text-foreground/40 mr-4">{cluster.articles?.[0].category || 'ВЕСТИ'}</span>
 								<span class="cluster-time-meta inline-flex items-center gap-1">
 									<Clock size={12} />
 									{getRelativeTimeStr(cluster.articles?.[0].created_at)}
@@ -321,13 +339,37 @@ const articleSchema = cluster ? {
 									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ВОДЕЧКА СТОРИЈА</h2>
 								</div>
 								<div class="prose-nyt prose-nyt-columns text-xl leading-relaxed text-foreground font-serif">
+										{/* Editorial Margin Note (Desktop only) */}
+										{cluster.tags && cluster.tags.length > 0 && (
+											<div class="editorial-margin-note hidden lg:block">
+												<span class="editorial-margin-label">Клучни актери</span>
+												<p class="editorial-margin-content">{cluster.tags.slice(0, 3).join(', ')}</p>
+											</div>
+										)}
 										{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
-										<p class:list={["mb-6 last:mb-0", idx === 0 ? "drop-cap" : ""]}>
-											{paragraph}
+										<p class:list={["mb-6 last:mb-0", idx === 0 ? "drop-cap" : ""]} set:html={parseFootnotes(paragraph)}>
 										</p>
 									))}
 								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
+
+								{/* Footnote Bibliography */}
+								<div class="mt-8 mb-12 bg-secondary/10 p-6 border-l-2 border-nyt-accent">
+									<p class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">БЕЛЕШКИ ЗА ИЗВОРИТЕ</p>
+									<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+										{cluster.articles.slice(0, 8).map((art: any, idx: number) => (
+											<div class="flex gap-2 items-start group">
+												<span class="text-[10px] font-black text-nyt-accent mt-0.5">[{idx + 1}]</span>
+												<div class="flex-1 min-w-0">
+													<p class="text-[10px] font-black uppercase tracking-tight text-foreground/60 leading-none mb-1">{art.source}</p>
+													<a href={art.link} target="_blank" class="text-[10px] font-serif font-bold text-foreground leading-tight hover:text-nyt-accent line-clamp-2 underline decoration-border group-hover:decoration-nyt-accent">
+														{cleanAndDecode(art.title)}
+													</a>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
 							</section>
 						) : (cluster.has_synthesis || generatedArticle) && (
 							<section class="cluster-synthesis">
@@ -342,13 +384,26 @@ const articleSchema = cluster ? {
 												<span class="text-nyt-accent font-black mt-1">●</span>
 												<span>
 													{item.source && <strong class="nyt-section-label text-[10px] mr-2 text-nyt-accent">[{item.source}]</strong>}
-													<span set:html={sanitizeHtml(item.content)}></span>
+													<span set:html={parseFootnotes(sanitizeHtml(item.content))}></span>
 												</span>
 											</li>
 										))}
 									</ul>
 								</div>
 								<div class="h-px bg-nyt-gray-300 my-10" />
+
+								{/* Secondary Bibliography for bullets-only view */}
+								<div class="mt-8 mb-12 bg-secondary/5 p-6 border-l-2 border-border/40">
+									<p class="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">БЕЛЕШКИ ЗА ИЗВОРИТЕ</p>
+									<div class="flex flex-wrap gap-x-6 gap-y-3">
+										{cluster.articles.slice(0, 8).map((art: any, idx: number) => (
+											<div class="flex gap-2 items-center">
+												<span class="text-[9px] font-black text-muted-foreground mt-0.5">[{idx + 1}]</span>
+												<span class="text-[9px] font-black uppercase tracking-tight text-foreground/60">{art.source}</span>
+											</div>
+										))}
+									</div>
+								</div>
 							</section>
 						)}
 
@@ -497,6 +552,9 @@ const articleSchema = cluster ? {
 
 						{/* Storyline History */}
 						<StorylineHistoryIsland client:load clusterId={id || ''} apiUrl={API_URL} />
+
+						{/* Synthesis Evolution Log */}
+						<ClusterHistoryIsland client:visible clusterId={id || ''} />
 					</div>
 
 					<aside class="cluster-sidebar">

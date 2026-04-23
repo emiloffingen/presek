@@ -1404,6 +1404,42 @@ button:active,
         column-rule: 1px solid var(--border);
         text-align: justify;
         hyphens: auto;
+        position: relative;
+    }
+
+    .editorial-margin-note {
+        position: absolute;
+        left: -14rem;
+        width: 12rem;
+        text-align: right;
+        padding-top: 0.5rem;
+        opacity: 0;
+        transform: translateX(10px);
+        transition: all 0.6s var(--ease-editorial);
+    }
+    
+    .prose-nyt-columns:hover .editorial-margin-note {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .editorial-margin-label {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--nyt-accent);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .editorial-margin-content {
+        font-family: var(--font-serif);
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.4;
+        color: var(--muted-foreground);
     }
 }
 
