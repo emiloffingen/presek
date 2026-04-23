@@ -21,9 +21,16 @@ def lemmatize_mk(word: str) -> str:
     if len(w) <= 3: return w
     if w in _MK_IRREGULAR_LEMMAS: return _MK_IRREGULAR_LEMMAS[w]
     
-    # Strip common adjective suffixes to get to the root/noun form
-    w = re.sub(r"(скиот|ската|ското|ските|ски)$", "", w)
+    # Selective suffix stripping (adjectives -> nouns where clear)
+    # Don't strip if it looks like a known name stem we want to keep
+    if not any(w.startswith(p) for p in ["македон", "мицкос"]):
+        # Strip common adjective suffixes to get to the root/noun form
+        # But only if it leaves a reasonable word behind
+        if len(w) > 6:
+            w = re.sub(r"(скиот|ската|ското|ските|ски)$", "", w)
     
+    if len(w) <= 3: return w
+
     for rx, repl in _MK_PLURAL_SUFFIXES[:7]:
         if rx.search(w):
             w = rx.sub(repl, w)
