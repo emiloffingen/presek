@@ -64,7 +64,6 @@ DEFAULT_SOURCE_CATALOG = [
     ("Kanal77", "https://kanal77.mk/feed/"),
     ("Glas", "https://glas.mk/feed/"),
     ("Vistina", "https://vistina.mk/feed/"),
-    ("Almakos", "https://almakos.com/feed/"),
     ("Vesnik", "https://vesnik.com/feed/"),
     ("Sloboden Svet", "https://slobodensvet.com.mk/feed/"),
     ("BiznisInfo", "https://biznisinfo.mk/feed/"),

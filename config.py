@@ -90,7 +90,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Reporter", "Off.net.mk", "Denesen", "24info",
     "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
     "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
-    "Almakos", "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
+    "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
     "PopUp", "Kultura.mk", "Reper",
 })
 
@@ -114,7 +114,7 @@ SOURCE_CREDIBILITY = {
     "Reporter": 1.0, "Off.net.mk": 1.0, "Denesen": 0.9,
     "24info": 0.9, "Vreme": 0.9, "Frontline": 0.9, "Nacional": 0.8,
     "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
-    "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8, "Almakos": 0.9,
+    "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
     "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1,
 }
