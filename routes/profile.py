@@ -18,6 +18,8 @@ from .security import validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
+
 
 async def _prune_recent_clusters(items):
     recent = _normalize_recent_clusters(items)
@@ -208,12 +210,12 @@ async def get_personalized_news_sync(request: Request):
 
     # 2. Semantic Search for similar news in last 72 hours (expanded window)
     # Exclude already seen clusters
-    rows = await db.async_execute("""
+    rows = await db.async_execute(f"""
         WITH pool AS (
-            SELECT cluster_id, title, source, created_at, category, topic, is_global, is_fact_check,
+            SELECT cluster_id, title, source, created_at, ingested_at, category, topic, is_global, is_fact_check,
                    (1 - (embedding <=> %s::vector)) as similarity
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '72 hours'
+            WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '72 hours'
               AND cluster_id NOT IN (SELECT unnest(%s::text[]))
               AND embedding IS NOT NULL
         )
@@ -237,7 +239,10 @@ async def get_personalized_news_sync(request: Request):
     if not cids:
         return {"status": "success", "results": []}
 
-    all_articles = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,))
+    all_articles = await db.async_execute(
+        f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",
+        (cids,),
+    )
     meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))
     synthesis_ids = set(await db.async_get_synthesis_ids(cids))
     

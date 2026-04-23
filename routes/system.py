@@ -36,6 +36,8 @@ from .security import validate_cluster_id, validate_string_param
 log = logging.getLogger("presek")
 router = APIRouter()
 
+_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
+
 _APP_ROOT = Path(__file__).resolve().parent.parent
 _STATIC_ROOT = _APP_ROOT / "static"
 _WMO_ICON = {0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌦️", 55: "🌦️", 61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️", 80: "🌦️", 81: "🌦️", 82: "🌦️", 85: "❄️", 86: "❄️", 95: "⛈️", 96: "⛈️", 99: "⛈️"}
@@ -137,10 +139,10 @@ async def get_navigation():
     """)
     
     # Subcategory still needs articles table but it's narrow
-    sub_activity = await db.async_execute("""
+    sub_activity = await db.async_execute(f"""
         SELECT subcategory, COUNT(DISTINCT cluster_id) as n
         FROM articles 
-        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'
           AND subcategory IS NOT NULL AND subcategory != ''
         GROUP BY subcategory
     """)

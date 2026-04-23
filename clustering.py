@@ -84,6 +84,13 @@ def _title_phrase_overlap(left: str, right: str) -> float:
     union = len(left_set | right_set) or 1
     return len(left_set & right_set) / union
 
+
+# Backward-compatible alias used by the ingestion worker. The helper was
+# renamed during clustering cleanup, but the worker still imports the old
+# symbol name.
+def _cluster_title_overlap(left: str, right: str) -> float:
+    return _title_phrase_overlap(left, right)
+
 def _temporal_decay(created_at) -> float:
     """Stronger decay for older news to prevent clusters spanning weeks."""
     if not created_at: return 1.0

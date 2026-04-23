@@ -87,12 +87,14 @@ class TestAstroFrontendIntegrity:
         ingestion = _read("ingestion.py")
         stats = _read("routes/stats.py")
         homepage = _read("routes/home.py")
+        clustering = _read("clustering.py")
 
         assert "ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP" in schema
         assert "UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL" in schema
         assert "\"ingested_at\": cycle_now" in ingestion
         assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in stats
         assert "_article_freshness_time(article)" in homepage
+        assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
 
     def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
         home_route = _read("routes/home.py")
@@ -107,9 +109,13 @@ class TestAstroFrontendIntegrity:
 
     def test_homepage_cards_render_ingestion_aware_time(self):
         homepage = _read("web/src/components/NewsCard.astro")
+        interactive_card = _read("web/src/components/NewsCard.tsx")
+        live_updates = _read("web/src/components/HomeLiveUpdatesIsland.tsx")
         lead = _read("web/src/components/home/LeadHero.astro")
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
+        assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
+        assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
@@ -131,7 +137,7 @@ class TestAstroFrontendIntegrity:
         assert 'error = "Медиумскиот пулс моментално не е достапен."' in pulse
         assert "const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));" in pulse
         assert "const cleanCategoryData = (categoryData || []).filter" in pulse
-        assert 'freshness_expr = "COALESCE(ingested_at, created_at)"' in intelligence
+        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
         assert "WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'" in intelligence
         assert "category IS NOT NULL" in intelligence
         assert "category != ''" in intelligence
@@ -139,6 +145,7 @@ class TestAstroFrontendIntegrity:
     def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(self):
         for_you_page = _read("web/src/pages/for-you.astro")
         for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
+        profile_route = _read("routes/profile.py")
 
         assert "let initialError: string | null = null;" in for_you_page
         assert 'initialError = "Не можеме да ги вчитаме почетните препораки во моментов."' in for_you_page
@@ -146,6 +153,23 @@ class TestAstroFrontendIntegrity:
         assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
         assert "}, [profile]);" in for_you_island
         assert "const pageError = semanticError || initialError;" in for_you_island
+        assert "COALESCE(ingested_at, created_at)" in profile_route
+        assert 'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"' in profile_route
+
+    def test_secondary_intelligence_and_stats_surfaces_use_ingestion_aware_freshness(self):
+        intelligence = _read("routes/intelligence.py")
+        stats = _read("routes/stats.py")
+        system = _read("routes/system.py")
+
+        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source" in intelligence
+        assert "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
+        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats
+        assert "ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC" in stats
+        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in system
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in system
 
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage = _read("web/src/pages/index.astro")

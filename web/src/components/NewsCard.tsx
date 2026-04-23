@@ -170,7 +170,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         )}
 
         <div className="footer-meta">
-          <span>{getTimeStr(main.created_at)}</span>
+          <span>{getTimeStr(main.ingested_at || main.created_at)}</span>
           <span className="dot">·</span>
           <span>{cluster.articles.length} извора</span>
         </div>
