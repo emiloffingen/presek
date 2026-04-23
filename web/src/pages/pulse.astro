@@ -87,7 +87,7 @@ const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.
         {globalPulse && (
             <div class="pulse-stats-grid mb-16">
                 <div class="pulse-card">
-                    <p class="card-label"><Activity size={12}/> ОБЕМ (24ч)</p>
+                    <p class="card-label"><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
                     <p class="card-value">{globalPulse.last_24h.toLocaleString()}</p>
                     <div class="card-sparkline">
                         {velocityData.slice(-12).map((v: any) => {
@@ -99,7 +99,7 @@ const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.
                 </div>
 
                 <div class="pulse-card">
-                    <p class="card-label"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
+                    <p class="card-label"><ShieldCheck size={12}/> ДИВЕРЗИТЕТ НА СТАВОВИ</p>
                     <p class="card-value">{intelligence.pluralism?.pluralism_pct || 0}%</p>
                     <p class="card-note">{intelligence.pluralism?.high_consensus_pct}% висок консензус</p>
                 </div>

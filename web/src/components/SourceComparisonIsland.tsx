@@ -78,7 +78,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
   return (
     <section className="rail-module border border-border p-8 rounded-xl bg-card">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-serif text-2xl font-black italic">Споредба на медиуми</h2>
+        <h2 className="font-serif text-2xl font-black italic">Споредба на редакции</h2>
         <ArrowLeftRight size={20} className="text-nyt-accent" />
       </div>
 
@@ -104,7 +104,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
       ) : m1 && m2 ? (
         <div className="space-y-8">
           {renderMetric("Индекс на Објективност", m1.avg_objectivity, m2.avg_objectivity)}
-          {renderMetric("Сензационализам (Clickbait)", m1.avg_sensationalism, m2.avg_sensationalism, true)}
+          {renderMetric("Сензационализам", m1.avg_sensationalism, m2.avg_sensationalism, true)}
           
           {overlap && (
             <div className="space-y-3 pt-4">
@@ -158,7 +158,7 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
         </div>
       ) : (
         <div className="py-12 text-center text-muted-foreground italic font-serif">
-          Изберете два медиуми за да ја започнете анализата.
+          Изберете две редакции за детална анализа на нивниот уреднички пристап.
         </div>
       )}
     </section>

@@ -25,7 +25,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
         setError(result.message || 'Грешка при анализата.');
       }
     } catch (e) {
-      setError('Системот моментално не е достапен.');
+      setError('Аналитичкиот центар е привремено недостапен.');
     } finally {
       setLoading(null);
     }
@@ -156,7 +156,7 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">
-                        АЛГОРИТАМСКИ СЛОЈ
+                        СИСТЕМСКА ВЕРИФИКАЦИЈА
                     </span>
                 </div>
              </div>
