@@ -292,10 +292,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             res = clean_json_response(raw)
             summary = res.get('summary', '') if isinstance(res, dict) else res
             generated_article = res.get('article', '') if isinstance(res, dict) else ''
+            synthetic_headline = res.get('synthetic_headline', '') if isinstance(res, dict) else ''
+            synthetic_standfirst = res.get('synthetic_standfirst', '') if isinstance(res, dict) else ''
             
             # Sanitize for name hallucinations
             summary = validate_person_names(summary)
             generated_article = validate_person_names(generated_article)
+            synthetic_headline = validate_person_names(synthetic_headline)
+            synthetic_standfirst = validate_person_names(synthetic_standfirst)
 
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
             quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
@@ -355,25 +359,27 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
             # Archive current summary before updating (Evolution Log)
             db.execute(
-                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, verification_report, created_at)
-                   SELECT cluster_id, summary, perspectives, generated_article, verification_report, created_at 
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, created_at)
+                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, created_at 
                    FROM cluster_summaries WHERE cluster_id = %s""",
                 (cluster_id,), fetch=False
             )
 
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report, quote, centroid)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, quote, centroid)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                        summary = EXCLUDED.summary, 
                        perspectives = EXCLUDED.perspectives, 
                        generated_article = EXCLUDED.generated_article, 
+                       synthetic_headline = EXCLUDED.synthetic_headline,
+                       synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at, 
                        sentiment = EXCLUDED.sentiment, 
                        verification_report = EXCLUDED.verification_report, 
                        quote = EXCLUDED.quote,
                        centroid = EXCLUDED.centroid""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid),
+                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid),
                 fetch=False
             )
 
@@ -433,15 +439,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         )
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, created_at, sentiment, verification_report)
-                   VALUES (%s, %s, %s, %s, %s, %s, NULL)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
                        generated_article = EXCLUDED.generated_article,
+                       synthetic_headline = EXCLUDED.synthetic_headline,
+                       synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment""",
-                (cluster_id, summary, json.dumps(perspectives), "", datetime.datetime.now(), json.dumps(sentiment_data)),
+                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)

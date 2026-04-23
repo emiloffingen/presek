@@ -29,7 +29,7 @@ const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
 
-const displayTitle = highlightScores(getDisplayTitle(main));
+const displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
@@ -55,7 +55,7 @@ function getCardSummary(article: Article, lead = false) {
 	return highlightScores(truncated);
 }
 
-const displaySummary = getCardSummary(main, isLead);
+const displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 const hasSynthesis = cluster.has_synthesis;

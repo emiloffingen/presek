@@ -65,13 +65,14 @@ class TestSynthesizeClusterTaskQuality:
              patch("tasks.utils.record_task_event"), \
              patch("embeddings.get_cluster_embedding", return_value=None):
             # Call 1: _load_cluster_articles_for_synthesis
-            # Call 2: INSERT INTO cluster_summaries
-            mock_db.execute.side_effect = [article_rows, None]
+            # Call 2: Archive history
+            # Call 3: INSERT INTO cluster_summaries
+            mock_db.execute.side_effect = [article_rows, None, None]
             mock_db.execute_one.return_value = {"dummy": 1}
 
             tasks.synthesize_cluster_task("cluster-1", "content")
 
-        insert_call = mock_db.execute.call_args_list[1]
+        insert_call = mock_db.execute.call_args_list[2]
         stored_summary = insert_call.args[1][1]
         stored_perspectives = json.loads(insert_call.args[1][2])
 
@@ -193,6 +194,7 @@ class TestDailyBriefTaskQuality:
             "### 1. Наслов\n- Што е новото: Факт.\n- Зошто е важно: Контекст.\n"
             "## Каде се разликува известувањето\n• Разлика.\n"
             "## Што да се следи понатаму\n• Следен чекор.\n"
+            "## Подетално за главните теми\n"
         )
 
         assert tasks.delivery._has_valid_daily_brief_structure(malformed) is False

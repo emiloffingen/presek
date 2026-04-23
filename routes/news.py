@@ -490,11 +490,13 @@ async def get_cluster_detail(cluster_id: str):
         public_articles = [_public_article_payload(article) for article in articles]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}'")
-        s_row = await db.async_execute_one("SELECT summary, generated_article, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
+        s_row = await db.async_execute_one("SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
         log.debug(f"[debug] s_row found: {bool(s_row)}")
         
         synthesis = s_row["summary"] if s_row else None
         generated_article = s_row["generated_article"] if s_row else None
+        synthetic_headline = s_row["synthetic_headline"] if s_row else None
+        synthetic_standfirst = s_row["synthetic_standfirst"] if s_row else None
         
         def _parse_maybe_json(val):
             if not val: return None
@@ -577,7 +579,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
         set_cache(cache_key, response, ttl=120)
         return response
 
@@ -595,7 +597,7 @@ async def get_cluster_history(cluster_id: str):
     validate_cluster_id(cluster_id)
     try:
         rows = await db.async_execute("""
-            SELECT summary, generated_article, perspectives, verification_report, created_at 
+            SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, verification_report, created_at 
             FROM cluster_summary_history 
             WHERE cluster_id = %s 
             ORDER BY created_at DESC 
@@ -613,6 +615,8 @@ async def get_cluster_history(cluster_id: str):
             history.append({
                 "summary": r["summary"],
                 "generated_article": r["generated_article"],
+                "synthetic_headline": r["synthetic_headline"],
+                "synthetic_standfirst": r["synthetic_standfirst"],
                 "perspectives": _parse_maybe_json(r["perspectives"]),
                 "verification_report": _parse_maybe_json(r["verification_report"]),
                 "created_at": r["created_at"]

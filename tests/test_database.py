@@ -161,3 +161,23 @@ class TestSchemaMigrations:
         statements = [call.args[0] for call in mock_cur.execute.call_args_list]
         assert any("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE" in sql for sql in statements)
         assert any("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS topics TEXT[]" in sql for sql in statements)
+
+    def test_init_schema_adds_synthetic_headline_and_standfirst(self):
+        from database import DatabaseManager
+
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+
+        manager = DatabaseManager.__new__(DatabaseManager)
+        manager.get_conn = MagicMock(return_value=mock_conn)
+        manager.put_conn = MagicMock()
+
+        manager.init_schema()
+
+        statements = [call.args[0] for call in mock_cur.execute.call_args_list]
+        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_headline TEXT" in sql for sql in statements)
+        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT" in sql for sql in statements)
+        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_headline TEXT" in sql for sql in statements)
+        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT" in sql for sql in statements)

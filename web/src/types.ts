@@ -40,6 +40,8 @@ export interface NewsCluster {
   articles: Article[];
   representative_image: string | null;
   dominant_color?: string | null;
+  synthetic_headline?: string | null;
+  synthetic_standfirst?: string | null;
   score: number;
   is_breaking: boolean;
   has_synthesis: boolean;
@@ -57,6 +59,8 @@ export interface NewsCluster {
 export interface ClusterDetail extends NewsCluster {
   synthesis: string;
   generated_article?: string;
+  synthetic_headline?: string | null;
+  synthetic_standfirst?: string | null;
   perspectives: ClusterSummary[];
   sentiment?: any;
   verification_report?: any;
