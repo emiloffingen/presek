@@ -171,6 +171,12 @@ function getTimeStr(dateStr: string) {
 			</h2>
 		</a>
 
+		{hasSynthesis && (
+			<span class="editorial-byline">
+				Од уредничкиот тим на Пресек
+			</span>
+		)}
+
 		{!isLead && variant === 'compact' ? null : (
 			<div class="card-content-stack">
 				<p class="why-it-matters">

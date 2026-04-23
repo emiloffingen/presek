@@ -1367,9 +1367,9 @@ button:active,
 .drop-cap::first-letter {
     font-family: var(--font-serif);
     float: left;
-    font-size: 4.8rem;
+    font-size: 3.5rem;
     line-height: 0.85;
-    padding-top: 0.1rem;
+    padding-top: 0.45rem;
     padding-right: 0.65rem;
     padding-left: 0.1rem;
     font-weight: 900;
@@ -1378,6 +1378,22 @@ button:active,
 
 .dark .drop-cap::first-letter {
     color: var(--foreground);
+}
+
+.masthead-double-rule {
+    border-top: 4px double var(--foreground);
+    padding-top: 1.5rem;
+}
+
+.editorial-byline {
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--foreground);
+    margin-bottom: 0.75rem;
+    display: block;
 }
 
 @media (min-width: 960px) {

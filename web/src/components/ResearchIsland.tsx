@@ -66,9 +66,12 @@ export default function ResearchIsland({ clusterId, initialHeadline }: ResearchI
       // First paragraph (Drop Cap style)
       if (i === 0) {
           return (
-            <p key={i} className="mb-8 text-xl md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-6 py-2 bg-secondary/5 rounded-r-lg">
-                {parseBoldText(trimmed)}
-            </p>
+            <div key={i} className="mb-10">
+                <span className="editorial-byline">Од уредничкиот тим на Пресек</span>
+                <p className="mb-8 text-xl md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
+                    {parseBoldText(trimmed)}
+                </p>
+            </div>
           );
       }
 

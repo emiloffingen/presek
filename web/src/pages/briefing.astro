@@ -133,7 +133,8 @@ function formatBriefing(content: string) {
         flushList();
         let rendered = renderBriefingLine(line);
         if (!firstParagraphFound && !line.startsWith('#') && !line.startsWith('**') && stripped.length > 50) {
-            rendered = rendered.replace('briefing-paragraph', 'briefing-paragraph first-paragraph');
+            rendered = rendered.replace('briefing-paragraph', 'briefing-paragraph drop-cap');
+            rendered = `<span class="editorial-byline">Од уредничкиот тим на Пресек</span>\n${rendered}`;
             firstParagraphFound = true;
         }
         out.push(rendered);
@@ -172,9 +173,8 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     <NYTHeader stats={stats} />
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
-        <header class="editorial-masthead motion-rise">
-            <div class="masthead-top">
-                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
+	    <header class="editorial-masthead motion-rise masthead-double-rule">
+	        <div class="masthead-top">                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
                     <span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
                     <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
@@ -399,7 +399,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     :global(.briefing-item-title a:hover span) { opacity: 1; }
     
     :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.82; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
-    :global(.first-paragraph::first-letter) { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
     
     :global(.briefing-list) { list-style: none; padding: 0; margin-bottom: 2rem; }
     :global(.briefing-li) { font-family: var(--font-nyt-body); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }

@@ -44,19 +44,23 @@ export default function SourceComparisonIsland({ allSources }: { allSources: str
   useEffect(() => {
     fetchData();
   }, [s1, s2]);
+const renderMetric = (label: string, val1: number, val2: number, inverse = false) => {
+  const p1 = Math.round(val1 * 100);
+  const p2 = Math.round(val2 * 100);
 
-  const renderMetric = (label: string, val1: number, val2: number, inverse = false) => {
-    const p1 = Math.round(val1 * 100);
-    const p2 = Math.round(val2 * 100);
-    
-    // For inverse (sensationalism), lower is better/accented
-    const isWinner1 = inverse ? p1 < p2 : p1 > p2;
-    const isWinner2 = inverse ? p2 < p1 : p2 > p1;
+  const tooltip = label === "Индекс на Објективност" 
+      ? "Мерка за непристрасност и присуство на фактички верификувани изјави."
+      : "Ниво на емотивен набој и употреба на реторика за привлекување внимание.";
 
-    return (
-      <div className="space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">{label}</p>
-        <div className="flex items-center gap-4">
+  // For inverse (sensationalism), lower is better/accented
+  const isWinner1 = inverse ? p1 < p2 : p1 > p2;
+  const isWinner2 = inverse ? p2 < p1 : p2 > p1;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center" title={tooltip}>{label}</p>
+      <div className="flex items-center gap-4">
+...
           <div className="flex-1 text-right">
             <span className={`font-serif font-black text-xl ${isWinner1 ? 'text-nyt-accent' : 'text-foreground/60'}`}>{p1}%</span>
           </div>
