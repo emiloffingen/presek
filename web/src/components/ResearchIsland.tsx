@@ -147,14 +147,30 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
 
       {data && (
         <div className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise">
-          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-5 py-4 md:px-6 flex items-center justify-between gap-4">
+          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-5 py-4 md:px-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
                 {modes.find(m => m.id === data.mode)?.label}
               </span>
             </div>
-            <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors">
+
+            {/* Complexity Meter */}
+            <div className="flex items-center gap-2 py-1 px-3 bg-background/50 rounded border border-nyt-accent/10">
+                <span className="text-[8px] font-black uppercase tracking-wider text-muted-foreground">Комплексност:</span>
+                <div className="flex gap-1">
+                    {[1, 2, 3].map((step) => {
+                        const content = data.report.toLowerCase();
+                        const level = (content.includes('разлики') || content.includes('контрадикторни')) ? 3 : 
+                                      (content.includes('дел од изворите') || content.includes('нејасно')) ? 2 : 1;
+                        const isActive = step <= level;
+                        const color = level === 3 ? 'bg-nyt-red' : level === 2 ? 'bg-amber-500' : 'bg-emerald-600';
+                        return <div key={step} className={`w-3 h-1 rounded-full transition-colors ${isActive ? color : 'bg-border'}`} />
+                    })}
+                </div>
+            </div>
+
+            <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">
                 <X size={20} />
             </button>
           </div>

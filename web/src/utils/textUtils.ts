@@ -157,3 +157,25 @@ export function highlightScores(text: string): string {
         return match;
     });
 }
+
+/**
+ * Returns a formal edition label based on the time of day.
+ */
+export function getEditionStr(dateInput: any): string {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    // If it's very fresh, it's an Extra Edition
+    if (diffMins >= 0 && diffMins < 45) {
+        return 'ВОНРЕДНО ИЗДАНИЕ';
+    }
+
+    const hour = date.getHours();
+    
+    if (hour >= 5 && hour < 12) return 'УТРИНСКО ИЗДАНИЕ';
+    if (hour >= 12 && hour < 18) return 'ПЛАДНЕВНО ИЗДАНИЕ';
+    return 'ВЕЧЕРНО ИЗДАНИЕ';
+}

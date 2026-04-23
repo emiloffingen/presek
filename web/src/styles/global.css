@@ -1396,6 +1396,22 @@ button:active,
     display: block;
 }
 
+/* Broadsheet Columnar Flow */
+@media (min-width: 1024px) {
+    .prose-nyt-columns {
+        column-count: 2;
+        column-gap: 3.5rem;
+        column-rule: 1px solid var(--border);
+        text-align: justify;
+        hyphens: auto;
+    }
+}
+
+/* Typographic Authority: Old-Style Figures */
+.font-serif {
+    font-variant-numeric: oldstyle-nums;
+}
+
 @media (min-width: 960px) {
     .editorial-page-grid {
         grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.92fr);

@@ -3,6 +3,7 @@ import SearchIsland from './SearchIsland';
 import ThemeIsland from './ThemeIsland';
 import { Sparkles, BarChart3, Radio, ShieldCheck } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { getEditionStr } from '../utils/textUtils';
 
 interface Props {
     category?: string | null;
@@ -19,6 +20,8 @@ const currentDate = new Intl.DateTimeFormat('mk-MK', {
     day: 'numeric',
     timeZone: 'Europe/Skopje'
 }).format(new Date());
+
+const currentEdition = getEditionStr(new Date());
 
 const API_URL = apiBaseUrl();
 
@@ -133,7 +136,13 @@ function getRelativeTimeStr(dateStr?: string) {
                 <div class="search-entry">
                     <SearchIsland initialQuery={q} client:idle />
                 </div>
-                <time class="topbar-date-display">{currentDate}</time>
+                <div class="flex items-center gap-3">
+                    <time class="topbar-date-display">{currentDate}</time>
+                    <span class="h-1 w-1 bg-border rounded-full hidden sm:block"></span>
+                    <span class="text-[0.52rem] font-black uppercase tracking-[0.1em] text-nyt-accent hidden sm:block">
+                        {currentEdition}
+                    </span>
+                </div>
             </div>
 
             <div class="topbar-branding">

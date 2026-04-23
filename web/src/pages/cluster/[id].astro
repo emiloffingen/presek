@@ -13,7 +13,7 @@ import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import AdUnit from '../../components/AdUnit.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr } from '../../utils/textUtils';
 
 function getRelativeTimeStr(dateStr: string) {
     if (!dateStr) return '';
@@ -203,6 +203,10 @@ const articleSchema = cluster ? {
 								<span class="cluster-time-meta inline-flex items-center gap-1">
 									<Clock size={12} />
 									{getRelativeTimeStr(cluster.articles?.[0].created_at)}
+									<span class="mx-1 opacity-30">·</span>
+									<span class="font-black uppercase tracking-widest text-[10px] text-nyt-accent">
+										{getEditionStr(cluster.articles?.[0].created_at)}
+									</span>
 								</span>
 							</div>
 
@@ -316,7 +320,7 @@ const articleSchema = cluster ? {
 									<Sparkles size={18} className="text-nyt-accent" />
 									<h2 class="nyt-section-label text-nyt-accent tracking-[0.2em]">ВОДЕЧКА СТОРИЈА</h2>
 								</div>
-								<div class="prose-nyt text-xl leading-relaxed text-foreground font-serif">
+								<div class="prose-nyt prose-nyt-columns text-xl leading-relaxed text-foreground font-serif">
 										{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
 										<p class:list={["mb-6 last:mb-0", idx === 0 ? "drop-cap" : ""]}>
 											{paragraph}
@@ -388,9 +392,25 @@ const articleSchema = cluster ? {
 						{/* Media Comparison / Fact Check */}
 						{verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0) && (
 							<section class="cluster-module cluster-factcheck">
-								<div class="cluster-module-head">
-									<Newspaper size={18} className="text-foreground" />
-									<h2 class="nyt-section-label tracking-[0.2em]">МЕДИУМСКА СПОРЕДБА</h2>
+								<div class="cluster-module-head flex-col sm:flex-row sm:items-center justify-between gap-4">
+									<div class="flex items-center gap-2">
+										<Newspaper size={18} className="text-foreground" />
+										<h2 class="nyt-section-label tracking-[0.2em]">МЕДИУМСКА СПОРЕДБА</h2>
+									</div>
+									
+									{/* Verification Complexity Meter */}
+									<div class="flex items-center gap-3 py-1.5 px-3 bg-secondary/30 rounded border border-border">
+										<span class="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Комплексност:</span>
+										<div class="flex gap-1">
+											{[1, 2, 3].map((step) => {
+												const conflicts = verificationReport.conflicts?.length || 0;
+												const level = conflicts >= 3 ? 3 : conflicts >= 1 ? 2 : 1;
+												return <div class:list={["w-3 h-1 rounded-full transition-colors", step <= level ? (level === 3 ? 'bg-nyt-red' : level === 2 ? 'bg-amber-500' : 'bg-emerald-600') : "bg-border"]} />
+											})}
+										</div>										<span class="text-[10px] font-bold uppercase text-foreground">
+											{ (verificationReport.conflicts?.length || 0) >= 3 ? 'Висока' : (verificationReport.conflicts?.length || 0) >= 1 ? 'Средна' : 'Ниска' }
+										</span>
+									</div>
 								</div>
 								
 								<div class="factcheck-grid">
