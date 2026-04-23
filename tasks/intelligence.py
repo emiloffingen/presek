@@ -11,10 +11,12 @@ if _ROOT not in sys.path:
 
 from celery_app import celery_app
 from database import db_manager as db
+from config import CLUSTER_LOOKBACK
 from ai_engine import (
     translate_to_macedonian,
     sync_call_ai as _call_ai, clean_json_response, generate_cover_art
 )
+from embeddings import average_embeddings, parse_embedding_value
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
     TOPIC_SYSTEM_PROMPT, FACTCHECK_SYSTEM_PROMPT
@@ -25,13 +27,13 @@ from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
     extract_cluster_tags_locally, filter_cluster_tags
 )
-from api_helpers import normalize_summary_text, normalize_perspectives
+from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color
 from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, safe_async_run, redis_client
 
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
-        "SELECT title, description, source, link, created_at, category FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
+        "SELECT title, description, summary, full_content, source, link, created_at, category, topic, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
         (cluster_id,)
     )
 
@@ -52,6 +54,58 @@ def _normalize_cluster_synthesis(summary, perspectives, article_rows):
         clean_perspectives = fallback_perspectives
 
     return clean_summary, clean_perspectives
+
+
+def _build_citation_sources(article_rows):
+    ordered = []
+    for item in article_rows or []:
+        ordered.append({
+            "source": str(item.get("source") or "").strip(),
+            "title": str(item.get("title") or "").strip(),
+            "link": str(item.get("link") or "").strip(),
+            "created_at": str(item.get("created_at") or "").strip(),
+            "category": str(item.get("category") or "").strip(),
+        })
+    return normalize_citation_sources(ordered)
+
+
+def _build_synthesis_source_context(article_rows):
+    blocks = []
+    for idx, row in enumerate(article_rows or [], start=1):
+        title = str(row.get("title") or "").strip()
+        source = str(row.get("source") or "Извор").strip()
+        category = str(row.get("category") or "").strip()
+        topic = str(row.get("topic") or "").strip()
+        description = str(row.get("description") or "").strip()
+        summary = str(row.get("summary") or "").strip()
+        full_content = str(row.get("full_content") or "").strip()
+
+        evidence = full_content if len(full_content) > len(description) else description
+        evidence = evidence[:2200].strip()
+        parts = [f"[{idx}] {source}"]
+        if category:
+            parts.append(f"Категорија: {category}")
+        if topic:
+            parts.append(f"Тема: {topic}")
+        if title:
+            parts.append(f"Наслов: {title}")
+        if summary:
+            parts.append(f"Постоечко резиме: {summary[:500]}")
+        if evidence:
+            parts.append(f"Контекст:\n{evidence}")
+        blocks.append("\n".join(parts))
+    return "\n\n".join(blocks)
+
+
+def _compute_centroid_from_values(values):
+    return average_embeddings(values)
+
+
+def _cosine_dist(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(y * y for y in b) ** 0.5
+    return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def translate_article_task(article_id, title, description):
@@ -252,6 +306,8 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
+    citation_sources = _build_citation_sources(article_rows)
+    source_context = _build_synthesis_source_context(article_rows)
     
     # 1. Fetch Historical Context (Cross-Story Memory)
     history_context = ""
@@ -285,13 +341,24 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
     try:
         from tasks.utils import record_task_event
-        full_prompt = f"{history_context}\n\nНОВИ СТАТИИ ОД ДЕНЕС:\n[START_NEW_ARTICLES]\n{content}\n[END_NEW_ARTICLES]"
-        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis")
+        legacy_summary = str(content or "").strip()
+        prompt_parts = []
+        if history_context:
+            prompt_parts.append(history_context)
+        prompt_parts.append("НОВИ СТАТИИ ОД ДЕНЕС:\n[START_NEW_ARTICLES]")
+        if source_context:
+            prompt_parts.append(source_context)
+        elif legacy_summary:
+            prompt_parts.append(legacy_summary)
+        prompt_parts.append("[END_NEW_ARTICLES]")
+        full_prompt = "\n\n".join(part for part in prompt_parts if part)
+        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=2800)
         
         verification_report = None
         # Save tokens: only fact-check larger clusters (5+ sources)
         if len(article_rows) >= 5:
-            v_raw, _ = _call_ai(f"Статии за споредба:\n[START_COMPARISON_DATA]\n{content}\n[END_COMPARISON_DATA]", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck")
+            comparison_payload = source_context or legacy_summary
+            v_raw, _ = _call_ai(f"Статии за споредба:\n[START_COMPARISON_DATA]\n{comparison_payload}\n[END_COMPARISON_DATA]", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck", max_tokens=1600)
             if v_raw:
                 verification_report = clean_json_response(v_raw)
 
@@ -334,47 +401,20 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
         if summary or perspectives:
             # Calculate Cluster Centroid (Semantic Center)
-            centroid = None
-            try:
-                import numpy as np
-                def parse_vec(v):
-                    if v is None: return None
-                    if isinstance(v, (list, tuple)):
-                        return np.array(v, dtype=np.float32)
-                    if isinstance(v, str):
-                        try:
-                            # pgvector string format "[1.2, 3.4]" is valid JSON
-                            import json
-                            return np.array(json.loads(v), dtype=np.float32)
-                        except json.JSONDecodeError:
-                            # Fallback: strip brackets and split by comma
-                            cleaned = v.strip("[]")
-                            if not cleaned: return None
-                            return np.array([float(x) for x in cleaned.split(",")], dtype=np.float32)
-                    # If it's a psycopg2 vector object or something else, try to iterate it
-                    try:
-                        return np.array(list(v), dtype=np.float32)
-                    except Exception:
-                        return None
-
-                vec_pool = [parse_vec(a['embedding']) for a in article_rows if a.get('embedding')]
-                vec_pool = [v for v in vec_pool if v is not None]
-                if vec_pool:
-                    centroid = np.mean(vec_pool, axis=0).tolist()
-            except Exception as ve:
-                log.warning(f"[tasks] Centroid calculation failed for {cluster_id}: {ve}")
+            centroid = _compute_centroid_from_values(a.get("embedding") for a in article_rows if a.get("embedding"))
+            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
             # Archive current summary before updating (Evolution Log)
             db.execute(
-                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, created_at)
-                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, created_at 
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, created_at)
+                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, created_at 
                    FROM cluster_summaries WHERE cluster_id = %s""",
                 (cluster_id,), fetch=False
             )
 
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, quote, centroid)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, quote, centroid, citation_sources)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                        summary = EXCLUDED.summary, 
                        perspectives = EXCLUDED.perspectives, 
@@ -385,8 +425,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                        sentiment = EXCLUDED.sentiment, 
                        verification_report = EXCLUDED.verification_report, 
                        quote = EXCLUDED.quote,
-                       centroid = EXCLUDED.centroid""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid),
+                       centroid = EXCLUDED.centroid,
+                       citation_sources = EXCLUDED.citation_sources""",
+                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources)),
                 fetch=False
             )
 
@@ -446,8 +487,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         )
         if summary or perspectives:
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
@@ -455,8 +496,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                        synthetic_headline = EXCLUDED.synthetic_headline,
                        synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at,
-                       sentiment = EXCLUDED.sentiment""",
-                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data)),
+                       sentiment = EXCLUDED.sentiment,
+                       citation_sources = EXCLUDED.citation_sources""",
+                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)
@@ -473,11 +515,11 @@ def auto_summarize_task():
     auto_summarize_top_clusters()
 
 @celery_app.task
-def extract_entities_task():
+def extract_entities_task(hours=24):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
         from tasks.utils import record_task_event
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
             FROM articles WHERE created_at >= %s GROUP BY cluster_id
@@ -545,13 +587,12 @@ def recategorize_clusters_task():
         record_task_event("recategorize_clusters", "ok", "clusters:recent")
 
 @celery_app.task
-def generate_cluster_metadata_task():
+def generate_cluster_metadata_task(hours=24):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
         from tasks.utils import record_task_event
-        import numpy as np
 
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
                    array_agg(DISTINCT topic) as topics,
@@ -575,33 +616,8 @@ def generate_cluster_metadata_task():
                 final_tags = filter_cluster_tags(r['sources'], limit=4)
             
             # Calculate Centroid (Semantic Center)
-            centroid = None
-            if r['embeddings']:
-                try:
-                    import numpy as np
-                    def parse_vec(v):
-                        if v is None: return None
-                        if isinstance(v, (list, tuple)):
-                            return np.array(v, dtype=np.float32)
-                        if isinstance(v, str):
-                            try:
-                                import json
-                                return np.array(json.loads(v), dtype=np.float32)
-                            except json.JSONDecodeError:
-                                cleaned = v.strip("[]")
-                                if not cleaned: return None
-                                return np.array([float(x) for x in cleaned.split(",")], dtype=np.float32)
-                        try:
-                            return np.array(list(v), dtype=np.float32)
-                        except Exception:
-                            return None
-
-                    vec_pool = [parse_vec(v) for v in r['embeddings']]
-                    vec_pool = [v for v in vec_pool if v is not None]
-                    if vec_pool:
-                        centroid = np.mean(vec_pool, axis=0).tolist()
-                except Exception as ve:
-                    log.warning(f"[tasks] Centroid calculation failed for {r['cluster_id']}: {ve}")
+            centroid = _compute_centroid_from_values(r.get("embeddings") or [])
+            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
             # Smart image selection: prefer high-quality sources and non-placeholder URLs
             img_row = db.execute_one("""
@@ -658,7 +674,7 @@ def generate_cluster_metadata_task():
                    dominant_color = EXCLUDED.dominant_color,
                    updated_at = NOW(),
                    centroid = EXCLUDED.centroid""",
-                (r['cluster_id'], final_tags, r['topics'], rep_image, dominant_color, centroid), fetch=False
+                (r['cluster_id'], final_tags, r['topics'], rep_image, dominant_color, centroid_str), fetch=False
             )
         invalidate_public_data_caches()
         record_task_event("cluster_metadata", "ok", "clusters:recent")
@@ -666,6 +682,132 @@ def generate_cluster_metadata_task():
         from tasks.utils import record_task_event
         record_task_event("cluster_metadata", "error", "clusters:recent")
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
+
+
+@celery_app.task(rate_limit='1/h')
+def recluster_recent_articles_task(hours=24, limit=800):
+    """Re-assign cluster IDs for recent articles using the current clustering logic."""
+    try:
+        from tasks.utils import record_task_event
+        import clustering
+
+        hours = max(1, int(hours or 24))
+        limit = max(1, int(limit or 800))
+        cutoff = datetime.datetime.now() - datetime.timedelta(hours=hours)
+        rows = db.execute(
+            """
+            SELECT id, cluster_id, title, source, category, topic, created_at, embedding
+            FROM articles
+            WHERE created_at >= %s
+            ORDER BY created_at ASC, id ASC
+            LIMIT %s
+            """,
+            (cutoff, limit),
+        ) or []
+
+        if not rows:
+            record_task_event("recluster_recent", "empty", f"hours:{hours}")
+            return {"reclustered": 0, "touched_clusters": 0, "hours": hours, "limit": limit}
+
+        recent_articles = []
+        batch_clusters = []
+        updates = []
+        touched_clusters = set()
+
+        for row in rows:
+            title = str(row.get("title") or "").strip()
+            category = row.get("category")
+            topic = str(row.get("topic") or "Вести").strip() or "Вести"
+            source = row.get("source")
+            created_at = row.get("created_at")
+            parsed_embedding = parse_embedding_value(row.get("embedding"))
+
+            new_cluster_id = None
+            if parsed_embedding:
+                for candidate in batch_clusters:
+                    if candidate["category"] != category or candidate["topic"] != topic:
+                        continue
+                    dist = _cosine_dist(parsed_embedding, candidate["embedding"])
+                    if dist >= (clustering.VECTOR_THRESHOLD * 0.78):
+                        continue
+                    if topic == "Вести" or not topic:
+                        incoming_entities = clustering._extract_title_entities(title)
+                        candidate_entities = candidate.get("entities", set())
+                        shared_entities = incoming_entities.intersection(candidate_entities) if incoming_entities and candidate_entities else set()
+                        phrase_overlap = clustering._cluster_title_overlap(title, candidate["title"])
+                        if not shared_entities and phrase_overlap < 0.34:
+                            continue
+                    new_cluster_id = candidate["cid"]
+                    break
+
+            if not new_cluster_id:
+                new_cluster_id = clustering.find_or_create_cluster(
+                    None,
+                    title,
+                    recent_articles,
+                    embedding=None,
+                    category=category,
+                    source=source,
+                    topic=topic,
+                )
+
+            old_cluster_id = str(row.get("cluster_id") or "")
+            if new_cluster_id != old_cluster_id:
+                updates.append((new_cluster_id, row["id"]))
+                if old_cluster_id:
+                    touched_clusters.add(old_cluster_id)
+                touched_clusters.add(new_cluster_id)
+
+            if parsed_embedding:
+                batch_clusters.append({
+                    "cid": new_cluster_id,
+                    "embedding": parsed_embedding,
+                    "category": category,
+                    "topic": topic,
+                    "title": title,
+                    "entities": clustering._extract_title_entities(title),
+                })
+
+            recent_articles.insert(0, {
+                "title": title,
+                "cluster_id": new_cluster_id,
+                "created_at": created_at,
+                "category": category,
+                "topic": topic,
+                "source": source,
+            })
+            if len(recent_articles) > CLUSTER_LOOKBACK:
+                recent_articles.pop()
+
+        for cluster_id, article_id in updates:
+            db.execute(
+                "UPDATE articles SET cluster_id = %s WHERE id = %s",
+                (cluster_id, article_id),
+                fetch=False,
+            )
+
+        if touched_clusters:
+            touched = sorted(touched_clusters)
+            for table in ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions"):
+                db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
+
+            extract_entities_task.delay(hours=hours)
+            generate_cluster_metadata_task.delay(hours=hours)
+            auto_summarize_task.delay()
+            invalidate_public_data_caches()
+
+        record_task_event("recluster_recent", "ok", f"articles:{len(updates)}")
+        return {
+            "reclustered": len(updates),
+            "touched_clusters": len(touched_clusters),
+            "hours": hours,
+            "limit": limit,
+        }
+    except Exception as e:
+        from tasks.utils import record_task_event
+        record_task_event("recluster_recent", "error", "clusters:recent")
+        log.error(f"[tasks] Recent recluster failed: {e}")
+        raise
 
 @celery_app.task
 def auto_repair_sources_task():
@@ -690,6 +832,7 @@ def backfill_cover_art_single_task(cluster_id, title):
 def backfill_cover_art_task():
     """Queue cover art generation for clusters that lack a strong visual."""
     lock_key = "lock:backfill_cover_art"
+    cooldown_key = "ai:cover_art:pollinations:cooldown"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=1200):
             log.info("Cover art backfill already in progress, skipping duplicate dispatch.")
@@ -698,6 +841,13 @@ def backfill_cover_art_task():
         log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
 
     try:
+        try:
+            if redis_client.get(cooldown_key):
+                log.info("Cover art backfill paused due to Pollinations cooldown.")
+                return
+        except Exception:
+            pass
+
         # Find clusters from last 24h that either:
         # 1. Have no representative image
         # 2. Have a representative image that would be considered 'weak' (placeholders, small thumbs)

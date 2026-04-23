@@ -23,9 +23,10 @@ def backfill_centroids():
         vecs = [parse_vec(a['embedding']) for a in arts]
         if vecs:
             centroid = np.mean(vecs, axis=0).tolist()
+            centroid_str = f"[{','.join(map(str, centroid))}]" if len(centroid) == 384 else None
             db.execute(
                 "INSERT INTO cluster_metadata (cluster_id, centroid, updated_at) VALUES (%s, %s, NOW()) ON CONFLICT (cluster_id) DO UPDATE SET centroid = EXCLUDED.centroid, updated_at = NOW()",
-                (cid, centroid), fetch=False
+                (cid, centroid_str), fetch=False
             )
             count += 1
             if count % 50 == 0:
