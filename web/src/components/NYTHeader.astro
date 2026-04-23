@@ -34,9 +34,18 @@ let navigationData: { breaking: NavItem[]; sections: any[] } = { breaking: [], s
 let stats = propStats;
 
 try {
-    const results = await Promise.allSettled([fetch(`${API_URL}/navigation`)]);
+    const requests = [fetch(`${API_URL}/navigation`)];
+    const shouldFetchStats = !stats || typeof stats.last_1h !== 'number';
+    if (shouldFetchStats) {
+        requests.push(fetch(`${API_URL}/stats/summary`));
+    }
+
+    const results = await Promise.allSettled(requests);
     if (results[0].status === 'fulfilled' && results[0].value.ok) {
         navigationData = await results[0].value.json();
+    }
+    if (shouldFetchStats && results[1]?.status === 'fulfilled' && results[1].value.ok) {
+        stats = await results[1].value.json();
     }
 } catch (e) {
     console.error('[Header] Fetch error:', e);

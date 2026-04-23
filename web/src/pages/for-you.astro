@@ -10,14 +10,18 @@ const API_URL = apiBaseUrl();
 
 // Fetch latest clusters to provide as potential local matches
 let initialClusters = [];
+let initialError: string | null = null;
 try {
     const res = await fetch(`${API_URL}/news?page_size=100`);
     if (res.ok) {
         const data = await res.json();
         initialClusters = data.clusters || [];
+    } else {
+        initialError = "Не можеме да ги вчитаме почетните препораки во моментов.";
     }
 } catch (e) {
     console.error("ForYou page fetch error:", e);
+    initialError = "Не можеме да ги вчитаме почетните препораки во моментов.";
 }
 ---
 
@@ -28,7 +32,7 @@ try {
     <NYTHeader />
     <main class="site-layout py-[var(--page-py)]">
         <Breadcrumbs items={[{ label: "За Вас" }]} />
-        <ForYouPageIsland client:load initialClusters={initialClusters} />
+        <ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />
     </main>
     <Footer />
 </Layout>

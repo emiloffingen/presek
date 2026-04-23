@@ -22,6 +22,8 @@ try {
     if (briefRes.ok) {
         briefing = await briefRes.json();
         if (briefing.detail || briefing.error || !briefing.content) briefing = null;
+    } else {
+        error = "Брифингот моментално не е достапен.";
     }
     if (statsRes.ok) {
         stats = await statsRes.json();
@@ -256,6 +258,12 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                             <p class="sig-label">ПРЕСЕК СИСТЕМСКИ УРЕДНИК</p>
                         </div>
                     </article>
+                ) : error ? (
+                    <div class="briefing-empty">
+                        <Activity className="opacity-30 text-nyt-accent" size={48} />
+                        <h3>Брифингот не е достапен</h3>
+                        <p>{error}</p>
+                    </div>
                 ) : (
                     <div class="briefing-empty">
                         <Activity className="animate-pulse opacity-30 text-nyt-accent" size={48} />

@@ -325,7 +325,8 @@ def test_home_route_composes_named_slots(mock_all):
     assert [item["cluster_id"] for item in data["wire"]] == ["wire-1"]
     assert [item["cluster_id"] for item in data["live_now"]] == ["wire-2", "live-1"]
     assert [item["title"] for item in data["latest_wire"]] == ["Тешка сообраќајка на експресниот пат кај Ранковце", "Собранието отвори расправа за буџетот", "Lead"]
-    assert data["focus_entities"][0]["name"] == "Влада"
+    assert data["focus_entities"][0]["name"] == "влада"
+    assert data["focus_entities"][0]["display_name"] == "Влада"
 
 
 def test_home_live_now_route_uses_backend_selection(mock_all):
@@ -475,9 +476,9 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 
     def execute_one_side_effect(query, *args, **kwargs):
-        if "COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'" in query:
+        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query:
             return {"count": 120}
-        if "COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'" in query:
+        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in query:
             return {"count": 12}
         if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
             return {"count": 40}
@@ -508,3 +509,88 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     assert data["intelligence"]["ai_transparency"]["ai_ratio"] == 75.0
     assert data["intelligence"]["pluralism"]["pluralism_pct"] == 65.0
     assert data["intelligence"]["pluralism"]["high_consensus_pct"] == 25.0
+
+def test_briefing_fallback_uses_ingestion_aware_window(mock_all):
+    import routes.stats
+
+    async def execute_one_side_effect(query, params=None):
+        if "SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE" in query:
+            return None
+        if "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1" in query:
+            return None
+        raise AssertionError(f"Unexpected query: {query}")
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "FROM knowledge_entities" in query:
+            return []
+        if "FROM articles" in query:
+            assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query
+            assert "ORDER BY COALESCE(ingested_at, created_at) DESC" in query
+            return []
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    with patch("routes.stats.generate_daily_brief_fallback", return_value="fallback"):
+        data = asyncio.run(routes.stats.get_briefing())
+
+    assert data["generated_locally"] is True
+    assert data["content"] == "fallback"
+
+def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(mock_all):
+    import routes.intelligence as intelligence
+
+    async def execute_one_side_effect(query, params=None):
+        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query:
+            return {"count": 12}
+        raise AssertionError(f"Unexpected query: {query}")
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "date_trunc('hour', COALESCE(ingested_at, created_at))" in query:
+            return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
+        if "FROM articles" in query and "GROUP BY category ORDER BY n DESC" in query:
+            assert "category IS NOT NULL" in query
+            assert "category != ''" in query
+            return [{"category": "Македонија", "n": 12}]
+        if "FROM knowledge_entities" in query:
+            return [{"name": "Иран", "total_mentions": 9, "sentiment_score": 0.1, "type": "GPE"}]
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    with patch("routes.intelligence.cached_response", return_value=None), \
+         patch("routes.intelligence.set_cache"), \
+         patch("routes.common.build_intelligence_summary_payload", new=AsyncMock(return_value={"pluralism": {"pluralism_pct": 64, "high_consensus_pct": 25}, "ai_transparency": {"ai_ratio": 52}, "international_share_pct": 14})):
+        data = asyncio.run(intelligence.get_global_pulse())
+
+    assert data["last_24h"] == 12
+    assert data["by_category"][0]["category"] == "Македонија"
+
+def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
+    import routes.news as news
+
+    arts = [
+        {
+            "title": "Собранието отвори расправа за буџетот",
+            "source": "MIA",
+            "topic": "Политика",
+            "category": "Македонија",
+            "created_at": "2026-04-22T08:00:00Z",
+            "ingested_at": "2026-04-22T18:10:00Z",
+        },
+        {
+            "title": "Телма: расправата за буџетот продолжува",
+            "source": "Telma",
+            "topic": "Политика",
+            "category": "Македонија",
+            "created_at": "2026-04-22T07:55:00Z",
+            "ingested_at": "2026-04-22T18:05:00Z",
+        },
+    ]
+
+    signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
+
+    assert signals["story_state"] in {"breaking", "confirmed", "developing"}
+    assert signals["live_now_fit"] is True

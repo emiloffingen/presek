@@ -15,6 +15,7 @@ import type { NewsCluster } from '../types';
 
 interface ForYouPageIslandProps {
   initialClusters: NewsCluster[];
+  initialError?: string | null;
 }
 
 interface ReaderProfile {
@@ -23,50 +24,77 @@ interface ReaderProfile {
   followedSources: string[];
 }
 
-export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandProps) {
+export default function ForYouPageIsland({ initialClusters, initialError = null }: ForYouPageIslandProps) {
   const [profile, setProfile] = useState<ReaderProfile>(loadReaderProfile());
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [semanticError, setSemanticError] = useState<string | null>(null);
 
   // 1. Load Local Profile & Subscribe
   useEffect(() => {
     const unsubscribe = subscribeToReaderProfile((nextProfile: ReaderProfile) => {
       setProfile(nextProfile);
     });
-    
+    return unsubscribe;
+  }, []);
+
+  // 2. Fetch semantic recommendations whenever personalization signals change.
+  useEffect(() => {
+    let cancelled = false;
+
     const fetchSemantic = async () => {
       if (!hasPersonalizationSignal(profile)) {
-        setLoading(false);
+        if (!cancelled) {
+          setSemanticResults([]);
+          setSemanticError(null);
+          setLoading(false);
+        }
         return;
       }
-      
+
+      if (!cancelled) {
+        setLoading(true);
+        setSemanticError(null);
+      }
+
       try {
         const res = await fetch(`${apiBaseUrl()}/profile/sync/personalized-news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            profile, 
-            recent_ids: [],
-            limit: 36
+          body: JSON.stringify({
+            profile,
+            limit: 36,
           }),
         });
-        
-        if (res.ok) {
-          const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(`Semantic request failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
           setSemanticResults(data.results || []);
         }
       } catch (e) {
         console.error('Semantic fetch failed', e);
+        if (!cancelled) {
+          setSemanticResults([]);
+          setSemanticError('Не можеме да ги вчитаме персонализираните препораки во моментов.');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSemantic();
-    return unsubscribe;
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [profile]);
 
-  // 2. Hybrid Merging
+  // 3. Hybrid Merging
   const mergedClusters = useMemo(() => {
     const local = buildPersonalizedClusters(initialClusters, profile, 48);
     const seen = new Set(semanticResults.map(r => r.cluster_id));
@@ -90,6 +118,8 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
       ...suggestions.sources.map((s: any) => ({ ...s, kind: 'source' }))
     ];
   }, [profile]);
+
+  const pageError = semanticError || initialError;
 
   if (loading) {
     return (
@@ -131,6 +161,13 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
           </p>
         </header>
 
+        {pageError && mergedClusters.length === 0 && (
+          <div className="py-12 text-center border border-dashed border-border rounded-xl bg-secondary/5">
+            <p className="font-serif text-2xl font-bold mb-3">Не можеме да го вчитаме „За Вас“</p>
+            <p className="text-muted-foreground">{pageError}</p>
+          </div>
+        )}
+
         {mergedClusters.length > 0 ? (
           <div className="space-y-10">
             {mergedClusters.map((cluster, idx) => (
@@ -154,7 +191,9 @@ export default function ForYouPageIsland({ initialClusters }: ForYouPageIslandPr
           </div>
         ) : (
           <div className="py-20 text-center border border-dashed border-border rounded-xl">
-             <p className="font-serif italic text-muted-foreground">Немаме нови вести за вашите специфични интереси во овој момент. Пробајте да додадете повеќе теми.</p>
+             <p className="font-serif italic text-muted-foreground">
+               {pageError || 'Немаме нови вести за вашите специфични интереси во овој момент. Пробајте да додадете повеќе теми.'}
+             </p>
           </div>
         )}
       </div>

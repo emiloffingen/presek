@@ -368,7 +368,17 @@ async def get_entity_profile(name: str):
     
     entity = await db.async_execute_one("SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score FROM knowledge_entities WHERE name = %s", (name,))
     if not entity:
-        if not await db.async_execute_one("SELECT 1 FROM cluster_metadata WHERE %s = ANY(tags) LIMIT 1", (name,)):
+        entity = await db.async_execute_one(
+            "SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score FROM knowledge_entities WHERE LOWER(name) = LOWER(%s) LIMIT 1",
+            (name,),
+        )
+    if entity:
+        name = entity["name"]
+    else:
+        if not await db.async_execute_one(
+            "SELECT 1 FROM cluster_metadata m WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s)) LIMIT 1",
+            (name,),
+        ):
             raise HTTPException(status_code=404, detail="Entity not found")
         entity = {"name": name, "type": "ENTITY", "total_mentions": 0, "first_seen": None, "last_seen": None, "sentiment_score": 0}
     
@@ -390,26 +400,29 @@ async def get_entity_profile(name: str):
 @router.get("/intelligence/global-pulse")
 async def get_global_pulse():
     """Public high-level intelligence stats for the Pulse page."""
-    cache_key = "api:intelligence:global-pulse:v1"
+    cache_key = "api:intelligence:global-pulse:v2"
     cached = cached_response(cache_key)
     if cached: return cached
 
-    last_24h_res = await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")
+    freshness_expr = "COALESCE(ingested_at, created_at)"
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'")
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
     # 1. News Velocity (Volume per hour)
-    velocity = await db.async_execute("""
-        SELECT date_trunc('hour', created_at) AS t, COUNT(*) AS n 
+    velocity = await db.async_execute(f"""
+        SELECT date_trunc('hour', {freshness_expr}) AS t, COUNT(*) AS n 
         FROM articles 
-        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
         GROUP BY t ORDER BY t
     """)
     
     # 2. Category Distribution
-    by_category = await db.async_execute("""
+    by_category = await db.async_execute(f"""
         SELECT category, COUNT(*) AS n 
         FROM articles 
-        WHERE created_at >= NOW() - INTERVAL '24 hours'
+        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
+          AND category IS NOT NULL
+          AND category != ''
         GROUP BY category ORDER BY n DESC
     """)
     

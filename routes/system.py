@@ -95,7 +95,7 @@ async def get_trending_route():
 @router.get("/navigation")
 async def get_navigation():
     """Returns high-intelligence dynamic navigation with activity thresholds."""
-    cache_key = "api:navigation:v4"
+    cache_key = "api:navigation:v5"
     cached = cached_response(cache_key)
     if cached: return cached
 
@@ -108,7 +108,7 @@ async def get_navigation():
     recent_clusters = await db.async_execute("""
         SELECT m.cluster_id, 
                (SELECT title FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as title,
-               (SELECT created_at FROM articles WHERE cluster_id = m.cluster_id ORDER BY created_at DESC LIMIT 1) as created_at
+               (SELECT COALESCE(ingested_at, created_at) FROM articles WHERE cluster_id = m.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as created_at
         FROM cluster_metadata m
         WHERE m.updated_at >= NOW() - INTERVAL '24 hours'
         ORDER BY m.updated_at DESC LIMIT 15

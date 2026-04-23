@@ -9,6 +9,7 @@ export interface Article {
   category: string;
   topic: string;
   created_at: string;
+  ingested_at?: string;
   image_url: string | null;
   clicks: number;
   reading_time: number;
@@ -48,6 +49,7 @@ export interface NewsCluster {
   entities?: string[];
   homepage_score?: number;
   created_at?: string;
+  display_name?: string;
   tags?: string[];
   topics?: string[];
 }

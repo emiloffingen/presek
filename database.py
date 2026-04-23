@@ -327,8 +327,8 @@ class DatabaseManager:
         total = self.execute_one("SELECT COUNT(*) FROM articles")["count"]
         by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC")
         by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC")
-        recent_24h = self.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 day'")["count"]
-        recent_1h = self.execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")["count"]
+        recent_24h = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'")["count"]
+        recent_1h = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'")["count"]
         summarized = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")["count"]
         return {
             "total_articles": total,
@@ -381,6 +381,7 @@ class DatabaseManager:
                     topic TEXT DEFAULT 'Вести',
                     country TEXT DEFAULT 'MK',
                     created_at TIMESTAMP NOT NULL,
+                    ingested_at TIMESTAMP,
                     image_url TEXT, 
                     clicks INTEGER DEFAULT 0, 
                     original_description TEXT DEFAULT '',
@@ -390,6 +391,9 @@ class DatabaseManager:
                     search_vector tsvector
                 )""")
                 cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE")
+                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP")
+                cur.execute("UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL")
+                cur.execute("ALTER TABLE articles ALTER COLUMN ingested_at SET DEFAULT CURRENT_TIMESTAMP")
 
                 # Table for cluster summaries with FK to articles (via cluster_id)
                 # Note: cluster_id is not unique in articles, so we use it as a logical link
@@ -532,6 +536,7 @@ class DatabaseManager:
                 # Indexes
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_ingested_at ON articles(ingested_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")

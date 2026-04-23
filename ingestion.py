@@ -521,6 +521,7 @@ async def ingest_all_sources_async():
                         "country": source_meta['country'],
                         "category": source_meta['category'],
                         "created_at": published_at,
+                        "ingested_at": cycle_now,
                     })
                     seen_links.add(link)
                     seen_titles_by_source[source_name].add(title_key)
@@ -617,12 +618,13 @@ async def ingest_all_sources_async():
                 clean_desc = re.sub(r'<[^>]+>', '', c['desc']).strip() if c['desc'] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
                 created_at = c.get("created_at") or cycle_now
+                ingested_at = c.get("ingested_at") or cycle_now
                 is_fact = detect_fact_check(c['source'], c['title'])
 
                 prepared_rows.append((
                     display_title, c['title'] if is_intl else "",
                     c['link'], c['source'], category, subcategory, 
-                    cluster_id, created_at, c['image_url'], clean_desc,
+                    cluster_id, created_at, ingested_at, c['image_url'], clean_desc,
                     clean_desc if is_intl else "", c['country'], 0,
                     str(emb) if emb else None, topic, is_fact
                 ))
@@ -649,7 +651,7 @@ async def ingest_all_sources_async():
             sql = """
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory, 
-                    cluster_id, created_at, image_url, description, original_description, 
+                    cluster_id, created_at, ingested_at, image_url, description, original_description, 
                     country, is_translated, embedding, topic, is_fact_check
                 ) VALUES %s ON CONFLICT (link) DO NOTHING RETURNING id, country
             """

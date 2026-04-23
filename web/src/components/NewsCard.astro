@@ -190,7 +190,7 @@ function getTimeStr(dateStr: string) {
 
 
 		<div class="footer-meta">
-			<span>{getTimeStr(main.created_at)}</span>
+			<span>{getTimeStr(main.ingested_at || main.created_at)}</span>
 			<span class="dot">·</span>
 			<span>{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</span>
 			{totalSources > uniqueSources && <span class="text-muted-foreground ml-1">({totalSources} вкупно)</span>}

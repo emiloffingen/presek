@@ -89,7 +89,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
             <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
         )}
         <div class="lead-meta">
-            <span>{getTimeStr(leadCluster.articles?.[0].created_at)}</span>
+            <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             <span>·</span>
             <span>{leadCluster.articles.length} извора</span>
         </div>

@@ -65,6 +65,7 @@ _PUBLIC_ARTICLE_FIELDS = {
     "topic",
     "country",
     "created_at",
+    "ingested_at",
     "image_url",
     "image_caption",
     "clicks",
@@ -144,25 +145,31 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
     main = ranked[0]
     unique_sources = {str(a.get("source") or "").strip() for a in ranked if str(a.get("source") or "").strip()}
     source_count = len(unique_sources)
-    latest_dt = max((_coerce_datetime(a.get("created_at")) for a in ranked), default=None)
+    latest_dt = max((_coerce_datetime(a.get("ingested_at") or a.get("created_at")) for a in ranked), default=None)
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     hours_since_latest = max(0.0, ((now - latest_dt).total_seconds() / 3600.0)) if latest_dt else 999.0
     recent_cutoff = now - datetime.timedelta(hours=6)
     recent_developments = sum(
         1
         for article in ranked
-        if (_coerce_datetime(article.get("created_at")) or datetime.datetime.min) >= recent_cutoff
+        if (_coerce_datetime(article.get("ingested_at") or article.get("created_at")) or datetime.datetime.min) >= recent_cutoff
     )
 
     top_weights = [get_source_effective_weight(str(article.get("source") or "")) for article in ranked[:3]]
     avg_top_weight = (sum(top_weights) / len(top_weights)) if top_weights else 0.0
-    freshness_score = min(10.0, max(0.0, 10.0 - (hours_since_latest * 1.1)) + min(1.6, max(0, recent_developments - 1) * 0.45))
+    if hours_since_latest <= 12:
+        freshness_base = 10.0 - (hours_since_latest * 0.45)
+    elif hours_since_latest <= 36:
+        freshness_base = 4.6 - ((hours_since_latest - 12) * 0.11)
+    else:
+        freshness_base = max(0.0, 1.96 - ((hours_since_latest - 36) * 0.18))
+    freshness_score = min(10.0, max(0.0, freshness_base) + min(1.6, max(0, recent_developments - 1) * 0.45))
     development_score = min(10.0, max(0, source_count - 1) * 1.85 + min(2.0, recent_developments * 0.6))
     trust_score = min(10.0, avg_top_weight * 5.0)
     importance_score = min(10.0, float(homepage_score or 0.0) * 3.0)
     novelty_score = min(10.0, freshness_score * (1.0 if source_count <= 2 else 0.65) + (1.25 if source_count == 1 else 0.0))
 
-    if hours_since_latest >= 24:
+    if hours_since_latest >= 36:
         story_state = "stale"
     elif cluster_score >= BREAKING_SCORE_THRESHOLD:
         story_state = "breaking"
@@ -548,15 +555,18 @@ async def get_cluster_detail(cluster_id: str):
                     limit=5,
                 )
                 for item in scored_related:
+                    shared_tags = item.get("shared_tags", [])
+                    shared_topics = item.get("shared_topics", [])
+                    shared_entities = item.get("shared_entities", [])
                     related.append({
                         "cluster_id": item["cluster_id"],
                         "title": item["title"],
                         "image_url": item.get("image_url"),
-                        "tags": item.get("shared_tags", []),
+                        "tags": shared_tags,
                         "relationship_label": item.get("relationship_label") or "Сродна тема",
-                        "shared_tags": item.get("shared_tags", []),
-                        "shared_topics": item.get("shared_topics", []),
-                        "shared_entities": item.get("shared_entities", []),
+                        "shared_tags": shared_tags,
+                        "shared_topics": shared_topics,
+                        "shared_entities": shared_entities,
                         "has_synthesis": item["cluster_id"] in synthesis_ids,
                     })
 

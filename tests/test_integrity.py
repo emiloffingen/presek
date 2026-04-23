@@ -77,6 +77,76 @@ class TestAstroFrontendIntegrity:
         assert "fetch(`${API_URL}/health`)" in status_page
         assert "Состојба на системот" in status_page
 
+    def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):
+        header = _read("web/src/components/NYTHeader.astro")
+        assert "shouldFetchStats" in header
+        assert "fetch(`${API_URL}/stats/summary`)" in header
+
+    def test_schema_and_ingestion_track_ingestion_time(self):
+        schema = _read("database.py")
+        ingestion = _read("ingestion.py")
+        stats = _read("routes/stats.py")
+        homepage = _read("routes/home.py")
+
+        assert "ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP" in schema
+        assert "UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL" in schema
+        assert "\"ingested_at\": cycle_now" in ingestion
+        assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in stats
+        assert "_article_freshness_time(article)" in homepage
+
+    def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
+        home_route = _read("routes/home.py")
+        homepage = _read("web/src/pages/index.astro")
+        entity_route = _read("routes/intelligence.py")
+
+        assert 'normalized["display_name"] = _display_entity_name(raw_name)' in home_route
+        assert 'normalized["name"] = raw_name' in home_route
+        assert "ent.display_name || ent.name" in homepage
+        assert "LOWER(name) = LOWER(%s)" in entity_route
+        assert "LOWER(tag) = LOWER(%s)" in entity_route
+
+    def test_homepage_cards_render_ingestion_aware_time(self):
+        homepage = _read("web/src/components/NewsCard.astro")
+        lead = _read("web/src/components/home/LeadHero.astro")
+
+        assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
+        assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
+
+    def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
+        briefing = _read("web/src/pages/briefing.astro")
+
+        assert 'error = "Брифингот моментално не е достапен."' in briefing
+        assert ") : error ? (" in briefing
+
+    def test_briefing_fallback_uses_ingestion_aware_article_window(self):
+        stats = _read("routes/stats.py")
+
+        assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in stats
+        assert "ORDER BY COALESCE(ingested_at, created_at) DESC" in stats
+
+    def test_pulse_page_has_real_error_state_and_safe_category_math(self):
+        pulse = _read("web/src/pages/pulse.astro")
+        intelligence = _read("routes/intelligence.py")
+
+        assert 'error = "Медиумскиот пулс моментално не е достапен."' in pulse
+        assert "const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));" in pulse
+        assert "const cleanCategoryData = (categoryData || []).filter" in pulse
+        assert 'freshness_expr = "COALESCE(ingested_at, created_at)"' in intelligence
+        assert "WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'" in intelligence
+        assert "category IS NOT NULL" in intelligence
+        assert "category != ''" in intelligence
+
+    def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(self):
+        for_you_page = _read("web/src/pages/for-you.astro")
+        for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
+
+        assert "let initialError: string | null = null;" in for_you_page
+        assert 'initialError = "Не можеме да ги вчитаме почетните препораки во моментов."' in for_you_page
+        assert "<ForYouPageIsland client:load initialClusters={initialClusters} initialError={initialError} />" in for_you_page
+        assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
+        assert "}, [profile]);" in for_you_island
+        assert "const pageError = semanticError || initialError;" in for_you_island
+
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage = _read("web/src/pages/index.astro")
         assert "newsUrl.searchParams.set('category', category);" in homepage

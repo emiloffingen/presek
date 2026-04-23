@@ -75,6 +75,11 @@ def _parse_time(value):
         return 0
 
 
+def _article_freshness_time(article):
+    article = article or {}
+    return article.get("ingested_at") or article.get("created_at")
+
+
 def _is_live_now_candidate(cluster):
     if "live_now_fit" in (cluster or {}):
         return bool(cluster.get("live_now_fit"))
@@ -108,12 +113,12 @@ def _rank_live_now_clusters(items, exclude_cluster_ids=None, limit=4):
             return (
                 float(cluster.get("live_now_score") or 0.0),
                 float(cluster.get("importance_score") or 0.0),
-                _parse_time(article.get("created_at")),
+                _parse_time(_article_freshness_time(article)),
             )
         return (
             1 if cluster.get("is_breaking") else 0,
             1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,
-            _parse_time(article.get("created_at")),
+            _parse_time(_article_freshness_time(article)),
         )
 
     ranked = sorted(
@@ -166,7 +171,7 @@ def _rank_latest_wire_articles(items, limit=15):
     candidates.sort(
         key=lambda article: (
             1 if cleanAndDecode(article.get("topic") or "") in _HARD_NEWS_TOPICS else 0,
-            _parse_time(article.get("created_at")),
+            _parse_time(_article_freshness_time(article)),
         ),
         reverse=True,
     )
@@ -231,9 +236,16 @@ def _decorate_clusters_display(clusters):
     return [_decorate_cluster_display(cluster) for cluster in (clusters or [])]
 
 
+def _display_entity_name(name):
+    clean = str(name or "").strip()
+    if not clean:
+        return ""
+    return f"{clean[0].upper()}{clean[1:]}"
+
+
 @router.get("/home")
 async def get_home():
-    cache_key = "api:home:v1"
+    cache_key = "api:home:v3"
     cached = cached_response(cache_key, ttl=120)
     if cached:
         return cached
@@ -291,8 +303,10 @@ async def get_home():
         focus_entities = []
         for entity in top_entities if isinstance(top_entities, list) else []:
             normalized = dict(entity)
-            normalized["name"] = str(entity.get("name") or "").strip()
-            if normalized["name"] and len(normalized["name"]) >= 3:
+            raw_name = str(entity.get("name") or "").strip()
+            normalized["name"] = raw_name
+            normalized["display_name"] = _display_entity_name(raw_name)
+            if raw_name and len(raw_name) >= 3:
                 focus_entities.append(normalized)
 
         response = {

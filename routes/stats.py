@@ -75,7 +75,12 @@ async def get_briefing():
         """)
 
         if not row:
-            fallback = await db.async_execute("SELECT cluster_id, title, description, source, category, topic, created_at FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 10")
+            fallback = await db.async_execute(
+                "SELECT cluster_id, title, description, source, category, topic, created_at, ingested_at "
+                "FROM articles "
+                "WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours' "
+                "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 10"
+            )
             return {
                 "date": datetime.date.today().isoformat(), 
                 "content": generate_daily_brief_fallback(fallback), 
@@ -222,11 +227,11 @@ async def get_stats_route():
 
 @router.get("/stats/summary")
 async def get_stats_summary():
-    cache_key = "api:stats:summary:v2"
+    cache_key = "api:stats:summary:v3"
     cached = cached_response(cache_key)
     if cached: return cached
-    last_24h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"))["count"] or 0
-    last_1h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'"))["count"] or 0
+    last_24h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'"))["count"] or 0
+    last_1h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'"))["count"] or 0
     total_feeds = (await db.async_execute_one("SELECT COUNT(*) FROM sources WHERE is_active = TRUE"))["count"] or 0
     quote_row = await db.async_execute_one("""
         SELECT s.quote, s.summary, s.generated_article, s.cluster_id,

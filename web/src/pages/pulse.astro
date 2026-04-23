@@ -33,9 +33,13 @@ try {
     if (pulseRes.ok) {
         const json = await pulseRes.json();
         pulseData = json.data || [];
+    } else {
+        error = "Медиумскиот пулс моментално не е достапен.";
     }
     if (globalRes.ok) {
         globalPulse = await globalRes.json();
+    } else {
+        error = error || "Медиумскиот пулс моментално не е достапен.";
     }
 } catch (e) {
     console.error(e);
@@ -57,6 +61,9 @@ function getSentimentLabel(score: number) {
 function formatStat(val: number) {
     return (val * 100).toFixed(0) + '%';
 }
+
+const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
+const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.category || '').trim());
 ---
 
 <Layout 
@@ -84,7 +91,8 @@ function formatStat(val: number) {
                     <p class="card-value">{globalPulse.last_24h.toLocaleString()}</p>
                     <div class="card-sparkline">
                         {velocityData.slice(-12).map((v: any) => {
-                            const height = Math.max(15, (v.n / Math.max(...velocityData.map((d: any) => d.n))) * 100);
+                            const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
+                            const height = Math.max(15, ((v.n || 0) / maxVelocity) * 100);
                             return <div class="bar" style={`height: ${height}%`}></div>
                         })}
                     </div>
@@ -116,13 +124,20 @@ function formatStat(val: number) {
             </div>
         )}
 
+        {error && !globalPulse && pulseData.length === 0 ? (
+            <div class="pulse-empty-state">
+                <Activity className="opacity-30 text-nyt-accent" size={48} />
+                <h3>Медиумскиот пулс не е достапен</h3>
+                <p>{error}</p>
+            </div>
+        ) : (
         <div class="broadsheet-grid">
             <div class="broadsheet-main">
                 <section class="mb-16">
                     <h2 class="section-title-italic">Дистрибуција по категории</h2>
                     <div class="category-pulse-grid">
-                        {categoryData.map((cat: any) => {
-                            const intensity = Math.min(1, cat.n / (globalPulse.last_24h / 4));
+                        {cleanCategoryData.map((cat: any) => {
+                            const intensity = Math.min(1, (cat.n || 0) / (safePulseVolume / 4));
                             return (
                                 <a href={`/?category=${encodeURIComponent(cat.category)}`} class="cat-card">
                                     <span class="cat-name">{cat.category}</span>
@@ -172,7 +187,9 @@ function formatStat(val: number) {
                 </div>
             </aside>
         </div>
+        )}
 
+        {!error || pulseLeaders.length > 0 ? (
         <section class="mt-20">
             <h2 class="section-title-italic mb-8">Ранг на редакции (24ч)</h2>
             <div class="broadsheet-table-wrapper">
@@ -213,6 +230,7 @@ function formatStat(val: number) {
                 </table>
             </div>
         </section>
+        ) : null}
     </main>
     <Footer />
 </Layout>
@@ -246,6 +264,9 @@ function formatStat(val: number) {
     }
 
     .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
+    .pulse-empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); margin: 2rem 0 4rem; }
+    .pulse-empty-state h3 { font-family: var(--font-serif); font-size: 1.8rem; margin: 1rem 0 0.5rem; }
+    .pulse-empty-state p { font-family: var(--font-nyt-body); color: var(--secondary-foreground); }
 
     /* ── Category Pulse ──────────────────────────────── */
     .category-pulse-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }

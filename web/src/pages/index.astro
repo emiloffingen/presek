@@ -138,7 +138,11 @@ if (isHomepage) {
 }
 
 const focusEntities = topEntities
-    .map((ent: { name: string; total_mentions: number }) => ({ ...ent, name: String(ent?.name || '').trim() }))
+    .map((ent: { name: string; display_name?: string; total_mentions: number }) => ({
+        ...ent,
+        name: String(ent?.name || '').trim(),
+        display_name: String(ent?.display_name || ent?.name || '').trim(),
+    }))
     .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
     .slice(0, 10);
 
@@ -204,8 +208,8 @@ const supportingCompact = supportingClusters.slice(2);
 const developmentsFeatured = continuingClusters.slice(0, 6);
 const developmentsCompact = continuingClusters.slice(6, 18);
 const railWireArticles = [...wireArticles].sort((a: any, b: any) => {
-    const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
-    const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+    const aTime = (a?.ingested_at || a?.created_at) ? new Date(a.ingested_at || a.created_at).getTime() : 0;
+    const bTime = (b?.ingested_at || b?.created_at) ? new Date(b.ingested_at || b.created_at).getTime() : 0;
     return bTime - aTime;
 });
 
@@ -383,7 +387,7 @@ function getBriefingSnippet(content: string) {
                         {railWireArticles.slice(0, 10).map((art: any) => (
                             <a href={`/cluster/${art.cluster_id}`} class="rail-wire-item">
                                 <p>{getDisplayTitle(art)}</p>
-                                <div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.created_at)}</div>
+                                <div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
                             </a>
                         ))}
                     </div>
@@ -423,13 +427,13 @@ function getBriefingSnippet(content: string) {
 				<section class="rail-block rail-block-quiet">
 					<p class="rail-kicker">Теми во фокус</p>
 					<div class="rail-tag-cloud">
-						{focusEntities.map((ent: any) => (
-							<a href={`/subjekt/${encodeURIComponent(ent.name)}`}>
-								{ent.name}
-							</a>
-						))}
-					</div>
-				</section>
+							{focusEntities.map((ent: any) => (
+								<a href={`/subjekt/${encodeURIComponent(ent.name)}`}>
+									{ent.display_name || ent.name}
+								</a>
+							))}
+						</div>
+					</section>
 			</aside>
 		</div>
 	</main>
