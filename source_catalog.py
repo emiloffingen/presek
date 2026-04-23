@@ -51,7 +51,6 @@ DEFAULT_SOURCE_CATALOG = [
     ("IT.mk", "https://it.mk/feed/"),
     ("Sportmanija", "https://sportmanija.mk/feed/"),
     ("Reporter", "https://reporter.mk/feed/"),
-    ("Alsat-M", "https://alsat.mk/feed/"),
     ("Off.net.mk", "https://off.net.mk/feed/"),
     ("Denesen", "https://denesen.mk/feed/"),
     ("24info", "https://24info.mk/feed/"),
