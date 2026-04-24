@@ -603,7 +603,9 @@ const articleSchema = cluster ? {
 									<h4 class="sidebar-label">КЛУЧНИ ПОИМИ</h4>
 									<div class="flex flex-wrap gap-2 mt-4">
 										{cluster.tags.map(tag => (
-											<span class="tag-chip">{tag}</span>
+											<a href={`/?q=${encodeURIComponent(tag)}`} class="tag-chip">
+                                                {tag}
+                                            </a>
 										))}
 									</div>
 								</div>
@@ -1225,18 +1227,24 @@ const articleSchema = cluster ? {
 
 	.tag-chip {
 		font-family: var(--font-sans);
-		font-size: 0.7rem;
-		font-weight: 700;
-		background: var(--secondary);
-		padding: 4px 10px;
-		border-radius: 4px;
+		font-size: 0.62rem;
+		font-weight: 850;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		background: color-mix(in srgb, var(--background) 92%, var(--secondary) 8%);
+		border: 1px solid var(--border);
+		padding: 0.4rem 0.75rem;
+		border-radius: 2px;
 		color: var(--secondary-foreground);
-		transition: all 0.2s;
+		text-decoration: none;
+		transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.tag-chip:hover {
-		background: var(--nyt-accent);
-		color: white;
+		border-color: var(--nyt-accent);
+		background: color-mix(in srgb, var(--background) 88%, var(--nyt-accent) 12%);
+		color: var(--nyt-accent);
+		transform: translateY(-1px);
 	}
 
 	.shadow-editorial {
