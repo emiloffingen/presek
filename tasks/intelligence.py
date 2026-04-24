@@ -407,15 +407,15 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
             # Archive current summary before updating (Evolution Log)
             db.execute(
-                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, created_at)
-                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, created_at 
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at)
+                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at 
                    FROM cluster_summaries WHERE cluster_id = %s""",
                 (cluster_id,), fetch=False
             )
 
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, quote, centroid, citation_sources)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                        summary = EXCLUDED.summary, 
                        perspectives = EXCLUDED.perspectives, 
@@ -424,14 +424,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                        synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at, 
                        sentiment = EXCLUDED.sentiment, 
+                       tone_analysis = EXCLUDED.tone_analysis,
                        verification_report = EXCLUDED.verification_report, 
-                       quote = EXCLUDED.quote,
+                       quote = EXCLUDED.quote, 
                        centroid = EXCLUDED.centroid,
                        citation_sources = EXCLUDED.citation_sources""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources)),
+                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources)),
                 fetch=False
             )
-
             # Publish SSE event for Real-Time UI updates
             try:
                 from utils import publish_event
@@ -936,7 +936,9 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "иран", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
         "обединетите нации", "он", "украина", "русија", "сдсм", "вашингтон", "техеран",
         "блискиот исток", "персискиот залив", "западниот балкан", "европската унија",
-        "брисел", "москва", "киев", "израел", "газа", "либан"
+        "брисел", "москва", "киев", "израел", "газа", "либан",
+        "ахмети", "мицкоски", "сиљановска", "пендаровски", "ковaчевски", "филипче", "груевски", "заев",
+        "пресек", "битола", "охрид", "тетово", "куманово", "гостивар", "шри ланка"
     }
     
     for phrase in _extract_capitalized_phrases(synthesis_text):

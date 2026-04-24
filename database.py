@@ -427,10 +427,12 @@ class DatabaseManager:
                 cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_headline TEXT")
                 cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
+                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS tone_analysis JSONB DEFAULT '{}'")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT")
                 cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'")
                 cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'")
+                cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS tone_analysis JSONB DEFAULT '{}'")
 
                 cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
                     cluster_id TEXT PRIMARY KEY, 
