@@ -249,6 +249,7 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
     if cached: return cached
 
     # Count international articles based on categories since is_global flag is unreliable
+    freshness_expr = "COALESCE(ingested_at, created_at)"
     total_articles_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'"))["count"] or 0
     intl_articles_24h = (await db.async_execute_one(f"""
         SELECT COUNT(*) FROM articles 
