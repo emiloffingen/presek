@@ -137,6 +137,18 @@ function formatBriefing(content: string) {
         const line = lines[i];
         const stripped = line.trim();
         if (!stripped) { flushList(); continue; }
+        
+        // Skip duplicated title if it exists in content
+        if (line.startsWith('# ') && (line.includes('Дневен Брифинг') || line.includes('Пресек Брифинг'))) {
+            continue;
+        }
+
+        // Skip duplicated greeting if it exists in content
+        const greetings = ['Добро утро', 'Добар ден', 'Добра вечер'];
+        if (greetings.some(g => stripped.startsWith(g)) && stripped.length < 30) {
+            continue;
+        }
+
         if (line.startsWith('- ') || line.startsWith('• ')) {
             buffer.push(renderBriefingListItem(line));
             continue;
@@ -205,12 +217,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
 
             <div class="masthead-standfirst">
                 <p>{editionStandfirst}</p>
-            </div>
-
-            <div class="masthead-deck">
-                <span>{coverageTone}</span>
-                <span>{totalSubjects} издвоени актери</span>
-                <span>{articleCount.toLocaleString('mk-MK')} следени објави</span>
             </div>
 
             {sectionHighlights.length > 0 && (
@@ -307,27 +313,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                         <p class="rail-text">Актерите ќе се појават тука кога системот ќе издвои доволно јасен дневен сигнал.</p>
                     )}
                 </section>
-
-                <section class="rail-block rail-metrics">
-                    <p class="rail-kicker">Во бројки</p>
-                    <h3 class="rail-title">ДНЕВЕН ОПСЕГ</h3>
-                    <div class="rail-metric-grid">
-                        <div class="rail-metric-card">
-                            <span class="rail-metric-value">{articleCount.toLocaleString('mk-MK')}</span>
-                            <span class="rail-metric-label">објави</span>
-                        </div>
-                        <div class="rail-metric-card">
-                            <span class="rail-metric-value">{sectionHighlights.length || 6}</span>
-                            <span class="rail-metric-label">линии</span>
-                        </div>
-                        <div class="rail-metric-card">
-                            <span class="rail-metric-value">{totalSubjects}</span>
-                            <span class="rail-metric-label">актери</span>
-                        </div>
-                    </div>
-                    <p class="rail-text">{coverageTone}. Изборот е подреден според уредничка тежина, не според гласност.</p>
-                </section>
-
 
                 <section class="rail-block">
                     <p class="rail-kicker">Издание</p>
