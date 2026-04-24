@@ -29,14 +29,6 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[] }> = ({ data }) => {
 
     return (
         <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden">
-            <header className="mb-10">
-                <span className="nyt-section-label text-nyt-accent tracking-widest mb-2 block">Визуелизација</span>
-                <h2 className="font-serif text-3xl font-black mb-3 italic">Медиумски Пејзаж</h2>
-                <p className="font-nyt-body text-secondary-foreground max-w-2xl text-sm md:text-base">
-                    Карта на медиумската сцена според тонот на известување. Изворите на десната страна се пообјективни, додека оние на врвот се посензационалистички.
-                </p>
-            </header>
-
             <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
                 {/* Quadrant Labels */}
                 <div className="absolute top-4 left-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-nyt-red/60">Субјективни & Сензационални</div>
