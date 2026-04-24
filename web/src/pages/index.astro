@@ -27,6 +27,7 @@ const topic = searchParams.get('topic');
 const entity = searchParams.get('entity');
 const subcategory = searchParams.get('subcategory');
 const q = searchParams.get('q');
+const timespan = searchParams.get('timespan');
 
 let clusters: NewsCluster[] = [];
 let globalClusters: NewsCluster[] = [];
@@ -108,6 +109,7 @@ if (isHomepage) {
     if (entity) newsUrl.searchParams.set('entity', entity);
     if (subcategory) newsUrl.searchParams.set('subcategory', subcategory);
     if (q) newsUrl.searchParams.set('q', q);
+    if (timespan) newsUrl.searchParams.set('timespan', timespan);
 
     const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),

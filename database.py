@@ -592,9 +592,11 @@ class DatabaseManager:
                         first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         sentiment_score REAL DEFAULT 0,
+                        image_url TEXT,
                         metadata JSONB DEFAULT '{}'
                     )
                 """)
+                cur.execute("ALTER TABLE knowledge_entities ADD COLUMN IF NOT EXISTS image_url TEXT")
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS knowledge_relationships (
                         entity_a TEXT REFERENCES knowledge_entities(name),
