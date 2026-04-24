@@ -84,10 +84,12 @@ def normalize_tag_name(name):
         "автомобил": "Автомобили",
         "владин": "Влада",
         "полициск": "Полиција",
-        "мицко": "Мицкоски",
-        "мицкоскиот": "Мицкоски",
+        "мицко": "Христијан Мицкоски",
+        "мицкоски": "Христијан Мицкоски",
+        "мицкоскиот": "Христијан Мицкоски",
         "филипчето": "Венко Филипче",
         "филипче": "Венко Филипче",
+        "македонск": "Македонија",
     }
     PROTECTED_NAMES = {"македонија", "македонци", "македонски", "македонец"}
     
@@ -96,16 +98,18 @@ def normalize_tag_name(name):
         return mapping[lowered]
         
     if lowered in PROTECTED_NAMES:
-        return clean.capitalize()
+        return "Македонија" if "македон" in lowered else clean.capitalize()
 
     # 2. Selective suffix stripping (adjectives -> nouns where clear)
     # Only strip if the remaining word is long enough and it's a known adjective ending
     # AND it doesn't end with common noun patterns like 'ија' (Македонија)
-    if len(clean) > 7:
+    if len(clean) > 8:
         if not clean.lower().endswith("нија"):
             # Don't strip if it looks like a known name stem we want to keep
             if not any(lowered.startswith(p) for p in ["македон", "мицкос"]):
-                clean = re.sub(r"(скиот|ската|ското|ските|ски)$", "", clean, flags=re.IGNORECASE)
+                clean = re.sub(r"(овски|евски|скиот|ската|ското|ските)$", "", clean, flags=re.IGNORECASE)
+                if clean.lower().endswith("ски") and len(clean) > 5:
+                    clean = re.sub(r"ски$", "", clean, flags=re.IGNORECASE)
 
     # 3. Capitalization fallback
     if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
