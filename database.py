@@ -174,35 +174,39 @@ class DatabaseManager:
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return self.execute(sql, (vec_str, vec_str, limit))
 
-    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50):
+    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid"):
         """
         Combines Full-Text Search (FTS) and Semantic Search (pgvector) using a weighted score.
+        Supports advanced web-style queries (e.g. "phrase search", -exclude).
         """
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         
-        sql = """
+        # We use websearch_to_tsquery for more natural search behavior
+        sql = f"""
             WITH fts_results AS (
-                SELECT id, ts_rank_cd(search_vector, plainto_tsquery('simple', %s)) AS rank
+                SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
                 FROM articles
-                WHERE search_vector @@ plainto_tsquery('simple', %s)
+                WHERE search_vector @@ websearch_to_tsquery('simple', %s)
                 ORDER BY rank DESC
-                LIMIT 200
+                LIMIT 300
             ),
             semantic_results AS (
                 SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
                 FROM articles
                 WHERE embedding IS NOT NULL
+                  AND created_at >= NOW() - INTERVAL '14 days'
                 ORDER BY similarity DESC
-                LIMIT 200
+                LIMIT 300
             ),
             scored_articles AS (
                 SELECT a.*, 
-                       (COALESCE(f.rank, 0) * 0.4 + COALESCE(s.similarity, 0) * 0.6) AS base_score,
-                       GREATEST(0.5, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 2592000)) as recency_factor
+                       (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
+                       -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
+                       GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
                 FROM articles a
                 LEFT JOIN fts_results f ON a.id = f.id
                 LEFT JOIN semantic_results s ON a.id = s.id
-                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.4)
+                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
             ),
             ranked_clusters AS (
                 SELECT *,
@@ -212,7 +216,7 @@ class DatabaseManager:
             SELECT *, (base_score * recency_factor) as hybrid_score
             FROM ranked_clusters
             WHERE cluster_rank = 1
-            ORDER BY hybrid_score DESC
+            ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
             LIMIT %s
         """
         return self.execute(sql, (query_text, query_text, vec_str, limit))

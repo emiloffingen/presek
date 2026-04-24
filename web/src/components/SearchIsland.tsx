@@ -260,6 +260,15 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const showRecent = query.trim().length < 2 && recentSearches.length > 0;
   const showSuggestions = query.trim().length >= 2;
 
+  const SUGGESTED_CATEGORIES = [
+    { name: 'Економија', color: 'text-emerald-600' },
+    { name: 'Политика', color: 'text-blue-600' },
+    { name: 'Спорт', color: 'text-orange-500' },
+    { name: 'Култура', color: 'text-purple-600' },
+    { name: 'Технологија', color: 'text-cyan-600' },
+    { name: 'Македонија', color: 'text-nyt-red' },
+  ];
+
   const renderHighlightedText = (text: string, searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return text;
@@ -521,9 +530,29 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 )}
 
                 {!showSuggestions && !showRecent && (
-                  <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed max-w-[42ch]">
-                    Почнете со име на личност, институција, град или тема за да добиете релевантни групирани вести.
-                  </p>
+                  <div className="space-y-6">
+                    <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed max-w-[42ch]">
+                      Почнете со име на личност, институција, град или тема за да добиете релевантни групирани вести.
+                    </p>
+                    <div className="pt-4">
+                      <p className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground mb-4">
+                        Истражи по категорија
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {SUGGESTED_CATEGORIES.map(cat => (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => { closeSearch(); navigate(`/?category=${encodeURIComponent(cat.name)}`); }}
+                            className="flex items-center justify-between p-3 border border-border hover:border-nyt-accent hover:bg-secondary transition-all text-left group"
+                          >
+                            <span className={`font-serif font-bold ${cat.color}`}>{cat.name}</span>
+                            <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 

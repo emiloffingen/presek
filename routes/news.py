@@ -257,7 +257,8 @@ async def get_news(
         if q:
             from embeddings import generate_query_embedding
             query_vec = generate_query_embedding(q)
-            rows = await db.async_hybrid_search(q, query_vec, limit=row_limit) if query_vec else await db.async_search_articles(q, limit=row_limit)
+            sort_by = "recent" if sort == "recent" else "hybrid"
+            rows = await db.async_hybrid_search(q, query_vec, limit=row_limit, sort_by=sort_by) if query_vec else await db.async_search_articles(q, limit=row_limit)
         elif subcategory:
             rows = await db.async_execute("""
                 SELECT cluster_id, MAX(created_at) as last_article
