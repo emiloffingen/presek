@@ -3,233 +3,103 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Shield, Lock, EyeOff, Globe } from 'lucide-react';
 ---
 
-<Layout title="Политика за приватност">
-  <NYTHeader />
-  <main class="site-layout py-[var(--page-py)]">
-    <Breadcrumbs items={[{ label: "Политика за приватност" }]} />
-    <article class="privacy-shell">
-      <header class="privacy-header">
-        <span class="page-kicker">Политика</span>
-        <h1 class="privacy-headline">Политика за приватност</h1>
-        <p class="privacy-intro">
-          Пресек е сервис за агрегирање и контекстуализирање вести. Оваа страница објаснува
-          кои технички податоци ги користиме, што останува локално на вашиот уред и како ги
-          третираме врските кон надворешни извори.
-        </p>
-        <p class="privacy-meta">Последна промена: 4 април 2026</p>
-      </header>
-
-      <div class="privacy-grid">
-        <div class="privacy-main">
-          <section class="privacy-module">
-            <h2 class="privacy-section-title">1. Собирање на информации</h2>
-            <div class="prose-nyt">
-              <p>
-                Пресек во најголем дел не бара лични податоци за читање и пребарување. Не
-                собираме имиња, адреси или телефонски броеви при обично користење на платформата.
-              </p>
+<Layout 
+    title="Политика за приватност — Пресек" 
+    description="Транспарентност во обработката на податоците: Како Пресек ги штити вашите информации."
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ПРАВНО & ПРИВАТНОСТ</span>
             </div>
-          </section>
-
-          <section class="privacy-module">
-            <h2 class="privacy-section-title">2. Колачиња и огласување</h2>
-            <div class="prose-nyt">
-              <p>
-                Користиме локално складирање за технички преференции. Дополнително, Пресек користи <strong>Google AdSense</strong> за прикажување огласи.
-              </p>
-              <ul class="list-disc pl-6 space-y-2 mt-4">
-                <li>Надворешни добавувачи, вклучително и Google, користат колачиња за да прикажуваат огласи врз основа на вашите претходни посети на оваа или други веб-страници.</li>
-                <li>Користењето на колачињата за огласување на Google му овозможува на Google и на неговите партнери да ви прикажуваат огласи врз основа на вашата посета на Пресек и/или на други страници на интернет.</li>
-                <li>Можете да се откажете од персонализираното огласување со посета на <a href="https://www.google.com/settings/ads" target="_blank" class="underline">Поставки за огласи</a>.</li>
-              </ul>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Политика за <span>Приватност</span></h1>
             </div>
-          </section>
+            <p class="masthead-intro">
+                Вашата приватност е во основата на нашата архитектура. Оваа страница објаснува како ги третираме техничките сигнали и врските кон надворешни извори.
+            </p>
+        </header>
 
-          <section class="privacy-module">
-            <h2 class="privacy-section-title">3. Аналитика</h2>
-            <div class="prose-nyt">
-              <p>
-                Може да користиме анонимни агрегирани податоци за посетеност со цел подобрување
-                на перформансите, стабилноста и читливоста на платформата. Тие податоци не се
-                користат за лична идентификација.
-              </p>
-            </div>
-          </section>
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Пресек е сервис за агрегирање и контекстуализирање вести кој работи на принципот на максимална анонимност за своите корисници. За разлика од социјалните мрежи, ние не градиме лични профили и не ја следиме вашата активност надвор од рамките на платформата.
+                    </p>
 
-          <section class="privacy-module">
-            <h2 class="privacy-section-title">4. Надворешни врски</h2>
-            <div class="prose-nyt">
-              <p>
-                Пресек упатува кон оригиналните медиумски извори за секоја сторија. Политиките
-                за приватност и содржината на тие веб-страници се одговорност на самите издавачи.
-              </p>
-            </div>
-          </section>
+                    <h2 class="section-title-italic">1. Собирање на информации</h2>
+                    <p>
+                        Пресек не бара регистрација, име, презиме или е-пошта за основно користење на сервисот. Повеќето податоци што овозможуваат персонализација (како избор на омилени теми или темна тема) се зачувуваат локално на вашиот уред (LocalStorage) и никогаш не ги напуштаат вашите рамки.
+                    </p>
 
-          <section class="privacy-module">
-            <h2 class="privacy-section-title">5. Промени во политиката</h2>
-            <div class="prose-nyt">
-              <p>
-                Оваа политика може да се ажурира кога ќе воведеме нови функции или промени во
-                техничката архитектура. Најновата верзија секогаш ќе биде објавена на оваа страница.
-              </p>
+                    <h2 class="section-title-italic">2. Огласување и Колачиња</h2>
+                    <p>
+                        За финансиска одржливост на проектот, Пресек користи <strong>Google AdSense</strong>. Надворешни добавувачи, вклучително и Google, користат колачиња за да прикажуваат огласи врз основа на вашите претходни посети.
+                    </p>
+                    <ul class="editorial-list">
+                        <li><strong>Персонализација:</strong> Користењето на колачињата му овозможува на Google да ви прикажува релевантни огласи.</li>
+                        <li><strong>Контрола:</strong> Можете да се откажете од персонализираното огласување преку <a href="https://www.google.com/settings/ads" target="_blank" class="text-nyt-accent underline">Поставките за огласи на Google</a>.</li>
+                    </ul>
+
+                    <h2 class="section-title-italic">3. Надворешни извори</h2>
+                    <p>
+                        Пресек содржи линкови до надворешни медиуми. Кога ќе кликнете на „Оригинална објава“, вие ја напуштате нашата платформа и влегувате во доменот на соодветниот медиум, чија политика за приватност е надвор од наша контрола.
+                    </p>
+
+                    <h2 class="section-title-italic">4. Аналитика</h2>
+                    <p>
+                        Користиме анонимни, агрегирани податоци за сообраќајот со цел да ги идентификуваме најпосетуваните категории и да ја оптимизираме брзината на серверот. Овие податоци се користат исклучиво за технички перформанси.
+                    </p>
+                </article>
             </div>
-          </section>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Безбедност</p>
+                    <h3 class="rail-title">НАШАТА ЗАЛОЖБА</h3>
+                    <p class="rail-text">Нема профили. Нема следење низ мрежата. Само чисти информации организирани за јасен преглед.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
+                    <p class="text-xs">Последна измена: 24 април, 2026</p>
+                </div>
+            </aside>
         </div>
-
-        <aside class="privacy-rail">
-          <div class="rail-card">
-            <h2 class="rail-card-title">Што Не Чуваме</h2>
-            <p class="rail-copy">
-              Не бараме регистрација за основно користење и не чуваме лични профили на читатели.
-            </p>
-          </div>
-          <div class="rail-card rail-card-accent">
-            <h2 class="rail-card-title">Локални Податоци</h2>
-            <p class="rail-copy">
-              Темата на интерфејсот и последните пребарувања може да бидат зачувани во вашиот
-              прелистувач за побрз и поконзистентен пристап.
-            </p>
-          </div>
-          <div class="rail-card">
-            <h2 class="rail-card-title">Поврзано</h2>
-            <div class="rail-links">
-              <a href="/terms" class="rail-link">Услови</a>
-              <a href="/contact" class="rail-link">Контакт</a>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </article>
-  </main>
-
-  <Footer />
+    </main>
+    <Footer />
 </Layout>
 
 <style>
-  .privacy-shell {
-    max-width: 76rem;
-    margin: 0 auto;
-  }
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
 
-  .privacy-header {
-    padding-bottom: 2rem;
-    margin-bottom: 2.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .privacy-headline {
-    font-size: clamp(2.4rem, 1.9rem + 1.8vw, 4.6rem);
-    line-height: 0.96;
-    margin: 0 0 1rem;
-    max-width: 12ch;
-  }
-
-  .privacy-intro {
-    margin: 0 0 1rem;
-    max-width: 48rem;
-    font-family: var(--font-nyt-body);
-    font-size: 1.06rem;
-    line-height: 1.7;
-    color: var(--secondary-foreground);
-  }
-
-  .privacy-meta {
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-  }
-
-  .privacy-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .privacy-main,
-  .privacy-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .rail-links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .privacy-module,
-  .rail-card {
-    padding: 1.4rem;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
-  }
-
-  .privacy-section-title,
-  .rail-card-title {
-    margin: 0 0 0.9rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid var(--border);
-    font-family: var(--font-sans);
-    font-size: 0.74rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .rail-copy {
-    margin: 0;
-    font-family: var(--font-nyt-body);
-    font-size: 1rem;
-    line-height: 1.68;
-    color: var(--secondary-foreground);
-  }
-
-  .rail-card-accent {
-    background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
-  }
-
-  @media (min-width: 960px) {
-    .privacy-grid {
-      grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
-      gap: 2rem;
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .privacy-rail {
-      position: sticky;
-      top: 7rem;
-      align-self: start;
-    }
-  }
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
 
-  @media (max-width: 640px) {
-    .privacy-header {
-      padding-bottom: 1.4rem;
-      margin-bottom: 1.6rem;
-    }
+    .editorial-list { list-style: none; padding: 0; margin-top: 1.5rem; }
+    .editorial-list li { margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
+    .editorial-list li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
 
-    .privacy-headline {
-      font-size: clamp(2rem, 9vw, 2.8rem);
-      line-height: 0.98;
-    }
-
-    .privacy-intro,
-    .rail-copy,
-    .prose-nyt {
-      font-size: 0.98rem;
-      line-height: 1.65;
-    }
-
-    .privacy-module,
-    .rail-card {
-      padding: 1rem;
-    }
-  }
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

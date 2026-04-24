@@ -3,117 +3,93 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import { Mail, Info } from 'lucide-react';
+import { Mail, MessageSquare, Info } from 'lucide-react';
 ---
 
 <Layout 
-    title="Контакт"
-    description="Контактирајте го тимот на Пресек за прашања, предлози или соработка."
+    title="Контакт — Пресек" 
+    description="Контактирајте го тимот на Пресек за соработка, предлози или техничка поддршка."
 >
     <NYTHeader />
-    <main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "Контакт" }]} />
-        <article class="editorial-shell">
-            <header class="editorial-header">
-                <span class="page-kicker">Комуникација</span>
-                <h1 class="editorial-headline">Контакт</h1>
-                <p class="editorial-intro">
-                    Имате прашање, предлог или сакате да го вклучите вашиот медиум во нашата мрежа? Тука сме за соработка и повратни информации.
-                </p>
-            </header>
-
-            <div class="editorial-page-grid">
-                <div class="editorial-main">
-                    <section class="editorial-panel">
-                        <h2 class="editorial-panel-title">Електронска пошта</h2>
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="p-3 bg-nyt-accent/10 text-nyt-accent rounded-full">
-                                <Mail size={24} />
-                            </div>
-                            <div>
-                                <p class="font-serif text-2xl font-black text-nyt-accent">contact@presek.mk</p>
-                                <p class="text-sm text-muted-foreground mt-1">Одговараме на сите легитимни барања во рок од 24 часа.</p>
-                                <a href="mailto:contact@presek.mk" class="contact-action-link">Испрати е-пошта</a>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="editorial-panel">
-                        <h2 class="editorial-panel-title">За медиумите</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Доколку претставувате медиум и сакате да бидете вклучени во Пресек, ве молиме испратете го вашиот официјален RSS линк. Нашата мисија е да промовираме квалитетно и објективно новинарство преку правилно групирање и транспарентно цитирање.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="editorial-panel">
-                        <h2 class="editorial-panel-title">Техничка поддршка</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                За пријавување на технички грешки, ве молиме наведете го вашиот уред и прелистувачот кој го користите. Ова ни помага побрзо да го идентификуваме и решиме проблемот.
-                            </p>
-                        </div>
-                    </section>
-                </div>
-
-                <aside class="editorial-rail">
-                    <div class="rail-card rail-card-accent">
-                        <h2 class="rail-card-title">Најбрз пат</h2>
-                        <p class="rail-copy">
-                            За прашања, технички проблеми или барања за вклучување медиум, најбрзо е директно да ни пишете на е-пошта со краток опис и линк каде што е потребно.
-                        </p>
-                    </div>
-
-                    <div class="rail-card">
-                        <h2 class="rail-card-title">Пред да пишете</h2>
-                        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-nyt-accent mb-4">
-                            <Info size={14} /> Корисно за побрз одговор
-                        </div>
-                        <ul class="contact-checklist">
-                            <li>испратете линк до конкретната страница или кластер;</li>
-                            <li>наведете дали се работи за содржина, технички проблем или нов извор;</li>
-                            <li>ако е баг, наведете уред и прелистувач.</li>
-                        </ul>
-                    </div>
-                </aside>
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">КОРЕСПОНДЕНЦИЈА & ПОДДРШКА</span>
             </div>
-        </article>
-    </main>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Контакт <span>Информации</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Отворени сме за вашите предлози, прашања и нови идеи за соработка. Комуникацијата со нашите читатели и партнери е клучна за развојот на платформата.
+            </p>
+        </header>
 
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Пресек е динамичен систем кој постојано се надградува. Вашите повратни информации ни помагаат да го подобриме алгоритамот, да додадеме нови извори и да го направиме корисничкото искуство уште појасно.
+                    </p>
+
+                    <div class="contact-channels space-y-8 my-10">
+                        <div class="channel-item p-8 border border-border bg-secondary/10">
+                            <h3 class="font-serif text-2xl font-black mb-4">Електронска пошта</h3>
+                            <p class="mb-6">За сите општи прашања, медиумски барања или соработка, пишете ни на нашата официјална адреса:</p>
+                            <a href="mailto:contact@presek.live" class="text-2xl font-black text-nyt-accent underline">contact@presek.live</a>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="channel-item p-6 border border-border">
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">За Медиумите</h4>
+                                <p class="text-sm leading-relaxed">Доколку сакате вашиот медиум да биде вклучен во агрегацијата, ве молиме испратете ни го вашиот официјален RSS фид.</p>
+                            </div>
+                            <div class="channel-item p-6 border border-border">
+                                <h4 class="font-sans font-black text-[10px] uppercase tracking-widest mb-3">Технички Грешки</h4>
+                                <p class="text-sm leading-relaxed">Пријавете багови или проблеми со приказот со наведување на вашиот уред и прелистувач за побрза дијагностика.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Одговор</p>
+                    <h3 class="rail-title">ВРЕМЕНСКА РАМКА</h3>
+                    <p class="rail-text">Настојуваме да одговориме на сите легитимни барања во рок од 24 до 48 часа.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">КОМУНИКАЦИЈА</p>
+                    <p class="text-xs leading-relaxed italic">Пресек.мк ги цени конструктивните критики и сугестии од заедницата.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
     <Footer />
 </Layout>
 
 <style>
-    .contact-action-link {
-        display: inline-flex;
-        margin-top: 0.9rem;
-        padding: 0.65rem 0.9rem;
-        border: 1px solid var(--foreground);
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--foreground);
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .contact-action-link:hover {
-        background: var(--foreground);
-        color: var(--background);
-    }
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
 
-    .contact-checklist {
-        margin: 0;
-        padding-left: 1.1rem;
-        font-family: var(--font-nyt-body);
-        font-size: 0.98rem;
-        line-height: 1.7;
-        color: var(--secondary-foreground);
-    }
-
-    .contact-checklist li + li {
-        margin-top: 0.45rem;
-    }
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>

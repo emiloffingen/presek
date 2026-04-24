@@ -3,327 +3,95 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { Scale, FileText, AlertCircle } from 'lucide-react';
 ---
 
-<Layout
-    title="Услови за користење"
-    description="Услови за користење на платформата Пресек — агрегатор на вести од македонски и регионални медиуми."
+<Layout 
+    title="Услови за користење — Пресек" 
+    description="Правни рамки за користење на платформата Пресек.мк и заштита на содржините."
 >
     <NYTHeader />
-    <main class="site-layout py-[var(--page-py)]">
-        <Breadcrumbs items={[{ label: "Услови за користење" }]} />
-        <article class="terms-shell">
-            <header class="terms-header">
-                <span class="page-kicker">Правно</span>
-                <h1 class="terms-headline">Услови за користење</h1>
-                <p class="terms-intro">
-                    Со пристапување и користење на Пресек, се согласувате со овие услови.
-                    Ве молиме прочитајте ги внимателно пред да ја користите платформата.
-                </p>
-                <p class="terms-meta">Последна промена: 9 април 2026</p>
-            </header>
-
-            <div class="terms-grid">
-                <div class="terms-main">
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">1. Опис на услугата</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Пресек е информативен агрегатор кој собира јавно достапни содржини од
-                                македонски и регионални медиуми, ги групира во тематски кластери и нуди
-                                сублимирани прегледи генерирани преку автоматизирана јазична обработка. Пресек
-                                не е издавач и не создава оригинални новинарски содржини.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">2. Авторски права и содржина</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Сите новинарски текстови, фотографии и мултимедијални содржини
-                                прикажани на Пресек се сопственост на нивните оригинални издавачи.
-                                Пресек прикажува наслови, кратки извадоци и линкови кон оригиналните
-                                извори. Целосните текстови секогаш се достапни на веб-страниците на
-                                самите медиуми.
-                            </p>
-                            <p>
-                                Дизајнот, кодот, автоматски генерираните сублимати и структурата на кластерите
-                                се интелектуална сопственост на Пресек.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">3. Користење на платформата</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Пресек е достапен бесплатно за лична, некомерцијална употреба.
-                                Забрането е:
-                            </p>
-                            <ul>
-                                <li>автоматско преземање (scraping) на содржини без дозвола;</li>
-                                <li>користење на платформата за ширење дезинформации;</li>
-                                <li>обид за нарушување на стабилноста или безбедноста на системот;</li>
-                                <li>прикажување на содржини од Пресек како ваши оригинални дела.</li>
-                            </ul>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">4. Автоматизирани содржини</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Пресек користи напредни алгоритми за сублимирање,
-                                групирање и споредување на вести. Овие содржини се генерирани автоматски
-                                и може да содржат неточности. Тие не претставуваат уредничко мислење
-                                и не треба да се сметаат за конечен извор на информации. За верификација,
-                                секогаш проверете ги оригиналните извори.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">5. Ограничување на одговорност</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Пресек ги прикажува содржините „како што се" (as-is), без гаранции за
-                                точност, целосност или навременост. Не сносиме одговорност за:
-                            </p>
-                            <ul>
-                                <li>содржината на надворешните веб-страници на кои упатуваме;</li>
-                                <li>одлуки донесени врз основа на информации прикажани на платформата;</li>
-                                <li>привремена недостапност на услугата поради одржување или технички причини.</li>
-                            </ul>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">6. Огласување</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Пресек може да прикажува огласи преку трети страни (вклучувајќи Google AdSense)
-                                за финансиска одржливост на платформата. Огласите се јасно одвоени од
-                                уредничката содржина и не влијаат врз приказот или рангирањето на вестите.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">7. Промени на условите</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                Го задржуваме правото да ги ажурираме овие услови во секое време.
-                                Продолженото користење на платформата по објавувањето на промените
-                                претставува согласност со новите услови. Најновата верзија секогаш
-                                ќе биде достапна на оваа страница.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section class="terms-module">
-                        <h2 class="terms-section-title">8. Контакт</h2>
-                        <div class="prose-nyt">
-                            <p>
-                                За прашања поврзани со овие услови, контактирајте нè на
-                                <a href="mailto:contact@presek.mk" class="text-nyt-accent underline">contact@presek.mk</a>.
-                            </p>
-                        </div>
-                    </section>
-                </div>
-
-                <aside class="terms-rail">
-                    <div class="rail-card">
-                        <h2 class="rail-card-title">Накратко</h2>
-                        <p class="rail-copy">
-                            Пресек агрегира вести — не ги создава. Содржините им припаѓаат на
-                            оригиналните издавачи. Автоматските сублимати се помошен алат, не замена
-                            за проверка на изворите.
-                        </p>
-                    </div>
-                    <div class="rail-card rail-card-accent">
-                        <h2 class="rail-card-title">Приватност</h2>
-                        <p class="rail-copy">
-                            За детали за колачиња, аналитика и локално складирање, прочитајте ја
-                            нашата <a href="/privacy" class="text-nyt-accent underline">Политика за приватност</a>.
-                        </p>
-                    </div>
-                    <div class="rail-card">
-                        <h2 class="rail-card-title">Помош</h2>
-                        <div class="rail-links">
-                            <a href="/privacy" class="rail-link">Политика за приватност</a>
-                            <a href="/contact" class="rail-link">Контакт</a>
-                        </div>
-                    </div>
-                </aside>
+    <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker">ПРАВНО & РЕГУЛАТИВА</span>
             </div>
-        </article>
-    </main>
+            <div class="masthead-main">
+                <h1 class="masthead-title">Услови за <span>Користење</span></h1>
+            </div>
+            <p class="masthead-intro">
+                Упатства за користење на нашиот сервис и дефинирање на одговорностите помеѓу платформата, издавачите и читателите.
+            </p>
+        </header>
 
+        <div class="broadsheet-grid">
+            <div class="broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Пресек е информативен агрегатор кој собира јавно достапни содржини од македонски и меѓународни медиуми. Користејќи ја нашата платформа, вие се согласувате со долунаведените услови кои ја регулираат употребата на автоматски генерираните податоци и пристапот до надворешните извори.
+                    </p>
+
+                    <h2 class="section-title-italic">1. Авторски права</h2>
+                    <p>
+                        Сите новинарски текстови, фотографии и мултимедијални содржини прикажани на Пресек се сопственост на нивните оригинални издавачи. Пресек прикажува само наслови, кратки извадоци и линкови кон изворните страници. Дизајнот, кодот и автоматски генерираните сублимати се сопственост на Пресек.
+                    </p>
+
+                    <h2 class="section-title-italic">2. Автоматизирани содржини</h2>
+                    <p>
+                        Сублиматите и анализите на Пресек се генерирани преку напредни алгоритми за јазична обработка. Иако се стремиме кон максимална точност, овие содржини може да содржат грешки и не претставуваат уредничко мислење на тимот. За верификација на фактите, секогаш користете ги оригиналните извори.
+                    </p>
+
+                    <h2 class="section-title-italic">3. Ограничувања</h2>
+                    <p>
+                        Забрането е секакво автоматско преземање (scraping) на содржини од Пресек без претходна дозвола. Платформата е наменета за лична, некомерцијална употреба и за информирање на пошироката јавност.
+                    </p>
+
+                    <h2 class="section-title-italic">4. Одговорност</h2>
+                    <p>
+                        Пресек не сноси одговорност за точноста на информациите објавени од трети страни (медиуми) ниту за евентуални штети настанати од користење на автоматските анализи. Нашата улога е чисто агрегаторска и технолошка.
+                    </p>
+                </article>
+            </div>
+
+            <aside class="broadsheet-rail">
+                <section class="rail-block rail-block-alt">
+                    <p class="rail-kicker">Напомена</p>
+                    <h3 class="rail-title">ПРАВЕН СТАТУС</h3>
+                    <p class="rail-text">Пресек не е медиумски издавач, туку технолошка алатка за транспарентност и организација на податоци.</p>
+                </section>
+
+                <div class="rail-meta-box">
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">АЖУРИРАНО</p>
+                    <p class="text-xs">Последна измена: 24 април, 2026</p>
+                </div>
+            </aside>
+        </div>
+    </main>
     <Footer />
 </Layout>
 
 <style>
-    .terms-shell {
-        max-width: 76rem;
-        margin: 0 auto;
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-intro { font-family: var(--font-nyt-body); font-size: 1.15rem; line-height: 1.6; color: var(--secondary-foreground); max-width: 42rem; }
+
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    @media (min-width: 1024px) {
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .terms-header {
-        padding-bottom: 2rem;
-        margin-bottom: 2.5rem;
-        border-bottom: 1px solid var(--border);
-    }
+    .prose-editorial { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.75; color: var(--secondary-foreground); }
+    .first-paragraph::first-letter { float: left; font-family: var(--font-serif); font-size: 5rem; font-weight: 900; line-height: 0.8; padding-top: 0.5rem; padding-right: 0.75rem; color: var(--foreground); }
+    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; margin-top: 3rem; margin-bottom: 1.5rem; color: var(--foreground); }
 
-    .terms-headline {
-        font-size: clamp(2.4rem, 1.9rem + 1.8vw, 4.6rem);
-        line-height: 0.96;
-        margin: 0 0 1rem;
-        max-width: 14ch;
-    }
-
-    .terms-intro {
-        margin: 0 0 1rem;
-        max-width: 48rem;
-        font-family: var(--font-nyt-body);
-        font-size: 1.06rem;
-        line-height: 1.7;
-        color: var(--secondary-foreground);
-    }
-
-    .terms-meta {
-        margin: 0;
-        font-family: var(--font-sans);
-        font-size: 0.72rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
-    }
-
-    .terms-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-
-    .terms-main,
-    .terms-rail {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .rail-links {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .terms-module,
-    .rail-card {
-        padding: 1.4rem;
-        border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%);
-    }
-
-    .terms-section-title,
-    .rail-card-title {
-        margin: 0 0 0.9rem;
-        padding-bottom: 0.8rem;
-        border-bottom: 1px solid var(--border);
-        font-family: var(--font-sans);
-        font-size: 0.74rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    .prose-nyt {
-        font-family: var(--font-nyt-body);
-        font-size: 1.06rem;
-        line-height: 1.8;
-        color: var(--secondary-foreground);
-    }
-
-    .prose-nyt p {
-        margin: 0 0 1rem;
-    }
-
-    .prose-nyt ul {
-        margin: 0.5rem 0 1rem;
-        padding-left: 1.5rem;
-    }
-
-    .prose-nyt li {
-        margin-bottom: 0.4rem;
-    }
-
-    .rail-copy {
-        margin: 0;
-        font-family: var(--font-nyt-body);
-        font-size: 1rem;
-        line-height: 1.68;
-        color: var(--secondary-foreground);
-    }
-
-    .rail-card-accent {
-        background: color-mix(in srgb, var(--background) 78%, var(--secondary) 22%);
-    }
-
-    .rail-link {
-        display: inline-flex;
-        width: fit-content;
-        padding: 0.6rem 0.85rem;
-        border: 1px solid var(--foreground);
-        font-family: var(--font-sans);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--foreground);
-    }
-
-    .rail-link:hover {
-        background: var(--foreground);
-        color: var(--background);
-    }
-
-    @media (min-width: 960px) {
-        .terms-grid {
-            grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
-            gap: 2rem;
-        }
-
-        .terms-rail {
-            position: sticky;
-            top: 7rem;
-            align-self: start;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .terms-header {
-            padding-bottom: 1.4rem;
-            margin-bottom: 1.6rem;
-        }
-
-        .terms-headline {
-            font-size: clamp(2rem, 9vw, 2.8rem);
-            line-height: 0.98;
-        }
-
-        .terms-intro,
-        .prose-nyt,
-        .rail-copy {
-            font-size: 0.98rem;
-            line-height: 1.65;
-        }
-
-        .terms-module,
-        .rail-card {
-            padding: 1rem;
-        }
-    }
+    .rail-block { margin-bottom: 2.5rem; }
+    .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
+    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    .rail-meta-box { padding: 1.5rem; border: 1px solid var(--border); }
 </style>
