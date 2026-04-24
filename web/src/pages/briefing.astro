@@ -196,9 +196,10 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
     <NYTHeader stats={stats} />
 
-	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
 	    <header class="editorial-masthead motion-rise masthead-double-rule">
-	        <div class="masthead-top">                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
+	        <div class="masthead-top">
+                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
                     <span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
                     <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА {versionLabel}</span>
@@ -209,9 +210,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                 <div class="masthead-branding">
                     <DispatchIcon size={32} className="text-nyt-accent" />
                     <h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
-                </div>
-                <div class="masthead-date">
-                    <p>{currentDate}</p>
                 </div>
             </div>
 
