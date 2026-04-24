@@ -425,7 +425,9 @@ def annotate_cluster_articles(arts, prefer_recent=False):
         balance_label = None # Lean: don't show if one-sided unless many sources
 
     annotated = []
-    for article, signal in zip(ranked, signals):
+    lead_article = ranked[0] if ranked else None
+    
+    for idx, (article, signal) in enumerate(zip(ranked, signals)):
         enriched = dict(article)
         enriched["source_signal"] = signal
         # Add cluster-level balance signal to every article for easy access in frontend
@@ -433,6 +435,20 @@ def annotate_cluster_articles(arts, prefer_recent=False):
             "score": balance_score,
             "label": balance_label
         }
+        
+        # Determine relationship to lead
+        if idx == 0:
+            enriched["relationship_to_lead"] = {"tone": "lead", "label": "ОСНОВНА ОБЈАВА"}
+        else:
+            # Heuristic for intra-cluster relationship
+            overlap = _cluster_title_overlap(lead_article.get("title", ""), article.get("title", ""))
+            if overlap >= 0.45:
+                enriched["relationship_to_lead"] = {"tone": "neutral", "label": "ИСТА ПРИКАЗНА"}
+            elif overlap >= 0.20:
+                enriched["relationship_to_lead"] = {"tone": "neutral", "label": "ПОВРЗАНА ПРИКАЗНА"}
+            else:
+                enriched["relationship_to_lead"] = {"tone": "neutral", "label": "ИСТ КОНТЕКСТ"}
+                
         annotated.append(enriched)
     return annotated
 

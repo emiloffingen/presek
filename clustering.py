@@ -153,7 +153,7 @@ MAX_CLUSTER_SIZE     = 35
 # same-story pairs typically sit around 0.10–0.25, clearly-related topics
 # 0.25–0.35, unrelated >0.45. 0.30 keeps precision high without being so
 # strict that it misses near-duplicate stories from different sources.
-VECTOR_THRESHOLD     = 0.26
+VECTOR_THRESHOLD     = 0.28
 
 def _extract_title_entities(title: str) -> set[str]:
     # Use precise Macedonian Cyrillic ranges to avoid matching lowercase words as entities
@@ -236,7 +236,7 @@ def _topic_bridge_allowed(incoming_topic: str, rep_topic: str, category: str | N
         or lexical_overlap >= (0.60 if recent_cycle else (0.66 if same_day else 0.72))
     )
 
-def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
+def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 48, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
     if not embedding: return None
     try:
         from psycopg2.extras import DictCursor
@@ -246,14 +246,14 @@ def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36
         threshold = VECTOR_THRESHOLD
         
         # 1. Stricter for international/regional news where stories are often broad
-        if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион"):
-            threshold = 0.18  # Was 0.22, now very strict
+        if category in ("Свет", "Европа", "Балкан", "САД", "Америка", "Регион", "Германија"):
+            threshold = 0.22  # Slightly more lenient to catch related global developments
             
         # 2. EVEN STRICTER for the generic 'Вести' topic (the catch-all)
         # Articles tagged only as 'Вести' often lack specific keywords, causing
         # vector-based 'gravitational' pull for unrelated content.
         if topic == "Вести" or not topic:
-            threshold = min(threshold, 0.21) # Cap distance for generic news
+            threshold = min(threshold, 0.24) # Increased for better recall on general news
             
         params = [str(embedding), lookback_hours]
         filters = []
