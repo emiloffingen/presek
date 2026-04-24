@@ -35,63 +35,71 @@ export default function NewsletterIsland() {
 
   if (status === 'success') {
     return (
-      <section className="rail-module border border-nyt-accent/20 bg-nyt-accent/4 p-5 animate-in fade-in duration-500">
-        <div className="flex flex-col items-center text-center">
-          <CheckCircle2 className="text-nyt-accent mb-3" size={26} />
-          <h3 className="font-serif font-bold text-base mb-2">Успешно се пријавивте!</h3>
-          <p className="text-[13px] text-secondary-foreground leading-relaxed">
+      <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden animate-in fade-in duration-500">
+        <div className="flex flex-col items-center text-center relative z-10">
+          <CheckCircle2 className="text-nyt-accent mb-4" size={28} />
+          <h3 className="font-serif font-black text-lg mb-3 tracking-tight">Успешно се пријавивте!</h3>
+          <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed">
             Секое утро во 08:00 часот ќе го добивате најважниот пресек на вестите директно во вашето сандаче.
           </p>
+        </div>
+        <div className="absolute -right-4 -bottom-4 opacity-5">
+           <Mail size={120} strokeWidth={1} />
         </div>
       </section>
     );
   }
 
   return (
-    <section className="rail-module border border-border/90 bg-card/88 p-5">
-      <p className="mb-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">Секое утро во едно писмо</p>
-      <div className="flex items-center gap-2 mb-2.5">
-        <Mail size={15} className="text-nyt-accent" />
-        <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.14em]">Утрински Брифинг</h3>
-      </div>
-      <p className="font-serif text-[1rem] leading-snug mb-2">
-        Најважните теми, собрани и подредени пред да почне денот.
-      </p>
-      <p className="text-[13px] leading-relaxed text-secondary-foreground mb-4">
-        Испраќаме краток избор од приказните што добиле најмногу потврди, внимание и контекст.
-      </p>
-      
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="relative">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Вашата е-пошта"
-            required
-            className="w-full px-3.5 py-2.5 bg-secondary/22 border border-border text-sm focus:outline-none focus:border-nyt-accent transition-colors"
-          />
-        </div>
-        
-        {status === 'error' && (
-          <p className="text-[10px] font-bold text-nyt-red uppercase tracking-tight">{message}</p>
-        )}
+    <section className="bg-secondary/30 p-6 border border-border/60 relative overflow-hidden group">
+      <div className="relative z-10">
+        <header className="mb-5 pb-4 border-b border-border/40">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">ПРЕСЕК БРИФИНГ</span>
+          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Вестите што вредат, директно до вас.</h3>
+        </header>
 
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          className="w-full py-2.5 bg-foreground text-background font-sans text-[11px] font-black uppercase tracking-[0.14em] hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
-        >
-          {status === 'loading' ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            'ПРИЈАВИ СЕ'
+        <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed mb-6">
+          Секое утро добивајте аналитички преглед на најважните настани што ја обликуваат Македонија.
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+            <input
+              type="email"
+              required
+              placeholder="Вашата е-пошта"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-background border border-border focus:border-nyt-accent outline-none font-sans text-sm transition-all"
+            />
+          </div>
+          
+          {status === 'error' && (
+            <p className="text-[10px] font-bold text-nyt-red uppercase tracking-tight">{message}</p>
           )}
-        </button>
-      </form>
-      <p className="text-[9px] text-muted-foreground mt-3 leading-relaxed italic">
-        * Со пријавувањето се согласувате со нашите услови за користење и политика за приватност. Можете да се одјавите во секое време.
-      </p>
+
+          <button
+            type="submit"
+            disabled={status === 'loading'}
+            className="w-full py-2.5 bg-foreground text-background hover:bg-nyt-accent hover:text-white font-sans text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+          >
+            {status === 'loading' ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              "ПРИЈАВИ СЕ"
+            )}
+          </button>
+        </form>
+
+        <p className="text-[9px] text-muted-foreground mt-4 leading-relaxed opacity-60">
+          * Со пријавувањето се согласувате со нашите услови. Можете да се одјавите во секое време.
+        </p>
+      </div>
+      
+      <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+        <Mail size={120} strokeWidth={1} />
+      </div>
     </section>
   );
 }

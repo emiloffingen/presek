@@ -52,9 +52,22 @@ const { title, note, developmentsFeatured, developmentsCompact, variant = "compa
 
 <style>
     .feed-section .section-heading-row {
-        margin-bottom: 1.2rem;
-        padding-bottom: 0.85rem;
-        border-bottom: 1px solid var(--border);
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .feed-tone-global {
+        background: color-mix(in srgb, #0f766e 3%, transparent);
+        margin: 0 -1.5rem;
+        padding: 2rem 1.5rem;
+        border-y: 1px solid color-mix(in srgb, #0f766e 10%, transparent);
+    }
+
+    .feed-tone-developing {
+        background: color-mix(in srgb, #9a3412 3%, transparent);
+        margin: 0 -1.5rem;
+        padding: 2rem 1.5rem;
+        border-y: 1px solid color-mix(in srgb, #9a3412 10%, transparent);
     }
 
     .section-kicker {

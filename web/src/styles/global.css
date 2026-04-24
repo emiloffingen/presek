@@ -288,22 +288,26 @@
 	}
 
 	.headline-lead {
-		font-size: clamp(1.85rem, 4.5vw, 3rem);
-		line-height: 1;
+		font-size: clamp(2rem, 5.5vw, 3.8rem);
+		line-height: 0.95;
+        letter-spacing: -0.04em;
 	}
 
 	.headline-cyrillic {
-		line-height: 1.15;
-		text-wrap: pretty;
+		line-height: 1.08;
+		text-wrap: balance;
+        letter-spacing: -0.01em;
 	}
 
 	.headline-standard {
 		font-size: var(--text-xl);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
 	}
 
     @media (min-width: 768px) {
         .headline-standard {
-            font-size: var(--text-2xl);
+            font-size: clamp(1.4rem, 2.2vw, 1.85rem);
         }
     }
 
@@ -889,12 +893,17 @@ button:active,
 }
 
 .nyt-article {
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 .nyt-article:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px -10px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
+    border-color: var(--nyt-accent);
+}
+
+.dark .nyt-article:hover {
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.4);
 }
 
 .headline-link:hover .headline {
@@ -1367,22 +1376,64 @@ button:active,
 .drop-cap::first-letter {
     font-family: var(--font-serif);
     float: left;
-    font-size: 3.5rem;
-    line-height: 0.85;
+    font-size: clamp(3.5rem, 8vw, 4.8rem);
+    line-height: 0.72;
     padding-top: 0.45rem;
-    padding-right: 0.65rem;
+    padding-right: 0.75rem;
     padding-left: 0.1rem;
-    font-weight: 900;
-    color: var(--nyt-accent);
-}
-
-.dark .drop-cap::first-letter {
+    font-weight: 950;
     color: var(--foreground);
+    text-transform: uppercase;
 }
 
 .masthead-double-rule {
-    border-top: 4px double var(--foreground);
-    padding-top: 1.5rem;
+    border-top: 1px solid var(--foreground);
+    border-bottom: 3px solid var(--foreground);
+    height: 6px;
+    padding: 0;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.section-heading-row.masthead-double-rule {
+    display: flex;
+    flex-direction: column;
+    padding-top: 1.25rem;
+    border-bottom: none;
+    height: auto;
+}
+
+.section-heading-row.masthead-double-rule::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--foreground);
+}
+
+.section-heading-row.masthead-double-rule::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--foreground);
+}
+
+.shadow-editorial {
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.02),
+        0 10px 20px rgba(0,0,0,0.04),
+        0 20px 40px rgba(0,0,0,0.04);
+}
+
+.dark .shadow-editorial {
+    box-shadow: 
+        0 4px 12px rgba(0,0,0,0.4),
+        0 12px 32px rgba(0,0,0,0.2);
 }
 
 .editorial-byline {
