@@ -6,6 +6,7 @@ import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 type Suggestion = {
   cluster_id: string;
   title: string;
+  image_url?: string | null;
   source?: string;
   category?: string;
   description?: string;
@@ -150,6 +151,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               return {
                 cluster_id: cluster.cluster_id,
                 title,
+                image_url: article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
                 description: getDisplaySummary(article),
@@ -304,19 +306,26 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   };
 
   const buildSnippet = (item: Suggestion, searchQuery: string) => {
-    const description = item.description?.trim();
-    if (!description) return '';
-
+    const description = item.description?.trim() || "";
     const cleanQuery = searchQuery.trim().toLowerCase();
-    if (!cleanQuery) return description.slice(0, 140);
+    
+    if (!cleanQuery || cleanQuery.length < 2) {
+      return description.slice(0, 120);
+    }
 
     const matchIndex = description.toLowerCase().indexOf(cleanQuery);
-    if (matchIndex === -1) return description.slice(0, 140);
+    if (matchIndex === -1) {
+      return description.slice(0, 120);
+    }
 
-    const start = Math.max(0, matchIndex - 42);
-    const end = Math.min(description.length, matchIndex + cleanQuery.length + 84);
-    const snippet = description.slice(start, end).trim();
-    return `${start > 0 ? '…' : ''}${snippet}${end < description.length ? '…' : ''}`;
+    const start = Math.max(0, matchIndex - 50);
+    const end = Math.min(description.length, matchIndex + cleanQuery.length + 80);
+    
+    let snippet = description.slice(start, end).trim();
+    if (start > 0) snippet = "…" + snippet;
+    if (end < description.length) snippet = snippet + "…";
+    
+    return snippet;
   };
 
   return (
@@ -482,11 +491,12 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                         }`}
                         >
                           <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-4 min-w-0">
+                            <div className="flex items-start gap-4 min-w-0 flex-1">
                               <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground pt-1 shrink-0">
                                 {String(index + 1).padStart(2, '0')}
                               </span>
-                              <div className="min-w-0">
+                              
+                              <div className="min-w-0 flex-1">
                                 <div className="mb-2 flex flex-wrap items-center gap-2">
                                   {item.matchLabel && (
                                     <span className="border border-border px-2 py-0.5 font-sans text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground">
@@ -513,6 +523,17 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                                   {[item.source, item.sourceCount ? `${item.sourceCount} извори` : ''].filter(Boolean).join(' · ')}
                                 </p>
                               </div>
+
+                              {item.image_url && (
+                                <div className="hidden sm:block shrink-0 w-24 aspect-[4/3] overflow-hidden border border-border bg-secondary/20">
+                                    <img 
+                                        src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} 
+                                        alt="" 
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </div>
+                              )}
                             </div>
                             <ArrowUpRight size={16} className="mt-1 shrink-0" />
                           </div>
