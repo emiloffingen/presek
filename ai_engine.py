@@ -437,8 +437,18 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
         if row: category = row.get("category", "Вести")
     except: pass
 
+    cooldown_key = "ai:cover_art:pollinations:cooldown"
+
     # 1. Try AI Generation (Pollinations)
     if POLLINATIONS_API_KEY:
+        try:
+            if redis_client.get(cooldown_key):
+                raise RuntimeError("pollinations_cooldown_active")
+        except RuntimeError:
+            pass
+        except Exception:
+            pass
+
         clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
         if len(clean_prompt) > 100:
             styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
@@ -459,8 +469,20 @@ def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
                     with open(path, "wb") as f:
                         f.write(content)
                     return f"/static/generated/{safe_id}.jpg"
+        except httpx.HTTPStatusError as e:
+            if e.response is not None and e.response.status_code == 429:
+                try:
+                    redis_client.setex(cooldown_key, 1800, "1")
+                except Exception:
+                    pass
+                log.info("[ai] Pollinations rate-limited; enabling 30 minute cooldown")
+            else:
+                log.debug(f"[ai] AI cover art failed: {e}")
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.debug(f"[ai] AI cover art failed: {e}")
+        except RuntimeError as e:
+            if str(e) != "pollinations_cooldown_active":
+                log.debug(f"[ai] AI cover art failed: {e}")
 
     # 2. Fallback to Local SVG Placeholder
     try:

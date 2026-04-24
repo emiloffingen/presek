@@ -143,6 +143,8 @@ class TestSchemaMigrations:
         statements = [call.args[0] for call in mock_cur.execute.call_args_list]
         assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB" in sql for sql in statements)
         assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT" in sql for sql in statements)
+        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'" in sql for sql in statements)
+        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'" in sql for sql in statements)
 
     def test_init_schema_adds_article_and_cluster_metadata_runtime_columns(self):
         from database import DatabaseManager

@@ -131,6 +131,40 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
     return result[:4]
 
 
+def normalize_citation_sources(raw_sources) -> list[dict]:
+    """Normalize stored citation-source rows into a stable ordered list."""
+    if not raw_sources:
+        return []
+    if isinstance(raw_sources, str):
+        try:
+            raw_sources = json.loads(raw_sources)
+        except Exception:
+            return []
+    if not isinstance(raw_sources, list):
+        return []
+
+    result = []
+    for idx, item in enumerate(raw_sources, start=1):
+        if not isinstance(item, dict):
+            continue
+        source = _clean_text_block(item.get("source"))
+        title = _clean_text_block(item.get("title"))
+        link = str(item.get("link") or "").strip()[:2048]
+        created_at = str(item.get("created_at") or "").strip()[:64]
+        category = _clean_text_block(item.get("category"))
+        if not source and not title:
+            continue
+        result.append({
+            "index": idx,
+            "source": source,
+            "title": title,
+            "link": link,
+            "created_at": created_at,
+            "category": category,
+        })
+    return result[:8]
+
+
 def normalize_server_delivery_subscription(payload) -> dict:
     payload = payload or {}
     raw_channel = str(payload.get("channel") or "ntfy").strip().lower()
@@ -155,5 +189,4 @@ def normalize_server_delivery_subscription(payload) -> dict:
         "breakingSources": bool(payload.get("breakingSources")),
         "isActive": is_active,
     }
-
 

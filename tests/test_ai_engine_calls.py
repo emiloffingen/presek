@@ -292,6 +292,33 @@ class TestGenerateCoverArt:
         assert result == "/static/generated/abc123.svg"
         mock_log.warning.assert_not_called()
 
+    def test_pollinations_429_sets_cooldown_and_falls_back(self):
+        from ai_engine import generate_cover_art
+        import httpx
+
+        mock_db = MagicMock()
+        mock_db.execute_one.return_value = {"category": "Вести"}
+        mock_redis = MagicMock()
+        request = MagicMock()
+        response = MagicMock()
+        response.status_code = 429
+
+        client = MagicMock()
+        client.__enter__.return_value = client
+        client.get.side_effect = httpx.HTTPStatusError("rate limited", request=request, response=response)
+
+        with patch('ai_engine.POLLINATIONS_API_KEY', "enabled"), \
+             patch('ai_engine.redis_client', mock_redis), \
+             patch('ai_engine.httpx.Client', return_value=client), \
+             patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+             patch('os.makedirs'), \
+             patch('database.db_manager', mock_db), \
+             patch('builtins.open', MagicMock()):
+            result = generate_cover_art("abc123", "Title")
+
+        assert result == "/static/generated/abc123.svg"
+        mock_redis.setex.assert_called_once_with("ai:cover_art:pollinations:cooldown", 1800, "1")
+
 
 class TestAutoSummarizeTopClusters:
     @patch("utils.get_source_health_map", return_value={})

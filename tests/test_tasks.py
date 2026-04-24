@@ -18,6 +18,7 @@ class TestBackfillCoverArtTask:
              patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
             mock_db.execute.return_value = rows
             mock_redis.set.return_value = True
+            mock_redis.get.return_value = None
             tasks.backfill_cover_art_task()
 
         assert mock_apply.call_count == 3
@@ -75,11 +76,71 @@ class TestSynthesizeClusterTaskQuality:
         insert_call = mock_db.execute.call_args_list[2]
         stored_summary = insert_call.args[1][1]
         stored_perspectives = json.loads(insert_call.args[1][2])
+        stored_citation_sources = json.loads(insert_call.args[1][11])
 
         assert "Статии" not in stored_summary
         assert stored_summary.count("Главен развој") == 1
         assert stored_perspectives[0]["angle"] == "Заедничка линија"
         assert stored_perspectives[1]["angle"] == "Различни акценти"
+        assert [item["source"] for item in stored_citation_sources] == ["МИА", "DW"]
+        assert stored_citation_sources[0]["index"] == 1
+
+
+class TestReclusterRecentArticlesTask:
+    def test_reclusters_recent_rows_and_queues_rebuilds(self):
+        import tasks
+
+        recent_rows = [
+            {
+                "id": 1,
+                "cluster_id": "old-a",
+                "title": "Пожар во магацин во Скопје",
+                "source": "МИА",
+                "category": "Македонија",
+                "topic": "Криминал",
+                "created_at": "2026-04-23T09:00:00",
+                "embedding": "[1,0,0]",
+            },
+            {
+                "id": 2,
+                "cluster_id": "old-b",
+                "title": "Пожар во магацин во Скопје, двајца повредени",
+                "source": "Телма",
+                "category": "Македонија",
+                "topic": "Криминал",
+                "created_at": "2026-04-23T09:05:00",
+                "embedding": "[0.99,0.01,0]",
+            },
+        ]
+
+        with patch("tasks.intelligence.db") as mock_db, \
+             patch("clustering.find_or_create_cluster", return_value="old-a"), \
+             patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate, \
+             patch("tasks.utils.record_task_event"), \
+             patch.object(tasks.extract_entities_task, "delay") as mock_extract_delay, \
+             patch.object(tasks.generate_cluster_metadata_task, "delay") as mock_meta_delay, \
+             patch.object(tasks.auto_summarize_task, "delay") as mock_summary_delay:
+            mock_db.execute.side_effect = [
+                recent_rows,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+            ]
+
+            result = tasks.recluster_recent_articles_task(hours=24, limit=10)
+
+        assert result["reclustered"] == 1
+        assert result["touched_clusters"] == 2
+        update_call = mock_db.execute.call_args_list[1]
+        assert "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
+        assert update_call.args[1] == ("old-a", 2)
+        mock_extract_delay.assert_called_once_with(hours=24)
+        mock_meta_delay.assert_called_once_with(hours=24)
+        mock_summary_delay.assert_called_once_with()
+        mock_invalidate.assert_called_once()
 
 
 class TestSummarizeArticleTaskQuality:
@@ -617,9 +678,9 @@ class TestProfileDeliveryTasks:
             }
         ]
 
-        with patch.object(tasks, "_load_weekly_topic_engagement", return_value={"Политика": {"section_score": 0.8}}), \
-             patch.object(tasks, "_load_weekly_source_engagement", return_value={}), \
-             patch.object(tasks, "_build_weekly_digest_sections", return_value=[
+        with patch("tasks.delivery._load_weekly_topic_engagement", return_value={"Политика": {"section_score": 0.8}}), \
+             patch("tasks.delivery._load_weekly_source_engagement", return_value={}), \
+             patch("tasks.delivery._build_weekly_digest_sections", return_value=[
                  {"title": "Што најмногу се помести", "subtitle": "главен неделен развој", "clusters": clusters}
              ]):
             message = tasks._build_profile_weekly_digest_message(

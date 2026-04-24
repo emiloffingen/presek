@@ -25,7 +25,7 @@ from nlp import (
 )
 from language import is_cyrillic_south_slavic
 from api_helpers import (
-    normalize_summary_text, normalize_perspectives
+    normalize_summary_text, normalize_perspectives, normalize_citation_sources
 )
 from .common import _source_admin_authorized, _error_json, cleanAndDecode, _news_row_limit
 
@@ -503,7 +503,7 @@ async def get_cluster_detail(cluster_id: str):
         public_articles = [_public_article_payload(article) for article in articles]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}'")
-        s_row = await db.async_execute_one("SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, created_at, sentiment, verification_report FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
+        s_row = await db.async_execute_one("SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, created_at, sentiment, verification_report, citation_sources FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
         log.debug(f"[debug] s_row found: {bool(s_row)}")
         
         synthesis = s_row["summary"] if s_row else None
@@ -522,6 +522,7 @@ async def get_cluster_detail(cluster_id: str):
         ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
         perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
         if not perspectives: perspectives = []
+        citation_sources = normalize_citation_sources(_parse_maybe_json(s_row.get("citation_sources")) if s_row else [])
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         m_row = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
@@ -592,7 +593,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "citation_sources": citation_sources, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
         set_cache(cache_key, response, ttl=120)
         return response
 

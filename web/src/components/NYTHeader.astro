@@ -93,12 +93,12 @@ function getRelativeTimeStr(dateStr?: string) {
     <div class="dispatch-bar">
         <div class="dispatch-container site-layout">
             <div class="dispatch-content">
-                <span class="dispatch-item"><ShieldCheck size={10} className="text-emerald-600" /> ВЕРИФИКАЦИЈА:</span>
-                <span class="dispatch-data">{confirmedFacts} ПОТВРДЕНИ ФАКТИ</span>
+                <span class="dispatch-item"><ShieldCheck size={10} className="text-emerald-600" /> <span class="hidden sm:inline">ВЕРИФИКАЦИЈА:</span></span>
+                <span class="dispatch-data"><span class="sm:hidden" title="Потврдени факти">✓</span> {confirmedFacts} <span class="hidden sm:inline">ПОТВРДЕНИ ФАКТИ</span></span>
                 <span class="dispatch-sep">•</span>
-                <span class="dispatch-data">{activeConflicts} АКТИВНИ ПРОТИВРЕЧНОСТИ</span>
+                <span class="dispatch-data"><span class="sm:hidden text-nyt-red" title="Активни противречности">!</span> {activeConflicts} <span class="hidden sm:inline">АКТИВНИ ПРОТИВРЕЧНОСТИ</span></span>
                 <span class="dispatch-sep">•</span>
-                <span class="dispatch-data">{totalFeeds} РЕДАКЦИИ ВО ЖИВО</span>
+                <span class="dispatch-data"><span class="sm:hidden text-blue-500" title="Редакции во живо">●</span> {totalFeeds} <span class="hidden sm:inline">РЕДАКЦИИ ВО ЖИВО</span></span>
             </div>
         </div>
     </div>
@@ -141,10 +141,6 @@ function getRelativeTimeStr(dateStr?: string) {
                 </div>
                 <div class="flex items-center gap-3">
                     <time class="topbar-date-display">{currentDate}</time>
-                    <span class="h-1 w-1 bg-border rounded-full hidden sm:block"></span>
-                    <span class="text-[0.52rem] font-black uppercase tracking-[0.1em] text-nyt-accent hidden sm:block">
-                        {currentEdition}
-                    </span>
                 </div>
             </div>
 
@@ -325,7 +321,8 @@ function getRelativeTimeStr(dateStr?: string) {
     .nav-fade.right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
     @media (max-width: 960px) {
-        .editorial-topbar { padding: 0.35rem 0 0.5rem; }
+        .live-ticker { display: none; }
+        .editorial-topbar { padding: 0.25rem 0 0.35rem; }
         .topbar-main { grid-template-columns: auto 1fr auto; gap: 0.5rem; }
         .topbar-left-stack { order: 1; flex-direction: row; align-items: center; }
         .topbar-date-display { display: none; }
@@ -336,6 +333,7 @@ function getRelativeTimeStr(dateStr?: string) {
         .brand-logo { height: 1.35rem; }
         .brand-emblem { height: 1.1rem; }
         .nav-rail-group { padding: 0 0.65rem; }
+        .nav-rail-content { padding: 0.2rem 0; }
         .live-ticker-badge { padding-right: 0.5rem; font-size: 0.48rem; }
     }
 </style>

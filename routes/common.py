@@ -220,6 +220,7 @@ _RATE_LIMITED_API_PATHS = {
     "/api/intelligence/top-entities",
     "/api/profile/sync/init",
     "/api/profile/sync",
+    "/api/profile/sync/personalized-news",
     "/api/profile/delivery",
     "/api/profile/suggestion-event",
 }

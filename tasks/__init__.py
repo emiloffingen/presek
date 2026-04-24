@@ -44,6 +44,7 @@ __all__ = [
     'auto_summarize_task',
     'extract_entities_task',
     'classify_topics_task',
+    'recluster_recent_articles_task',
     'refresh_global_headlines_task',
     'synthesize_storylines_task',
 

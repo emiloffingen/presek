@@ -11,6 +11,7 @@ import {
   sendSuggestionEvents,
   subscribeToReaderProfile,
 } from '../lib/personalization.js';
+import { sanitizeHtml } from '../lib/sanitize';
 import { getDisplaySummary, getDisplayTitle, highlightScores } from '../utils/textUtils';
 
 function getSummary(cluster: any) {
@@ -179,7 +180,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
                   {isSemantic ? <BrainCircuit size={12} /> : <Compass size={12} />}
                   <span>{isSemantic ? 'Семантичка препорака' : (item.reason || 'Сродна тема')}</span>
                 </p>
-                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(title) }}></h3>
+                <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">
@@ -224,7 +225,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
                   <Clock3 size={12} />
                   <span>Актуелно во моментот</span>
                 </p>
-                <h3 dangerouslySetInnerHTML={{ __html: highlightScores(title) }}></h3>
+                <h3 dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightScores(title)) }}></h3>
                 {summary && <p className="for-you-card-copy">{summary}</p>}
                 <div className="for-you-card-footer">
                   <div className="for-you-card-meta">

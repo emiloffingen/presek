@@ -125,8 +125,9 @@ class TestAstroFrontendIntegrity:
         cluster_page = _read("web/src/pages/cluster/[id].astro")
         text_utils = _read("web/src/utils/textUtils.ts")
 
-        assert "set:html={sanitizeHtml(parseFootnotes(paragraph))}" in cluster_page
-        assert "set:html={sanitizeHtml(parseFootnotes(item.content))}" in cluster_page
+        assert "const citationSources = cluster?.citation_sources || [];" in cluster_page
+        assert "function renderSynthesisHtml(text: string)" in cluster_page
+        assert "return sanitizeHtml(parseFootnotes(clean));" in cluster_page
         assert "set:html={parseFootnotes(paragraph)}" not in cluster_page
         assert "timeZone: 'Europe/Skopje'" in text_utils
         assert "'Заев'" in text_utils

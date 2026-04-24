@@ -1,7 +1,7 @@
 import pytest
 import datetime
 from unittest.mock import patch, MagicMock
-from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster, _title_phrase_overlap
+from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster, _title_phrase_overlap, _topic_bridge_allowed
 from collections import Counter
 
 # db_manager is imported inside find_or_create_cluster as `from database import db_manager`,
@@ -51,6 +51,12 @@ def test_title_phrase_overlap_prefers_shared_bigram_structure():
         "Фудбалски натпревар во Лига Шампиони"
     )
     assert close > far
+
+
+def test_topic_bridge_is_more_permissive_for_fresh_followups_than_old_ones():
+    shared = {"Кочани"}
+    assert _topic_bridge_allowed("Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 4.0) is True
+    assert _topic_bridge_allowed("Политика", "Вести", "Македонија", "Македонија", 0.0, 0.55, shared, 30.0) is False
 
 @patch(_DB_PATCH, _mock_db)
 def test_find_or_create_cluster():
@@ -176,6 +182,58 @@ def test_same_source_unrelated_followup_does_not_merge_after_time_gap():
         category="Македонија",
         source="Skopje Info",
         topic="Вести",
+    )
+
+    assert cid != "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_topic_bridge_allows_same_story_followup_when_entities_and_title_overlap_are_strong():
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Кочани", "Обвинителство"}}
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Обвинителството отвори истрага за пожарот во Кочани",
+            "created_at": datetime.datetime.now(),
+            "source": "МИА",
+            "category": "Македонија",
+            "topic": "Вести",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Кочани: Обвинителството бара нови докази во истрагата за пожарот",
+        recent_articles,
+        category="Македонија",
+        source="Телма",
+        topic="Политика",
+    )
+
+    assert cid == "c1"
+
+
+@patch(_DB_PATCH, _mock_db)
+def test_topic_bridge_does_not_merge_same_category_story_without_shared_entities_or_overlap():
+    _mock_db.get_cluster_entities.return_value = {"c1": {"Кочани", "Обвинителство"}}
+    recent_articles = [
+        {
+            "cluster_id": "c1",
+            "title": "Обвинителството отвори истрага за пожарот во Кочани",
+            "created_at": datetime.datetime.now(),
+            "source": "МИА",
+            "category": "Македонија",
+            "topic": "Вести",
+        }
+    ]
+
+    cid = find_or_create_cluster(
+        MagicMock(),
+        "Владата отвора нов конкурс за директори на училишта",
+        recent_articles,
+        category="Македонија",
+        source="Сител",
+        topic="Политика",
     )
 
     assert cid != "c1"

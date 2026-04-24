@@ -7,6 +7,7 @@ on CPU after the model is downloaded once to ~/.cache/huggingface.
 
 No API key, no quota, no network at runtime.
 """
+import json
 import logging
 import threading
 from hf_cache import configure_huggingface_cache
@@ -175,11 +176,104 @@ def generate_query_embedding(text: str) -> list[float] | None:
 
     return vector
 
+
+def parse_embedding_value(value) -> list[float] | None:
+    """Normalize embeddings loaded from pgvector, JSON, or legacy wrapped payloads."""
+    if value is None:
+        return None
+
+    if hasattr(value, "tolist"):
+        try:
+            value = value.tolist()
+        except Exception:
+            pass
+
+    if isinstance(value, dict):
+        for key in ("embedding", "vector", "vec", "values", "data"):
+            candidate = value.get(key)
+            parsed = parse_embedding_value(candidate)
+            if parsed:
+                return parsed
+        for candidate in value.values():
+            parsed = parse_embedding_value(candidate)
+            if parsed:
+                return parsed
+        return None
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        if raw.startswith("{") or raw.startswith("["):
+            try:
+                return parse_embedding_value(json.loads(raw))
+            except Exception:
+                pass
+        cleaned = raw.strip("[]()")
+        if not cleaned:
+            return None
+        try:
+            return [float(part.strip()) for part in cleaned.split(",") if part.strip()]
+        except Exception:
+            return None
+
+    if isinstance(value, (list, tuple)):
+        if len(value) == 1 and isinstance(value[0], (str, list, tuple, dict)):
+            nested = parse_embedding_value(value[0])
+            if nested:
+                return nested
+        try:
+            return [float(item) for item in value]
+        except Exception:
+            normalized = []
+            for item in value:
+                try:
+                    normalized.append(float(item))
+                except Exception:
+                    return None
+            return normalized or None
+
+    try:
+        items = list(value)
+        if len(items) == 1 and isinstance(items[0], (str, list, tuple, dict)):
+            nested = parse_embedding_value(items[0])
+            if nested:
+                return nested
+        return [float(item) for item in items]
+    except Exception:
+        return None
+
+
+def average_embeddings(values) -> list[float] | None:
+    """Compute a centroid from mixed embedding payloads, skipping malformed rows."""
+    vectors = []
+    for value in values or []:
+        parsed = parse_embedding_value(value)
+        if parsed:
+            vectors.append(parsed)
+
+    if not vectors:
+        return None
+
+    dims = len(vectors[0])
+    totals = [0.0] * dims
+    count = 0
+
+    for vector in vectors:
+        if len(vector) != dims:
+            continue
+        for idx, item in enumerate(vector):
+            totals[idx] += float(item)
+        count += 1
+
+    if count == 0:
+        return None
+
+    return [value / count for value in totals]
+
 def get_cluster_embedding(cluster_id: str) -> list[float] | None:
     """Calculate the average embedding vector for all articles in a cluster."""
     from database import db_manager as db
-    import json
-    import numpy as np
 
     try:
         rows = db.execute(
@@ -188,22 +282,8 @@ def get_cluster_embedding(cluster_id: str) -> list[float] | None:
         )
         if not rows:
             return None
-        
-        vecs = []
-        for r in rows:
-            emb = r["embedding"]
-            if isinstance(emb, str):
-                try: emb = json.loads(emb)
-                except: continue
-            if isinstance(emb, list) and len(emb) > 0:
-                vecs.append(emb)
-        
-        if not vecs:
-            return None
-        
-        # Centroid calculation via numpy
-        avg = np.mean(vecs, axis=0).tolist()
-        return avg
+
+        return average_embeddings([r.get("embedding") for r in rows])
     except Exception as e:
         log.warning(f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}")
         return None

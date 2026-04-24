@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import re
+import datetime
 from unittest.mock import MagicMock, patch
 
 # Add parent directory to path
@@ -45,7 +46,7 @@ def test_clustering_suite():
             # Simulate entities in DB for the existing cluster
             mock_db.get_cluster_entities.return_value = {cid_a: case_entities or simple_extract_entities(title_a)}
             
-            # Mock articles window
+            # Mock articles window - use a very recent date to avoid temporal decay
             recent_articles = [
                 {
                     "title": title_a,
@@ -53,7 +54,7 @@ def test_clustering_suite():
                     "category": category_a,
                     "topic": topic_a,
                     "source": "Source A",
-                    "created_at": "2026-04-16T10:00:00Z"
+                    "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
                 }
             ]
             

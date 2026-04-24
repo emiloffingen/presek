@@ -177,11 +177,6 @@ export function getEditionStr(dateInput: any): string {
     const now = new Date();
     const diffMins = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
-    // If it's very fresh, it's an Extra Edition
-    if (diffMins >= 0 && diffMins < 45) {
-        return 'ВОНРЕДНО ИЗДАНИЕ';
-    }
-
     const hour = Number(new Intl.DateTimeFormat('en-US', {
         hour: 'numeric',
         hour12: false,

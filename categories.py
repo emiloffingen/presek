@@ -37,7 +37,7 @@ def _score_keyword_group(text: str, keywords: list[str]) -> float:
             continue
         if " " in kw:
             score += 2.5 # Multi-word matches are very strong signals
-        elif len(kw) >= 8:
+        elif len(kw) >= 7: # Lowered from 8 to catch 'Владата', 'Партија', etc.
             score += 1.5
         else:
             score += 1.0
@@ -50,8 +50,6 @@ def validate_category(category: str) -> str:
 
 
 # ORDER MATTERS — first match wins.
-# Германија before Европа (Germany would otherwise match broad European keywords).
-# Балкан before Свет (Balkan countries would otherwise match global keywords).
 CATEGORIES = [
 
     ("Германија", [
@@ -82,7 +80,7 @@ CATEGORIES = [
         "трамп", "харис", "бајден", "пентагон", "стејт департмент",
         "волстрит", "силиконска долина", "фбр", "циа",
         "канада", "канадски", "отава", "торонто", "тридо",
-        "нба", "млс", "лејкерс", "хјустон", "мајами хит", "голден стејт",
+        "нба", "млс", "лејкерс", "хјустон", "мајами хит", "голден стајт",
         "лос анџелес", "интер мајами",
         "united states", "washington", "white house", "congress", "trump", "biden",
         "nba", "mls", "lakers", "houston", "inter miami",
@@ -156,16 +154,10 @@ TITLE_PROPER_NOUNS = [
 ]
 
 
-def detect_category(title: str, description: str = "", source: str = "",
-                    forced_category: str | None = None) -> str:
-    """Return category for an article.
-
-    If forced_category is provided (e.g. hardcoded at feed level) and valid,
-    it is returned immediately without keyword scanning.
-    Falls back to 'Македонија' if nothing matches.
-    """
-    if forced_category and forced_category in ALLOWED_CATEGORIES:
-        return forced_category
+def detect_category(title: str, description: str = "") -> str:
+    """Return category for an article."""
+    if (title + " " + description).lower().find("германија") >= 0: # Quick check for forced category logic elsewhere if needed
+        pass
     text = (title + " " + description).lower()
     best_category = None
     best_score = 0.0
@@ -211,9 +203,7 @@ def detect_subcategory(title: str, description: str = "") -> str | None:
 
 
 # ── Source country code map ────────────────────────────────────────
-# ISO 3166-1 alpha-2 codes where applicable; region sentinels for aggregates.
 _COUNTRY_MAP: dict[str, str] = {
-    # Balkan sources
     "N1 Info":        "RS",
     "Kurir.rs":       "RS",
     "Danas.rs":       "RS",
@@ -229,7 +219,6 @@ _COUNTRY_MAP: dict[str, str] = {
     "Daily Sabah":    "TR",
     "Anadolu Agency": "TR",
     "Balkan Insight": "BALKAN",
-    # International sources
     "Tagesschau":     "DE",
     "CNN":            "US",
     "BBC News":       "GB",
@@ -240,6 +229,23 @@ _COUNTRY_MAP: dict[str, str] = {
 # ── Thematic Topic Detection ──────────────────────────────────────
 
 TOPICS = [
+    ("Политика", [
+        "политика", "влада", "владата", "министер", "претседател", "парламент", "парламентот", "собрание", "собранието",
+        "избори", "гласање", "партија", "сдсм", "вмро-дпмне", "дуи", "левица", "знам", "вреди",
+        "закон", "реформа", "дипломатија", "амбасадор", "протест", "протести", "дебата",
+        "самит", "договор", "лидер", "политички", "државен", "функционер",
+        "мицкоски", "сиљановска", "давкова", "ахмети", "филипче", "апасиев",
+        "министерство", "министерството", "институции", "државна",
+        "government", "president", "parliament", "minister", "election", "summit", "politics",
+    ]),
+    ("Економија", [
+        "економија", "финансии", "буџет", "инфлација", "каматна стапка", "камати",
+        "берза", "акции", "инвестиции", "банка", "бруто домашен производ", "бдп",
+        "данок", "плата", "минимална плата", "пензија", "пазар", "цени", "нафта", "енергија",
+        "гас", "криза", "мерки", "бизнис", "компанија", "корпорација", "трговија", "увоз", "извоз",
+        "фирми", "фирмите", "поддршка", "претпријатија", "субвенции",
+        "inflation", "tariffs", "market", "markets", "economy", "budget", "finance", "gdp",
+    ]),
     ("Спорт", [
         "фудбал", "кошарка", "ракомет", "тенисер", "тенисерка", "атлетика",
         "лига на шампиони", "премиер лига", "фифа", "уефа", "олимписки", "олимпијада",
@@ -257,13 +263,6 @@ TOPICS = [
         "иновација", "робот", "чип", "процесор", "мајкрософт", "гугл", "епл", "самсунг",
         "фејсбук", "мета", "твитер", "х", "социјални мрежи", "гејминг", "конзола", "плејстејшн",
         "software", "hardware", "ai", "artificial intelligence", "iphone", "android",
-    ]),
-    ("Економија", [
-        "економија", "финансии", "буџет", "инфлација", "каматна стапка", "камати",
-        "берза", "акции", "инвестиции", "банка", "бруто домашен производ", "бдп",
-        "данок", "плата", "минимална плата", "пензија", "пазар", "цени", "нафта", "енергија",
-        "гас", "криза", "мерки", "бизнис", "компанија", "корпорација", "трговија", "увоз", "извоз",
-        "inflation", "tariffs", "market", "markets", "economy", "budget", "finance", "gdp",
     ]),
     ("Здравје", [
         "здравје", "медицина", "болест", "вирус", "пандемија", "вакцина", "ковид",
@@ -300,14 +299,6 @@ TOPICS = [
         "сообраќај", "несреќа", "патни", "превоз", "животни", "природа",
         "lifestyle", "travel", "family", "education", "weather",
     ]),
-    ("Политика", [
-        "политика", "влада", "владата", "министер", "претседател", "парламент", "парламентот", "собрание",
-        "избори", "гласање", "партија", "сдсм", "вмро-дпмне", "дуи", "левица", "знам", "вреди",
-        "закон", "реформа", "дипломатија", "амбасадор", "протест", "протести", "дебата",
-        "самит", "договор", "лидер", "политички", "државен", "функционер",
-        "мицкоски", "сиљановска", "давкова", "ахмети", "филипче", "апасиев",
-        "government", "president", "parliament", "minister", "election", "summit", "politics",
-    ]),
 ]
 
 
@@ -321,7 +312,7 @@ def detect_topic(title: str, description: str = "") -> str:
         if score > best_score:
             best_topic = topic_name
             best_score = score
-    if best_topic and best_score >= 2.0:
+    if best_topic and best_score >= 1.5:
         return best_topic
     return "Вести"
 
@@ -340,8 +331,6 @@ def normalize_headline(title: str) -> str:
     t = re.sub(r'<[^>]+>', '', t) # Strip HTML
     
     # 2. Aggressive Tag & Decorative Prefix Removal
-    # Handles (ВИДЕО), [ФОТО], [ФОТО/ВИДЕО], (ФОТО+ВИДЕО), ЖИВО:, BREAKING:, etc.
-    # More robust pattern for bracketed/parenthesized tags with slashes, pluses or combined words
     tags_pattern = r'(\[[^\]]*(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)[^\]]*\]|\([^\)]*(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE)[^\)]*\))'
     t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
     
@@ -359,7 +348,6 @@ def normalize_headline(title: str) -> str:
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
 
     # 3. Suffix / Source Attribution Cleanup
-    # Remove things like "- ПРЕСЕК", "| 360 степени" at the end
     sources = [
         "360 степени", "Слободен печат", "Макфакс", "Фокус", "Канал 5", "Сител", "Телма", 
         "МРТ", "A1on", "Локално", "Lokalno", "Вечер", "Vecer", "Nezavisen", "Независен", 
@@ -371,25 +359,17 @@ def normalize_headline(title: str) -> str:
     t = re.sub(suffix_pattern, '', t, flags=re.IGNORECASE)
 
     # 4. De-Shouting (Sentence Case)
-    # Improved de-shouting: check if title has large all-caps segments even if not fully all-caps
     upper_count = sum(1 for c in t if c.isupper())
     alpha_count = sum(1 for c in t if c.isalpha())
-    
-    # Also check for long all-caps prefixes (e.g. "POLICE REPORT: man arrested")
     long_upper_prefix = re.match(r'^([А-ЯЀ-ӿ\s]{8,})[:\-]', t)
     
     if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
-        # Convert to sentence case but try to preserve common acronyms
         t = t.capitalize()
-        # Restore common Macedonian acronyms (this is a heuristic)
         for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП", "УЈП"]:
             t = re.sub(rf'\b{re.escape(acronym)}\b', acronym, t, flags=re.IGNORECASE)
 
     # 5. Macedonian Quote Standardization
-    # Convert "...", '...', and other variants to literary „...“
-    # Handle double single quotes often found in portals
     t = t.replace("''", '"')
-    # Use standard Macedonian literary quotes
     t = re.sub(r'["\']([^"\']+)["\']', r'„\1“', t)
 
     # 6. Technical Polish
@@ -399,7 +379,6 @@ def normalize_headline(title: str) -> str:
     for pattern, replacement in TITLE_PROPER_NOUNS:
         t = pattern.sub(replacement, t)
     
-    # 7. Professional Casing for first letter
     if t and t[0].islower():
         t = t[0].upper() + t[1:]
     

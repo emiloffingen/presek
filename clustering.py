@@ -40,11 +40,12 @@ MK_STOPWORDS = {
     "ги","го","им","му","ја","ми","ме","те","ве","ни","си","ке",
     "во","со","на","од","до","при","пред","под","над","зад","меѓу",
     "овој","оваа","ова","овие","тој","таа","тоа","тие",
-    "еден","една","едно","еднa","нема","нема","нови","нов","нова",
+    "еден","една","едно","еднa","нема","нови","нов","нова",
     "само","уште","преку","бидејќи","поради","каде","како","кога",
     "туку","пак","сепак","затоа","бидејки","ваков","ваква","вакви",
     "според","соопштија","информираат","изјави","вели","изјавија",
     "рече","порача","велат","пренесе","објави","пишува",
+    "денес", "денеска", "денешната", "денешниот", "вчера", "утре",
     "македонија", "северна",
     "the","and","for","from","that","this","with","has",
 }
@@ -62,10 +63,36 @@ def _get_fingerprint(title: str) -> str:
     # Sort words to catch permutated titles
     return "".join(sorted([w for w in words if w not in MK_STOPWORDS]))
 
+# ── Synonym Mapping ──────────────────────────────────────────────
+NEWS_SYNONYMS = {
+    "стопанств": "економија",
+    "стопанство": "економија",
+    "влада": "влад",
+    "министерств": "влад",
+    "министерство": "влад",
+    "кабинет": "влад",
+    "компани": "фирм",
+    "претпријати": "фирм",
+    "мвр": "полици",
+    "фудбал": "меч",
+    "кошарка": "меч",
+    "ракомет": "меч",
+    "усвои": "најави",
+    "соопшти": "најави",
+    "информира": "најави",
+    "потврди": "најави",
+    "поддршка": "мерки",
+}
+
+
+def _apply_synonyms(terms: list[str]) -> list[str]:
+    return [NEWS_SYNONYMS.get(t, t) for t in terms]
+
 def _title_terms(title: str) -> list[str]:
     normalized = _normalize_cluster_title(title)
     words = re.findall(r"[А-Яа-яЀ-ӿ\w]{3,}", normalized)
-    return [mk_stem(word) for word in words if word not in MK_STOPWORDS]
+    stems = [mk_stem(word) for word in words if word not in MK_STOPWORDS]
+    return _apply_synonyms(stems)
 
 def _title_phrase_overlap(left: str, right: str) -> float:
     left_terms = _title_terms(left)
@@ -108,7 +135,7 @@ def _temporal_decay(created_at) -> float:
 def text_to_vector(text: str) -> Counter:
     words = re.findall(r'[А-Яа-яЀ-ӿ\w]{3,}', text.lower())
     stems = [mk_stem(w) for w in words if w not in MK_STOPWORDS]
-    return Counter(stems)
+    return Counter(_apply_synonyms(stems))
 
 def get_cosine(vec1: Counter, vec2: Counter) -> float:
     intersection = set(vec1) & set(vec2)
@@ -119,7 +146,7 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.52  # Increased from 0.48 to reduce keyword-based collisions
+SIMILARITY_THRESHOLD = 0.45  # Lowered from 0.52 to improve recall for reworded stories
 MAX_CLUSTER_SIZE     = 35
 # Cosine-distance cutoff for pgvector semantic lookup. Tuned for the local
 # paraphrase-multilingual-MiniLM-L12-v2 model (384-dim, L2-normalized):
@@ -129,11 +156,85 @@ MAX_CLUSTER_SIZE     = 35
 VECTOR_THRESHOLD     = 0.26
 
 def _extract_title_entities(title: str) -> set[str]:
+    # Use precise Macedonian Cyrillic ranges to avoid matching lowercase words as entities
+    uc = "А-ЯЁЂЃЄЅІЇЈЉЊЋЌЎЏ"
+    lc = "а-яёђѓєѕіїјљњћќўџ"
+    pattern = rf'[{uc}][{lc}]+(?:\s+[{uc}][{lc}]+)*'
     return {
         match.strip()
-        for match in re.findall(r'[А-ЯЀ-ӿ][а-яѐ-ӿ]+(?:\s+[А-ЯЀ-ӿ][а-яѐ-ӿ]+)*', str(title or ""))
+        for match in re.findall(pattern, str(title or ""))
         if match.strip()
     }
+
+
+def _entity_token_overlap(left_entities: set[str], right_entities: set[str]) -> set[str]:
+    # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
+    # (e.g., "Владата" and "Министерството" -> "влад")
+    left_tokens = {
+        _apply_synonyms([mk_stem(token.strip().lower())])[0]
+        for entity in (left_entities or set())
+        for token in str(entity).split()
+        if len(token.strip()) >= 4
+    }
+    right_tokens = {
+        _apply_synonyms([mk_stem(token.strip().lower())])[0]
+        for entity in (right_entities or set())
+        for token in str(entity).split()
+        if len(token.strip()) >= 4
+    }
+    res = left_tokens & right_tokens
+    return res
+
+
+def _rep_age_hours(created_at) -> float:
+    dt = created_at
+    if not dt:
+        return 999.0
+    if isinstance(dt, str):
+        try:
+            dt = datetime.datetime.fromisoformat(dt.replace("Z", "+00:00"))
+        except Exception:
+            return 999.0
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return max(0.0, (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds() / 3600.0)
+
+
+def _topic_bridge_allowed(incoming_topic: str, rep_topic: str, category: str | None, rep_category: str | None, phrase_overlap: float, lexical_overlap: float, shared_entities: set[str], freshest_rep_hours: float) -> bool:
+    """Allow tight same-story continuations to survive small topic-label drift."""
+    incoming_clean = str(incoming_topic or "Вести").strip() or "Вести"
+    rep_clean = str(rep_topic or "Вести").strip() or "Вести"
+    
+    if incoming_clean == rep_clean:
+        return True
+
+    # Sports should remain strictly isolated; score updates and match reports
+    # are too collision-prone to bridge across topics.
+    if "Спорт" in {incoming_clean, rep_clean}:
+        return False
+
+    # Cross-category merges remain unsafe in practice.
+    if category and rep_category and category != rep_category:
+        return False
+
+    shared_count = len(shared_entities or set())
+    generic_mismatch = "Вести" in {incoming_clean, rep_clean}
+    recent_cycle = freshest_rep_hours <= 8
+    same_day = freshest_rep_hours <= 18
+
+    if generic_mismatch:
+        return (
+            (shared_count >= 1 and phrase_overlap >= (0.16 if same_day else 0.22))
+            or phrase_overlap >= (0.42 if recent_cycle else 0.50)
+            or lexical_overlap >= (0.50 if recent_cycle else (0.56 if same_day else 0.62))
+        )
+
+    return (
+        (shared_count >= 2 and phrase_overlap >= (0.24 if same_day else 0.30))
+        or (shared_count >= 1 and (phrase_overlap >= (0.34 if same_day else 0.42) or lexical_overlap >= (0.48 if same_day else 0.56)))
+        or phrase_overlap >= (0.50 if recent_cycle else 0.56)
+        or lexical_overlap >= (0.60 if recent_cycle else (0.66 if same_day else 0.72))
+    )
 
 def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 36, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
     if not embedding: return None
@@ -284,18 +385,28 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         rep_0 = reps[0]
         if category and rep_0.get("category") != category: continue
         
-        # Strict Topic Isolation:
-        # 1. If incoming is 'Спорт', it can ONLY join a 'Спорт' cluster.
-        # 2. If cluster is 'Спорт', only 'Спорт' articles can join.
+        rep_entities = cluster_entities.get(cid, set())
         rep_topic = rep_0.get("topic", "Вести")
         incoming_topic = topic or "Вести"
-        
-        if incoming_topic != rep_topic:
-            # If either side is a specific topic, they MUST match exactly.
-            # (i.e. 'Вести' can only join 'Вести', 'Спорт' only 'Спорт')
+        rep_category = rep_0.get("category")
+        freshest_rep_hours = min((_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0)
+        shared_entities = potential_entities.intersection(rep_entities) if potential_entities and rep_entities else set()
+        if not shared_entities and potential_entities and rep_entities:
+            shared_entities = _entity_token_overlap(potential_entities, rep_entities)
+        topic_bridge = _topic_bridge_allowed(
+            incoming_topic,
+            rep_topic,
+            category,
+            rep_category,
+            max((_title_phrase_overlap(normalized_input, rep["title"]) for rep in reps), default=0.0),
+            max((get_cosine(vec1, text_to_vector(rep["title"])) for rep in reps), default=0.0),
+            shared_entities,
+            freshest_rep_hours,
+        )
+
+        if not topic_bridge:
             continue
 
-        rep_entities = cluster_entities.get(cid, set())
         if incoming_topic == "Вести" and potential_entities and rep_entities and not potential_entities.intersection(rep_entities):
             continue
         
@@ -331,17 +442,17 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         # 1. Shared Entity Boost
         # If articles share multiple capitalized proper nouns, they are highly likely related.
         entity_boost = 1.0
-        if cid in cluster_entities and potential_entities:
-            shared = potential_entities.intersection(cluster_entities[cid])
-            if len(shared) >= 2:
+        if shared_entities:
+            if len(shared_entities) >= 2:
                 entity_boost = 1.25 # Significant boost for 2+ shared entities
-            elif len(shared) == 1:
+            elif len(shared_entities) == 1:
                 entity_boost = 1.1
 
         current_best_rep_score = 0.0
         for rep in reps:
             rep_title = rep["title"]
-            lexical_score = get_cosine(vec1, text_to_vector(rep_title))
+            vec2 = text_to_vector(rep_title)
+            lexical_score = get_cosine(vec1, vec2)
             phrase_score = _title_phrase_overlap(normalized_input, rep_title)
 
             # Short title penalty: be stricter with very short headlines (under 30 chars)
@@ -353,15 +464,19 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             # Same-source follow-ups should only merge when the titles still
             # look like the same story, or when they share concrete entities.
             if same_source_cluster and input_fp != _get_fingerprint(rep_title):
-                if phrase_score < 0.26 and lexical_score < 0.58 and not (len(shared) >= 1 if cid in cluster_entities else False):
+                if phrase_score < 0.26 and lexical_score < 0.58 and not (len(shared_entities) >= 1 if shared_entities else False):
                     continue
             
             # Weighted combine
-            score = (lexical_score * 0.7) + (phrase_score * 0.3)
+            # Favor lexical (stem) similarity for better recall across diverse headlines
+            score = (lexical_score * 0.9) + (phrase_score * 0.1)
             score *= _temporal_decay(rep.get("created_at"))
             score *= source_penalty
             score *= entity_boost
             
+            if topic_bridge and incoming_topic != rep_topic:
+                score *= 1.06
+
             if score > current_best_rep_score:
                 current_best_rep_score = score
         
@@ -382,8 +497,15 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         # Adaptive Lexical Threshold
         # Generic topics should require higher similarity to merge.
         current_threshold = threshold
-        if incoming_topic == "Вести":
+        if incoming_topic == "Вести" and incoming_topic == rep_topic:
             current_threshold = max(threshold, 0.58) # Be more demanding for 'Вести'
+        elif topic_bridge and incoming_topic != rep_topic:
+            if freshest_rep_hours <= 12: # Within half-day cycle
+                current_threshold = min(threshold, 0.40)
+            elif freshest_rep_hours <= 24: # Within same day
+                current_threshold = min(threshold, 0.44)
+            else: # Older clusters
+                current_threshold = min(threshold, 0.48)
 
         if current_best_rep_score > current_threshold and current_best_rep_score > best_score:
             best_score = current_best_rep_score

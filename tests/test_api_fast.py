@@ -215,6 +215,7 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
 
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
+    assert common._is_rate_limited_path("/api/profile/sync/personalized-news") is True
 
 
 def test_profile_sync_rejects_weak_token_headers(mock_all):
@@ -497,6 +498,21 @@ def test_fastapi_proxy_rejects_remote_svg_content(mock_all):
          patch("requests.get", return_value=fake_resp):
         response = asyncio.run(api_fast.proxy_image("https://c.com/a.svg", None))
     assert response.status_code in {415, 200}
+
+
+def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
+    import api_fast
+
+    mock_all["db"].async_execute_one.return_value = {
+        "local_image_path": "../../../etc/passwd",
+    }
+
+    with patch("routes.system.generate_local_placeholder", return_value="<svg/>"), \
+         patch("routes.system._resolve_public_ips", side_effect=ValueError("blocked")):
+        response = asyncio.run(api_fast.proxy_image("https://example.com/image.jpg", None))
+
+    assert response.media_type == "image/svg+xml"
+    assert response.headers["X-Proxy-Fallback"] == "security_block"
 
 def test_fastapi_serves_robots_txt(mock_all):
     import api_fast

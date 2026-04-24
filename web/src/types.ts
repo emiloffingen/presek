@@ -36,6 +36,15 @@ export interface ClusterSummary {
   content: string;
 }
 
+export interface CitationSource {
+  index: number;
+  source: string;
+  title: string;
+  link: string;
+  created_at?: string;
+  category?: string;
+}
+
 export interface NewsCluster {
   cluster_id: string;
   articles: Article[];
@@ -66,6 +75,7 @@ export interface ClusterDetail extends NewsCluster {
   sentiment?: any;
   verification_report?: any;
   ai_summary_bullets?: string[];
+  citation_sources?: CitationSource[];
   synthesis_updated_at?: string;
   synthesis_freshness?: {
     is_stale: boolean;

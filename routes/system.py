@@ -390,7 +390,22 @@ async def proxy_image(
                 local_rel = local_rel[len("static/"):].lstrip("/")
             
             local_full = (_STATIC_ROOT / local_rel).resolve()
-            if local_full.exists() and local_full.is_file():
+            allowed_roots = [
+                _STATIC_ROOT.resolve(),
+                (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
+            ]
+            is_safe_local = False
+            for root in allowed_roots:
+                try:
+                    local_full.relative_to(root)
+                    is_safe_local = True
+                    break
+                except ValueError:
+                    continue
+
+            if not is_safe_local:
+                log.warning(f"[proxy] Blocked unsafe local image path for {url}: {local_full}")
+            elif local_full.exists() and local_full.is_file():
                 with open(local_full, "rb") as f:
                     img_data = f.read()
                 log.info(f"[proxy] Using local master for {url}")
