@@ -28,6 +28,8 @@ const significanceLabel =
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card');
 const thumbSrc = selectedImage.proxiedUrl;
 const isFallbackArt = selectedImage.isWeak;
+const tintColor = cluster.dominant_color || '#1e40af';
+const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
 const displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
@@ -214,13 +216,16 @@ function getTimeStr(dateStr: string) {
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={`/cluster/${cluster.cluster_id}`} class="block h-full">
 				{isFallbackArt ? (
-					<div class="article-image-placeholder">
+					<div class="article-image-placeholder" style={`--placeholder-bg: ${tintColor};`}>
+                        <div class="article-image-placeholder-bg-text" set:html={sanitizeHtml(rawLeadTitle)}></div>
 						<div class="article-image-placeholder-topline">
 							<p class="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
 							<p class="article-image-placeholder-chip">{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</p>
 						</div>
-						<h3>{main?.category || 'Вести'}</h3>
-						<p class="article-image-placeholder-source">{main.source}</p>
+                        <div class="article-image-placeholder-content">
+						    <h3>{main?.category || 'Вести'}</h3>
+						    <p class="article-image-placeholder-source">{main.source}</p>
+                        </div>
 					</div>
 				) : (
 					<img
@@ -254,6 +259,65 @@ function getTimeStr(dateStr: string) {
 
 <style>
 	.nyt-article {
-		--news-card-cache-bust-20260414: 1;
+		--news-card-cache-bust-20260424: 1;
 	}
+
+    .article-image-placeholder {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        align-content: space-between;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        background: 
+            linear-gradient(135deg, 
+                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, 
+                color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%
+            );
+    }
+
+    .article-image-placeholder-bg-text {
+        position: absolute;
+        inset: -10%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-serif);
+        font-size: 8rem;
+        font-weight: 900;
+        line-height: 0.8;
+        color: white;
+        opacity: 0.04;
+        filter: blur(2px);
+        pointer-events: none;
+        user-select: none;
+        z-index: 0;
+        text-align: center;
+        word-break: break-all;
+    }
+
+    .article-image-placeholder::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.12), transparent 40%),
+            linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .article-image-placeholder-topline {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .article-image-placeholder-content {
+        position: relative;
+        z-index: 2;
+    }
 </style>
