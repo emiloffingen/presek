@@ -62,11 +62,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isOpen) {
       document.body.style.overflow = 'unset';
       setActiveIndex(-1);
       setSuggestions([]);
+      setError(null);
       if (lastFocusedRef.current) {
         lastFocusedRef.current.focus();
       }
@@ -76,13 +79,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     lastFocusedRef.current = document.activeElement as HTMLElement;
     document.body.style.overflow = 'hidden';
     
-    // Use a small delay to ensure focus works on all browsers when opening
+    // Improved focus for all devices
     const timer = setTimeout(() => {
-      inputRef.current?.focus();
-      if (query) {
-        inputRef.current?.setSelectionRange(query.length, query.length);
+      if (inputRef.current) {
+        inputRef.current.focus();
+        // Force focus for iOS
+        inputRef.current.click();
       }
-    }, 10);
+    }, 50);
 
     return () => {
       document.body.style.overflow = 'unset';
@@ -130,10 +134,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`);
         if (!res.ok) {
-          throw new Error('search failed');
+          throw new Error('Системот е привремено зафатен. Ве молиме обидете се повторно.');
         }
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
@@ -161,11 +166,12 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
         if (!cancelled) {
           setSuggestions(nextSuggestions);
-          setActiveIndex(-1); // Don't auto-select the first suggestion, let Enter perform general search
+          setActiveIndex(-1);
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           setSuggestions([]);
+          setError(err instanceof Error ? err.message : 'Грешка при пребарувањето');
           setActiveIndex(-1);
         }
       } finally {
@@ -271,25 +277,30 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
   const renderHighlightedText = (text: string, searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
-    if (!cleanQuery) return text;
+    if (!cleanQuery || cleanQuery.length < 2) return text;
 
-    const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedQuery})`, 'ig');
-    const parts = text.split(regex);
+    try {
+      // Escape for regex but handle Cyrillic safely
+      const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedQuery})`, 'ig');
+      const parts = text.split(regex);
 
-    return parts.map((part, index) => {
-      if (part.toLowerCase() === cleanQuery.toLowerCase()) {
-        return (
-          <mark
-            key={`${part}-${index}`}
-            className="bg-transparent text-nyt-red underline decoration-nyt-red/70 underline-offset-4"
-          >
-            {part}
-          </mark>
-        );
-      }
-      return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
-    });
+      return parts.map((part, index) => {
+        if (part.toLowerCase() === cleanQuery.toLowerCase()) {
+          return (
+            <mark
+              key={`${part}-${index}`}
+              className="bg-nyt-accent/10 text-nyt-accent px-0.5 rounded-sm"
+            >
+              {part}
+            </mark>
+          );
+        }
+        return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+      });
+    } catch {
+      return text;
+    }
   };
 
   const buildSnippet = (item: Suggestion, searchQuery: string) => {
@@ -424,7 +435,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </div>
                     )}
 
-                    {!isLoading && suggestions.length === 0 && (
+                    {error && (
+                      <div className="p-4 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red text-sm flex items-center gap-3">
+                        <Zap size={14} />
+                        <span>{error}</span>
+                      </div>
+                    )}
+
+                    {!isLoading && !error && suggestions.length === 0 && (
                       <div className="space-y-4">
                         <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
                           Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
