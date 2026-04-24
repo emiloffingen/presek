@@ -246,6 +246,17 @@ async def get_news(
         page_size = max(1, min(int(page_size or 24), 50))
         row_limit = _news_row_limit(page, page_size)
         if q: q = q.strip()[:API_MAX_Q_LEN]
+        
+        entity_info = None
+        if q and page == 0:
+            # Check if query matches a known entity
+            e_row = await db.async_execute_one("""
+                SELECT name, type, total_mentions, sentiment_score, image_url 
+                FROM knowledge_entities 
+                WHERE LOWER(name) = LOWER(%s)
+            """, (q,))
+            if e_row:
+                entity_info = dict(e_row)
 
         # Handle legacy or thematic categories requested as 'category'
         # If 'category' is actually a theme (e.g., Politics), move it to 'topic'
@@ -420,7 +431,8 @@ async def get_news(
             "clusters": result, 
             "global": global_result,
             "page": page, 
-            "has_more": len(ranked_clusters) > start + page_size
+            "has_more": len(ranked_clusters) > start + page_size,
+            "entity": entity_info
         }
         set_cache(cache_key, final_response, ttl=180)
         return final_response

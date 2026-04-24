@@ -14,6 +14,14 @@ type Suggestion = {
   matchLabel?: string;
 };
 
+type EntityResult = {
+  name: string;
+  type: string;
+  total_mentions: number;
+  sentiment_score: number;
+  image_url?: string | null;
+};
+
 type TrendingItem = {
   word: string;
 };
@@ -26,6 +34,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const [query, setQuery] = useState(initialQuery || '');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -168,11 +177,13 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
         if (!cancelled) {
           setSuggestions(nextSuggestions);
+          setEntityResult(data.entity || null);
           setActiveIndex(-1);
         }
       } catch (err) {
         if (!cancelled) {
           setSuggestions([]);
+          setEntityResult(null);
           setError(err instanceof Error ? err.message : 'Грешка при пребарувањето');
           setActiveIndex(-1);
         }
@@ -451,7 +462,30 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </div>
                     )}
 
-                    {!isLoading && !error && suggestions.length === 0 && (
+                    {!isLoading && entityResult && (
+                      <button
+                        onClick={() => { closeSearch(); navigate(`/?entity=${encodeURIComponent(entityResult.name)}`); }}
+                        className="w-full mb-6 p-5 border-2 border-nyt-accent/20 bg-nyt-accent/[0.03] hover:bg-nyt-accent/[0.06] transition-colors flex items-center gap-6 group text-left"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden">
+                           {entityResult.image_url ? (
+                             <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} alt="" className="w-full h-full object-cover" />
+                           ) : (
+                             <span className="font-serif font-black text-2xl text-muted-foreground">{entityResult.name[0]}</span>
+                           )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-sans text-[9px] font-black uppercase tracking-[0.14em] text-nyt-accent mb-1 block">Профил на субјект</span>
+                          <h4 className="font-serif font-black text-2xl mb-1 group-hover:underline decoration-nyt-accent decoration-2 underline-offset-4">{entityResult.name}</h4>
+                          <p className="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            {entityResult.total_mentions.toLocaleString('mk-MK')} споменувања · {entityResult.sentiment_score > 0.1 ? 'Позитивен' : entityResult.sentiment_score < -0.1 ? 'Негативен' : 'Неутрален'} тон
+                          </p>
+                        </div>
+                        <ArrowUpRight size={20} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
+                      </button>
+                    )}
+
+                    {!isLoading && !error && suggestions.length === 0 && !entityResult && (
                       <div className="space-y-4">
                         <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
                           Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
@@ -597,18 +631,18 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
               <div className="px-5 md:px-8 py-6 md:py-0 md:pt-0 bg-[color:color-mix(in_srgb,var(--background)_90%,var(--secondary)_10%)]">
                 <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
-                  ПОПУЛАРНО ДЕНЕС
+                  ТРЕНД ПРЕБАРУВАЊА
                 </h3>
                 <div className="space-y-3">
                   {(trendingItems.length > 0
                     ? trendingItems
                     : [
+                        { word: 'СДСМ' },
                         { word: 'Влада' },
-                        { word: 'Економија' },
-                        { word: 'Избори' },
                         { word: 'ЕУ' },
+                        { word: 'Доналд Трамп' },
+                        { word: 'Венко Филипче' },
                         { word: 'Скопје' },
-                        { word: 'Технологија' },
                       ]
                   ).map((item, index) => (
                     <button
