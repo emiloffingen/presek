@@ -79,13 +79,13 @@ const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.
             <div class="masthead-main">
                 <h1 class="masthead-title">Медиумски <span>Пулс</span></h1>
             </div>
-            <p class="masthead-intro">
+            <p class="masthead-intro mt-6">
                 Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност на македонскиот информативен простор.
             </p>
         </header>
 
         {globalPulse && (
-            <div class="pulse-stats-grid mb-16">
+            <div class="pulse-stats-grid mt-16 mb-24">
                 <div class="pulse-card">
                     <p class="card-label" title="Мерка за брзината на проток на нови информации во изминатите 24 часа."><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
                     <p class="card-value">{globalPulse.last_24h.toLocaleString()}</p>

@@ -213,12 +213,12 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                 </div>
             </div>
 
-            <div class="masthead-standfirst">
+            <div class="masthead-standfirst mt-6">
                 <p>{editionStandfirst}</p>
             </div>
 
             {sectionHighlights.length > 0 && (
-                <nav class="masthead-nav hide-scrollbar">
+                <nav class="masthead-nav mt-8 hide-scrollbar">
                     <span class="nav-label">ВО ФОКУС:</span>
                     {sectionHighlights.map((section: any) => (
                         <a class="nav-link" href={`#${section.slug}`}>
@@ -230,7 +230,7 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
             )}
         </header>
 
-        <div class="broadsheet-grid mt-12">
+        <div class="broadsheet-grid mt-24">
             <div class="broadsheet-main">
                 {briefing ? (
                     <article class="briefing-container">
