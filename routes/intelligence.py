@@ -398,18 +398,22 @@ async def get_entity_profile(name: str):
         (name,),
     )
     sentiment_history = await db.async_execute(
-        f"SELECT DATE({_FRESHNESS_EXPR}) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE {_CASE_INSENSITIVE_TAG_EXISTS} AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC",
+        f"SELECT DATE(COALESCE(a.ingested_at, a.created_at)) as day, AVG(CAST(s.sentiment->'sentiment'->>'score' AS FLOAT)) as avg_sentiment, COUNT(DISTINCT a.cluster_id) as volume FROM articles a JOIN cluster_metadata m ON a.cluster_id = m.cluster_id JOIN cluster_summaries s ON a.cluster_id = s.cluster_id WHERE {_CASE_INSENSITIVE_TAG_EXISTS} AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days' AND s.sentiment IS NOT NULL GROUP BY day ORDER BY day ASC",
         (name,),
     )
     recent = await db.async_execute(
-        f"SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE {_CASE_INSENSITIVE_TAG_EXISTS} ORDER BY c.updated_at DESC LIMIT 10",
+        f"SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{{}}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
         (name,),
     )
     
     processed = []
     for c in recent:
         bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in (c["summary"] or "").split('\n') if line.strip() and not line.strip().lower().startswith('статии:')]
-        sent = json.loads(c["sentiment"]) if isinstance(c["sentiment"], str) else c["sentiment"]
+        sent = None
+        try:
+            sent = json.loads(c["sentiment"]) if isinstance(c["sentiment"], str) else c["sentiment"]
+        except Exception:
+            sent = {"sentiment": {"score": 0, "tone": "неутрално"}}
         processed.append({"cluster_id": c["cluster_id"], "title": cleanAndDecode(c["title"]), "created_at": c["created_at"], "bullets": bullets[:2], "sentiment": sent})
 
     return {"profile": entity, "related": relationships, "media": media_stats, "categories": category_stats, "sentiment_history": sentiment_history, "clusters": processed}
