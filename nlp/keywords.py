@@ -184,8 +184,10 @@ _sentence_tokens = _tokenize_title_terms
 def _extract_capitalized_phrases(text):
     if not text:
         return []
-    upper = r"[A-ZЀ-Я]"
-    lower = r"[a-zа-я0-9ѐ-ӿ]"
+    # Explicitly list Cyrillic characters to avoid range errors in some environments
+    # Includes standard Russian and specific Macedonian/Balkan Cyrillic characters
+    upper = r"[A-ZА-ЯЁЂЃЄЅІЇЈЉЊЋЌЍЎЏ]"
+    lower = r"[a-zа-яёђѓєѕіїјљњћќѝўџѐѝ0-9]"
     pattern = re.compile(
         rf"(?:\b{upper}{lower}+\b(?:[\s-]+\b{upper}{lower}+\b){{0,2}})"
     )

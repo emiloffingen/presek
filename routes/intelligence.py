@@ -525,9 +525,14 @@ async def get_personalized_recommendations(request: Request):
         raise HTTPException(status_code=400, detail="Invalid JSON")
     recent_ids = validate_list_param(payload.get("recentlyRead", []), "recentlyRead", max_items=10, max_item_length=64)
     followed = validate_list_param(payload.get("followedTopics", []), "followedTopics", max_items=10, max_item_length=100)
+    interest_vector = payload.get("interestVector")
     limit = min(max(1, int(payload.get("limit", 6))), 20)
-    if not recent_ids and not followed: return {"status": "success", "clusters": []}
+    if not recent_ids and not followed and not interest_vector: return {"status": "success", "clusters": []}
     user_vectors = []
+    
+    if interest_vector and isinstance(interest_vector, list) and len(interest_vector) == 384:
+        user_vectors.append(interest_vector)
+
     if recent_ids:
         rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL LIMIT 20", (recent_ids,))
         for r in rows:

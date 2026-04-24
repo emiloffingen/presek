@@ -271,8 +271,10 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
 
     allowed_singletons = {
         "македонија", "скопје", "албанија", "еу", "вмро-дпмне",
-        "ирaн", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
-        "обединетите нации", "он", "украина", "русија", "сдсм"
+        "иран", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
+        "обединетите нации", "он", "украина", "русија", "сдсм", "вашингтон", "техеран",
+        "блискиот исток", "персискиот залив", "западниот балкан", "европската унија",
+        "брисел", "москва", "киев", "израел", "газа", "либан"
     }
 
     for phrase in _extract_capitalized_phrases(brief_text):
@@ -310,12 +312,17 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
         r"##.*Што го движи денот",
         r"##.*Каде се разликува известувањето",
         r"##.*Што да се следи понатаму",
-        r"##.*(Подетално за главните теми|Клучни случувања|Главни теми|Клучни вести|Клучни случувања)",
     ]
     # Check if all required main headers are present
     for pattern in required_regex:
         if not re.search(pattern, text):
             log.warning(f"[briefing-debug] Header missing: {pattern}")
+            return False
+            
+    # The fourth header is sometimes missed by AI but it starts with ### 1.
+    if not re.search(r"##.*(Подетално за главните теми|Клучни случувања|Главни теми|Клучни вести|Клучни случувања)", text):
+        if "### 1." not in text:
+            log.warning("[briefing-debug] Fourth header AND ### 1. missing")
             return False
     
     # Check for at least 3 numbered items (### 1., ### 2., etc.) or bullet points (•)

@@ -169,15 +169,24 @@ TITLE_PROPER_NOUNS = [
     (re.compile(r"\bнато\b", re.IGNORECASE), "НАТО"),
     (re.compile(r"\bтито\b", re.IGNORECASE), "Тито"),
     (re.compile(r"\bзаев\b", re.IGNORECASE), "Заев"),
+    (re.compile(r"\bмицкоски\b", re.IGNORECASE), "Мицкоски"),
+    (re.compile(r"\bфилипче\b", re.IGNORECASE), "Филипче"),
+    (re.compile(r"\bахмети\b", re.IGNORECASE), "Ахмети"),
     (re.compile(r"\bбашановиќ\b", re.IGNORECASE), "Башановиќ"),
     (re.compile(r"\bбашановик\b", re.IGNORECASE), "Башановиќ"),
+    (re.compile(r"\bскопје\b", re.IGNORECASE), "Скопје"),
+    (re.compile(r"\bбитола\b", re.IGNORECASE), "Битола"),
+    (re.compile(r"\bохрид\b", re.IGNORECASE), "Охрид"),
+    (re.compile(r"\bтетово\b", re.IGNORECASE), "Тетово"),
+    (re.compile(r"\bштип\b", re.IGNORECASE), "Штип"),
 ]
 
 
-def detect_category(title: str, description: str = "") -> str:
+def detect_category(title: str, description: str = "", source: str = "", forced_category: str = None) -> str:
     """Return category for an article."""
-    if (title + " " + description).lower().find("германија") >= 0: # Quick check for forced category logic elsewhere if needed
-        pass
+    if forced_category and forced_category in ALLOWED_CATEGORIES:
+        return forced_category
+
     text = (title + " " + description).lower()
     best_category = None
     best_score = 0.0
@@ -366,6 +375,9 @@ def normalize_headline(title: str) -> str:
     ]
     prefix_pattern = r'^(' + '|'.join(sensationalist) + r')[\s\|:–—-]+'
     t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
+    
+    # Strip any remaining all-caps prefix followed by colon (e.g. "СКОПЈЕ: ...")
+    t = re.sub(r'^[А-ЯЁЂЃЄЅІЇЈЉЊЋЌЍЎЏ\s]{3,}:', '', t).strip()
 
     # 3. Suffix / Source Attribution Cleanup
     sources = [
@@ -379,17 +391,30 @@ def normalize_headline(title: str) -> str:
     t = re.sub(suffix_pattern, '', t, flags=re.IGNORECASE)
 
     # 4. De-Shouting (Sentence Case)
-    upper_count = sum(1 for c in t if c.isupper())
-    alpha_count = sum(1 for c in t if c.isalpha())
-    long_upper_prefix = re.match(r'^([А-ЯЀ-ӿ\s]{8,})[:\-]', t)
+    # Improved check: if more than 65% of alpha chars are uppercase
+    # OR if title starts with a long uppercase segment before a colon
+    alpha_chars = [c for c in t if c.isalpha()]
+    upper_count = sum(1 for c in alpha_chars if c.isupper())
+    alpha_count = len(alpha_chars)
+    
+    # Prefix check like "МАКЕДОНИЈА: Наслов..."
+    long_upper_prefix = re.match(r'^([А-ЯЁЂЃЄЅІЇЈЉЊЋЌЍЎЏ\s]{6,}):', t)
     
     if (alpha_count >= 6 and (upper_count / alpha_count) > 0.65) or long_upper_prefix:
-        t = t.capitalize()
-        for acronym in ["ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП", "УЈП"]:
-            t = re.sub(rf'\b{re.escape(acronym)}\b', acronym, t, flags=re.IGNORECASE)
+        # Before lower-casing, protect common Macedonian/International acronyms
+        acronyms = {"ЕУ", "НАТО", "САД", "МВР", "СЗО", "СДСМ", "ВМРО", "ДУИ", "ЗНАМ", "ДИК", "СЕП", "УЈП", "МНР", "МО", "МЗ", "УБК", "ОЈО", "АЕК", "ФФМ", "МОК"}
+        
+        # Capitalize only first letter, lower the rest
+        t_normalized = t.capitalize()
+        
+        # Restore acronyms
+        for acronym in acronyms:
+            t_normalized = re.sub(rf'\b{re.escape(acronym)}\b', acronym, t_normalized, flags=re.IGNORECASE)
+        t = t_normalized
 
-    # 5. Macedonian Quote Standardization
+    # 5. Macedonian Quote Standardization (Standard quotes „...“)
     t = t.replace("''", '"')
+    # Replace simple quotes with balanced Macedonian ones
     t = re.sub(r'["\']([^"\']+)["\']', r'„\1“', t)
 
     # 6. Technical Polish

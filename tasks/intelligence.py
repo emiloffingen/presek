@@ -353,14 +353,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         prompt_parts.append("[END_NEW_ARTICLES]")
         full_prompt = "\n\n".join(part for part in prompt_parts if part)
         raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=2800)
-        
-        verification_report = None
-        # Save tokens: only fact-check larger clusters (5+ sources)
-        if len(article_rows) >= 5:
-            comparison_payload = source_context or legacy_summary
-            v_raw, _ = _call_ai(f"Статии за споредба:\n[START_COMPARISON_DATA]\n{comparison_payload}\n[END_COMPARISON_DATA]", FACTCHECK_SYSTEM_PROMPT, json_mode=True, task_type="factcheck", max_tokens=1600)
-            if v_raw:
-                verification_report = clean_json_response(v_raw)
 
         if raw:
             res = clean_json_response(raw)
@@ -369,11 +361,20 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             synthetic_headline = res.get('synthetic_headline', '') if isinstance(res, dict) else ''
             synthetic_standfirst = res.get('synthetic_standfirst', '') if isinstance(res, dict) else ''
             
+            verification_report = res.get('verification_report') if isinstance(res, dict) else None
+            
             # Sanitize for name hallucinations
             summary = validate_person_names(summary)
             generated_article = validate_person_names(generated_article)
             synthetic_headline = validate_person_names(synthetic_headline)
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
+
+            # AI Quality Gate: Hallucination Scanner
+            comparison_text = summary + "\n" + generated_article
+            if not _is_grounded_synthesis(comparison_text, source_context or legacy_summary) and retry_attempt < 2:
+                log.warning(f"Hallucination gate failed for cluster {cluster_id}, retrying...")
+                synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=30)
+                return
 
             perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
             quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
@@ -431,6 +432,29 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 fetch=False
             )
 
+            # Publish SSE event for Real-Time UI updates
+            try:
+                from utils import publish_event
+                # Determine if breaking
+                is_breaking = False
+                if article_rows:
+                    from utils import score_cluster
+                    cluster_score = score_cluster(article_rows)
+                    from config import BREAKING_SCORE_THRESHOLD
+                    is_breaking = cluster_score >= BREAKING_SCORE_THRESHOLD
+
+                snippet = summary.split('\n')[0] if summary else ""
+                snippet = snippet.replace('•', '').strip()[:150]
+                publish_event("updates", {
+                    "type": "cluster_synthesis_updated",
+                    "cluster_id": cluster_id,
+                    "is_breaking": is_breaking,
+                    "headline": synthetic_headline or article_rows[0].get('title', ''),
+                    "snippet": snippet,
+                    "time": datetime.datetime.now().isoformat()
+                })
+            except Exception as pub_err:
+                log.warning(f"[tasks] Failed to publish SSE event for {cluster_id}: {pub_err}")
 
             # Real-time Sports Score Alert
             try:
@@ -895,3 +919,44 @@ def discover_storylines_task():
         discovery_engine.refresh_storyline_metadata()
     except Exception as e:
         log.warning(f"[tasks] Storyline discovery failed: {e}")
+
+def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
+    if not synthesis_text or not source_context:
+        return True
+    
+    from tasks.delivery import _extract_capitalized_phrases
+    context_entities = {
+        phrase.casefold()
+        for phrase in _extract_capitalized_phrases(source_context)
+        if len(str(phrase or "").strip()) >= 4
+    }
+    
+    allowed_singletons = {
+        "македонија", "скопје", "албанија", "еу", "вмро-дпмне",
+        "иран", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
+        "обединетите нации", "он", "украина", "русија", "сдсм", "вашингтон", "техеран",
+        "блискиот исток", "персискиот залив", "западниот балкан", "европската унија",
+        "брисел", "москва", "киев", "израел", "газа", "либан"
+    }
+    
+    for phrase in _extract_capitalized_phrases(synthesis_text):
+        clean = str(phrase or "").strip()
+        if len(clean) < 4: continue
+        if clean.split()[0].lower() in {"од", "во", "на", "со", "за", "низ"}:
+            clean_parts = clean.split()[1:]
+            if not clean_parts: continue
+            clean = " ".join(clean_parts)
+            if len(clean) < 3: continue
+            
+        words = [part for part in clean.replace("-", " ").split() if part]
+        is_acronym = clean.isupper()
+        if len(words) < 2 and not is_acronym: continue
+        folded = clean.casefold()
+        
+        if folded in context_entities or folded in allowed_singletons:
+            continue
+            
+        log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}")
+        return False
+        
+    return True

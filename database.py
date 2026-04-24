@@ -587,6 +587,28 @@ class DatabaseManager:
                         PRIMARY KEY (entity_a, entity_b)
                     )
                 """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS storylines_v2 (
+                        id SERIAL PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        slug TEXT UNIQUE,
+                        summary TEXT,
+                        status TEXT DEFAULT 'active',
+                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        metadata JSONB DEFAULT '{}'::jsonb,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS storyline_clusters_v2 (
+                        storyline_id INTEGER REFERENCES storylines_v2(id) ON DELETE CASCADE,
+                        cluster_id TEXT NOT NULL,
+                        relevance_score REAL DEFAULT 1.0,
+                        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (storyline_id, cluster_id)
+                    )
+                """)
 
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_entity_b ON knowledge_relationships(entity_b)")

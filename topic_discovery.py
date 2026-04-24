@@ -37,7 +37,7 @@ class StoryDiscoveryEngine:
                    ARRAY_AGG(DISTINCT a.title) as titles,
                    ARRAY_AGG(DISTINCT a.source) as sources
             FROM articles a
-            LEFT JOIN storyline_clusters sc ON a.cluster_id = sc.cluster_id
+            LEFT JOIN storyline_clusters_v2 sc ON a.cluster_id = sc.cluster_id
             WHERE sc.storyline_id IS NULL
               AND a.embedding IS NOT NULL
               AND a.created_at >= NOW() - %s * INTERVAL '1 hour'
@@ -64,10 +64,10 @@ class StoryDiscoveryEngine:
             SELECT s.id, s.title, 
                    (SELECT AVG(a.embedding) 
                     FROM articles a 
-                    JOIN storyline_clusters sc2 ON a.cluster_id = sc2.cluster_id 
+                    JOIN storyline_clusters_v2 sc2 ON a.cluster_id = sc2.cluster_id 
                     WHERE sc2.storyline_id = s.id) <=> %s::vector as distance
-            FROM storylines s
-            WHERE s.is_active = TRUE
+            FROM storylines_v2 s
+            WHERE s.status = 'active'
               AND s.last_activity >= NOW() - INTERVAL '3 days'
             ORDER BY distance ASC
             LIMIT 1
@@ -78,13 +78,13 @@ class StoryDiscoveryEngine:
             log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity})")
             
             db.execute(
-                "INSERT INTO storyline_clusters (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                "INSERT INTO storyline_clusters_v2 (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                 (sid, cid, 1.0 - float(best_storyline['distance'])),
                 fetch=False
             )
             # Update storyline status based on new activity
             db.execute(
-                "UPDATE storylines SET last_activity = NOW(), is_active = TRUE WHERE id = %s",
+                "UPDATE storylines_v2 SET last_activity = NOW(), status = 'active' WHERE id = %s",
                 (sid,), fetch=False
             )
         else:
@@ -114,14 +114,14 @@ class StoryDiscoveryEngine:
         
         try:
             res = db.execute(
-                """INSERT INTO storylines (title, slug, last_activity, metadata) 
+                """INSERT INTO storylines_v2 (title, slug, last_activity, metadata) 
                    VALUES (%s, %s, NOW(), %s) RETURNING id""",
                 (story_title, slug, json.dumps({"origin_cluster": cid})),
             )
             if res:
                 sid = res[0]['id']
                 db.execute(
-                    "INSERT INTO storyline_clusters (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s)",
+                    "INSERT INTO storyline_clusters_v2 (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s)",
                     (sid, cid, 1.0),
                     fetch=False
                 )
@@ -132,7 +132,7 @@ class StoryDiscoveryEngine:
         """
         Periodically update summaries and titles for active storylines.
         """
-        active_storylines = db.execute("SELECT id, title FROM storylines WHERE is_active = TRUE ORDER BY last_activity DESC LIMIT 20")
+        active_storylines = db.execute("SELECT id, title FROM storylines_v2 WHERE status = 'active' ORDER BY last_activity DESC LIMIT 20")
         
         for s in active_storylines:
             sid = s['id']
@@ -140,7 +140,7 @@ class StoryDiscoveryEngine:
             rows = db.execute("""
                 SELECT a.title, a.description 
                 FROM articles a
-                JOIN storyline_clusters sc ON a.cluster_id = sc.cluster_id
+                JOIN storyline_clusters_v2 sc ON a.cluster_id = sc.cluster_id
                 WHERE sc.storyline_id = %s
             """, (sid,))
             
@@ -151,7 +151,7 @@ class StoryDiscoveryEngine:
             story_summary = summarize_locally(combined_text, sentence_count=2)
             
             db.execute(
-                "UPDATE storylines SET summary = %s WHERE id = %s",
+                "UPDATE storylines_v2 SET summary = %s WHERE id = %s",
                 (story_summary, sid), fetch=False
             )
 

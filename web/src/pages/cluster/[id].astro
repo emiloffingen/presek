@@ -40,7 +40,7 @@ function getRelativeTimeStr(dateStr: string) {
 }
 
 import { sanitizeHtml } from '../../lib/sanitize';
-import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio } from 'lucide-react';
+import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search } from 'lucide-react';
 import type { ClusterDetail } from '../../types';
 
 const { id } = Astro.params;
@@ -423,6 +423,21 @@ const articleSchema = cluster ? {
 													))}
 												</ul>
 											</div>
+
+											{verificationReport.missing_info && verificationReport.missing_info.length > 0 && (
+												<div class="factcheck-col missing-info mt-6 col-span-full border-t border-border pt-4">
+													<header class="col-header">
+														<Search size={18} className="text-amber-500" />
+														<h3>Информативни Празнини</h3>
+													</header>
+													<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">Што изоставуваат одредени извори:</p>
+													<ul class="fact-list">
+														{verificationReport.missing_info.map((item: string) => (
+															<li class="fact-item amber" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+														))}
+													</ul>
+												</div>
+											)}
 										</div>
 										
 										{verificationReport.context && (

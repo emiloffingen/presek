@@ -47,23 +47,24 @@ celery_app.conf.update(
     task_default_queue='celery',
     task_queues=(
         Queue('celery'),
-        Queue('ingestion'),
-        Queue('intelligence'),
+        Queue('fast-track'),
+        Queue('intel-heavy'),
         Queue('delivery'),
         Queue('maintenance'),
     ),
     task_routes={
-        'tasks.ingestion_task.run_ingestion': {'queue': 'ingestion'},
-        'tasks.ingestion_task.auto_repair_sources_task': {'queue': 'ingestion'},
-        'tasks.ingestion_task.crawl_article_task': {'queue': 'intelligence'},
-        'tasks.intelligence.*': {'queue': 'intelligence'},
+        'tasks.ingestion_task.run_ingestion': {'queue': 'fast-track'},
+        'tasks.ingestion_task.auto_repair_sources_task': {'queue': 'maintenance'},
+        'tasks.ingestion_task.crawl_article_task': {'queue': 'fast-track'},
+        'tasks.intelligence.*': {'queue': 'intel-heavy'},
+        'tasks.delivery.send_profile_breaking_alerts_task': {'queue': 'fast-track'},
         'tasks.delivery.*': {'queue': 'delivery'},
         'tasks.maintenance.*': {'queue': 'maintenance'},
     },
     beat_schedule={
         'ingest-regular-feeds': {
             'task': 'tasks.ingestion_task.run_ingestion',
-            'schedule': 1200.0, # Every 20 minutes
+            'schedule': 120.0, # Every 2 minutes
         },
         'prune-database': {
             'task': 'tasks.maintenance.run_prune_db',

@@ -6,8 +6,8 @@ These units are the supported production runtime for `presek.live`.
 
 ## Services
 
-- `presek-worker.service`: Celery worker for `celery`, `intelligence`, and `maintenance`
-- `presek-worker-ingestion.service`: dedicated Celery worker for `ingestion`
+- `presek-worker.service`: Celery worker for `celery`, `intel-heavy`, and `maintenance`
+- `presek-worker-ingestion.service`: dedicated Celery worker for `fast-track`
 - `presek-worker-delivery.service`: dedicated Celery worker for `delivery`
 - `presek-beat.service`: Celery beat scheduler
 - `presek-fastapi.service`: FastAPI on `127.0.0.1:5001`
