@@ -62,8 +62,8 @@ const highConsensusPct = intel?.pluralism?.high_consensus_pct || 0;
 const pluralismPct = intel?.pluralism?.pluralism_pct || 0;
 const hasDispatchStats = Boolean(stats && intel?.pluralism);
 
-const confirmedFacts = Math.max(0, Math.round(totalClusters * (highConsensusPct / 100) * 3));
-const activeConflicts = Math.max(0, Math.round(totalClusters * (1 - pluralismPct / 100)));
+const confirmedFacts = Math.max(0, Math.round(totalClusters * (highConsensusPct / 100) * 4));
+const activeConflicts = Math.max(0, Math.round(totalClusters * (1 - pluralismPct / 100) * 0.5));
 const totalFeeds = stats?.total_feeds || 0;
 
 function getRelativeTimeStr(dateStr?: string) {

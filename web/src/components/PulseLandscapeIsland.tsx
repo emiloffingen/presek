@@ -18,23 +18,33 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[] }> = ({ data }) => {
     // Filter to top sources for clarity in the map
     const plotData = useMemo(() => {
         return data
-            .slice(0, 25)
-            .map(item => ({
-                ...item,
-                // Normalized positions for the grid (0 to 100)
-                x: (item.avg_objectivity * 100),
-                y: (item.avg_sensationalism * 100)
-            }));
+            .slice(0, 30)
+            .map((item, idx) => {
+                // Base positions
+                const xBase = item.avg_objectivity * 100;
+                const yBase = item.avg_sensationalism * 100;
+                
+                // Deterministic jitter based on index to prevent overlap
+                // while keeping the point close to its real value
+                const jitterX = ((idx % 3) - 1) * 2.5; 
+                const jitterY = (((idx * 7) % 3) - 1) * 2.5;
+
+                return {
+                    ...item,
+                    x: Math.max(5, Math.min(95, xBase + jitterX)),
+                    y: Math.max(5, Math.min(95, yBase + jitterY))
+                };
+            });
     }, [data]);
 
     return (
         <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden">
             <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
                 {/* Quadrant Labels */}
-                <div className="absolute top-4 left-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-nyt-red/60">Субјективни & Сензационални</div>
-                <div className="absolute top-4 right-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-nyt-accent/60">Објективни & Динамични</div>
-                <div className="absolute bottom-4 left-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Традиционални & Статични</div>
-                <div className="absolute bottom-4 right-4 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Прецизни & Аналитички</div>
+                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/40 px-2 py-1 rounded">Субјективни & Сензационални</div>
+                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/40 px-2 py-1 rounded">Објективни & Динамични</div>
+                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/40 px-2 py-1 rounded">Традиционални & Статични</div>
+                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/40 px-2 py-1 rounded">Прецизни & Аналитички</div>
 
                 {/* Axes */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/40 dashed"></div>

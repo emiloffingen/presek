@@ -248,8 +248,13 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
     cached = cached_response(cache_key, ttl=300)
     if cached: return cached
 
-    total_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0
-    intl_articles = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE is_global = TRUE"))["count"] or 0
+    # Count international articles based on categories since is_global flag is unreliable
+    total_articles_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'"))["count"] or 0
+    intl_articles_24h = (await db.async_execute_one(f"""
+        SELECT COUNT(*) FROM articles 
+        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
+          AND (category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE)
+    """))["count"] or 0
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
@@ -295,7 +300,7 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
 
     res = {
         "last_24h": last_24h,
-        "international_share_pct": round((intl_articles / total_articles * 100), 1) if total_articles > 0 else 0,
+        "international_share_pct": round((intl_articles_24h / max(1, total_articles_24h) * 100), 1) if total_articles_24h > 0 else 0,
         "ai_transparency": {
             "ai_summaries": ai_summaries,
             "local_summaries": local_summaries,
