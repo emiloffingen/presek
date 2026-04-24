@@ -363,12 +363,15 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     }
 
     /* ── Briefing Content ────────────────────────────── */
-    .briefing-intro { display: grid; grid-template-columns: 1fr; gap: 1.35rem; margin-bottom: 2rem; }
-    .intro-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.14em; color: var(--nyt-accent); margin-bottom: 0.75rem; }
-    .intro-greeting { font-family: var(--font-serif); font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 900; italic: true; margin-bottom: 0.75rem; line-height: 0.95; }
-    .intro-copy { font-family: var(--font-nyt-body); font-size: 1.04rem; line-height: 1.62; color: var(--secondary-foreground); max-width: 39rem; text-wrap: pretty; }
-    .intro-ledger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-    .ledger-card { padding: 0.85rem 0.95rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%); }
+    .briefing-intro { display: flex; flex-direction: column; gap: 2rem; margin-bottom: 3rem; }
+    .intro-greeting { font-family: var(--font-serif); font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 900; italic: true; margin-bottom: 1rem; line-height: 1; }
+    
+    .intro-ledger { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 640px) {
+        .intro-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    
+    .ledger-card { padding: 1.25rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%); min-height: min-content; }
     .ledger-label { display: block; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin-bottom: 0.55rem; }
     .ledger-card strong { display: block; font-family: var(--font-serif); font-size: 1.18rem; font-weight: 900; margin-bottom: 0.35rem; }
     .ledger-card p { font-family: var(--font-nyt-body); font-size: 0.84rem; line-height: 1.45; color: var(--secondary-foreground); }
