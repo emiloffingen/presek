@@ -330,10 +330,10 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 <img src="/img/presek_emblem.svg?v=3" alt="ПРЕСЕК.мк" className="h-6 site-emblem" />
                 <div>
                   <span id="presek-search-title" className="font-serif font-black text-lg block">
-                    ПРЕСЕК.мк Пребарување
+                    ИСТРАЖУВАЊЕ НА АРХИВАТА
                   </span>
                   <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
-                    Вести, теми, личности и контекст
+                    Длабинско мапирање на теми и настани
                   </span>
                 </div>
               </div>
@@ -391,7 +391,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">
-                <Zap size={10} /> Пребарување низ најновите групирани вести и теми
+                <Zap size={10} /> Пребарување низ консолидирани наративи во реално време
               </div>
             </form>
 

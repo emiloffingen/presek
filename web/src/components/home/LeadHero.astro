@@ -74,12 +74,12 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
     </a>
     <div class="lead-copy">
         <div class="lead-edition-bar">
-            <span class="lead-edition-label">Водечка приказна</span>
-            <span class="lead-edition-note">{leadCluster.articles.length} извори ја туркаат темата напред</span>
+            <span class="lead-edition-label">ВОДЕЧКИ НАРАТИВ</span>
+            <span class="lead-edition-note">Консензус помеѓу {leadCluster.articles.length} редакции</span>
         </div>
         <div class="lead-kicker">
             <span class="source-label">{leadCluster.articles?.[0].source}</span>
-            {leadCluster.is_breaking && <span class="live-pill">Во живо</span>}
+            {leadCluster.is_breaking && <span class="live-pill">Ударна вест</span>}
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
             <h1 class:list={["headline headline-lead", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
@@ -96,7 +96,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
 
         {relatedArticles.length > 0 && (
             <div class="lead-follow-strip">
-                <p class="lead-follow-kicker">Следно во кластерот</p>
+                <p class="lead-follow-kicker">ДОПОЛНИТЕЛНИ ПЕРСПЕКТИВИ</p>
                 <ul class="lead-related">
                     {relatedArticles.map((article: any, index: number) => (
                         <li>

@@ -143,7 +143,7 @@ const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && cluster.articles.length >= 3;
 const primaryNarrativeLabel = 'СУБЛИМАТ';
-const primaryNarrativeEyebrow = '';
+const primaryNarrativeEyebrow = 'РЕДАКЦИСКА СИНТЕЗА';
 
 const sentimentData = cluster?.sentiment ? {
     sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
@@ -155,15 +155,15 @@ const conflictsCount = verificationReport?.conflicts?.length || 0;
 const totalSourcesCount = cluster?.articles?.length || 0;
 const isBreakingFlag = cluster?.articles?.some(a => a.is_breaking) || false;
 
-let momentumKicker = { label: 'УРЕДНИЧКИ ПРЕГЛЕД', color: 'text-muted-foreground' };
+let momentumKicker = { label: 'РЕДАКЦИСКИ УВИД', color: 'text-muted-foreground' };
 if (isBreakingFlag && totalSourcesCount >= 4) {
-    momentumKicker = { label: 'УДАРЕН РАЗВОЈ', color: 'text-nyt-red' };
+    momentumKicker = { label: 'УДАРЕН НАРАТИВ', color: 'text-nyt-red' };
 } else if (conflictsCount >= 3) {
-    momentumKicker = { label: 'ПРОТИВРЕЧЕН РАЗВОЈ', color: 'text-amber-600' };
+    momentumKicker = { label: 'КОНТРАДИКТОРЕН РАЗВОЈ', color: 'text-amber-600' };
 } else if (totalSourcesCount >= 6) {
-    momentumKicker = { label: 'ЗАСИЛЕН ИНТЕРЕС', color: 'text-emerald-700 dark:text-emerald-500' };
+    momentumKicker = { label: 'СЕОПФАТЕН ИНТЕРЕС', color: 'text-emerald-700 dark:text-emerald-500' };
 } else if (totalSourcesCount >= 2 && !synthesisFreshness.is_stale) {
-    momentumKicker = { label: 'ДЕФИНИТИВЕН ПРЕГЛЕД', color: 'text-blue-700 dark:text-blue-500' };
+    momentumKicker = { label: 'КОНСОЛИДИРАН ПРЕГЛЕД', color: 'text-blue-700 dark:text-blue-500' };
 }
 
 // --- SEO & Schema ---

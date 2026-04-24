@@ -340,7 +340,7 @@ function getBriefingSnippet(content: string) {
 					<div class="section-wrapper">
 						<DevelopmentsSection
 							title="Теми во развој"
-							note="Приказни што ја обликуваат јавната дебата."
+							note="Актуелни наративи со засилен медиумски интензитет."
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
                             tone="developing"
@@ -357,8 +357,8 @@ function getBriefingSnippet(content: string) {
 				{globalClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Глобален Пулс"
-							note="Најважните светски вести од Америка и Германија."
+							title="Глобална Сцена"
+							note="Синтеза на меѓународните случувања од водечките центри."
 							developmentsFeatured={globalClusters.slice(0, 2)}
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
@@ -369,8 +369,8 @@ function getBriefingSnippet(content: string) {
 				{wireClusters.length > 0 && (
 					<div class="section-wrapper">
 						<DevelopmentsSection
-							title="Најнови вести"
-							note="Свежи поединечни објави."
+							title="Последно на лентата"
+							note="Реално време: поединечни извештаи од теренот."
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"
