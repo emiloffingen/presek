@@ -174,19 +174,29 @@ class DatabaseManager:
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return self.execute(sql, (vec_str, vec_str, limit))
 
-    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid"):
+    def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
         """
         Combines Full-Text Search (FTS) and Semantic Search (pgvector) using a weighted score.
         Supports advanced web-style queries (e.g. "phrase search", -exclude).
         """
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         
+        # Build time constraint
+        time_filter = ""
+        if timespan == "24h":
+            time_filter = "AND created_at >= NOW() - INTERVAL '24 hours'"
+        elif timespan == "7d":
+            time_filter = "AND created_at >= NOW() - INTERVAL '7 days'"
+        elif timespan == "30d":
+            time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
+
         # We use websearch_to_tsquery for more natural search behavior
         sql = f"""
             WITH fts_results AS (
                 SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
                 FROM articles
                 WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+                {time_filter}
                 ORDER BY rank DESC
                 LIMIT 300
             ),
@@ -194,7 +204,8 @@ class DatabaseManager:
                 SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
                 FROM articles
                 WHERE embedding IS NOT NULL
-                  AND created_at >= NOW() - INTERVAL '14 days'
+                  AND created_at >= NOW() - INTERVAL '30 days'
+                  {time_filter}
                 ORDER BY similarity DESC
                 LIMIT 300
             ),

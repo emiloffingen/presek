@@ -32,6 +32,7 @@ const FOCUSABLE_SELECTOR =
 export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(initialQuery || '');
+  const [timespan, setTimespan] = useState('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
@@ -146,7 +147,9 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`);
+        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`;
+        const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
+        const res = await fetch(url + timespanPart);
         if (!res.ok) {
           throw new Error('Системот е привремено зафатен. Ве молиме обидете се повторно.');
         }
@@ -218,7 +221,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     if (!cleanQuery) return;
     persistRecentSearch(cleanQuery);
     closeSearch();
-    navigate(`/?q=${encodeURIComponent(cleanQuery)}`);
+    const tsPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
+    navigate(`/?q=${encodeURIComponent(cleanQuery)}${tsPart}`);
   };
 
   const navigateToCluster = (clusterId: string) => {
@@ -430,8 +434,32 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">
-                <Zap size={10} /> Пребарување низ консолидирани наративи во реално време
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">
+                    <Zap size={10} /> Пребарување низ консолидирани наративи во реално време
+                </div>
+
+                <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-sm border border-border">
+                   {[
+                     { id: '24h', label: '24 ЧАСА' },
+                     { id: '7d', label: '7 ДЕНА' },
+                     { id: '30d', label: '30 ДЕНА' },
+                     { id: 'all', label: 'СИТЕ' }
+                   ].map(ts => (
+                     <button
+                        key={ts.id}
+                        type="button"
+                        onClick={() => setTimespan(ts.id)}
+                        className={`px-3 py-1 font-sans text-[9px] font-black tracking-widest transition-all ${
+                            timespan === ts.id 
+                            ? 'bg-foreground text-background shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                     >
+                       {ts.label}
+                     </button>
+                   ))}
+                </div>
               </div>
             </form>
 

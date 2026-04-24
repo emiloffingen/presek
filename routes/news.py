@@ -234,10 +234,11 @@ async def get_news(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     sort: str = "recent",
+    timespan: Optional[str] = None, # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24
 ):
-    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{page}:{page_size}"
+    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{timespan}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached: return cached
 
