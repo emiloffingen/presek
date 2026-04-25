@@ -35,7 +35,17 @@ def _pick_quote_of_the_day(row) -> dict | None:
         if not text:
             return ""
         for line in text.splitlines():
+            # Strip list markers and extra whitespace
             clean = re.sub(r"^[-•*]\s*", "", line).strip()
+            if not clean:
+                continue
+            
+            # Remove citation markers like [1], [12], [6]
+            clean = re.sub(r"\[\d+\]", "", clean).strip()
+            
+            # Remove redundant nested quotes at start/end
+            clean = clean.strip("„“\"\'")
+            
             if clean:
                 return clean[:280]
         return ""
