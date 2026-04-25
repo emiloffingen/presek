@@ -4,6 +4,7 @@ import ThemeIsland from './ThemeIsland';
 import { Sparkles, BarChart3, Radio, ShieldCheck } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { getEditionStr } from '../utils/textUtils';
+import Branding from './Branding.astro';
 
 interface Props {
     category?: string | null;
@@ -146,8 +147,7 @@ function getRelativeTimeStr(dateStr?: string) {
 
             <div class="topbar-branding">
                 <a href="/" class="brand-link">
-                    <img src="/img/presek_emblem.svg?v=3" alt="" class="brand-emblem site-emblem" />
-                    <img src="/logo.svg?v=3" alt="ПРЕСЕК.мк" class="brand-logo site-logo" />
+                    <Branding mode="full" />
                 </a>
             </div>
 
