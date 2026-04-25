@@ -84,20 +84,31 @@ function renderBriefingLine(line: string) {
     if (stripped === '---') {
         return `<div class="briefing-divider"></div>`;
     }
+
+    // Generic link detection for [[id]] in any line
+    const linkMatch = line.match(/\[\[([\w-]+)\]\]/);
+    if (linkMatch) {
+        const id = linkMatch[1];
+        let text = line.replace(`[[${id}]]`, '').trim();
+        
+        // If it was a heading, treat it as such, otherwise as a paragraph/list item
+        if (line.startsWith('### ')) {
+            return `<h3 class="briefing-item-title">
+                <a href="/cluster/${id}">${esc(text.substring(4))} <span>Истражи приказна →</span></a>
+            </h3>`;
+        }
+        
+        // Handle numbered items or plain paragraphs with links
+        return `<p class="briefing-paragraph has-link">
+            <a href="/cluster/${id}">${esc(text)} <span class="briefing-action">ИСТРАЖИ ПРИКАЗНА →</span></a>
+        </p>`;
+    }
+
     if (line.startsWith('# ')) {
         return `<h1 class="briefing-masthead-title">${esc(line.substring(2))}</h1>`;
     }
     if (line.startsWith('### ')) {
-        let text = line.substring(4);
-        const match = text.match(/\[\[([\w-]+)\]\]\s*$/);
-        if (match) {
-            const id = match[1];
-            text = text.replace(`[[${id}]]`, '').trim();
-            return `<h3 class="briefing-item-title">
-                <a href="/cluster/${id}">${esc(text)} <span>Истражи приказна →</span></a>
-            </h3>`;
-        }
-        return `<h3 class="briefing-item-title">${esc(text)}</h3>`;
+        return `<h3 class="briefing-item-title">${esc(line.substring(4))}</h3>`;
     }
     if (line.startsWith('## ')) {
         const text = line.substring(3).trim();
@@ -443,7 +454,9 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     :global(.briefing-item-title a span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); opacity: 0; transition: opacity 0.2s; }
     :global(.briefing-item-title a:hover span) { opacity: 1; }
     
-    :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.82; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
+    :global(.briefing-paragraph.has-link a) { text-decoration: none; color: inherit; display: block; transition: color 0.2s; }
+    :global(.briefing-paragraph.has-link a:hover) { color: var(--foreground); }
+    :global(.briefing-action) { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); margin-left: 0.75rem; letter-spacing: 0.05em; vertical-align: middle; }
     
     :global(.briefing-list) { list-style: none; padding: 0; margin-bottom: 2rem; }
     :global(.briefing-li) { font-family: var(--font-nyt-body); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
