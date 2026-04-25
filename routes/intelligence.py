@@ -481,10 +481,14 @@ async def get_global_pulse(category: Optional[str] = None):
         """
         top_entities = await db.async_execute(top_entities_sql, (category,))
     else:
-        top_entities_sql = """
-            SELECT name, total_mentions, sentiment_score, type
-            FROM knowledge_entities
-            WHERE last_seen >= NOW() - INTERVAL '24 hours'
+        # Use a join to get REAL 24h counts instead of lifetime total_mentions
+        top_entities_sql = f"""
+            SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+            FROM knowledge_entities ke
+            JOIN cluster_entities ce ON ke.name = ce.entity_name
+            JOIN articles a ON ce.cluster_id = a.cluster_id
+            WHERE a.{freshness_expr} >= NOW() - INTERVAL '24 hours'
+            GROUP BY ke.name, ke.sentiment_score, ke.type
             ORDER BY total_mentions DESC
             LIMIT 8
         """

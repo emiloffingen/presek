@@ -73,6 +73,16 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
         return (val * 100).toFixed(0) + '%';
     }
 
+    function getTypeLabel(type: string) {
+        const map: Record<string, string> = {
+            'PER': 'Личност',
+            'ORG': 'Организација',
+            'LOC': 'Локација',
+            'ENTITY': 'Субјект'
+        };
+        return map[type] || 'Субјект';
+    }
+
     return (
         <>
             {/* Category Filter Bar */}
@@ -126,7 +136,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         {topEntities.slice(0, 3).map((e: any, i: number) => (
                             <div key={i} className="list-item">
                                 <span className="truncate">{e.name}</span>
-                                <strong>+{e.total_mentions}</strong>
+                                <strong className="text-nyt-accent">+{e.total_mentions}</strong>
                             </div>
                         ))}
                     </div>
@@ -163,10 +173,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                             href={`/subjekt/${encodeURIComponent(ent.name)}`}
                                             className="p-4 border border-border bg-card hover:border-nyt-accent transition-all group"
                                         >
-                                            <span className="text-[9px] font-black uppercase text-muted-foreground block mb-2">{ent.type || 'СУБЈЕКТ'}</span>
+                                            <span className="text-[9px] font-black uppercase text-nyt-accent block mb-2">{getTypeLabel(ent.type)}</span>
                                             <h3 className="font-serif font-bold text-base leading-tight group-hover:text-nyt-accent">{ent.name}</h3>
                                             <div className="mt-3 flex items-center justify-between">
-                                                <span className="text-[9px] font-bold uppercase">{ent.total_mentions} објави</span>
+                                                <span className="text-[10px] font-bold uppercase text-muted-foreground">+{ent.total_mentions} теми денес</span>
                                                 <div className={`w-2 h-2 rounded-full ${ent.sentiment_score > 0.1 ? 'bg-green-500' : ent.sentiment_score < -0.1 ? 'bg-nyt-red' : 'bg-muted'}`}></div>
                                             </div>
                                         </a>
