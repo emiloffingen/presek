@@ -48,3 +48,7 @@ def version_payload() -> dict:
     if sha:
         payload["commit"] = sha
     return payload
+
+
+def get_full_version_info() -> dict:
+    return version_payload()
