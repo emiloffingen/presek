@@ -12,7 +12,16 @@ interface PulseRow {
     effective_weight?: number;
 }
 
-const PulseLandscapeIsland: React.FC<{ data: PulseRow[] }> = ({ data }) => {
+const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean }> = ({ data, loading = false }) => {
+    if (loading) {
+        return (
+            <div className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 animate-pulse">
+                <div className="w-full aspect-square md:aspect-[16/9] bg-secondary/20 rounded-lg flex items-center justify-center">
+                    <span className="font-serif italic text-muted-foreground">Се вчитува пејзажот...</span>
+                </div>
+            </div>
+        );
+    }
     if (!data || data.length === 0) return null;
 
     // Filter to top sources for clarity in the map

@@ -335,8 +335,15 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         return {"status": "error", "message": "Грешка при анализата."}
 
 @router.get("/intelligence/source-pulse")
-async def get_source_pulse():
+async def get_source_pulse(category: Optional[str] = None):
     from utils import get_source_trust_label, get_source_effective_weight
+    
+    cat_filter = ""
+    params = []
+    if category:
+        cat_filter = "AND a.category = %s"
+        params.append(category)
+
     sql = f"""
         WITH first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
@@ -351,15 +358,16 @@ async def get_source_pulse():
             COUNT(DISTINCT a.cluster_id) as cluster_count,
             (SELECT COUNT(*) FROM first_reporters fr 
              WHERE fr.source = a.source 
-               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days')
+               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' {cat_filter})
             ) as first_report_count
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
         WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '7 days'
-        GROUP BY a.source HAVING COUNT(DISTINCT a.cluster_id) >= 3
+        {cat_filter}
+        GROUP BY a.source HAVING COUNT(DISTINCT a.cluster_id) >= 1
         ORDER BY cluster_count DESC
     """
-    rows = await db.async_execute(sql)
+    rows = await db.async_execute(sql, tuple(params + params))
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
@@ -419,23 +427,31 @@ async def get_entity_profile(name: str):
     return {"profile": entity, "related": relationships, "media": media_stats, "categories": category_stats, "sentiment_history": sentiment_history, "clusters": processed}
 
 @router.get("/intelligence/global-pulse")
-async def get_global_pulse():
+async def get_global_pulse(category: Optional[str] = None):
     """Public high-level intelligence stats for the Pulse page."""
-    cache_key = "api:intelligence:global-pulse:v2"
+    cat_id = f"cat-{category}" if category else "all"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v3"
     cached = cached_response(cache_key)
     if cached: return cached
 
     freshness_expr = _FRESHNESS_EXPR
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'")
+    
+    cat_filter = ""
+    params = []
+    if category:
+        cat_filter = "AND category = %s"
+        params.append(category)
+
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
-    # 1. News Velocity (Volume per hour)
+    # 1. News Velocity
     velocity = await db.async_execute(f"""
         SELECT date_trunc('hour', {freshness_expr}) AS t, COUNT(*) AS n 
         FROM articles 
-        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
+        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
         GROUP BY t ORDER BY t
-    """)
+    """, tuple(params))
     
     # 2. Category Distribution
     by_category = await db.async_execute(f"""
@@ -449,16 +465,30 @@ async def get_global_pulse():
     
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload
-    intel = await build_intelligence_summary_payload(last_24h)
+    intel = await build_intelligence_summary_payload(last_24h, category=category)
     
     # 4. Top Trending Entities
-    top_entities = await db.async_execute("""
-        SELECT name, total_mentions, sentiment_score, type
-        FROM knowledge_entities
-        WHERE last_seen >= NOW() - INTERVAL '24 hours'
-        ORDER BY total_mentions DESC
-        LIMIT 8
-    """)
+    if category:
+        top_entities_sql = f"""
+            SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+            FROM knowledge_entities ke
+            JOIN cluster_entities ce ON ke.name = ce.entity_name
+            JOIN articles a ON ce.cluster_id = a.cluster_id
+            WHERE a.category = %s AND a.{freshness_expr} >= NOW() - INTERVAL '24 hours'
+            GROUP BY ke.name, ke.sentiment_score, ke.type
+            ORDER BY total_mentions DESC
+            LIMIT 8
+        """
+        top_entities = await db.async_execute(top_entities_sql, (category,))
+    else:
+        top_entities_sql = """
+            SELECT name, total_mentions, sentiment_score, type
+            FROM knowledge_entities
+            WHERE last_seen >= NOW() - INTERVAL '24 hours'
+            ORDER BY total_mentions DESC
+            LIMIT 8
+        """
+        top_entities = await db.async_execute(top_entities_sql)
 
     res = {
         "status": "success",

@@ -2,71 +2,36 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
-import SourceComparisonIsland from '../components/SourceComparisonIsland';
-import KnowledgeGraphIsland from '../components/KnowledgeGraphIsland';
-import PulseLandscapeIsland from '../components/PulseLandscapeIsland';
+import PulseClientContainer from '../components/PulseClientContainer';
 import { apiBaseUrl } from '../lib/apiBase';
-import { Activity, Zap, ShieldCheck, Info, Globe, ChevronRight, Timer, Sun, Coffee, Moon } from 'lucide-react';
-
-type PulseRow = {
-    source: string;
-    avg_sentiment: number;
-    avg_objectivity: number;
-    avg_sensationalism: number;
-    cluster_count: number;
-    first_report_count: number;
-    trust_label?: string;
-    effective_weight?: number;
-};
+import { Activity, Timer } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
-let pulseData: PulseRow[] = [];
-let globalPulse: any = null;
-let error = null;
+let initialPulseData = [];
+let initialGlobalPulse: any = null;
+let categories: string[] = [];
 
 try {
-    const [pulseRes, globalRes] = await Promise.all([
+    const [pulseRes, globalRes, catRes] = await Promise.all([
         fetch(`${API_URL}/intelligence/source-pulse`),
-        fetch(`${API_URL}/intelligence/global-pulse`)
+        fetch(`${API_URL}/intelligence/global-pulse`),
+        fetch(`${API_URL}/categories`)
     ]);
+    
     if (pulseRes.ok) {
         const json = await pulseRes.json();
-        pulseData = json.data || [];
-    } else {
-        error = "Медиумскиот пулс моментално не е достапен.";
-        Astro.response.status = 500;
+        initialPulseData = json.data || [];
     }
     if (globalRes.ok) {
-        globalPulse = await globalRes.json();
-    } else {
-        error = error || "Медиумскиот пулс моментално не е достапен.";
-        Astro.response.status = 500;
+        initialGlobalPulse = await globalRes.json();
     }
-    } catch (e) {
-    console.error(e);
-    error = "Грешка при вчитување на пулсот.";
-    Astro.response.status = 500;
+    if (catRes.ok) {
+        const json = await catRes.json();
+        categories = (json.categories || []).map((c: any) => c.name);
     }
-
-const intelligence = globalPulse?.intelligence ?? {};
-const pulseLeaders = pulseData.slice(0, 15);
-const velocityData = globalPulse?.velocity ?? [];
-const categoryData = globalPulse?.by_category ?? [];
-const topEntities = globalPulse?.top_entities ?? [];
-
-function getSentimentLabel(score: number) {
-    if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
-    if (score < -0.2) return { label: 'Критичен', color: 'text-nyt-red' };
-    return { label: 'Неутрален', color: 'text-muted-foreground' };
+} catch (e) {
+    console.error("Pulse SSR error:", e);
 }
-
-function formatStat(val: number) {
-    return (val * 100).toFixed(0) + '%';
-}
-
-const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
-const cleanCategoryData = (categoryData || []).filter((cat: any) => String(cat?.category || '').trim());
 
 const currentDate = new Date().toLocaleDateString('mk-MK', { 
     weekday: 'long', 
@@ -79,7 +44,7 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
 
 <Layout 
     title="Медиумски Пулс — Пресек"
-    description="Анализа на медиумскиот пејзаж во Македонија преку податоци и алгоритамска обработка."
+    description="Анализа на медиумскиот пејзаж во Македонија преку податоци и алгоритамска обработка во реално време."
 >
     <NYTHeader />
     <main class="site-layout broadsheet-layout pt-48 pb-[var(--page-py)]">
@@ -87,8 +52,8 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             <div class="masthead-top">
                 <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
-                    <span class="meta-item"><Timer size={11} /> {globalPulse?.last_24h ? Math.max(3, Math.ceil(globalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
-                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
+                    <span class="meta-item"><Timer size={11} /> {initialGlobalPulse?.last_24h ? Math.max(3, Math.ceil(initialGlobalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
+                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.5</span>
                 </div>
             </div>
 
@@ -107,9 +72,9 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             </div>
 
             <div class="masthead-deck">
-                <span>{cleanCategoryData.length} КАТЕГОРИИ АНАЛИЗИРАНИ</span>
-                <span>{intelligence.pluralism?.pluralism_pct || 0}% ДИВЕРЗИТЕТ</span>
-                <span>{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0} ОБЈАВИ ДЕНЕС</span>
+                <span>{categories.length} КАТЕГОРИИ АНАЛИЗИРАНИ</span>
+                <span>{initialGlobalPulse?.intelligence?.pluralism?.pluralism_pct || 0}% ДИВЕРЗИТЕТ</span>
+                <span>{initialGlobalPulse?.last_24h?.toLocaleString('mk-MK') || 0} ОБЈАВИ ДЕНЕС</span>
             </div>
         </header>
 
@@ -118,118 +83,17 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
                 <h2 class="intro-greeting">Системски мониторинг.</h2>
                 <p class="intro-copy">
                     Медиумскиот Пулс е во реално време: секоја објава се деконструира преку јазични модели за да се измери објективноста,
-                    тонот и оригиналноста. Овој преглед ви овозможува да го видите „шумот“ зад вестите.
+                    тонот и оригиналноста. Изберете категорија за да ја анализирате специфичната медиумска динамика.
                 </p>
             </div>
         </div>
 
-        {error && !globalPulse && pulseData.length === 0 ? (
-            <div class="pulse-empty-state">
-                <Activity className="opacity-30 text-nyt-accent" size={48} />
-                <h3>Медиумскиот пулс не е достапен</h3>
-                <p>{error}</p>
-            </div>
-        ) : (
-        <div class="broadsheet-grid">
-            <div class="broadsheet-main">
-                <section class="mb-16">
-                    <h2 class="section-title-italic">Дистрибуција по категории</h2>
-                    <div class="category-pulse-grid">
-                        {cleanCategoryData.map((cat: any) => {
-                            const intensity = Math.min(1, (cat.n || 0) / (safePulseVolume / 4));
-                            return (
-                                <a href={`/?category=${encodeURIComponent(cat.category)}`} class="cat-card">
-                                    <span class="cat-name">{cat.category}</span>
-                                    <span class="cat-val">{cat.n}</span>
-                                    <div class="cat-bar"><div style={`width: ${intensity * 100}%`}></div></div>
-                                </a>
-                            )
-                        })}
-                    </div>
-                </section>
-
-                <section class="mb-16">
-                    <h2 class="section-title-italic masthead-double-rule">Редакциски Хоризонт</h2>
-                    <PulseLandscapeIsland client:visible data={pulseData} />
-                </section>
-
-                <section class="mb-16">
-                    <h2 class="section-title-italic masthead-double-rule">Тематски Корелации</h2>
-                    <KnowledgeGraphIsland client:load apiUrl={API_URL} />
-                </section>
-            </div>
-
-            <aside class="broadsheet-rail">
-                <section class="rail-block rail-block-featured">
-                    <p class="rail-kicker">Фокус</p>
-                    <h3 class="rail-title">СУБЈЕКТИ</h3>
-                    <div class="rail-tag-cloud">
-                        {topEntities.map((e: any) => (
-                            <a href={`/?entity=${encodeURIComponent(e.name)}`}>
-                                {e.name}
-                            </a>
-                        ))}
-                    </div>
-                </section>
-
-                <section class="rail-block">
-                    <p class="rail-kicker">Методологија</p>
-                    <h3 class="rail-title">ИНТЕЛЕКТ</h3>
-                    <p class="rail-text">
-                        Податоците се генерираат преку автоматизирана анализа на секој кластер. Нашиот алгоритам го оценува известувањето на секој медиум посебно според објективност, тон и сензационализам.
-                    </p>
-                </section>
-
-                <div class="rail-ad-box">
-                    <p class="text-[9px] opacity-50 mb-2">ПРОМОЦИЈА</p>
-                    <SourceComparisonIsland client:load allSources={pulseData.map((r: PulseRow) => r.source)} />
-                </div>
-            </aside>
-        </div>
-        )}
-
-        {!error || pulseLeaders.length > 0 ? (
-        <section class="mt-20">
-            <h2 class="section-title-italic mb-8 masthead-double-rule">Ранг на редакции (24ч)</h2>
-            <div class="broadsheet-table-wrapper">
-                <table class="broadsheet-table">
-                    <thead>
-                        <tr>
-                            <th>РЕДАКЦИЈА</th>
-                            <th>ТОН</th>
-                            <th class="text-right">ОБЈЕКТИВНОСТ</th>
-                            <th class="text-right">СЕНЗАЦИОНАЛИЗАМ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {pulseLeaders.map((row: PulseRow) => (
-                            <tr>
-                                <td>
-                                    <div class="table-source">
-                                        <strong>{row.source}</strong>
-                                        <span>{row.cluster_count} теми</span>
-                                    </div>
-                                </td>
-                                <td><span class={`tone-label ${getSentimentLabel(row.avg_sentiment).color}`}>{getSentimentLabel(row.avg_sentiment).label}</span></td>
-                                <td class="text-right">
-                                    <div class="stat-row">
-                                        <div class="stat-bar"><div style={`width: ${row.avg_objectivity * 100}%`}></div></div>
-                                        <span class="stat-num">{formatStat(row.avg_objectivity)}</span>
-                                    </div>
-                                </td>
-                                <td class="text-right">
-                                    <div class="stat-row">
-                                        <div class="stat-bar bar-red"><div style={`width: ${row.avg_sensationalism * 100}%`}></div></div>
-                                        <span class="stat-num text-nyt-red">{formatStat(row.avg_sensationalism)}</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        ) : null}
+        <PulseClientContainer 
+            client:load 
+            initialGlobalPulse={initialGlobalPulse} 
+            initialPulseData={initialPulseData}
+            categories={categories}
+        />
     </main>
     <Footer />
 </Layout>
@@ -292,65 +156,47 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
         margin: 0;
     }
 
-    /* ── Broadstreet Grid ────────────────────────────── */
-    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+    :global(.pulse-stats-grid) { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 3rem; }
+    @media (min-width: 768px) { :global(.pulse-stats-grid) { grid-template-columns: repeat(4, 1fr); } }
+    :global(.pulse-card) { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem; border: 1px solid var(--border); background: var(--background); }
+    :global(.card-label) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 0.4rem; }
+    :global(.card-value) { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    :global(.card-note) { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
+    :global(.card-sparkline) { display: flex; align-items: end; gap: 2px; height: 2rem; margin-top: 0.5rem; }
+    :global(.card-sparkline .bar) { flex: 1; background: var(--nyt-accent); opacity: 0.2; }
+    :global(.card-list) { display: flex; flex-direction: column; gap: 0.4rem; }
+    :global(.list-item) { display: flex; justify-content: space-between; font-size: 0.75rem; font-family: var(--font-serif); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
+
+    :global(.broadsheet-grid) { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
-        .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+        :global(.broadsheet-grid) { grid-template-columns: minmax(0, 1fr) 300px; }
+        :global(.broadsheet-main) { border-right: 1px solid var(--border); padding-right: 3rem; }
+        :global(.broadsheet-rail) { position: sticky; top: 8rem; align-self: start; }
     }
 
-    .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
-    .pulse-empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); margin: 2rem 0 4rem; }
-    .pulse-empty-state h3 { font-family: var(--font-serif); font-size: 1.8rem; margin: 1rem 0 0.5rem; }
-    .pulse-empty-state p { font-family: var(--font-nyt-body); color: var(--secondary-foreground); }
+    :global(.section-title-italic) { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; italic: true; margin-bottom: 1.5rem; }
 
-    /* ── Category Pulse ──────────────────────────────── */
-    .category-pulse-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-    @media (min-width: 640px) { .category-pulse-grid { grid-template-columns: repeat(6, 1fr); } }
-    .cat-card { display: block; padding: 1rem; border: 1px solid var(--border); text-decoration: none; color: inherit; }
-    .cat-name { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; text-transform: uppercase; color: var(--muted-foreground); display: block; margin-bottom: 0.35rem; }
-    .cat-val { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 900; display: block; }
-    .cat-bar { height: 3px; background: var(--secondary); margin-top: 0.75rem; }
-    .cat-bar div { height: 100%; background: var(--nyt-accent); }
+    :global(.rail-block) { margin-bottom: 2.5rem; }
+    :global(.rail-block-featured) { padding: 1.5rem; background: var(--secondary); }
+    :global(.rail-kicker) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    :global(.rail-title) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    :global(.rail-tag-cloud) { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    :global(.rail-tag-cloud a) { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; text-decoration: none; color: inherit; }
+    :global(.rail-text) { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
+    :global(.rail-ad-box) { padding: 1.5rem; border: 1px solid var(--border); }
 
-    /* ── Rail ────────────────────────────────────────── */
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-featured { padding: 1.5rem; background: var(--secondary); }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .rail-tag-cloud a { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; text-decoration: none; color: inherit; }
-    .rail-text { font-family: var(--font-nyt-body); font-size: 0.9rem; line-height: 1.5; color: var(--secondary-foreground); }
-    .rail-text-tight { margin-bottom: 1rem; }
-
-    .rail-subject-list { display: flex; flex-direction: column; gap: 1rem; }
-    .subject-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
-    .subject-row:last-child { border-bottom: none; }
-    .subject-name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 800; display: block; }
-    .subject-count { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; opacity: 0.6; }
-    .subject-sentiment { font-size: 1.1rem; }
-    .rail-metrics { padding: 1.25rem 1.35rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%); }
-    .rail-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
-    .rail-metric-card { padding: 0.75rem 0.6rem; border: 1px solid var(--border); background: var(--background); text-align: center; }
-    .rail-metric-value { display: block; font-family: var(--font-serif); font-size: 1.15rem; font-weight: 900; line-height: 1; margin-bottom: 0.3rem; }
-    .rail-metric-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); }
-
-    .rail-ad-box { padding: 1.5rem; border: 1px solid var(--border); }
-
-    /* ── Table ───────────────────────────────────────── */
-    .broadsheet-table-wrapper { overflow-x: auto; border-top: 2px solid var(--foreground); }
-    .broadsheet-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    .broadsheet-table th { text-align: left; padding: 1rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; border-bottom: 1px solid var(--border); color: var(--muted-foreground); }
-    .broadsheet-table td { padding: 1.25rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .table-source strong { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 800; display: block; }
-    .table-source span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
-    .tone-label { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
-    .stat-row { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
-    .stat-bar { height: 4px; width: 80px; background: var(--secondary); overflow: hidden; }
-    .stat-bar div { height: 100%; background: var(--nyt-accent); }
-    .stat-bar.bar-red div { background: var(--nyt-red); }
-    .stat-num { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 800; width: 2.5rem; }
+    :global(.broadsheet-table-wrapper) { overflow-x: auto; border-top: 2px solid var(--foreground); }
+    :global(.broadsheet-table) { width: 100%; border-collapse: collapse; min-width: 600px; }
+    :global(.broadsheet-table th) { text-align: left; padding: 1rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; border-bottom: 1px solid var(--border); color: var(--muted-foreground); }
+    :global(.broadsheet-table td) { padding: 1.25rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    :global(.table-source strong) { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 800; display: block; }
+    :global(.table-source span) { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
+    :global(.tone-label) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
+    :global(.stat-row) { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
+    :global(.stat-bar) { height: 4px; width: 80px; background: var(--secondary); overflow: hidden; }
+    :global(.stat-bar div) { height: 100%; background: var(--nyt-accent); }
+    :global(.stat-bar.bar-red div) { background: var(--nyt-red); }
+    :global(.stat-num) { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 800; width: 2.5rem; }
 
     @media (max-width: 640px) {
         .editorial-masthead { padding-bottom: 0.75rem; }

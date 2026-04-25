@@ -239,47 +239,49 @@ def _is_rate_limited_path(path: str) -> bool:
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
 
-async def build_intelligence_summary_payload(last_24h: int) -> dict:
-    """Calculates AI transparency, pluralism and international share metrics."""
+async def build_intelligence_summary_payload(last_24h: int, category: Optional[str] = None) -> dict:
+    """Calculates AI transparency, pluralism and international share metrics with optional category filter."""
     from utils import cached_response, set_cache, redis_client
     import asyncio
     
-    cache_key = f"stats:intel_summary:{last_24h}"
+    cat_id = f"cat-{category}" if category else "all"
+    cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v3"
     cached = cached_response(cache_key, ttl=300)
     if cached: return cached
 
     # Count international articles based on categories since is_global flag is unreliable
     freshness_expr = "COALESCE(ingested_at, created_at)"
-    total_articles_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'"))["count"] or 0
+    cat_filter = ""
+    params = []
+    if category:
+        cat_filter = "AND category = %s"
+        params.append(category)
+
+    total_articles_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params)))["count"] or 0
     intl_articles_24h = (await db.async_execute_one(f"""
         SELECT COUNT(*) FROM articles 
-        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
+        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
           AND (category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE)
-    """))["count"] or 0
+    """, tuple(params)))["count"] or 0
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
     
     # Robustly count summaries (AI vs Local)
+    # Note: Runtime events are global, not per-category for now
     ai_summaries = 0
     local_summaries = 0
     
     for k, v in ai_events.items():
         key = k.decode() if isinstance(k, bytes) else k
-        if key.startswith("synthesis_path"):
-            val = int(v)
-            if "mode=local" in key:
-                local_summaries += val
-            else:
-                ai_summaries += val
-        elif key.startswith("summary_path"):
+        if key.startswith("synthesis_path") or key.startswith("summary_path"):
             val = int(v)
             if "mode=local" in key:
                 local_summaries += val
             else:
                 ai_summaries += val
 
-    balance_stats = await db.async_execute_one("""
+    balance_stats = await db.async_execute_one(f"""
         WITH cluster_tiers AS (
             SELECT cluster_id, COUNT(DISTINCT
                 CASE
@@ -289,7 +291,7 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
                 END) as group_count
             FROM articles a
             JOIN sources s ON a.source = s.name
-            WHERE a.created_at >= NOW() - INTERVAL '24 hours'
+            WHERE a.created_at >= NOW() - INTERVAL '24 hours' {cat_filter}
             GROUP BY cluster_id
         )
         SELECT
@@ -297,10 +299,10 @@ async def build_intelligence_summary_payload(last_24h: int) -> dict:
             COUNT(*) FILTER (WHERE group_count >= 3) as high_consensus,
             COUNT(*) FILTER (WHERE group_count = 2) as diverse_sources
         FROM cluster_tiers
-    """) or {"total_clusters": 0, "high_consensus": 0, "diverse_sources": 0}
+    """, tuple(params)) or {"total_clusters": 0, "high_consensus": 0, "diverse_sources": 0}
 
     res = {
-        "last_24h": last_24h,
+        "last_24h": total_articles_24h,
         "international_share_pct": round((intl_articles_24h / max(1, total_articles_24h) * 100), 1) if total_articles_24h > 0 else 0,
         "ai_transparency": {
             "ai_summaries": ai_summaries,
