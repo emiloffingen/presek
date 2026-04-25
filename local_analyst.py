@@ -2,7 +2,9 @@ import os
 import logging
 import json
 import time
-from typing import Optional, Dict, Any
+import threading
+import re
+from typing import Optional, Dict, Any, List
 from llama_cpp import Llama
 
 log = logging.getLogger("presek.analyst")
@@ -13,35 +15,43 @@ N_THREADS = int(os.environ.get("MODEL_THREADS", "2"))
 
 class LocalAnalyst:
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(LocalAnalyst, cls).__new__(cls)
-            cls._instance.model = None
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(LocalAnalyst, cls).__new__(cls)
+                cls._instance.model = None
+                cls._instance.load_lock = threading.Lock()
         return cls._instance
 
     def _load_model(self):
         if self.model is not None:
             return True
         
-        if not os.path.exists(MODEL_PATH):
-            log.warning(f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped.")
-            return False
+        with self.load_lock:
+            # Check again inside lock to prevent double loading
+            if self.model is not None:
+                return True
 
-        try:
-            t0 = time.time()
-            # Optimized for 6GB RAM: small context window, limited threads
-            self.model = Llama(
-                model_path=MODEL_PATH,
-                n_ctx=2048, 
-                n_threads=N_THREADS,
-                verbose=False
-            )
-            log.info(f"[analyst] Gemma 2 2B loaded in {time.time()-t0:.1f}s")
-            return True
-        except Exception as e:
-            log.error(f"[analyst] Failed to load local model: {e}")
-            return False
+            if not os.path.exists(MODEL_PATH):
+                log.warning(f"Local model not found at {MODEL_PATH}. Deep Local tasks will be skipped.")
+                return False
+
+            try:
+                t0 = time.time()
+                # Optimized for 6GB RAM: small context window, limited threads
+                self.model = Llama(
+                    model_path=MODEL_PATH,
+                    n_ctx=2048, 
+                    n_threads=N_THREADS,
+                    verbose=False
+                )
+                log.info(f"[analyst] Gemma 2 2B loaded in {time.time()-t0:.1f}s")
+                return True
+            except Exception as e:
+                log.error(f"[analyst] Failed to load local model: {e}")
+                return False
 
     def analyze(self, prompt: str, system_prompt: str, max_tokens: int = 512) -> Optional[str]:
         if not self._load_model():
@@ -73,6 +83,30 @@ class LocalAnalyst:
         result = self.analyze(f"Наслов: {title}", system, max_tokens=64)
         return result if result else title
 
+    def extract_deep_metadata(self, text: str) -> Dict[str, Any]:
+        """Extracts facts and pulse from Macedonian text."""
+        system = (
+            "Анализирај го текстот на македонски јазик и врати JSON со следните полиња: "
+            "'facts' (листа од 3 клучни факти), 'entities' (листа од имиња и институции), "
+            "'sentiment' (позитивен, негативен или неутрален), 'pulse' (од 1 до 100 важност). "
+            "Врати само чист JSON."
+        )
+        raw = self.analyze(text[:1500], system, max_tokens=300)
+        if not raw:
+            return {"error": "no_response"}
+            
+        try:
+            # Basic cleanup if model adds markdown blocks
+            clean_raw = raw
+            if "```json" in raw:
+                clean_raw = raw.split("```json")[1].split("```")[0]
+            elif "```" in raw:
+                clean_raw = raw.split("```")[1].split("```")[0]
+            return json.loads(clean_raw)
+        except Exception as e:
+            log.error(f"[analyst] JSON parse failed: {e} | Raw: {raw[:100]}...")
+            return {"error": "failed_to_parse"}
+
     def assess_pluralism(self, titles_with_sources: List[str]) -> Dict[str, Any]:
         """Analyzes if a cluster represents a diverse consensus or an echo chamber."""
         system = (
@@ -82,8 +116,16 @@ class LocalAnalyst:
         )
         prompt = "\n".join(titles_with_sources)
         raw = self.analyze(prompt, system, max_tokens=256)
+        if not raw:
+            return {"score": 50, "verdict": "Стандардна покриеност"}
+            
         try:
-            return json.loads(raw)
+            clean_raw = raw
+            if "```json" in raw:
+                clean_raw = raw.split("```json")[1].split("```")[0]
+            elif "```" in raw:
+                clean_raw = raw.split("```")[1].split("```")[0]
+            return json.loads(clean_raw)
         except:
             return {"score": 50, "verdict": "Стандардна покриеност"}
 
@@ -95,8 +137,14 @@ class LocalAnalyst:
         )
         prompt = f"ТЕКСТ: {article_text[:500]}\nКОНТЕКСТ: {cluster_context[:1000]}"
         result = self.analyze(prompt, system, max_tokens=10)
+        if not result:
+            return 1.0
+            
         try:
-            return float(re.findall(r"[\d.]+", result)[0])
+            matches = re.findall(r"[\d.]+", result)
+            if matches:
+                return float(matches[0])
+            return 1.0
         except:
             return 1.0
 
@@ -107,7 +155,8 @@ class LocalAnalyst:
             "Биди објективен, професионален и концизен. Ако нема информација, кажи дека не е познато."
         )
         prompt = f"ПРАШАЊЕ: {query}\nКОНТЕКСТ: {context}"
-        return self.analyze(prompt, system, max_tokens=512)
+        res = self.analyze(prompt, system, max_tokens=512)
+        return res if res else "Нема доволно информации за одговор на ова прашање."
 
 # Singleton instance
 analyst = LocalAnalyst()

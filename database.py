@@ -339,20 +339,36 @@ class DatabaseManager:
         return 0.0
 
     def get_stats(self):
-        total = self.execute_one("SELECT COUNT(*) FROM articles")["count"]
-        by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC")
-        by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC")
-        recent_24h = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'")["count"]
-        recent_1h = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'")["count"]
-        summarized = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")["count"]
-        return {
-            "total_articles": total,
-            "by_category": by_cat,
-            "by_source": by_source,
-            "last_24h": recent_24h,
-            "last_1h": recent_1h,
-            "summarized": summarized
-        }
+        try:
+            total_row = self.execute_one("SELECT COUNT(*) FROM articles")
+            total = total_row["count"] if total_row else 0
+            
+            by_cat = self.execute("SELECT category, COUNT(*) n FROM articles GROUP BY category ORDER BY n DESC") or []
+            by_source = self.execute("SELECT source, COUNT(*) n FROM articles GROUP BY source ORDER BY n DESC") or []
+            
+            recent_24h_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 day'")
+            recent_24h = recent_24h_row["count"] if recent_24h_row else 0
+            
+            recent_1h_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'")
+            recent_1h = recent_1h_row["count"] if recent_1h_row else 0
+            
+            summarized_row = self.execute_one("SELECT COUNT(*) FROM articles WHERE summary IS NOT NULL AND summary != ''")
+            summarized = summarized_row["count"] if summarized_row else 0
+            
+            return {
+                "total_articles": total,
+                "by_category": by_cat,
+                "by_source": by_source,
+                "last_24h": recent_24h,
+                "last_1h": recent_1h,
+                "summarized": summarized
+            }
+        except Exception as e:
+            log.error(f"Error getting stats: {e}")
+            return {
+                "total_articles": 0, "by_category": [], "by_source": [],
+                "last_24h": 0, "last_1h": 0, "summarized": 0
+            }
 
     def init_schema(self):
         conn = self.get_conn()

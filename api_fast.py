@@ -21,6 +21,40 @@ from database import db_manager as db
 import config
 from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
+def is_safe_url(url: str) -> bool:
+    """Rigorous SSRF protection: block local/private network ranges."""
+    from urllib.parse import urlparse
+    import socket
+    
+    parsed = urlparse(url)
+    if parsed.scheme not in ["http", "https"]:
+        return False
+        
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+        
+    # 1. Direct block for common local hostnames
+    if hostname.lower() in ["localhost", "127.0.0.1", "0.0.0.0", "::1"]:
+        return False
+
+    # 2. Resolve and check IP ranges
+    try:
+        ip = socket.gethostbyname(hostname)
+        parts = list(map(int, ip.split('.')))
+        
+        # Private ranges
+        if parts[0] == 10: return False # 10.0.0.0/8
+        if parts[0] == 172 and 16 <= parts[1] <= 31: return False # 172.16.0.0/12
+        if parts[0] == 192 and parts[1] == 168: return False # 192.168.0.0/16
+        if parts[0] == 169 and parts[1] == 254: return False # 169.254.0.0/16 (Metadata service)
+        if parts[0] == 127: return False # Loopback
+        
+        return True
+    except Exception as e:
+        log.error(f"is_safe_url error for {hostname}: {e}")
+        return False
+
 # Initialize Logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.api")
@@ -68,7 +102,8 @@ async def health_check():
         raw = health._get_redis().get(health._REDIS_KEY)
         if raw:
             last_refresh = json.loads(raw)
-    except:
+    except Exception as e:
+        log.error(f"Health check error (redis/freshness): {e}")
         pass
 
     return {
@@ -91,9 +126,10 @@ async def image_proxy(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
     
-    # Simple SSRF protection: only allow http/https
-    if not url.startswith("http"):
-        raise HTTPException(status_code=400, detail="Invalid URL")
+    # SSRF protection: block local/private network ranges
+    if not is_safe_url(url):
+        log.warning(f"SSRF block triggered for proxy URL: {url}")
+        raise HTTPException(status_code=403, detail="Access to this URL is restricted for security reasons")
 
     try:
         # Use a reasonable timeout and headers
