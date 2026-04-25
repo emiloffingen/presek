@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users, Heart } from 'lucide-react';
+import { Activity, Zap, ShieldCheck, Globe, Timer, Loader2, BarChart3, TrendingUp, Users } from 'lucide-react';
 import PulseLandscapeIsland from './PulseLandscapeIsland';
 import SourceComparisonIsland from './SourceComparisonIsland';
 import { apiBaseUrl } from '../lib/apiBase';
