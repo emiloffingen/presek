@@ -158,11 +158,13 @@ copy_release_tree() {
     --exclude 'presek.db' \
     --exclude 'static/uploads/*' \
     --exclude 'static/generated/*' \
+    --exclude 'models/' \
     "$SOURCE_ROOT/" "$RELEASE_DIR/"
 }
 
 prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
+  ln -sfnT "$SHARED_DIR/models" "$RELEASE_DIR/models"
   mkdir -p "$RELEASE_DIR/static"
   rm -rf "$RELEASE_DIR/static/uploads" "$RELEASE_DIR/static/generated"
   ln -sfnT "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
