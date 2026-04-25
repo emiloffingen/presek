@@ -389,28 +389,39 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             # Phase 3: Deep Local Analyst (Local Insight Layer)
             deep_metadata = {}
             pluralism_data = {}
-            try:
-                analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
-                deep_metadata = analyst.extract_deep_metadata(analyst_text)
-                
-                # Phase 3.1: Pluralism Assessment
-                titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
-                pluralism_data = analyst.assess_pluralism(titles_sources)
-                
-                # Phase 3.2: Knowledge Graph Update
-                entities = deep_metadata.get('entities', [])
-                for entity in entities:
-                    db.execute("""
-                        INSERT INTO entity_knowledge (entity_name, last_seen, importance_score)
-                        VALUES (%s, NOW(), %s)
-                        ON CONFLICT (entity_name) DO UPDATE SET 
-                            last_seen = NOW(),
-                            importance_score = entity_knowledge.importance_score + 1
-                    """, (entity, deep_metadata.get('pulse', 50)), fetch=False)
-                
+            
+            def _run_analyst_logic():
+                nonlocal deep_metadata, pluralism_data
+                try:
+                    analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
+                    deep_metadata = analyst.extract_deep_metadata(analyst_text)
+                    
+                    # Phase 3.1: Pluralism Assessment
+                    titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
+                    pluralism_data = analyst.assess_pluralism(titles_sources)
+                    
+                    # Phase 3.2: Knowledge Graph Update
+                    entities = deep_metadata.get('entities', [])
+                    for entity in entities:
+                        db.execute("""
+                            INSERT INTO entity_knowledge (entity_name, last_seen, importance_score)
+                            VALUES (%s, NOW(), %s)
+                            ON CONFLICT (entity_name) DO UPDATE SET 
+                                last_seen = NOW(),
+                                importance_score = entity_knowledge.importance_score + 1
+                        """, (entity, deep_metadata.get('pulse', 50)), fetch=False)
+                except Exception as e:
+                    log.error(f"[analyst] Internal logic error: {e}")
+
+            import threading
+            analyst_thread = threading.Thread(target=_run_analyst_logic)
+            analyst_thread.start()
+            analyst_thread.join(timeout=120) # 2 minute hard limit
+            
+            if analyst_thread.is_alive():
+                log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
+            elif deep_metadata or pluralism_data:
                 log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
-            except Exception as ae:
-                log.warning(f"[analyst] Advanced local analysis failed: {ae}")
 
         else:
             fallback = synthesize_cluster_fallback(article_rows)
