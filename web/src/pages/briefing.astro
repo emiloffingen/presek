@@ -338,7 +338,13 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
 
 <style>
     /* ── Editorial Masthead ──────────────────────────── */
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 1rem; }
+    .editorial-masthead {
+        height: auto;
+        padding: 1rem 0;
+        margin-bottom: 0;
+        border-top: 1px solid var(--foreground);
+        border-bottom: 4px solid var(--foreground);
+    }
     .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-meta { display: flex; gap: 1.25rem; }
