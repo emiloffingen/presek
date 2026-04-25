@@ -79,56 +79,60 @@ function slugifyHeading(value: string) {
         .replace(/-+/g, '-');
 }
 
+function processFormatting(text: string) {
+    let html = esc(text);
+    
+    // 1. Handle Bold: **text**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // 2. Handle Italic: *text*
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // 3. Handle Cluster IDs: [[id]] -> Surgical inline badge
+    html = html.replace(/\[\[([\w-]+)\]\]/g, (match, id) => {
+        return `<a href="/cluster/${id}" class="briefing-inline-badge">ПРИКАЗНА →</a>`;
+    });
+    
+    return html;
+}
+
 function renderBriefingLine(line: string) {
     const stripped = line.trim();
     if (stripped === '---') {
         return `<div class="briefing-divider"></div>`;
     }
 
-    // Generic link detection for [[id]] in any line
-    const linkMatch = line.match(/\[\[([\w-]+)\]\]/);
-    if (linkMatch) {
-        const id = linkMatch[1];
-        let text = line.replace(`[[${id}]]`, '').trim();
-        
-        // If it was a heading, treat it as such, otherwise as a paragraph/list item
-        if (line.startsWith('### ')) {
-            return `<h3 class="briefing-item-title">
-                <a href="/cluster/${id}">${esc(text.substring(4))} <span>Истражи приказна →</span></a>
-            </h3>`;
-        }
-        
-        // Handle numbered items or plain paragraphs with links
-        return `<p class="briefing-paragraph has-link">
-            <a href="/cluster/${id}">${esc(text)} <span class="briefing-action">ИСТРАЖИ ПРИКАЗНА →</span></a>
-        </p>`;
-    }
-
     if (line.startsWith('# ')) {
-        return `<h1 class="briefing-masthead-title">${esc(line.substring(2))}</h1>`;
+        return `<h1 class="briefing-masthead-title">${processFormatting(line.substring(2))}</h1>`;
     }
+    
     if (line.startsWith('### ')) {
-        return `<h3 class="briefing-item-title">${esc(line.substring(4))}</h3>`;
+        return `<h3 class="briefing-item-title">${processFormatting(line.substring(4))}</h3>`;
     }
+    
     if (line.startsWith('## ')) {
         const text = line.substring(3).trim();
         const slug = slugifyHeading(text);
-        return `<h2 id="${esc(slug)}" class="briefing-section-title">${esc(text)}</h2>`;
+        return `<h2 id="${esc(slug)}" class="briefing-section-title">${processFormatting(text)}</h2>`;
     }
-    if (line.startsWith('**') && line.endsWith('**')) {
-        return `<p class="briefing-kicker">${esc(line.substring(2, line.length - 2))}</p>`;
+
+    // Detect Kicker-style start: **Text**: Description
+    if (line.startsWith('**') && line.includes('**:')) {
+        const parts = line.split('**:', 2);
+        const kicker = parts[0].replace(/\*\*/g, '').trim();
+        const content = parts[1].trim();
+        return `<p class="briefing-paragraph">
+            <span class="briefing-kicker">${esc(kicker)}</span>
+            ${processFormatting(content)}
+        </p>`;
     }
-    return `<p class="briefing-paragraph">${esc(line)}</p>`;
+
+    return `<p class="briefing-paragraph">${processFormatting(line)}</p>`;
 }
 
 function renderBriefingListItem(line: string) {
     const item = line.substring(2);
-    const parts = item.split(':');
-    if (parts.length > 1) {
-        const label = parts.shift()!;
-        return `<li class="briefing-li"><strong>${esc(label)}:</strong>${esc(parts.join(':'))}</li>`;
-    }
-    return `<li class="briefing-li">${esc(item)}</li>`;
+    return `<li class="briefing-li">${processFormatting(item)}</li>`;
 }
 
 function formatBriefing(content: string) {
@@ -454,15 +458,36 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     :global(.briefing-item-title a span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); opacity: 0; transition: opacity 0.2s; }
     :global(.briefing-item-title a:hover span) { opacity: 1; }
     
-    :global(.briefing-paragraph.has-link a) { text-decoration: none; color: inherit; display: block; transition: color 0.2s; }
-    :global(.briefing-paragraph.has-link a:hover) { color: var(--foreground); }
-    :global(.briefing-action) { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); margin-left: 0.75rem; letter-spacing: 0.05em; vertical-align: middle; }
+    :global(.briefing-paragraph) { font-family: var(--font-nyt-body); font-size: 1.1rem; line-height: 1.82; color: var(--secondary-foreground); margin-bottom: 1.5rem; text-wrap: pretty; }
+    :global(.briefing-paragraph strong) { color: var(--foreground); font-weight: 800; }
     
+    /* Surgical Inline Link */
+    :global(.briefing-inline-badge) { 
+        display: inline-flex; 
+        align-items: center; 
+        padding: 0.15rem 0.45rem; 
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent); 
+        color: var(--nyt-accent); 
+        font-family: var(--font-sans); 
+        font-size: 0.58rem; 
+        font-weight: 950; 
+        text-decoration: none; 
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+        border-radius: 3px;
+        margin: 0 0.35rem;
+        vertical-align: middle;
+        transition: all 0.2s;
+    }
+    :global(.briefing-inline-badge:hover) {
+        background: var(--nyt-accent);
+        color: white;
+    }
+
     :global(.briefing-list) { list-style: none; padding: 0; margin-bottom: 2rem; }
     :global(.briefing-li) { font-family: var(--font-nyt-body); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1rem; padding-left: 1.5rem; position: relative; }
     :global(.briefing-li::before) { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 900; }
     :global(.briefing-divider) { height: 1px; background: var(--border); margin: 3rem 0; }
-    :global(.briefing-kicker) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .briefing-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.12em; margin-bottom: 0.35rem; display: block; }
 
     /* ── Signature ───────────────────────────────────── */
     .briefing-signature { margin-top: 5rem; padding: 4rem 0; border-top: 1px solid var(--border); text-align: center; }
@@ -484,19 +509,6 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     .subject-name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 800; display: block; }
     .subject-count { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; text-transform: uppercase; opacity: 0.6; }
     .subject-sentiment { font-size: 1.1rem; }
-    .rail-metrics { padding: 1.25rem 1.35rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%); }
-    .rail-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
-    .rail-metric-card { padding: 0.75rem 0.6rem; border: 1px solid var(--border); background: var(--background); text-align: center; }
-    .rail-metric-value { display: block; font-family: var(--font-serif); font-size: 1.15rem; font-weight: 900; line-height: 1; margin-bottom: 0.3rem; }
-    .rail-metric-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); }
-    .rail-agenda { padding: 1.25rem 1.35rem; border: 1px solid var(--border); background: linear-gradient(180deg, color-mix(in srgb, var(--background) 94%, #efe5d6 6%), var(--background)); }
-    .rail-agenda-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .rail-agenda-item { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; padding: 0.8rem 0; border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent); text-decoration: none; color: inherit; }
-    .rail-agenda-item:first-child { border-top: none; padding-top: 0; }
-    .rail-agenda-index { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; letter-spacing: 0.12em; color: var(--nyt-accent); }
-    .rail-agenda-copy strong { display: block; font-family: var(--font-serif); font-size: 0.92rem; line-height: 1.2; margin-bottom: 0.2rem; }
-    .rail-agenda-copy span { display: block; font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
-    .rail-agenda-item:hover .rail-agenda-copy strong { color: var(--nyt-accent); }
 
     .rail-support-card { padding: 1.5rem; border: 1px solid var(--border); border-top: 3px solid var(--foreground); background: linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, #efe5d6 4%), var(--background)); }
     .support-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; background: var(--foreground); color: var(--background); font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; text-decoration: none; border-radius: 4px; }
@@ -537,14 +549,8 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
         .broadsheet-rail { display: grid; gap: 1.1rem; }
         .rail-block { margin-bottom: 0; }
         .rail-block-featured,
-        .rail-metrics,
-        .rail-agenda,
         .rail-support-card { padding: 1rem; }
-        .rail-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .rail-metric-card { padding: 0.65rem 0.4rem; }
-        .rail-metric-value { font-size: 1rem; }
         .rail-agenda-item { gap: 0.55rem; padding: 0.65rem 0; }
-        .rail-agenda-copy strong { font-size: 0.86rem; }
     }
 
     @media (min-width: 960px) {
