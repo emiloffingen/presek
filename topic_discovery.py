@@ -96,14 +96,18 @@ class StoryDiscoveryEngine:
         cid = cluster['cluster_id']
         titles = cluster['titles']
         
-        # Generate a title for the storyline using local NLP
-        # We take the most common terms/tags from the cluster
-        tags = extract_cluster_tags_locally(titles, top_n=3)
-        if not tags:
-            # Fallback to the lead title if no tags
-            story_title = titles[0][:100]
-        else:
-            story_title = " ".join(tags)
+        # Phase 4: Use Gemma 2 for Editorial Storyline Titles
+        from local_analyst import analyst
+        story_title = analyst.analyze(
+            f"Наслови: {' | '.join(titles[:5])}", 
+            "Ти си главен уредник. Врз основа на овие наслови, генерирај еден краток, моќен наслов за целата приказна (storyline) на македонски јазик. Врати само наслов.",
+            max_tokens=48
+        )
+        
+        if not story_title or len(story_title) < 5:
+            # Fallback to local logic if Gemma fails
+            tags = extract_cluster_tags_locally(titles, top_n=3)
+            story_title = " ".join(tags) if tags else titles[0][:100]
 
         # Basic slugification
         slug = re.sub(r'[^a-z0-9а-я]', '-', story_title.lower())
@@ -125,34 +129,37 @@ class StoryDiscoveryEngine:
                     (sid, cid, 1.0),
                     fetch=False
                 )
-        except Exception as e:
-            log.error(f"Failed to create storyline: {e}")
-
     def refresh_storyline_metadata(self):
         """
-        Periodically update summaries and titles for active storylines.
+        Periodically update summaries and titles for active storylines using Gemma 2.
         """
         active_storylines = db.execute("SELECT id, title FROM storylines_v2 WHERE status = 'active' ORDER BY last_activity DESC LIMIT 20")
         
+        from local_analyst import analyst
         for s in active_storylines:
             sid = s['id']
-            # Get all titles in this storyline
+            # Get all titles and summaries in this storyline
             rows = db.execute("""
-                SELECT a.title, a.description 
+                SELECT a.title, a.summary 
                 FROM articles a
                 JOIN storyline_clusters_v2 sc ON a.cluster_id = sc.cluster_id
                 WHERE sc.storyline_id = %s
+                LIMIT 15
             """, (sid,))
             
             if not rows: continue
             
-            # Use local NLP to generate a brief summary of the storyline so far
-            combined_text = ". ".join([f"{r['title']}. {r.get('description','')}" for r in rows[:10]])
-            story_summary = summarize_locally(combined_text, sentence_count=2)
-            
-            db.execute(
-                "UPDATE storylines_v2 SET summary = %s WHERE id = %s",
-                (story_summary, sid), fetch=False
+            combined_text = "\n".join([f"• {r['title']}: {r.get('summary','')}" for r in rows])
+            story_summary = analyst.analyze(
+                combined_text,
+                "Напиши краток преглед (2-3 реченици) на македонски јазик за досегашниот развој на оваа приказна врз основа на настаните подолу. Фокусирај се на главниот наратив.",
+                max_tokens=256
             )
+            
+            if story_summary:
+                db.execute(
+                    "UPDATE storylines_v2 SET summary = %s WHERE id = %s",
+                    (story_summary, sid), fetch=False
+                )
 
 discovery_engine = StoryDiscoveryEngine()

@@ -94,6 +94,27 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
         {leadSummary && (
             <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
         )}
+
+        {leadCluster.key_facts && leadCluster.key_facts.length > 0 && (
+            <div class="lead-analyst-box">
+                <div class="analyst-header">
+                    <span class="analyst-label">ЛОКАЛЕН АНАЛИТИЧАР (Gemma 2)</span>
+                    {leadCluster.pulse_score && (
+                        <div class="pulse-indicator">
+                            <span class="pulse-text">ПУЛС: {leadCluster.pulse_score}</span>
+                            <div class="pulse-bar-bg">
+                                <div class="pulse-bar-fill" style={`width: ${leadCluster.pulse_score}%`}></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <ul class="analyst-facts">
+                    {leadCluster.key_facts.map((fact: string) => (
+                        <li set:html={sanitizeHtml(fact)}></li>
+                    ))}
+                </ul>
+            </div>
+        )}
         <div class="lead-meta">
             <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             <span>·</span>
@@ -287,6 +308,88 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
 		text-transform: uppercase;
 		color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground) 10%);
 	}
+
+    .lead-analyst-box {
+        margin-top: 1.2rem;
+        padding: 1rem;
+        background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background) 96%);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, var(--border) 85%);
+        border-radius: 2px;
+    }
+
+    .dark .lead-analyst-box {
+        background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background) 94%);
+    }
+
+    .analyst-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    }
+
+    .analyst-label {
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        color: var(--nyt-accent);
+    }
+
+    .pulse-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .pulse-text {
+        font-family: var(--font-sans);
+        font-size: 0.56rem;
+        font-weight: 950;
+        color: var(--foreground);
+    }
+
+    .pulse-bar-bg {
+        width: 40px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .pulse-bar-fill {
+        height: 100%;
+        background: var(--nyt-accent);
+        border-radius: 999px;
+    }
+
+    .analyst-facts {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .analyst-facts li {
+        font-family: var(--font-nyt-body);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        color: var(--foreground);
+        position: relative;
+        padding-left: 1.25rem;
+    }
+
+    .analyst-facts li::before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: var(--nyt-accent);
+        font-weight: 900;
+    }
 
 	.lead-meta {
 		margin-top: 0.45rem;

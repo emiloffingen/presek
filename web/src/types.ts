@@ -59,6 +59,9 @@ export interface NewsCluster {
   reading_time: number;
   reason?: string;
   entities?: string[];
+  analyst_entities?: string[];
+  key_facts?: string[];
+  pulse_score?: number;
   homepage_score?: number;
   created_at?: string;
   display_name?: string;

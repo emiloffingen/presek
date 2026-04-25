@@ -130,9 +130,11 @@ def translate_article_task(article_id, title, description):
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
         raise
 
+from local_analyst import analyst
+
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def standardize_article_style_task(article_id):
-    """Refines article linguistic style using NLLB round-trip (Style Normalization)."""
+    """Refines article linguistic style using Gemma 2 2B (Literary Normalization)."""
     from config import ENABLE_EXPENSIVE_STYLE_TASKS
     if not ENABLE_EXPENSIVE_STYLE_TASKS:
         return
@@ -151,37 +153,24 @@ def standardize_article_style_task(article_id):
         if topic == "Спорт" or category == "Спорт":
             return
 
-        from language import detect_language
-        lang = detect_language(title)
-        # We now ALLOW lang == "mk" for round-tripping to clean up tabloid style
-        # but only for news that isn't from highly trusted sources (optional logic)
-
-        from nllb_translate import translate as nllb_translate
-        from ai_engine import rewrite_to_macedonian_locally
+        # Use Gemma 2 2B for Literary Normalization
+        final_title = analyst.normalize_headline(title)
         
-        # 1. Title Normalization: MK -> EN -> MK (The English filter cleans up slang/noise)
-        # mask_entities=True is now default in our nllb_translate wrapper
-        en_bridge = nllb_translate(title, src_lang="mk", target_lang="en")
-        if en_bridge and en_bridge.strip().lower() != title.strip().lower():
-            mk_standard = nllb_translate(en_bridge, src_lang="en", target_lang="mk")
-            if mk_standard and len(mk_standard) > 15:
-                # 2. Local polish (Deterministic rules)
-                final_title = rewrite_to_macedonian_locally(mk_standard)
-                if final_title and final_title.strip().lower() != title.strip().lower():
-                    # Check semantic similarity to ensure we didn't lose the plot
-                    from nlp.text_processing import _jaccard_similarity
-                    if _jaccard_similarity(title, final_title) < 0.35:
-                        log.warning(f"[style] Rejected over-aggressive polish for {article_id}")
-                        return
+        if final_title and final_title.strip().lower() != title.strip().lower():
+            # Check semantic similarity to ensure we didn't lose the plot
+            from nlp.text_processing import _jaccard_similarity
+            if _jaccard_similarity(title, final_title) < 0.35:
+                log.warning(f"[style] Rejected over-aggressive polish for {article_id}")
+                return
 
-                    # Preserve original for transparency/debugging
-                    db.execute(
-                        "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
-                        (final_title, title, article_id), fetch=False
-                    )
-                    log.info(f"[style] Standardized title for article {article_id}")
-                    # Re-trigger summary if title changed significantly
-                    summarize_article_task.delay(article_id, final_title)
+            # Preserve original for transparency/debugging
+            db.execute(
+                "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
+                (final_title, title, article_id), fetch=False
+            )
+            log.info(f"[style] Standardized title for article {article_id} using Gemma 2 2B")
+            # Re-trigger summary if title changed significantly
+            summarize_article_task.delay(article_id, final_title)
         
     except Exception as e:
         log.error(f"[style] Normalization failed for {article_id}: {e}")
@@ -396,6 +385,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
             record_runtime_event("synthesis_path", mode=provider or "unknown")
+
+            # Phase 3: Deep Local Analyst (Local Insight Layer)
+            deep_metadata = {}
+            try:
+                # We feed the analyst the synthesized summary for high-precision extraction
+                analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
+                deep_metadata = analyst.extract_deep_metadata(analyst_text)
+                log.info(f"[analyst] Deep metadata extracted for cluster {cluster_id}")
+            except Exception as ae:
+                log.warning(f"[analyst] Local deep analysis failed: {ae}")
+
         else:
             fallback = synthesize_cluster_fallback(article_rows)
             sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
@@ -406,6 +406,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             )
             generated_article = ""
             quote = ""
+            deep_metadata = {}
             record_runtime_event("synthesis_path", mode="local_fallback")
             if (summary or perspectives) and retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
@@ -417,15 +418,15 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
             # Archive current summary before updating (Evolution Log)
             db.execute(
-                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at)
-                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at 
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
+                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
                    FROM cluster_summaries WHERE cluster_id = %s""",
                 (cluster_id,), fetch=False
             )
 
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE SET 
                        summary = EXCLUDED.summary, 
                        perspectives = EXCLUDED.perspectives, 
@@ -438,8 +439,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                        verification_report = EXCLUDED.verification_report, 
                        quote = EXCLUDED.quote, 
                        centroid = EXCLUDED.centroid,
-                       citation_sources = EXCLUDED.citation_sources""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources)),
+                       citation_sources = EXCLUDED.citation_sources,
+                       key_facts = EXCLUDED.key_facts,
+                       analyst_entities = EXCLUDED.analyst_entities,
+                       pulse_score = EXCLUDED.pulse_score""",
+                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50)),
                 fetch=False
             )
             # Publish SSE event for Real-Time UI updates
@@ -946,11 +950,17 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "иран", "ормускиот теснец", "дојран", "сад", "тексас", "нато",
         "обединетите нации", "он", "украина", "русија", "сдсм", "вашингтон", "техеран",
         "блискиот исток", "персискиот залив", "западниот балкан", "европската унија",
-        "брисел", "москва", "киев", "израел", "газа", "либан",
+        "брисел", "москва", "киев", "израел", "газа", "либан", "црна гора", "србија", "грција", "бугарија",
         "ахмети", "мицкоски", "сиљановска", "пендаровски", "ковaчевски", "филипче", "груевски", "заев",
-        "пресек", "битола", "охрид", "тетово", "куманово", "гостивар", "шри ланка"
+        "пресек", "битола", "охрид", "тетово", "куманово", "гостивар", "шри ланка", "кирибати",
+        "си џинпинг", "бајден", "трамп", "путин", "зеленски", "макрон", "ердоган", "вучиќ", "рама",
+        "мицкоски", "османи", "маричиќ", "костадиновска-стојчевска", "бисерка", "бочварски",
+        "лига на шампиони", "премиер лига", "реал мадрид", "барселона", "манчестер јунајтед", "баерн минхен",
+        "стеф кари", "леброн џејмс", "јокиќ", "дончиќ", "ѓоковиќ", "алкараз", "синер", "јаник синер",
+        "винисиус", "винисиус жуниор", "мбапе", "халанд", "елмас", "елиф елмас", "пандев"
     }
     
+    hallucinated_count = 0
     for phrase in _extract_capitalized_phrases(synthesis_text):
         clean = str(phrase or "").strip()
         if len(clean) < 4: continue
@@ -962,13 +972,22 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
             
         words = [part for part in clean.replace("-", " ").split() if part]
         is_acronym = clean.isupper()
-        if len(words) < 2 and not is_acronym: continue
-        folded = clean.casefold()
         
+        # Stricter check for multi-word entities (proper names)
+        # Single words are often common nouns or noise, so we are more lenient
+        if len(words) < 2 and not is_acronym: continue
+        
+        folded = clean.casefold()
         if folded in context_entities or folded in allowed_singletons:
             continue
             
         log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}")
+        hallucinated_count += 1
+        
+    # Allow 1 minor hallucination for very long syntheses to prevent infinite retry loops
+    if hallucinated_count > 1:
+        return False
+    if hallucinated_count == 1 and len(synthesis_text) < 1500:
         return False
         
     return True

@@ -31,3 +31,4 @@ web/.env.local
 venv/
 .cache/
 .hf_cache/
+models/

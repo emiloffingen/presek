@@ -388,6 +388,45 @@ const articleSchema = cluster ? {
 						</section>
 						)}
 
+						{/* DEEP LOCAL ANALYST (Gemma 2) */}
+						{cluster.key_facts && cluster.key_facts.length > 0 && (
+							<section class="editorial-section analyst-section mb-16 border-t-2 border-nyt-accent pt-10 bg-secondary/5 p-8 rounded-sm">
+								<div class="section-eyebrow mb-8">
+									<Zap size={18} className="text-nyt-accent" fill="currentColor" />
+									<h2 class="section-label">ЛОКАЛЕН АНАЛИТИЧАР (Gemma 2)</h2>
+									<div class="section-divider"></div>
+									{cluster.pulse_score && (
+										<div class="analyst-pulse-badge">
+											<span>ПУЛС: {cluster.pulse_score}%</span>
+											<div class="pulse-ring">
+												<div class="pulse-ring-fill" style={`height: ${cluster.pulse_score}%`}></div>
+											</div>
+										</div>
+									)}
+								</div>
+
+								<div class="analyst-facts-grid grid grid-cols-1 md:grid-cols-3 gap-8">
+									{cluster.key_facts.map((fact: string, idx: number) => (
+										<div class="fact-card">
+											<span class="fact-number">0{idx + 1}</span>
+											<p class="fact-text font-serif text-lg leading-snug" set:html={sanitizeHtml(fact)}></p>
+										</div>
+									))}
+								</div>
+								
+								{cluster.analyst_entities && cluster.analyst_entities.length > 0 && (
+									<div class="analyst-entities mt-10 pt-6 border-t border-border/40">
+										<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-4">КЛУЧНИ СУБЈЕКТИ:</span>
+										<div class="flex flex-wrap gap-2 mt-3">
+											{cluster.analyst_entities.map((entity: string) => (
+												<span class="px-2 py-1 bg-background border border-border/60 text-[11px] font-bold rounded-sm shadow-sm">{entity}</span>
+											))}
+										</div>
+									</div>
+								)}
+							</section>
+						)}
+
 						{/* ANALYSIS SECTION: Fact Check & Comparison */}
 						{(hasFactcheck || perspectives.length > 0) && (
 							<section class="editorial-section analysis-section mb-16 border-t-4 border-foreground pt-12">
@@ -1245,6 +1284,64 @@ const articleSchema = cluster ? {
 		background: color-mix(in srgb, var(--background) 88%, var(--nyt-accent) 12%);
 		color: var(--nyt-accent);
 		transform: translateY(-1px);
+	}
+
+	/* --- DEEP LOCAL ANALYST --- */
+	.analyst-pulse-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: var(--background);
+		padding: 0.4rem 0.8rem;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		font-family: var(--font-sans);
+		font-size: 11px;
+		font-weight: 900;
+	}
+
+	.pulse-ring {
+		width: 8px;
+		height: 16px;
+		background: var(--border);
+		border-radius: 4px;
+		overflow: hidden;
+		position: relative;
+	}
+
+	.pulse-ring-fill {
+		position: absolute;
+		bottom: 0;
+		width: 100%;
+		background: var(--nyt-accent);
+		transition: height 1s ease-out;
+	}
+
+	.fact-card {
+		position: relative;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border);
+	}
+
+	.fact-number {
+		position: absolute;
+		top: -0.6rem;
+		left: 0;
+		background: var(--background);
+		padding-right: 0.5rem;
+		font-family: var(--font-sans);
+		font-size: 10px;
+		font-weight: 900;
+		color: var(--nyt-accent);
+		letter-spacing: 0.1em;
+	}
+
+	.analyst-section {
+		transition: transform 0.3s ease;
+	}
+
+	.analyst-section:hover {
+		transform: translateY(-2px);
 	}
 
 	.shadow-editorial {

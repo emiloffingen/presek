@@ -28,3 +28,4 @@ playwright==1.58.0
 # CPU-only PyTorch (use PyTorch CPU wheels)
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.6.0+cpu
+llama-cpp-python==0.3.7
