@@ -164,6 +164,7 @@ copy_release_tree() {
 
 prepare_release_runtime_links() {
   ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
+  rm -rf "$RELEASE_DIR/models"
   ln -sfnT "$SHARED_DIR/models" "$RELEASE_DIR/models"
   mkdir -p "$RELEASE_DIR/static"
   rm -rf "$RELEASE_DIR/static/uploads" "$RELEASE_DIR/static/generated"
