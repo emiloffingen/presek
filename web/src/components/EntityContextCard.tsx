@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Shield, Info, TrendingUp, Loader2 } from 'lucide-react';
+import { User, TrendingUp, Loader2 } from 'lucide-react';
 
 interface EntityContextCardProps {
   name: string;
