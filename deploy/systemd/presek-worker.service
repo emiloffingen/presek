@@ -18,14 +18,14 @@ WorkingDirectory=/home/emiloffingen/presek-runtime/current
 ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app worker --loglevel=info -n intel-heavy@%h --concurrency=1 --queues=celery,intel-heavy,maintenance --max-memory-per-child=400000'
 Restart=always
 RestartSec=5
-TimeoutStartSec=90
+TimeoutStartSec=180
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-worker
 Nice=10
 CPUWeight=50
-MemoryHigh=900M
-MemoryMax=1200M
+MemoryHigh=1600M
+MemoryMax=2000M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

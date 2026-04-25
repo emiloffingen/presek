@@ -427,7 +427,7 @@ start_window "beat" "cd '$APP_DIR' && export PYTHONPATH='$APP_DIR' && exec '$CEL
 sleep 1
 
 if [ "$ENABLE_FASTAPI" = "1" ]; then
-  start_window "fastapi" "cd '$APP_DIR' && exec '$UVICORN' api_fast:app --host '$FASTAPI_BIND_HOST' --port 5001 --workers 2 >> '$FASTAPI_LOG' 2>&1"
+  start_window "fastapi" "cd '$APP_DIR' && exec '$UVICORN' api_fast:app --host '$FASTAPI_BIND_HOST' --port 5001 --workers 1 >> '$FASTAPI_LOG' 2>&1"
   sleep 1
 fi
 

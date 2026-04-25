@@ -15,17 +15,15 @@ Environment=TRANSFORMERS_CACHE=/home/emiloffingen/presek-runtime/shared/huggingf
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
 ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && test -f api_fast.py'
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 2'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/uvicorn api_fast:app --host 127.0.0.1 --port 5001 --workers 1'
 Restart=always
 RestartSec=5
-TimeoutStartSec=90
+TimeoutStartSec=180
 TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-fastapi
-MemoryHigh=640M
-MemoryMax=896M
-CPUWeight=200
+# Removed MemoryHigh/Max to allow NLLB model to load (needs ~1.5GB)
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes
