@@ -55,9 +55,29 @@ from routes import home, news, intelligence, profile, stats, system
 
 @app.get("/api/health")
 async def health_check():
+    """Comprehensive health check for smoke tests and monitoring."""
+    import health
+    from health import _probe_database, _probe_redis, _freshness_payload, _start_time
+    
+    db_status = _probe_database()
+    redis_status = _probe_redis()
+    
+    # Get last refresh from Redis
+    last_refresh = {}
+    try:
+        raw = health._get_redis().get(health._REDIS_KEY)
+        if raw:
+            last_refresh = json.loads(raw)
+    except:
+        pass
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status["ok"] and redis_status["ok"] else "degraded",
         "version": APP_VERSION,
+        "uptime_seconds": int(time.time() - _start_time),
+        "database": db_status,
+        "redis": redis_status,
+        "freshness": _freshness_payload(last_refresh.get("time")),
         "time": datetime.datetime.now().isoformat()
     }
 
