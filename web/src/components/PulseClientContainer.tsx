@@ -118,10 +118,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </div>
                 </div>
 
-                <div className="pulse-card">
-                    <p className="card-label"><ShieldCheck size={12}/> ДИВЕРЗИТЕТ НА СТАВОВИ</p>
+                <div className="pulse-card border-t-4 border-t-nyt-accent">
+                    <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
                     <p className="card-value">{intelligence.pluralism?.pluralism_pct || 0}%</p>
-                    <p className="card-note">{intelligence.pluralism?.high_consensus_pct}% висок консензус</p>
+                    <p className="card-note">{intelligence.pluralism?.high_consensus_pct}% медиумски консензус</p>
                 </div>
 
                 <div className="pulse-card">
@@ -171,13 +171,19 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <a 
                                             key={ent.name} 
                                             href={`/subjekt/${encodeURIComponent(ent.name)}`}
-                                            className="p-4 border border-border bg-card hover:border-nyt-accent transition-all group"
+                                            className="p-5 border border-border bg-card hover:border-nyt-accent hover:shadow-lg hover:-translate-y-1 transition-all group relative overflow-hidden"
                                         >
-                                            <span className="text-[9px] font-black uppercase text-nyt-accent block mb-2">{getTypeLabel(ent.type)}</span>
-                                            <h3 className="font-serif font-bold text-base leading-tight group-hover:text-nyt-accent">{ent.name}</h3>
-                                            <div className="mt-3 flex items-center justify-between">
-                                                <span className="text-[10px] font-bold uppercase text-muted-foreground">+{ent.total_mentions} теми денес</span>
-                                                <div className={`w-2 h-2 rounded-full ${ent.sentiment_score > 0.1 ? 'bg-green-500' : ent.sentiment_score < -0.1 ? 'bg-nyt-red' : 'bg-muted'}`}></div>
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-nyt-accent/10 group-hover:bg-nyt-accent transition-colors"></div>
+                                            <span className="text-[8px] font-black uppercase text-nyt-accent tracking-widest block mb-2">{getTypeLabel(ent.type)}</span>
+                                            <h3 className="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent mb-4">{ent.name}</h3>
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black uppercase text-muted-foreground tracking-tight">Експонираност</span>
+                                                    <span className="text-xs font-black">+{ent.total_mentions} теми</span>
+                                                </div>
+                                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${ent.sentiment_score > 0.1 ? 'bg-green-100 text-green-700' : ent.sentiment_score < -0.1 ? 'bg-red-100 text-red-700' : 'bg-secondary text-muted-foreground'}`}>
+                                                    {ent.sentiment_score > 0.1 ? 'Позитивен' : ent.sentiment_score < -0.1 ? 'Критичен' : 'Неутрален'}
+                                                </div>
                                             </div>
                                         </a>
                                     ))}

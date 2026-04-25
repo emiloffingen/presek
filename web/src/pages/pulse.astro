@@ -52,24 +52,25 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             <div class="masthead-top">
                 <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
-                    <span class="meta-item"><Timer size={11} /> {initialGlobalPulse?.last_24h ? Math.max(3, Math.ceil(initialGlobalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
-                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.5</span>
-                </div>
-            </div>
+                    <span className="meta-item"><Timer size={11} /> {initialGlobalPulse?.last_24h ? Math.max(3, Math.ceil(initialGlobalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
+                    <span className="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
+                    </div>
+                    </div>
 
-            <div class="masthead-main">
-                <div class="masthead-branding">
-                    <Activity size={32} className="text-nyt-accent" />
+                    <div class="masthead-main">
+                    <div class="masthead-branding">
+                    <Zap size={32} className="text-nyt-accent" fill="currentColor" />
                     <h1 class="masthead-title">Медиумски <span>Пулс</span></h1>
-                </div>
-                <div class="masthead-date">
+                    </div>
+                    <div class="masthead-date">
                     <p>{currentDate}</p>
-                </div>
-            </div>
+                    </div>
+                    </div>
 
-            <div class="masthead-standfirst mt-6">
-                <p>Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност на македонскиот информативен простор.</p>
-            </div>
+                    <div class="masthead-standfirst mt-6">
+                    <p>Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност. Анализирано преку <strong>Gemma 2 Deep Local</strong> моделот за објективност и плурализам.</p>
+                    </div>
+
 
             <div class="masthead-deck">
                 <span>{categories.length} КАТЕГОРИИ АНАЛИЗИРАНИ</span>
