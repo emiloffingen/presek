@@ -1,13 +1,3 @@
-"""
-nllb_translate.py — Self-hosted NLLB-200 translation for Presek.
-
-Uses Meta's NLLB-200-distilled-600M model for translating Balkan and other
-languages into Macedonian. The model is loaded lazily on first use and kept
-in memory for subsequent calls.
-
-Runs on CPU with ~2.5 GB RAM. Typical headline translation takes 5-10s.
-Supports batching for higher throughput during ingestion cycles.
-"""
 import logging
 import threading
 import time
@@ -76,6 +66,9 @@ def _load_model():
             _unavailable = True
             return None, None
     return _model, _tokenizer
+
+# Pre-load model on module import to avoid timeout during first request
+threading.Thread(target=_load_model, daemon=True).start()
 
 def _mask_entities(text: str) -> tuple[str, dict[str, str]]:
     """Protects capitalized phrases from translation by replacing them with placeholders."""
