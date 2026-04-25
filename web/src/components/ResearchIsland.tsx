@@ -29,7 +29,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       if (result.status === 'success') {
         // Map research API 'answer' to 'report' for consistency with existing UI
         if (mode === 'custom') {
-            setData({ report: result.answer, mode: 'custom' });
+            setData({ report: result.answer, suggestions: result.suggestions, mode: 'custom' });
         } else {
             setData(result);
         }
@@ -44,10 +44,18 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const parseBoldText = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
+    // 1. Handle Citations: (Извор: Name)
+    const withCitations = text.replace(/\((Извор: .*?)\)/g, '<span class="citation-badge">$1</span>');
+    
+    // 2. Handle Bold: **text**
+    const parts = withCitations.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={i} className="font-black text-foreground">{part.slice(2, -2)}</strong>;
+      }
+      if (part.includes('class="citation-badge"')) {
+          const name = part.match(/>(.*)</)?.[1] || '';
+          return <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-1 bg-secondary/80 border border-border rounded text-[9px] font-black text-nyt-accent uppercase tracking-tighter leading-none align-middle" title="Кредибилен извор">{name}</span>;
       }
       return part;
     });
@@ -114,15 +122,15 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="mb-2 flex items-center gap-2 font-sans text-[10px] font-black uppercase tracking-[0.18em] text-nyt-accent">
-            <BrainCircuit size={14} strokeWidth={2} /> Аналитички Центар
+            <Sparkles size={14} strokeWidth={2} /> Истражувачки Центар
           </p>
-          <h2 className="font-serif text-2xl md:text-[2rem] font-black text-foreground mb-2">Подлабока анализа</h2>
+          <h2 className="font-serif text-2xl md:text-[2rem] font-black text-foreground mb-2">Подлабоко истражување</h2>
           <p className="max-w-2xl font-nyt-body text-sm md:text-[15px] leading-relaxed text-secondary-foreground">
-            Активирајте дополнителен аналитички слој само кога ви се потребни повеќе бројки, клучни актери или поширок контекст за приказната.
+            Активирајте дополнителен истражувачки слој само кога ви се потребни повеќе бројки, клучни актери или поширок контекст за приказната.
           </p>
         </div>
         <p className="max-w-sm font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-          Анализа по барање
+          Увид по барање
         </p>
       </div>
 
@@ -212,6 +220,30 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="max-w-3xl">
                 {formatText(data.report)}
 
+                {/* Follow-up Suggestions */}
+                {data.mode === 'custom' && data.suggestions && data.suggestions.length > 0 && (
+                  <div className="mt-12 pt-8 border-t border-border/40">
+                    <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-6 flex items-center gap-2">
+                      <ChevronRight size={12} strokeWidth={3} /> СЛЕДНО ИСТРАЖУВАЊЕ
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      {data.suggestions.map((s: string, idx: number) => (
+                        <button 
+                          key={idx}
+                          onClick={() => {
+                            setCustomQuery(s);
+                            performResearch('custom', s);
+                          }}
+                          disabled={!!loading}
+                          className="text-left p-4 border border-border bg-secondary/5 hover:border-nyt-accent hover:bg-secondary/10 transition-all font-serif italic text-lg text-foreground/90 group"
+                        >
+                          <span className="group-hover:translate-x-1 transition-transform inline-block">{s} →</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {sources.length > 0 && (
                   <div className="mt-16 pt-8 border-t border-border/40">
                     <p className="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
@@ -232,7 +264,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 opacity-60">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
-                   Интерна системска синтеза
+                   Автоматизирана уредничка синтеза
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">

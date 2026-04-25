@@ -148,15 +148,31 @@ class LocalAnalyst:
         except:
             return 1.0
 
-    def research_query(self, query: str, context: str) -> str:
-        """Acts as a local researcher answering user questions based on cluster data."""
+    def research_query(self, query: str, context: str) -> Dict[str, Any]:
+        """Acts as a local researcher providing cited answers and follow-up suggestions."""
         system = (
             "Ти си Пресек Истражувач. Одговори на прашањето користејќи го само дадениот контекст од македонските медиуми. "
-            "Биди објективен, професионален и концизен. Ако нема информација, кажи дека не е познато."
+            "1. За секој клучен факт или бројка, наведи го името на медиумот во заграда, на пример: (Извор: Сител). "
+            "2. На крајот од одговорот, генерирај точно 3 предлог-прашања за следно истражување поврзани со оваа тема. "
+            "Врати го одговорот во JSON формат со полиња: 'answer' (текст со цитати) и 'suggestions' (листа од 3 прашања)."
         )
         prompt = f"ПРАШАЊЕ: {query}\nКОНТЕКСТ: {context}"
-        res = self.analyze(prompt, system, max_tokens=512)
-        return res if res else "Нема доволно информации за одговор на ова прашање."
+        raw = self.analyze(prompt, system, max_tokens=600)
+        
+        try:
+            # Clean JSON extraction
+            clean_raw = raw
+            if "```json" in raw:
+                clean_raw = raw.split("```json")[1].split("```")[0]
+            elif "```" in raw:
+                clean_raw = raw.split("```")[1].split("```")[0]
+            return json.loads(clean_raw)
+        except:
+            # Fallback if JSON fails
+            return {
+                "answer": raw if raw else "Нема доволно информации.",
+                "suggestions": ["Кои се клучните актери?", "Каков е економскиот ефект?", "Кои се следните чекори?"]
+            }
 
 # Singleton instance
 analyst = LocalAnalyst()

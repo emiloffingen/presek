@@ -218,6 +218,6 @@ async def cluster_research(cluster_id: str, q: str):
         raise HTTPException(status_code=404, detail="Cluster not found")
         
     context = f"{row['summary']}\n{row['generated_article']}"
-    answer = analyst.research_query(q, context)
+    res = analyst.research_query(q, context)
     
-    return {"status": "success", "answer": answer}
+    return {"status": "success", "answer": res.get('answer'), "suggestions": res.get('suggestions', [])}
