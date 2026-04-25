@@ -129,6 +129,9 @@ class StoryDiscoveryEngine:
                     (sid, cid, 1.0),
                     fetch=False
                 )
+        except Exception as e:
+            log.error(f"Failed to create storyline: {e}")
+
     def refresh_storyline_metadata(self):
         """
         Periodically update summaries and titles for active storylines using Gemma 2.
