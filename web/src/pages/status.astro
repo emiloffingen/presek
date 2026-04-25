@@ -65,8 +65,8 @@ function formatUptime(seconds?: number) {
             <div class="status-summary">
               <div>
                 <span class="micro-label">Севкупен статус</span>
-                <strong class={`status-pill ${statusClass(health?.status === 'ok')}`}>
-                  {health?.status === 'ok' ? 'Оперативен' : 'Деградиран'}
+                <strong class={`status-pill ${statusClass(health?.status === 'ok' || health?.status === 'healthy')}`}>
+                  {(health?.status === 'ok' || health?.status === 'healthy') ? 'Оперативен' : 'Деградиран'}
                 </strong>
               </div>
               <div>
