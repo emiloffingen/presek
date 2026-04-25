@@ -416,7 +416,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             import threading
             analyst_thread = threading.Thread(target=_run_analyst_logic)
             analyst_thread.start()
-            analyst_thread.join(timeout=120) # 2 minute hard limit
+            analyst_thread.join(timeout=240) # 4 minute limit for low-core CPUs
             
             if analyst_thread.is_alive():
                 log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
