@@ -438,7 +438,17 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             record_runtime_event("synthesis_path", mode="local_fallback")
 
         if summary or perspectives:
-            # ... (Centroid and history logic)
+            # Calculate Cluster Centroid (Semantic Center)
+            centroid = _compute_centroid_from_values([a.get("embedding") for a in article_rows if a.get("embedding")])
+            centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
+
+            # Archive current summary before updating (Evolution Log)
+            db.execute(
+                """INSERT INTO cluster_summary_history (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities)
+                   SELECT cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities
+                   FROM cluster_summaries WHERE cluster_id = %s""",
+                (cluster_id,), fetch=False
+            )
 
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
