@@ -184,7 +184,7 @@ const IzvoriPage: React.FC = () => {
           <section className="rail-block rail-block-alt">
             <p className="rail-kicker">Интелигенција</p>
             <h3 className="rail-title">КВАЛИТЕТЕН ИНДЕКС (QI)</h3>
-            <p className="rail-text">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>Gemma 2 Deep Local</strong> алгоритам. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
+            <p className="rail-text">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>систем за длабока анализа</strong>. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
           </section>
 
           <section className="rail-block">
