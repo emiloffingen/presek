@@ -11,17 +11,28 @@ type ResearchMode = 'facts' | 'perspectives' | 'context';
 
 export default function ResearchIsland({ clusterId, initialHeadline, sources = [] }: ResearchIslandProps) {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState<ResearchMode | null>(null);
+  const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [customQuery, setCustomQuery] = useState('');
 
-  const performResearch = async (mode: ResearchMode) => {
+  const performResearch = async (mode: ResearchMode | 'custom', query?: string) => {
     setLoading(mode);
     setError(null);
     try {
-      const resp = await fetch(`/api/intelligence/cluster/${clusterId}/analyst?mode=${mode}`);
+      let url = `/api/intelligence/cluster/${clusterId}/analyst?mode=${mode}`;
+      if (mode === 'custom') {
+          url = `/api/research/${clusterId}?q=${encodeURIComponent(query || '')}`;
+      }
+      
+      const resp = await fetch(url);
       const result = await resp.json();
       if (result.status === 'success') {
-        setData(result);
+        // Map research API 'answer' to 'report' for consistency with existing UI
+        if (mode === 'custom') {
+            setData({ report: result.answer, mode: 'custom' });
+        } else {
+            setData(result);
+        }
       } else {
         setError(result.message || 'Грешка при анализата.');
       }
@@ -135,6 +146,28 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         ))}
       </div>
 
+      {/* Custom Research Input */}
+      <div className="mt-6 flex flex-col md:flex-row gap-3">
+        <div className="relative flex-grow">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <input 
+                type="text" 
+                placeholder="Поставете конкретно прашање за овој настан..."
+                value={customQuery}
+                onChange={(e) => setCustomQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-background border border-border focus:border-nyt-accent outline-none font-nyt-body text-lg shadow-inner"
+                onKeyDown={(e) => e.key === 'Enter' && customQuery && performResearch('custom', customQuery)}
+            />
+        </div>
+        <button 
+            onClick={() => performResearch('custom', customQuery)}
+            disabled={!customQuery || !!loading}
+            className="px-8 py-4 bg-foreground text-background font-black uppercase tracking-widest text-xs hover:bg-nyt-accent transition-colors disabled:opacity-50"
+        >
+            {loading === 'custom' ? <Loader2 className="animate-spin" size={18} /> : 'Истражи'}
+        </button>
+      </div>
+
       {error && (
         <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -151,7 +184,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
               <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
-                {modes.find(m => m.id === data.mode)?.label}
+                {data.mode === 'custom' ? 'Одговор на истражувањето' : modes.find(m => m.id === data.mode)?.label}
               </span>
             </div>
 

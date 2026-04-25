@@ -118,4 +118,37 @@ app.include_router(home.router, prefix="/api")
 app.include_router(intelligence.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
-app.include_router(system.router, prefix="/api")
+@app.get(\"/api/entity-graph/{entity_name}\")
+async def entity_graph_lookup(entity_name: str):
+    \"\"\"Fetches persistent knowledge about an entity from the local graph.\"\"\"
+    from database import db_manager as db
+    
+    row = db.execute_one(\"\"\"
+        SELECT bio_summary, importance_score, last_seen, category 
+        FROM entity_knowledge WHERE entity_name = %s
+    \"\"\", (entity_name,))
+    
+    if not row:
+        return {\"status\": \"not_found\"}
+        
+    return {\"status\": \"success\", \"data\": row}
+
+@app.get(\"/api/research/{cluster_id}\")
+async def cluster_research(cluster_id: str, q: str):
+    \"\"\"Researches a cluster based on a user query using Gemma 2.\"\"\"
+    from local_analyst import analyst
+    from database import db_manager as db
+    
+    # Get cluster context
+    row = db.execute_one(\"\"\"
+        SELECT summary, generated_article 
+        FROM cluster_summaries WHERE cluster_id = %s
+    \"\"\", (cluster_id,))
+    
+    if not row:
+        raise HTTPException(status_code=404, detail=\"Cluster not found\")
+        
+    context = f\"{row['summary']}\\n{row['generated_article']}\"
+    answer = analyst.research_query(q, context)
+    
+    return {\"status\": \"success\", \"answer\": answer}

@@ -41,7 +41,9 @@ function getRelativeTimeStr(dateStr: string) {
 
 import { sanitizeHtml } from '../../lib/sanitize';
 import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, BarChart3, Radio, Search } from 'lucide-react';
-import type { ClusterDetail } from '../../types';
+import EntityContextCard from '../../components/EntityContextCard.tsx';
+
+---
 
 const { id } = Astro.params;
 const API_URL = apiBaseUrl();
@@ -637,11 +639,42 @@ const articleSchema = cluster ? {
 								client:visible 
 							/>
 
+							{cluster.pluralism_score !== undefined && (
+								<div class="sidebar-module p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 rounded-sm">
+									<h4 class="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400">МЕДИУМСКИ ПЛУРАЛИЗАМ</h4>
+									<div class="mt-4">
+										<div class="flex items-center justify-between mb-2">
+											<span class="text-[10px] font-black uppercase">Разновидност</span>
+											<span class="text-xs font-black">{cluster.pluralism_score}%</span>
+										</div>
+										<div class="h-1.5 w-full bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
+											<div class="h-full bg-emerald-500" style={`width: ${cluster.pluralism_score}%`}></div>
+										</div>
+										{cluster.narrative_diversity?.verdict && (
+											<p class="mt-3 text-[11px] font-medium leading-relaxed text-emerald-800 dark:text-emerald-300 italic">
+												“{cluster.narrative_diversity.verdict}”
+											</p>
+										)}
+									</div>
+								</div>
+							)}
+
+							{cluster.analyst_entities && cluster.analyst_entities.length > 0 && (
+								<div class="sidebar-module">
+									<h4 class="sidebar-label">КЛУЧНИ СУБЈЕКТИ</h4>
+									<div class="flex flex-col gap-3 mt-4">
+										{cluster.analyst_entities.map(name => (
+											<EntityContextCard name={name} client:load />
+										))}
+									</div>
+								</div>
+							)}
+
 							{cluster.tags && cluster.tags.length > 0 && (
 								<div class="sidebar-module">
 									<h4 class="sidebar-label">КЛУЧНИ ПОИМИ</h4>
 									<div class="flex flex-wrap gap-2 mt-4">
-										{cluster.tags.map(tag => (
+										{cluster.tags.filter(t => !cluster.analyst_entities?.includes(t)).map(tag => (
 											<a href={`/?q=${encodeURIComponent(tag)}`} class="tag-chip">
                                                 {tag}
                                             </a>

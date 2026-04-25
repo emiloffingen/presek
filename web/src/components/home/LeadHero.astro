@@ -107,6 +107,14 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
                             </div>
                         </div>
                     )}
+                    {leadCluster.pluralism_score !== undefined && (
+                        <div class="pluralism-indicator ml-4">
+                            <span class="pulse-text">ПЛУРАЛИЗАМ: {leadCluster.pluralism_score}</span>
+                            <div class="pulse-bar-bg">
+                                <div class="pulse-bar-fill bg-emerald-500" style={`width: ${leadCluster.pluralism_score}%`}></div>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <ul class="analyst-facts">
                     {leadCluster.key_facts.map((fact: string) => (
@@ -339,6 +347,12 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
     }
 
     .pulse-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .pluralism-indicator {
         display: flex;
         align-items: center;
         gap: 0.6rem;

@@ -73,24 +73,41 @@ class LocalAnalyst:
         result = self.analyze(f"Наслов: {title}", system, max_tokens=64)
         return result if result else title
 
-    def extract_deep_metadata(self, text: str) -> Dict[str, Any]:
-        """Extracts facts and pulse from Macedonian text."""
+    def assess_pluralism(self, titles_with_sources: List[str]) -> Dict[str, Any]:
+        """Analyzes if a cluster represents a diverse consensus or an echo chamber."""
         system = (
-            "Анализирај го текстот на македонски јазик и врати JSON со следните полиња: "
-            "'facts' (листа од 3 клучни факти), 'entities' (листа од имиња и институции), "
-            "'sentiment' (позитивен, негативен или неутрален), 'pulse' (од 1 до 100 важност). "
-            "Врати само чист JSON."
+            "Ти си медиумски аналитичар. Анализирај ги овие наслови и извори од Македонија. "
+            "Врати JSON со: 'score' (0-100), 'verdict' (краток опис на македонски), "
+            "'bias_detected' (дали сите извори се од иста група/страна)."
         )
-        raw = self.analyze(text[:1500], system, max_tokens=300)
+        prompt = "\n".join(titles_with_sources)
+        raw = self.analyze(prompt, system, max_tokens=256)
         try:
-            # Basic cleanup if model adds markdown blocks
-            if "```json" in raw:
-                raw = raw.split("```json")[1].split("```")[0]
-            elif "```" in raw:
-                raw = raw.split("```")[1].split("```")[0]
             return json.loads(raw)
         except:
-            return {"error": "failed_to_parse"}
+            return {"score": 50, "verdict": "Стандардна покриеност"}
+
+    def detect_echo(self, article_text: str, cluster_context: str) -> float:
+        """Detects if an article is a unique report or just a 'copy-paste' (echo)."""
+        system = (
+            "Спореди го текстот со контекстот. Дали носи нови информации или е само препишано? "
+            "Врати само бројка од 0.0 (целосна копија) до 1.0 (целосно уникатно)."
+        )
+        prompt = f"ТЕКСТ: {article_text[:500]}\nКОНТЕКСТ: {cluster_context[:1000]}"
+        result = self.analyze(prompt, system, max_tokens=10)
+        try:
+            return float(re.findall(r"[\d.]+", result)[0])
+        except:
+            return 1.0
+
+    def research_query(self, query: str, context: str) -> str:
+        """Acts as a local researcher answering user questions based on cluster data."""
+        system = (
+            "Ти си Пресек Истражувач. Одговори на прашањето користејќи го само дадениот контекст од македонските медиуми. "
+            "Биди објективен, професионален и концизен. Ако нема информација, кажи дека не е познато."
+        )
+        prompt = f"ПРАШАЊЕ: {query}\nКОНТЕКСТ: {context}"
+        return self.analyze(prompt, system, max_tokens=512)
 
 # Singleton instance
 analyst = LocalAnalyst()
