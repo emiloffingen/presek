@@ -130,48 +130,46 @@ class LocalProvider(AIProvider):
                 await asyncio.sleep(0.01)
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
+        from local_analyst import analyst
         lowered_system = (system or "").lower()
-        if "translate" in lowered_system or "превед" in lowered_system:
-            return rewrite_to_macedonian_locally(prompt)
         
-        if "synthesis" in lowered_system or "синтез" in lowered_system:
-            try:
-                lines = prompt.split("\n")
-                fake_articles = []
-                for line in lines:
-                    if "]:" in line:
-                        parts = line.split("]:", 1)
-                        fake_articles.append({
-                            "title": parts[1].strip(), 
-                            "description": "", 
-                            "source": parts[0].replace("- [", "").strip()
-                        })
-                
-                if fake_articles:
-                    summary = synthesize_locally(fake_articles, sentence_count=4, topic=topic)
-                    return summary
-            except:
-                pass
-            
-            summary = summarize_locally(prompt, sentence_count=4, topic=topic)
-            return summary
-            
-        text = re.sub(r"^\s*summarize(?: the following)?\s*:\s*", "", prompt, flags=re.IGNORECASE).strip()
-        return summarize_article_fallback("", text, topic=topic)
+        # 1. Use the new Gemma 2 2B singleton for high-quality local tasks
+        if "translate" in lowered_system or "превед" in lowered_system:
+            # Gemma is better at literary translation than the old regex engine
+            return analyst.analyze(prompt, system, max_tokens=max_tokens)
+        
+        if "synthesis" in lowered_system or "синтез" in lowered_system or task_type == "synthesis":
+             # We use the analyst for local synthesis if mistral is offline
+             return analyst.analyze(prompt, system, max_tokens=max_tokens)
+
+        if "summarize" in lowered_system or task_type == "summarize":
+             # Native Gemma summarization
+             return analyst.analyze(prompt, system, max_tokens=max_tokens)
+
+        if task_type == "research":
+             # Native research answering
+             res = analyst.research_query(prompt, system) # system here acts as context in our wrapper
+             return json.dumps(res) if isinstance(res, dict) else res
+
+        # Fallback to the old deterministic rules if Gemma is not suitable or fails
+        return summarize_locally(prompt, sentence_count=4, topic=topic)
 
 PROVIDERS = {
     "mistral": MistralProvider(),
     "local": LocalProvider(),
 }
 
+# --- Task Routing (Priority Shift) ---
+# local (Gemma 2 2B) is now the PRIMARY choice for volume tasks.
+# mistral (Cloud) is the HIGH-TIER fallback or for complex synthesis.
 TASK_ROUTING = {
-    "translation":  ["mistral", "local"],
-    "summarize":    ["mistral", "local"],
-    "synthesis":    ["mistral", "local"],
-    "daily_brief":  ["mistral", "local"],
-    "research":     ["mistral", "local"],
-    "chat":         ["mistral", "local"],
-    "default":      ["mistral", "local"],
+    "translation":  ["local", "mistral"],
+    "summarize":    ["local", "mistral"],
+    "synthesis":    ["mistral", "local"], # Keep Mistral first for long-form editorial synthesis
+    "daily_brief":  ["mistral", "local"], # Keep Mistral first for premium morning dispatches
+    "research":     ["local", "mistral"],
+    "chat":         ["local", "mistral"],
+    "default":      ["local", "mistral"],
 }
 
 # --- Service Methods ---
