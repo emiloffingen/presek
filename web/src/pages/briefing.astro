@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
-import { Sparkles, Coffee, Moon, Sun, Timer, Activity } from 'lucide-react';
+import { Sparkles, Coffee, Moon, Sun, Timer, Activity, Zap } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 
@@ -90,7 +90,7 @@ function processFormatting(text: string) {
     
     // 3. Handle Cluster IDs: [[id]] -> Surgical inline badge
     html = html.replace(/\[\[([\w-]+)\]\]/g, (match, id) => {
-        return `<a href="/cluster/${id}" class="briefing-inline-badge">ПРИКАЗНА →</a>`;
+        return `<a href="/cluster/${id}" class="briefing-inline-badge">ДЕТАЛИ →</a>`;
     });
     
     return html;
@@ -187,13 +187,13 @@ const subjectPreview = (briefing?.subjects || []).slice(0, 4);
 const sectionPreview = sectionHighlights.slice(0, 3);
 const totalSubjects = briefing?.subjects?.length || 0;
 const articleCount = stats?.total_articles || 0;
-const versionLabel = health?.version_label || health?.version || '4.2';
+const versionLabel = health?.version_label || health?.version || '5.2';
 const editionLabel = hour >= 5 && hour < 12 ? 'Утринско издание' : hour >= 12 && hour < 18 ? 'Пладневно издание' : 'Вечерно издание';
 const editionStandfirst = hour >= 5 && hour < 12
-    ? 'Кондензиран утрински преглед на денот: што навистина се придвижи, кои актери ја носат тежината на приказната и каде вреди да се задржи вниманието пред остатокот од вестите да ве оттуркаат во шум.'
+    ? 'Кондензиран утрински преглед на денот: што навистина се придвижи, кои актери ја носат тежината на приказната и каде вреди да се задржи вниманието. Синтетизирано преку Gemma 2 Deep Local.'
     : hour >= 12 && hour < 18
-        ? 'Кондензиран пладневен преглед: што се зацврсти, кои линии на известување се издвојуваат и каде вреди да се остане внимателен до крајот на денот.'
-        : 'Кондензиран вечерен преглед: што навистина се помести денес, кои актери ја носеа тежината на приказната и што останува важно по првиот бран на шум.';
+        ? 'Кондензиран пладневен преглед: што се зацврсти, кои линии на известување се издвојуваат и каде вреди да се остане внимателен. Подготвено од системот за длабока анализа.'
+        : 'Кондензиран вечерен преглед: што навистина се помести денес, кои актери ја носеа тежината на приказната и што останува важно. Редакциска синтеза од Пресек 5.2.';
 const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон на теми' : sectionHighlights.length >= 4 ? 'Фокусиран дневен избор' : 'Покондензирано издание';
 ---
 
@@ -212,7 +212,7 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
 
             <div class="masthead-main">
                 <div class="masthead-branding">
-                    <DispatchIcon size={32} className="text-nyt-accent" />
+                    <Zap size={32} className="text-nyt-accent" fill="currentColor" />
                     <h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
                 </div>
                 <div class="masthead-date">
@@ -280,10 +280,10 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                         
                         <div class="briefing-signature">
                             <div class="sig-mark">
-                                <Sparkles size={24} className="text-nyt-accent" />
+                                <Zap size={24} className="text-nyt-accent" fill="currentColor" />
                             </div>
                             <p class="sig-quote">„Ние ги наоѓаме фактите, вие го градите мислењето.“</p>
-                            <p class="sig-label">ПРЕСЕК СИСТЕМСКИ УРЕДНИК</p>
+                            <p class="sig-label">ПРЕСЕК СИНТЕТИЧКИ УРЕДНИК (Gemma 2)</p>
                         </div>
                     </article>
                 ) : error ? (
