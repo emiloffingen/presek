@@ -11,6 +11,9 @@ Supports batching for higher throughput during ingestion cycles.
 import logging
 import threading
 import time
+import re
+import json
+import hashlib
 from hf_cache import configure_huggingface_cache
 
 log = logging.getLogger("presek")
@@ -45,6 +48,12 @@ LANG_CODES = {
 
 configure_huggingface_cache()
 
+def _get_redis():
+    try:
+        from utils import redis_client
+        return redis_client
+    except Exception:
+        return None
 
 def _load_model():
     """Load NLLB model and tokenizer. Called once, lazily."""
@@ -68,14 +77,61 @@ def _load_model():
             return None, None
     return _model, _tokenizer
 
+def _mask_entities(text: str) -> tuple[str, dict[str, str]]:
+    """Protects capitalized phrases from translation by replacing them with placeholders."""
+    from nlp.keywords import _extract_capitalized_phrases
+    entities = _extract_capitalized_phrases(text)
+    mapping = {}
+    masked_text = text
+    
+    # Sort by length descending to avoid partial replacements
+    for idx, ent in enumerate(sorted(set(entities), key=len, reverse=True)):
+        placeholder = f"$[{idx}]$"
+        mapping[placeholder] = ent
+        masked_text = masked_text.replace(ent, placeholder)
+        
+    return masked_text, mapping
 
-def translate(text: str, src_lang: str, target_lang: str = "mk") -> str | None:
+def _unmask_entities(text: str, mapping: dict[str, str]) -> str:
+    """Restores masked entities in translated text with flexible matching."""
+    if not text: return text
+    unmasked = text
+    for placeholder, original in mapping.items():
+        # Handle cases where NLLB might have added spaces: $ [ 0 ] $
+        # and escape $ and []
+        idx = placeholder.strip("$[]")
+        pattern = rf"\$\s*\[\s*{idx}\s*\]\s*\$"
+        unmasked = re.sub(pattern, original, unmasked)
+    return unmasked
+
+def translate(text: str, src_lang: str, target_lang: str = "mk", use_cache: bool = True, mask_entities: bool = True) -> str | None:
     """Translate a single text from src_lang to target_lang.
 
-    Returns the translated text, or None if translation fails.
+    Includes Semantic Caching and Entity Masking.
     """
     if not text or not text.strip():
         return text
+
+    # 1. Check Cache
+    redis = _get_redis()
+    cache_key = None
+    if use_cache and redis:
+        h = hashlib.md5(f"{text}:{src_lang}:{target_lang}".encode()).hexdigest()
+        cache_key = f"nllb:trans:{h}"
+        try:
+            cached = redis.get(cache_key)
+            if cached:
+                if isinstance(cached, bytes):
+                    return cached.decode('utf-8')
+                return str(cached)
+        except Exception as e:
+            log.warning(f"[nllb] Cache read error: {e}")
+
+    # 2. Entity Masking
+    mask_map = {}
+    working_text = text
+    if mask_entities:
+        working_text, mask_map = _mask_entities(text)
 
     model, tokenizer = _load_model()
     if model is None:
@@ -89,28 +145,44 @@ def translate(text: str, src_lang: str, target_lang: str = "mk") -> str | None:
 
     try:
         tokenizer.src_lang = src_code
-        inputs = tokenizer(text[:500], return_tensors="pt", truncation=True, max_length=256)
+        inputs = tokenizer(working_text[:800], return_tensors="pt", truncation=True, max_length=400)
         translated = model.generate(
             **inputs,
             forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
-            max_new_tokens=256,
+            max_new_tokens=400,
             num_beams=4,
             repetition_penalty=1.1,
         )
         result = tokenizer.batch_decode(translated, skip_special_tokens=True)[0]
-        return result.strip() if result else None
+        
+        if result:
+            result = result.strip()
+            # 3. Unmask
+            if mask_entities:
+                result = _unmask_entities(result, mask_map)
+            
+            # 4. Save to Cache (24h)
+            if cache_key and redis:
+                try:
+                    redis.setex(cache_key, 86400, result)
+                except Exception:
+                    pass
+            return result
+        return None
     except Exception as e:
         log.error(f"[nllb] Translation failed ({src_lang}→{target_lang}): {e}")
         return None
 
 
-def translate_batch(texts: list[str], src_langs: list[str], target_lang: str = "mk") -> list[str | None]:
-    """Translate multiple texts, potentially with different source languages.
-
-    Returns a list of translated texts (None for failures).
-    """
+def translate_batch(texts: list[str], src_langs: list[str], target_lang: str = "mk", mask_entities: bool = True) -> list[str | None]:
+    """Translate multiple texts, potentially with different source languages."""
     if not texts:
         return []
+
+    # For batch, we simplify and bypass complex masking for now to avoid alignment issues,
+    # OR we implement it carefully. Let's do a simpler per-item loop for safety if masking is on.
+    if mask_entities:
+        return [translate(t, s, target_lang, mask_entities=True) for t, s in zip(texts, src_langs)]
 
     model, tokenizer = _load_model()
     if model is None:
@@ -132,18 +204,18 @@ def translate_batch(texts: list[str], src_langs: list[str], target_lang: str = "
         code = LANG_CODES.get(lang)
         if not code:
             continue
-        by_lang.setdefault(code, []).append((i, text[:500]))
+        by_lang.setdefault(code, []).append((i, text[:800]))
 
     for src_code, items in by_lang.items():
         try:
             tokenizer.src_lang = src_code
             batch_texts = [t for _, t in items]
             inputs = tokenizer(batch_texts, return_tensors="pt", padding=True,
-                             truncation=True, max_length=256)
+                             truncation=True, max_length=400)
             translated = model.generate(
                 **inputs,
                 forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
-                max_new_tokens=256,
+                max_new_tokens=400,
                 num_beams=4,
                 repetition_penalty=1.1,
             )

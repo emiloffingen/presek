@@ -137,33 +137,43 @@ def standardize_article_style_task(article_id):
     if not ENABLE_EXPENSIVE_STYLE_TASKS:
         return
 
-    row = db.execute_one("SELECT title, description FROM articles WHERE id = %s", (article_id,))
+    row = db.execute_one("SELECT title, description, topic, category FROM articles WHERE id = %s", (article_id,))
     if not row: return
 
     title = row.get("title", "")
-    desc = row.get("description", "")
+    topic = row.get("topic") or ""
+    category = row.get("category") or ""
     
     if not title or len(title) < 25: return # Skip very short headlines
 
     try:
+        # Topic-Aware Bypass: Don't over-polish sports or entertainment as it kills the "vibe"
+        if topic == "Спорт" or category == "Спорт":
+            return
+
         from language import detect_language
         lang = detect_language(title)
-        if lang == "mk":
-            # If it's already Macedonian, don't do the round-trip translation.
-            # It often degrades quality/meaning for low-credibility but natively written MK news.
-            return
+        # We now ALLOW lang == "mk" for round-tripping to clean up tabloid style
+        # but only for news that isn't from highly trusted sources (optional logic)
 
         from nllb_translate import translate as nllb_translate
         from ai_engine import rewrite_to_macedonian_locally
         
-        # 1. Title Normalization: MK -> EN -> MK
+        # 1. Title Normalization: MK -> EN -> MK (The English filter cleans up slang/noise)
+        # mask_entities=True is now default in our nllb_translate wrapper
         en_bridge = nllb_translate(title, src_lang="mk", target_lang="en")
         if en_bridge and en_bridge.strip().lower() != title.strip().lower():
             mk_standard = nllb_translate(en_bridge, src_lang="en", target_lang="mk")
             if mk_standard and len(mk_standard) > 15:
-                # Local polish
+                # 2. Local polish (Deterministic rules)
                 final_title = rewrite_to_macedonian_locally(mk_standard)
                 if final_title and final_title.strip().lower() != title.strip().lower():
+                    # Check semantic similarity to ensure we didn't lose the plot
+                    from nlp.text_processing import _jaccard_similarity
+                    if _jaccard_similarity(title, final_title) < 0.35:
+                        log.warning(f"[style] Rejected over-aggressive polish for {article_id}")
+                        return
+
                     # Preserve original for transparency/debugging
                     db.execute(
                         "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
