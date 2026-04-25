@@ -1,7 +1,7 @@
 {
-  "name": "Пресек",
-  "short_name": "Пресек",
-  "description": "Македонски информативен агрегатор со подлабок контекст и напредна јазична обработка.",
+  "name": "ПРЕСЕК",
+  "short_name": "ПРЕСЕК",
+  "description": "Систем за длабока медиумска анализа, плурализам и уредничка синтеза.",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#1a1715",
@@ -9,43 +9,49 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/static/img/presek_emblem.svg",
+      "src": "/img/presek_emblem.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/static/img/presek_emblem.svg",
+      "src": "/img/presek_emblem.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/static/img/presek_emblem.png",
+      "src": "/img/presek_emblem.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/img/presek_emblem.png",
+      "src": "/img/presek_emblem.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ],
-  "categories": ["news", "politics"],
+  "categories": ["news", "politics", "education"],
   "shortcuts": [
     {
       "name": "Дневен Брифинг",
       "short_name": "Брифинг",
       "url": "/briefing",
-      "icons": [{ "src": "/static/img/presek_emblem.svg", "sizes": "any" }]
+      "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Медиумски Пулс",
+      "short_name": "Пулс",
+      "url": "/pulse",
+      "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     },
     {
       "name": "Извори",
       "short_name": "Извори",
       "url": "/izvori",
-      "icons": [{ "src": "/static/img/presek_emblem.svg", "sizes": "any" }]
+      "icons": [{ "src": "/img/presek_emblem.svg", "sizes": "any" }]
     }
   ]
 }
