@@ -142,9 +142,9 @@ class DatabaseManager:
         import asyncio
         return await asyncio.to_thread(self.search_semantic, query_embedding, limit)
 
-    async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50):
+    async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
         import asyncio
-        return await asyncio.to_thread(self.hybrid_search, query_text, query_embedding, limit)
+        return await asyncio.to_thread(self.hybrid_search, query_text, query_embedding, limit, sort_by, timespan)
 
     async def async_search_articles(self, query: str, limit: int = 50):
         import asyncio

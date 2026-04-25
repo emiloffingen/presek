@@ -137,17 +137,6 @@ function formatBriefing(content: string) {
         const line = lines[i];
         const stripped = line.trim();
         if (!stripped) { flushList(); continue; }
-        
-        // Skip duplicated title if it exists in content
-        if (line.startsWith('# ') && (line.includes('Дневен Брифинг') || line.includes('Пресек Брифинг'))) {
-            continue;
-        }
-
-        // Skip duplicated greeting if it exists in content
-        const greetings = ['Добро утро', 'Добар ден', 'Добра вечер'];
-        if (greetings.some(g => stripped.startsWith(g)) && stripped.length < 30) {
-            continue;
-        }
 
         if (line.startsWith('- ') || line.startsWith('• ')) {
             buffer.push(renderBriefingListItem(line));
@@ -211,10 +200,19 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                     <DispatchIcon size={32} className="text-nyt-accent" />
                     <h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
                 </div>
+                <div class="masthead-date">
+                    <p>{currentDate}</p>
+                </div>
             </div>
 
             <div class="masthead-standfirst mt-6">
                 <p>{editionStandfirst}</p>
+            </div>
+
+            <div class="masthead-deck">
+                <span>{coverageTone}</span>
+                <span>{totalSubjects} издвоени актери</span>
+                <span>{articleCount.toLocaleString('mk-MK')} следени објави</span>
             </div>
 
             {sectionHighlights.length > 0 && (
@@ -235,6 +233,14 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                 {briefing ? (
                     <article class="briefing-container">
                         <div class="briefing-intro">
+                            <div class="intro-lede">
+                                <h2 class="intro-greeting">{hour >= 5 && hour < 12 ? 'Добро утро.' : hour >= 12 && hour < 18 ? 'Добар ден.' : 'Добра вечер.'}</h2>
+                                <p class="intro-copy">
+                                    Денешната синтеза ги собира <span class="font-bold">{articleCount.toLocaleString('mk-MK')} објави</span> во јасна редакциска линија:
+                                    што е водечко, што е споредно и кои теми заслужуваат второ читање наместо брзо скролање.
+                                </p>
+                            </div>
+
                             <div class="intro-ledger">
                                 <div class="ledger-card">
                                     <span class="ledger-label">Издание</span>
@@ -363,15 +369,59 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     }
 
     /* ── Briefing Content ────────────────────────────── */
-    .briefing-intro { display: flex; flex-direction: column; gap: 2rem; margin-bottom: 3rem; }
-    .intro-greeting { font-family: var(--font-serif); font-size: clamp(2.1rem, 3.6vw, 3.1rem); font-weight: 900; italic: true; margin-bottom: 1rem; line-height: 1; }
-    
-    .intro-ledger { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-    @media (min-width: 640px) {
-        .intro-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .briefing-intro { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 2.5rem; 
+        margin-bottom: 4rem;
+        position: relative;
+        z-index: 1;
     }
     
-    .ledger-card { padding: 1.25rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%); min-height: min-content; }
+    .intro-lede {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .intro-greeting { 
+        font-family: var(--font-serif); 
+        font-size: clamp(2.1rem, 3.6vw, 3.1rem); 
+        font-weight: 900; 
+        italic: true; 
+        line-height: 1.1;
+        margin: 0;
+    }
+    
+    .intro-copy {
+        font-family: var(--font-nyt-body);
+        font-size: 1.1rem;
+        line-height: 1.65;
+        color: var(--secondary-foreground);
+        max-width: 44rem;
+        margin: 0;
+    }
+
+    .intro-ledger { 
+        display: grid; 
+        grid-template-columns: 1fr; 
+        gap: 1.5rem; 
+        margin-top: 1rem;
+    }
+    
+    @media (min-width: 640px) {
+        .intro-ledger { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    .ledger-card { 
+        padding: 1.5rem; 
+        border: 1px solid var(--border); 
+        background: color-mix(in srgb, var(--background) 88%, var(--secondary) 12%); 
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        position: relative;
+    }
     .ledger-label { display: block; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin-bottom: 0.55rem; }
     .ledger-card strong { display: block; font-family: var(--font-serif); font-size: 1.18rem; font-weight: 900; margin-bottom: 0.35rem; }
     .ledger-card p { font-family: var(--font-nyt-body); font-size: 0.84rem; line-height: 1.45; color: var(--secondary-foreground); }
