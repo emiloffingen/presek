@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ShieldCheck, Zap, Info } from 'lucide-react';
+import { ShieldCheck, Zap } from 'lucide-react';
 
 interface PulseRow {
     source: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
-import { ArrowLeftRight, Loader2, Info } from 'lucide-react';
+import { ArrowLeftRight, Loader2 } from 'lucide-react';
 
 interface SourceMetrics {
   source: string;
