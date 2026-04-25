@@ -41,6 +41,41 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+# --- Version Management ---
+
+bump_version() {
+  local version_file="$SOURCE_ROOT/VERSION"
+  local package_json="$SOURCE_ROOT/web/package.json"
+  
+  if [ ! -f "$version_file" ]; then
+    echo "5.3.0" > "$version_file"
+  fi
+
+  local current_version=$(cat "$version_file" | tr -d '[:space:]')
+  # Split version into parts (Major.Minor.Patch)
+  IFS='.' read -r major minor patch <<< "$current_version"
+  
+  # Increment minor version (e.g. 5.3 -> 5.4)
+  local next_minor=$((minor + 1))
+  local next_version="$major.$next_minor.0"
+  
+  info "Bumping version: $current_version -> $next_version"
+  
+  # Update VERSION file
+  echo "$next_version" > "$version_file"
+  
+  # Update web/package.json
+  if [ -f "$package_json" ]; then
+    sed -i "s/\"version\": \".*\"/\"version\": \"$next_version\"/" "$package_json"
+  fi
+  
+  # Commit version bump to git
+  cd "$SOURCE_ROOT"
+  git add VERSION web/package.json
+  git commit -m "Admin: Auto-bump version to $next_version" || true
+  cd - > /dev/null
+}
+
 cleanup_listener_port() {
   local port="$1"
   local label="$2"
@@ -338,6 +373,7 @@ main() {
   need_cmd npm
   need_cmd sudo
   need_cmd bash
+  need_cmd sed
   need_cmd flock
   need_cmd sha256sum
   need_cmd "$PYTHON_BIN"
@@ -350,6 +386,11 @@ main() {
   LOCK_FILE="$APP_ROOT/.deploy.lock"
   exec 9>"$LOCK_FILE"
   flock -n 9 || fail "Another deploy is already in progress (lock: $LOCK_FILE)"
+
+  # Auto-bump version (5.3 -> 5.4)
+  if [ "${BUMP_VERSION:-1}" = "1" ]; then
+    bump_version
+  fi
 
   [ ! -e "$RELEASE_DIR" ] || fail "Release already exists: $RELEASE_DIR"
 
