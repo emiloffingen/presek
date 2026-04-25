@@ -64,27 +64,27 @@ const hasSynthesis = cluster.has_synthesis;
 
 function getWhyItMatters() {
 	if (cluster.articles.some(a => a.is_fact_check)) {
-		return 'Приказна со активна проверка на факти и анализа на веродостојноста.';
+		return 'Приказна со активна системска верификација и детална деконструкција на наводите.';
 	}
 	if (cluster.is_breaking && totalSources >= 4) {
-		return 'Итен развој кој веќе добива широко меѓународно и домашно внимание.';
+		return 'Итен развој со висок интензитет кој веќе добива сеопфатно медиумско внимание.';
 	}
 	if (sourceSignal.role_label && totalSources >= 4) {
-		return `${sourceSignal.role_label}. Темата веќе се потврдува и се проширува низ повеќе редакции.`;
+		return `${sourceSignal.role_label}. Приказната се зацврстува низ повеќе независни линии на известување.`;
 	}
 	if (sourceSignal.role_label && totalSources >= 2) {
-		return `${sourceSignal.role_label}. Следете ја за нови потврди и официјални реакции.`;
+		return `${sourceSignal.role_label}. Темата се проширува со нови потврди и официјални реакции.`;
 	}
 	if (totalSources >= 6) {
-		return `Развој со широко медиумско покривање од ${totalSources} различни извори.`;
+		return `Развој со изразена медиумска тежина поддржана од ${totalSources} различни извори.`;
 	}
 	if (totalSources >= 4) {
-		return 'Повеќе редакции веќе додаваат нови детали и различен контекст.';
+		return 'Повеќе редакции веќе додаваат нови слоеви на информации и специфичен контекст.';
 	}
 	if (totalSources >= 2) {
-		return 'Приказна што почнува да добива потврди и поширок општествен контекст.';
+		return 'Приказна која брзо добива системска потврда и поширок општествен одглас.';
 	}
-	return 'Приказна со потенцијал за понатамошен развој.';
+	return 'Развој со потенцијал за дополнителна тематска еволуција.';
 }
 
 
@@ -154,8 +154,8 @@ function getTimeStr(dateStr: string) {
 			)}
 
 			{hasSynthesis && (
-				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-nyt-accent" title="Уредничка Синтеза достапна">
-					<Sparkles size={11} className="fill-nyt-accent/20" /> АНАЛИЗА
+				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-nyt-accent" title="Системска синтеза достапна">
+					<Zap size={11} className="fill-nyt-accent/20" fill="currentColor" /> СИНТЕЗА
 				</span>
 			)}
 
@@ -175,7 +175,7 @@ function getTimeStr(dateStr: string) {
 
 		{hasSynthesis && (
 			<span class="editorial-byline">
-				Од уредничкиот тим на Пресек
+				Системска синтеза на Пресек
 			</span>
 		)}
 

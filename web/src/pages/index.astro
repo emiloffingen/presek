@@ -281,8 +281,8 @@ function getBriefingSnippet(content: string) {
 					</div>
 					{(q || entity) && (
 						<div class="system-status">
-							<Sparkles size={10} strokeWidth={3} />
-							<span>Семантичка Синтеза</span>
+							<Zap size={10} strokeWidth={3} fill="currentColor" />
+							<span>Системска Контекстуализација</span>
 						</div>
 					)}
 					<a href="/" class="clear-filter">СИТЕ ВЕСТИ <ChevronRight size={10} strokeWidth={3} /></a>
@@ -342,7 +342,7 @@ function getBriefingSnippet(content: string) {
 					<div class="section-wrapper">
 						<DevelopmentsSection
 							title="Теми во развој"
-							note="Актуелни наративи со засилен медиумски интензитет."
+							note="Актуелни наративи со изразена медиумска динамика и активна уредничка синтеза."
 							developmentsFeatured={developmentsFeatured}
 							developmentsCompact={developmentsCompact}
                             tone="developing"
@@ -360,7 +360,7 @@ function getBriefingSnippet(content: string) {
 					<div class="section-wrapper">
 						<DevelopmentsSection
 							title="Глобална Сцена"
-							note="Синтеза на меѓународните случувања од водечките центри."
+							note="Системски преглед на меѓународните случувања од водечките новински агенции."
 							developmentsFeatured={globalClusters.slice(0, 2)}
 							developmentsCompact={globalClusters.slice(2)}
                             tone="global"
@@ -372,7 +372,7 @@ function getBriefingSnippet(content: string) {
 					<div class="section-wrapper">
 						<DevelopmentsSection
 							title="Последно на лентата"
-							note="Реално време: поединечни извештаи од теренот."
+							note="Извештаи во реално време: поединечни објави од теренот."
 							developmentsFeatured={wireClusters}
 							developmentsCompact={[]}
 							variant="wire"
