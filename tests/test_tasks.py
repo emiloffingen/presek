@@ -64,11 +64,17 @@ class TestSynthesizeClusterTaskQuality:
              patch("tasks.intelligence.generate_cover_art", return_value=None), \
              patch("tasks.intelligence.invalidate_cluster_caches"), \
              patch("tasks.utils.record_task_event"), \
+             patch("tasks.intelligence.analyst") as mock_analyst, \
              patch("embeddings.get_cluster_embedding", return_value=None):
+            
+            mock_analyst.extract_deep_metadata.return_value = {"entities": [], "facts": [], "pulse": 50}
+            mock_analyst.assess_pluralism.return_value = {"score": 50}
+
             # Call 1: _load_cluster_articles_for_synthesis
             # Call 2: Archive history
             # Call 3: INSERT INTO cluster_summaries
-            mock_db.execute.side_effect = [article_rows, None, None]
+            # Call 4: Strong image check
+            mock_db.execute.side_effect = [article_rows, None, None, None]
             mock_db.execute_one.return_value = {"dummy": 1}
 
             tasks.synthesize_cluster_task("cluster-1", "content")

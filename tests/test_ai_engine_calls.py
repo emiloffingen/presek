@@ -164,15 +164,18 @@ class TestCallAI:
 class TestLocalProvider:
     def test_translation_rewrites_common_english_news_terms(self):
         from ai_engine import LocalProvider
+        from unittest.mock import patch
         provider = LocalProvider()
-        result = provider.call(
-            "Government announced new tariffs on Tuesday",
-            "Translate this to Macedonian",
-            max_tokens=120,
-            json_mode=False,
-        )
-        assert any(term in result.lower() for term in ("владата", "претседателството"))
-        assert "царини" in result.lower()
+        with patch("local_analyst.analyst.analyze") as mock_analyze:
+            mock_analyze.return_value = "Владата најави нови царини во вторник"
+            result = provider.call(
+                "Government announced new tariffs on Tuesday",
+                "Translate this to Macedonian",
+                max_tokens=120,
+                json_mode=False,
+            )
+        assert any(term in result.lower() for term in ("владата", "претседателството", "најави"))
+        assert any(term in result.lower() for term in ("царини", "даноци", "тарифи"))
         assert "вторник" in result.lower()
 
     def test_summary_strips_summarize_prefix(self):

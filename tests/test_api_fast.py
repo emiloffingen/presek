@@ -275,7 +275,7 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     from version import APP_VERSION
     assert data["version"] == APP_VERSION
 
-    assert data["version_label"] == "5.7"
+    assert data["version_label"] == "5.10"
     assert isinstance(data["uptime_seconds"], int)
 
 
