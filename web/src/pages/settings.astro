@@ -5,8 +5,9 @@ import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
 import SettingsProfileIsland from '../components/SettingsProfileIsland.tsx';
+import AccountSyncIsland from '../components/AccountSyncIsland.tsx';
 import OnboardingIsland from '../components/OnboardingIsland.tsx';
-import { KeyRound, Radio } from 'lucide-react';
+import { KeyRound, Radio, ShieldCheck, UserCircle2 } from 'lucide-react';
 ---
 
 <Layout title="Поставки" description="Управувајте со синхронизацијата, следењата и доставата на брифингот во Пресек.">
@@ -14,44 +15,67 @@ import { KeyRound, Radio } from 'lucide-react';
 
   <main class="site-layout py-[var(--page-py)]">
     <Breadcrumbs items={[{ label: "Поставки" }]} />
-    <div class="settings-shell editorial-shell">
-      <header class="settings-header editorial-header motion-rise">
-        <span class="page-kicker">Синхронизиран профил</span>
-        <h1 class="settings-headline editorial-headline">Поставки</h1>
-        <p class="settings-lede editorial-intro">
-          Управувајте со вашиот клуч за синхронизација, следените теми и извори, и каналите за достава што го претвораат Пресек во услуга меѓу уреди.
+    
+    <div class="settings-shell editorial-shell mt-12">
+      <header class="settings-header editorial-header mb-16 motion-rise">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-[1px] bg-nyt-accent"></div>
+            <span class="page-kicker !mb-0">КОНТРОЛЕН ЦЕНТАР</span>
+        </div>
+        <h1 class="settings-headline editorial-headline italic">Вашиот <span>Дигитален</span> Профил</h1>
+        <p class="settings-lede editorial-intro max-w-3xl mt-6">
+          Пресек работи без лозинки. Вашиот профил е анонимен, но синхронизиран. Овде ги контролирате темите што ги следите и начинот на кој ги добивате вестите.
         </p>
       </header>
 
-        <div class="settings-page-grid editorial-page-grid">
-        <div class="settings-main editorial-main motion-rise motion-delay-1">
-          <div class="settings-card editorial-panel">
-            <SettingsProfileIsland client:load />
-          </div>
-          <div class="settings-card editorial-panel">
-            <OnboardingIsland client:load />
-          </div>
+      <div class="settings-page-grid grid grid-cols-1 lg:grid-cols-3 gap-16">
+        <div class="lg:col-span-2 space-y-16 motion-rise">
+            {/* 1. INTERESTS SECTION */}
+            <section class="settings-section">
+                <div class="section-eyebrow mb-8">
+                    <ShieldCheck size={18} className="text-nyt-accent" />
+                    <h2 class="section-label">ВАШИ ИНТЕРЕСИ</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <SettingsProfileIsland client:load />
+            </section>
+
+            {/* 2. ONBOARDING / DISCOVERY */}
+            <section class="settings-section border-t border-border pt-16">
+                <div class="section-eyebrow mb-8">
+                    <Sparkles size={18} className="text-nyt-accent" />
+                    <h2 class="section-label">ОТКРИЈТЕ ПОВЕЌЕ</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="bg-secondary/5 p-8 rounded-2xl border border-border/40">
+                    <OnboardingIsland client:load />
+                </div>
+            </section>
         </div>
 
-        <aside class="settings-rail editorial-rail motion-rise motion-delay-2">
-          <div class="settings-card editorial-panel">
-            <h3 class="settings-rail-title editorial-panel-title"><Radio size={14} /> Достава и известувања</h3>
-            <BriefingDeliveryIsland client:load variant="full" />
+        <aside class="settings-rail space-y-12 motion-rise">
+          {/* DIGITAL PASSPORT - SYNC */}
+          <div class="sidebar-module">
+            <h3 class="sidebar-label flex items-center gap-2"><KeyRound size={14} /> ДИГИТАЛЕН ПАСОШ</h3>
+            <div class="mt-6">
+                <AccountSyncIsland client:load />
+            </div>
           </div>
 
-          <div class="settings-card settings-card-accent editorial-panel-strong">
-            <h3 class="settings-rail-title editorial-panel-title"><KeyRound size={14} /> Што се менува тука</h3>
-            <p class="settings-rail-copy">
-              Оваа страница ги контролира сигналите што влијаат врз „За Вас“, следењата по тема и извор, како и каналите преку кои добивате брифинг и известувања.
-            </p>
+          {/* SUBSCRIPTIONS */}
+          <div class="sidebar-module border-t border-border pt-12">
+            <h3 class="sidebar-label flex items-center gap-2"><Radio size={14} /> ДОСТАВА</h3>
+            <div class="mt-6 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
+                <BriefingDeliveryIsland client:load variant="full" />
+            </div>
           </div>
 
-          <div class="settings-card editorial-panel">
-            <h3 class="settings-rail-title editorial-panel-title">Понатаму</h3>
-            <div class="settings-rail-links">
-              <a href="/briefing">Отвори брифинг</a>
-              <a href="/izvori">Уреди извори</a>
-              <a href="/contact">Побарај помош</a>
+          <div class="sidebar-module border-t border-border pt-12">
+            <h4 class="sidebar-label">ПОМОШ И ПОДДРШКА</h4>
+            <div class="settings-rail-links mt-6">
+              <a href="/briefing" class="flex justify-between items-center group">Отвори брифинг <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/izvori" class="flex justify-between items-center group">Уреди извори <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
+              <a href="/contact" class="flex justify-between items-center group">Кореспонденција <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all" /></a>
             </div>
           </div>
         </aside>
@@ -63,41 +87,31 @@ import { KeyRound, Radio } from 'lucide-react';
 </Layout>
 
 <style>
-  .settings-card-accent {
-    color: var(--foreground);
-  }
-
-  .settings-rail-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .settings-rail-copy {
-    margin: 0;
-    font-family: var(--font-nyt-body);
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--secondary-foreground);
+  .editorial-headline span {
+    font-weight: 300;
   }
 
   .settings-rail-links {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 1.25rem;
   }
 
   .settings-rail-links a {
     font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    font-weight: 950;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     text-decoration: none;
     color: var(--foreground);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s;
   }
 
   .settings-rail-links a:hover {
     color: var(--nyt-accent);
+    border-bottom-color: var(--nyt-accent);
   }
 </style>

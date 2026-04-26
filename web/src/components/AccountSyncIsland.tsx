@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Copy, Download, KeyRound, RefreshCw, Upload } from 'lucide-react';
+import { Copy, Download, KeyRound, RefreshCw, Upload, ShieldCheck, Info } from 'lucide-react';
 import {
   buildSyncTokenHeaders,
   exportSyncPayload,
@@ -106,71 +106,69 @@ export default function AccountSyncIsland({
   };
 
   return (
-    <div className="account-sync-panel">
-      <p className="account-sync-kicker">
-        <KeyRound size={14} />
-        <span>Синхронизација на профил</span>
-      </p>
-      <p className="account-sync-copy">
-        Користете еден клуч за синхронизација за да ги носите следените теми, следените извори, поставките за достава и неодамнешното читање меѓу уреди.
-      </p>
-
-      <div className="account-sync-controls">
-        <button type="button" className="delivery-action" onClick={createSyncKey}>
-          <KeyRound size={14} />
-          <span className="delivery-action-content">
-            <span className="delivery-action-label">{hasToken ? 'Креирај нов клуч за синхронизација' : 'Креирај клуч за синхронизација'}</span>
-            <span className="delivery-action-note">Започнува нов синхронизиран профил за овој читач.</span>
-          </span>
-        </button>
-        {hasToken && (
-          <>
-            <button type="button" className="delivery-action" onClick={() => pushLocalProfile()}>
-              <Upload size={14} />
-              <span className="delivery-action-content">
-                <span className="delivery-action-label">Синхронизирај го овој уред</span>
-                <span className="delivery-action-note">Го испраќа локалниот профил кон активниот клуч.</span>
-              </span>
-            </button>
-            <button type="button" className="delivery-action" onClick={() => pullRemoteProfile()}>
-              <Download size={14} />
-              <span className="delivery-action-content">
-                <span className="delivery-action-label">Вчитај синхронизиран профил</span>
-                <span className="delivery-action-note">Ги презема следењата и читањето зачувани на сервер.</span>
-              </span>
-            </button>
-            <button type="button" className="delivery-action" onClick={copyToken}>
-              <Copy size={14} />
-              <span className="delivery-action-content">
-                <span className="delivery-action-label">Копирај клуч за синхронизација</span>
-                <span className="delivery-action-note">За поврзување на друг уред со истиот профил.</span>
-              </span>
-            </button>
-          </>
-        )}
+    <div className="account-sync-island">
+      <div className="bg-zinc-900 dark:bg-black text-white p-6 rounded-xl shadow-xl border-l-4 border-nyt-accent relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:rotate-12 transition-transform">
+            <ShieldCheck size={80} />
+        </div>
+        
+        <div className="relative z-10">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-2">Статус: {hasToken ? 'АКТИВЕН ПАСОШ' : 'НЕГЕНЕРИРАН'}</p>
+            <h4 className="font-serif font-black text-xl mb-4 italic">Дигитален Идентитет</h4>
+            
+            {hasToken ? (
+                <div className="space-y-4">
+                    <div className="bg-white/10 p-3 rounded border border-white/10 flex items-center justify-between gap-4">
+                        <code className="text-xs font-mono truncate opacity-80">{token}</code>
+                        <button onClick={copyToken} className="flex-shrink-0 p-2 hover:text-nyt-accent transition-colors" title="Копирај Клуч">
+                            <Copy size={16} />
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => pushLocalProfile()} className="py-2 bg-white text-black text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-nyt-accent hover:text-white transition-all">
+                            <Upload size={12} /> СИНХРОНИЗИРАЈ
+                        </button>
+                        <button onClick={() => pullRemoteProfile()} className="py-2 bg-transparent border border-white/20 text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:border-nyt-accent hover:text-nyt-accent transition-all">
+                            <Download size={12} /> ПРЕЗЕМИ
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <button onClick={createSyncKey} className="w-full py-4 bg-nyt-accent text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:brightness-110 transition-all">
+                    <KeyRound size={14} /> КРЕИРАЈ ПАСОШ
+                </button>
+            )}
+        </div>
       </div>
 
-      <label className="account-sync-label">
-        <span>Користи постоечки клуч за синхронизација</span>
-        <div className="account-sync-import">
-          <input
-            type="text"
-            value={inputToken}
-            onChange={(e) => setInputToken(e.target.value)}
-            placeholder="Вметнете го вашиот клуч за синхронизација"
-            className="account-sync-input"
-          />
-          <button type="button" className="delivery-action account-sync-import-btn" onClick={() => pullRemoteProfile(inputToken)}>
-            <RefreshCw size={14} />
-            <span className="delivery-action-content">
-              <span className="delivery-action-label">Поврзи</span>
-            </span>
-          </button>
+      <div className="mt-8 space-y-4">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Користете го овој клуч за да ги носите вашите следења и интереси на друг уред без регистрација.
+        </p>
+        
+        <div className="pt-6 border-t border-border">
+            <label className="block text-[9px] font-black uppercase text-muted-foreground mb-2 tracking-widest">Увоз на постоечки клуч</label>
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={inputToken}
+                    onChange={(e) => setInputToken(e.target.value)}
+                    placeholder="Вметнете клуч..."
+                    className="flex-grow bg-secondary/30 border border-border rounded px-3 py-2 text-xs font-mono outline-none focus:border-nyt-accent transition-all"
+                />
+                <button onClick={() => pullRemoteProfile(inputToken)} className="p-2 bg-foreground text-background rounded hover:bg-nyt-accent transition-all">
+                    <RefreshCw size={16} className={status === 'working' ? 'animate-spin' : ''} />
+                </button>
+            </div>
         </div>
-      </label>
+      </div>
 
-      {token && <p className="account-sync-token">Тековен клуч:<code>{token}</code></p>}
-      {message && <p className={`account-sync-message is-${status}`}>{message}</p>}
+      {message && (
+        <div className={`mt-6 p-4 text-[10px] font-bold rounded flex items-center gap-2 animate-in fade-in ${status === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            <Info size={12} />
+            {message}
+        </div>
+      )}
     </div>
   );
 }
