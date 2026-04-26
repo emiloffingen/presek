@@ -86,14 +86,16 @@ class TestAstroFrontendIntegrity:
         assert "{hasDispatchStats && (" in header
 
     def test_schema_and_ingestion_track_ingestion_time(self):
-        schema = _read("database.py")
+        # We now check migrations for schema definitions
+        migration_file = next(ROOT.glob("migrations/versions/*baseline_schema.py"))
+        schema = migration_file.read_text(encoding="utf-8")
+        
         ingestion = _read("ingestion.py")
         stats = _read("routes/stats.py")
         homepage = _read("routes/home.py")
         clustering = _read("clustering.py")
 
-        assert "ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP" in schema
-        assert "UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL" in schema
+        assert "ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" in schema
         assert "\"ingested_at\": cycle_now" in ingestion
         assert "ingested_at" in stats
         assert "INTERVAL '1 hour'" in stats

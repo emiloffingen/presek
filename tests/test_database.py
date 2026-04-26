@@ -126,60 +126,18 @@ class TestGetDb:
 
 
 class TestSchemaMigrations:
-    def test_init_schema_adds_cluster_summary_runtime_columns(self):
+    def test_init_schema_calls_alembic_upgrade(self):
         from database import DatabaseManager
-
-        mock_conn = MagicMock()
-        mock_cur = MagicMock()
-        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
-        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+        from unittest.mock import patch, MagicMock
 
         manager = DatabaseManager.__new__(DatabaseManager)
-        manager.get_conn = MagicMock(return_value=mock_conn)
-        manager.put_conn = MagicMock()
-
-        manager.init_schema()
-
-        statements = [call.args[0] for call in mock_cur.execute.call_args_list]
-        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'" in sql for sql in statements)
-
-    def test_init_schema_adds_article_and_cluster_metadata_runtime_columns(self):
-        from database import DatabaseManager
-
-        mock_conn = MagicMock()
-        mock_cur = MagicMock()
-        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
-        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
-
-        manager = DatabaseManager.__new__(DatabaseManager)
-        manager.get_conn = MagicMock(return_value=mock_conn)
-        manager.put_conn = MagicMock()
-
-        manager.init_schema()
-
-        statements = [call.args[0] for call in mock_cur.execute.call_args_list]
-        assert any("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS topics TEXT[]" in sql for sql in statements)
-
-    def test_init_schema_adds_synthetic_headline_and_standfirst(self):
-        from database import DatabaseManager
-
-        mock_conn = MagicMock()
-        mock_cur = MagicMock()
-        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
-        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
-
-        manager = DatabaseManager.__new__(DatabaseManager)
-        manager.get_conn = MagicMock(return_value=mock_conn)
-        manager.put_conn = MagicMock()
-
-        manager.init_schema()
-
-        statements = [call.args[0] for call in mock_cur.execute.call_args_list]
-        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_headline TEXT" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_headline TEXT" in sql for sql in statements)
-        assert any("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT" in sql for sql in statements)
+        
+        with patch("alembic.command.upgrade") as mock_upgrade, \
+             patch("alembic.config.Config") as mock_config, \
+             patch("os.path.exists", return_value=True):
+            
+            manager.init_schema()
+            
+            assert mock_upgrade.called
+            assert mock_upgrade.call_args[0][1] == "head"
+            assert mock_config.called
