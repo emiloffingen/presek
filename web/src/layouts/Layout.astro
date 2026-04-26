@@ -195,6 +195,18 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		--layout-cache-bust-20260409: 1;
 	}
 
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        position: relative;
+        margin: 0;
+        padding: 0;
+    }
+
 	/* Broadstreet Aesthetic Adjustments */
 	.dark .site-logo {
 		filter: invert(1) brightness(1.5);
