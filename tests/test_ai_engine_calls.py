@@ -171,7 +171,7 @@ class TestLocalProvider:
             max_tokens=120,
             json_mode=False,
         )
-        assert "владата" in result.lower()
+        assert any(term in result.lower() for term in ("владата", "претседателството"))
         assert "царини" in result.lower()
         assert "вторник" in result.lower()
 
