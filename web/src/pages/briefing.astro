@@ -12,13 +12,15 @@ const API_URL = apiBaseUrl();
 let briefing = null;
 let stats: any = null;
 let health: any = null;
+let leadCluster: any = null;
 let error = null;
 
 try {
-    const [briefRes, statsRes, healthRes] = await Promise.all([
+    const [briefRes, statsRes, healthRes, leadRes] = await Promise.all([
         fetch(`${API_URL}/briefing`),
         fetch(`${API_URL}/stats/summary`),
-        fetch(`${API_URL}/health`)
+        fetch(`${API_URL}/health`),
+        fetch(`${API_URL}/news?page_size=1`)
     ]);
     
     if (briefRes.ok) {
@@ -37,6 +39,10 @@ try {
     }
     if (healthRes.ok) {
         health = await healthRes.json();
+    }
+    if (leadRes.ok) {
+        const json = await leadRes.json();
+        leadCluster = json.clusters?.[0];
     }
 } catch (e) {
     console.error("Fetch error:", e);
@@ -243,7 +249,32 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
             )}
         </header>
 
-        <div class="broadsheet-grid mt-24">
+        {leadCluster && (
+            <div class="briefing-hero mt-12 mb-16 motion-rise">
+                <div class="hero-image-container shadow-editorial">
+                    {leadCluster.articles?.[0]?.image_url && (
+                        <img 
+                            src={`/proxy?url=${encodeURIComponent(leadCluster.articles[0].image_url)}&w=1200`} 
+                            alt={leadCluster.synthetic_headline || leadCluster.articles[0].title}
+                            class="hero-image"
+                        />
+                    )}
+                    <div class="hero-overlay">
+                        <div class="hero-meta">
+                            <span class="hero-kicker">ТЕМА НА ДЕНОТ</span>
+                            <h2 class="hero-title">{leadCluster.synthetic_headline || leadCluster.articles[0].title}</h2>
+                            <div class="hero-footer">
+                                <span>{leadCluster.articles.length} редакции анализирани</span>
+                                <span class="mx-2 opacity-30">|</span>
+                                <a href={`/cluster/${leadCluster.cluster_id}`} class="hero-cta">ЦЕЛОСНА СТОРИЈА →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        <div class="broadsheet-grid">
             <div class="broadsheet-main">
                 {briefing ? (
                     <article class="briefing-container">
@@ -380,6 +411,19 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     .nav-link { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--font-sans); font-size: 0.62rem; font-weight: 800; white-space: nowrap; text-decoration: none; color: var(--foreground); padding: 0.35rem 0; border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s; }
     .nav-link span { font-size: 0.54rem; font-weight: 950; letter-spacing: 0.08em; color: var(--muted-foreground); }
     .nav-link:hover { color: var(--nyt-accent); border-color: color-mix(in srgb, var(--nyt-accent) 35%, transparent); }
+
+    /* ── Briefing Hero ───────────────────────────────── */
+    .briefing-hero { width: 100%; }
+    .hero-image-container { position: relative; width: 100%; height: 400px; overflow: hidden; background: var(--secondary); }
+    .hero-image { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.1); transition: transform 1s ease; }
+    .hero-image-container:hover .hero-image { transform: scale(1.02); }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%); display: flex; align-items: flex-end; padding: 2.5rem; }
+    .hero-meta { color: white; max-width: 50rem; }
+    .hero-kicker { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; letter-spacing: 0.2em; color: var(--nyt-accent); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .hero-title { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 950; line-height: 1.1; margin: 0.75rem 0 1.25rem; text-wrap: balance; }
+    .hero-footer { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; letter-spacing: 0.05em; opacity: 0.8; display: flex; align-items: center; }
+    .hero-cta { color: var(--nyt-accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+    .hero-cta:hover { border-color: var(--nyt-accent); }
 
     /* ── Broadsheet Grid ────────────────────────────── */
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
