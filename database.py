@@ -13,6 +13,82 @@ import logging
 import time
 import os
 
+# --- SQL Query Catalog ---
+
+SQL_SEMANTIC_SEARCH = """
+    SELECT *, (1 - (embedding <=> %s::vector)) as similarity
+    FROM articles
+    WHERE embedding IS NOT NULL
+      AND created_at >= NOW() - INTERVAL '7 days'
+    ORDER BY embedding <=> %s::vector
+    LIMIT %s
+"""
+
+SQL_ARTICLE_SEARCH = """
+    WITH query AS (
+        SELECT
+            websearch_to_tsquery('simple', %s) AS ts_query,
+            lower(%s) AS query_text
+    )
+    SELECT
+        a.*,
+        ts_rank_cd(a.search_vector, query.ts_query) AS rank,
+        CASE
+            WHEN lower(a.title) = query.query_text THEN 4
+            WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+            WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+            WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+            ELSE 0
+        END AS match_score
+    FROM articles a
+    CROSS JOIN query
+    WHERE a.search_vector @@ query.ts_query
+    ORDER BY match_score DESC, rank DESC, created_at DESC
+    LIMIT %s
+"""
+
+def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
+    """Helper to build dynamic hybrid search SQL."""
+    return f"""
+        WITH fts_results AS (
+            SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
+            FROM articles
+            WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+            {time_filter}
+            ORDER BY rank DESC
+            LIMIT 300
+        ),
+        semantic_results AS (
+            SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
+            FROM articles
+            WHERE embedding IS NOT NULL
+              AND created_at >= NOW() - INTERVAL '30 days'
+              {time_filter}
+            ORDER BY similarity DESC
+            LIMIT 300
+        ),
+        scored_articles AS (
+            SELECT a.*, 
+                   (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
+                   -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
+                   GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
+            FROM articles a
+            LEFT JOIN fts_results f ON a.id = f.id
+            LEFT JOIN semantic_results s ON a.id = s.id
+            WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
+        ),
+        ranked_clusters AS (
+            SELECT *,
+                   ROW_NUMBER() OVER (PARTITION BY cluster_id ORDER BY base_score DESC) as cluster_rank
+            FROM scored_articles
+        )
+        SELECT *, (base_score * recency_factor) as hybrid_score
+        FROM ranked_clusters
+        WHERE cluster_rank = 1
+        ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
+        LIMIT %s
+    """
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -53,7 +129,10 @@ class AsyncDatabaseManager:
                 min_size=DB_POOL_MINCONN,
                 max_size=DB_POOL_MAXCONN,
                 open=False,
-                kwargs={"row_factory": dict_row}
+                kwargs={
+                    "row_factory": dict_row,
+                    "options": "-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
+                }
             )
             await self._pool.open()
             log.info(f"Presek 4.0: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
@@ -96,7 +175,8 @@ class DatabaseManager:
                 self._pool = ThreadedConnectionPool(
                     minconn=DB_POOL_MINCONN,
                     maxconn=DB_POOL_MAXCONN,
-                    dsn=DATABASE_URL
+                    dsn=DATABASE_URL,
+                    options="-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
                 )
                 log.info(
                     "Presek 4.0: Database connection pool initialized "
@@ -190,16 +270,8 @@ class DatabaseManager:
         return await self.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
 
     async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
-        sql = """
-            SELECT *, (1 - (embedding <=> %s::vector)) as similarity
-            FROM articles
-            WHERE embedding IS NOT NULL
-              AND created_at >= NOW() - INTERVAL '7 days'
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
-        """
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        return await self.async_execute(sql, (vec_str, vec_str, limit))
+        return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
 
     async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
         # Build time constraint
@@ -212,71 +284,11 @@ class DatabaseManager:
             time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
 
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        sql = f"""
-            WITH fts_results AS (
-                SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
-                FROM articles
-                WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-                {time_filter}
-                ORDER BY rank DESC
-                LIMIT 300
-            ),
-            semantic_results AS (
-                SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
-                FROM articles
-                WHERE embedding IS NOT NULL
-                  AND created_at >= NOW() - INTERVAL '30 days'
-                  {time_filter}
-                ORDER BY similarity DESC
-                LIMIT 300
-            ),
-            scored_articles AS (
-                SELECT a.*, 
-                       (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
-                       -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
-                       GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
-                FROM articles a
-                LEFT JOIN fts_results f ON a.id = f.id
-                LEFT JOIN semantic_results s ON a.id = s.id
-                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
-            ),
-            ranked_clusters AS (
-                SELECT *,
-                       ROW_NUMBER() OVER (PARTITION BY cluster_id ORDER BY base_score DESC) as cluster_rank
-                FROM scored_articles
-            )
-            SELECT *, (base_score * recency_factor) as hybrid_score
-            FROM ranked_clusters
-            WHERE cluster_rank = 1
-            ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
-            LIMIT %s
-        """
+        sql = _build_hybrid_search_sql(time_filter, sort_by)
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
     async def async_search_articles(self, query: str, limit: int = 50):
-        sql = """
-            WITH query AS (
-                SELECT
-                    websearch_to_tsquery('simple', %s) AS ts_query,
-                    lower(%s) AS query_text
-            )
-            SELECT
-                a.*,
-                ts_rank_cd(a.search_vector, query.ts_query) AS rank,
-                CASE
-                    WHEN lower(a.title) = query.query_text THEN 4
-                    WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
-                    WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
-                    WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
-                    ELSE 0
-                END AS match_score
-            FROM articles a
-            CROSS JOIN query
-            WHERE a.search_vector @@ query.ts_query
-            ORDER BY match_score DESC, rank DESC, created_at DESC
-            LIMIT %s
-        """
-        return await self.async_execute(sql, (query, query, limit))
+        return await self.async_execute(SQL_ARTICLE_SEARCH, (query, query, limit))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str]):
         if not cluster_ids: return []
@@ -291,17 +303,9 @@ class DatabaseManager:
         Search for articles using vector similarity (cosine distance).
         Returns articles from clusters that are semantically close to the query.
         """
-        sql = """
-            SELECT *, (1 - (embedding <=> %s::vector)) as similarity
-            FROM articles
-            WHERE embedding IS NOT NULL
-              AND created_at >= NOW() - INTERVAL '7 days'
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
-        """
         # Ensure embedding is passed as a string representation of the list for pgvector
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        return self.execute(sql, (vec_str, vec_str, limit))
+        return self.execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit))
 
     def hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
         """
@@ -320,45 +324,7 @@ class DatabaseManager:
             time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
 
         # We use websearch_to_tsquery for more natural search behavior
-        sql = f"""
-            WITH fts_results AS (
-                SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
-                FROM articles
-                WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-                {time_filter}
-                ORDER BY rank DESC
-                LIMIT 300
-            ),
-            semantic_results AS (
-                SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
-                FROM articles
-                WHERE embedding IS NOT NULL
-                  AND created_at >= NOW() - INTERVAL '30 days'
-                  {time_filter}
-                ORDER BY similarity DESC
-                LIMIT 300
-            ),
-            scored_articles AS (
-                SELECT a.*, 
-                       (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
-                       -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
-                       GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
-                FROM articles a
-                LEFT JOIN fts_results f ON a.id = f.id
-                LEFT JOIN semantic_results s ON a.id = s.id
-                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
-            ),
-            ranked_clusters AS (
-                SELECT *,
-                       ROW_NUMBER() OVER (PARTITION BY cluster_id ORDER BY base_score DESC) as cluster_rank
-                FROM scored_articles
-            )
-            SELECT *, (base_score * recency_factor) as hybrid_score
-            FROM ranked_clusters
-            WHERE cluster_rank = 1
-            ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
-            LIMIT %s
-        """
+        sql = _build_hybrid_search_sql(time_filter, sort_by)
         return self.execute(sql, (query_text, query_text, vec_str, limit))
 
     def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
@@ -422,29 +388,7 @@ class DatabaseManager:
         except (ValueError, TypeError):
             limit = 100
             
-        sql = """
-            WITH query AS (
-                SELECT
-                    websearch_to_tsquery('simple', %s) AS ts_query,
-                    lower(%s) AS query_text
-            )
-            SELECT
-                a.*,
-                ts_rank_cd(a.search_vector, query.ts_query) AS rank,
-                CASE
-                    WHEN lower(a.title) = query.query_text THEN 4
-                    WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
-                    WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
-                    WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
-                    ELSE 0
-                END AS match_score
-            FROM articles a
-            CROSS JOIN query
-            WHERE a.search_vector @@ query.ts_query
-            ORDER BY match_score DESC, rank DESC, created_at DESC
-            LIMIT %s
-        """
-        return self.execute(sql, (q, q, limit))
+        return self.execute(SQL_ARTICLE_SEARCH, (q, q, limit))
 
     def get_synthesis_ids(self, cluster_ids):
         if not cluster_ids: return []
