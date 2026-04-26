@@ -94,6 +94,7 @@ class CrawlerService:
         """
         log.info(f"Starting headless crawl for {url}")
         result = {"url": url, "method": "headless"}
+        browser = None
         
         try:
             # SSRF Protection
@@ -101,41 +102,38 @@ class CrawlerService:
             
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                try:
-                    # Set a common viewport and user agent
-                    context = await browser.new_context(
-                        viewport={"width": 1280, "height": 800},
-                        user_agent=self.headers["User-Agent"]
-                    )
-                    page = await context.new_page()
-                    
-                    # Wait for 'networkidle' to ensure JS has finished loading content
-                    await page.goto(url, wait_until="networkidle", timeout=30000)
-                    
-                    # Some sites might need a small extra sleep for hydration
-                    await asyncio.sleep(1)
-                    
-                    html_content = await page.content()
-                    final_url = page.url
-                    
-                    # Capture a screenshot as a fallback image if og:image is missing
-                    screenshot_bytes = None
-                    
-                    # Extract metadata using page.evaluate to get computed properties
-                    metadata = await page.evaluate("""() => {
-                        const getMeta = (name) => {
-                            const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
-                            return el ? el.getAttribute('content') : null;
-                        };
-                        return {
-                            title: document.title,
-                            ogImage: getMeta('og:image'),
-                            description: getMeta('og:description') || getMeta('description'),
-                            author: getMeta('author') || getMeta('article:author'),
-                        };
-                    }""")
-                finally:
-                    await browser.close()
+                # Set a common viewport and user agent
+                context = await browser.new_context(
+                    viewport={"width": 1280, "height": 800},
+                    user_agent=self.headers["User-Agent"]
+                )
+                page = await context.new_page()
+                
+                # Wait for 'networkidle' to ensure JS has finished loading content
+                await page.goto(url, wait_until="networkidle", timeout=30000)
+                
+                # Some sites might need a small extra sleep for hydration
+                await asyncio.sleep(1)
+                
+                html_content = await page.content()
+                final_url = page.url
+                
+                # Extract metadata using page.evaluate to get computed properties
+                metadata = await page.evaluate("""() => {
+                    const getMeta = (name) => {
+                        const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
+                        return el ? el.getAttribute('content') : null;
+                    };
+                    return {
+                        title: document.title,
+                        ogImage: getMeta('og:image'),
+                        description: getMeta('og:description') || getMeta('description'),
+                        author: getMeta('author') || getMeta('article:author'),
+                    };
+                }""")
+                
+                await browser.close()
+                browser = None
 
                 # Still use trafilatura on the rendered HTML for the best text extraction
                 extracted = self._parse_with_trafilatura(html_content, final_url)
@@ -150,6 +148,9 @@ class CrawlerService:
         except Exception as e:
             log.error(f"Headless crawl failed for {url}: {e}")
             result["error"] = str(e)
+        finally:
+            if browser:
+                await browser.close()
 
         return result
 

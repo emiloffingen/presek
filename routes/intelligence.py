@@ -460,7 +460,7 @@ async def get_global_pulse(category: Optional[str] = None):
         params.append(category)
 
     # Use explicit COALESCE(a.ingested_at, a.created_at) to avoid schema errors
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
     # 1. News Velocity

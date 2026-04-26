@@ -23,7 +23,8 @@ TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-fastapi
-# Removed MemoryHigh/Max to allow NLLB model to load (needs ~1.5GB)
+MemoryHigh=1600M
+MemoryMax=2000M
 ProtectSystem=strict
 ProtectHome=read-only
 NoNewPrivileges=yes

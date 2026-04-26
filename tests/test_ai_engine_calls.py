@@ -53,7 +53,7 @@ class TestCallAI:
         }
 
     @patch('utils.redis_client')
-    def test_default_uses_remote_before_local(self, mock_redis):
+    def test_default_uses_local_before_remote(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
         providers = self._mock_providers(mistral="Remote result", local="Local result")
@@ -62,10 +62,10 @@ class TestCallAI:
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Test", "System")
-        assert result == "Local result" # Updated to match config.py
-        assert tier in ("mistral", "local")
-        providers["mistral"].call.assert_called_once()
-        providers["local"].call.assert_not_called()
+        assert result == "Local result"
+        assert tier == "local"
+        providers["local"].call.assert_called_once()
+        providers["mistral"].call.assert_not_called()
 
     @patch('utils.redis_client')
     def test_all_fail_returns_none(self, mock_redis):
@@ -108,8 +108,8 @@ class TestCallAI:
         assert tier == "local"
 
     @patch('utils.redis_client')
-    def test_task_routing_translation_prefers_remote_before_local(self, mock_redis):
-        """Translation should try remote providers before the local rewrite fallback."""
+    def test_task_routing_translation_prefers_local_before_remote(self, mock_redis):
+        """Translation should try local provider first according to config."""
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
         providers = self._mock_providers(mistral="Translated", local="Local translated")
@@ -118,9 +118,10 @@ class TestCallAI:
              patch('ai_engine.redis_client', mock_redis):
             from ai_engine import _call_ai
             result, tier = _call_ai("Text", "System", task_type="translation")
-        assert result == "Local translated" # Updated to match config.py
-        assert tier in ("mistral", "local")
-        providers["local"].call.assert_not_called()
+        assert result == "Local translated"
+        assert tier == "local"
+        providers["local"].call.assert_called_once()
+        providers["mistral"].call.assert_not_called()
 
     @patch('utils.redis_client')
     def test_stream_falls_back_when_first_provider_yields_nothing(self, mock_redis):

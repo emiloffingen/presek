@@ -304,7 +304,12 @@ run_migrations() {
   fi
 
   info "Running database schema updates"
-  (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()")
+  # Try Alembic first, fallback to legacy init_db if needed
+  if [ -f "$RELEASE_DIR/alembic.ini" ]; then
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/alembic" upgrade head)
+  else
+    (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" -c "import config; from database import init_db; init_db()")
+  fi
   SCHEMA_UPDATED=1
 }
 

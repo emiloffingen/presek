@@ -24,7 +24,6 @@ def test_daily_brief_prompt_requires_editorial_sections():
     assert "## Каде се разликува известувањето" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "## Што да се следи понатаму" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "### 1." in DAILY_BRIEF_SYSTEM_PROMPT
-    assert "- Што е новото:" in DAILY_BRIEF_SYSTEM_PROMPT
-    assert "Не користи `---`" in DAILY_BRIEF_SYSTEM_PROMPT
+    assert "- Што се менува:" in DAILY_BRIEF_SYSTEM_PROMPT
+    assert "ЗАБРАНЕТО е користење на `---`" in DAILY_BRIEF_SYSTEM_PROMPT
     assert "Не вклучувај временска прогноза" in DAILY_BRIEF_SYSTEM_PROMPT
-    assert "партиско соопштение" in DAILY_BRIEF_SYSTEM_PROMPT

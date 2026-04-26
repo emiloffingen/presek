@@ -3,8 +3,10 @@ import os
 
 def configure_huggingface_cache() -> str:
     """Point model caches at a writable, persistent app-owned directory."""
-    # Check for production shared directory first
+    # Check for production shared directory first (unless in test)
     production_shared = "/home/emiloffingen/presek-runtime/shared/huggingface"
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        production_shared = "/non/existent/path/for/tests"
     
     app_root = os.path.dirname(os.path.abspath(__file__))
     if os.path.basename(app_root) == "current":
@@ -12,10 +14,10 @@ def configure_huggingface_cache() -> str:
     else:
         shared_root = ""
 
-    if os.path.isdir(os.path.dirname(production_shared)):
-        cache_root = production_shared
-    elif shared_root and os.path.isdir(os.path.dirname(shared_root)):
+    if shared_root and os.path.isdir(os.path.dirname(shared_root)):
         cache_root = shared_root
+    elif os.path.isdir(os.path.dirname(production_shared)):
+        cache_root = production_shared
     else:
         cache_root = os.path.join(app_root, ".cache", "huggingface")
 

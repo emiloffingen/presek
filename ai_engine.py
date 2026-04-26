@@ -145,28 +145,35 @@ class LocalProvider(AIProvider):
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         from local_analyst import analyst
         lowered_system = (system or "").lower()
-        
+
         # 1. Use the new Gemma 2 2B singleton for high-quality local tasks
-        if "translate" in lowered_system or "превед" in lowered_system:
+        if "translate" in lowered_system or "превед" in lowered_system or task_type == "translation":
             # Gemma is better at literary translation than the old regex engine
-            return analyst.analyze(prompt, system, max_tokens=max_tokens)
-        
+            res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+            if res: return res
+            # Fallback to deterministic rewrite
+            return rewrite_to_macedonian_locally(prompt)
+
         if "synthesis" in lowered_system or "синтез" in lowered_system or task_type == "synthesis":
              # We use the analyst for local synthesis if mistral is offline
-             return analyst.analyze(prompt, system, max_tokens=max_tokens)
+             res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+             if res: return res
+             # Fallback to multi-source synthesis
+             return synthesize_locally([], topic=topic) # Fallback doesn't easily take raw prompt yet
 
         if "summarize" in lowered_system or task_type == "summarize":
              # Native Gemma summarization
-             return analyst.analyze(prompt, system, max_tokens=max_tokens)
+             res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+             if res: return res
 
         if task_type == "research":
              # Native research answering
              res = analyst.research_query(prompt, system) # system here acts as context in our wrapper
-             return json.dumps(res) if isinstance(res, dict) else res
+             if res:
+                 return json.dumps(res) if isinstance(res, dict) else res
 
         # Fallback to the old deterministic rules if Gemma is not suitable or fails
         return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
-
 PROVIDERS = {
     "mistral": MistralProvider(),
     "local": LocalProvider(),
@@ -242,13 +249,13 @@ def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_token
 
 def clean_json_response(text: str) -> dict | str | None:
     if text is None:
-        return None
+        return ""
     if not isinstance(text, str):
-        return None
+        return ""
 
     text = text.strip()
     if not text:
-        return None
+        return ""
 
     # Look for JSON structure
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)

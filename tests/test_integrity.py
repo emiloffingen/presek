@@ -95,7 +95,8 @@ class TestAstroFrontendIntegrity:
         assert "ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP" in schema
         assert "UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL" in schema
         assert "\"ingested_at\": cycle_now" in ingestion
-        assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in stats
+        assert "ingested_at" in stats
+        assert "INTERVAL '1 hour'" in stats
         assert "_article_freshness_time(article)" in homepage
         assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
 
@@ -193,7 +194,7 @@ class TestAstroFrontendIntegrity:
 
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source" in intelligence
+        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
         assert "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
         assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
         assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats

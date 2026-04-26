@@ -651,16 +651,16 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 
     def execute_one_side_effect(query, *args, **kwargs):
-        if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query and "category IN" not in query:
-            return {"count": 120}
+        if "category IN" in query and ("is_global" in query or "Свет" in query):
+            return {"count": 18}
         if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in query:
             return {"count": 12}
         if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
             return {"count": 40}
         if "FROM cluster_summaries s" in query:
             return {"quote": "", "summary": "• Q\n• R", "generated_article": "", "cluster_id": "abc123", "title": "T"}
-        if "SELECT COUNT(*) FROM articles WHERE is_global = TRUE" in query:
-            return {"count": 30}
+        if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query:
+            return {"count": 120}
         if "SELECT COUNT(*) FROM articles" in query:
             return {"count": 200}
         if "FROM cluster_tiers" in query:
@@ -681,7 +681,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     assert data["quote_of_the_day"]["cluster_id"] == "abc123"
     assert data["quote_of_the_day"]["quote"] == "Q"
     assert data["intelligence"]["international_share_pct"] == 15.0
-    assert data["intelligence"]["ai_transparency"]["ai_ratio"] == 75.0
+    assert data["intelligence"]["synthesis_transparency"]["systemic_ratio"] == 75.0
     assert data["intelligence"]["pluralism"]["pluralism_pct"] == 65.0
     assert data["intelligence"]["pluralism"]["high_consensus_pct"] == 25.0
 
@@ -724,7 +724,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(m
     async def execute_side_effect(query, params=None, fetch=True):
         if "date_trunc" in query and "COALESCE" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
-        if "FROM articles" in query and "GROUP BY category ORDER BY n DESC" in query:
+        if "FROM articles a" in query and "GROUP BY a.category ORDER BY n DESC" in query:
             assert "category IS NOT NULL" in query
             assert "category != ''" in query
             return [{"category": "Македонија", "n": 12}]
@@ -737,7 +737,7 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(m
 
     with patch("routes.intelligence.cached_response", return_value=None), \
          patch("routes.intelligence.set_cache"), \
-         patch("routes.common.build_intelligence_summary_payload", new=AsyncMock(return_value={"pluralism": {"pluralism_pct": 64, "high_consensus_pct": 25}, "ai_transparency": {"ai_ratio": 52}, "international_share_pct": 14})):
+         patch("routes.common.build_intelligence_summary_payload", new=AsyncMock(return_value={"pluralism": {"pluralism_pct": 64, "high_consensus_pct": 25}, "synthesis_transparency": {"systemic_ratio": 52}, "international_share_pct": 14})):
         data = asyncio.run(intelligence.get_global_pulse())
 
     assert data["last_24h"] == 12
