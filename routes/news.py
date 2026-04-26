@@ -2,7 +2,9 @@ import json
 import logging
 import re
 import datetime
-from typing import Optional, List
+
+from typing import Optional, List, Any, Dict
+from pydantic import BaseModel, Field
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -33,6 +35,28 @@ from .security import validate_cluster_id, validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+class ArticleResponse(BaseModel):
+    id: str
+    title: str
+    link: str
+    source: str
+    created_at: str
+    category: Optional[str] = None
+    topic: Optional[str] = None
+    image_url: Optional[str] = None
+
+class ClusterResponse(BaseModel):
+    cluster_id: str
+    title: str
+    summary: Optional[str] = None
+    articles: List[ArticleResponse]
+
+class NewsResponse(BaseModel):
+    status: str
+    page: int
+    page_size: int
+    clusters: List[Any]
 
 _SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
 _HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
@@ -92,7 +116,7 @@ _PUBLIC_ARTICLE_FIELDS = {
 
 
 def _public_article_payload(article):
-    from categories import normalize_headline
+    from nlp.categories import normalize_headline
     import datetime
     res = {}
     for key, value in article.items():
@@ -226,7 +250,7 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
         "latest_wire_score": round(latest_wire_score, 3),
     }
 
-@router.get("/news")
+@router.get("/news", response_model=NewsResponse)
 async def get_news(
     q: Optional[str] = None,
     category: Optional[str] = None,
@@ -261,7 +285,7 @@ async def get_news(
 
         # Handle legacy or thematic categories requested as 'category'
         # If 'category' is actually a theme (e.g., Politics), move it to 'topic'
-        from categories import THEMATIC_TOPICS
+        from nlp.categories import THEMATIC_TOPICS
         if category and category in THEMATIC_TOPICS and not topic:
             topic = category
             category = None
@@ -670,8 +694,15 @@ async def get_historical_events(cluster_id: str):
         vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL", (cluster_id,))
         if not vec_rows:
             return {"status": "success", "events": []}
+
+        try:
+            import numpy as np
+        except ImportError:
+            import sys
+            if 'numpy' not in sys.modules:
+                raise
+            import numpy as np
         
-        import numpy as np
         def parse_vec(v):
             if isinstance(v, str):
                 import json

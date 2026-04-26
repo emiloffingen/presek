@@ -6,6 +6,7 @@ import math, uuid, re
 import datetime
 from collections import Counter
 from database import get_db
+from config import CLUSTERING_THRESHOLDS
 
 # ── Macedonian stemmer ────────────────────────────────────────────
 MK_SUFFIXES = [
@@ -146,14 +147,14 @@ def get_cosine(vec1: Counter, vec2: Counter) -> float:
     return numerator / denom if denom else 0.0
 
 # ── Parameters ────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.45  # Lowered from 0.52 to improve recall for reworded stories
-MAX_CLUSTER_SIZE     = 35
+SIMILARITY_THRESHOLD = CLUSTERING_THRESHOLDS["SIMILARITY_THRESHOLD"]
+MAX_CLUSTER_SIZE     = CLUSTERING_THRESHOLDS["MAX_CLUSTER_SIZE"]
 # Cosine-distance cutoff for pgvector semantic lookup. Tuned for the local
 # paraphrase-multilingual-MiniLM-L12-v2 model (384-dim, L2-normalized):
 # same-story pairs typically sit around 0.10–0.25, clearly-related topics
 # 0.25–0.35, unrelated >0.45. 0.30 keeps precision high without being so
 # strict that it misses near-duplicate stories from different sources.
-VECTOR_THRESHOLD     = 0.28
+VECTOR_THRESHOLD     = CLUSTERING_THRESHOLDS["VECTOR_THRESHOLD"]
 
 def _extract_title_entities(title: str) -> set[str]:
     # Use precise Macedonian Cyrillic ranges to avoid matching lowercase words as entities

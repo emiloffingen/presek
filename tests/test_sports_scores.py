@@ -15,7 +15,7 @@ def test_extract_number_tokens_excludes_time():
     assert "15:00" not in tokens
 
 def test_compare_cluster_sources_sports_conflict():
-    from categories import detect_topic
+    from nlp.categories import detect_topic
     articles = [
         {"source": "S1", "title": "Вардар победи 1-0", "description": "Спортски извештај"},
         {"source": "S2", "title": "Вардар победи 2-0", "description": "Различен резултат"}

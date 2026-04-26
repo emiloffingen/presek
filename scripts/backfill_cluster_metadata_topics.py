@@ -7,7 +7,7 @@ import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import db_manager as db
-from categories import detect_topic
+from nlp.categories import detect_topic
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("backfill_topics")

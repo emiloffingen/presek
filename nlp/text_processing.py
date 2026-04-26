@@ -116,6 +116,12 @@ JUNK_NEWS_PHRASES = [
     "follow us", "дознајте повеќе", "според информациите на",
 ]
 
+def calculate_reading_time(text: str) -> int:
+    """Estimates reading time in minutes (approx 200 wpm)."""
+    if not text: return 1
+    words = len(text.split())
+    return max(1, math.ceil(words / 200))
+
 def _normalize_summary_sentence(sentence):
     text = re.sub(r"\s+", " ", str(sentence or "")).strip()
     text = re.sub(r"^[•*\-\u2022]+\s*", "", text)

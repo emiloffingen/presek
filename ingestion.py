@@ -16,14 +16,33 @@ except ModuleNotFoundError:
 
 import clustering
 from ai_engine import translate_to_macedonian
-from categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
+from nlp.categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
 from database import db_manager as db, get_db
 from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
 from health import record_source_fetch, get_source_statuses
 from language import is_cyrillic_south_slavic
 
+from prometheus_client import Counter
+
 log = logging.getLogger("presek")
+
+# --- Prometheus Metrics ---
+INGESTION_TOTAL = Counter(
+    "presek_ingestion_total",
+    "Total articles fetched by source",
+    ["source"]
+)
+INGESTION_ACCEPTED = Counter(
+    "presek_ingestion_accepted_total",
+    "Total articles accepted by source",
+    ["source"]
+)
+INGESTION_ERRORS = Counter(
+    "presek_ingestion_errors_total",
+    "Total errors during ingestion",
+    ["source", "error_type"]
+)
 
 _OG_IMAGE_READ_LIMIT = 64 * 1024
 _OG_IMAGE_CONCURRENCY = 8
@@ -52,7 +71,7 @@ def is_junk(title: str, desc: str) -> bool:
         return True
 
     # Strip common prefixes for the junk check
-    from categories import normalize_headline
+    from nlp.categories import normalize_headline
     clean_title = normalize_headline(t_clean)
 
     text = f"{clean_title} {desc}".lower()
@@ -483,9 +502,11 @@ async def ingest_all_sources_async():
         
         for source_name, entries, err in results:
             source_stats[source_name]["fetched"] = len(entries)
+            INGESTION_TOTAL.labels(source=source_name).inc(len(entries))
             if err:
                 source_stats[source_name]["status"] = "error"
                 source_stats[source_name]["error"] = str(err)
+                INGESTION_ERRORS.labels(source=source_name, error_type=type(err).__name__).inc()
                 errors.append((source_name, err))
                 continue
             
@@ -536,6 +557,7 @@ async def ingest_all_sources_async():
                     seen_links.add(link)
                     seen_titles_by_source[source_name].add(title_key)
                     source_stats[source_name]["accepted"] += 1
+                    INGESTION_ACCEPTED.labels(source=source_name).inc()
             finally:
                 try: redis_client.delete(lock_key)
                 except Exception: pass

@@ -3,7 +3,8 @@ import json
 import asyncio
 import logging
 import re
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
@@ -13,9 +14,25 @@ from nlp import normalize_tag_name
 from entities import normalize_entity_name, normalize_person_surface_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
+from limiter import custom_rate_limit
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+class PulseVelocity(BaseModel):
+    t: str
+    n: int
+
+class PulseCategory(BaseModel):
+    category: str
+    n: int
+
+class GlobalPulseResponse(BaseModel):
+    status: str
+    last_24h: int
+    velocity: List[PulseVelocity]
+    by_category: List[PulseCategory]
+    intelligence: Dict[str, Any]
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 _CASE_INSENSITIVE_TAG_EXISTS = (
@@ -426,7 +443,7 @@ async def get_entity_profile(name: str):
 
     return {"profile": entity, "related": relationships, "media": media_stats, "categories": category_stats, "sentiment_history": sentiment_history, "clusters": processed}
 
-@router.get("/intelligence/global-pulse")
+@router.get("/intelligence/global-pulse", response_model=GlobalPulseResponse)
 async def get_global_pulse(category: Optional[str] = None):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}" if category else "all"
@@ -506,6 +523,40 @@ async def get_global_pulse(category: Optional[str] = None):
     }
     set_cache(cache_key, res, ttl=300)
     return res
+
+@router.get("/entity-graph/{entity_name}")
+@custom_rate_limit("30/minute")
+async def entity_graph_lookup(entity_name: str):
+    """Fetches persistent knowledge about an entity from the local graph."""
+    row = await db.async_execute_one("""
+        SELECT bio_summary, importance_score, last_seen, category 
+        FROM entity_knowledge WHERE entity_name = %s
+    """, (entity_name,))
+    
+    if not row:
+        return {"status": "not_found"}
+        
+    return {"status": "success", "data": row}
+
+@router.get("/research/{cluster_id}")
+@custom_rate_limit("10/minute")
+async def cluster_research(cluster_id: str, q: str):
+    """Researches a cluster based on a user query using Gemma 2."""
+    from local_analyst import analyst
+    
+    # Get cluster context
+    row = await db.async_execute_one("""
+        SELECT summary, generated_article 
+        FROM cluster_summaries WHERE cluster_id = %s
+    """, (cluster_id,))
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Cluster not found")
+        
+    context = f"{row['summary']}\n{row['generated_article']}"
+    res = analyst.research_query(q, context)
+    
+    return {"status": "success", "answer": res.get('answer'), "suggestions": res.get('suggestions', [])}
 
 @router.get("/intelligence/top-entities")
 async def get_top_entities(limit: int = 10):

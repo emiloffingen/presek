@@ -76,7 +76,7 @@ class TestSynthesizeClusterTaskQuality:
         insert_call = mock_db.execute.call_args_list[2]
         stored_summary = insert_call.args[1][1]
         stored_perspectives = json.loads(insert_call.args[1][2])
-        stored_citation_sources = json.loads(insert_call.args[1][11])
+        stored_citation_sources = json.loads(insert_call.args[1][12])
 
         assert "Статии" not in stored_summary
         assert stored_summary.count("Главен развој") == 1

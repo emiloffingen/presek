@@ -21,7 +21,7 @@ from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
     TOPIC_SYSTEM_PROMPT, FACTCHECK_SYSTEM_PROMPT
 )
-from categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
+from nlp.categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
 from entities import extract_entities, validate_person_names
 from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
@@ -500,7 +500,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
 
             # Real-time Sports Score Alert
             try:
-                from categories import detect_topic
+                from nlp.categories import detect_topic
                 all_titles = " ".join([a.get("title") or "" for a in article_rows])
                 if detect_topic(all_titles) == "Спорт":
                     from nlp.generation import _extract_sports_scores

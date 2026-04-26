@@ -2,7 +2,8 @@ import json
 import secrets
 import logging
 import asyncio
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
@@ -17,6 +18,35 @@ from .security import validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+class DeliveryPreferences(BaseModel):
+    morningBriefing: bool = True
+    breakingAlerts: bool = True
+    browserPermission: str = "default"
+
+class RecentCluster(BaseModel):
+    cluster_id: str
+    title: str
+    category: str
+    topic: str
+    primarySource: str
+    sources: List[str]
+    tags: List[str]
+    viewedAt: str
+
+class SyncedProfile(BaseModel):
+    followedTopics: List[str]
+    followedSources: List[str]
+    recentClusters: List[RecentCluster]
+    deliveryPreferences: DeliveryPreferences
+
+class ProfileInitResponse(BaseModel):
+    status: str
+    sync_token: str
+
+class ProfileGetResponse(BaseModel):
+    status: str
+    profile: SyncedProfile
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 
@@ -95,14 +125,14 @@ def _normalize_server_delivery_row(row):
         "isActive": row.get("is_active"),
     })
 
-@router.post("/profile/sync/init")
+@router.post("/profile/sync/init", response_model=ProfileInitResponse)
 async def init_profile_sync():
     token = _validate_sync_token_value(secrets.token_urlsafe(24))
     empty = _normalize_synced_profile({})
     await db.async_execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
     return {"status": "success", "token": token, "profile": empty}
 
-@router.get("/profile/sync")
+@router.get("/profile/sync", response_model=ProfileGetResponse)
 async def get_profile_sync(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))

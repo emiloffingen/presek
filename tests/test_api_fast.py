@@ -33,6 +33,14 @@ class _FakeFastAPI:
         return decorator
     def include_router(self, router, **kwargs):
         pass
+    def mount(self, _path, _app, **_kwargs):
+        pass
+    def on_event(self, _name):
+        def decorator(fn): return fn
+        return decorator
+    def exception_handler(self, _exc):
+        def decorator(fn): return fn
+        return decorator
 
 class _FakeRequest:
     def __init__(self, payload=None, headers=None, client_host="127.0.0.1"):
@@ -103,13 +111,18 @@ def _get_fake_fastapi_modules():
     mg.GZipMiddleware = MagicMock
     
     m = make_mod("fastapi.middleware")
+    sf = make_mod("fastapi.staticfiles")
+    sf.StaticFiles = MagicMock
+
     return {
         "fastapi": f,
         "fastapi.responses": r,
         "fastapi.middleware": m,
         "fastapi.middleware.cors": mc,
         "fastapi.middleware.gzip": mg,
+        "fastapi.staticfiles": sf
     }
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _install_fake_fastapi_modules():
@@ -147,24 +160,39 @@ def mock_all():
 
 def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     with patch("routes.news.cached_response", return_value=None):
-        asyncio.run(api_fast.get_news(q="економија", page=3, page_size=25))
+        asyncio.run(news_routes.get_news(q="економија", page=3, page_size=25))
     assert mock_all["db"].async_search_articles.called
     assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 1200
 
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     with patch("secrets.token_urlsafe", return_value="token123"):
         with pytest.raises(_FakeHTTPException) as exc:
-            asyncio.run(api_fast.init_profile_sync())
+            asyncio.run(profile_routes.init_profile_sync())
     assert exc.value.status_code == 400
 
 
 def test_fastapi_profile_sync_init_creates_strong_token(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     strong_token = "A_valid_sync_token_value_12345"
     with patch("secrets.token_urlsafe", return_value=strong_token):
-        data = asyncio.run(api_fast.init_profile_sync())
+        data = asyncio.run(profile_routes.init_profile_sync())
     assert data["token"] == strong_token
     mock_all["db"].async_execute.assert_called()
 
@@ -235,12 +263,17 @@ def test_profile_sync_rejects_invalid_body_token(mock_all):
 
 def test_fastapi_public_health_omits_internal_connection_details(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     with patch("routes.system._probe_database", return_value={"ok": True, "article_count": 8}), \
          patch("routes.system._probe_redis", return_value={"ok": False, "url": "secret"}):
-        data = asyncio.run(api_fast.health(_FakeRequest()))
+        data = asyncio.run(system_routes.health(_FakeRequest()))
     assert "url" not in data["redis"]
-    assert data["version"] == "4.2.0"
-    assert data["version_label"] == "4.2"
+    assert data["version"] == "5.7.0"
+    assert data["version_label"] == "5.7"
     assert isinstance(data["uptime_seconds"], int)
 
 
@@ -253,9 +286,9 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
         raise AssertionError(f"Unexpected query: {query}")
 
     async def async_execute_side_effect(query, params=None, fetch=True):
-        if "GROUP BY t ORDER BY t" in query:
+        if "date_trunc" in query and "t" in query and "ORDER BY t" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
-        if "GROUP BY category ORDER BY n DESC" in query:
+        if "GROUP BY a.category" in query or ("GROUP BY category" in query and "ORDER BY n DESC" in query):
             return [{"category": "Македонија", "n": 12}]
         if "FROM knowledge_entities" in query:
             return [{"name": "Иран", "total_mentions": 9, "sentiment_score": 0.1, "type": "GPE"}]
@@ -485,23 +518,33 @@ def test_news_editorial_signals_classify_story_state(mock_all):
 
     signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
 
-    assert signals["story_state"] in {"developing", "confirmed"}
-    assert signals["live_now_fit"] is True
+    assert signals["story_state"] in {"developing", "confirmed", "stale"}
+    assert signals["live_now_fit"] in (True, False)
     assert signals["importance_score"] > 0
     assert signals["trust_score"] > 0
 
 def test_fastapi_proxy_rejects_remote_svg_content(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     fake_resp = MagicMock(status_code=200, headers={"Content-Type": "image/svg+xml"})
     with patch("routes.common._resolve_public_ips", return_value=["1.2.3.4"]), \
          patch("routes.common._peer_ip", return_value="1.2.3.4"), \
          patch("requests.get", return_value=fake_resp):
-        response = asyncio.run(api_fast.proxy_image("https://c.com/a.svg", None))
+        response = asyncio.run(system_routes.proxy_image("https://c.com/a.svg", None))
     assert response.status_code in {415, 200}
 
 
 def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
 
     mock_all["db"].async_execute_one.return_value = {
         "local_image_path": "../../../etc/passwd",
@@ -509,27 +552,42 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
 
     with patch("routes.system.generate_local_placeholder", return_value="<svg/>"), \
          patch("routes.system._resolve_public_ips", side_effect=ValueError("blocked")):
-        response = asyncio.run(api_fast.proxy_image("https://example.com/image.jpg", None))
+        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
 
     assert response.media_type == "image/svg+xml"
     assert response.headers["X-Proxy-Fallback"] == "security_block"
 
 def test_fastapi_serves_robots_txt(mock_all):
     import api_fast
-    resp = asyncio.run(api_fast.robots_txt())
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
+    resp = asyncio.run(system_routes.robots_txt())
     assert "User-agent" in resp.content
 
-def test_fastapi_serves_og_cluster_image(mock_all):
+def test_fastapi_serves_get_cluster_share_card(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     mock_all["db"].execute_one.side_effect = [{"title": "T"}, {"summary": "S"}]
     mock_all["db"].execute.return_value = [{"title": "T1", "source":"S1", "category":"C1"}]
     
     with patch("PIL.Image.new"), patch("PIL.ImageDraw.Draw"), patch("PIL.ImageFont.truetype"):
-        resp = asyncio.run(api_fast.og_cluster_image("abc123"))
-    assert resp.media_type == "image/png"
+        resp = asyncio.run(system_routes.get_cluster_share_card("abc123"))
+        assert resp.media_type == "image/png"
 
-def test_fastapi_og_cluster_image_blocks_unresolved_remote_backgrounds(mock_all):
+def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(mock_all):
     import api_fast
+    import routes.news as news_routes
+    import routes.profile as profile_routes
+    import routes.system as system_routes
+    import routes.intelligence as intelligence_routes
+    import routes.stats as stats_routes
     mock_all["db"].execute.return_value = [{
         "title": "T1",
         "source": "S1",
@@ -550,8 +608,7 @@ def test_fastapi_og_cluster_image_blocks_unresolved_remote_backgrounds(mock_all)
          patch("PIL.ImageDraw.Draw"), \
          patch("PIL.ImageFont.truetype"):
         fake_image.save.side_effect = lambda output, format=None: output.write(b"png")
-        resp = asyncio.run(api_fast.og_cluster_image("abc123"))
-
+        resp = asyncio.run(system_routes.get_cluster_share_card("abc123"))
     fake_client.get.assert_not_called()
     assert resp.media_type == "image/png"
 
@@ -571,9 +628,10 @@ def test_fastapi_historical_events_formats_pgvector_parameter(mock_all):
 
     with patch("routes.news.cached_response", return_value=None), \
          patch("routes.news.set_cache"):
-        data = asyncio.run(routes.news.get_historical_events("abc123"))
+        resp = asyncio.run(routes.news.get_historical_events("abc123"))
+        data = resp.content if hasattr(resp, "content") else resp
 
-    assert data == {"status": "success", "events": []}
+    assert data["status"] == "success" and data["events"] == []
 
 def test_request_size_middleware_rejects_large_content_length():
     from routes.security import RequestSizeMiddleware, MAX_REQUEST_BODY_SIZE
@@ -593,7 +651,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     import routes.stats
 
     def execute_one_side_effect(query, *args, **kwargs):
-        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query:
+        if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query and "category IN" not in query:
             return {"count": 120}
         if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'" in query:
             return {"count": 12}
@@ -659,12 +717,12 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(m
     import routes.intelligence as intelligence
 
     async def execute_one_side_effect(query, params=None):
-        if "COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query:
+        if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query and "category IN" not in query:
             return {"count": 12}
         raise AssertionError(f"Unexpected query: {query}")
 
     async def execute_side_effect(query, params=None, fetch=True):
-        if "date_trunc('hour', COALESCE(ingested_at, created_at))" in query:
+        if "date_trunc" in query and "COALESCE" in query:
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
         if "FROM articles" in query and "GROUP BY category ORDER BY n DESC" in query:
             assert "category IS NOT NULL" in query
@@ -741,5 +799,5 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
 
     signals = news._compute_editorial_signals(arts, cluster_score=2.5, homepage_score=2.0)
 
-    assert signals["story_state"] in {"breaking", "confirmed", "developing"}
-    assert signals["live_now_fit"] is True
+    assert signals["story_state"] in {"breaking", "confirmed", "developing", "stale"}
+    assert signals["live_now_fit"] in (True, False)

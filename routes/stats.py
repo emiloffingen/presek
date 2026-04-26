@@ -3,7 +3,8 @@ import logging
 import datetime
 import asyncio
 import re
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any, Dict
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse
@@ -23,6 +24,22 @@ from .security import validate_date, validate_cluster_id, require_admin_token, v
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+class QuoteOfTheDay(BaseModel):
+    quote: str
+    summary: str
+    generated_article: str
+    cluster_id: str
+    title: str
+
+class StatsSummaryResponse(BaseModel):
+    status: str
+    last_24h: int
+    last_1h: int
+    total_feeds: int
+    total_clusters: int
+    quote_of_the_day: Optional[QuoteOfTheDay] = None
+    intelligence: Dict[str, Any]
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 
@@ -237,7 +254,7 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
 async def get_stats_route():
     return {"status": "success", "data": await asyncio.to_thread(db.get_stats)}
 
-@router.get("/stats/summary")
+@router.get("/stats/summary", response_model=StatsSummaryResponse)
 async def get_stats_summary():
     cache_key = "api:stats:summary:v4"
     cached = cached_response(cache_key)

@@ -155,3 +155,23 @@ POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
 # Set to False to disable local translation/style normalization.
 LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").lower() == "true"
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "true").lower() == "true"
+
+# ── AI Routing Configuration ────────────────────────────────────
+# local (Gemma 2 2B) is now the PRIMARY choice for volume tasks.
+# mistral (Cloud) is the HIGH-TIER fallback or for complex synthesis.
+TASK_ROUTING = {
+    "translation":  ["local", "mistral"],
+    "summarize":    ["local", "mistral"],
+    "synthesis":    ["mistral", "local"],
+    "daily_brief":  ["mistral", "local"],
+    "research":     ["local", "mistral"],
+    "chat":         ["local", "mistral"],
+    "default":      ["local", "mistral"],
+}
+
+# ── Clustering Parameters ───────────────────────────────────────
+CLUSTERING_THRESHOLDS = {
+    "SIMILARITY_THRESHOLD": 0.45,
+    "VECTOR_THRESHOLD": 0.28,
+    "MAX_CLUSTER_SIZE": 35
+}

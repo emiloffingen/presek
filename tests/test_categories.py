@@ -1,5 +1,5 @@
 import pytest
-from categories import (
+from nlp.categories import (
     validate_category, detect_category, detect_subcategory, detect_topic,
     detect_country, normalize_headline, ALLOWED_CATEGORIES
 )

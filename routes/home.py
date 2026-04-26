@@ -1,6 +1,8 @@
 import logging
 import re
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any, Dict
 from utils import cached_response, set_cache
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
@@ -10,6 +12,21 @@ from .system import get_trending_route
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+class HomeResponse(BaseModel):
+    status: str
+    news: List[Any]
+    recent: List[Any]
+    trending: List[Any]
+    entities: List[Any]
+    briefing: Dict[str, Any]
+    stats: Dict[str, Any]
+    focus_entities: List[Any]
+    excluded_cluster_ids: List[str]
+
+class StatusOnlyResponse(BaseModel):
+    status: str
+    message: Optional[str] = None
 
 _SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
 _HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
@@ -243,7 +260,7 @@ def _display_entity_name(name):
     return f"{clean[0].upper()}{clean[1:]}"
 
 
-@router.get("/home")
+@router.get("/home", response_model=HomeResponse)
 async def get_home():
     cache_key = "api:home:v3"
     cached = cached_response(cache_key, ttl=120)

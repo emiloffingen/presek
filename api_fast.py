@@ -8,6 +8,7 @@ import requests
 import importlib.util
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import Response
 import fastapi
 if not hasattr(fastapi, "responses"):
     import fastapi.responses
@@ -15,6 +16,7 @@ from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 import database
 from database import db_manager as db
@@ -209,6 +211,12 @@ async def health_check():
 @app.get("/api/version")
 async def version_info():
     return get_full_version_info()
+
+@app.get("/metrics")
+@exempt_from_rate_limit
+async def metrics():
+    """Expose Prometheus metrics."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # Proxy for images to avoid CORS/Mixed content issues on client
 @app.get("/proxy")

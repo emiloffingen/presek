@@ -17,12 +17,14 @@ from config import (
     CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
     OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
-    POLLINATIONS_API_KEY,
+    POLLINATIONS_API_KEY, TASK_ROUTING
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
     TRANSLATION_SYSTEM_PROMPT
 )
+
+from prometheus_client import Histogram, Counter
 
 log = logging.getLogger("presek")
 
@@ -31,6 +33,17 @@ from database import db_manager as db
 import nlp
 from nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
 
+# --- Prometheus Metrics ---
+AI_LATENCY = Histogram(
+    "presek_ai_latency_seconds",
+    "Latency of AI provider calls",
+    ["provider", "task_type"]
+)
+AI_CALLS = Counter(
+    "presek_ai_calls_total",
+    "Total number of AI provider calls",
+    ["provider", "task_type", "status"]
+)
 
 # --- Base Classes ---
 
@@ -152,24 +165,11 @@ class LocalProvider(AIProvider):
              return json.dumps(res) if isinstance(res, dict) else res
 
         # Fallback to the old deterministic rules if Gemma is not suitable or fails
-        return summarize_locally(prompt, sentence_count=4, topic=topic)
+        return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
 
 PROVIDERS = {
     "mistral": MistralProvider(),
     "local": LocalProvider(),
-}
-
-# --- Task Routing (Priority Shift) ---
-# local (Gemma 2 2B) is now the PRIMARY choice for volume tasks.
-# mistral (Cloud) is the HIGH-TIER fallback or for complex synthesis.
-TASK_ROUTING = {
-    "translation":  ["local", "mistral"],
-    "summarize":    ["local", "mistral"],
-    "synthesis":    ["mistral", "local"], # Keep Mistral first for long-form editorial synthesis
-    "daily_brief":  ["mistral", "local"], # Keep Mistral first for premium morning dispatches
-    "research":     ["local", "mistral"],
-    "chat":         ["local", "mistral"],
-    "default":      ["local", "mistral"],
 }
 
 # --- Service Methods ---
@@ -185,21 +185,30 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
     
     for provider_name in route:
         provider = PROVIDERS[provider_name]
+        start_time = time.time()
         try:
             if stream:
                 generator = provider.stream_call(prompt, system, max_tokens)
                 try:
                     first_chunk = await anext(generator)
                 except StopAsyncIteration:
+                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="empty").inc()
                     continue
                 if first_chunk:
+                    AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                    AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                     return _stream_with_initial_chunk(generator, first_chunk), provider_name
                 continue
             
             res = await asyncio.to_thread(provider.call, prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type)
             if res:
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                 return res, provider_name
+            else:
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
         except Exception as e:
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
             
@@ -211,11 +220,17 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
     
     for provider_name in route:
         provider = PROVIDERS[provider_name]
+        start_time = time.time()
         try:
             res = provider.call(prompt, system, max_tokens, json_mode, topic=topic, task_type=task_type)
             if res:
+                AI_LATENCY.labels(provider=provider_name, task_type=task_type).observe(time.time() - start_time)
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="success").inc()
                 return res, provider_name
+            else:
+                AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
         except Exception as e:
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
             log.warning(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
             
@@ -227,13 +242,13 @@ def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_token
 
 def clean_json_response(text: str) -> dict | str | None:
     if text is None:
-        return ""
+        return None
     if not isinstance(text, str):
         return None
 
     text = text.strip()
     if not text:
-        return ""
+        return None
 
     # Look for JSON structure
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)

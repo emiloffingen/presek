@@ -406,7 +406,7 @@ def compare_cluster_sources(articles):
         open_points.append(f"Деталите околу овој развој остануваат непотврдени кај {', '.join(uncertain_sources[:2])}.")
     
     # Extra check for numbers mismatch as open points
-    from categories import detect_topic
+    from nlp.categories import detect_topic
     all_titles = " ".join([a.get("title") or "" for a in articles])
     is_sport = detect_topic(all_titles) == "Спорт"
 
@@ -442,7 +442,7 @@ def synthesize_cluster_fallback(articles):
     summary_lines = [f"• Што се случува: {lead['title']}"]
     
     # Special Score Detection for Sports
-    from categories import detect_topic
+    from nlp.categories import detect_topic
     all_titles = " ".join([a.get("title") or "" for a in articles])
     if detect_topic(all_titles) == "Спорт":
         # Extract all scores; articles are typically sorted by date DESC
