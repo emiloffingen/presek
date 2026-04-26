@@ -339,7 +339,15 @@ def auto_summarize_top_clusters():
                 pass
 
             lines = "\n".join(f"- [{a.get('source', 'Извор')}]: {a.get('title', '')}" for a in arts[:10])
-            tasks_mod.synthesize_cluster_task.delay(cid, lines)
+            
+            if existing_at is None:
+                # Stage 1: Fast Draft (Immediate)
+                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": True})
+                # Stage 2: Deep Synthesis (Scheduled 2 mins later)
+                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False}, countdown=120)
+            else:
+                # Just update existing stale synthesis
+                tasks_mod.synthesize_cluster_task.delay(cid, lines)
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
 

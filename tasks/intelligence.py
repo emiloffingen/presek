@@ -301,12 +301,15 @@ def summarize_article_task(article_id, title, retry_attempt=0):
             record_task_event("summarize_article", "error", f"article:{article_id}")
             log.error(f"[tasks] Summarize failed for {article_id}: {e}")
 
-@celery_app.task(rate_limit='5/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
+@celery_app.task(rate_limit='15/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     citation_sources = _build_citation_sources(article_rows)
     source_context = _build_synthesis_source_context(article_rows)
+
+    # In fast mode, we use a much shorter token limit to get a response in seconds
+    max_tokens = 600 if fast_mode else 2800
     
     # 1. Fetch Historical Context (Cross-Story Memory)
     history_context = ""
@@ -342,8 +345,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
         from tasks.utils import record_task_event
         legacy_summary = str(content or "").strip()
         prompt_parts = []
-        if history_context:
+        if fast_mode:
+            prompt_parts.append("PROVIDE A BRIEF 1-PARAGRAPH SUMMARY ONLY. FOCUS ON THE CORE EVENT. IGNORE PERSPECTIVES.")
+        elif history_context:
             prompt_parts.append(history_context)
+            
         prompt_parts.append("НОВИ СТАТИИ ОД ДЕНЕС:\n[START_NEW_ARTICLES]")
         if source_context:
             prompt_parts.append(source_context)
@@ -351,7 +357,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             prompt_parts.append(legacy_summary)
         prompt_parts.append("[END_NEW_ARTICLES]")
         full_prompt = "\n\n".join(part for part in prompt_parts if part)
-        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=2800)
+        raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=max_tokens)
 
         if raw:
             res = clean_json_response(raw)
@@ -368,9 +374,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             synthetic_headline = validate_person_names(synthetic_headline)
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
 
-            # AI Quality Gate: Hallucination Scanner
+            # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
             comparison_text = summary + "\n" + generated_article
-            if not _is_grounded_synthesis(comparison_text, source_context or legacy_summary) and retry_attempt < 2:
+            if not fast_mode and not _is_grounded_synthesis(comparison_text, source_context or legacy_summary) and retry_attempt < 2:
                 log.warning(f"Hallucination gate failed for cluster {cluster_id}, retrying...")
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=30)
                 return
@@ -384,44 +390,45 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
             }
 
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
-            record_runtime_event("synthesis_path", mode=provider or "unknown")
+            record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode)
 
-            # Phase 3: Deep Local Analyst (Local Insight Layer)
+            # Phase 3: Deep Local Analyst (SKIP in fast_mode)
             deep_metadata = {}
             pluralism_data = {}
             
-            def _run_analyst_logic():
-                nonlocal deep_metadata, pluralism_data
-                try:
-                    analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
-                    deep_metadata = analyst.extract_deep_metadata(analyst_text)
-                    
-                    # Phase 3.1: Pluralism Assessment
-                    titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
-                    pluralism_data = analyst.assess_pluralism(titles_sources)
-                    
-                    # Phase 3.2: Knowledge Graph Update
-                    entities = deep_metadata.get('entities', [])
-                    for entity in entities:
-                        db.execute("""
-                            INSERT INTO entity_knowledge (entity_name, last_seen, importance_score)
-                            VALUES (%s, NOW(), %s)
-                            ON CONFLICT (entity_name) DO UPDATE SET 
-                                last_seen = NOW(),
-                                importance_score = entity_knowledge.importance_score + 1
-                        """, (entity, deep_metadata.get('pulse', 50)), fetch=False)
-                except Exception as e:
-                    log.error(f"[analyst] Internal logic error: {e}")
+            if not fast_mode:
+                def _run_analyst_logic():
+                    nonlocal deep_metadata, pluralism_data
+                    try:
+                        analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
+                        deep_metadata = analyst.extract_deep_metadata(analyst_text)
+                        
+                        # Phase 3.1: Pluralism Assessment
+                        titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
+                        pluralism_data = analyst.assess_pluralism(titles_sources)
+                        
+                        # Phase 3.2: Knowledge Graph Update
+                        entities = deep_metadata.get('entities', [])
+                        for entity in entities:
+                            db.execute("""
+                                INSERT INTO entity_knowledge (entity_name, last_seen, importance_score)
+                                VALUES (%s, NOW(), %s)
+                                ON CONFLICT (entity_name) DO UPDATE SET 
+                                    last_seen = NOW(),
+                                    importance_score = entity_knowledge.importance_score + 1
+                            """, (entity, deep_metadata.get('pulse', 50)), fetch=False)
+                    except Exception as e:
+                        log.error(f"[analyst] Internal logic error: {e}")
 
-            import threading
-            analyst_thread = threading.Thread(target=_run_analyst_logic)
-            analyst_thread.start()
-            analyst_thread.join(timeout=240) # 4 minute limit for low-core CPUs
-            
-            if analyst_thread.is_alive():
-                log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
-            elif deep_metadata or pluralism_data:
-                log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
+                import threading
+                analyst_thread = threading.Thread(target=_run_analyst_logic)
+                analyst_thread.start()
+                analyst_thread.join(timeout=240) # 4 minute limit for low-core CPUs
+                
+                if analyst_thread.is_alive():
+                    log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
+                elif deep_metadata or pluralism_data:
+                    log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
 
         else:
             fallback = synthesize_cluster_fallback(article_rows)
@@ -450,30 +457,45 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0):
                 (cluster_id,), fetch=False
             )
 
-            db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (cluster_id) DO UPDATE SET 
-                       summary = EXCLUDED.summary, 
-                       perspectives = EXCLUDED.perspectives, 
-                       generated_article = EXCLUDED.generated_article, 
-                       synthetic_headline = EXCLUDED.synthetic_headline,
-                       synthetic_standfirst = EXCLUDED.synthetic_standfirst,
-                       created_at = EXCLUDED.created_at, 
-                       sentiment = EXCLUDED.sentiment, 
-                       tone_analysis = EXCLUDED.tone_analysis,
-                       verification_report = EXCLUDED.verification_report, 
-                       quote = EXCLUDED.quote, 
-                       centroid = EXCLUDED.centroid,
-                       citation_sources = EXCLUDED.citation_sources,
-                       key_facts = EXCLUDED.key_facts,
-                       analyst_entities = EXCLUDED.analyst_entities,
-                       pulse_score = EXCLUDED.pulse_score,
-                       pluralism_score = EXCLUDED.pluralism_score,
-                       narrative_diversity = EXCLUDED.narrative_diversity""",
-                (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data)),
-                fetch=False
-            )
+            if fast_mode:
+                db.execute(
+                    """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (cluster_id) DO UPDATE SET 
+                           summary = EXCLUDED.summary, 
+                           generated_article = EXCLUDED.generated_article, 
+                           synthetic_headline = EXCLUDED.synthetic_headline,
+                           synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                           created_at = EXCLUDED.created_at,
+                           citation_sources = EXCLUDED.citation_sources""",
+                    (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(citation_sources)),
+                    fetch=False
+                )
+            else:
+                db.execute(
+                    """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (cluster_id) DO UPDATE SET 
+                           summary = EXCLUDED.summary, 
+                           perspectives = EXCLUDED.perspectives, 
+                           generated_article = EXCLUDED.generated_article, 
+                           synthetic_headline = EXCLUDED.synthetic_headline,
+                           synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                           created_at = EXCLUDED.created_at, 
+                           sentiment = EXCLUDED.sentiment, 
+                           tone_analysis = EXCLUDED.tone_analysis,
+                           verification_report = EXCLUDED.verification_report, 
+                           quote = EXCLUDED.quote, 
+                           centroid = EXCLUDED.centroid,
+                           citation_sources = EXCLUDED.citation_sources,
+                           key_facts = EXCLUDED.key_facts,
+                           analyst_entities = EXCLUDED.analyst_entities,
+                           pulse_score = EXCLUDED.pulse_score,
+                           pluralism_score = EXCLUDED.pluralism_score,
+                           narrative_diversity = EXCLUDED.narrative_diversity""",
+                    (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data)),
+                    fetch=False
+                )
             # Publish SSE event for Real-Time UI updates
             try:
                 from utils import publish_event
