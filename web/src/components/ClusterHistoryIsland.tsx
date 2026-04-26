@@ -45,48 +45,57 @@ export default function ClusterHistoryIsland({ clusterId }: { clusterId: string 
     <div className="mt-8 border-t border-border pt-6">
       <button 
         onClick={toggleOpen}
-        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-nyt-accent transition-colors"
+        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-nyt-accent transition-all group"
       >
-        <History size={12} />
-        ИСТОРИЈА НА СИНТЕЗИ
-        {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        <div className="w-6 h-[1px] bg-border group-hover:bg-nyt-accent transition-colors" />
+        <History size={11} className="group-hover:rotate-[-30deg] transition-transform" />
+        РЕДАКЦИСКИ ЛОГ
+        {isOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
       </button>
 
       {isOpen && (
-        <div className="mt-6 space-y-4 motion-rise">
+        <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
           {loading ? (
-            <p className="text-[10px] italic text-muted-foreground">Се вчитува архивата...</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 animate-pulse">Архивски увид...</p>
           ) : history.length === 0 ? (
-            <p className="text-[10px] italic text-muted-foreground">Нема претходни верзии за оваа сторија.</p>
+            <div className="flex items-center gap-3 p-4 border border-border/40 bg-secondary/5 rounded-sm">
+                <Sparkles size={14} className="text-nyt-accent" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-foreground">Нов наратив: Прва верзија на синтезата</span>
+            </div>
           ) : (
-            history.map((item, idx) => (
-              <div key={idx} className="border border-border bg-secondary/5 rounded-lg overflow-hidden">
-                <button 
-                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
-                  className="w-full flex items-center justify-between p-3 hover:bg-secondary/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Clock size={11} className="text-muted-foreground" />
-                    <span className="text-[10px] font-bold text-foreground">
-                        {new Date(item.created_at).toLocaleString('mk-MK', { 
-                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
-                        })}
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-black uppercase tracking-tighter bg-border px-1.5 py-0.5 rounded">ВЕРЗИЈА {history.length - idx}</span>
-                </button>
-                
-                {expandedIndex === idx && (
-                  <div className="p-4 border-t border-border bg-background/50">
-                    <div className="prose-nyt text-sm leading-relaxed text-muted-foreground font-serif italic">
-                       {item.summary.split('\n').map((p, pi) => (
-                         <p key={pi} className="mb-2">{p}</p>
-                       ))}
+            <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">ЕВОЛУЦИЈА НА СТОРИЈАТА</p>
+                {history.map((item, idx) => (
+                <div key={idx} className="border border-border/60 bg-background shadow-sm hover:border-nyt-accent/30 transition-all">
+                    <button 
+                    onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                    className="w-full flex items-center justify-between p-4"
+                    >
+                    <div className="flex items-center gap-4">
+                        <Clock size={12} className="text-muted-foreground/60" />
+                        <span className="text-[11px] font-black tabular-nums text-foreground">
+                            {new Date(item.created_at).toLocaleString('mk-MK', { 
+                                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+                            })}
+                        </span>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))
+                    <span className="text-[9px] font-black uppercase tracking-[0.1em] border border-border px-2 py-1 rounded-sm text-muted-foreground group-hover:text-nyt-accent transition-colors">
+                        РЕВИЗИЈА {history.length - idx}
+                    </span>
+                    </button>
+                    
+                    {expandedIndex === idx && (
+                    <div className="p-5 pt-0 animate-in fade-in duration-300">
+                        <div className="prose-nyt text-[13px] leading-relaxed text-secondary-foreground font-serif italic border-l-2 border-border pl-4">
+                        {item.summary.split('\n').map((p, pi) => (
+                            <p key={pi} className="mb-2 last:mb-0">{p}</p>
+                        ))}
+                        </div>
+                    </div>
+                    )}
+                </div>
+                ))}
+            </div>
           )}
         </div>
       )}

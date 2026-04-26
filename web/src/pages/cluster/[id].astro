@@ -708,7 +708,7 @@ const articleSchema = cluster ? {
 									<div class="flex flex-wrap gap-2 mt-4">
 										{cluster.tags.filter(t => !cluster.analyst_entities?.includes(t)).map(tag => (
 											<a href={`/?q=${encodeURIComponent(tag)}`} class="tag-chip">
-                                                {tag}
+                                                {deShout(tag)}
                                             </a>
 										))}
 									</div>
