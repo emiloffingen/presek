@@ -233,6 +233,16 @@ def upgrade() -> None:
             PRIMARY KEY (entity_a, entity_b)
         )
     """)
+
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS entity_mentions_daily (
+            entity_name TEXT REFERENCES knowledge_entities(name) ON DELETE CASCADE,
+            cluster_id TEXT NOT NULL,
+            day DATE DEFAULT CURRENT_DATE,
+            PRIMARY KEY (entity_name, cluster_id, day)
+        )
+    """)
+
     op.execute("""
         CREATE TABLE IF NOT EXISTS storylines_v2 (
             id SERIAL PRIMARY KEY,

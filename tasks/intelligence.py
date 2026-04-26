@@ -417,13 +417,30 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                         # Phase 3.2: Knowledge Graph Update
                         entities = deep_metadata.get('entities', [])
                         for entity in entities:
+                            # 1. Ensure entity exists and update its score
                             db.execute("""
-                                INSERT INTO entity_knowledge (entity_name, last_seen, importance_score)
-                                VALUES (%s, NOW(), %s)
-                                ON CONFLICT (entity_name) DO UPDATE SET 
-                                    last_seen = NOW(),
-                                    importance_score = entity_knowledge.importance_score + 1
-                            """, (entity, deep_metadata.get('pulse', 50)), fetch=False)
+                                INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
+                                VALUES (%s, 'PERSON', NOW(), 1)
+                                ON CONFLICT (name) DO UPDATE SET 
+                                    last_seen = NOW()
+                            """, (entity,), fetch=False)
+
+                            # 2. Add a unique mention for THIS cluster on THIS day
+                            # This prevents inflation if a cluster is synthesized multiple times
+                            db.execute("""
+                                INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
+                                VALUES (%s, %s, CURRENT_DATE)
+                                ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
+                            """, (entity, cluster_id), fetch=False)
+
+                            # 3. Update total_mentions based on unique daily counts
+                            db.execute("""
+                                UPDATE knowledge_entities 
+                                SET total_mentions = (
+                                    SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
+                                )
+                                WHERE name = %s
+                            """, (entity, entity), fetch=False)
                     except Exception as e:
                         log.error(f"[analyst] Internal logic error: {e}")
 
