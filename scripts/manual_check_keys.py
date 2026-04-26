@@ -30,11 +30,7 @@ def check_openai_compatible(env_key, url, model):
 
 def main():
     load_dotenv()
-    check_openai_compatible("GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile")
-    check_openai_compatible("MISTRAL_API_KEY", "https://api.mistral.ai/v1/chat/completions", "mistral-small-latest")
-    check_openai_compatible("CEREBRAS_API_KEY", "https://api.cerebras.ai/v1/chat/completions", "llama3.1-8b")
-    check_openai_compatible("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1/chat/completions", "openrouter/auto")
-    check_openai_compatible("OPENAI_API_KEY", "https://api.openai.com/v1/chat/completions", "gpt-4o-mini")
+    check_openai_compatible("MISTRAL_API_KEY", "https://api.mistral.ai/v1/chat/completions", "mistral-large-latest")
 
 
 if __name__ == "__main__":

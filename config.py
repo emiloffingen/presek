@@ -25,25 +25,9 @@ VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.3-70b-versatile"
-
-CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
-CEREBRAS_API_URL = "https://api.cerebras.ai/v1/chat/completions"
-CEREBRAS_MODEL = "llama3.1-8b"
-
 MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "")
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_MODEL = "mistral-large-latest"
-
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "openrouter/auto"
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
@@ -157,17 +141,10 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# local (Gemma 2 2B) is now the PRIMARY choice for volume tasks.
-# mistral (Cloud) is the HIGH-TIER fallback or for complex synthesis.
-TASK_ROUTING = {
-    "translation":  ["local", "mistral"],
-    "summarize":    ["local", "mistral"],
-    "synthesis":    ["local", "mistral"],
-    "daily_brief":  ["local", "mistral"],
-    "research":     ["local", "mistral"],
-    "chat":         ["local", "mistral"],
-    "default":      ["local", "mistral"],
-}
+# local (Gemma 2 2B) is the PRIMARY choice for volume tasks.
+# mistral (Cloud) is the HIGH-TIER fallback.
+PROVIDER_FALLBACK_ORDER = ["local", "mistral"]
+
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
     "SIMILARITY_THRESHOLD": 0.45,

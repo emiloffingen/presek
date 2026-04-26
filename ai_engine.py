@@ -13,11 +13,7 @@ from typing import AsyncGenerator
 
 from config import (
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
-    GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
-    CEREBRAS_API_KEY, CEREBRAS_API_URL, CEREBRAS_MODEL,
-    OPENROUTER_API_KEY, OPENROUTER_API_URL, OPENROUTER_MODEL,
-    OPENAI_API_KEY, OPENAI_API_URL, OPENAI_MODEL,
-    POLLINATIONS_API_KEY, TASK_ROUTING
+    POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
 )
 from prompts import (
     SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
@@ -197,9 +193,7 @@ async def _stream_with_initial_chunk(generator: AsyncGenerator[str, None], first
 
 async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False, topic: str = None):
     """Entrypoint with cascading failover."""
-    route = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
-    
-    for provider_name in route:
+    for provider_name in PROVIDER_FALLBACK_ORDER:
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:
@@ -232,9 +226,7 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Synchronous AI entrypoint with cascading failover."""
-    route = TASK_ROUTING.get(task_type, TASK_ROUTING["default"])
-    
-    for provider_name in route:
+    for provider_name in PROVIDER_FALLBACK_ORDER:
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:

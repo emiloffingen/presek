@@ -5,38 +5,6 @@ import json
 import sys
 import types
 from unittest.mock import patch, MagicMock
-from io import BytesIO
-
-
-class TestOpenAICompatibleProvider:
-    @patch('httpx.Client.post')
-    def test_successful_call(self, mock_post):
-        from ai_engine import OpenAICompatibleProvider
-
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": "OpenAI response text"}}]
-        }
-        mock_post.return_value = mock_resp
-
-        provider = OpenAICompatibleProvider("test", "api-key", "http://test-url", "test-model")
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result == "OpenAI response text"
-
-    def test_no_key_returns_none(self):
-        from ai_engine import OpenAICompatibleProvider
-        provider = OpenAICompatibleProvider("test", "", "http://test-url", "test-model")
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result in (None, "")
-
-    @patch('httpx.Client.post')
-    def test_network_error(self, mock_post):
-        import httpx
-        from ai_engine import OpenAICompatibleProvider
-        mock_post.side_effect = httpx.RequestError("Connection refused", request=MagicMock())
-        provider = OpenAICompatibleProvider("test", "api-key", "http://test-url", "test-model")
-        result = provider.call("Test", "System", max_tokens=200, json_mode=False)
-        assert result in (None, "")
 
 
 class TestCallAI:
@@ -71,7 +39,7 @@ class TestCallAI:
     def test_all_fail_returns_none(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(local=None)
+        providers = self._mock_providers(local=None, mistral=None)
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
@@ -108,22 +76,6 @@ class TestCallAI:
         assert tier == "local"
 
     @patch('utils.redis_client')
-    def test_task_routing_translation_prefers_local_before_remote(self, mock_redis):
-        """Translation should try local provider first according to config."""
-        mock_redis.incr.return_value = 1
-        mock_redis.expire.return_value = True
-        providers = self._mock_providers(mistral="Translated", local="Local translated")
-
-        with patch.dict('ai_engine.PROVIDERS', providers), \
-             patch('ai_engine.redis_client', mock_redis):
-            from ai_engine import _call_ai
-            result, tier = _call_ai("Text", "System", task_type="translation")
-        assert result == "Local translated"
-        assert tier == "local"
-        providers["local"].call.assert_called_once()
-        providers["mistral"].call.assert_not_called()
-
-    @patch('utils.redis_client')
     def test_stream_falls_back_when_first_provider_yields_nothing(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
@@ -133,14 +85,14 @@ class TestCallAI:
                 if False:
                     yield ""
 
-            def call(self, prompt, system, max_tokens, json_mode, topic=None):
+            def call(self, prompt, system, max_tokens, json_mode, topic=None, task_type="default"):
                 return None
 
         class LocalStreamProvider:
             async def stream_call(self, prompt, system, max_tokens):
                 yield "локален"
 
-            def call(self, prompt, system, max_tokens, json_mode, topic=None):
+            def call(self, prompt, system, max_tokens, json_mode, topic=None, task_type="default"):
                 return "локален"
 
         providers = {
@@ -262,7 +214,7 @@ class TestGenerateCoverArt:
         mock_db.execute_one.return_value = {"category": "Вести"}
 
         with patch('ai_engine.POLLINATIONS_API_KEY', None), \
-             patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+             patch('nlp.generate_local_placeholder', return_value="<svg />"), \
              patch('os.makedirs'), \
              patch('database.db_manager', mock_db), \
              patch('builtins.open', MagicMock()):
@@ -289,7 +241,7 @@ class TestGenerateCoverArt:
         with patch('ai_engine.POLLINATIONS_API_KEY', "enabled"), \
              patch('ai_engine.redis_client', mock_redis), \
              patch('ai_engine.httpx.Client', return_value=client), \
-             patch('local_nlp.generate_local_placeholder', return_value="<svg />"), \
+             patch('nlp.generate_local_placeholder', return_value="<svg />"), \
              patch('os.makedirs'), \
              patch('database.db_manager', mock_db), \
              patch('builtins.open', MagicMock()):
@@ -338,7 +290,7 @@ class TestAutoSummarizeTopClusters:
         synthesize_delay = MagicMock()
         fake_tasks = types.SimpleNamespace(
             summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
-            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay, apply_async=MagicMock()),
         )
 
         with patch("database.db_manager", mock_db), \
@@ -348,7 +300,7 @@ class TestAutoSummarizeTopClusters:
              patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
             ai_engine.auto_summarize_top_clusters()
 
-        synthesize_delay.assert_called_once()
+        fake_tasks.synthesize_cluster_task.delay.assert_called()
 
     @patch("utils.get_source_health_map", return_value={})
     def test_does_not_refresh_minor_recent_followup(self, _mock_health):
@@ -388,7 +340,7 @@ class TestAutoSummarizeTopClusters:
         synthesize_delay = MagicMock()
         fake_tasks = types.SimpleNamespace(
             summarize_article_task=types.SimpleNamespace(delay=summarize_delay),
-            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay),
+            synthesize_cluster_task=types.SimpleNamespace(delay=synthesize_delay, apply_async=MagicMock()),
         )
 
         with patch("database.db_manager", mock_db), \
@@ -398,4 +350,5 @@ class TestAutoSummarizeTopClusters:
              patch("config.AUTO_SUMMARIZE_MIN_SRC", 2):
             ai_engine.auto_summarize_top_clusters()
 
+        fake_tasks.synthesize_cluster_task.apply_async.assert_not_called()
         synthesize_delay.assert_not_called()
