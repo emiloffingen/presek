@@ -84,6 +84,12 @@ def normalize_tag_name(name):
 
     # 1. Handle specific common typos or bad lemmatizations/truncations
     mapping = {
+        "насилството": "Насилство",
+        "насилство": "Насилство",
+        "општества": "Општество",
+        "општеството": "Општество",
+        "демократските": "Демократија",
+        "место": "", # Generic preposition noise
         "теснецот": "Теснец",
         "нападот": "Напад",
         "пукањето": "Пукање",
@@ -110,29 +116,38 @@ def normalize_tag_name(name):
         "филипче": "Венко Филипче",
         "македонск": "Македонија",
     }
+
     PROTECTED_NAMES = {"македонија", "македонци", "македонски", "македонец"}
-    
     lowered = clean.lower()
+    
     if lowered in mapping:
         return mapping[lowered]
         
     if lowered in PROTECTED_NAMES:
         return "Македонија" if "македон" in lowered else clean.capitalize()
 
-    # 2. Selective suffix stripping (adjectives -> nouns where clear)
-    # Only strip if the remaining word is long enough and it's a known adjective ending
-    # AND it doesn't end with common noun patterns like 'ија' (Македонија)
+    # 2. Basic Macedonian Definite Article Stripping (Conservative)
+    # Only strip if the word remains long enough and it's a common suffix
+    if len(clean) > 6:
+        if clean.endswith("то") or clean.endswith("та"):
+             clean = clean[:-2]
+        elif clean.endswith("от"):
+             clean = clean[:-2] # Correction: 'от' is 2 chars
+        elif clean.endswith("те"):
+            clean = clean[:-2]
+
+    # 3. Selective suffix stripping (adjectives -> nouns where clear)
     if len(clean) > 8:
         if not clean.lower().endswith("нија"):
-            # Don't strip if it looks like a known name stem we want to keep
             if not any(lowered.startswith(p) for p in ["македон", "мицкос"]):
                 clean = re.sub(r"(овски|евски|скиот|ската|ското|ските)$", "", clean, flags=re.IGNORECASE)
                 if clean.lower().endswith("ски") and len(clean) > 5:
                     clean = re.sub(r"ски$", "", clean, flags=re.IGNORECASE)
 
-    # 3. Capitalization fallback
+    # 4. Capitalization fallback
     if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
         clean = " ".join(part.capitalize() for part in clean.split(" "))
+    
     return clean.strip()
 
 def is_valid_focus_entity(name, entity_type=None):
