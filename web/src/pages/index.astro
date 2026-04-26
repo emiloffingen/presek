@@ -6,6 +6,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
+import NationalMoodIsland from '../components/NationalMoodIsland.tsx';
 import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
@@ -410,6 +411,8 @@ function getBriefingSnippet(content: string) {
 						<a href="/briefing" class="rail-cta">ЦЕЛОСЕН ПРЕГЛЕД <TrendingUp size={10} /></a>
 					</section>
 				)}
+
+				<NationalMoodIsland client:visible />
 
 				<HomeRailSuggestionsIsland client:visible />
 

@@ -27,10 +27,10 @@ router = APIRouter()
 
 class QuoteOfTheDay(BaseModel):
     quote: str
-    summary: str
-    generated_article: str
-    cluster_id: str
-    title: str
+    summary: Optional[str] = None
+    generated_article: Optional[str] = None
+    cluster_id: Optional[str] = None
+    title: Optional[str] = None
 
 class StatsSummaryResponse(BaseModel):
     status: str
@@ -290,6 +290,7 @@ async def get_stats_summary():
     intelligence = await build_intelligence_summary_payload(last_24h)
     
     res = {
+        "status": "success",
         "last_24h": last_24h,
         "last_1h": last_1h,
         "total_feeds": total_feeds,
@@ -392,3 +393,93 @@ async def control_source_route(name: str, request: Request):
     upd = await db.async_execute_one("SELECT * FROM sources WHERE name = %s", (name,))
     if upd: upd = dict(upd); upd["source_status"] = get_source_statuses().get(name)
     return {"status": "success", "source": upd}
+
+@router.get("/stats/sentiment-trends")
+async def get_sentiment_trends():
+    """Returns average sentiment and tone analysis for the last 7 days."""
+    cache_key = "api:stats:sentiment:trends:v1"
+    cached = cached_response(cache_key, ttl=1800)
+    if cached: return cached
+
+    sql = """
+        SELECT 
+            DATE(created_at) as day,
+            AVG((sentiment->'sentiment'->>'score')::float) as avg_score,
+            AVG((sentiment->'tone_analysis'->>'objectivity')::float) as avg_objectivity,
+            AVG((sentiment->'tone_analysis'->>'sensationalism')::float) as avg_sensationalism,
+            COUNT(*) as cluster_count
+        FROM cluster_summaries
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+          AND sentiment IS NOT NULL
+        GROUP BY day
+        ORDER BY day ASC
+    """
+    try:
+        rows = await db.async_execute(sql)
+        data = []
+        for r in rows:
+            score = float(r["avg_score"] or 0)
+            # Map score to label
+            label = "неутрален"
+            if score > 0.4: label = "позитивен"
+            elif score > 0.1: label = "умерено позитивен"
+            elif score < -0.4: label = "негативен"
+            elif score < -0.1: label = "умерено негативен"
+
+            data.append({
+                "day": r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"]),
+                "score": round(score, 2),
+                "label": label,
+                "objectivity": round(float(r["avg_objectivity"] or 0), 2),
+                "sensationalism": round(float(r["avg_sensationalism"] or 0), 2),
+                "count": r["cluster_count"]
+            })
+        
+        res = {"status": "success", "data": data}
+        set_cache(cache_key, res, ttl=1800)
+        return res
+    except Exception as e:
+        log.error(f"Sentiment Trends Error: {e}")
+        return {"status": "error", "message": "Неуспешно вчитување на сентимент"}
+
+@router.get("/stats/mood")
+async def get_current_mood():
+    """Returns a real-time 'National Mood' based on today's coverage."""
+    cache_key = "api:stats:mood:v1"
+    cached = cached_response(cache_key, ttl=600)
+    if cached: return cached
+
+    sql = """
+        SELECT 
+            sentiment->'sentiment'->>'tone' as tone,
+            (sentiment->'sentiment'->>'score')::float as score,
+            (sentiment->'tone_analysis'->>'objectivity')::float as objectivity
+        FROM cluster_summaries
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+          AND sentiment IS NOT NULL
+    """
+    try:
+        rows = await db.async_execute(sql)
+        if not rows:
+            return {"status": "success", "mood": "неутрален", "score": 0, "objectivity": 1.0}
+        
+        avg_score = sum(r["score"] for r in rows) / len(rows)
+        avg_obj = sum(r["objectivity"] for r in rows) / len(rows)
+        
+        # Dominant tone (most frequent)
+        tones = [r["tone"] for r in rows if r["tone"]]
+        dominant_tone = max(set(tones), key=tones.count) if tones else "неутрален"
+
+        res = {
+            "status": "success",
+            "mood": dominant_tone,
+            "score": round(avg_score, 2),
+            "objectivity": round(avg_obj, 2),
+            "sample_size": len(rows)
+        }
+        set_cache(cache_key, res, ttl=600)
+        return res
+    except Exception as e:
+        log.error(f"Mood Error: {e}")
+        return {"status": "error", "mood": "неутрален"}
+
