@@ -172,6 +172,15 @@ class LocalProvider(AIProvider):
              if res:
                  return json.dumps(res) if isinstance(res, dict) else res
 
+        # 2. General Local Analyst fallback
+        res = analyst.analyze(prompt, system, max_tokens=max_tokens)
+        if res:
+            if json_mode:
+                # If we asked for JSON but got a string from basic analyze, wrap it
+                # to prevent frontend parsing errors.
+                return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
+            return res
+
         # Fallback to the old deterministic rules if Gemma is not suitable or fails
         return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
 PROVIDERS = {

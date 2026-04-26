@@ -27,12 +27,16 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       const resp = await fetch(url);
       const result = await resp.json();
       if (result.status === 'success') {
-        // Map research API 'answer' to 'report' for consistency with existing UI
-        if (mode === 'custom') {
-            setData({ report: result.answer, suggestions: result.suggestions, mode: 'custom' });
-        } else {
-            setData(result);
-        }
+        // Robust result mapping: handle 'answer' (research API), 'report' (analyst API), or raw string
+        const report = result.report || result.answer || (typeof result === 'string' ? result : null);
+        const suggestions = result.suggestions || [];
+        const mode_actual = result.mode || mode;
+        
+        setData({ 
+            report, 
+            suggestions, 
+            mode: mode_actual 
+        });
       } else {
         setError(result.message || 'Грешка при анализата.');
       }

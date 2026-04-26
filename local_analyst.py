@@ -58,14 +58,15 @@ class LocalAnalyst:
             return None
 
         try:
-            # Gemma 2 Instruct format
+            # Gemma 2 Instruct format (Optimized for single user turn to ensure instruction following)
             full_prompt = f"<start_of_turn>user\n{system_prompt}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
             
             output = self.model(
                 full_prompt,
                 max_tokens=max_tokens,
-                stop=["<end_of_turn>", "###"],
-                echo=False
+                stop=["<end_of_turn>", "<eos>", "###"],
+                echo=False,
+                temperature=0.1 # Low temperature for analytical consistency
             )
             return output['choices'][0]['text'].strip()
         except Exception as e:
