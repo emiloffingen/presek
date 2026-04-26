@@ -272,10 +272,9 @@ def test_fastapi_public_health_omits_internal_connection_details(mock_all):
          patch("routes.system._probe_redis", return_value={"ok": False, "url": "secret"}):
         data = asyncio.run(system_routes.health(_FakeRequest()))
     assert "url" not in data["redis"]
-    from version import APP_VERSION
+    from version import APP_VERSION, APP_VERSION_LABEL
     assert data["version"] == APP_VERSION
-
-    assert data["version_label"] == "5.10"
+    assert data["version_label"] == APP_VERSION_LABEL
     assert isinstance(data["uptime_seconds"], int)
 
 
