@@ -530,8 +530,7 @@ class TestReadNextClusters:
 
         assert result
         assert result[0]["cluster_id"] == "next-1"
-        assert result[0]["relationship_label"] in {"Следен развој", "Позадина и контекст", "Исти актери, друг агол"}
-
+        assert result[0]["relationship_label"] in {"Следен развој", "Позадина и контекст", "Исти актери"}
     @patch("utils.get_source_health_map", return_value={})
     def test_build_read_next_clusters_skips_weakly_related_noise(self, _mock_health):
         now = datetime.datetime.now()

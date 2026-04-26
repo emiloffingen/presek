@@ -180,13 +180,16 @@ class TestLocalProvider:
 
     def test_summary_strips_summarize_prefix(self):
         from ai_engine import LocalProvider
+        from unittest.mock import patch
         provider = LocalProvider()
-        result = provider.call(
-            "Summarize: Владата усвои пакет од 120 милиони евра. Опозицијата го критикува рокот за спроведување.",
-            "Return a concise 2-sentence news summary in Macedonian.",
-            max_tokens=120,
-            json_mode=False,
-        )
+        with patch("local_analyst.analyst.analyze") as mock_analyze:
+            mock_analyze.return_value = "Владата усвои пакет од 120 милиони евра."
+            result = provider.call(
+                "Summarize: Владата усвои пакет од 120 милиони евра. Опозицијата го критикува рокот за спроведување.",
+                "Return a concise 2-sentence news summary in Macedonian.",
+                max_tokens=120,
+                json_mode=False,
+            )
         assert "Summarize:" not in result
         assert "120 милиони евра" in result
 
