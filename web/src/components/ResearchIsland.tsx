@@ -130,68 +130,85 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           <Sparkles size={240} />
       </div>
 
-      <div className="relative z-10 mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="relative z-10 mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="max-w-3xl">
-          <p className="mb-4 flex items-center gap-2 font-sans text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent">
+          <p className="mb-2 flex items-center gap-2 font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
             <div className="w-8 h-[2px] bg-nyt-accent"></div>
             ДОПОЛНИТЕЛНА АНАЛИТИКА
           </p>
-          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-4 leading-[1.1] tracking-tight">Истражувачки Центар</h2>
+          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Истражувачки Центар</h1>
+          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Подлабоко истражување</h2>
           <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
             Активирајте дополнителен истражувачки слој само кога ви се потребни повеќе бројки, клучни актери или поширок контекст за приказната.
           </p>
         </div>
-        <div className="hidden md:block">
+        <div className="hidden md:block pt-4">
             <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
             Увид по барање
             </p>
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
         {modes.map((m) => (
-          <button
+          <div
             key={m.id}
-            onClick={() => performResearch(m.id)}
-            disabled={!!loading}
-            className={`group relative p-6 text-left border border-border bg-background shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 hover:border-nyt-accent/40 ${loading === m.id ? 'ring-2 ring-nyt-accent ring-inset border-transparent' : ''}`}
+            className={`group relative p-8 text-left border border-border bg-background shadow-sm transition-all hover:shadow-xl hover:border-nyt-accent/40 flex flex-col h-full`}
           >
-            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-5 transition-all ${loading === m.id ? 'bg-nyt-accent text-white rotate-[360deg]' : 'bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white'}`}>
-              {loading === m.id ? <Loader2 className="animate-spin" size={24} /> : <m.icon size={22} />}
+            <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-6 transition-all bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white`}>
+              {loading === m.id ? <Loader2 className="animate-spin" size={28} /> : <m.icon size={26} />}
             </div>
-            <h4 className="font-black text-xs mb-2 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
-            <p className="text-[13px] text-muted-foreground leading-relaxed font-medium mb-6 min-h-[3rem]">{m.desc}</p>
             
-            <div className="flex items-center justify-between pt-4 border-t border-border/50 group-hover:border-nyt-accent/30">
-                <span className="text-[10px] font-black uppercase tracking-widest text-nyt-accent">Истражи</span>
-                <ChevronRight size={14} className="text-nyt-accent group-hover:translate-x-1 transition-transform" />
+            <h4 className="font-black text-sm mb-1 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
+            
+            {/* Complexity Indicator */}
+            <div className="flex items-center gap-2 mb-4 opacity-60">
+                <span className="text-[9px] font-black uppercase tracking-widest">Комплексност:</span>
+                <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className={`w-2.5 h-1 rounded-full ${i <= (m.id === 'facts' ? 2 : m.id === 'perspectives' ? 4 : 3) ? 'bg-nyt-accent' : 'bg-border'}`}></div>
+                    ))}
+                </div>
             </div>
-          </button>
+
+            <p className="text-sm text-muted-foreground leading-relaxed font-medium mb-10 flex-grow">{m.desc}</p>
+            
+            <button
+                onClick={() => performResearch(m.id)}
+                disabled={!!loading}
+                className="w-full py-3 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-border/50 group-hover:border-transparent"
+            >
+                {loading === m.id ? 'ВЧИТУВАЊЕ...' : 'Истражи'}
+                {!loading && <ChevronRight size={12} />}
+            </button>
+          </div>
         ))}
       </div>
 
       {/* Custom Research Input */}
-      <div className="relative z-10 mt-8 flex flex-col md:flex-row gap-4 bg-background p-2 border border-border focus-within:border-nyt-accent/50 shadow-inner">
-        <div className="relative flex-grow">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={20} />
-            <input 
-                type="text" 
-                placeholder="Поставете конкретно прашање за овој настан..."
-                value={customQuery}
-                onChange={(e) => setCustomQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-transparent outline-none font-serif italic text-lg"
-                onKeyDown={(e) => e.key === 'Enter' && customQuery && performResearch('custom', customQuery)}
-            />
+      <div className="relative z-10 mt-10 bg-background p-2 border border-border focus-within:border-nyt-accent/50 shadow-inner">
+        <div className="flex flex-col md:flex-row gap-2">
+            <div className="relative flex-grow">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={22} />
+                <input 
+                    type="text" 
+                    placeholder="Поставете конкретно прашање за овој настан..."
+                    value={customQuery}
+                    onChange={(e) => setCustomQuery(e.target.value)}
+                    className="w-full pl-14 pr-4 py-5 bg-transparent outline-none font-serif italic text-xl"
+                    onKeyDown={(e) => e.key === 'Enter' && customQuery && performResearch('custom', customQuery)}
+                />
+            </div>
+            <button 
+                onClick={() => performResearch('custom', customQuery)}
+                disabled={!customQuery || !!loading}
+                className="px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+            >
+                {loading === 'custom' ? <Loader2 className="animate-spin" size={18} /> : (
+                    <>Истражи <ChevronRight size={14} /></>
+                )}
+            </button>
         </div>
-        <button 
-            onClick={() => performResearch('custom', customQuery)}
-            disabled={!customQuery || !!loading}
-            className="px-10 py-4 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[10px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
-        >
-            {loading === 'custom' ? <Loader2 className="animate-spin" size={16} /> : (
-                <>ИСТРАЖИ <ChevronRight size={12} /></>
-            )}
-        </button>
       </div>
 
       {error && (

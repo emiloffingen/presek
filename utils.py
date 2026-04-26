@@ -510,7 +510,7 @@ def build_read_next_clusters(current_cluster_id, current_articles, current_tags,
         title_overlap = _cluster_title_overlap(current_lead_title, str(lead.get("title") or ""))
         
         score = 0.0
-        relation_label = "Сличен контекст"
+        relation_label = "Ист контекст"
         relation_note = "Поврзан кластер со сличен новинарски контекст."
 
         if shared_entities and title_overlap >= 0.28:
@@ -523,14 +523,14 @@ def build_read_next_clusters(current_cluster_id, current_articles, current_tags,
             relation_note = "Поврзани лица со оваа вест, но во поинаков контекст."
         elif shared_tags and (title_overlap >= 0.15 or len(shared_tags) >= 2):
             score += 1.6 + len(shared_tags) * 0.18
-            relation_label = "Поврзана тема"
+            relation_label = "Позадина и контекст"
             relation_note = "Поврзани информации и претходен контекст за оваа тема."
         elif title_overlap >= 0.25:
             score += 1.4
             relation_label = "Сродна сторија"
         elif shared_topics and title_overlap >= 0.12:
             score += 1.1 + len(shared_topics) * 0.1
-            relation_label = "Од истата категорија"
+            relation_label = "Ист контекст"
         else:
             # If no entities or tags or high title overlap, it's likely a false positive
             continue
