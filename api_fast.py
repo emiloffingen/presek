@@ -22,6 +22,25 @@ from database import db_manager as db
 import config
 from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
+# =============================================================================
+# Rate Limiting Setup
+# =============================================================================
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    _rate_limiter_enabled = True
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=["100/minute", "1000/hour"],
+        storage_uri=os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    )
+except ImportError:
+    _rate_limiter_enabled = False
+    limiter = None
+    log = logging.getLogger("presek.api")
+    log.warning("slowapi not installed - rate limiting disabled. Install with: pip install slowapi")
+
 def is_safe_url(url: str) -> bool:
     """Rigorous SSRF protection: block local/private network ranges."""
     from urllib.parse import urlparse
@@ -108,6 +127,25 @@ async def validate_input_length(request: Request, call_next):
     
     return await call_next(request)
 
+
+# =============================================================================
+# Rate Limit Exceeded Handler
+# =============================================================================
+if _rate_limiter_enabled:
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+        """Return JSON response for rate limit exceeded errors."""
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": "Too many requests",
+                "detail": f"Rate limit exceeded: {exc.detail}",
+                "status": "rate_limit_exceeded"
+            },
+            headers={"Retry-After": str(exc.retry_after)}
+        )
+
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -115,11 +153,30 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.on_event("startup")
 async def startup_event():
     log.info(f"Пресек API v{APP_VERSION} ({APP_VERSION_LABEL}) starting up...")
+    if _rate_limiter_enabled:
+        log.info("Rate limiting enabled (slowapi)")
+    else:
+        log.warning("Rate limiting disabled - slowapi not installed")
 
 # Import and include routers
 from routes import home, news, intelligence, profile, stats, system
 
+# Apply rate limiting to routers if enabled
+if _rate_limiter_enabled:
+    for router in [home.router, news.router, intelligence.router, profile.router, stats.router, system.router]:
+        router.dependencies.append(limiter)
+
+
+# Decorator helpers that work with or without slowapi
+def exempt_from_rate_limit(func):
+    """Decorator that exempts from rate limiting (no-op if slowapi not installed)."""
+    if _rate_limiter_enabled:
+        return limiter.exempt(func)
+    return func
+
+
 @app.get("/api/health")
+@exempt_from_rate_limit
 async def health_check():
     """Comprehensive health check for smoke tests and monitoring."""
     import health
@@ -199,6 +256,7 @@ async def get_generated_image(filename: str):
     return FileResponse(os.path.join("static", "generated", filename))
 
 @app.get("/api/delivery/track/{event_type}")
+@exempt_from_rate_limit
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
     p = await db.async_execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
     if p:
@@ -218,7 +276,16 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 
+# Decorator helper for custom rate limits
+def custom_rate_limit(limit_str):
+    """Factory for rate limit decorators (no-op if slowapi not installed)."""
+    if _rate_limiter_enabled:
+        return limiter.limit(limit_str)
+    return lambda f: f
+
+
 @app.get("/api/entity-graph/{entity_name}")
+@custom_rate_limit("30/minute")
 async def entity_graph_lookup(entity_name: str):
     """Fetches persistent knowledge about an entity from the local graph."""
     from database import db_manager as db
@@ -234,6 +301,7 @@ async def entity_graph_lookup(entity_name: str):
     return {"status": "success", "data": row}
 
 @app.get("/api/research/{cluster_id}")
+@custom_rate_limit("10/minute")
 async def cluster_research(cluster_id: str, q: str):
     """Researches a cluster based on a user query using Gemma 2."""
     from local_analyst import analyst

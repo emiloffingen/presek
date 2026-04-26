@@ -45,6 +45,10 @@ celery_app = Celery(
 celery_app.conf.update(
     timezone='UTC',
     task_default_queue='celery',
+    # Memory protection: restart workers after processing N tasks or M memory
+    worker_max_memory_per_child=2_000_000,  # 2GB memory limit per worker process
+    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks to prevent memory leaks
+    task_default_rate_limit='100/m',  # Global rate limit: 100 tasks per minute
     task_queues=(
         Queue('celery'),
         Queue('fast-track'),
@@ -111,5 +115,17 @@ celery_app.conf.update(
             'task': 'tasks.maintenance.validate_cluster_images_task',
             'schedule': 3600.0, # Every hour
         },
-    }
+    },
+    # Task-specific rate limits
+    task_annotations={
+        'tasks.ingestion_task.crawl_article_task': {'rate_limit': '20/m'},
+        'tasks.intelligence.generate_embeddings_task': {'rate_limit': '30/m'},
+        'tasks.intelligence.synthesize_cluster_task': {'rate_limit': '10/m'},
+    },
+    # Worker prefetch multiplier - reduce from default 4 to 1 to prevent memory over-commitment
+    worker_prefetch_multiplier=1,
+    # Disable result persistence for tasks that don't need it (reduces memory/RPC overhead)
+    result_expires=3600,  # Results expire after 1 hour
+    # Concurrent task execution limits per worker
+    worker_concurrency=2,  # Reduced from default 4 to prevent resource exhaustion
 )
