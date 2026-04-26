@@ -4,21 +4,15 @@
   "description": "Македонски информативен агрегатор со подлабок контекст и напредна јазична обработка.",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
-  "background_color": "#1a1715",
-  "theme_color": "#1a1715",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     {
       "src": "/img/presek_emblem.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/img/presek_emblem.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/img/presek_emblem.png",
