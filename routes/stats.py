@@ -239,11 +239,18 @@ async def get_stats_route():
 
 @router.get("/stats/summary")
 async def get_stats_summary():
-    cache_key = "api:stats:summary:v3"
+    cache_key = "api:stats:summary:v4"
     cached = cached_response(cache_key)
     if cached: return cached
-    last_24h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'"))["count"] or 0
-    last_1h = (await db.async_execute_one("SELECT COUNT(*) FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '1 hour'"))["count"] or 0
+    
+    # Use Skopje time for intervals
+    skopje_now = "timezone('Europe/Skopje', NOW())"
+    
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= {skopje_now} - INTERVAL '24 hours'")
+    last_24h = last_24h_res["count"] if last_24h_res else 0
+    
+    last_1h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= {skopje_now} - INTERVAL '1 hour'")
+    last_1h = last_1h_res["count"] if last_1h_res else 0
     total_feeds = (await db.async_execute_one("SELECT COUNT(*) FROM sources WHERE is_active = TRUE"))["count"] or 0
     quote_row = await db.async_execute_one("""
         SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
