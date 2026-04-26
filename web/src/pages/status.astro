@@ -46,12 +46,12 @@ function formatUptime(seconds?: number) {
   <NYTHeader />
   <main class="site-layout py-[var(--page-py)]">
     <Breadcrumbs items={[{ label: "Статус" }]} />
-    <article class="status-shell">
+    <article class="status-shell mt-12">
       <header class="status-header">
-        <span class="page-kicker">Статус</span>
-        <h1 class="status-headline">Состојба на системот</h1>
+        <span class="page-kicker">СИСТЕМСКИ МОНИТОРИНГ</span>
+        <h1 class="status-headline italic">Состојба на <span>Системот</span></h1>
         <p class="status-intro">
-          Брз преглед на тоа дали API-от, базата и Redis одговараат, без да копате по логови.
+          Директен увид во здравјето на Пресек: оперативност на API-от, базата на податоци и меморискиот кеш.
         </p>
       </header>
 
@@ -66,7 +66,7 @@ function formatUptime(seconds?: number) {
               <div>
                 <span class="micro-label">Севкупен статус</span>
                 <strong class={`status-pill ${statusClass(health?.status === 'ok' || health?.status === 'healthy')}`}>
-                  {(health?.status === 'ok' || health?.status === 'healthy') ? 'Оперативен' : 'Деградиран'}
+                  {(health?.status === 'ok' || health?.status === 'healthy') ? 'Системот е оперативен' : 'Системот е деградиран'}
                 </strong>
               </div>
               <div>
@@ -74,7 +74,7 @@ function formatUptime(seconds?: number) {
                 <strong>{health?.version_label || health?.version || 'Непозната'}</strong>
               </div>
               <div>
-                <span class="micro-label">Активен</span>
+                <span class="micro-label">Време на работа</span>
                 <strong>{formatUptime(health?.uptime_seconds)}</strong>
               </div>
             </div>
