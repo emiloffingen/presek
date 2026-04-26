@@ -101,6 +101,17 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		)}
 
 		<script is:inline>
+		// Register Service Worker for Offline Mode
+		if ('serviceWorker' in navigator) {
+		window.addEventListener('load', () => {
+		navigator.serviceWorker.register('/sw.js')
+		.then(reg => console.log('SW registered:', reg.scope))
+		.catch(err => console.log('SW error:', err));
+		});
+		}
+		</script>
+		</head>
+		<script is:inline>
 			/**
 			 * Immediate theme sync to prevent flicker. 
 			 * We encapsulate in a function so it can be re-run on 'astro:after-swap'.
