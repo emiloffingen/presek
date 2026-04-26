@@ -83,17 +83,19 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           );
       }
 
-      // Headers
-      if (trimmed.startsWith('#')) {
-          return <h3 key={i} className="font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight">{parseBoldText(trimmed.replace(/^#+\s*/, ''))}</h3>;
+      // Headers (robust: matches '# Header' or '1. # Header')
+      if (trimmed.includes('#')) {
+          const headerText = trimmed.split('#')[1].trim();
+          return <h3 key={i} className="font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight">{parseBoldText(headerText)}</h3>;
       }
       
-      // List items
-      if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+      // List items (robust: matches '-', '•', '*', '1. ', etc.)
+      if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
+          const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
             <div key={i} className="flex gap-4 mb-4 items-start pl-2">
               <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
-              <span className="text-lg md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(trimmed.replace(/^[-•]\s*/, ''))}</span>
+              <span className="text-lg md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(cleanItem)}</span>
             </div>
           );
       }
