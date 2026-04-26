@@ -172,78 +172,77 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
             <div className="broadsheet-grid">
                 <div className="broadsheet-main">
+                    {/* 1. HORIZON ANALYSIS */}
                     <section className="mb-16">
                         <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
-                            <h2 className="section-title-italic !mb-0">Редакциски Хоризонт</h2>
-                            {category && <span className="text-[10px] font-black uppercase tracking-widest text-nyt-accent">Филтрирано по: {category}</span>}
+                            <h2 className="section-title-italic !mb-0 text-3xl">Редакциски Хоризонт</h2>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                <BarChart3 size={12} /> Аналитика по теми
+                            </div>
                         </div>
                         <PulseLandscapeIsland data={pulseData} loading={loading} />
                     </section>
 
-                    <section className="mb-16">
-                        <div className="flex items-center gap-2 mb-8 border-b border-border pb-4">
-                            <BarChart3 size={20} className="text-nyt-accent" />
-                            <h2 className="font-serif text-2xl font-black italic">Аналитика по теми</h2>
+                    {/* 2. KEY ACTORS GRID */}
+                    <section className="mb-20">
+                        <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
+                            <h2 className="section-title-italic !mb-0 text-3xl">Клучни Актори</h2>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                <Users size={12} /> во фокус
+                            </div>
                         </div>
                         
-                        <div className={`space-y-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                            {/* Trending Entities */}
-                            <section>
-                                <div className="flex items-center gap-2 mb-6 border-b border-border/50 pb-4">
-                                    <TrendingUp size={16} className="text-nyt-accent" />
-                                    <h3 className="font-sans text-[10px] font-black uppercase tracking-widest">Клучни актери во фокус</h3>
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {topEntities.map((ent: any) => (
-                                        <a 
-                                            key={ent.name} 
-                                            href={`/subjekt/${encodeURIComponent(ent.name)}`}
-                                            className="p-5 border border-border bg-card hover:border-nyt-accent hover:shadow-lg hover:-translate-y-1 transition-all group relative overflow-hidden"
-                                        >
-                                            <div className="absolute top-0 left-0 w-1 h-full bg-nyt-accent/10 group-hover:bg-nyt-accent transition-colors"></div>
-                                            <span className="text-[8px] font-black uppercase text-nyt-accent tracking-widest block mb-2">{getTypeLabel(ent.type)}</span>
-                                            <h3 className="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent mb-4">{ent.name}</h3>
-                                            <div className="flex items-center justify-between mt-auto">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase text-muted-foreground tracking-tight">Експонираност</span>
-                                                    <span className="text-xs font-black">+{ent.total_mentions} теми</span>
-                                                </div>
-                                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${ent.sentiment_score > 0.1 ? 'bg-green-100 text-green-700' : ent.sentiment_score < -0.1 ? 'bg-red-100 text-red-700' : 'bg-secondary text-muted-foreground'}`}>
-                                                    {ent.sentiment_score > 0.1 ? 'Позитивен' : ent.sentiment_score < -0.1 ? 'Критичен' : 'Неутрален'}
-                                                </div>
+                        {topEntities.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {topEntities.map((ent: any) => (
+                                    <a 
+                                        key={ent.name} 
+                                        href={`/subjekt/${encodeURIComponent(ent.name)}`}
+                                        className="p-6 border border-border bg-card hover:border-nyt-accent hover:shadow-xl transition-all group relative overflow-hidden flex flex-col"
+                                    >
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-nyt-accent/10 group-hover:bg-nyt-accent transition-colors"></div>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="text-[9px] font-black uppercase text-nyt-accent tracking-widest bg-nyt-accent/5 px-2 py-0.5 rounded">
+                                                {getTypeLabel(ent.type)}
+                                            </span>
+                                            <span className="text-xl">{ent.sentiment_score > 0.1 ? '😊' : ent.sentiment_score < -0.1 ? '😤' : '😐'}</span>
+                                        </div>
+                                        <h3 className="font-serif font-black text-xl leading-tight group-hover:text-nyt-accent mb-6">{ent.name}</h3>
+                                        <div className="mt-auto pt-4 border-t border-border/40 flex items-center justify-between">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Споменувања</span>
+                                                <span className="text-xl font-black tabular-nums">{ent.total_mentions}</span>
                                             </div>
-                                        </a>
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
+                                            <div className={`text-[10px] font-black uppercase tracking-tighter ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                                {ent.sentiment_score > 0.1 ? 'Позитивен' : ent.sentiment_score < -0.1 ? 'Критичен' : 'Неутрален'}
+                                            </div>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 text-center border border-dashed border-border rounded-2xl bg-secondary/5">
+                                <Users className="mx-auto mb-4 opacity-10" size={48} />
+                                <p className="font-serif italic text-muted-foreground text-lg">Системот анализира нови актери во оваа категорија...</p>
+                            </div>
+                        )}
                     </section>
                 </div>
 
                 <aside className="broadsheet-rail">
-                    <section className="rail-block rail-block-featured">
-                        <p className="rail-kicker">Фокус</p>
-                        <h3 className="rail-title">СУБЈЕКТИ</h3>
-                        <div className="rail-tag-cloud">
-                            {topEntities.map((e: any) => (
-                                <a key={e.name} href={`/?entity=${encodeURIComponent(e.name)}`}>
-                                    {e.name}
-                                </a>
-                            ))}
-                        </div>
-                    </section>
-
                     <section className="rail-block">
                         <p className="rail-kicker">Методологија</p>
-                        <h3 className="rail-title">ИНТЕЛЕКТ</h3>
+                        <h3 className="rail-title italic font-serif text-lg">Уреднички Алгоритам</h3>
                         <p className="rail-text">
-                            Податоците се генерираат преку автоматизирана анализа на секој кластер. Нашиот алгоритам го оценува известувањето на секој медиум посебно според објективност, тон и сензационализам.
+                            Информациите во овој индекс се генерираат преку автоматска обработка на природниот јазик (NLP) на сите вклучени македонски извори за изминатите 24 часа.
                         </p>
                     </section>
 
-                    <div className="rail-ad-box">
-                        <p className="text-[9px] opacity-50 mb-2 uppercase font-bold">Споредба на извори</p>
-                        <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} />
+                    <div className="sidebar-module mt-12">
+                        <h4 className="sidebar-label">СПОРЕДБА НА ИЗВОРИ</h4>
+                        <div className="mt-4">
+                            <SourceComparisonIsland allSources={pulseData.map((r: PulseRow) => r.source)} />
+                        </div>
                     </div>
                 </aside>
             </div>
