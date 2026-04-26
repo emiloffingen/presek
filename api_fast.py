@@ -1,6 +1,5 @@
 import os
 import secrets
-import logging
 import json
 import datetime
 import time
@@ -22,6 +21,10 @@ from database import db_manager as db
 import config
 from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
+# Initialize logging early (before other imports)
+from logging_config import setup_logging, get_logger, early_setup
+# early_setup() already called by logging_config import
+
 # =============================================================================
 # Rate Limiting Setup
 # =============================================================================
@@ -38,7 +41,7 @@ try:
 except ImportError:
     _rate_limiter_enabled = False
     limiter = None
-    log = logging.getLogger("presek.api")
+    log = get_logger("presek.api")
     log.warning("slowapi not installed - rate limiting disabled. Install with: pip install slowapi")
 
 def is_safe_url(url: str) -> bool:
@@ -75,9 +78,9 @@ def is_safe_url(url: str) -> bool:
         log.error(f"is_safe_url error for {hostname}: {e}")
         return False
 
-# Initialize Logging
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("presek.api")
+# Initialize Logging - use centralized config
+# logging_config.early_setup() already called by import
+log = get_logger("presek.api")
 
 app = FastAPI(
     title="Пресек API",

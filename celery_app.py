@@ -11,19 +11,28 @@ from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
 from kombu import Queue
 
-log = logging.getLogger("presek_celery")
+from logging_config import get_logger
+log = get_logger("presek_celery")
 
 @worker_process_init.connect
 def reset_db_pool(**kwargs):
     """Ensure each worker process gets a fresh DB connection pool after forking."""
     from database import db_manager
-    log.info("[celery] Resetting database connection pool for worker process.")
+    log.info("Resetting database connection pool for worker process", extra={"action": "worker_init"})
     db_manager._reset_pool()
 
 @task_failure.connect
 def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):
     """Log permanently failed tasks to Dead Letter Queue (DLQ) in database."""
-    log.error(f"[celery-failure] Task {sender.name} (id={task_id}) failed: {exception}")
+    log.error(
+        "Task failed",
+        extra={
+            "task_name": sender.name,
+            "task_id": task_id,
+            "exception": str(exception),
+            "action": "task_failure"
+        }
+    )
     try:
         from database import db_manager
         import json
@@ -129,3 +138,7 @@ celery_app.conf.update(
     # Concurrent task execution limits per worker
     worker_concurrency=2,  # Reduced from default 4 to prevent resource exhaustion
 )
+
+# Setup logging for Celery workers
+from logging_config import setup_logging
+setup_logging()
