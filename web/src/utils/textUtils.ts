@@ -63,6 +63,22 @@ export function decodeHtmlEntities(text: any): string {
 }
 
 /**
+ * Converts ALL CAPS text into Sentence case, preserving acronyms.
+ */
+export function deShout(text: string): string {
+    if (!text) return '';
+    // If text doesn't have many lowercase letters, it's probably shouting
+    const lowerCount = (text.match(/[a-zа-ш]/g) || []).length;
+    const totalAlpha = (text.match(/[a-zA-Zа-шА-Ш]/g) || []).length;
+    
+    if (totalAlpha > 5 && lowerCount < totalAlpha * 0.2) {
+        const lower = text.toLowerCase();
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }
+    return text;
+}
+
+/**
  * Global cleaning and decoding for news text.
  * Strips scraping artifacts and standardizes whitespace.
  */
