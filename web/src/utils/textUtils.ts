@@ -209,11 +209,26 @@ export function getEditionStr(dateInput: any): string {
 }
 
 /**
- * Converts [1], [2] citations into superscript links.
+ * Converts [1], [2], [1, 2] or even raw trailing numbers like "fact 46" into superscript links.
  */
 export function parseFootnotes(text: string): string {
     if (!text) return '';
-    return text.replace(/\[(\d+)\]/g, (match, num) => {
+    
+    let processed = text;
+
+    // 1. Convert raw numbers at the end of words/sentences into brackets
+    // Matches a space, then 1-3 digits, followed by a period or end of string
+    // e.g. "претседателот 1" -> "претседателот [1]"
+    processed = processed.replace(/\s(\d{1,3})(?=\.|\,|$|\s)/g, ' [$1]');
+
+    // 2. Handle [1, 2, 3] style (comma separated inside brackets)
+    // Splits them into individual [1][2][3] for the next pass
+    processed = processed.replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (match, digits) => {
+        return digits.split(',').map((d: string) => `[${d.trim()}]`).join('');
+    });
+
+    // 3. Convert all [N] into superscript links
+    return processed.replace(/\[(\d+)\]/g, (match, num) => {
         return `<sup class="text-nyt-accent font-black ml-0.5 cursor-help" title="Извор ${num}">${num}</sup>`;
     });
 }

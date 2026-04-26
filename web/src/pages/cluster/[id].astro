@@ -108,8 +108,14 @@ function renderSynthesisHtml(text: string) {
 	let clean = cleanAndDecode(text);
 	if (!clean) return '';
 
-	// Handle Markdown Bold: **text** -> <strong>text</strong>
+	// 1. Strip residual AI placeholders
+	clean = clean.replace(/\[ПРЕТХОДЕН КОНТЕКСТ\]/gi, '');
+
+	// 2. Handle Markdown Bold: **text** -> <strong>text</strong>
 	clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+	// 3. Handle Markdown Italics: *text* -> <em>text</em>
+	clean = clean.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
 	if (hasCitationSources) return sanitizeHtml(parseFootnotes(clean));
 	return sanitizeHtml(clean.replace(/\[(\d+)\]/g, '').replace(/\s{2,}/g, ' ').trim());
