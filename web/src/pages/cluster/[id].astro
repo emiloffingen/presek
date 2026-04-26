@@ -497,7 +497,7 @@ const articleSchema = cluster ? {
 										
 										{verificationReport.context && (
 											<div class="factcheck-context p-6 bg-muted/30 border border-border/40 mt-8 italic text-sm text-muted-foreground">
-												<p set:html={sanitizeHtml(cleanAndDecode(verificationReport.context))}></p>
+												<p set:html={renderSynthesisHtml(verificationReport.context)}></p>
 											</div>
 										)}
 									</div>
@@ -509,8 +509,8 @@ const articleSchema = cluster ? {
 										<div class="perspective-grid-v2">
 											{perspectives.map((p: any) => (
 												<div class="editorial-angle-card">
-													<h5 class="angle-title" set:html={sanitizeHtml(p.angle)}></h5>
-													<p class="angle-content" set:html={sanitizeHtml(p.content)}></p>
+													<h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
+													<p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
 												</div>
 											))}
 										</div>
