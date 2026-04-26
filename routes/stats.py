@@ -260,13 +260,10 @@ async def get_stats_summary():
     cached = cached_response(cache_key)
     if cached: return cached
     
-    # Use Skopje time for intervals
-    skopje_now = "timezone('Europe/Skopje', NOW())"
-    
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= {skopje_now} - INTERVAL '24 hours'")
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'")
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
-    last_1h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= {skopje_now} - INTERVAL '1 hour'")
+    last_1h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour'")
     last_1h = last_1h_res["count"] if last_1h_res else 0
     total_feeds = (await db.async_execute_one("SELECT COUNT(*) FROM sources WHERE is_active = TRUE"))["count"] or 0
     quote_row = await db.async_execute_one("""

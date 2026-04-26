@@ -192,7 +192,7 @@ const DispatchIcon = dispatchIcon;
 const subjectPreview = (briefing?.subjects || []).slice(0, 4);
 const sectionPreview = sectionHighlights.slice(0, 3);
 const totalSubjects = briefing?.subjects?.length || 0;
-const articleCount = stats?.total_articles || 0;
+const articleCount = stats?.last_24h || 0;
 const versionLabel = health?.version_label || health?.version || '5.2';
 const editionLabel = hour >= 5 && hour < 12 ? 'Утринско издание' : hour >= 12 && hour < 18 ? 'Пладневно издание' : 'Вечерно издание';
 const editionStandfirst = hour >= 5 && hour < 12
