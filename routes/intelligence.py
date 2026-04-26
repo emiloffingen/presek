@@ -324,14 +324,25 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
     try:
         from ai_engine import sync_call_ai
-        # Use mistral for high-quality formatting at low cost
-        response, provider = await asyncio.to_thread(
-            sync_call_ai,
-            prompt=user_prompt,
-            system=system_prompt,
-            task_type="default",
-            max_tokens=1000,
-        )
+        
+        log.info(f"[analyst] Generating report for {cluster_id} (mode={mode})")
+        # Use mistral for high-quality formatting
+        try:
+            response, provider = await asyncio.wait_for(
+                asyncio.to_thread(
+                    sync_call_ai,
+                    prompt=user_prompt,
+                    system=system_prompt,
+                    task_type="default",
+                    max_tokens=1200,
+                ),
+                timeout=45.0
+            )
+        except asyncio.TimeoutError:
+            log.warning(f"[analyst] Timeout for {cluster_id}, using local fallback")
+            from local_nlp import summarize_locally
+            response = summarize_locally(user_prompt, sentence_count=5)
+            provider = "local_timeout_fallback"
         
         if not response:
             return {"status": "error", "message": "Аналитичарот е зафатен."}
@@ -351,7 +362,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
         return result
         
     except Exception as e:
-        log.error(f"Analyst Error: {e}", exc_info=True)
+        log.error(f"[analyst] Unexpected error for {cluster_id}: {e}", exc_info=True)
         return {"status": "error", "message": "Грешка при анализата."}
 
 @router.get("/intelligence/source-pulse")

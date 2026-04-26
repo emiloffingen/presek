@@ -24,7 +24,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
           url = `/api/research/${clusterId}?q=${encodeURIComponent(query || '')}`;
       }
       
-      const resp = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s limit
+
+      const resp = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       const result = await resp.json();
       if (result.status === 'success') {
         // Robust result mapping: handle 'answer' (research API), 'report' (analyst API), or raw string
@@ -40,8 +45,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       } else {
         setError(result.message || 'Грешка при анализата.');
       }
-    } catch (e) {
-      setError('Аналитичкиот центар е привремено недостапен.');
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+          setError('Барањето траеше предолго. Обидете се повторно за неколку секунди.');
+      } else {
+          setError('Аналитичкиот центар е привремено недостапен.');
+      }
     } finally {
       setLoading(null);
     }
