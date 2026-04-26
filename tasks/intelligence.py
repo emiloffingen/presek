@@ -186,14 +186,23 @@ def detect_global_story_task(article_id):
     if not row or not row.get("title"): return
 
     try:
-        from nllb_translate import translate as nllb_translate
         from embeddings import generate_query_embedding
         from utils import redis_client
+        from prompts import TRANSLATION_TO_ENGLISH_SYSTEM_PROMPT
         import numpy as np
 
-        # 1. Translate to English Bridge
-        en_title = nllb_translate(row["title"], src_lang="mk", target_lang="en")
-        if not en_title or len(en_title) < 15: return
+        # 1. Translate to English Bridge using AI (Gemma/Mistral)
+        raw_res, provider = _call_ai(row["title"], TRANSLATION_TO_ENGLISH_SYSTEM_PROMPT, task_type="translation", json_mode=True)
+        en_title = None
+        if raw_res:
+            parsed = clean_json_response(raw_res)
+            if isinstance(parsed, dict):
+                en_title = parsed.get("translation")
+            elif isinstance(parsed, str):
+                en_title = parsed
+
+        if not en_title or len(en_title) < 15:
+            return
 
         # 2. Get English Embedding
         mk_vec = generate_query_embedding(en_title)

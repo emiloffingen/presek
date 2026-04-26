@@ -196,52 +196,25 @@ class TestLocalProvider:
 
 class TestTranslateToMacedonian:
     @patch('ai_engine.record_runtime_event')
-    @patch('nllb_translate.translate')
-    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
-    def test_records_nllb_translation_path(self, mock_nllb_translate, mock_record_runtime_event):
+    @patch('ai_engine._call_ai')
+    def test_records_ai_translation_path(self, mock_call_ai, mock_record_runtime_event):
         from ai_engine import translate_to_macedonian
-        mock_nllb_translate.return_value = "Владата најави нов пакет мерки."
+        mock_call_ai.return_value = ('{"summary": "Владата најави нов пакет мерки."}', "mistral")
 
         translate_to_macedonian("Government announced a new package of measures.")
 
-        mock_record_runtime_event.assert_any_call("translation_path", source_lang="en", mode="nllb")
+        mock_record_runtime_event.assert_any_call("translation_path", source_lang="en", mode="ai", provider="mistral")
 
-    @patch('nllb_translate.translate')
-    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
-    def test_prefers_nllb_when_it_returns_valid_macedonian(self, mock_nllb_translate):
-        from ai_engine import translate_to_macedonian
-        mock_nllb_translate.return_value = "Владата најави нов пакет мерки."
-
-        result = translate_to_macedonian("Government announced a new package of measures.")
-
-        assert "Владата" in result
-
-    @patch('nllb_translate.translate')
     @patch('ai_engine._call_ai')
-    @patch('config.LOCAL_TRANSLATION_ENABLED', True)
-    def test_ignores_unchanged_nllb_output_and_uses_ai_translation(self, mock_call_ai, mock_nllb_translate):
+    def test_successful_translation_via_ai(self, mock_call_ai):
         from ai_engine import translate_to_macedonian
-        mock_nllb_translate.return_value = "Government announced a new package of measures."
-        mock_call_ai.return_value = ('{"summary": "Владата најави нов пакет мерки."}', "mistral")
-
-        result = translate_to_macedonian("Government announced a new package of measures.")
-
-        assert "Владата" in result
-
-    @patch('nllb_translate.translate')
-    @patch('ai_engine._call_ai')
-    def test_successful_translation(self, mock_call_ai, mock_nllb_translate):
-        from ai_engine import translate_to_macedonian
-        mock_nllb_translate.return_value = None
         mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "mistral")
         result = translate_to_macedonian("English text to translate")
         assert result == "Преведен текст"
 
-    @patch('nllb_translate.translate')
     @patch('ai_engine._call_ai')
-    def test_ai_returns_none(self, mock_call_ai, mock_nllb_translate):
+    def test_ai_returns_none_falls_back_to_original(self, mock_call_ai):
         from ai_engine import translate_to_macedonian
-        mock_nllb_translate.side_effect = RuntimeError("nllb unavailable")
         mock_call_ai.return_value = (None, None)
         result = translate_to_macedonian("Text")
         assert result == "Text"
@@ -260,15 +233,14 @@ class TestTranslateToMacedonian:
         result = translate_to_macedonian("Text")
         assert result == "Преведено"
 
-    @patch('nllb_translate.translate')
     @patch('ai_engine._call_ai')
-    def test_ai_unchanged_text_falls_back_to_original_when_local_rewrite_cannot_translate(self, mock_call_ai, mock_nllb_translate):
+    def test_ai_unchanged_text_falls_back_to_original_when_local_rewrite_cannot_translate(self, mock_call_ai):
         from ai_engine import translate_to_macedonian
-        mock_nllb_translate.return_value = "Qxzv blorf snth"
         mock_call_ai.return_value = ("Qxzv blorf snth", "mistral")
 
         result = translate_to_macedonian("Qxzv blorf snth")
 
+        # It stays the same because it's already "normalized" or can't be translated better
         assert result == "Qxzv blorf snth"
 
     @patch('ai_engine.log')

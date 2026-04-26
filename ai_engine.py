@@ -364,7 +364,7 @@ def auto_summarize_top_clusters():
 def translate_to_macedonian(text: str) -> str | None:
     """Translate text to Macedonian.
 
-    Priority: NLLB (free, self-hosted) → AI API fallback → local rewrite.
+    Priority: AI API (Gemma/Mistral) → local rewrite fallback.
     """
     if not text or not text.strip():
         return text
@@ -411,21 +411,7 @@ def translate_to_macedonian(text: str) -> str | None:
             return normalized or candidate
         return None
 
-    # 1. Try self-hosted NLLB (free, no API cost, but heavy on RAM)
-    from config import LOCAL_TRANSLATION_ENABLED
-    if LOCAL_TRANSLATION_ENABLED:
-        try:
-            from nllb_translate import translate as nllb_translate
-            result = nllb_translate(text, lang)
-            translated = _normalize_translation_candidate(result)
-            if translated:
-                record_runtime_event("translation_path", source_lang=lang, mode="nllb")
-                log.info(f"[translate] {lang}→mk via nllb: {text[:60]}...")
-                return translated
-        except Exception as e:
-            log.warning(f"[translate] NLLB failed for {lang} text: {e}")
-
-    # 2. Fallback to AI API
+    # 1. Primary path: AI API (Gemma 2 2B or Mistral)
     try:
         result, provider = _call_ai(
             prompt=text,
@@ -451,7 +437,7 @@ def translate_to_macedonian(text: str) -> str | None:
     except Exception as e:
         log.warning(f"[translate] AI translation failed for {lang} text: {e}")
 
-    # 3. Last resort: local rewrite (best-effort)
+    # 2. Last resort: local rewrite (best-effort)
     rewritten = rewrite_to_macedonian_locally(text)
     if rewritten and str(rewritten).strip() and str(rewritten).strip().casefold() != text.strip().casefold():
         record_runtime_event("translation_path", source_lang=lang, mode="local_rewrite")
