@@ -157,23 +157,25 @@ async def get_cluster_storyline_history(cluster_id: str):
     vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
     
     # Search for similar clusters from the past 30 days
-    # We group by cluster_id and join with metadata for images
+    # We tighten the similarity threshold to 0.72 and ensure category overlap
     related_clusters = await db.async_execute("""
         SELECT a.cluster_id,
                MAX(a.title) as title,
                MIN(a.created_at) as first_seen,
                (1 - (MIN(a.embedding <=> %s::vector))) as similarity,
-               MAX(cm.representative_image) as image_url
+               MAX(cm.representative_image) as image_url,
+               MAX(a.category) as category
         FROM articles a
         LEFT JOIN cluster_metadata cm ON a.cluster_id = cm.cluster_id
         WHERE a.embedding IS NOT NULL
           AND a.cluster_id != %s
           AND a.created_at >= NOW() - INTERVAL '30 days'
         GROUP BY a.cluster_id
-        HAVING (1 - (MIN(a.embedding <=> %s::vector))) > 0.60
+        HAVING (1 - (MIN(a.embedding <=> %s::vector))) > 0.72
+           AND MAX(a.category) = (SELECT category FROM articles WHERE cluster_id = %s LIMIT 1)
         ORDER BY first_seen DESC
         LIMIT 10
-    """, (vec_str, cluster_id, vec_str))
+    """, (vec_str, cluster_id, vec_str, cluster_id))
 
     return {"history": related_clusters}
 @router.get("/intelligence/cluster/{cluster_id}/research")

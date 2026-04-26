@@ -505,26 +505,35 @@ def build_read_next_clusters(current_cluster_id, current_articles, current_tags,
 
         shared_tags = current_tags & candidate_tags
         shared_entities = current_entities & candidate_entities
+        shared_tags = current_tags & candidate_tags
         shared_topics = current_topics & candidate_topics
         title_overlap = _cluster_title_overlap(current_lead_title, str(lead.get("title") or ""))
+        
         score = 0.0
-        relation_label = "Ист контекст"
-        relation_note = "Поврзан кластер што влегува во истиот поширок news cycle."
+        relation_label = "Сличен контекст"
+        relation_note = "Поврзан кластер со сличен новинарски контекст."
 
-        if shared_entities and title_overlap >= 0.25:
-            score += 2.0 + len(shared_entities) * 0.22
+        if shared_entities and title_overlap >= 0.28:
+            score += 2.5 + len(shared_entities) * 0.3
             relation_label = "Следен развој"
             relation_note = "Истите актери или тема, но со нов развој или следна фаза."
-        elif shared_tags and title_overlap < 0.22:
-            score += 1.6 + len(shared_tags) * 0.18
-            relation_label = "Позадина и контекст"
-            relation_note = "Поврзани информации и претходен контекст за оваа тема."
         elif shared_entities:
-            score += 1.35 + len(shared_entities) * 0.15
-            relation_label = "Исти актери, друг агол"
-            relation_note = "Поврзани лица со оваа вест, но во поинаков контекст или настан."
-        elif shared_topics:
-            score += 1.05 + len(shared_topics) * 0.12
+            score += 1.8 + len(shared_entities) * 0.2
+            relation_label = "Исти актери"
+            relation_note = "Поврзани лица со оваа вест, но во поинаков контекст."
+        elif shared_tags and (title_overlap >= 0.15 or len(shared_tags) >= 2):
+            score += 1.6 + len(shared_tags) * 0.18
+            relation_label = "Поврзана тема"
+            relation_note = "Поврзани информации и претходен контекст за оваа тема."
+        elif title_overlap >= 0.25:
+            score += 1.4
+            relation_label = "Сродна сторија"
+        elif shared_topics and title_overlap >= 0.12:
+            score += 1.1 + len(shared_topics) * 0.1
+            relation_label = "Од истата категорија"
+        else:
+            # If no entities or tags or high title overlap, it's likely a false positive
+            continue
 
         if lead.get("source_signal", {}).get("trust_label") == "Висока доверба":
             score += 0.35

@@ -456,6 +456,7 @@ async def get_news(
             "clusters": result, 
             "global": global_result,
             "page": page, 
+            "page_size": page_size,
             "has_more": len(ranked_clusters) > start + page_size,
             "entity": entity_info
         }
@@ -584,19 +585,20 @@ async def get_cluster_detail(cluster_id: str):
             if dominant_color:
                 await db.async_execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
 
-        related = []
         lead_article = articles[0] if articles else None
         if lead_article and lead_article.get("embedding"):
             lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
-            related_results = await db.async_search_semantic(lead_vec, limit=24)
+            # Tightened limit and threshold
+            related_results = await db.async_search_semantic(lead_vec, limit=20)
             related_cids = []
             seen = {cluster_id}
             for r in related_results:
                 cid = r.get("cluster_id")
-                if cid and cid not in seen:
+                similarity = float(r.get("similarity", 0))
+                if cid and cid not in seen and similarity >= 0.72:
                     related_cids.append(cid)
                     seen.add(cid)
-                    if len(related_cids) >= 12:
+                    if len(related_cids) >= 10:
                         break
             if related_cids:
                 r_rows = await db.async_execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
