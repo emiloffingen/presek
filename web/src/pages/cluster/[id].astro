@@ -16,7 +16,7 @@ import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSugges
 import NewsletterIsland from '../../components/NewsletterIsland.tsx';
 import AdUnit from '../../components/AdUnit.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
-import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes } from '../../utils/textUtils';
+import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout } from '../../utils/textUtils';
 
 function getRelativeTimeStr(dateStr: string) {
     if (!dateStr) return '';
