@@ -585,6 +585,7 @@ async def get_cluster_detail(cluster_id: str):
             if dominant_color:
                 await db.async_execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
 
+        related = []
         lead_article = articles[0] if articles else None
         if lead_article and lead_article.get("embedding"):
             lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
