@@ -287,7 +287,7 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                                 </p>
                             </div>
 
-                            <div class="intro-ledger">
+                            <div class="intro-ledger mt-8">
                                 <div class="ledger-card">
                                     <span class="ledger-label">Издание</span>
                                     <strong>{readingTime} минути</strong>
@@ -298,13 +298,17 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
                                     <strong>{sectionHighlights.length || 6} главни линии</strong>
                                     <p>Поделени според агенда, а не според суров редослед на објавување.</p>
                                 </div>
+                                <div class="ledger-card">
+                                    <span class="ledger-label">Уреднички избор</span>
+                                    <strong>{totalSubjects > 0 ? `${totalSubjects} активни актери` : 'Покондензирано издание'}</strong>
+                                    <p>Селектирано преку систем за длабока анализа на медиумскиот плурализам.</p>
+                                </div>
+                                <div class="ledger-card bg-nyt-accent/5">
+                                    <span class="ledger-label !text-nyt-accent">Кредибилитет</span>
+                                    <strong>{stats?.intelligence?.pluralism?.high_consensus_pct || 0}% Консензус</strong>
+                                    <p>Висок степен на усогласеност кај водечките медиумски извори.</p>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="intro-notes">
-                            <span class="intro-note">Уреднички избор</span>
-                            <span class="intro-note">{coverageTone}</span>
-                            <span class="intro-note">{totalSubjects} активни актери</span>
                         </div>
 
                         <div class="briefing-content" set:html={sanitizeHtml(formatBriefing(briefing.content))} />
