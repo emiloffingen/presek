@@ -537,43 +537,6 @@ const articleSchema = cluster ? {
 							</section>
 						)}
 
-						{/* ANALYTICAL TOOLS SECTION */}
-						<section class="editorial-section data-section mb-16 border-t border-border/40 pt-12">
-							<div class="section-eyebrow mb-12">
-								<BarChart3 size={18} className="text-muted-foreground" />
-								<h2 class="section-label">МЕДИУМСКИ ПУЛС</h2>
-								<div class="section-divider"></div>
-							</div>
-
-							<div class="data-tools-grid">
-								{sentimentData && (
-									<div class="data-card radar-card">
-										<header class="card-header">
-											<h4>Тоналитет на известувањето</h4>
-											<p>Сентимент и емотивен набој низ сите извори.</p>
-										</header>
-										<MediaPulseRadar data={sentimentData} client:visible />
-									</div>
-								)}
-
-								<div class="data-card spectrum-card">
-									<header class="card-header">
-										<h4>Спектар на извори</h4>
-										<p>Распределба на медиумите во овој кластер.</p>
-									</header>
-									<div class="py-6">
-										<SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source })) as any} client:visible />
-									</div>
-								</div>
-							</div>
-
-							{allSourcesNames.length >= 2 && (
-								<div class="mt-12">
-									<SourceComparisonIsland allSources={allSourcesNames} client:visible />
-								</div>
-							)}
-						</section>
-
 						{/* ALL SOURCES LIST */}
 						<section class="editorial-section sources-section mb-16 border-t border-border/40 pt-12">
 							<div class="section-eyebrow mb-8">
@@ -658,6 +621,29 @@ const articleSchema = cluster ? {
 					{/* 4. SIDEBAR COLUMN */}
 					<aside class="editorial-sidebar-col">
 						<div class="sticky-sidebar space-y-12">
+                            {/* NEW: Data Anchors in Sidebar */}
+                            {sentimentData && (
+                                <div class="sidebar-module">
+                                    <h4 class="sidebar-label">МЕДИУМСКИ ПУЛС</h4>
+                                    <div class="mt-4">
+                                        <MediaPulseRadar data={sentimentData} client:visible />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div class="sidebar-module">
+                                <h4 class="sidebar-label">СПЕКТАР НА ИЗВОРИ</h4>
+                                <div class="mt-6">
+                                    <SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source })) as any} client:visible />
+                                </div>
+                            </div>
+
+                            {allSourcesNames.length >= 2 && (
+                                <div class="sidebar-module">
+                                    <SourceComparisonIsland allSources={allSourcesNames} client:visible />
+                                </div>
+                            )}
+
 							<div class="sidebar-module">
 								<AdUnit slot="cluster_sidebar" />
 							</div>
