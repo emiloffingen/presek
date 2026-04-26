@@ -41,8 +41,6 @@ try:
 except ImportError:
     _rate_limiter_enabled = False
     limiter = None
-    log = get_logger("presek.api")
-    log.warning("slowapi not installed - rate limiting disabled. Install with: pip install slowapi")
 
 def is_safe_url(url: str) -> bool:
     """Rigorous SSRF protection: block local/private network ranges."""
