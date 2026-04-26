@@ -144,7 +144,7 @@ def _briefing_title_penalty(title: str, source_count: int = 1, has_editorial_dep
         penalty *= 0.75
     return penalty
 
-def _load_daily_brief_clusters(limit=6):
+def _load_daily_brief_clusters(limit=5):
     rows = db.execute(
         "SELECT cluster_id, title, description, summary, source, category, topic, created_at FROM articles "
         "WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 180"

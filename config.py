@@ -162,13 +162,12 @@ ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "f
 TASK_ROUTING = {
     "translation":  ["local", "mistral"],
     "summarize":    ["local", "mistral"],
-    "synthesis":    ["mistral", "local"],
-    "daily_brief":  ["mistral", "local"],
+    "synthesis":    ["local", "mistral"],
+    "daily_brief":  ["local", "mistral"],
     "research":     ["local", "mistral"],
     "chat":         ["local", "mistral"],
     "default":      ["local", "mistral"],
 }
-
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
     "SIMILARITY_THRESHOLD": 0.45,
