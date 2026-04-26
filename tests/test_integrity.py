@@ -16,7 +16,7 @@ class TestAstroFrontendIntegrity:
             "web/src/pages/archive.astro",
             "web/src/pages/izvori.astro",
             "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[id].astro",
+            "web/src/pages/cluster/[slug].astro",
             "web/src/pages/subjekt/[name].astro",
         ):
             assert (ROOT / rel_path).is_file(), f"Missing Astro route: {rel_path}"
@@ -50,7 +50,7 @@ class TestAstroFrontendIntegrity:
             "web/src/pages/index.astro",
             "web/src/pages/briefing.astro",
             "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[id].astro",
+            "web/src/pages/cluster/[slug].astro",
             "web/src/pages/subjekt/[name].astro",
             "web/src/pages/archive.astro",
         ):
@@ -125,7 +125,7 @@ class TestAstroFrontendIntegrity:
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
-        cluster_page = _read("web/src/pages/cluster/[id].astro")
+        cluster_page = _read("web/src/pages/cluster/[slug].astro")
         text_utils = _read("web/src/utils/textUtils.ts")
 
         assert "const citationSources = cluster?.citation_sources || [];" in cluster_page
