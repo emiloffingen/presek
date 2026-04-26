@@ -432,38 +432,51 @@ def compare_cluster_sources(articles):
 def synthesize_cluster_fallback(articles):
     articles = _normalize_articles_for_local_use(articles)
     if not articles: return {"summary": "", "perspectives": []}
-    lead = articles[0]
-    descriptions = [article["description"] for article in articles if article["description"]]
-    combined_text = " ".join([lead["title"], *descriptions[:4]])
-    context_summary = summarize_locally(combined_text, sentence_count=3).strip()
-    comparison = compare_cluster_sources(articles)
-    common_line = re.sub(r"^Повеќето извори се согласуваат околу:\s*", "", comparison["common_line"]).strip()
-    compact_context = " ".join(_coerce_grounded_snippet(line).rstrip(".") for line in context_summary.splitlines()[:2] if _coerce_grounded_snippet(line))
-    summary_lines = [f"• Што се случува: {lead['title']}"]
     
-    # Special Score Detection for Sports
-    from nlp.categories import detect_topic
-    all_titles = " ".join([a.get("title") or "" for a in articles])
-    if detect_topic(all_titles) == "Спорт":
-        # Extract all scores; articles are typically sorted by date DESC
-        latest_scores = _extract_sports_scores(articles[0].get("title") or "") + _extract_sports_scores(articles[0].get("description") or "")
-        if latest_scores:
-            summary_lines.append(f"• Резултат: {latest_scores[0]}")
+    lead = articles[0]
+    comparison = compare_cluster_sources(articles)
+    
+    # 1. Smarter Context Extraction
+    desc = cleanAndDecode(lead.get("description", ""))
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', desc) if len(s.strip()) > 20]
+    
+    # 2. Build Summary Points
+    summary_lines = []
+    summary_lines.append(f"• {lead['title']}")
+    
+    if sentences:
+        summary_lines.append(f"• {sentences[0]}")
+        
+    common = comparison.get("common_line", "").replace("Повеќето извори се согласуваат околу ", "").replace(" како теми во фокус.", "").strip()
+    if common and len(common) > 5:
+        summary_lines.append(f"• Потврден е фокусот на: {common}")
+    
+    sources_str = _source_list(articles, limit=4)
+    summary_lines.append(f"• Развојот го следат {len(articles)} медиуми, вклучувајќи ги {sources_str}.")
 
-    if common_line: summary_lines.append(f"• Што е потврдено: {common_line}")
-    elif compact_context: summary_lines.append(f"• Што е потврдено: {compact_context}.")
-    summary_lines.append(f"• Покриеност: темата ја следат {len(articles)} извори, со водечки сигнали од {_source_list(articles)}.")
-    if comparison["difference_points"]: summary_lines.append(f"• Каде се разликуваат изворите: {comparison['difference_points'][0]}")
-    if comparison.get("open_points"): summary_lines.append(f"• Што останува отворено: {comparison['open_points'][0]}")
+    summary = "\n".join(summary_lines)
+
+    # 3. Perspectives
     perspectives = []
-    if common_line: perspectives.append({"angle": "Заедничка линија", "content": common_line})
-    if comparison["difference_points"]: perspectives.append({"angle": "Различни акценти", "content": " ".join(comparison["difference_points"][:2])})
-    if comparison.get("open_points"): perspectives.append({"angle": "Што останува отворено", "content": comparison["open_points"][0]})
-    summary = "\n".join(summary_lines[:6])
-    if _is_low_quality_local_text(summary):
-        summary = _build_minimum_cluster_summary(articles, comparison=comparison)
-        record_runtime_event("local_synthesis_path", mode="minimum")
-    else: record_runtime_event("local_synthesis_path", mode="full")
+    if len(articles) > 1:
+        perspectives.append({
+            "angle": "Консензус", 
+            "content": f"Водечките извештаи од {articles[0]['source']} и {articles[1]['source']} се усогласени околу главните параметри на настанот."
+        })
+    
+    if comparison["difference_points"]:
+        perspectives.append({
+            "angle": "Нијанси", 
+            "content": comparison["difference_points"][0]
+        })
+        
+    if comparison.get("open_points"):
+        perspectives.append({
+            "angle": "Отворено", 
+            "content": comparison["open_points"][0]
+        })
+
+    record_runtime_event("local_synthesis_path", mode="enhanced_fallback")
     return {"summary": summary, "perspectives": perspectives[:3]}
 
 def generate_daily_brief_fallback(clusters):

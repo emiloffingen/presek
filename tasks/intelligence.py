@@ -360,14 +360,24 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=max_tokens)
 
         if raw:
-            res = clean_json_response(raw)
+            try:
+                res = clean_json_response(raw)
+            except Exception as e:
+                log.error(f"[tasks/synthesis] JSON Parse Error for {cluster_id}: {e}. Raw: {raw[:200]}")
+                raise
+
             summary = res.get('summary', '') if isinstance(res, dict) else res
             generated_article = res.get('article', '') if isinstance(res, dict) else ''
             synthetic_headline = res.get('synthetic_headline', '') if isinstance(res, dict) else ''
             synthetic_standfirst = res.get('synthetic_standfirst', '') if isinstance(res, dict) else ''
-            
             verification_report = res.get('verification_report') if isinstance(res, dict) else None
-            
+            perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
+            quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
+
+            if not summary or (isinstance(summary, str) and len(summary) < 20):
+                 log.warning(f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id}")
+                 raise ValueError("Empty AI summary")
+
             # Sanitize for name hallucinations
             summary = validate_person_names(summary)
             generated_article = validate_person_names(generated_article)
@@ -375,14 +385,11 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
 
             # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
-            comparison_text = summary + "\n" + generated_article
+            comparison_text = (summary or "") + "\n" + (generated_article or "")
             if not fast_mode and not _is_grounded_synthesis(comparison_text, source_context or legacy_summary) and retry_attempt < 2:
                 log.warning(f"Hallucination gate failed for cluster {cluster_id}, retrying...")
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=30)
                 return
-
-            perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
-            quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
 
             sentiment_data = {
                 "sentiment": res.get('sentiment', {}),
@@ -395,18 +402,18 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             # Phase 3: Deep Local Analyst (SKIP in fast_mode)
             deep_metadata = {}
             pluralism_data = {}
-            
+
             if not fast_mode:
                 def _run_analyst_logic():
                     nonlocal deep_metadata, pluralism_data
                     try:
                         analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
                         deep_metadata = analyst.extract_deep_metadata(analyst_text)
-                        
+
                         # Phase 3.1: Pluralism Assessment
                         titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
                         pluralism_data = analyst.assess_pluralism(titles_sources)
-                        
+
                         # Phase 3.2: Knowledge Graph Update
                         entities = deep_metadata.get('entities', [])
                         for entity in entities:
@@ -424,25 +431,26 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 analyst_thread = threading.Thread(target=_run_analyst_logic)
                 analyst_thread.start()
                 analyst_thread.join(timeout=240) # 4 minute limit for low-core CPUs
-                
+
                 if analyst_thread.is_alive():
                     log.warning(f"[analyst] Timeout reached for cluster {cluster_id}")
                 elif deep_metadata or pluralism_data:
                     log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
 
         else:
+            log.warning(f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id}, using enhanced fallback")
             fallback = synthesize_cluster_fallback(article_rows)
-            sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
-            summary, perspectives = _normalize_cluster_synthesis(
-                fallback.get("summary", ""),
-                fallback.get("perspectives", []),
-                article_rows,
-            )
+            summary = fallback["summary"]
+            perspectives = fallback["perspectives"]
+            synthetic_headline = deShout(article_rows[0]["title"])
+            synthetic_standfirst = "Аналитички преглед на новинарските извештаи од денот."
             generated_article = ""
-            quote = ""
+            verification_report = None
+            sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
             deep_metadata = {}
             pluralism_data = {}
-            record_runtime_event("synthesis_path", mode="local_fallback")
+            record_task_event(cluster_id, "synthesis_fallback", {"provider": provider})
+            record_runtime_event("synthesis_path", mode="local_fallback_total")
 
         if summary or perspectives:
             # Calculate Cluster Centroid (Semantic Center)
@@ -495,8 +503,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                            narrative_diversity = EXCLUDED.narrative_diversity""",
                     (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data)),
                     fetch=False
-                )
-            # Publish SSE event for Real-Time UI updates
+                )            # Publish SSE event for Real-Time UI updates
             try:
                 from utils import publish_event
                 # Determine if breaking
