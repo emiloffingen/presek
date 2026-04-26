@@ -190,6 +190,7 @@ copy_release_tree() {
     --exclude 'releases/' \
     --exclude 'current' \
     --exclude 'previous' \
+    --exclude '.runtime-meta' \
     --exclude 'presek.db' \
     --exclude 'static/uploads/*' \
     --exclude 'static/generated/*' \
@@ -212,6 +213,7 @@ persist_release_runtime_meta() {
   local venv_target="$2"
   local web_target="$3"
   [ -n "$target_dir" ] && [ -d "$target_dir" ] || return 0
+  [ "$(cd "$target_dir" && pwd -P)" != "$(cd "$SOURCE_ROOT" && pwd -P)" ] || return 0
   cat > "$target_dir/.runtime-meta" <<EOF
 VENV_TARGET=$venv_target
 WEB_NODE_MODULES_TARGET=$web_target
@@ -280,13 +282,35 @@ update_active_runtime_links() {
 
 build_release() {
   ln -sfn "$RELEASE_WEB_NODE_MODULES_TARGET" "$RELEASE_DIR/web/node_modules"
+  mkdir -p "$RELEASE_DIR/web/.astro/collections"
 
   info "Building Astro release"
   (cd "$RELEASE_DIR/web" && npm run build)
   [ -f "$RELEASE_DIR/web/dist/server/entry.mjs" ] || fail "Release build did not produce web/dist/server/entry.mjs"
 }
 
+invalidate_public_api_caches() {
+  if ! command -v redis-cli >/dev/null 2>&1; then
+    warn "redis-cli not found; skipping public API cache invalidation"
+    return 0
+  fi
+
+  info "Clearing public API caches"
+  redis-cli EVAL "for _,p in ipairs(ARGV) do local cursor='0' repeat local r=redis.call('scan', cursor, 'match', p, 'count', 200) cursor=r[1] for _,k in ipairs(r[2]) do redis.call('del', k) end until cursor == '0' end" 0 \
+    "api:news:*" \
+    "api:home:*" \
+    "api:stats:summary:*" \
+    "api:briefing:*" \
+    >/dev/null || warn "Could not clear Redis API caches"
+}
+
 run_release_checks() {
+  info "Checking FastAPI import in release runtime"
+  (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" - <<'PY'
+import api_fast
+PY
+  )
+
   if [ "$RUN_TESTS" = "1" ]; then
     [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL must be set when RUN_TESTS=1"
     info "Running pytest before switch"
@@ -433,6 +457,7 @@ main() {
     ln -sfn "$previous_target" "$PREVIOUS_LINK"
   fi
   update_active_runtime_links "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
+  invalidate_public_api_caches
 
   if ! restart_and_smoke; then
     rollback_release "$RELEASE_DIR" "$previous_target" "$current_venv_target" "$current_web_deps_target" || warn "Rollback did not complete cleanly"

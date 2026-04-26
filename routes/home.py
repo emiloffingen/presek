@@ -15,14 +15,21 @@ router = APIRouter()
 
 class HomeResponse(BaseModel):
     status: str
-    news: List[Any]
-    recent: List[Any]
-    trending: List[Any]
-    entities: List[Any]
-    briefing: Dict[str, Any]
-    stats: Dict[str, Any]
-    focus_entities: List[Any]
-    excluded_cluster_ids: List[str]
+    lead: Optional[Any] = None
+    lead_display: Optional[Dict[str, Any]] = None
+    supporting: List[Any] = Field(default_factory=list)
+    live_now: List[Any] = Field(default_factory=list)
+    for_you_pool: List[Any] = Field(default_factory=list)
+    developing: List[Any] = Field(default_factory=list)
+    wire: List[Any] = Field(default_factory=list)
+    latest_wire: List[Any] = Field(default_factory=list)
+    global_: List[Any] = Field(default_factory=list, alias="global")
+    trending: List[Any] = Field(default_factory=list)
+    briefing: Dict[str, Any] = Field(default_factory=dict)
+    stats: Dict[str, Any] = Field(default_factory=dict)
+    focus_entities: List[Any] = Field(default_factory=list)
+    excluded_cluster_ids: List[str] = Field(default_factory=list)
+    message: Optional[str] = None
 
 class StatusOnlyResponse(BaseModel):
     status: str

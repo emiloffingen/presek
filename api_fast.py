@@ -295,7 +295,7 @@ def custom_rate_limit(limit_str):
 
 @app.get("/api/entity-graph/{entity_name}")
 @custom_rate_limit("30/minute")
-async def entity_graph_lookup(entity_name: str):
+async def entity_graph_lookup(request: Request, entity_name: str):
     """Fetches persistent knowledge about an entity from the local graph."""
     from database import db_manager as db
     
@@ -311,7 +311,7 @@ async def entity_graph_lookup(entity_name: str):
 
 @app.get("/api/research/{cluster_id}")
 @custom_rate_limit("10/minute")
-async def cluster_research(cluster_id: str, q: str):
+async def cluster_research(request: Request, cluster_id: str, q: str):
     """Researches a cluster based on a user query using Gemma 2."""
     from local_analyst import analyst
     from database import db_manager as db

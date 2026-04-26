@@ -90,6 +90,7 @@ rebuild_dist() {
   local backup_dir="$WEB_DIR/.dist-backup.$$"
 
   rm -rf "$backup_dir"
+  mkdir -p "$WEB_DIR/.astro/collections"
   if [ -d "$dist_dir" ]; then
     mv "$dist_dir" "$backup_dir"
   fi
@@ -100,9 +101,11 @@ rebuild_dist() {
   fi
 
   echo "Astro rebuild failed; restoring previous dist/" >&2
-  rm -rf "$dist_dir"
   if [ -d "$backup_dir" ]; then
+    rm -rf "$dist_dir"
     mv "$backup_dir" "$dist_dir"
+  else
+    echo "No previous dist/ backup was available to restore" >&2
   fi
   return 1
 }
