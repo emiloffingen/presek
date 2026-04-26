@@ -69,6 +69,8 @@ celery_app.conf.update(
         'tasks.ingestion_task.run_ingestion': {'queue': 'fast-track'},
         'tasks.ingestion_task.auto_repair_sources_task': {'queue': 'maintenance'},
         'tasks.ingestion_task.crawl_article_task': {'queue': 'fast-track'},
+        'tasks.intelligence.synthesize_cluster_task': {'queue': 'fast-track'},
+        'tasks.intelligence.auto_summarize_task': {'queue': 'fast-track'},
         'tasks.intelligence.*': {'queue': 'intel-heavy'},
         'tasks.delivery.send_profile_breaking_alerts_task': {'queue': 'fast-track'},
         'tasks.delivery.*': {'queue': 'delivery'},

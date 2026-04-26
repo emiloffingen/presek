@@ -154,7 +154,7 @@ POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
 # Large models (Gemma 2, MiniLM) take 2GB+ RAM and can slow down the server.
 # Set to False to disable local translation/style normalization.
 LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").lower() == "true"
-ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "true").lower() == "true"
+ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
 # local (Gemma 2 2B) is now the PRIMARY choice for volume tasks.
