@@ -105,8 +105,12 @@ const articleRows = (cluster?.articles || []).map(a => {
 
 function renderSynthesisHtml(text: string) {
 	if (!text) return '';
-	const clean = cleanAndDecode(text);
+	let clean = cleanAndDecode(text);
 	if (!clean) return '';
+
+	// Handle Markdown Bold: **text** -> <strong>text</strong>
+	clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
 	if (hasCitationSources) return sanitizeHtml(parseFootnotes(clean));
 	return sanitizeHtml(clean.replace(/\[(\d+)\]/g, '').replace(/\s{2,}/g, ' ').trim());
 }
@@ -313,7 +317,7 @@ const articleSchema = cluster ? {
 							
 							<div class="briefing-content space-y-4 mb-6">
 								{headerBriefItems.map((line: string) => (
-									<p class="briefing-point" set:html={sanitizeHtml(cleanAndDecode(line))}></p>
+									<p class="briefing-point" set:html={renderSynthesisHtml(line)}></p>
 								))}
 							</div>
 
@@ -446,7 +450,7 @@ const articleSchema = cluster ? {
 												</header>
 												<ul class="fact-list">
 													{verificationReport.agreements.map((item: string) => (
-														<li class="fact-item green" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+														<li class="fact-item green" set:html={renderSynthesisHtml(item)}></li>
 													))}
 												</ul>
 											</div>
@@ -458,7 +462,7 @@ const articleSchema = cluster ? {
 												</header>
 												<ul class="fact-list">
 													{verificationReport.conflicts.map((item: string) => (
-														<li class="fact-item red" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+														<li class="fact-item red" set:html={renderSynthesisHtml(item)}></li>
 													))}
 												</ul>
 											</div>
@@ -472,7 +476,7 @@ const articleSchema = cluster ? {
 													<p class="text-xs text-muted-foreground mb-3 font-sans uppercase font-bold tracking-wider">Што изоставуваат одредени извори:</p>
 													<ul class="fact-list">
 														{verificationReport.missing_info.map((item: string) => (
-															<li class="fact-item amber" set:html={sanitizeHtml(cleanAndDecode(item))}></li>
+															<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
 														))}
 													</ul>
 												</div>
