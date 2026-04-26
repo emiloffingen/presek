@@ -105,23 +105,25 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 {loading && <Loader2 size={14} className="animate-spin text-nyt-accent ml-2" />}
             </nav>
 
-            <div className={`pulse-stats-grid mb-24 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+            <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                 <div className="pulse-card">
                     <p className="card-label"><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
                     <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</p>
                     <div className="card-sparkline">
-                        {velocityData.slice(-12).map((v: any, i: number) => {
+                        {velocityData.length > 0 ? velocityData.slice(-12).map((v: any, i: number) => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
                             const height = Math.max(15, ((v.n || 0) / maxVelocity) * 100);
                             return <div key={i} className="bar" style={{ height: `${height}%` }}></div>
-                        })}
+                        }) : (
+                            <div className="w-full h-px bg-border opacity-20 self-center"></div>
+                        )}
                     </div>
                 </div>
 
                 <div className="pulse-card border-t-4 border-t-nyt-accent">
                     <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
                     <p className="card-value">{intelligence.pluralism?.pluralism_pct || 0}%</p>
-                    <p className="card-note">{intelligence.pluralism?.high_consensus_pct}% медиумски консензус</p>
+                    <p className="card-note">{(intelligence.pluralism?.pluralism_pct || 0) > 0 ? `${intelligence.pluralism?.high_consensus_pct}% медиумски консензус` : 'Системот анализира нови кластери'}</p>
                 </div>
 
                 <div className="pulse-card">
@@ -133,12 +135,37 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 <div className="pulse-card">
                     <p className="card-label"><Zap size={12}/> ТРЕНДИНГ {category && <span className="text-[8px] opacity-60">ВО {category}</span>}</p>
                     <div className="card-list">
-                        {topEntities.slice(0, 3).map((e: any, i: number) => (
+                        {topEntities.length > 0 ? topEntities.slice(0, 3).map((e: any, i: number) => (
                             <div key={i} className="list-item">
                                 <span className="truncate">{e.name}</span>
                                 <strong className="text-nyt-accent">+{e.total_mentions}</strong>
                             </div>
-                        ))}
+                        )) : (
+                            <p className="text-[10px] text-muted-foreground italic py-2">Нема доволно податоци за трендови</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Insights Deck */}
+            <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-1">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent mb-2">Клучни Увиди</h3>
+                    <p className="font-serif italic text-lg leading-snug">
+                        {intelligence.pluralism?.pluralism_pct > 50 
+                            ? "Забележан е висок степен на медиумски консензус кај водечките стории денес."
+                            : "Низок плурализам: темите се обработуваат со специфични, дивергентни агли."
+                        }
+                    </p>
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-4 border-l border-border pl-8">
+                    <div>
+                        <span className="block text-[9px] font-black uppercase text-muted-foreground">Транспарентност</span>
+                        <span className="text-lg font-black">{intelligence.synthesis_transparency?.systemic_ratio || 0}%</span>
+                    </div>
+                    <div>
+                        <span className="block text-[9px] font-black uppercase text-muted-foreground">Стабилност</span>
+                        <span className="text-lg font-black text-emerald-600">Оптимална</span>
                     </div>
                 </div>
             </div>

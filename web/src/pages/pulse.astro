@@ -52,34 +52,34 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
     description="Анализа на медиумскиот пејзаж во Македонија преку податоци и алгоритамска обработка во реално време."
 >
     <NYTHeader />
-    <main class="site-layout broadsheet-layout pt-48 pb-[var(--page-py)]">
+    <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
         <header class="editorial-masthead motion-rise masthead-double-rule">
             <div class="masthead-top">
                 <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
-                    <span className="meta-item"><Timer size={11} /> {globalPulse?.last_24h ? Math.max(3, Math.ceil(globalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
-                    <span className="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
-                    </div>
-                    </div>
+                    <span class="meta-item"><Timer size={11} /> {globalPulse?.last_24h ? Math.max(3, Math.ceil(globalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
+                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
+                </div>
+            </div>
 
-                    <div class="masthead-main">
-                    <div class="masthead-branding">
+            <div class="masthead-main">
+                <div class="masthead-branding">
                     <Zap size={32} className="text-nyt-accent" fill="currentColor" />
                     <h1 class="masthead-title">Медиумски <span>Пулс</span></h1>
-                    </div>
-                    <div class="masthead-date">
+                </div>
+                <div class="masthead-date">
                     <p>{currentDate}</p>
-                    </div>
-                    </div>
+                </div>
+            </div>
 
-                    <div class="masthead-standfirst mt-6">
-                        <p>Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност. Анализирано преку систем за длабока анализа за објективност и плурализам.</p>
-                    </div>
+            <div class="masthead-standfirst mt-6">
+                <p>Дневната слика на медиумската сцена: обем, ритам, диверзитет и системска транспарентност. Анализирано преку систем за длабока анализа за објективност и плурализам.</p>
+            </div>
 
-            <div class="masthead-deck">
-                <span>{categories.length} КАТЕГОРИИ АНАЛИЗИРАНИ</span>
-                <span>{globalPulse?.intelligence?.pluralism?.pluralism_pct || 0}% ДИВЕРЗИТЕТ</span>
-                <span>{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0} ОБЈАВИ ДЕНЕС</span>
+            <div class="masthead-deck mt-8">
+                <span class="deck-item"><strong>{categories.length || 6}</strong> Категории</span>
+                <span class="deck-item"><strong>{globalPulse?.intelligence?.pluralism?.pluralism_pct || 0}%</strong> Диверзитет</span>
+                <span class="deck-item"><strong>{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</strong> Објави Денес</span>
             </div>
         </header>
 
