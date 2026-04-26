@@ -322,19 +322,25 @@ function getRelativeTimeStr(dateStr?: string) {
 
     @media (max-width: 960px) {
         .live-ticker { display: none; }
-        .editorial-topbar { padding: 0.25rem 0 0.35rem; }
+        .editorial-topbar { padding: 0.25rem 0.5rem 0.35rem; }
         .topbar-main { grid-template-columns: auto 1fr auto; gap: 0.5rem; }
         .topbar-left-stack { order: 1; flex-direction: row; align-items: center; }
         .topbar-date-display { display: none; }
-        .topbar-branding { order: 2; flex: 1; justify-content: flex-start; }
+        .topbar-branding { order: 2; flex: 1; justify-content: flex-start; min-width: 0; }
         .topbar-actions { order: 3; flex-direction: row; align-items: center; gap: 0.5rem; }
         .topbar-modes-rail { border: 0; padding: 0; }
-        .mode-link { padding: 0.3rem 0.4rem; }
-        .brand-logo { height: 1.35rem; }
-        .brand-emblem { height: 1.1rem; }
+        .mode-link { padding: 0.3rem 0.4rem; font-size: 0.55rem; }
+        .brand-logo { height: 1.25rem; max-width: 100%; }
+        .brand-emblem { height: 1rem; }
         .nav-rail-group { padding: 0 0.65rem; }
-        .nav-rail-content { padding: 0.2rem 0; }
+        .nav-rail-content { padding: 0.2rem 0; width: max-content; }
         .live-ticker-badge { padding-right: 0.5rem; font-size: 0.48rem; }
+    }
+
+    @media (max-width: 400px) {
+        .topbar-modes-rail { display: none; }
+        .topbar-main { grid-template-columns: auto 1fr auto; }
+        .topbar-util { gap: 0.35rem; }
     }
 </style>
 

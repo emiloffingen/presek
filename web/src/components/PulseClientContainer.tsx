@@ -84,7 +84,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     }
 
     return (
-        <>
+        <div className="pulse-client-container w-full max-w-full overflow-x-hidden">
             {/* Category Filter Bar */}
             <nav className="flex items-center gap-2 mb-12 border-b border-border pb-4 overflow-x-auto hide-scrollbar sticky top-[72px] bg-background/80 backdrop-blur-md z-30 py-2">
                 <button 
@@ -290,6 +290,6 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </div>
                 </section>
             )}
-        </>
+        </div>
     );
 }

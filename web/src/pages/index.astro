@@ -266,7 +266,7 @@ function getBriefingSnippet(content: string) {
 >
     <NYTHeader q={q} category={category} topic={topic} stats={stats} />
 
-	<main class="site-layout broadsheet-layout py-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout py-[var(--page-py)] overflow-x-hidden max-w-full">
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
 			<div class="filter-header mb-12">

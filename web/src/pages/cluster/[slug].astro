@@ -733,11 +733,17 @@ const articleSchema = cluster ? {
 	.cluster-article-container {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 0 1rem;
+		padding: 0 1.25rem;
         width: 100%;
         overflow-x: hidden;
         word-wrap: break-word;
 	}
+
+    @media (max-width: 640px) {
+        .cluster-article-container {
+            padding: 0 0.75rem;
+        }
+    }
 
 	/* --- 1. THE LEDE --- */
 	.editorial-lede {
