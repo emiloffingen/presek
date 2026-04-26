@@ -1,8 +1,13 @@
 import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
-from contextlib import contextmanager
+import psycopg
+from psycopg_pool import AsyncConnectionPool
+from psycopg.rows import dict_row
+from contextlib import contextmanager, asynccontextmanager
 from collections import defaultdict
+import alembic.config
+import alembic.command
 import datetime
 import logging
 import time
@@ -30,6 +35,48 @@ def _int_env(name: str, default: int) -> int:
 
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
 DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 10))
+
+class AsyncDatabaseManager:
+    """Modern Async Database Layer using psycopg 3."""
+    _instance = None
+    _pool = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(AsyncDatabaseManager, cls).__new__(cls)
+        return cls._instance
+
+    async def _ensure_pool(self):
+        if self._pool is None:
+            self._pool = AsyncConnectionPool(
+                conninfo=DATABASE_URL,
+                min_size=DB_POOL_MINCONN,
+                max_size=DB_POOL_MAXCONN,
+                open=False,
+                kwargs={"row_factory": dict_row}
+            )
+            await self._pool.open()
+            log.info(f"Presek 4.0: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
+
+    async def execute(self, sql, params=None, fetch=True):
+        await self._ensure_pool()
+        async with self._pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(sql, params)
+                if fetch:
+                    return await cur.fetchall()
+                await conn.commit()
+                return cur.rowcount
+
+    async def execute_one(self, sql, params=None):
+        results = await self.execute(sql, params)
+        return results[0] if results else None
+
+    @asynccontextmanager
+    async def connection(self):
+        await self._ensure_pool()
+        async with self._pool.connection() as conn:
+            yield conn
 
 class DatabaseManager:
     """Centralized Database Access Layer (DAL) for Presek 4.0."""
@@ -121,14 +168,12 @@ class DatabaseManager:
         return results[0] if results else None
 
     async def async_execute(self, sql, params=None, fetch=True):
-        """Asynchronous execution via threadpool to avoid blocking FastAPI loop."""
-        import asyncio
-        return await asyncio.to_thread(self.execute, sql, params, fetch)
+        """Asynchronous execution via native psycopg 3 async pool."""
+        return await async_db.execute(sql, params, fetch)
 
     async def async_execute_one(self, sql, params=None):
-        """Asynchronous execution of single row query."""
-        import asyncio
-        return await asyncio.to_thread(self.execute_one, sql, params)
+        """Asynchronous execution of single row query via native async pool."""
+        return await async_db.execute_one(sql, params)
 
     @contextmanager
     def connection(self):
@@ -145,20 +190,98 @@ class DatabaseManager:
         return await self.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
 
     async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
-        import asyncio
-        return await asyncio.to_thread(self.search_semantic, query_embedding, limit)
+        sql = """
+            SELECT *, (1 - (embedding <=> %s::vector)) as similarity
+            FROM articles
+            WHERE embedding IS NOT NULL
+              AND created_at >= NOW() - INTERVAL '7 days'
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """
+        vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        return await self.async_execute(sql, (vec_str, vec_str, limit))
 
     async def async_hybrid_search(self, query_text: str, query_embedding: list[float], limit: int = 50, sort_by: str = "hybrid", timespan: str | None = None):
-        import asyncio
-        return await asyncio.to_thread(self.hybrid_search, query_text, query_embedding, limit, sort_by, timespan)
+        # Build time constraint
+        time_filter = ""
+        if timespan == "24h":
+            time_filter = "AND created_at >= NOW() - INTERVAL '24 hours'"
+        elif timespan == "7d":
+            time_filter = "AND created_at >= NOW() - INTERVAL '7 days'"
+        elif timespan == "30d":
+            time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
+
+        vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        sql = f"""
+            WITH fts_results AS (
+                SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
+                FROM articles
+                WHERE search_vector @@ websearch_to_tsquery('simple', %s)
+                {time_filter}
+                ORDER BY rank DESC
+                LIMIT 300
+            ),
+            semantic_results AS (
+                SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
+                FROM articles
+                WHERE embedding IS NOT NULL
+                  AND created_at >= NOW() - INTERVAL '30 days'
+                  {time_filter}
+                ORDER BY similarity DESC
+                LIMIT 300
+            ),
+            scored_articles AS (
+                SELECT a.*, 
+                       (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
+                       -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
+                       GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
+                FROM articles a
+                LEFT JOIN fts_results f ON a.id = f.id
+                LEFT JOIN semantic_results s ON a.id = s.id
+                WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
+            ),
+            ranked_clusters AS (
+                SELECT *,
+                       ROW_NUMBER() OVER (PARTITION BY cluster_id ORDER BY base_score DESC) as cluster_rank
+                FROM scored_articles
+            )
+            SELECT *, (base_score * recency_factor) as hybrid_score
+            FROM ranked_clusters
+            WHERE cluster_rank = 1
+            ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
+            LIMIT %s
+        """
+        return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
     async def async_search_articles(self, query: str, limit: int = 50):
-        import asyncio
-        return await asyncio.to_thread(self.search_articles, query, limit)
+        sql = """
+            WITH query AS (
+                SELECT
+                    websearch_to_tsquery('simple', %s) AS ts_query,
+                    lower(%s) AS query_text
+            )
+            SELECT
+                a.*,
+                ts_rank_cd(a.search_vector, query.ts_query) AS rank,
+                CASE
+                    WHEN lower(a.title) = query.query_text THEN 4
+                    WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+                    WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+                    WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+                    ELSE 0
+                END AS match_score
+            FROM articles a
+            CROSS JOIN query
+            WHERE a.search_vector @@ query.ts_query
+            ORDER BY match_score DESC, rank DESC, created_at DESC
+            LIMIT %s
+        """
+        return await self.async_execute(sql, (query, query, limit))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str]):
-        import asyncio
-        return await asyncio.to_thread(self.get_synthesis_ids, cluster_ids)
+        if not cluster_ids: return []
+        rows = await self.async_execute("SELECT cluster_id FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_ids,))
+        return [r["cluster_id"] for r in rows]
 
     def get_articles_by_ids(self, ids):
         return self.execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,))
@@ -377,310 +500,26 @@ class DatabaseManager:
             }
 
     def init_schema(self):
-        conn = self.get_conn()
+        """Unified Schema management via Alembic."""
         try:
-            with conn.cursor() as cur:
-                try:
-                    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-                except Exception:
-                    conn.rollback() # extension might already exist or be in progress
+            # Check for Alembic config file
+            ini_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini")
+            if not os.path.exists(ini_path):
+                log.warning(f"Alembic config not found at {ini_path}, skipping migrations.")
+                return
+
+            cfg = alembic.config.Config(ini_path)
+            # Ensure URL is set correctly from env
+            cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
             
-            with conn.cursor() as cur:
-                # Migration: Handle vector dimension change (768 -> 384 for MiniLM)
-                cur.execute("""
-                    DO $$ 
-                    BEGIN
-                        IF EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name='articles' AND column_name='embedding'
-                        ) THEN
-                            -- Check if we need to change dimension
-                            IF (SELECT atttypmod FROM pg_attribute 
-                                WHERE attrelid = 'articles'::regclass AND attname = 'embedding') != 384 THEN
-                                ALTER TABLE articles DROP COLUMN embedding;
-                                ALTER TABLE articles ADD COLUMN embedding vector(384);
-                            END IF;
-                        END IF;
-                    END $$;
-                """)
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS articles (
-                    id SERIAL PRIMARY KEY, 
-                    cluster_id TEXT NOT NULL, 
-                    source TEXT NOT NULL, 
-                    link TEXT UNIQUE NOT NULL,
-                    title TEXT NOT NULL, 
-                    original_title TEXT DEFAULT '', 
-                    description TEXT DEFAULT '', 
-                    summary TEXT,
-                    category TEXT, 
-                    subcategory TEXT DEFAULT '', 
-                    topic TEXT DEFAULT 'Вести',
-                    country TEXT DEFAULT 'MK',
-                    created_at TIMESTAMP NOT NULL,
-                    ingested_at TIMESTAMP,
-                    image_url TEXT, 
-                    clicks INTEGER DEFAULT 0, 
-                    original_description TEXT DEFAULT '',
-                    is_translated INTEGER DEFAULT 0, 
-                    is_fact_check BOOLEAN DEFAULT FALSE,
-                    embedding vector(384),
-                    search_vector tsvector
-                )""")
-                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_fact_check BOOLEAN DEFAULT FALSE")
-                cur.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS ingested_at TIMESTAMP")
-                cur.execute("UPDATE articles SET ingested_at = created_at WHERE ingested_at IS NULL")
-                cur.execute("ALTER TABLE articles ALTER COLUMN ingested_at SET DEFAULT CURRENT_TIMESTAMP")
-
-                # Table for cluster summaries with FK to articles (via cluster_id)
-                # Note: cluster_id is not unique in articles, so we use it as a logical link
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summaries (
-                    cluster_id TEXT PRIMARY KEY, 
-                    summary TEXT, 
-                    generated_article TEXT,
-                    synthetic_headline TEXT,
-                    synthetic_standfirst TEXT,
-                    perspectives JSONB DEFAULT '[]', 
-                    sentiment JSONB DEFAULT '{}',
-                    created_at TIMESTAMP
-                )""")
-                
-                # History table for evolution log
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_summary_history (
-                    id SERIAL PRIMARY KEY,
-                    cluster_id TEXT NOT NULL,
-                    summary TEXT,
-                    generated_article TEXT,
-                    synthetic_headline TEXT,
-                    synthetic_standfirst TEXT,
-                    perspectives JSONB DEFAULT '[]',
-                    verification_report JSONB,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_summary_history_cid ON cluster_summary_history(cluster_id)")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS generated_article TEXT")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_headline TEXT")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT")
-                cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_headline TEXT")
-                cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS synthetic_standfirst TEXT")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS sentiment JSONB DEFAULT '{}'")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS tone_analysis JSONB DEFAULT '{}'")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS verification_report JSONB")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS quote TEXT")
-                cur.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'")
-                cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS citation_sources JSONB DEFAULT '[]'")
-                cur.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS tone_analysis JSONB DEFAULT '{}'")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_metadata (
-                    cluster_id TEXT PRIMARY KEY, 
-                    tags TEXT[], 
-                    topics TEXT[], 
-                    representative_image TEXT,
-                    dominant_color TEXT,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS topics TEXT[]")
-                cur.execute("ALTER TABLE cluster_metadata ADD COLUMN IF NOT EXISTS dominant_color TEXT")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS cluster_entities (
-                    cluster_id TEXT, 
-                    entity_name TEXT, 
-                    entity_type TEXT, 
-                    PRIMARY KEY (cluster_id, entity_name)
-                )""")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS reactions (
-                    cluster_id TEXT, 
-                    emoji TEXT, 
-                    count INTEGER DEFAULT 1, 
-                    PRIMARY KEY (cluster_id, emoji)
-                )""")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS daily_briefings (
-                    date DATE PRIMARY KEY, 
-                    content TEXT, 
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                
-                cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (
-                    id SERIAL PRIMARY KEY, 
-                    email TEXT UNIQUE NOT NULL, 
-                    is_active BOOLEAN DEFAULT TRUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS synced_reader_profiles (
-                    sync_token TEXT PRIMARY KEY,
-                    profile_data JSONB DEFAULT '{}'::jsonb,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS synced_delivery_subscriptions (
-                    sync_token TEXT PRIMARY KEY REFERENCES synced_reader_profiles(sync_token) ON DELETE CASCADE,
-                    channel TEXT DEFAULT 'ntfy',
-                    target TEXT DEFAULT '',
-                    morning_briefing BOOLEAN DEFAULT TRUE,
-                    weekly_digest BOOLEAN DEFAULT FALSE,
-                    breaking_topics BOOLEAN DEFAULT FALSE,
-                    breaking_sources BOOLEAN DEFAULT FALSE,
-                    is_active BOOLEAN DEFAULT FALSE,
-                    last_morning_sent_at TIMESTAMP,
-                    last_weekly_sent_at TIMESTAMP,
-                    last_breaking_sent_at TIMESTAMP,
-                    last_alert_cluster_ids JSONB DEFAULT '[]'::jsonb,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS last_alert_context JSONB DEFAULT '{}'::jsonb")
-                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE")
-                cur.execute("ALTER TABLE synced_delivery_subscriptions ADD COLUMN IF NOT EXISTS last_weekly_sent_at TIMESTAMP")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS delivery_tracking_events (
-                    id SERIAL PRIMARY KEY,
-                    sync_token TEXT REFERENCES synced_reader_profiles(sync_token) ON DELETE CASCADE,
-                    parent_event_id INTEGER REFERENCES delivery_tracking_events(id) ON DELETE SET NULL,
-                    event_type TEXT NOT NULL,
-                    delivery_kind TEXT NOT NULL,
-                    channel TEXT DEFAULT 'ntfy',
-                    target TEXT DEFAULT '',
-                    cluster_id TEXT,
-                    metadata JSONB DEFAULT '{}'::jsonb,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_sync_created ON delivery_tracking_events(sync_token, created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_delivery_tracking_event_kind_created ON delivery_tracking_events(event_type, delivery_kind, created_at DESC)")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS suggestion_surface_events (
-                    id SERIAL PRIMARY KEY,
-                    sync_token TEXT REFERENCES synced_reader_profiles(sync_token) ON DELETE SET NULL,
-                    client_id TEXT,
-                    surface TEXT NOT NULL,
-                    suggestion_kind TEXT,
-                    event_type TEXT NOT NULL,
-                    value TEXT DEFAULT '',
-                    metadata JSONB DEFAULT '{}'::jsonb,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_created ON suggestion_surface_events(created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_surface_kind ON suggestion_surface_events(surface, suggestion_kind, event_type, created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS failed_tasks (
-                    id SERIAL PRIMARY KEY,
-                    task_name TEXT NOT NULL,
-                    args JSONB DEFAULT '[]'::jsonb,
-                    kwargs JSONB DEFAULT '{}'::jsonb,
-                    error_message TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)")
-
-                cur.execute("""CREATE TABLE IF NOT EXISTS sources (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL,
-                    url TEXT NOT NULL,
-                    country TEXT DEFAULT 'MK',
-                    category TEXT DEFAULT 'Локални',
-                    credibility FLOAT DEFAULT 1.0,
-                    is_active BOOLEAN DEFAULT TRUE,
-                    last_fetched TIMESTAMP,
-                    fetch_interval INTEGER DEFAULT 300,
-                    source_limit INTEGER DEFAULT 10,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )""")
-                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS pause_mode TEXT")
-                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS pause_reason TEXT")
-                cur.execute("ALTER TABLE sources ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP")
-
-                # Indexes
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_id ON articles(cluster_id)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_ingested_at ON articles(ingested_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING GIN (search_vector)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_cluster_metadata_tags ON cluster_metadata USING GIN (tags)")
-                
-                # Knowledge Graph Tables
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS knowledge_entities (
-                        name TEXT PRIMARY KEY,
-                        type TEXT,
-                        total_mentions INTEGER DEFAULT 1,
-                        first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        sentiment_score REAL DEFAULT 0,
-                        image_url TEXT,
-                        metadata JSONB DEFAULT '{}'
-                    )
-                """)
-                cur.execute("ALTER TABLE knowledge_entities ADD COLUMN IF NOT EXISTS image_url TEXT")
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS knowledge_relationships (
-                        entity_a TEXT REFERENCES knowledge_entities(name),
-                        entity_b TEXT REFERENCES knowledge_entities(name),
-                        weight INTEGER DEFAULT 1,
-                        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (entity_a, entity_b)
-                    )
-                """)
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS storylines_v2 (
-                        id SERIAL PRIMARY KEY,
-                        title TEXT NOT NULL,
-                        slug TEXT UNIQUE,
-                        summary TEXT,
-                        status TEXT DEFAULT 'active',
-                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        metadata JSONB DEFAULT '{}'::jsonb,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS storyline_clusters_v2 (
-                        storyline_id INTEGER REFERENCES storylines_v2(id) ON DELETE CASCADE,
-                        cluster_id TEXT NOT NULL,
-                        relevance_score REAL DEFAULT 1.0,
-                        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (storyline_id, cluster_id)
-                    )
-                """)
-
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_weight ON knowledge_relationships(weight DESC)")
-                cur.execute("CREATE INDEX IF NOT EXISTS idx_rel_entity_b ON knowledge_relationships(entity_b)")
-
-                
-                # FTS Trigger
-                cur.execute("""
-                    CREATE OR REPLACE FUNCTION articles_search_trigger() RETURNS trigger AS $$
-                    BEGIN
-                      new.search_vector :=
-                        setweight(to_tsvector('simple', coalesce(new.title,'')), 'A') ||
-                        setweight(to_tsvector('simple', coalesce(new.description,'')), 'B');
-                      return new;
-                    END
-                    $$ LANGUAGE plpgsql;
-                """)
-                cur.execute("""
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'tsvectorupdate') THEN
-                            CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE
-                            ON articles FOR EACH ROW EXECUTE FUNCTION articles_search_trigger();
-                        END IF;
-                    END
-                    $$;
-                """)
-                
-                conn.commit()
-                log.info("Presek 4.0: Schema verification complete.")
-        finally:
-            self.put_conn(conn)
+            log.info("Presek 4.0: Running database migrations...")
+            alembic.command.upgrade(cfg, "head")
+            log.info("Presek 4.0: Schema verification complete.")
+        except Exception as e:
+            log.error(f"Migration error: {e}")
+            # Fallback to legacy behavior if migrations fail during transition?
+            # For now, we want to know if it fails.
+            raise
 
 # --- Legacy Compatibility Wrapper ---
 
@@ -705,6 +544,7 @@ class DBWrapper:
     def __exit__(self, exc_type, exc_val, exc_tb): self.close()
 
 db_manager = DatabaseManager()
+async_db = AsyncDatabaseManager()
 
 def get_db(): return DBWrapper(db_manager)
 def get_db_size(): return db_manager.get_db_size()
