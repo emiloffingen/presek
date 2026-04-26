@@ -46,6 +46,7 @@ ENTITY_NOISE_WORDS = {
     "американскиот", "општата", "сектор", "полициска", "полицаец",
     "тој", "тоа", "прево", "неговите", "нејзините", "нивните", "некои", "кој",
     "што", "како", "каде", "кога", "зошто", "овој", "оваа", "овие",
+    "човекот", "пукаше", "обид", "белата", "куќа", "куќ", "дописници", "дописниц",
 }
 
 TAG_NOISE_WORDS = {
@@ -58,6 +59,7 @@ TAG_NOISE_WORDS = {
     "што", "како", "каде", "кога", "зошто", "овој", "оваа", "овие",
     "нападот", "пукање", "гала", "вечерата", "вечера", "пукањето",
     "добронамерните", "добронамерни",
+    "човекот", "пукаше", "обид", "белата", "куќа", "куќ", "дописници", "дописниц",
 }
 
 SOURCE_NOISE_WORDS = {
@@ -90,6 +92,10 @@ def normalize_tag_name(name):
         "општества": "Општество",
         "општеството": "Општество",
         "демократските": "Демократија",
+        "белата": "Белата Куќа",
+        "куќа": "Белата Куќа",
+        "белата куќа": "Белата Куќа",
+        "дописниците": "Дописници",
         "место": "", # Generic preposition noise
         "теснецот": "Теснец",
         "нападот": "Напад",
@@ -129,11 +135,11 @@ def normalize_tag_name(name):
 
     # 2. Basic Macedonian Definite Article Stripping (Conservative)
     # Only strip if the word remains long enough and it's a common suffix
-    if len(clean) > 6:
+    if len(clean) > 7: # Higher threshold to protect words like 'Куќа'
         if clean.endswith("то") or clean.endswith("та"):
              clean = clean[:-2]
         elif clean.endswith("от"):
-             clean = clean[:-2] # Correction: 'от' is 2 chars
+             clean = clean[:-2] 
         elif clean.endswith("те"):
             clean = clean[:-2]
 
@@ -148,6 +154,10 @@ def normalize_tag_name(name):
     # 4. Capitalization fallback
     if re.fullmatch(r"[A-Za-zА-Яа-яЀ-ӿ\s-]+", clean) and clean.islower():
         clean = " ".join(part.capitalize() for part in clean.split(" "))
+    
+    # 5. Final pass against noise
+    if clean.lower() in TAG_NOISE_WORDS or len(clean) < 3:
+        return ""
     
     return clean.strip()
 
