@@ -18,33 +18,13 @@ from fastapi.responses import JSONResponse
 from database import db_manager as db
 from config import API_MAX_Q_LEN
 from utils import _resolve_public_ips, _peer_ip
+from nlp.utils import cleanAndDecode
 
 log = logging.getLogger("presek")
-
-_CLEAN_ARTIFACTS = [
-    re.compile(r'Read\s+More\s*[»\>\-]*\s*$', re.I),
-    re.compile(r'Прочитај\s+повеќе\s*$', re.I),
-    re.compile(r'Continue\s+reading\s*$', re.I),
-    re.compile(r'\[\s*&#\d+;\s*\]'),
-    re.compile(r'\[\s*\.\.\.\s*\]'),
-    re.compile(r'\s*&#8230;\s*$'),
-    re.compile(r'\s*…\s*$'),
-]
 
 _PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024
 SYNC_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
-
-def cleanAndDecode(text: str) -> str:
-    if not text:
-        return ''
-    cleaned = _html.unescape(text)
-    for rx in _CLEAN_ARTIFACTS:
-        cleaned = rx.sub('', cleaned)
-    cleaned = re.sub(r'^[⚪🟢🔴]\s*', '', cleaned)
-    cleaned = re.sub(r'#[^\s#]+', '', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned)
-    return cleaned.strip()
 
 def _normalize_sync_list(values, limit=24):
     cleaned = []

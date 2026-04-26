@@ -16,10 +16,11 @@ log = get_logger("presek_celery")
 
 @worker_process_init.connect
 def reset_db_pool(**kwargs):
-    """Ensure each worker process gets a fresh DB connection pool after forking."""
-    from database import db_manager
-    log.info("Resetting database connection pool for worker process", extra={"action": "worker_init"})
+    """Ensure each worker process gets fresh DB connection pools after forking."""
+    from database import db_manager, async_db
+    log.info("Resetting database connection pools for worker process", extra={"action": "worker_init"})
     db_manager._reset_pool()
+    async_db._reset_pool()
 
 @task_failure.connect
 def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **kw):

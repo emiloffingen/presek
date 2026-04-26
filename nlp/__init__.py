@@ -1,3 +1,4 @@
+from nlp.utils import cleanAndDecode, deShout
 from nlp.sentiment import analyze_sentiment_locally
 from nlp.keywords import (
     extract_keyphrases_locally,
@@ -24,6 +25,8 @@ from nlp.generation import (
 # Export for easier access
 __all__ = [
     'analyze_sentiment_locally',
+    'cleanAndDecode',
+    'deShout',
     'extract_keyphrases_locally',
     'extract_cluster_tags_locally',
     'filter_cluster_tags',

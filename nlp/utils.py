@@ -1,9 +1,44 @@
+import re
+import html as _html
 import logging
 import threading
 from collections import OrderedDict
 from utils import record_runtime_event
 
 log = logging.getLogger("presek")
+
+_CLEAN_ARTIFACTS = [
+    re.compile(r'Read\s+More\s*[»\>\-]*\s*$', re.I),
+    re.compile(r'Прочитај\s+повеќе\s*$', re.I),
+    re.compile(r'Continue\s+reading\s*$', re.I),
+    re.compile(r'\[\s*&#\d+;\s*\]'),
+    re.compile(r'\[\s*\.\.\.\s*\]'),
+    re.compile(r'\s*&#8230;\s*$'),
+    re.compile(r'\s*…\s*$'),
+]
+
+def cleanAndDecode(text: str) -> str:
+    if not text:
+        return ''
+    cleaned = _html.unescape(str(text))
+    for rx in _CLEAN_ARTIFACTS:
+        cleaned = rx.sub('', cleaned)
+    cleaned = re.sub(r'^[⚪🟢🔴]\s*', '', cleaned)
+    cleaned = re.sub(r'#[^\s#]+', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
+def deShout(text: str) -> str:
+    """Converts ALL CAPS text into Sentence case, preserving acronyms."""
+    if not text: return ''
+    s = str(text)
+    # If text doesn't have many lowercase letters, it's probably shouting
+    lowerCount = len(re.findall(r'[a-zа-ш]', s))
+    totalAlpha = len(re.findall(r'[a-zA-Zа-шА-Ш]', s))
+    
+    if totalAlpha > 5 and lowerCount < totalAlpha * 0.2:
+        return s.lower().capitalize()
+    return s
 
 _LOCAL_CACHE_MAXSIZE = 256
 _local_cache_lock = threading.Lock()

@@ -59,17 +59,18 @@ def get_dominant_color(url: str) -> str:
             except Exception:
                 return ""
             
-            response = client.get(url, headers={"User-Agent": "PresekColorBot/1.0"})
-            
-            # Post-connection IP verification
-            p_ip = _peer_ip(response)
-            if not p_ip or p_ip not in safe_ips:
-                log.warning(f"[utils] color extraction blocked: IP mismatch/private for {url}")
-                return ""
+            with client.stream("GET", url, headers={"User-Agent": "PresekColorBot/1.0"}) as response:
+                if response.status_code != 200: return ""
+                
+                # Post-connection IP verification
+                p_ip = _peer_ip(response)
+                if not p_ip or p_ip not in safe_ips:
+                    log.warning(f"[utils] color extraction blocked: IP mismatch/private for {url}")
+                    return ""
+                
+                content = response.read()
 
-        if response.status_code != 200: return ""
-
-        img = Image.open(BytesIO(response.content))
+        img = Image.open(BytesIO(content))
         img = img.convert("RGB")
         img.thumbnail((60, 60)) # Reduced size for speed
         

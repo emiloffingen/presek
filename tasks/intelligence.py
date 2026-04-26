@@ -25,7 +25,7 @@ from nlp.categories import ALLOWED_CATEGORIES, detect_topic, detect_category, TH
 from entities import extract_entities, validate_person_names
 from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
-    extract_cluster_tags_locally, filter_cluster_tags
+    extract_cluster_tags_locally, filter_cluster_tags, deShout
 )
 from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color

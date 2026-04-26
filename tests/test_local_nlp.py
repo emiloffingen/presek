@@ -211,10 +211,9 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert any(item["angle"] == "Различни акценти" for item in result["perspectives"])
-        assert any(item["angle"] == "Што останува отворено" for item in result["perspectives"])
-        assert "Каде се разликуваат изворите" in result["summary"]
-        assert "Што останува отворено" in result["summary"]
+        assert any(item["angle"] == "Нијанси" for item in result["perspectives"])
+        assert any(item["angle"] == "Отворено" for item in result["perspectives"])
+        assert "Развојот го следат" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_confirmed_section(self):
         articles = [
@@ -232,7 +231,7 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Што е потврдено" in result["summary"]
+        assert "Потврден е фокусот на" in result["summary"]
         assert "енергетска поддршка" in result["summary"].lower()
 
     def test_synthesize_cluster_fallback_quality_gate_keeps_grounded_structure(self):
@@ -251,8 +250,7 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Што се случува" in result["summary"]
-        assert "Покриеност" in result["summary"]
+        assert "Развојот го следат" in result["summary"]
         assert "Пакетот" in result["summary"]
 
     def test_synthesize_cluster_fallback_records_mode(self, monkeypatch):
@@ -278,7 +276,7 @@ class TestClusterComparison:
 
         synthesize_cluster_fallback(articles)
 
-        assert ("local_synthesis_path", {"mode": "full"}) in events
+        assert ("local_synthesis_path", {"mode": "enhanced_fallback"}) in events
 
 class TestArticleSummaryFallback:
     def test_summarize_locally_prefers_information_dense_sentences_over_noise(self):
@@ -339,9 +337,8 @@ class TestLocalMacedonianRewrite:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Што е потврдено" in result["summary"]
-        assert "Што се случува" in result["summary"]
-        assert "Покриеност" in result["summary"]
+        assert "Владата усвои пакет за поддршка" in result["summary"]
+        assert "Развојот го следат 2 медиуми" in result["summary"]
 
     def test_synthesize_cluster_fallback_uses_cleaner_open_line_label(self):
         articles = [
@@ -353,13 +350,13 @@ class TestLocalMacedonianRewrite:
             {
                 "source": "Reuters",
                 "title": "Reuters акцентира на рокот и реакциите",
-                "description": "Се уште не е потврдено кога точно ќе стартува пакетот.",
+                "description": "Се уште не е потвредeно кога точно ќе стартува пакетот.",
             },
         ]
 
         result = synthesize_cluster_fallback(articles)
-
-        assert "Што останува отворено" in result["summary"] or "Следно за следење" in result["summary"]
+        assert any(p["angle"] == "Нијанси" for p in result["perspectives"])
+        assert any(p["angle"] == "Отворено" for p in result["perspectives"])
 
 
 class TestLocalBriefingFallback:

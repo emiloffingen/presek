@@ -110,7 +110,7 @@ def _int_env(name: str, default: int) -> int:
 
 
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
-DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 10))
+DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 20))
 
 class AsyncDatabaseManager:
     """Modern Async Database Layer using psycopg 3."""
@@ -121,6 +121,16 @@ class AsyncDatabaseManager:
         if cls._instance is None:
             cls._instance = super(AsyncDatabaseManager, cls).__new__(cls)
         return cls._instance
+
+    def _reset_pool(self):
+        """Force re-initialization of the async pool. Crucial after process forking."""
+        if self._pool:
+            try:
+                # We can't easily close an async pool from a sync signal handler
+                # but we can at least null it out so the next async call re-inits
+                self._pool = None
+            except Exception:
+                pass
 
     async def _ensure_pool(self):
         if self._pool is None:
@@ -139,13 +149,17 @@ class AsyncDatabaseManager:
 
     async def execute(self, sql, params=None, fetch=True):
         await self._ensure_pool()
-        async with self._pool.connection() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(sql, params)
-                if fetch:
-                    return await cur.fetchall()
-                await conn.commit()
-                return cur.rowcount
+        try:
+            async with self._pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(sql, params)
+                    if fetch:
+                        return await cur.fetchall()
+                    await conn.commit()
+                    return cur.rowcount
+        except Exception as e:
+            log.error(f"Presek 4.0 Async DB Error: {e}")
+            raise
 
     async def execute_one(self, sql, params=None):
         results = await self.execute(sql, params)
