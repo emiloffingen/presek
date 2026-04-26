@@ -348,7 +348,7 @@ async def get_source_pulse(category: Optional[str] = None):
         WITH first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
             FROM articles
-            ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC
+            ORDER BY cluster_id, COALESCE(ingested_at, created_at) ASC, created_at ASC
         )
         SELECT 
             a.source,
@@ -358,7 +358,7 @@ async def get_source_pulse(category: Optional[str] = None):
             COUNT(DISTINCT a.cluster_id) as cluster_count,
             (SELECT COUNT(*) FROM first_reporters fr 
              WHERE fr.source = a.source 
-               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' {cat_filter})
+               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' {cat_filter.replace('a.category', 'category')})
             ) as first_report_count
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
@@ -439,28 +439,29 @@ async def get_global_pulse(category: Optional[str] = None):
     cat_filter = ""
     params = []
     if category:
-        cat_filter = "AND category = %s"
+        cat_filter = "AND a.category = %s"
         params.append(category)
 
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
+    # Use explicit COALESCE(a.ingested_at, a.created_at) to avoid schema errors
+    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
     last_24h = last_24h_res["count"] if last_24h_res else 0
     
     # 1. News Velocity
     velocity = await db.async_execute(f"""
-        SELECT date_trunc('hour', {freshness_expr}) AS t, COUNT(*) AS n 
-        FROM articles 
-        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
+        SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
+        FROM articles a
+        WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
         GROUP BY t ORDER BY t
     """, tuple(params))
     
     # 2. Category Distribution
     by_category = await db.async_execute(f"""
-        SELECT category, COUNT(*) AS n 
-        FROM articles 
-        WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours'
-          AND category IS NOT NULL
-          AND category != ''
-        GROUP BY category ORDER BY n DESC
+        SELECT a.category, COUNT(*) AS n 
+        FROM articles a
+        WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
+          AND a.category IS NOT NULL
+          AND a.category != ''
+        GROUP BY a.category ORDER BY n DESC
     """)
     
     # 3. Pluralism & AI Metrics (Aggregated)
@@ -474,7 +475,7 @@ async def get_global_pulse(category: Optional[str] = None):
             FROM knowledge_entities ke
             JOIN cluster_entities ce ON ke.name = ce.entity_name
             JOIN articles a ON ce.cluster_id = a.cluster_id
-            WHERE a.category = %s AND a.{freshness_expr} >= NOW() - INTERVAL '24 hours'
+            WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
             GROUP BY ke.name, ke.sentiment_score, ke.type
             ORDER BY total_mentions DESC
             LIMIT 8
@@ -487,7 +488,7 @@ async def get_global_pulse(category: Optional[str] = None):
             FROM knowledge_entities ke
             JOIN cluster_entities ce ON ke.name = ce.entity_name
             JOIN articles a ON ce.cluster_id = a.cluster_id
-            WHERE a.{freshness_expr} >= NOW() - INTERVAL '24 hours'
+            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
             GROUP BY ke.name, ke.sentiment_score, ke.type
             ORDER BY total_mentions DESC
             LIMIT 8
@@ -541,7 +542,7 @@ async def get_live_map():
     return {
         "status": "success",
         "data": await db.async_execute(
-            f"SELECT source, COUNT(*) as activity_score FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY activity_score DESC"
+            f"SELECT a.source, COUNT(*) as activity_score FROM articles a WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source ORDER BY activity_score DESC"
         ),
     }
 

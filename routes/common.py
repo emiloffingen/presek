@@ -240,7 +240,7 @@ def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
 
 async def build_intelligence_summary_payload(last_24h: int, category: Optional[str] = None) -> dict:
-    """Calculates AI transparency, pluralism and international share metrics with optional category filter."""
+    """Calculates synthesis transparency, pluralism and international share metrics with optional category filter."""
     from utils import cached_response, set_cache, redis_client
     import asyncio
     
@@ -257,19 +257,22 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
         cat_filter = "AND category = %s"
         params.append(category)
 
-    total_articles_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params)))["count"] or 0
-    intl_articles_24h = (await db.async_execute_one(f"""
+    total_articles_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
+    total_articles_24h = total_articles_24h_res["count"] if total_articles_24h_res else 0
+
+    intl_articles_24h_res = await db.async_execute_one(f"""
         SELECT COUNT(*) FROM articles 
         WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
           AND (category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE)
-    """, tuple(params)))["count"] or 0
+    """, tuple(params))
+    intl_articles_24h = intl_articles_24h_res["count"] if intl_articles_24h_res else 0
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
     
-    # Robustly count summaries (AI vs Local)
+    # Robustly count summaries (Systemic vs Local)
     # Note: Runtime events are global, not per-category for now
-    ai_summaries = 0
+    systemic_summaries = 0
     local_summaries = 0
     
     for k, v in ai_events.items():
@@ -279,7 +282,7 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
             if "mode=local" in key:
                 local_summaries += val
             else:
-                ai_summaries += val
+                systemic_summaries += val
 
     balance_stats = await db.async_execute_one(f"""
         WITH cluster_tiers AS (
@@ -304,10 +307,10 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
     res = {
         "last_24h": total_articles_24h,
         "international_share_pct": round((intl_articles_24h / max(1, total_articles_24h) * 100), 1) if total_articles_24h > 0 else 0,
-        "ai_transparency": {
-            "ai_summaries": ai_summaries,
+        "synthesis_transparency": {
+            "systemic_summaries": systemic_summaries,
             "local_summaries": local_summaries,
-            "ai_ratio": round(ai_summaries / (ai_summaries + local_summaries) * 100, 1) if (ai_summaries + local_summaries) > 0 else 0
+            "systemic_ratio": round(systemic_summaries / (systemic_summaries + local_summaries) * 100, 1) if (systemic_summaries + local_summaries) > 0 else 0
         },
         "pluralism": {
             "total_clusters": balance_stats["total_clusters"],

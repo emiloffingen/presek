@@ -24,12 +24,12 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek")
 
 def force_generate_with_mistral():
-    print("🚀 Starting manual briefing generation with Mistral...")
+    log.info("Starting manual briefing generation with Mistral...")
     
     # 1. Force provider to Mistral in ai_engine
     class MistralOnlyProvider(ai_engine.MistralProvider):
         def call(self, prompt, system, max_tokens, json_mode, topic=None, task_type="default"):
-            print(f"DEBUG: MistralOnlyProvider called for task: {task_type}")
+            log.debug(f"MistralOnlyProvider called for task: {task_type}")
             return super().call(prompt, system, max_tokens, json_mode, topic, task_type)
 
     ai_engine.PROVIDERS["mistral"] = MistralOnlyProvider()
@@ -79,19 +79,19 @@ def force_generate_with_mistral():
         
         full_context = content_context + system_insight
 
-        print(f"📊 Stats: {total_24h} articles, {intl_pct}% global, {diverse_pct}% pluralism")
-        print("🤖 Calling Mistral...")
+        log.info(f"Stats: {total_24h} articles, {intl_pct}% global, {diverse_pct}% pluralism")
+        log.info("Calling Mistral...")
         
         brief, provider = ai_engine._call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
         
         if not brief:
-            print("❌ Mistral returned nothing.")
+            log.error("Mistral returned nothing.")
             return
 
-        print(f"✅ Mistral responded (via {provider}). Length: {len(brief)} chars.")
-
+        log.info(f"Mistral responded (via {provider}). Length: {len(brief)} chars.")
+        
         if not _has_valid_daily_brief_structure(brief):
-            print("⚠️ Invalid structure, but forcing save anyway for manual review if needed.")
+            log.warning("Invalid structure, but forcing save anyway for manual review if needed.")
         
         final_brief = brief
         if not final_brief.startswith("#"):
@@ -104,15 +104,12 @@ def force_generate_with_mistral():
         redis_client.delete(lock_key)
         delete_cache("daily_brief:latest")
         
-        print("✨ Success! New briefing generated and saved.")
-        print("\n--- BRIEFING START ---\n")
-        print(final_brief[:500] + "...")
-        print("\n--- BRIEFING END ---")
+        log.info("Success! New briefing generated and saved.")
+        log.debug(f"Briefing preview: {final_brief[:500]}...")
 
     except Exception as e:
-        print(f"💥 Error during manual generation: {e}")
-        import traceback
-        traceback.print_exc()
+        log.error(f"Error during manual generation: {e}")
+        log.exception("Full traceback")
 
 if __name__ == "__main__":
     force_generate_with_mistral()

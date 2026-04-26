@@ -63,19 +63,50 @@ log = logging.getLogger("presek.api")
 app = FastAPI(
     title="Пресек API",
     version=APP_VERSION,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
+    redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None
 )
 
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[os.environ.get("CORS_ORIGINS", "*")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# =============================================================================
+# Security: Input Length Validation Middleware
+# =============================================================================
+
+MAX_QUERY_PARAM_LENGTH = 500
+MAX_BODY_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+@app.middleware("http")
+async def validate_input_length(request: Request, call_next):
+    """Validate query parameter and body length to prevent DoS attacks."""
+    # Check query parameters
+    for name, value in request.query_params.items():
+        if len(value) > MAX_QUERY_PARAM_LENGTH:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Query parameter '{name}' exceeds maximum length of {MAX_QUERY_PARAM_LENGTH}"}
+            )
+    
+    # Check Content-Length for POST/PUT/PATCH requests
+    if request.method in ("POST", "PUT", "PATCH"):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_BODY_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={"error": f"Request body exceeds maximum size of {MAX_BODY_SIZE // (1024*1024)}MB"}
+            )
+    
+    return await call_next(request)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

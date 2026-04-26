@@ -140,7 +140,6 @@ def test_get_personalized_news_sync_with_history():
          patch("routes.news._public_article_payload", side_effect=lambda x: x):
         response = asyncio.run(get_personalized_news_sync(request))
     
-    print(f"DEBUG RESPONSE: {response}")
     assert response["status"] == "success"
     assert len(response["results"]) == 1
     assert response["results"][0]["cluster_id"] == "c2"

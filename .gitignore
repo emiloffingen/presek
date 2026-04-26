@@ -1,7 +1,7 @@
-presek.db
-presek.db.bak
-presek.db-shm
-presek.db-wal
+*.db
+*.db.bak
+*.db-shm
+*.db-wal
 presek.log
 presek.log.old
 nohup.out
@@ -29,6 +29,8 @@ web/.env.local
 .hypothesis/
 *.pem
 venv/
+.venv*/
+.venv_audit/
 .cache/
 .hf_cache/
 models/

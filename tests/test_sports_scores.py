@@ -22,7 +22,6 @@ def test_compare_cluster_sources_sports_conflict():
     ]
     all_titles = " ".join([a.get("title") or "" for a in articles])
     topic = detect_topic(all_titles)
-    print(f"DEBUG: detected topic: {topic}")
     result = compare_cluster_sources(articles)
     assert any("резултат" in item and ("2-0" in item or "1-0" in item) for item in result["open_points"])
 
