@@ -1,7 +1,7 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
 import { ShieldCheck, Globe, CheckCircle2, Sparkles, Zap } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
@@ -33,6 +33,9 @@ const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
 const displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
+
+const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
+const clusterUrl = `/cluster/${cluster.cluster_id}-${clusterSlug}`;
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
 
@@ -168,7 +171,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 
-		<a href={`/cluster/${cluster.cluster_id}`} class="headline-link group">
+		<a href={clusterUrl} class="headline-link group">
 			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
 			</h2>
 		</a>
@@ -196,7 +199,7 @@ function getTimeStr(dateStr: string) {
             <ul class="sub-headlines">
                 {cluster.articles.slice(1).filter(a => !a.is_redundant).slice(0, 3).map((sub: Article) => (
                     <li>
-                        <a href={`/cluster/${cluster.cluster_id}`} set:html={sanitizeHtml(getDisplayTitle(sub))}>
+                        <a href={clusterUrl} set:html={sanitizeHtml(getDisplayTitle(sub))}>
                         </a>
                     </li>
                 ))}
@@ -214,7 +217,7 @@ function getTimeStr(dateStr: string) {
 
 		{thumbSrc && (
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
-			<a href={`/cluster/${cluster.cluster_id}`} class="block h-full">
+			<a href={clusterUrl} class="block h-full">
 				{isFallbackArt ? (
 					<div class="article-image-placeholder" style={`--placeholder-bg: ${tintColor};`}>
                         <div class="article-image-placeholder-bg-text" set:html={sanitizeHtml(rawLeadTitle)}></div>
