@@ -100,7 +100,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
     const seen = new Set(semanticResults.map(r => r.cluster_id));
     
     // Combine semantic results (server-side brain) with local keyword matches
-    return [
+    const combined = [
       ...semanticResults,
       ...local.filter(item => item && item.cluster && !seen.has(item.cluster.cluster_id)).map(item => ({
         ...item!.cluster,
@@ -109,6 +109,17 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         has_balanced: item!.cluster.has_balanced
       }))
     ];
+
+    // COLD START FALLBACK: If we have followed topics but NO matches, 
+    // provide the top 10 most relevant from the initial set anyway
+    if (combined.length === 0 && hasPersonalizationSignal(profile)) {
+        return initialClusters.slice(0, 10).map(c => ({
+            ...c,
+            reason: 'Актуелно денес'
+        }));
+    }
+
+    return combined;
   }, [initialClusters, semanticResults, profile]);
 
   const followSuggestions = useMemo(() => {
@@ -123,7 +134,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
+      <div className="flex flex-col items-center justify-center py-40">
         <Loader2 className="animate-spin text-nyt-accent mb-4" size={32} />
         <p className="font-serif italic text-muted-foreground">Генерираме ваш личен преглед...</p>
       </div>
@@ -132,32 +143,34 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
   if (!hasPersonalizationSignal(profile)) {
     return (
-      <div className="max-w-4xl mx-auto py-12">
+      <div className="max-w-4xl mx-auto py-20">
         <header className="mb-12 text-center">
             <div className="inline-flex items-center justify-center p-3 bg-nyt-accent/10 rounded-full mb-4">
                 <Compass className="text-nyt-accent" size={24} />
             </div>
-            <h1 className="font-serif text-4xl font-black mb-4">Добредојдовте во „За Вас“</h1>
-            <p className="text-lg text-secondary-foreground max-w-xl mx-auto">
-                Оваа страница е празна бидејќи сè уште не знаеме што ве интересира. Изберете неколку теми за да започнете.
+            <h1 className="font-serif text-4xl md:text-5xl font-black mb-4 tracking-tight">Вашиот Личен Простор</h1>
+            <p className="text-lg md:text-xl text-secondary-foreground max-w-xl mx-auto italic font-serif">
+                Оваа страница е место каде што Пресек се прилагодува на вашиот ритам. Изберете теми што ве интересираат за да започнете.
             </p>
         </header>
-        <OnboardingIsland />
+        <div className="bg-secondary/5 border border-border p-8 md:p-12 rounded-3xl shadow-inner">
+            <OnboardingIsland />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="for-you-page-grid grid grid-cols-1 lg:grid-cols-3 gap-12">
+    <div className="for-you-page-grid grid grid-cols-1 lg:grid-cols-3 gap-16 mt-12">
       <div className="lg:col-span-2 space-y-12">
-        <header className="pb-8 border-b border-border">
-          <div className="flex items-center gap-2 mb-2">
+        <header className="pb-10 border-b border-border">
+          <div className="flex items-center gap-2 mb-3">
             <Sparkles className="text-nyt-accent" size={18} />
-            <span className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-nyt-accent">Интелигенција</span>
+            <span className="font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА ИНТЕЛИГЕНЦИЈА</span>
           </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-black italic">Личен <span className="serif-display">Пресек</span></h1>
-          <p className="mt-4 font-nyt-body text-lg text-secondary-foreground leading-relaxed">
-             Вашиот дневен преглед на вести, прецизно синтетизиран според темите, личностите и изворите што ги следите.
+          <h1 className="font-serif text-4xl md:text-6xl font-black leading-none mb-6 italic">Личен <span className="serif-display">Пресек</span></h1>
+          <p className="mt-4 font-nyt-body text-xl text-secondary-foreground leading-relaxed italic max-w-2xl">
+             Вашиот дневен преглед, синтетизиран според темите, личностите и изворите што ги следите.
           </p>
         </header>
 
@@ -169,16 +182,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
         )}
 
         {mergedClusters.length > 0 ? (
-          <div className="space-y-10">
+          <div className="space-y-16">
             {mergedClusters.map((cluster, idx) => (
               <div key={cluster.cluster_id} className="relative group">
-                {cluster.reason && (
-                    <div className="absolute -left-4 top-0 bottom-0 w-1 bg-nyt-accent/20 group-hover:bg-nyt-accent transition-colors hidden md:block"></div>
-                )}
-                <div className="mb-2 flex items-center gap-2">
-                    <BrainCircuit size={12} className="text-nyt-accent/60" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                        {cluster.reason || 'Препорачано'}
+                <div className="mb-4 flex items-center gap-3">
+                    <div className="w-8 h-[1px] bg-nyt-accent/30"></div>
+                    <BrainCircuit size={13} className="text-nyt-accent" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-nyt-accent transition-colors">
+                        {cluster.reason || 'За Вас'}
                     </span>
                 </div>
                 <NewsCard 
@@ -191,22 +202,22 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
           </div>
         ) : (
           <div className="py-20 text-center border border-dashed border-border rounded-xl">
-             <p className="font-serif italic text-muted-foreground">
-               {pageError || 'Немаме нови вести за вашите специфични интереси во овој момент. Пробајте да додадете повеќе теми.'}
+             <p className="font-serif italic text-muted-foreground text-xl">
+               {pageError || 'Немаме нови вести за вашите специфични интереси во овој момент.'}
              </p>
           </div>
         )}
       </div>
 
-      <aside className="space-y-10">
+      <aside className="space-y-12">
         {/* Following Section */}
-        <section className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-          <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-foreground mb-6 pb-2 border-b border-border">Ваши Интереси</h3>
+        <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
+          <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">Ваши Интереси</h3>
           
-          <div className="space-y-8">
+          <div className="space-y-10">
             {profile.followedTopics.length > 0 && (
                 <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Теми</p>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Теми</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedTopics.map((t: string) => (
                             <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
@@ -217,7 +228,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
             {profile.followedSources.length > 0 && (
                 <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-3">Извори</p>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Извори</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedSources.map((s: string) => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
@@ -226,7 +237,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
                 </div>
             )}
             
-            <a href="/settings" className="block text-center py-2 text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:underline">
+            <a href="/settings" className="block text-center py-3 bg-secondary/50 rounded-lg text-[10px] font-black uppercase tracking-widest text-nyt-accent hover:bg-nyt-accent hover:text-white transition-all">
                 Уреди ги сите интереси →
             </a>
           </div>
@@ -234,14 +245,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
         {/* Discovery Suggestions */}
         {followSuggestions.length > 0 && (
-            <section className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
-                <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent mb-6">Откријте повеќе</h3>
-                <div className="space-y-3">
+            <section className="bg-secondary/10 border border-border rounded-2xl p-8">
+                <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent mb-8">Откријте повеќе</h3>
+                <div className="space-y-4">
                     {followSuggestions.map(item => (
-                        <div key={item.value} className="flex items-center justify-between gap-4 p-2 bg-card border border-border rounded-lg group">
+                        <div key={item.value} className="flex items-center justify-between gap-4 p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
                             <div className="min-w-0">
-                                <p className="text-xs font-bold truncate">{item.value}</p>
-                                <p className="text-[9px] text-muted-foreground uppercase">{item.kind === 'topic' ? 'Тема' : 'Извор'}</p>
+                                <p className="text-xs font-black truncate uppercase tracking-tighter">{item.value}</p>
+                                <p className="text-[9px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Тема' : 'Извор'}</p>
                             </div>
                             <PreferenceToggle 
                                 kind={item.kind as any} 
