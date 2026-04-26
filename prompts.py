@@ -119,9 +119,3 @@ ENTITY_EXTRACTION_PROMPT = (
     "{\"entities\": [ {\"name\": \"Име\", \"type\": \"PERSON\"}, {\"name\": \"Организација\", \"type\": \"ORG\"} ] }\n"
     "Максимум 5 субјекти. БЕЗ markdown."
 )
-
-TRANSLATION_TO_ENGLISH_SYSTEM_PROMPT = (
-    "You are a professional translator. Translate the following Macedonian news headline into standard English. "
-    "Maintain the same meaning and tone. Return ONLY a valid JSON object: {\"translation\": \"your translation\"}. "
-    "Do not include any other text or markdown."
-)

@@ -188,24 +188,10 @@ def detect_global_story_task(article_id):
     try:
         from embeddings import generate_query_embedding
         from utils import redis_client
-        from prompts import TRANSLATION_TO_ENGLISH_SYSTEM_PROMPT
         import numpy as np
 
-        # 1. Translate to English Bridge using AI (Gemma/Mistral)
-        raw_res, provider = _call_ai(row["title"], TRANSLATION_TO_ENGLISH_SYSTEM_PROMPT, task_type="translation", json_mode=True)
-        en_title = None
-        if raw_res:
-            parsed = clean_json_response(raw_res)
-            if isinstance(parsed, dict):
-                en_title = parsed.get("translation")
-            elif isinstance(parsed, str):
-                en_title = parsed
-
-        if not en_title or len(en_title) < 15:
-            return
-
-        # 2. Get English Embedding
-        mk_vec = generate_query_embedding(en_title)
+        # Use the multilingual embedding model (MiniLM-L12) to compare Macedonian directly with global English headlines
+        mk_vec = generate_query_embedding(row["title"])
         if not mk_vec: return
 
         # 3. Compare with Global Cache from Redis
@@ -221,7 +207,7 @@ def detect_global_story_task(article_id):
             if sim > best_similarity:
                 best_similarity = sim
         
-        # 4. Verdict (0.82 is a strong semantic match for translations)
+        # 4. Verdict (0.82 is a strong semantic match for cross-lingual pairs)
         if best_similarity > 0.82:
             db.execute("UPDATE articles SET is_global = TRUE WHERE id = %s", (article_id,), fetch=False)
             log.info(f"[originality] Flagged article {article_id} as GLOBAL (Sim: {best_similarity:.4f})")
