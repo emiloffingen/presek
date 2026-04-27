@@ -45,9 +45,10 @@ except ImportError:
     limiter = None
 
 def is_safe_url(url: str) -> bool:
-    """Rigorous SSRF protection: block local/private network ranges."""
+    """Rigorous SSRF protection: block local/private network ranges and DNS rebinding."""
     from urllib.parse import urlparse
     import socket
+    import ipaddress
     
     parsed = urlparse(url)
     if parsed.scheme not in ["http", "https"]:
@@ -56,22 +57,53 @@ def is_safe_url(url: str) -> bool:
     hostname = parsed.hostname
     if not hostname:
         return False
-        
-    # 1. Direct block for common local hostnames
-    if hostname.lower() in ["localhost", "127.0.0.1", "0.0.0.0", "::1"]:
+    
+    # Strip port if present
+    hostname_only = hostname.split(':')[0].lower()
+    
+    # 1. Direct block for common local hostnames (case-insensitive)
+    BLOCKED_HOSTNAMES = {
+        "localhost", "127.0.0.1", "0.0.0.0", "::1", "0:0:0:0:0:0:0:1",
+        "metadata", "metadata.google.internal", "metadata.internal",
+        "169.254.169.254", "fd00:ec2::254",
+        "169.254.170.2",
+        "100.100.100.200",
+    }
+    if hostname_only in BLOCKED_HOSTNAMES:
         return False
-
-    # 2. Resolve and check IP ranges
+    
+    # 2. Block IP-like hostnames
+    if hostname_only.replace('.', '').replace(':', '').isdigit() or all(c in '0123456789abcdefABCDEF:.' for c in hostname_only):
+        try:
+            ip_address = ipaddress.ip_address(hostname_only)
+            if ip_address.is_private or ip_address.is_loopback or ip_address.is_link_local or ip_address.is_reserved:
+                return False
+        except ValueError:
+            pass
+    
+    # 3. Resolve hostname and check all resolved IPs (DNS rebinding protection)
     try:
-        ip = socket.gethostbyname(hostname)
-        parts = list(map(int, ip.split('.')))
+        addr_infos = socket.getaddrinfo(hostname, None)
+        if not addr_infos:
+            return False
         
-        # Private ranges
-        if parts[0] == 10: return False # 10.0.0.0/8
-        if parts[0] == 172 and 16 <= parts[1] <= 31: return False # 172.16.0.0/12
-        if parts[0] == 192 and parts[1] == 168: return False # 192.168.0.0/16
-        if parts[0] == 169 and parts[1] == 254: return False # 169.254.0.0/16 (Metadata service)
-        if parts[0] == 127: return False # Loopback
+        for addr_info in addr_infos:
+            ip = addr_info[4][0]
+            try:
+                ip_obj = ipaddress.ip_address(ip)
+                if (ip_obj.is_private or ip_obj.is_loopback or 
+                    ip_obj.is_link_local or ip_obj.is_reserved):
+                    return False
+            except ValueError:
+                continue
+        
+        # 4. Additional DNS-based checks for cloud metadata
+        metadata_markers = [
+            "metadata.", ".metadata", "metadata.google", "metadata.internal",
+            "169.254.", "fd00:ec2", "100.100.100.",
+        ]
+        if any(marker in hostname for marker in metadata_markers):
+            return False
         
         return True
     except Exception as e:
@@ -90,12 +122,21 @@ app = FastAPI(
 )
 
 # Middleware
+# Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
+cors_origins = os.environ.get("CORS_ORIGINS", "")
+if cors_origins == "*" and os.environ.get("ENV") == "production":
+    cors_origins = ["https://presek.live", "https://www.presek.live"]
+    log.warning("CORS_ORIGINS was '*', defaulting to presek.live for production security")
+else:
+    cors_origins = cors_origins.split(",") if cors_origins else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.environ.get("CORS_ORIGINS", "*")],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["*"],
+    max_age=600,
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 

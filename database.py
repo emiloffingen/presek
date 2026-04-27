@@ -141,6 +141,7 @@ class AsyncDatabaseManager:
                 open=False,
                 kwargs={
                     "row_factory": dict_row,
+                    "connect_timeout": 5,
                     "options": "-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
                 }
             )
@@ -190,11 +191,12 @@ class DatabaseManager:
                     minconn=DB_POOL_MINCONN,
                     maxconn=DB_POOL_MAXCONN,
                     dsn=DATABASE_URL,
+                    connect_timeout=5,
                     options="-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
                 )
                 log.info(
                     "Presek 4.0: Database connection pool initialized "
-                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN})."
+                    f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, connect_timeout=5s)."
                 )
                 return
             except Exception as e:

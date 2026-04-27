@@ -31,3 +31,4 @@ slowapi==0.1.9
 pydantic==2.10.6
 prometheus-client==0.21.1
 alembic==1.14.1
+bleach==6.1.0

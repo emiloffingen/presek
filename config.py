@@ -26,8 +26,8 @@ VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 
 # ── Additional AI Providers (OpenAI-compatible) ──────────────────
 MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "")
-MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
-MISTRAL_MODEL = "mistral-large-latest"
+MISTRAL_API_URL = os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions")
+MISTRAL_MODEL = os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
 
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
