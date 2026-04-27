@@ -44,71 +44,7 @@ except ImportError:
     _rate_limiter_enabled = False
     limiter = None
 
-def is_safe_url(url: str) -> bool:
-    """Rigorous SSRF protection: block local/private network ranges and DNS rebinding."""
-    from urllib.parse import urlparse
-    import socket
-    import ipaddress
-    
-    parsed = urlparse(url)
-    if parsed.scheme not in ["http", "https"]:
-        return False
-        
-    hostname = parsed.hostname
-    if not hostname:
-        return False
-    
-    # Strip port if present
-    hostname_only = hostname.split(':')[0].lower()
-    
-    # 1. Direct block for common local hostnames (case-insensitive)
-    BLOCKED_HOSTNAMES = {
-        "localhost", "127.0.0.1", "0.0.0.0", "::1", "0:0:0:0:0:0:0:1",
-        "metadata", "metadata.google.internal", "metadata.internal",
-        "169.254.169.254", "fd00:ec2::254",
-        "169.254.170.2",
-        "100.100.100.200",
-    }
-    if hostname_only in BLOCKED_HOSTNAMES:
-        return False
-    
-    # 2. Block IP-like hostnames
-    if hostname_only.replace('.', '').replace(':', '').isdigit() or all(c in '0123456789abcdefABCDEF:.' for c in hostname_only):
-        try:
-            ip_address = ipaddress.ip_address(hostname_only)
-            if ip_address.is_private or ip_address.is_loopback or ip_address.is_link_local or ip_address.is_reserved:
-                return False
-        except ValueError:
-            pass
-    
-    # 3. Resolve hostname and check all resolved IPs (DNS rebinding protection)
-    try:
-        addr_infos = socket.getaddrinfo(hostname, None)
-        if not addr_infos:
-            return False
-        
-        for addr_info in addr_infos:
-            ip = addr_info[4][0]
-            try:
-                ip_obj = ipaddress.ip_address(ip)
-                if (ip_obj.is_private or ip_obj.is_loopback or 
-                    ip_obj.is_link_local or ip_obj.is_reserved):
-                    return False
-            except ValueError:
-                continue
-        
-        # 4. Additional DNS-based checks for cloud metadata
-        metadata_markers = [
-            "metadata.", ".metadata", "metadata.google", "metadata.internal",
-            "169.254.", "fd00:ec2", "100.100.100.",
-        ]
-        if any(marker in hostname for marker in metadata_markers):
-            return False
-        
-        return True
-    except Exception as e:
-        log.error(f"is_safe_url error for {hostname}: {e}")
-        return False
+from api_helpers import is_safe_url
 
 # Initialize Logging - use centralized config
 # logging_config.early_setup() already called by import
