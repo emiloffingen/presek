@@ -67,7 +67,7 @@ celery_app.conf.update(
         Queue('maintenance'),
     ),
     task_routes={
-        'tasks.ingestion_task.run_ingestion': {'queue': 'fast-track'},
+        'tasks.ingestion_task.run_ingestion': {'queue': 'ingestion'},
         'tasks.ingestion_task.auto_repair_sources_task': {'queue': 'maintenance'},
         'tasks.ingestion_task.crawl_article_task': {'queue': 'fast-track'},
         'tasks.intelligence.synthesize_cluster_task': {'queue': 'fast-track'},
