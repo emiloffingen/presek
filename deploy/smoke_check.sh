@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PUBLIC_URL="${PUBLIC_URL:-https://presek.live}"
+PUBLIC_URL="${PUBLIC_URL:-https://presek.live/}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5001/api/health}"
 ASTRO_URL="${ASTRO_URL:-http://127.0.0.1:3000}"
 FASTAPI_URL="${FASTAPI_URL:-http://127.0.0.1:5001/api/health}"
@@ -128,7 +128,8 @@ main() {
   fi
 
   if [ "$ENABLE_PUBLIC_CHECK" = "1" ]; then
-    wait_http_ok "Public site" "$PUBLIC_URL" 200
+    # Allow 200 or 301 for the root domain as it often redirects to / or www.
+    wait_http_ok "Public site" "$PUBLIC_URL" "200" || wait_http_ok "Public site" "$PUBLIC_URL" "301"
     wait_http_ok "Public status page" "$PUBLIC_URL/status" 200 "Состојба на системот"
     wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
     wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
