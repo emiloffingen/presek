@@ -116,6 +116,7 @@ main() {
     fi
     cp "$NGINX_DIR/cloudflare-realip.conf" "$REALIP_SNIPPET"
     cp "$NGINX_DIR/security-headers.conf" "$SECURITY_SNIPPET"
+    cp "$NGINX_DIR/presek-routes.conf" "/etc/nginx/snippets/presek-routes.conf"
     ln -sfn "$SITE_AVAILABLE" "$SITE_ENABLED"
 
     if [ -e "$LEGACY_SITE_ENABLED" ] && grep -q "server_name .*presek.live" "$LEGACY_SITE_ENABLED"; then
