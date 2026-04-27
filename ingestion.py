@@ -4,6 +4,7 @@ import re
 import html
 import datetime
 import asyncio
+import random
 import feedparser
 import logging
 from collections import defaultdict
@@ -498,9 +499,15 @@ async def ingest_all_sources_async():
         tasks = [fetch_feed_async(client, s) for s in sources]
         results = await asyncio.gather(*tasks)
         
+        # Shuffle results to ensure we don't always process the same sources first if we hit the limit
+        random.shuffle(results)
+        
         from utils import redis_client
         
         for source_name, entries, err in results:
+            if len(candidates) >= 80:
+                continue
+            
             source_stats[source_name]["fetched"] = len(entries)
             INGESTION_TOTAL.labels(source=source_name).inc(len(entries))
             if err:
@@ -521,6 +528,9 @@ async def ingest_all_sources_async():
             try:
                 source_meta = next(s for s in sources if s['name'] == source_name)
                 for e in entries:
+                    if len(candidates) >= 80:
+                        break
+                    
                     title = e.get("title", "").strip()
                     link = normalize_feed_link(e.get("link", ""))
                     title_key = normalize_candidate_title(title)
