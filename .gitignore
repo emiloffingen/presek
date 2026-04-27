@@ -1,3 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+.
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Environments
+.env
+.env.local
+.env.*.local
+.venv
+.venv_audit/
+venv/
+ENV/
+env/
+python-venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Database
 *.db
 *.db.bak
 *.db-shm
@@ -5,13 +72,13 @@
 presek.log
 presek.log.old
 nohup.out
+
+# Digests and caches
 digests/
-__pycache__/
-*.pyc
-.env
-.env.local
-.env.*.local
-venv/
+.hf_cache/
+*.pem
+
+# Application specific
 celerybeat-schedule
 *.log
 node_modules/
@@ -21,16 +88,19 @@ package-lock.json
 screenshots/
 static/dist/
 web/dist/
+web/.env
 web/.env.local
+
+# Claude
 .claude/
 .mypy_cache/
 .ruff_cache/
-*.egg-info/
-.hypothesis/
-*.pem
-venv/
-.venv*/
-.venv_audit/
-.cache/
-.hf_cache/
+
+# Model files
 models/
+*.gguf
+*.safetensors
+*.bin
+
+# Test results
+.test-results/

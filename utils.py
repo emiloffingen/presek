@@ -15,7 +15,24 @@ from config import (
 )
 
 log = logging.getLogger("presek")
-redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+
+# Redis client with password support
+# REDIS_URL format: redis://[:password@]hostname[:port]/db
+redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+try:
+    redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
+    # Test connection
+    redis_client.ping()
+    log.info(f"Redis connected: {redis_url.split('@')[-1].split('/')[0]}")
+except redis.ConnectionError as e:
+    log.error(f"Redis connection failed to {redis_url}: {e}")
+    # Fallback to localhost without password for backward compatibility
+    redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
+except Exception as e:
+    log.error(f"Redis initialization error: {e}")
+    # Last resort: create a client that will fail on first use
+    redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
+
 _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
 
 class DateTimeEncoder(json.JSONEncoder):

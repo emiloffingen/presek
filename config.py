@@ -1,22 +1,116 @@
 import os
 import sys
+import logging
 try:
     from dotenv import load_dotenv
 except ModuleNotFoundError:  # Optional in pre-provisioned environments.
     def load_dotenv():
         return False
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (only in development)
+# In production, environment variables should be set directly
+if os.environ.get("ENV") != "production":
+    load_dotenv()
+
+# Configure logging for config validation
+log = logging.getLogger("presek.config")
 
 REQUIRED_RUNTIME_ENV_KEYS = ("DATABASE_URL", "SECRET_KEY")
+
+# Optional but recommended for production
+RECOMMENDED_ENV_KEYS = (
+    "REDIS_URL",
+    "MISTRAL_API_KEY",
+    "PRESEK_ADMIN_TOKEN",
+    "NTFY_TOPIC",
+    "NTFY_TOKEN",
+    "VAPID_PRIVATE_KEY",
+    "VAPID_PUBLIC_KEY",
+    "SMTP_HOST",
+    "SMTP_PASS",
+)
+
+# Keys that should NEVER be used without explicit configuration
+SENSITIVE_ENV_KEYS = (
+    "DATABASE_URL",
+    "REDIS_URL",
+    "SECRET_KEY",
+    "PRESEK_ADMIN_TOKEN",
+    "MISTRAL_API_KEY",
+    "SMTP_PASS",
+    "CLOUDFLARE_API_TOKEN",
+    "R2_SECRET_ACCESS_KEY",
+    "POLLINATIONS_API_KEY",
+    "GOOGLE_API_KEY",
+    "VAPID_PRIVATE_KEY",
+    "CF_AI_GATEWAY_TOKEN",
+)
 
 
 def validate_required_env(required_keys=REQUIRED_RUNTIME_ENV_KEYS):
     """Validate that critical environment variables are set before serving traffic."""
     missing = [k for k in required_keys if not os.environ.get(k)]
     if missing:
-        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+        # In production, this should be a hard failure
+        if os.environ.get("ENV") == "production":
+            missing_str = ", ".join(missing)
+            log.critical(f"PRODUCTION STARTUP FAILED: Missing required environment variables: {missing_str}")
+            raise RuntimeError(f"Missing required environment variables: {missing_str}")
+        else:
+            # In development, log warnings but allow startup
+            for key in missing:
+                log.warning(f"Missing environment variable (required for production): {key}")
+            log.warning(f"Running in development mode with missing config. For production, set: {', '.join(missing)}")
+
+
+def validate_recommended_env():
+    """Warn about missing recommended configuration."""
+    missing = [k for k in RECOMMENDED_ENV_KEYS if not os.environ.get(k)]
+    if missing:
+        for key in missing:
+            log.warning(f"Recommended environment variable not set: {key}")
+
+
+def check_sensitive_values():
+    """Warn if sensitive environment variables contain default/test values."""
+    dangerous_patterns = [
+        ("DATABASE_URL", ["password", "1234", "test", "changeme", "postgres://"]),
+        ("SECRET_KEY", ["secret", "test", "changeme", "123"]),
+        ("PRESEK_ADMIN_TOKEN", ["admin", "test", "123", "changeme"]),
+        ("MISTRAL_API_KEY", ["sk-", "test", "fake"]),
+    ]
+    
+    issues = []
+    for key, patterns in dangerous_patterns:
+        value = os.environ.get(key, "").lower()
+        for pattern in patterns:
+            if pattern.lower() in value:
+                issues.append(f"{key} appears to contain a default/test value")
+                break
+    
+    if issues:
+        log.warning(f"Potentially insecure configuration detected: {'; '.join(issues)}")
+
+
+# Validate on import
+def _init_config():
+    """Initialize and validate configuration on module import."""
+    validate_required_env()
+    validate_recommended_env()
+    
+    # Only check in development (production should have proper values)
+    if os.environ.get("ENV") != "production":
+        check_sensitive_values()
+    
+    # Validate specific configurations
+    db_url = os.environ.get("DATABASE_URL", "")
+    if db_url and not db_url.startswith(("postgresql://", "postgres://")):
+        log.error(f"Invalid DATABASE_URL scheme: {db_url[:50]}...")
+        raise ValueError("DATABASE_URL must use postgresql:// or postgres:// scheme")
+
+
+# Run initialization
+_init_config()
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek-mk-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")

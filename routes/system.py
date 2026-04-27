@@ -20,9 +20,16 @@ from utils import (
     cached_response, set_cache, record_runtime_event, redis_client
 )
 
+log = logging.getLogger("presek.routes.system")
+
 # Use a separate client for binary data to avoid UnicodeDecodeError from utils.redis_client
-_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-binary_redis_client = _redis_lib.from_url(_redis_url, decode_responses=False)
+_redis_url = os.environ.get("REDIS_URL") or "redis://localhost:6379/0"
+try:
+    binary_redis_client = _redis_lib.from_url(_redis_url, decode_responses=False)
+    binary_redis_client.ping()
+except Exception as e:
+    log.warning(f"Binary Redis client failed to connect to {_redis_url}: {e}")
+    binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
 from health import _probe_database, _probe_redis
 from nlp import generate_local_placeholder
 from ai_engine import _call_ai_async
