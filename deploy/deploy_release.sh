@@ -66,7 +66,7 @@ bump_version() {
   
   # Update web/package.json
   if [ -f "$package_json" ]; then
-    sed -i "s/\"version\": \".*\"/\"version\": \"$next_version\"/" "$package_json"
+    sed -i "s/^[[:space:]]*\"version\": \".*\"/  \"version\": \"$next_version\"/" "$package_json"
   fi
   
   # Commit version bump to git
@@ -260,8 +260,18 @@ ensure_release_web_deps() {
     rm -rf "$versioned_web_deps"
     install -d "$versioned_web_deps"
     cp "$RELEASE_DIR/web/package.json" "$versioned_web_deps/"
-    [ ! -f "$RELEASE_DIR/web/package-lock.json" ] || cp "$RELEASE_DIR/web/package-lock.json" "$versioned_web_deps/"
-    (cd "$versioned_web_deps" && npm ci)
+    
+    if [ -f "$RELEASE_DIR/web/package-lock.json" ]; then
+      cp "$RELEASE_DIR/web/package-lock.json" "$versioned_web_deps/"
+      info "Attempting npm ci..."
+      (cd "$versioned_web_deps" && npm ci) || {
+        warn "npm ci failed; falling back to npm install"
+        (cd "$versioned_web_deps" && npm install)
+      }
+    else
+      warn "package-lock.json missing; using npm install"
+      (cd "$versioned_web_deps" && npm install)
+    fi
   else
     info "Reusing versioned Astro dependencies $versioned_web_deps"
   fi
@@ -416,11 +426,6 @@ main() {
   exec 9>"$LOCK_FILE"
   flock -n 9 || fail "Another deploy is already in progress (lock: $LOCK_FILE)"
 
-  # Auto-bump version (5.3 -> 5.4)
-  if [ "${BUMP_VERSION:-1}" = "1" ]; then
-    bump_version
-  fi
-
   [ ! -e "$RELEASE_DIR" ] || fail "Release already exists: $RELEASE_DIR"
 
   local previous_target=""
@@ -440,14 +445,25 @@ main() {
   [ -n "$current_venv_target" ] || fail "Could not resolve active Python runtime from $VENV_DIR"
   [ -n "$current_web_deps_target" ] || fail "Could not resolve active Astro dependencies from $SHARED_WEB_NODE_MODULES"
 
+  # 1. Prepare environment and copy source
   copy_release_tree
   prepare_release_runtime_links
   ensure_release_venv
   ensure_release_web_deps
+  
+  # 2. Build and verify
   build_release
   run_release_checks
+  
+  # 3. Only if everything above passed, we bump the version in the repo
+  if [ "${BUMP_VERSION:-1}" = "1" ]; then
+    bump_version
+  fi
+
+  # 4. Database migrations
   run_migrations
 
+  # 5. Atomic switch
   persist_release_runtime_meta "$RELEASE_DIR" "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
   persist_release_runtime_meta "$previous_target" "$current_venv_target" "$current_web_deps_target"
 
@@ -459,6 +475,7 @@ main() {
   update_active_runtime_links "$RELEASE_VENV_TARGET" "$RELEASE_WEB_NODE_MODULES_TARGET"
   invalidate_public_api_caches
 
+  # 6. Restart services
   if ! restart_and_smoke; then
     rollback_release "$RELEASE_DIR" "$previous_target" "$current_venv_target" "$current_web_deps_target" || warn "Rollback did not complete cleanly"
     fail "Release deploy failed"
