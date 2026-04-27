@@ -14,7 +14,7 @@ SHARED_WEB_DEPS_ROOT="${SHARED_WEB_DEPS_ROOT:-$SHARED_DIR/web-deps}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
-ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
+ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
 BACKUP_SCRIPT="$SOURCE_ROOT/deploy/backup_postgres.sh"
@@ -191,6 +191,7 @@ copy_release_tree() {
     --exclude 'current' \
     --exclude 'previous' \
     --exclude '.runtime-meta' \
+    --exclude '.env' \
     --exclude 'presek.db' \
     --exclude 'static/uploads/*' \
     --exclude 'static/generated/*' \
