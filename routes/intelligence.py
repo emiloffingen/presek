@@ -463,7 +463,7 @@ async def get_entity_profile(name: str):
 async def get_global_pulse(category: Optional[str] = None):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}" if category else "all"
-    cache_key = f"api:intelligence:global-pulse:{cat_id}:v3"
+    cache_key = f"api:intelligence:global-pulse:{cat_id}:v4"
     cached = cached_response(cache_key)
     if cached: return cached
 
@@ -501,32 +501,36 @@ async def get_global_pulse(category: Optional[str] = None):
     from .common import build_intelligence_summary_payload
     intel = await build_intelligence_summary_payload(last_24h, category=category)
     
-    # 4. Top Trending Entities
-    if category:
-        top_entities_sql = f"""
-            SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
-            FROM knowledge_entities ke
-            JOIN cluster_entities ce ON ke.name = ce.entity_name
-            JOIN articles a ON ce.cluster_id = a.cluster_id
-            WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
-            GROUP BY ke.name, ke.sentiment_score, ke.type
-            ORDER BY total_mentions DESC
-            LIMIT 8
-        """
-        top_entities = await db.async_execute(top_entities_sql, (category,))
-    else:
-        # Use a join to get REAL 24h counts instead of lifetime total_mentions
-        top_entities_sql = f"""
-            SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
-            FROM knowledge_entities ke
-            JOIN cluster_entities ce ON ke.name = ce.entity_name
-            JOIN articles a ON ce.cluster_id = a.cluster_id
-            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
-            GROUP BY ke.name, ke.sentiment_score, ke.type
-            ORDER BY total_mentions DESC
-            LIMIT 8
-        """
-        top_entities = await db.async_execute(top_entities_sql)
+    # 4. Top Trending Entities (with 48h fallback)
+    async def fetch_top_entities(interval_str):
+        if category:
+            sql = f"""
+                SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+                FROM knowledge_entities ke
+                JOIN cluster_entities ce ON ke.name = ce.entity_name
+                JOIN articles a ON ce.cluster_id = a.cluster_id
+                WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                GROUP BY ke.name, ke.sentiment_score, ke.type
+                ORDER BY total_mentions DESC
+                LIMIT 8
+            """
+            return await db.async_execute(sql, (category,))
+        else:
+            sql = f"""
+                SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+                FROM knowledge_entities ke
+                JOIN cluster_entities ce ON ke.name = ce.entity_name
+                JOIN articles a ON ce.cluster_id = a.cluster_id
+                WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                GROUP BY ke.name, ke.sentiment_score, ke.type
+                ORDER BY total_mentions DESC
+                LIMIT 8
+            """
+            return await db.async_execute(sql)
+
+    top_entities = await fetch_top_entities("'24 hours'")
+    if not top_entities or len(top_entities) < 3:
+        top_entities = await fetch_top_entities("'48 hours'")
 
     res = {
         "status": "success",
