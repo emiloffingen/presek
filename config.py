@@ -118,11 +118,7 @@ VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 
-# ── Additional AI Providers (OpenAI-compatible & Gemini) ─────────
-MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "")
-MISTRAL_API_URL = os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions")
-MISTRAL_MODEL = os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
-
+# ── Additional AI Providers (Gemini) ───────────────────────────
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
@@ -240,8 +236,7 @@ ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "f
 # ── AI Routing Configuration ────────────────────────────────────
 # gemini (Cloud) is the PRIMARY choice for volume tasks (2026 standard).
 # local (Gemma 2 2B) is the SECONDARY fallback for privacy/offline.
-# mistral (Cloud) is the HIGH-TIER fallback.
-PROVIDER_FALLBACK_ORDER = ["gemini", "local", "mistral"]
+PROVIDER_FALLBACK_ORDER = ["gemini", "local"]
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

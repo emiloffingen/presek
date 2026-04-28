@@ -12,7 +12,6 @@ from collections import defaultdict
 from typing import AsyncGenerator
 
 from config import (
-    MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
     GEMINI_API_KEY, GEMINI_MODEL,
     POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
 )
@@ -54,41 +53,6 @@ class AIProvider(ABC):
         pass
 
 # --- Provider Registry ---
-
-class MistralProvider(AIProvider):
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
-        if not MISTRAL_API_KEY: return None
-        payload = {
-            "model": MISTRAL_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0.2
-        }
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-
-        # Use Mistral API directly
-        url = MISTRAL_API_URL
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {MISTRAL_API_KEY}",
-        }
-        try:
-            with httpx.Client(timeout=60.0) as client:
-                resp = client.post(url, json=payload, headers=headers)
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            log.warning(f"[ai/mistral] Call failed (URL: {url}): {e}")
-            return None
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res: yield res
 
 class OpenAICompatibleProvider(AIProvider):
     def __init__(self, provider_name: str, api_key: str, api_url: str, model: str):
@@ -246,7 +210,6 @@ class GeminiProvider(AIProvider):
 
 PROVIDERS = {
     "gemini": GeminiProvider(),
-    "mistral": MistralProvider(),
     "local": LocalProvider(),
 }
 
