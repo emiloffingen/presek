@@ -195,7 +195,13 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             </div>
                         </div>
                         
-                        {topEntities.length > 0 ? (
+                        {loading ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="h-48 border border-border bg-card/50"></div>
+                                ))}
+                            </div>
+                        ) : topEntities.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {topEntities.map((ent: any) => (
                                     <a 
