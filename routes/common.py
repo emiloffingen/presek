@@ -274,7 +274,7 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
                 END) as group_count
             FROM articles a
             JOIN sources s ON a.source = s.name
-            WHERE a.created_at >= NOW() - INTERVAL '24 hours' {cat_filter}
+            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
             GROUP BY cluster_id
         )
         SELECT

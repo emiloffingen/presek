@@ -7,10 +7,10 @@ import { apiBaseUrl } from '../lib/apiBase';
 import { Activity, Timer, Zap } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
-let initialPulseData = [];
+let initialPulseData = null;
 let globalPulse: any = null;
 let categories: string[] = [];
-let error = "";
+let ssrFailed = false;
 
 try {
     const [pulseRes, globalRes, catRes] = await Promise.all([
@@ -22,17 +22,23 @@ try {
     if (pulseRes.ok) {
         const json = await pulseRes.json();
         initialPulseData = json.data || [];
+    } else {
+        ssrFailed = true;
     }
+
     if (globalRes.ok) {
         globalPulse = await globalRes.json();
+    } else {
+        ssrFailed = true;
     }
+
     if (catRes.ok) {
         const json = await catRes.json();
         categories = (json.categories || []).map((c: any) => c.name);
     }
 } catch (e) {
     console.error("Pulse SSR error:", e);
-    error = "Медиумскиот пулс моментално не е достапен.";
+    ssrFailed = true;
 }
 
 const safePulseVolume = Math.max(1, Number(globalPulse?.last_24h || 0));
@@ -96,8 +102,9 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
         <PulseClientContainer 
             client:load 
             initialGlobalPulse={globalPulse} 
-            initialPulseData={initialPulseData}
+            initialPulseData={initialPulseData || []}
             categories={categories}
+            ssrFailed={ssrFailed}
         />
     </main>
     <Footer />

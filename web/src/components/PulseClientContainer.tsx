@@ -19,9 +19,10 @@ interface PulseClientContainerProps {
     initialGlobalPulse: any;
     initialPulseData: PulseRow[];
     categories: string[];
+    ssrFailed?: boolean;
 }
 
-export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories }: PulseClientContainerProps) {
+export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed }: PulseClientContainerProps) {
     const [category, setCategory] = useState<string | null>(null);
     const [globalPulse, setGlobalPulse] = useState(initialGlobalPulse);
     const [pulseData, setPulseData] = useState<PulseRow[]>(initialPulseData);
@@ -29,7 +30,9 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     const API_URL = apiBaseUrl();
 
     useEffect(() => {
-        if (category === null && globalPulse === initialGlobalPulse) return;
+        // Fetch if we don't have data, if SSR failed, or if the category has changed.
+        const hasData = !!(globalPulse && pulseData && pulseData.length > 0);
+        if (category === null && globalPulse === initialGlobalPulse && hasData && !ssrFailed) return;
         
         const fetchData = async () => {
             setLoading(true);
