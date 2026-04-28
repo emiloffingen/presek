@@ -460,8 +460,11 @@ async def get_current_mood():
         if not rows:
             return {"status": "success", "mood": "неутрален", "score": 0, "objectivity": 1.0}
         
-        avg_score = sum(r["score"] for r in rows) / len(rows)
-        avg_obj = sum(r["objectivity"] for r in rows) / len(rows)
+        valid_scores = [r["score"] for r in rows if r["score"] is not None]
+        avg_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0.0
+        
+        valid_objs = [r["objectivity"] for r in rows if r["objectivity"] is not None]
+        avg_obj = sum(valid_objs) / len(valid_objs) if valid_objs else 1.0
         
         # Dominant tone (most frequent)
         tones = [r["tone"] for r in rows if r["tone"]]

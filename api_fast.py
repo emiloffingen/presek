@@ -200,10 +200,13 @@ async def metrics():
 async def image_proxy(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
-    
+
+    # Allow internal static files without full proxy fetch
+    if url.startswith("/static/"):
+        return RedirectResponse(url=url)
+
     # SSRF protection: block local/private network ranges
-    if not is_safe_url(url):
-        log.warning(f"SSRF block triggered for proxy URL: {url}")
+    if not is_safe_url(url):        log.warning(f"SSRF block triggered for proxy URL: {url}")
         raise HTTPException(status_code=403, detail="Access to this URL is restricted for security reasons")
 
     try:

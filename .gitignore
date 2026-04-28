@@ -104,3 +104,7 @@ models/
 
 # Test results
 .test-results/
+
+# Keys
+private_key.pem
+public_key.pem
