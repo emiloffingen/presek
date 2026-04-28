@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+# Cleanup lock file on exit (normal or error)
+cleanup_lock() {
+  [ -n "${LOCK_FILE:-}" ] && rm -f "$LOCK_FILE"
+  exec 9>&- 2>/dev/null || true
+}
+trap cleanup_lock EXIT
+
 SOURCE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP_ROOT="${APP_ROOT:-$HOME/presek-runtime}"
 RELEASES_DIR="$APP_ROOT/releases"
@@ -457,8 +464,16 @@ main() {
   run_release_checks
   
   # 3. Only if everything above passed, we bump the version in the repo
-  if [ "${BUMP_VERSION:-1}" = "1" ]; then
-    bump_version
+  # Default to 0 to prevent accidental version bumps in CI/staging
+  if [ "${BUMP_VERSION:-0}" = "1" ]; then
+    # Check for uncommitted changes before bumping
+    cd "$SOURCE_ROOT"
+    if [ -n "$(git status --porcelain)" ]; then
+      warn "Not bumping version: repository has uncommitted changes"
+    else
+      bump_version
+    fi
+    cd - > /dev/null
   fi
 
   # 4. Database migrations
@@ -481,6 +496,10 @@ main() {
     rollback_release "$RELEASE_DIR" "$previous_target" "$current_venv_target" "$current_web_deps_target" || warn "Rollback did not complete cleanly"
     fail "Release deploy failed"
   fi
+
+  # 7. Auto-prune old releases
+  info "Pruning old releases"
+  DRY_RUN=0 KEEP_EXTRA=3 APP_ROOT="$APP_ROOT" bash "$SOURCE_ROOT/deploy/prune_releases.sh" || warn "Cleanup failed"
 
   ok "Release deployed successfully"
   ok "Current release: $RELEASE_ID"
