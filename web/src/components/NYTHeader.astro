@@ -90,26 +90,16 @@ function getRelativeTimeStr(dateStr?: string) {
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
-    {(hasDispatchStats || hasBreaking) && (
+    {hasBreaking && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
             <div class="ticker-prefix">
-                <span class="dispatch-item"><ShieldCheck size={10} className="text-emerald-600" /> <span class="hidden sm:inline">ИНДЕКС:</span></span>
-                {hasBreaking && <Radio size={10} className="animate-pulse text-nyt-red ml-2" />}
+                <span class="dispatch-item"><Radio size={10} className="animate-pulse text-nyt-red mr-2" /> <span class="hidden sm:inline">ВО ЖИВО:</span></span>
             </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
                     <div class="ticker-content-segment">
-                        {hasDispatchStats && (
-                            <div class="stats-group">
-                                <span class="dispatch-data"><span class="sm:hidden" title="Потврдени факти">✓</span> {confirmedFacts} <span class="hidden sm:inline">ПОТВРДЕНИ ФАКТИ</span></span>
-                                <span class="dispatch-sep">•</span>
-                                <span class="dispatch-data"><span class="sm:hidden text-nyt-red" title="Противречности">!</span> {activeConflicts} <span class="hidden sm:inline">УРЕДНИЧКИ ДИВЕРГЕНЦИИ</span></span>
-                                <span class="dispatch-sep">•</span>
-                                <span class="dispatch-data"><span class="sm:hidden text-blue-500" title="Извори">●</span> {totalFeeds} <span class="hidden sm:inline">АКТИВНИ РЕДАКЦИИ</span></span>
-                            </div>
-                        )}
-                        {hasBreaking && breakingItems.map((item: any) => (
+                        {breakingItems.map((item: any) => (
                             <a href={item.href} class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">||</span>
                                 <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
@@ -119,16 +109,7 @@ function getRelativeTimeStr(dateStr?: string) {
                     </div>
                     {/* Duplicate for seamless looping */}
                     <div class="ticker-content-segment" aria-hidden="true">
-                        {hasDispatchStats && (
-                            <div class="stats-group">
-                                <span class="dispatch-data"><span class="sm:hidden" title="Потврдени факти">✓</span> {confirmedFacts} <span class="hidden sm:inline">ПОТВРДЕНИ ФАКТИ</span></span>
-                                <span class="dispatch-sep">•</span>
-                                <span class="dispatch-data"><span class="sm:hidden text-nyt-red" title="Противречности">!</span> {activeConflicts} <span class="hidden sm:inline">УРЕДНИЧКИ ДИВЕРГЕНЦИИ</span></span>
-                                <span class="dispatch-sep">•</span>
-                                <span class="dispatch-data"><span class="sm:hidden text-blue-500" title="Извори">●</span> {totalFeeds} <span class="hidden sm:inline">АКТИВНИ РЕДАКЦИИ</span></span>
-                            </div>
-                        )}
-                        {hasBreaking && breakingItems.map((item: any) => (
+                        {breakingItems.map((item: any) => (
                             <a href={item.href} class="live-ticker-headline">
                                 <span class="ticker-sep" aria-hidden="true">||</span>
                                 <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
