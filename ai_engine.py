@@ -13,6 +13,7 @@ from typing import AsyncGenerator
 
 from config import (
     MISTRAL_API_KEY, MISTRAL_API_URL, MISTRAL_MODEL,
+    GEMINI_API_KEY, GEMINI_MODEL,
     POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
 )
 from prompts import (
@@ -179,7 +180,49 @@ class LocalProvider(AIProvider):
 
         # Fallback to the old deterministic rules if Gemma is not suitable or fails
         return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
+class GeminiProvider(AIProvider):
+    def __init__(self):
+        self.client = None
+        if GEMINI_API_KEY:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            self.client = genai
+
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
+        if not self.client or not GEMINI_API_KEY:
+            return None
+        
+        try:
+            model = self.client.GenerativeModel(
+                model_name=GEMINI_MODEL,
+                system_instruction=system
+            )
+            
+            generation_config = {
+                "max_output_tokens": max_tokens,
+                "temperature": 0.2,
+            }
+            
+            if json_mode:
+                generation_config["response_mime_type"] = "application/json"
+            
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config
+            )
+            return response.text
+        except Exception as e:
+            log.warning(f"[ai/gemini] Call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        # For simplicity, we use non-streaming for now as Gemini SDK 
+        # is often used synchronously in these legacy wrappers
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 PROVIDERS = {
+    "gemini": GeminiProvider(),
     "mistral": MistralProvider(),
     "local": LocalProvider(),
 }
