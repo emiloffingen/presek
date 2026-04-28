@@ -360,8 +360,8 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                         if re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', temp_text, re.I) or \
                            re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', temp_text, re.I):
                             break
-                    except:
-                        pass
+                    except Exception as e:
+                        log.debug(f"OG image meta parse error: {e}")
 
                 if len(head_bytes) >= _OG_IMAGE_READ_LIMIT:
                     break
@@ -523,7 +523,8 @@ async def ingest_all_sources_async():
                 if not redis_client.set(lock_key, "1", nx=True, ex=300):
                     log.info(f"Source {source_name} is being processed by another worker, skipping.")
                     continue
-            except Exception: pass
+            except Exception as e:
+                log.debug(f"Redis lock error for source {source_name}: {e}")
 
             try:
                 source_meta = next(s for s in sources if s['name'] == source_name)
@@ -569,8 +570,10 @@ async def ingest_all_sources_async():
                     source_stats[source_name]["accepted"] += 1
                     INGESTION_ACCEPTED.labels(source=source_name).inc()
             finally:
-                try: redis_client.delete(lock_key)
-                except Exception: pass
+                try:
+                    redis_client.delete(lock_key)
+                except Exception as e:
+                    log.debug(f"Redis unlock error for source {source_name}: {e}")
 
             if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
                 source_stats[source_name]["status"] = "warning"

@@ -127,7 +127,8 @@ class LocalAnalyst:
             elif "```" in raw:
                 clean_raw = raw.split("```")[1].split("```")[0]
             return json.loads(clean_raw)
-        except:
+        except Exception as e:
+            log.debug(f"JSON parse error in extract_coverage_score: {e}")
             return {"score": 50, "verdict": "Стандардна покриеност"}
 
     def detect_echo(self, article_text: str, cluster_context: str) -> float:
@@ -146,7 +147,8 @@ class LocalAnalyst:
             if matches:
                 return float(matches[0])
             return 1.0
-        except:
+        except Exception as e:
+            log.debug(f"Sentiment parse error in detect_sentiment: {e}")
             return 1.0
 
     def research_query(self, query: str, context: str) -> Dict[str, Any]:
