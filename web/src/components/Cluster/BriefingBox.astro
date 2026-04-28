@@ -1,0 +1,112 @@
+---
+import { getRelativeTimeStr, getEditionStr, cleanAndDecode, parseFootnotes } from '../../utils/textUtils';
+import { sanitizeHtml } from '../../lib/sanitize';
+
+interface Props {
+	headerBriefItems: string[];
+	sourcePreview: string[];
+	synthesisUpdatedAt?: string;
+	synthesisFreshness: { is_stale: boolean; new_article_count?: number };
+	hasCitationSources: boolean;
+    getRelativeTimeStr: (dateStr: string) => string;
+}
+
+const { headerBriefItems, sourcePreview, synthesisUpdatedAt, synthesisFreshness, hasCitationSources, getRelativeTimeStr } = Astro.props;
+
+function renderSynthesisHtml(text: string) {
+	if (!text) return '';
+	let clean = cleanAndDecode(text);
+	if (!clean) return '';
+
+	// 1. Strip residual AI placeholders
+	clean = clean.replace(/\[ПРЕТХОДЕН КОНТЕКСТ\]/gi, '');
+
+	// 2. Handle Markdown Bold: **text** -> <strong>text</strong>
+	clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+	// 3. Handle Markdown Italics: *text* -> <em>text</em>
+	clean = clean.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // 4. Handle Parenthetical Citations: (Извор: Име) or (Име) -> <span class="citation-badge">Име</span>
+    // We target common news source patterns (capitalised, 1-3 words)
+    clean = clean.replace(/\((?:Извор:\s*)?([A-ZА-Ш][a-zа-ш0-9\s\.]{2,20})\)/g, (match, name) => {
+        return `<span class="citation-badge">${name.trim()}</span>`;
+    });
+
+	if (hasCitationSources) return sanitizeHtml(parseFootnotes(clean));
+	return sanitizeHtml(clean.replace(/\[(\d+)\]/g, '').replace(/\s{2,}/g, ' ').trim());
+}
+---
+
+<div class="briefing-box">
+	<div class="briefing-header mb-5">
+		<span class="briefing-kicker">КРАТОК БРИФИНГ</span>
+		<h3 class="briefing-title">Што треба да знаете</h3>
+	</div>
+	
+	<div class="briefing-content space-y-4 mb-6">
+		{headerBriefItems.map((line: string) => (
+			<p class="briefing-point" set:html={renderSynthesisHtml(line)}></p>
+		))}
+	</div>
+
+	<div class="briefing-footer border-t border-border/40 pt-4">
+		<div class="flex flex-wrap gap-2 mb-4">
+			{sourcePreview.map(s => (
+				<span class="text-[9px] font-black uppercase tracking-tighter bg-secondary/50 px-1.5 py-0.5 rounded text-muted-foreground">{s}</span>
+			))}
+		</div>
+		{synthesisUpdatedAt && (
+			<p class:list={["text-[10px] font-bold uppercase tracking-tight", synthesisFreshness.is_stale ? "text-nyt-red" : "text-muted-foreground/60"]}>
+				{synthesisFreshness.is_stale
+					? `${synthesisFreshness.new_article_count || 1} нови извештаи од последната синтеза`
+					: `Последен уреднички преглед: ${getRelativeTimeStr(synthesisUpdatedAt)}`}
+			</p>
+		)}
+	</div>
+</div>
+
+<style>
+	.briefing-box {
+		height: 100%;
+		padding: 2rem;
+		background: color-mix(in srgb, var(--secondary) 15%, var(--background));
+		border: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.briefing-kicker {
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 900;
+		letter-spacing: 0.15em;
+		color: var(--nyt-accent);
+		display: block;
+		margin-bottom: 0.5rem;
+	}
+
+	.briefing-title {
+		font-family: var(--font-serif);
+		font-size: 1.4rem;
+		font-weight: 900;
+		line-height: 1.1;
+	}
+
+	.briefing-point {
+		font-family: var(--font-serif);
+		font-size: 1.05rem;
+		line-height: 1.45;
+		color: var(--foreground);
+		position: relative;
+		padding-left: 1.25rem;
+	}
+
+	.briefing-point::before {
+		content: "—";
+		position: absolute;
+		left: 0;
+		color: var(--nyt-accent);
+		font-weight: 900;
+	}
+</style>

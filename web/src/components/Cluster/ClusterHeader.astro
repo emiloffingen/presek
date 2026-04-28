@@ -1,0 +1,102 @@
+---
+import { Clock } from 'lucide-react';
+import { getEditionStr } from '../../utils/textUtils';
+import ShareIsland from '../ShareIsland.tsx';
+import PreferenceToggle from '../PreferenceToggle.tsx';
+
+interface Props {
+	momentumKicker: { label: string; color: string };
+	category: string;
+	createdAt: string;
+	displayHeadline: string;
+	headlineIsCyrillic: boolean;
+	syntheticStandfirst?: string;
+	canonicalUrl: string;
+	topics: string[];
+	getRelativeTimeStr: (dateStr: string) => string;
+}
+
+const { 
+	momentumKicker, 
+	category, 
+	createdAt, 
+	displayHeadline, 
+	headlineIsCyrillic, 
+	syntheticStandfirst, 
+	canonicalUrl, 
+	topics,
+	getRelativeTimeStr
+} = Astro.props;
+---
+
+<header class="editorial-lede mb-10">
+	<div class="lede-meta mb-6">
+		<span class:list={["font-black uppercase tracking-[0.25em] text-[11px] mr-5", momentumKicker.color]}>{momentumKicker.label}</span>
+		<span class="nyt-section-label text-foreground/50 mr-5">{category}</span>
+		<span class="lede-time-meta inline-flex items-center gap-1.5 text-muted-foreground">
+			<Clock size={12} />
+			<span class="text-[11px] font-bold uppercase tracking-wide">{getRelativeTimeStr(createdAt)}</span>
+			<span class="mx-1.5 opacity-30">·</span>
+			<span class="font-black uppercase tracking-widest text-[10px] text-nyt-accent/80">
+				{getEditionStr(createdAt)}
+			</span>
+		</span>
+	</div>
+
+	<h1 class:list={["editorial-headline mb-8", { "is-cyrillic": headlineIsCyrillic }]}>
+		{displayHeadline}
+	</h1>
+
+	{syntheticStandfirst && (
+		<p class="editorial-standfirst font-serif text-2xl leading-tight text-muted-foreground italic max-w-3xl border-l-2 border-border/60 pl-6 mb-10">
+			{syntheticStandfirst}
+		</p>
+	)}
+
+	<div class="flex flex-wrap gap-4 items-center mb-12 border-y border-border/40 py-5">
+		<ShareIsland
+			title={displayHeadline}
+			url={canonicalUrl}
+			client:idle
+		/>
+		<div class="h-5 w-px bg-border/60 mx-2"></div>
+		<PreferenceToggle
+			kind="topic"
+			value={topics?.[0] || category}
+			client:idle
+		/>
+	</div>
+</header>
+
+<style>
+	.editorial-headline {
+		font-family: var(--font-serif);
+		font-size: clamp(2.5rem, 6.5vw, 4.8rem);
+		font-weight: 900;
+		line-height: 0.92;
+		letter-spacing: -0.025em;
+		color: var(--foreground);
+		text-wrap: balance;
+	}
+
+	.editorial-headline.is-cyrillic {
+		line-height: 1.05;
+		letter-spacing: -0.01em;
+	}
+
+	.editorial-standfirst {
+		text-wrap: pretty;
+	}
+
+	.nyt-section-label {
+		font-family: var(--font-sans);
+		font-size: 0.7rem;
+		font-weight: 950;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
+	.lede-time-meta {
+		font-family: var(--font-sans);
+	}
+</style>

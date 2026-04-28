@@ -1,0 +1,125 @@
+---
+import { Newspaper } from 'lucide-react';
+
+interface Props {
+	leadVisual: any;
+	dominantColor?: string;
+	displayHeadline: string;
+	id: string;
+	category: string;
+	sourcePreview: string[];
+	articlesCount: number;
+}
+
+const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview, articlesCount } = Astro.props;
+---
+
+<div class="hero-visual-area">
+	{leadVisual && leadVisual.rawUrl ? (
+		<div class:list={["hero-visual-card shadow-editorial", leadVisual.isWeak ? "is-weak" : ""]}>
+			{dominantColor && !leadVisual.isWeak && (
+				<div class="hero-visual-aura" style={`background-color: ${dominantColor};`}></div>
+			)}
+			
+			{leadVisual.isWeak ? (
+				<div class="hero-fallback">
+					<p class="hero-fallback-kicker">ПРЕСЕК.мк Преглед</p>
+					<h2 class="font-serif font-black">{category || 'Главна Приказна'}</h2>
+					<p class="hero-fallback-meta">{articlesCount} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
+				</div>
+			) : (
+				<img
+					src={leadVisual.src}
+					alt={displayHeadline}
+					class="hero-main-image"
+					transition:name={`cluster-image-${id}`}
+					loading="eager"
+					onload="this.classList.add('is-loaded')"
+				/>
+			)}
+			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+				Илустрација од водечките извештаи · {articlesCount} редакции анализирани
+			</div>
+		</div>
+	) : (
+		<div class="hero-fallback-plain p-12 bg-secondary/20 border border-border/40 text-center">
+			<Newspaper size={48} className="mx-auto mb-4 opacity-20" />
+			<p class="font-serif italic text-muted-foreground">Нема достапна илустрација за овој развој.</p>
+		</div>
+	)}
+</div>
+
+<style>
+	.hero-visual-card {
+		position: relative;
+		border: 1px solid var(--border);
+		background: var(--card);
+		overflow: hidden;
+		min-height: 300px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.hero-visual-aura {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0.15;
+		filter: blur(80px);
+		z-index: 0;
+		pointer-events: none;
+	}
+
+	.hero-main-image {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 3/2;
+		object-fit: cover;
+		display: block;
+		position: relative;
+		z-index: 1;
+		opacity: 0;
+		transition: opacity 0.8s ease;
+	}
+
+	:global(.hero-main-image.is-loaded) {
+		opacity: 1;
+	}
+
+	.hero-fallback {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 4rem 2rem;
+		text-align: center;
+		background: linear-gradient(135deg, var(--secondary) 0%, var(--background) 100%);
+	}
+
+	.hero-fallback-kicker {
+		font-family: var(--font-sans);
+		font-size: 0.65rem;
+		font-weight: 950;
+		text-transform: uppercase;
+		letter-spacing: 0.15em;
+		color: var(--nyt-accent);
+		margin-bottom: 1rem;
+	}
+
+	.hero-fallback h2 {
+		font-size: 2.5rem;
+		margin-bottom: 1rem;
+		line-height: 1.1;
+	}
+
+	.hero-fallback-meta {
+		font-family: var(--font-sans);
+		font-size: 0.75rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+	}
+</style>

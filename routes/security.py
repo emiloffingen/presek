@@ -259,13 +259,14 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
 # =============================================================================
 
 def sanitize_html(text: str) -> str:
-    """Remove HTML tags and escape special characters."""
-    import html
+    """Safely remove HTML tags and escape special characters using bleach."""
+    import bleach
     if not text:
         return ""
-    text = re.sub(r'<[^>]*>', '', text)  # Remove HTML tags
-    text = html.escape(text)  # Escape HTML entities
-    return text
+    # Clean HTML using bleach with a very restrictive whitelist (none)
+    # to match the current intent of removing all tags.
+    clean = bleach.clean(text, tags=[], attributes={}, strip=True)
+    return clean
 
 
 def safe_contains(haystack: str, needle: str) -> bool:

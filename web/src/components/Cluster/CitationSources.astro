@@ -1,0 +1,70 @@
+---
+import { cleanAndDecode } from '../../utils/textUtils';
+
+interface Props {
+	citationSources: any[];
+}
+
+const { citationSources } = Astro.props;
+---
+
+<footer class="narrative-citations mt-12 p-8 bg-secondary/10 border border-border/40 rounded-lg">
+	<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">РЕФЕРЕНТНИ ИЗВОРИ</h4>
+	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+		{citationSources.map((art: any) => (
+			<div class="citation-card group">
+				<span class="citation-idx">[{art.index}]</span>
+				<div class="citation-body">
+					<p class="citation-source">{art.source}</p>
+					<a href={art.link} target="_blank" rel="noopener noreferrer" class="citation-link">
+						{cleanAndDecode(art.title)}
+					</a>
+				</div>
+			</div>
+		))}
+	</div>
+</footer>
+
+<style>
+	.citation-card {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+	}
+	.citation-idx {
+		font-family: var(--font-sans);
+		font-size: 0.65rem;
+		font-weight: 900;
+		color: var(--nyt-accent);
+		margin-top: 0.2rem;
+	}
+	.citation-body {
+		flex: 1;
+		min-width: 0;
+	}
+	.citation-source {
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 950;
+		text-transform: uppercase;
+		color: var(--muted-foreground);
+		margin-bottom: 0.25rem;
+		letter-spacing: 0.05em;
+	}
+	.citation-link {
+		font-family: var(--font-serif);
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1.35;
+		color: var(--foreground);
+		text-decoration: none;
+		display: block;
+		text-wrap: pretty;
+	}
+	.citation-link:hover {
+		color: var(--nyt-accent);
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 3px;
+	}
+</style>
