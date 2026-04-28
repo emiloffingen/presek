@@ -29,10 +29,12 @@ class PulseCategory(BaseModel):
 
 class GlobalPulseResponse(BaseModel):
     status: str
+    timestamp: datetime.datetime
     last_24h: int
     velocity: List[PulseVelocity]
     by_category: List[PulseCategory]
     intelligence: Dict[str, Any]
+    top_entities: List[Dict[str, Any]] = []
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 _CASE_INSENSITIVE_TAG_EXISTS = (
