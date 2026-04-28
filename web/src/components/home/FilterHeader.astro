@@ -1,0 +1,45 @@
+---
+import { Zap, ChevronRight } from 'lucide-react';
+
+interface Props {
+	q?: string | null;
+	category?: string | null;
+	topic?: string | null;
+	entity?: string | null;
+	subcategory?: string | null;
+}
+
+const { q, category, topic, entity, subcategory } = Astro.props;
+---
+
+<div class="filter-header mb-12">
+	<p class="filter-kicker">Резултати за</p>
+	<h1 class="filter-title">{q ? `"${q}"` : `${subcategory || entity || category || topic}`}</h1>
+	<div class="filter-meta-row">
+		<div class="filter-chips">
+			{q && <span class="filter-chip">Пребарување</span>}
+			{subcategory && <span class="filter-chip">Локално</span>}
+			{entity && <span class="filter-chip">Субјект</span>}
+			{category && <span class="filter-chip">Регион</span>}
+			{topic && <span class="filter-chip">Тема</span>}
+		</div>
+		{(q || entity) && (
+			<div class="system-status">
+				<Zap size={10} strokeWidth={3} fill="currentColor" />
+				<span>Системска Контекстуализација</span>
+			</div>
+		)}
+		<a href="/" class="clear-filter">СИТЕ ВЕСТИ <ChevronRight size={10} strokeWidth={3} /></a>
+	</div>
+</div>
+
+<style>
+    .filter-header { padding: 2rem 0; border-bottom: 3px solid var(--foreground); }
+    .filter-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted-foreground); margin-bottom: 0.4rem; }
+    .filter-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; italic: true; line-height: 1; margin: 0 0 1.25rem; }
+    .filter-meta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+    .filter-chips { display: flex; gap: 0.5rem; }
+    .filter-chip { padding: 0.35rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
+    .system-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
+    .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
+</style>

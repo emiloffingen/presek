@@ -3,6 +3,9 @@ import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import BriefingDeliveryIsland from '../components/BriefingDeliveryIsland.tsx';
+import BriefingHeader from '../components/briefing/BriefingHeader.astro';
+import BriefingContent from '../components/briefing/BriefingContent.astro';
+import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import { Sparkles, Coffee, Moon, Sun, Timer, Activity, Zap } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -207,47 +210,14 @@ const coverageTone = sectionHighlights.length >= 7 ? 'Широк распон н
     <NYTHeader stats={stats} />
 
 	<main class="site-layout broadsheet-layout pt-48 pb-[var(--page-py)]">
-	    <header class="editorial-masthead motion-rise masthead-double-rule">
-	        <div class="masthead-top">
-                <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
-                <div class="masthead-meta">
-                    <span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
-                    <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА {versionLabel}</span>
-                </div>
+        {error ? (
+            <div class="py-24 text-center">
+                <h1 class="font-serif text-3xl mb-4">{error}</h1>
+                <a href="/" class="text-nyt-accent hover:underline font-bold uppercase tracking-widest text-xs">Назад на почетна</a>
             </div>
-
-            <div class="masthead-main">
-                <div class="masthead-branding">
-                    <Zap size={32} className="text-nyt-accent" fill="currentColor" />
-                    <h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
-                </div>
-                <div class="masthead-date">
-                    <p>{currentDate}</p>
-                </div>
-            </div>
-
-            <div class="masthead-standfirst mt-6">
-                <p>{editionStandfirst}</p>
-            </div>
-
-            <div class="masthead-deck">
-                <span>{coverageTone}</span>
-                <span>{totalSubjects} издвоени актери</span>
-                <span>{articleCount.toLocaleString('mk-MK')} следени објави</span>
-            </div>
-
-            {sectionHighlights.length > 0 && (
-                <nav class="masthead-nav mt-8 hide-scrollbar">
-                    <span class="nav-label">ВО ФОКУС:</span>
-                    {sectionHighlights.map((section: any) => (
-                        <a class="nav-link" href={`#${section.slug}`}>
-                            <span>{String(section.index).padStart(2, '0')}</span>
-                            {section.title}
-                        </a>
-                    ))}
-                </nav>
-            )}
-        </header>
+        ) : briefing && (
+            <div class="briefing-container">
+                <BriefingHeader currentDate={currentDate} dispatchIcon={dispatchIcon} stats={stats} />
 
         {leadCluster && (
             <div class="briefing-hero mt-12 mb-16 motion-rise">

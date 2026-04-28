@@ -1,0 +1,63 @@
+---
+import { Timer, Activity } from 'lucide-react';
+
+interface Props {
+	currentDate: string;
+	dispatchIcon: any;
+	stats: any;
+}
+
+const { currentDate, dispatchIcon: DispatchIcon, stats } = Astro.props;
+---
+
+<header class="briefing-masthead masthead-double-rule motion-rise">
+	<div class="masthead-top">
+		<span class="masthead-kicker">УРЕДНИЧКИ БРИФИНГ</span>
+		<div class="masthead-meta">
+			<span class="meta-item"><Timer size={11} /> {stats?.last_24h ? Math.max(3, Math.ceil(stats.last_24h / 150)) : 5} МИН. ЧИТАЊЕ</span>
+			<span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
+		</div>
+	</div>
+
+	<div class="masthead-main">
+		<div class="masthead-branding">
+			<DispatchIcon size={32} className="text-nyt-accent" fill="currentColor" />
+			<h1 class="masthead-title">Дневен <span>Брифинг</span></h1>
+		</div>
+		<div class="masthead-date">
+			<p>{currentDate}</p>
+		</div>
+	</div>
+
+	<div class="masthead-standfirst mt-6">
+		<p>Системски генериран преглед на најважните настани во Македонија и светот, подготвен од нашиот алгоритам за синтеза на вести во реално време.</p>
+	</div>
+
+	<div class="masthead-deck mt-8">
+		<span class="deck-item"><strong>{stats?.total_feeds || 0}</strong> Редакции</span>
+		<span class="deck-item"><strong>{stats?.last_24h || 0}</strong> Извештаи</span>
+		<span class="deck-item"><strong>{stats?.intelligence?.pluralism?.pluralism_pct || 0}%</strong> Диверзитет</span>
+	</div>
+</header>
+
+<style>
+    .briefing-masthead { margin-bottom: 4rem; }
+    .masthead-double-rule { border-top: 4px double var(--foreground); padding-top: 1.5rem; }
+    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .masthead-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.2em; color: var(--foreground); }
+    .masthead-meta { display: flex; gap: 1.5rem; }
+    .meta-item { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--muted-foreground); text-transform: uppercase; }
+    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; }
+    .masthead-branding { display: flex; align-items: center; gap: 1.25rem; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; line-height: 0.85; letter-spacing: -0.04em; margin: 0; }
+    .masthead-title span { font-weight: 400; font-style: italic; }
+    .masthead-date { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 700; text-transform: capitalize; border-y: 1px solid var(--border); padding: 0.75rem 2rem; }
+    .masthead-standfirst { max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.4; color: var(--foreground); font-style: italic; }
+    .masthead-deck { display: flex; justify-content: center; gap: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .deck-item { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); }
+    .deck-item strong { color: var(--foreground); margin-right: 0.4rem; }
+
+    @media (max-width: 640px) {
+        .masthead-deck { gap: 1.5rem; flex-wrap: wrap; }
+    }
+</style>

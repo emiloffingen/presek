@@ -12,6 +12,9 @@ import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
 import AdUnit from '../components/AdUnit.astro';
+import FilterHeader from '../components/home/FilterHeader.astro';
+import HomeRail from '../components/home/HomeRail.astro';
+import EmptyState from '../components/home/EmptyState.astro';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { cleanAndDecode, extractCleanSummaryText, getDisplayTitle, isMostlyCyrillic } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -269,26 +272,7 @@ function getBriefingSnippet(content: string) {
 	<main class="site-layout broadsheet-layout py-[var(--page-py)] overflow-x-hidden max-w-full">
 		{/* Filtering Status */}
 		{(q || category || topic || entity || subcategory) && (
-			<div class="filter-header mb-12">
-				<p class="filter-kicker">Резултати за</p>
-				<h1 class="filter-title">{q ? `"${q}"` : `${subcategory || entity || category || topic}`}</h1>
-				<div class="filter-meta-row">
-					<div class="filter-chips">
-						{q && <span class="filter-chip">Пребарување</span>}
-						{subcategory && <span class="filter-chip">Локално</span>}
-						{entity && <span class="filter-chip">Субјект</span>}
-						{category && <span class="filter-chip">Регион</span>}
-						{topic && <span class="filter-chip">Тема</span>}
-					</div>
-					{(q || entity) && (
-						<div class="system-status">
-							<Zap size={10} strokeWidth={3} fill="currentColor" />
-							<span>Системска Контекстуализација</span>
-						</div>
-					)}
-					<a href="/" class="clear-filter">СИТЕ ВЕСТИ <ChevronRight size={10} strokeWidth={3} /></a>
-				</div>
-			</div>
+			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
 		)}
 
 		<div class="broadsheet-grid">
@@ -300,16 +284,7 @@ function getBriefingSnippet(content: string) {
                 )}
 
                 {!error && clusters.length === 0 && (
-                    <div class="empty-state">
-                        <p class="empty-kicker">ТИВКО НА ЛЕНТАТА</p>
-                        <h2>Нема нови вести за оваа тема.</h2>
-                        <p class="empty-copy">Пробајте со поопшт поим или пребарајте нешто актуелно:</p>
-                        <div class="trend-links">
-                            {trending.slice(0, 8).map((t: any) => (
-                                <a href={`/?q=${encodeURIComponent(t.word)}`}>{t.word}</a>
-                            ))}
-                        </div>
-                    </div>
+                    <EmptyState trending={trending} />
                 )}
 
 				{leadCluster && (
@@ -383,66 +358,14 @@ function getBriefingSnippet(content: string) {
 				)}
 			</div>
 
-			<aside class="broadsheet-rail">
-                <section class="rail-block rail-priority-block">
-                    <p class="rail-kicker">Редакциски деск</p>
-                    <div class="rail-head-red">
-                        <Activity size={12} strokeWidth={3} />
-                        <h3>ПОСЛЕДНО НА ЛЕНТАТА</h3>
-                    </div>
-                    <div class="rail-wire-list">
-                        {railWireArticles.slice(0, 10).map((art: any) => (
-                            <a href={`/cluster/${art.cluster_id}`} class="rail-wire-item">
-                                <p>{getDisplayTitle(art)}</p>
-                                <div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
-                            </a>
-                        ))}
-                    </div>
-                    <a href="/pulse" class="rail-cta-plain">СИТЕ ВЕСТИ</a>
-                </section>
-
-				{briefing && briefing.content && (
-					<section class="rail-block rail-block-alt rail-priority-block">
-						<p class="rail-kicker">Брифинг</p>
-						<h3 class="rail-title">КЛУЧНО ЗА ДЕНЕС</h3>
-						<p class="rail-brief-text">
-							{getBriefingSnippet(briefing.content)}
-						</p>
-						<a href="/briefing" class="rail-cta">ЦЕЛОСЕН ПРЕГЛЕД <TrendingUp size={10} /></a>
-					</section>
-				)}
-
-				<NationalMoodIsland client:visible />
-
-				<HomeRailSuggestionsIsland client:visible />
-
-				<NewsletterIsland client:visible />
-
-				{stats?.quote_of_the_day && (
-					<section class="rail-block">
-						<p class="rail-kicker">Цитат на денот</p>
-						<blockquote class="rail-quote-block">
-							<p>„{stats.quote_of_the_day.quote}“</p>
-							<cite>
-								<span>ПОВРЗАНА ПРИКАЗНА</span>
-								<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`}>
-									{stats.quote_of_the_day.title}
-								</a>
-							</cite>
-						</blockquote>
-					</section>
-				)}
-				<section class="rail-block rail-block-quiet">
-					<p class="rail-kicker">Теми во фокус</p>
-					<div class="rail-tag-cloud">
-							{focusEntities.map((ent: any) => (
-								<a href={`/subjekt/${encodeURIComponent(ent.name)}`}>
-									{ent.display_name || ent.name}
-								</a>
-							))}
-						</div>
-					</section>
-			</aside>
+			<HomeRail 
+				railWireArticles={railWireArticles}
+				briefing={briefing}
+				stats={stats}
+				focusEntities={focusEntities}
+				getTimeStr={getTimeStr}
+				getBriefingSnippet={getBriefingSnippet}
+			/>
 		</div>
 	</main>
 
@@ -457,7 +380,6 @@ function getBriefingSnippet(content: string) {
     @media (min-width: 1024px) {
         .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
         .broadsheet-main { border-right: 1px solid var(--border); padding-right: 2rem; }
-        .broadsheet-rail { position: sticky; top: 7rem; align-self: start; }
     }
 
     /* ── Section Dividers ────────────────────────────── */
@@ -473,58 +395,7 @@ function getBriefingSnippet(content: string) {
     }
     .editorial-briefing-wrap { padding-bottom: 2.25rem; }
 
-    /* ── Filtering Status ─────────────────────────────── */
-    .filter-header { padding: 2rem 0; border-bottom: 3px solid var(--foreground); }
-    .filter-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted-foreground); margin-bottom: 0.4rem; }
-    .filter-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; italic: true; line-height: 1; margin: 0 0 1.25rem; }
-    .filter-meta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
-    .filter-chips { display: flex; gap: 0.5rem; }
-    .filter-chip { padding: 0.35rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
-    .system-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
-    .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
-
-    /* ── Broadsheet Rail ──────────────────────────────── */
-    .rail-block { margin-bottom: 3.5rem; }
-    .rail-block-alt { padding: 1.5rem; background: var(--secondary); border-radius: 2px; }
-    .rail-block-quiet { opacity: 0.85; }
-    .rail-priority-block { padding: 1.25rem 1.4rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--background) 95%, #efe5d6 5%); }
-    
-    .rail-head-red { display: flex; align-items: center; gap: 0.6rem; color: var(--nyt-red); margin-bottom: 1.5rem; padding-bottom: 0.6rem; border-bottom: 2px solid var(--nyt-red); }
-    .rail-head-red h3 { font-family: var(--font-sans); font-size: 0.68rem; font-weight: 950; letter-spacing: 0.12em; }
-    
-    .rail-wire-item { display: block; padding: 1rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--foreground); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .rail-wire-item:last-child { border-bottom: none; }
-    .rail-wire-item p { font-family: var(--font-serif); font-size: 0.92rem; font-weight: 800; line-height: 1.35; margin-bottom: 0.4rem; transition: color 0.2s ease; }
-    .rail-wire-meta { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); }
-    .rail-wire-meta span { opacity: 0.5; margin: 0 0.3rem; }
-    .rail-wire-item:hover { transform: translateX(4px); }
-    .rail-wire-item:hover p { color: var(--nyt-accent); text-decoration: none; }
-
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-    .rail-brief-text { font-family: var(--font-serif); font-size: 0.88rem; line-height: 1.5; color: var(--secondary-foreground); font-style: italic; margin-bottom: 1rem; }
-    .rail-cta { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--nyt-accent); text-decoration: none; border-bottom: 1px solid transparent; }
-    .rail-cta:hover { border-bottom-color: var(--nyt-accent); }
-    .rail-cta-plain { display: block; text-align: center; padding: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--muted-foreground); text-decoration: none; }
-
-    .rail-quote-block p { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; font-style: italic; line-height: 1.4; margin-bottom: 1rem; }
-    .rail-quote-block cite { display: block; border-top: 1px solid var(--border); padding-top: 0.75rem; font-style: normal; }
-    .rail-quote-block cite span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; display: block; color: var(--muted-foreground); margin-bottom: 0.25rem; }
-    .rail-quote-block cite a { font-family: var(--font-serif); font-size: 0.72rem; font-weight: 800; color: var(--foreground); text-decoration: none; line-height: 1.2; display: block; }
-    .rail-quote-block cite a:hover { color: var(--nyt-accent); }
-
-    .rail-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .rail-tag-cloud a { padding: 0.35rem 0.55rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--foreground); text-decoration: none; transition: all 0.2s; }
-    .rail-tag-cloud a:hover { background: var(--foreground); color: var(--background); }
-
-    .empty-state { text-align: center; padding: 4rem 1rem; border: 1px dashed var(--border); margin: 2rem 0; }
-    .empty-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--nyt-accent); margin-bottom: 1rem; }
-    .empty-state h2 { font-family: var(--font-serif); font-size: 1.75rem; margin-bottom: 1rem; }
-    .trend-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.5rem; }
-    .trend-links a { font-family: var(--font-serif); font-weight: 700; font-style: italic; font-size: 1.1rem; text-decoration: underline; color: var(--foreground); }
-
     @media (max-width: 768px) {
         .broadsheet-main { border-right: none; padding-right: 0; }
-        .rail-priority-block { padding: 1rem; }
     }
 </style>

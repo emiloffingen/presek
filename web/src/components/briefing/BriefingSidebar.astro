@@ -1,0 +1,74 @@
+---
+import { Zap, Activity } from 'lucide-react';
+import BriefingDeliveryIsland from '../BriefingDeliveryIsland.tsx';
+
+interface Props {
+	stats: any;
+	health: any;
+	leadCluster: any;
+}
+
+const { stats, health, leadCluster } = Astro.props;
+---
+
+<aside class="briefing-sidebar">
+	<div class="sidebar-sticky">
+		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm">
+			<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">ДИГИТАЛНА ИСПОРАКА</h4>
+			<BriefingDeliveryIsland client:load />
+		</section>
+
+		{stats?.intelligence?.pluralism && (
+			<section class="sidebar-module">
+				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+					<Activity size={14} className="text-emerald-600" />
+					<h4 class="text-[10px] font-black uppercase tracking-widest">СИСТЕМСКИ БАЛАНС</h4>
+				</div>
+				<div class="space-y-6">
+					<div>
+						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
+							<span>Медиумски Плурализам</span>
+							<span>{stats.intelligence.pluralism.pluralism_pct}%</span>
+						</div>
+						<div class="h-1 bg-secondary rounded-full overflow-hidden">
+							<div class="h-full bg-emerald-500" style={`width: ${stats.intelligence.pluralism.pluralism_pct}%`}></div>
+						</div>
+					</div>
+					<div>
+						<div class="flex justify-between text-[10px] font-bold uppercase mb-2">
+							<span>Висок Консензус</span>
+							<span>{stats.intelligence.pluralism.high_consensus_pct}%</span>
+						</div>
+						<div class="h-1 bg-secondary rounded-full overflow-hidden">
+							<div class="h-full bg-blue-500" style={`width: ${stats.intelligence.pluralism.high_consensus_pct}%`}></div>
+						</div>
+					</div>
+				</div>
+			</section>
+		)}
+
+		{leadCluster && (
+			<section class="sidebar-module">
+				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+					<Zap size={14} className="text-nyt-accent" />
+					<h4 class="text-[10px] font-black uppercase tracking-widest">АКТУЕЛНО СЕГА</h4>
+				</div>
+				<a href={`/cluster/${leadCluster.cluster_id}`} class="group">
+					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">
+						{leadCluster.articles?.[0]?.title}
+					</p>
+					<span class="block mt-2 text-[9px] font-black uppercase text-muted-foreground">
+						{leadCluster.articles?.[0]?.source} · ПРЕД {Math.floor((new Date().getTime() - new Date(leadCluster.articles?.[0]?.created_at).getTime()) / 60000)} МИН
+					</span>
+				</a>
+			</section>
+		)}
+	</div>
+</aside>
+
+<style>
+    .briefing-sidebar { display: flex; flex-direction: column; gap: 3rem; }
+    .sidebar-sticky { position: sticky; top: 7rem; display: flex; flex-direction: column; gap: 3rem; }
+    .sidebar-module { border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .sidebar-module:first-child { border-top: none; padding-top: 0; }
+</style>
