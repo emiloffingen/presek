@@ -483,7 +483,7 @@ async def semantic_search(
         from embeddings import generate_query_embedding
         query_vec = generate_query_embedding(q)
         if not query_vec:
-            raise HTTPException(status_code=500, detail="Failed to generate query embedding")
+            raise HTTPException(status_code=500, detail="Неуспешно генерирање на вектор за пребарување")
         
         # Fetch articles using vector distance
         rows = await db.async_search_semantic(query_vec, limit=limit)
@@ -534,9 +534,9 @@ async def get_cluster_detail(cluster_id: str):
         return cached
     try:
         rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
-        if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
+        if not rows: raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
         rows = [row for row in rows if _is_publicly_displayable_article(row)]
-        if not rows: raise HTTPException(status_code=404, detail="Cluster not found")
+        if not rows: raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles: a['reading_time'] = calculate_reading_time(a.get('description', ''))
         public_articles = [_public_article_payload(article) for article in articles]
@@ -642,7 +642,7 @@ async def get_cluster_detail(cluster_id: str):
         raise
     except Exception as e:
         log.error(f"Cluster Detail Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Внатрешна серверска грешка")
 
 @router.get("/cluster/{cluster_id}/history")
 async def get_cluster_history(cluster_id: str):

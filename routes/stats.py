@@ -126,7 +126,7 @@ async def get_briefing():
         }
     except Exception as e:
         log.error(f"Briefing Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch briefing")
+        raise HTTPException(status_code=500, detail="Неуспешно преземање на брифинг")
 
 @router.get("/archive/heatmap")
 async def get_archive_heatmap():
@@ -167,9 +167,9 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
         
         if page < 0 or page > 1000:
-            raise HTTPException(status_code=400, detail="Invalid page number")
+            raise HTTPException(status_code=400, detail="Невалиден број на страница")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(status_code=400, detail="Invalid page_size (1-50)")
+            raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
         
         # Build parameterized query safely
         base_sql = "SELECT * FROM articles WHERE created_at::date = %s"
@@ -245,10 +245,10 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
             "top_topics": await db.async_execute(group_topic_sql, tuple(group_topic_params))
         }
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        raise HTTPException(status_code=400, detail="Невалиден формат на датум. Користете YYYY-MM-DD")
     except Exception as e:
         log.error(f"Archive Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to load archive")
+        raise HTTPException(status_code=500, detail="Неуспешно вчитување на архива")
 
 @router.get("/stats")
 async def get_stats_route():
@@ -304,7 +304,7 @@ async def subscribe_newsletter(request: Request):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     email = validate_email(body.get("email", ""), "email")
     try:
         await db.async_execute("INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE", (email,), fetch=False)
@@ -315,7 +315,7 @@ async def subscribe_newsletter(request: Request):
 
 @router.get("/stats/full")
 async def get_stats_full(request: Request):
-    if not _source_admin_authorized(request): raise HTTPException(status_code=403, detail="Forbidden")
+    if not _source_admin_authorized(request): raise HTTPException(status_code=403, detail="Забрането")
     cached = cached_response("stats:full", ttl=120)
     if cached: return cached
 
@@ -355,7 +355,7 @@ async def get_stats_full(request: Request):
         return res
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate statistics")
+        raise HTTPException(status_code=500, detail="Неуспешно генерирање на статистики")
     finally:
         try:
             redis_client.delete(lock_key)
@@ -377,7 +377,7 @@ async def control_source_route(name: str, request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     action = str(payload.get("action", "")).strip().lower()
     source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source: return _error_json("Source not found", 404)

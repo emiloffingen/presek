@@ -331,7 +331,7 @@ async def proxy_image(
     cat: Optional[str] = None
 ):
     if not url:
-        raise HTTPException(status_code=400, detail="Missing url")
+        raise HTTPException(status_code=400, detail="Недостасува УРЛ адреса")
     
     if url.startswith("/static/"):
         relative = url[len("/static/"):].lstrip("/")
@@ -368,7 +368,7 @@ async def proxy_image(
             raise HTTPException(status_code=403)
 
     if not re.match(r'^https?://', url):
-        raise HTTPException(status_code=400, detail="Invalid URL scheme")
+        raise HTTPException(status_code=400, detail="Невалидна УРЛ шема")
 
     target_w = int(w) if w and w.isdigit() else 600
     target_w = max(20, min(1200, target_w))

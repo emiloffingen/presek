@@ -57,8 +57,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const parseBoldText = (text: string) => {
-    // 1. Handle Citations: (Извор: Name)
-    const withCitations = text.replace(/\((Извор: .*?)\)/g, '<span class="citation-badge">$1</span>');
+    // 1. Handle Citations: [Name] (excluding numbers like [1])
+    const withCitations = text.replace(/\[([^\d\]]+?)\]/g, '<span class="citation-badge">$1</span>');
     
     // 2. Handle Bold: **text**
     const parts = withCitations.split(/(\*\*.*?\*\*)/g);

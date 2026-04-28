@@ -44,10 +44,10 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
     token = str(value or "").strip()
     if not token:
         if required:
-            raise HTTPException(status_code=400, detail="Missing sync token")
+            raise HTTPException(status_code=400, detail="Недостасува клуч за синхронизација")
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
-        raise HTTPException(status_code=400, detail="Invalid sync token format")
+        raise HTTPException(status_code=400, detail="Невалиден формат на клучот за синхронизација")
     return token
 
 def _looks_macedonian_headline(text: str) -> bool:

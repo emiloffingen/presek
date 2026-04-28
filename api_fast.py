@@ -93,7 +93,7 @@ async def validate_input_length(request: Request, call_next):
         if len(value) > MAX_QUERY_PARAM_LENGTH:
             return JSONResponse(
                 status_code=400,
-                content={"error": f"Query parameter '{name}' exceeds maximum length of {MAX_QUERY_PARAM_LENGTH}"}
+                content={"error": f"Параметарот '{name}' ја надминува максималната должина од {MAX_QUERY_PARAM_LENGTH} карактери"}
             )
     
     # Check Content-Length for POST/PUT/PATCH requests
@@ -102,7 +102,7 @@ async def validate_input_length(request: Request, call_next):
         if content_length and int(content_length) > MAX_BODY_SIZE:
             return JSONResponse(
                 status_code=413,
-                content={"error": f"Request body exceeds maximum size of {MAX_BODY_SIZE // (1024*1024)}MB"}
+                content={"error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"}
             )
     
     return await call_next(request)
@@ -118,8 +118,8 @@ if _rate_limiter_enabled:
         return JSONResponse(
             status_code=429,
             content={
-                "error": "Too many requests",
-                "detail": f"Rate limit exceeded: {exc.detail}",
+                "error": "Премногу барања",
+                "detail": f"Надминато е ограничувањето за барања: {exc.detail}",
                 "status": "rate_limit_exceeded"
             },
             headers={"Retry-After": str(exc.retry_after)}
@@ -199,15 +199,16 @@ async def metrics():
 @app.get("/proxy")
 async def image_proxy(url: str):
     if not url:
-        raise HTTPException(status_code=400, detail="URL is required")
+        raise HTTPException(status_code=400, detail="УРЛ адресата е задолжителна")
 
     # Allow internal static files without full proxy fetch
     if url.startswith("/static/"):
         return RedirectResponse(url=url)
 
     # SSRF protection: block local/private network ranges
-    if not is_safe_url(url):        log.warning(f"SSRF block triggered for proxy URL: {url}")
-        raise HTTPException(status_code=403, detail="Access to this URL is restricted for security reasons")
+    if not is_safe_url(url):
+        log.warning(f"SSRF block triggered for proxy URL: {url}")
+        raise HTTPException(status_code=403, detail="Пристапот до оваа УРЛ адреса е ограничен од безбедносни причини")
 
     try:
         # Use a reasonable timeout and headers
@@ -303,7 +304,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     """, (cluster_id,))
     
     if not row:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
         
     context = f"{row['summary']}\n{row['generated_article']}"
     res = analyst.research_query(q, context)

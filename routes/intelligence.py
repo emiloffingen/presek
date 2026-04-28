@@ -199,7 +199,7 @@ async def get_deep_research(cluster_id: str):
         ORDER BY a.created_at DESC LIMIT 1
     """, (cluster_id,))
     if not row:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
 
     title = row["title"]
     summary = row["summary"] or ""
@@ -260,7 +260,7 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     # 1. Fetch all full content
     arts = await db.async_execute("SELECT title, full_content, source, category, embedding FROM articles WHERE cluster_id = %s", (cluster_id,))
     if not arts:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
 
     combined_text = "\n\n".join([f"--- ИЗВОР: {a['source']} ---\n{a['full_content'] or a['title']}" for a in arts[:5]])
     
@@ -425,7 +425,7 @@ async def get_entity_profile(name: str):
             f"SELECT 1 FROM cluster_metadata m WHERE {_CASE_INSENSITIVE_TAG_EXISTS} LIMIT 1",
             (name,),
         ):
-            raise HTTPException(status_code=404, detail="Entity not found")
+            raise HTTPException(status_code=404, detail="Субјектот не е пронајден")
         entity = {"name": name, "type": "ENTITY", "total_mentions": 0, "first_seen": None, "last_seen": None, "sentiment_score": 0}
     
     relationships = await db.async_execute("SELECT CASE WHEN entity_a = %s THEN entity_b ELSE entity_a END as related_entity, weight FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s ORDER BY weight DESC LIMIT 8", (name, name, name))
@@ -571,7 +571,7 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     """, (cluster_id,))
     
     if not row:
-        raise HTTPException(status_code=404, detail="Cluster not found")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
         
     context = f"{row['summary']}\n{row['generated_article']}"
     res = analyst.research_query(q, context)
@@ -632,7 +632,7 @@ async def get_personalized_recommendations(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     recent_ids = validate_list_param(payload.get("recentlyRead", []), "recentlyRead", max_items=10, max_item_length=64)
     followed = validate_list_param(payload.get("followedTopics", []), "followedTopics", max_items=10, max_item_length=100)
     interest_vector = payload.get("interestVector")

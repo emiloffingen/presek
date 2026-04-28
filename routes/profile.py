@@ -136,7 +136,7 @@ async def init_profile_sync():
 async def get_profile_sync(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT profile_data, updated_at FROM synced_reader_profiles WHERE sync_token = %s", (token,))
-    if not row: raise HTTPException(status_code=404, detail="Profile not found")
+    if not row: raise HTTPException(status_code=404, detail="Профилот не е пронајден")
     profile = _normalize_synced_profile(row.get("profile_data") or {})
     pruned_recent = await _prune_recent_clusters(profile.get("recentClusters") or [])
     if len(pruned_recent) != len(profile.get("recentClusters") or []):
@@ -153,11 +153,11 @@ async def save_profile_sync(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = _validate_sync_token_value(payload.get("token"))
     incoming = _normalize_synced_profile(payload.get("profile") or {})
     existing = await db.async_execute_one("SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s", (token,))
-    if not existing: raise HTTPException(status_code=404, detail="Profile not found")
+    if not existing: raise HTTPException(status_code=404, detail="Профилот не е пронајден")
     merged = _merge_synced_profiles(existing.get("profile_data") or {}, incoming)
     merged["recentClusters"] = await _prune_recent_clusters(merged.get("recentClusters") or [])
     await db.async_execute("UPDATE synced_reader_profiles SET profile_data = %s::jsonb, updated_at = NOW() WHERE sync_token = %s", (json.dumps(merged), token), fetch=False)
@@ -166,7 +166,7 @@ async def save_profile_sync(request: Request):
 @router.get("/profile/vapid-key")
 async def get_vapid_key():
     from config import VAPID_PUBLIC_KEY
-    if not VAPID_PUBLIC_KEY: raise HTTPException(status_code=404, detail="Web Push not configured")
+    if not VAPID_PUBLIC_KEY: raise HTTPException(status_code=404, detail="Web Push не е конфигуриран")
     return {"status": "success", "key": VAPID_PUBLIC_KEY}
 
 @router.get("/profile/delivery")
@@ -180,10 +180,10 @@ async def save_profile_delivery(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = _validate_sync_token_value(payload.get("token"))
     if not await db.async_execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
-        raise HTTPException(status_code=400, detail="Invalid sync token")
+        raise HTTPException(status_code=400, detail="Невалиден клуч за синхронизација")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
     await db.async_execute("""INSERT INTO synced_delivery_subscriptions
            (sync_token, channel, target, morning_briefing, weekly_digest, breaking_topics, breaking_sources, is_active, updated_at)
@@ -204,7 +204,7 @@ async def get_personalized_news_sync(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     
     profile = _normalize_synced_profile(payload.get("profile") or {})
     recent = profile.get("recentClusters") or []
@@ -315,14 +315,14 @@ async def save_suggestion_events(request: Request):
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = str(payload.get("token") or "").strip()
     client_id = str(payload.get("clientId") or "").strip()[:64]
     events = payload.get("events") or []
-    if not client_id or not events: raise HTTPException(status_code=400, detail="Missing data")
+    if not client_id or not events: raise HTTPException(status_code=400, detail="Недостасуваат податоци")
     # Validate client_id
     if len(client_id) < 1 or len(client_id) > 64:
-        raise HTTPException(status_code=400, detail="Invalid client ID")
+        raise HTTPException(status_code=400, detail="Невалиден клиент ID")
     for item in events[:24]:
         surface = _normalize_suggestion_surface(item.get("surface"))
         etype = _normalize_suggestion_event_type(item.get("eventType"))
