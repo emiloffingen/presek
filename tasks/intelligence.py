@@ -218,14 +218,31 @@ def detect_global_story_task(article_id):
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def summarize_article_task(article_id, title, retry_attempt=0):
     """Generates an AI summary for a single article using Presek 4.0 DAL."""
-    row = db.execute_one("SELECT description, full_content, topic FROM articles WHERE id = %s", (article_id,))
+    row = db.execute_one("SELECT description, full_content, topic, cluster_id, created_at FROM articles WHERE id = %s", (article_id,))
     if not row:
         return
         
     description = row.get("description") or ""
     full_content = row.get("full_content") or ""
     topic = row.get("topic")
+    cluster_id = row.get("cluster_id")
     
+    # [OPTIMIZATION] CPU Throttle: Only use AI for the "Lead" articles of a cluster.
+    # If this is the 3rd or later article in a cluster, use the fast local fallback to save CPU for Synthesis.
+    if cluster_id:
+        cluster_position = db.execute_one(
+            "SELECT COUNT(*) as pos FROM articles WHERE cluster_id = %s AND created_at < %s",
+            (cluster_id, row["created_at"])
+        )
+        if cluster_position and cluster_position.get("pos", 0) >= 2:
+            log.info(f"Skipping AI summary for supporting article {article_id} in cluster {cluster_id}")
+            fallback = summarize_article_fallback(title, full_content or description, topic=topic)
+            if fallback:
+                db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+                invalidate_public_data_caches()
+                record_runtime_event("summary_path", mode="local_throttle_skip", topic=topic or "unknown")
+            return
+
     # Prioritize full content for better quality, but limit context size for cheap providers
     context_text = full_content if len(full_content) > len(description) else description
     
