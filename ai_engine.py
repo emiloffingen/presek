@@ -183,15 +183,28 @@ class LocalProvider(AIProvider):
 class GeminiProvider(AIProvider):
     def __init__(self):
         self.client = None
+        self.daily_limit = 2000000 # 2 million tokens safety budget (~$0.20)
         if GEMINI_API_KEY:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
             self.client = genai
 
+    def _get_usage_key(self):
+        return f"ai:gemini:usage:{datetime.date.today().isoformat()}"
+
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.client or not GEMINI_API_KEY:
             return None
         
+        # 1. Check Circuit Breaker
+        try:
+            usage = int(redis_client.get(self._get_usage_key()) or 0)
+            if usage > self.daily_limit:
+                log.warning(f"[ai/gemini] Budget exceeded ({usage} tokens). Circuit breaker active.")
+                return None
+        except Exception as e:
+            log.error(f"[ai/gemini] Budget check error: {e}")
+
         try:
             model = self.client.GenerativeModel(
                 model_name=GEMINI_MODEL,
@@ -210,6 +223,16 @@ class GeminiProvider(AIProvider):
                 prompt,
                 generation_config=generation_config
             )
+
+            # 2. Track Usage (Estimate tokens: chars / 4 is a safe overestimate for MK Cyrillic)
+            # Gemini response.usage_metadata is better if available in this SDK version
+            try:
+                tokens_used = getattr(response, 'usage_metadata', {}).total_token_count if hasattr(response, 'usage_metadata') else (len(prompt) + len(response.text)) // 2
+                redis_client.incrby(self._get_usage_key(), int(tokens_used))
+                redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
+            except Exception as usage_err:
+                log.debug(f"Usage tracking failed: {usage_err}")
+
             return response.text
         except Exception as e:
             log.warning(f"[ai/gemini] Call failed: {e}")
