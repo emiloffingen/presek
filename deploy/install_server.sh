@@ -19,6 +19,7 @@ APP_SERVICES=(
   presek-astro.service
   presek-worker.service
   presek-worker-ingestion.service
+  presek-worker-fasttrack.service
   presek-worker-delivery.service
   presek-beat.service
 )
@@ -94,11 +95,11 @@ main() {
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$SHARED_ROOT/huggingface/sentence_transformers"
   install -d /etc/systemd/system
 
-  for unit in presek.target presek-worker.service presek-worker-ingestion.service presek-worker-delivery.service presek-beat.service presek-fastapi.service presek-astro.service; do
+  for unit in presek.target presek-worker.service presek-worker-ingestion.service presek-worker-fasttrack.service presek-worker-delivery.service presek-beat.service presek-fastapi.service presek-astro.service; do
     replace_paths "$SYSTEMD_DIR/$unit" "/etc/systemd/system/$unit"
   done
 
-  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-worker-ingestion.service /etc/systemd/system/presek-worker-delivery.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
+  systemd-analyze verify /etc/systemd/system/presek.target /etc/systemd/system/presek-worker.service /etc/systemd/system/presek-worker-ingestion.service /etc/systemd/system/presek-worker-fasttrack.service /etc/systemd/system/presek-worker-delivery.service /etc/systemd/system/presek-beat.service /etc/systemd/system/presek-fastapi.service /etc/systemd/system/presek-astro.service
 
   systemctl daemon-reload
   systemctl enable presek.target

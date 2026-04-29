@@ -39,6 +39,7 @@ APP_SERVICES=(
   presek-astro.service
   presek-worker.service
   presek-worker-ingestion.service
+  presek-worker-fasttrack.service
   presek-worker-delivery.service
   presek-beat.service
 )

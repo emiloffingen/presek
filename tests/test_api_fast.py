@@ -443,6 +443,8 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
             ]
         if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
             return [{"cluster_id": "mixed", "representative_image": None, "dominant_color": None}]
+        if "FROM cluster_summaries" in query and "key_facts" in query:
+            return []
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute.side_effect = execute_side_effect
@@ -491,6 +493,8 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
             ]
         if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
             return [{"cluster_id": "mixed-geo", "representative_image": None, "dominant_color": None}]
+        if "FROM cluster_summaries" in query and "key_facts" in query:
+            return []
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute.side_effect = execute_side_effect

@@ -334,8 +334,9 @@ def auto_summarize_top_clusters():
         from utils import redis_client
 
         rows = db.execute(
-            "SELECT * FROM articles WHERE created_at >= NOW() - INTERVAL '1 day' "
-            "ORDER BY created_at DESC LIMIT 500"
+            "SELECT * FROM articles "
+            "WHERE COALESCE(ingested_at, created_at) >= NOW() - make_interval(days => 1) "
+            "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
         )
         if not rows:
             return
@@ -349,7 +350,7 @@ def auto_summarize_top_clusters():
             unique_sources = {a.get("source") for a in arts if a.get("source")}
             if len(unique_sources) < AUTO_SUMMARIZE_MIN_SRC:
                 continue
-            newest = max(a["created_at"] for a in arts)
+            newest = max((a.get("ingested_at") or a.get("created_at")) for a in arts)
             ranked.append((cid, arts, len(unique_sources), newest))
 
         ranked.sort(key=lambda x: (x[2], x[3]), reverse=True)
@@ -370,13 +371,18 @@ def auto_summarize_top_clusters():
         if tasks_mod is None:
             import tasks as tasks_mod
 
+        dispatched = 0
+        skipped_locked = 0
+        skipped_fresh = 0
         for cid, arts, _src_count, newest in top:
             existing_at = existing_map.get(cid)
             if existing_at is not None and (newest - existing_at) <= STALE_THRESHOLD:
+                skipped_fresh += 1
                 continue
 
             try:
                 if not redis_client.set(f"task:synthesize:{cid}", 1, nx=True, ex=600):
+                    skipped_locked += 1
                     continue
             except Exception:
                 pass
@@ -391,6 +397,15 @@ def auto_summarize_top_clusters():
             else:
                 # Just update existing stale synthesis
                 tasks_mod.synthesize_cluster_task.delay(cid, lines)
+            dispatched += 1
+        log.info(
+            "[auto-summarize] ranked=%s top=%s dispatched=%s skipped_fresh=%s skipped_locked=%s",
+            len(ranked),
+            len(top),
+            dispatched,
+            skipped_fresh,
+            skipped_locked,
+        )
     except Exception as e:
         log.error(f"[auto-summarize] Error: {e}")
 

@@ -145,6 +145,22 @@ def _public_article_payload(article):
     return res
 
 
+def _parse_maybe_json(val):
+    if not val:
+        return None
+    if isinstance(val, (dict, list)):
+        return val
+    try:
+        return json.loads(val)
+    except Exception:
+        return None
+
+
+def _as_list(val):
+    parsed = _parse_maybe_json(val)
+    return parsed if isinstance(parsed, list) else []
+
+
 def _title_looks_like_feature(title):
     clean = str(title or "").strip()
     if not clean:
@@ -262,7 +278,7 @@ async def get_news(
     page: int = 0,
     page_size: int = 24
 ):
-    cache_key = f"api:news:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{timespan}:{page}:{page_size}"
+    cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{sort}:{timespan}:{page}:{page_size}"
     cached = cached_response(cache_key)
     if cached: return cached
 
@@ -390,7 +406,7 @@ async def get_news(
             def get_recent_sort_key(cluster_arts):
                 if not cluster_arts: return 0
                 lead_art = cluster_arts[0]
-                dt = _coerce_datetime(lead_art.get('created_at'))
+                dt = _coerce_datetime(lead_art.get('ingested_at') or lead_art.get('created_at'))
                 return dt.timestamp() if dt else 0
 
             ranked_clusters.sort(key=get_recent_sort_key, reverse=True)
@@ -424,6 +440,16 @@ async def get_news(
         meta_rows = await db.async_execute("SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)", (all_cids,)) if all_cids else []
         meta_map = {r['cluster_id']: r for r in meta_rows}
         synthesis_ids = set(await db.async_get_synthesis_ids(all_cids)) if all_cids else set()
+        summary_rows = await db.async_execute(
+            """
+            SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
+                   analyst_entities, pulse_score, pluralism_score, narrative_diversity
+            FROM cluster_summaries
+            WHERE cluster_id = ANY(%s)
+            """,
+            (all_cids,),
+        ) if all_cids else []
+        summary_map = {r["cluster_id"]: r for r in summary_rows}
 
         def _format_cluster(arts):
             main = arts[0]
@@ -432,11 +458,19 @@ async def get_news(
             homepage_score = score_cluster_for_homepage(arts)
             editorial = _compute_editorial_signals(arts, s, homepage_score)
             meta = meta_map.get(cid, {})
+            summary = summary_map.get(cid, {})
             return {
                 "cluster_id": cid,
                 "articles": [_public_article_payload(article) for article in arts],
                 "representative_image": meta.get("representative_image"),
                 "dominant_color": meta.get("dominant_color"),
+                "synthetic_headline": summary.get("synthetic_headline"),
+                "synthetic_standfirst": summary.get("synthetic_standfirst"),
+                "key_facts": _as_list(summary.get("key_facts")),
+                "analyst_entities": _as_list(summary.get("analyst_entities")),
+                "pulse_score": summary.get("pulse_score"),
+                "pluralism_score": summary.get("pluralism_score"),
+                "narrative_diversity": _parse_maybe_json(summary.get("narrative_diversity")),
                 "reading_time": main.get('reading_time', 1),
                 "score": round(s, 3),
                 "homepage_score": round(homepage_score, 3),
@@ -528,7 +562,7 @@ async def semantic_search(
 async def get_cluster_detail(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
-    cache_key = f"api:cluster:detail:v1:{cluster_id}"
+    cache_key = f"api:cluster:detail:v2:{cluster_id}"
     cached = cached_response(cache_key, ttl=120)
     if cached:
         return cached
@@ -542,7 +576,17 @@ async def get_cluster_detail(cluster_id: str):
         public_articles = [_public_article_payload(article) for article in articles]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}'")
-        s_row = await db.async_execute_one("SELECT summary, generated_article, synthetic_headline, synthetic_standfirst, perspectives, created_at, sentiment, verification_report, citation_sources FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
+        s_row = await db.async_execute_one(
+            """
+            SELECT summary, generated_article, synthetic_headline, synthetic_standfirst,
+                   perspectives, created_at, sentiment, tone_analysis, verification_report,
+                   citation_sources, key_facts, analyst_entities, pulse_score,
+                   pluralism_score, narrative_diversity, storyline_narrative
+            FROM cluster_summaries
+            WHERE cluster_id = %s
+            """,
+            (cluster_id,),
+        )
         log.debug(f"[debug] s_row found: {bool(s_row)}")
         
         synthesis = s_row["summary"] if s_row else None
@@ -550,18 +594,18 @@ async def get_cluster_detail(cluster_id: str):
         synthetic_headline = s_row["synthetic_headline"] if s_row else None
         synthetic_standfirst = s_row["synthetic_standfirst"] if s_row else None
         
-        def _parse_maybe_json(val):
-            if not val: return None
-            if isinstance(val, (dict, list)): return val
-            try: return json.loads(val)
-            except Exception: return None
-
         sentiment = _parse_maybe_json(s_row.get("sentiment")) if s_row else None
+        tone_analysis = _parse_maybe_json(s_row.get("tone_analysis")) if s_row else None
+        if isinstance(sentiment, dict) and tone_analysis and not sentiment.get("tone_analysis"):
+            sentiment["tone_analysis"] = tone_analysis
         verification_report = _parse_maybe_json(s_row.get("verification_report")) if s_row else None
         ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
         perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
         if not perspectives: perspectives = []
         citation_sources = normalize_citation_sources(_parse_maybe_json(s_row.get("citation_sources")) if s_row else [])
+        key_facts = _as_list(s_row.get("key_facts")) if s_row else []
+        analyst_entities = _as_list(s_row.get("analyst_entities")) if s_row else []
+        narrative_diversity = _parse_maybe_json(s_row.get("narrative_diversity")) if s_row else None
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
 
         m_row = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
@@ -634,7 +678,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "citation_sources": citation_sources, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "citation_sources": citation_sources, "key_facts": key_facts, "analyst_entities": analyst_entities, "pulse_score": s_row.get("pulse_score") if s_row else None, "pluralism_score": s_row.get("pluralism_score") if s_row else None, "narrative_diversity": narrative_diversity, "storyline_narrative": s_row.get("storyline_narrative") if s_row else None, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
         set_cache(cache_key, response, ttl=120)
         return response
 
