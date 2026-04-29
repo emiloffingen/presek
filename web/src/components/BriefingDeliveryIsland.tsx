@@ -263,20 +263,20 @@ export default function BriefingDeliveryIsland({
         </p>
       </div>
 
-      <div className="delivery-toggle-list">
-        <button type="button" className={`delivery-toggle ${prefs.morningBriefing ? 'is-active' : ''}`} onClick={() => togglePref('morningBriefing')}>
-          <span className="delivery-toggle-content">
-            <span className="delivery-toggle-label">Утрински брифинг</span>
-            <span className="delivery-toggle-meta">Локален преглед на денот на овој прелистувач.</span>
+      <div className="delivery-toggle-list space-y-4">
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('morningBriefing')}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Утрински брифинг</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Локален преглед на денот на овој прелистувач.</span>
           </span>
-          <strong>{prefs.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
-        <button type="button" className={`delivery-toggle ${prefs.breakingAlerts ? 'is-active' : ''}`} onClick={() => togglePref('breakingAlerts')}>
-          <span className="delivery-toggle-content">
-            <span className="delivery-toggle-label">Итни известувања</span>
-            <span className="delivery-toggle-meta">Брзи сигнали кога следената приказна забрзува.</span>
+        <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${prefs.breakingAlerts ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => togglePref('breakingAlerts')}>
+          <span className="text-left">
+            <span className="block font-sans font-bold text-sm">Итни известувања</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Брзи сигнали кога следената приказна забрзува.</span>
           </span>
-          <strong>{prefs.breakingAlerts ? 'Вклучено' : 'Исклучено'}</strong>
+          <strong className={`text-[10px] font-black uppercase tracking-widest ${prefs.breakingAlerts ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{prefs.breakingAlerts ? 'Вклучено' : 'Исклучено'}</strong>
         </button>
       </div>
 
@@ -329,41 +329,41 @@ export default function BriefingDeliveryIsland({
           />
         </label>
 
-        <div className="delivery-toggle-list">
-          <button type="button" className={`delivery-toggle ${serverDelivery.morningBriefing ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
-            <span className="delivery-toggle-content">
-              <span className="delivery-toggle-label">Утрински ntfy брифинг</span>
-              <span className="delivery-toggle-meta">Серверски испорачан преглед во вашата `ntfy` тема.</span>
+        <div className="delivery-toggle-list space-y-4">
+          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.morningBriefing ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ morningBriefing: !serverDelivery.morningBriefing })}>
+            <span className="text-left">
+              <span className="block font-sans font-bold text-sm">Утрински ntfy брифинг</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">Серверски испорачан преглед во вашата `ntfy` тема.</span>
             </span>
-            <strong>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
+            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.morningBriefing ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.morningBriefing ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
-          <button type="button" className={`delivery-toggle ${serverDelivery.weeklyDigest ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
-            <span className="delivery-toggle-content">
-              <span className="delivery-toggle-label">Неделен дигест</span>
-              <span className="delivery-toggle-meta">Побавен резиме-преглед на темите што сте ги следеле.</span>
+          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.weeklyDigest ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ weeklyDigest: !serverDelivery.weeklyDigest })}>
+            <span className="text-left">
+              <span className="block font-sans font-bold text-sm">Неделен дигест</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">Побавен резиме-преглед на темите што сте ги следеле.</span>
             </span>
-            <strong>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
+            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.weeklyDigest ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.weeklyDigest ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
-          <button type="button" className={`delivery-toggle ${serverDelivery.breakingTopics ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
-            <span className="delivery-toggle-content">
-              <span className="delivery-toggle-label">Известувања за следени теми</span>
-              <span className="delivery-toggle-meta">Се активира кога вашите теми добиваат нов силен кластер.</span>
+          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingTopics ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingTopics: !serverDelivery.breakingTopics })}>
+            <span className="text-left">
+              <span className="block font-sans font-bold text-sm">Известувања за следени теми</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">Се активира кога вашите теми добиваат нов силен кластер.</span>
             </span>
-            <strong>{serverDelivery.breakingTopics ? 'Вклучено' : 'Исклучено'}</strong>
+            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingTopics ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingTopics ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
-          <button type="button" className={`delivery-toggle ${serverDelivery.breakingSources ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
-            <span className="delivery-toggle-content">
-              <span className="delivery-toggle-label">Известувања за следени извори</span>
-              <span className="delivery-toggle-meta">Следи кога избран извор прв отвора важна приказна.</span>
+          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.breakingSources ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ breakingSources: !serverDelivery.breakingSources })}>
+            <span className="text-left">
+              <span className="block font-sans font-bold text-sm">Известувања за следени извори</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">Следи кога избран извор прв отвора важна приказна.</span>
             </span>
-            <strong>{serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
+            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.breakingSources ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.breakingSources ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
-          <button type="button" className={`delivery-toggle ${serverDelivery.isActive ? 'is-active' : ''}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
-            <span className="delivery-toggle-content">
-              <span className="delivery-toggle-label">Закажаната достава е активна</span>
-              <span className="delivery-toggle-meta">Главен прекинувач за серверската достава на овој профил.</span>
+          <button type="button" className={`flex w-full items-center justify-between p-4 rounded-xl border transition ${serverDelivery.isActive ? 'bg-nyt-accent/10 border-nyt-accent' : 'bg-secondary/5 border-border'}`} onClick={() => updateServerDelivery({ isActive: !serverDelivery.isActive })}>
+            <span className="text-left">
+              <span className="block font-sans font-bold text-sm">Закажаната достава е активна</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">Главен прекинувач за серверската достава на овој профил.</span>
             </span>
-            <strong>{serverDelivery.isActive ? 'Вклучено' : 'Исклучено'}</strong>
+            <strong className={`text-[10px] font-black uppercase tracking-widest ${serverDelivery.isActive ? 'text-nyt-accent' : 'text-muted-foreground'}`}>{serverDelivery.isActive ? 'Вклучено' : 'Исклучено'}</strong>
           </button>
         </div>
 
