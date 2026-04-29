@@ -200,7 +200,10 @@ if (isBreakingFlag && totalSourcesCount >= 4) {
 }
 
 // --- SEO & Schema ---
-const ogImageUrl = id ? `/og/cluster/${id}.svg` : null;
+// Prefer a high-res representative image or the lead article visual for social sharing.
+// Generated SVG is used only as a last resort fallback.
+const socialImageUrl = cluster?.representative_image || (leadVisual && !leadVisual.isWeak ? leadVisual.rawUrl : imageUrl);
+
 const articleSchema = cluster ? {
 	"@context": "https://schema.org",
 	"@type": "NewsArticle",
@@ -228,7 +231,7 @@ const articleSchema = cluster ? {
 <Layout 
 	title={displayHeadline} 
 	description={cluster?.generated_article?.slice(0, 160) || cluster?.synthesis?.slice(0, 160) || shareDescription}
-	image={ogImageUrl || imageUrl}
+	image={socialImageUrl}
 	type="article"
 	canonical={canonicalUrl}
 	schema={articleSchema || undefined}

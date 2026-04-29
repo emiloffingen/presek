@@ -263,15 +263,24 @@ def summarize_article_task(article_id, title, retry_attempt=0):
 
     try:
         from tasks.utils import record_task_event
-        raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic)
+        raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic, json_mode=False)
         
         final_text = None
         if raw_output:
+            # First try parsing as JSON (backwards compatibility)
             parsed = clean_json_response(raw_output)
-            if isinstance(parsed, dict):
-                final_text = parsed.get('summary')
-            elif isinstance(parsed, str):
-                final_text = parsed
+            if isinstance(parsed, dict) and 'summary' in parsed:
+                final_text = parsed['summary']
+            else:
+                # If not JSON, use the raw output but strip markdown fences if any
+                final_text = re.sub(r'^```(json)?\s*', '', raw_output.strip())
+                final_text = re.sub(r'\s*```$', '', final_text)
+                # If it still looks like JSON {"summary": "..."}, extract text
+                if final_text.startswith('{') and '"summary"' in final_text:
+                    try:
+                        data = json.loads(final_text)
+                        final_text = data.get('summary', final_text)
+                    except: pass
 
         # Safety Check: Never allow prompt markers to leak into DB
         if final_text and ("[START_ARTICLE_TEXT]" in final_text or "Наслов:" in final_text):
