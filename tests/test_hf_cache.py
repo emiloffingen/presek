@@ -22,7 +22,7 @@ def test_configure_model_cache_uses_app_owned_paths(monkeypatch, tmp_path):
     expected_root = os.path.join(str(shared_root), "huggingface")
     assert os.environ["HF_HOME"] == expected_root
     assert os.environ["HF_HUB_CACHE"] == os.path.join(expected_root, "hub")
-    assert os.environ["TRANSFORMERS_CACHE"] == os.path.join(expected_root, "transformers")
+    assert "TRANSFORMERS_CACHE" not in os.environ
     assert os.environ["SENTENCE_TRANSFORMERS_HOME"] == os.path.join(
         expected_root, "sentence_transformers"
     )
@@ -45,7 +45,7 @@ def test_configure_model_cache_falls_back_inside_repo(monkeypatch, tmp_path):
     expected_root = os.path.join(str(app_root), ".cache", "huggingface")
     assert os.environ["HF_HOME"] == expected_root
     assert os.environ["HF_HUB_CACHE"] == os.path.join(expected_root, "hub")
-    assert os.environ["TRANSFORMERS_CACHE"] == os.path.join(expected_root, "transformers")
+    assert "TRANSFORMERS_CACHE" not in os.environ
     assert os.environ["SENTENCE_TRANSFORMERS_HOME"] == os.path.join(
         expected_root, "sentence_transformers"
     )
