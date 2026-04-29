@@ -149,15 +149,17 @@ class GeminiProvider(AIProvider):
         self.client = None
         self.daily_limit = 2000000 # 2 million tokens safety budget (~$0.20)
         if GEMINI_API_KEY:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            self.client = genai
+            try:
+                from google import genai
+                self.client = genai.Client(api_key=GEMINI_API_KEY)
+            except Exception as e:
+                log.error(f"[ai/gemini] SDK init failed: {e}")
 
     def _get_usage_key(self):
         return f"ai:gemini:usage:{datetime.date.today().isoformat()}"
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
-        if not self.client or not GEMINI_API_KEY:
+        if not self.client:
             return None
         
         # 1. Check Circuit Breaker
@@ -170,28 +172,25 @@ class GeminiProvider(AIProvider):
             log.error(f"[ai/gemini] Budget check error: {e}")
 
         try:
-            model = self.client.GenerativeModel(
-                model_name=GEMINI_MODEL,
-                system_instruction=system
-            )
-            
-            generation_config = {
+            # Modern SDK syntax for 2026
+            config = {
+                "system_instruction": system,
                 "max_output_tokens": max_tokens,
                 "temperature": 0.2,
             }
-            
             if json_mode:
-                generation_config["response_mime_type"] = "application/json"
-            
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config
+                config["response_mime_type"] = "application/json"
+
+            response = self.client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=config
             )
 
-            # 2. Track Usage (Estimate tokens: chars / 4 is a safe overestimate for MK Cyrillic)
-            # Gemini response.usage_metadata is better if available in this SDK version
+            # 2. Track Usage
             try:
-                tokens_used = getattr(response, 'usage_metadata', {}).total_token_count if hasattr(response, 'usage_metadata') else (len(prompt) + len(response.text)) // 2
+                # Use total_token_count from response if available
+                tokens_used = getattr(response, 'usage_metadata', {}).total_token_count or (len(prompt) + len(response.text)) // 2
                 redis_client.incrby(self._get_usage_key(), int(tokens_used))
                 redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
             except Exception as usage_err:
