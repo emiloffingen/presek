@@ -10,6 +10,7 @@ APP_ROOT="${APP_ROOT:-$DEFAULT_APP_ROOT}"
 ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/.env}"
 BACKUP_DIR="${BACKUP_DIR:-$APP_ROOT/shared/backups}"
 KEEP_DAYS="${KEEP_DAYS:-7}"
+REQUIRE_BACKUP_ENCRYPTION="${REQUIRE_BACKUP_ENCRYPTION:-0}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
@@ -40,7 +41,12 @@ main() {
   fi
 
   [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
-  [ -n "${BACKUP_PASSPHRASE:-}" ] || warn "BACKUP_PASSPHRASE is not set; backup will be gzipped but NOT encrypted"
+  if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
+    if [ "$REQUIRE_BACKUP_ENCRYPTION" = "1" ]; then
+      fail "BACKUP_PASSPHRASE is not set and REQUIRE_BACKUP_ENCRYPTION=1"
+    fi
+    warn "BACKUP_PASSPHRASE is not set; backup will be gzipped but NOT encrypted"
+  fi
 
   install -d "$BACKUP_DIR"
 

@@ -21,8 +21,13 @@ SHARED_WEB_DEPS_ROOT="${SHARED_WEB_DEPS_ROOT:-$SHARED_DIR/web-deps}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
-ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}"
+ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
+ENABLE_ADMIN_CHECK="${ENABLE_ADMIN_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
+REQUIRE_CLEAN_GIT="${REQUIRE_CLEAN_GIT:-1}"
+REQUIRE_WEB_LOCKFILE="${REQUIRE_WEB_LOCKFILE:-1}"
+ALLOW_NPM_INSTALL_FALLBACK="${ALLOW_NPM_INSTALL_FALLBACK:-0}"
+REQUIRE_ENCRYPTED_BACKUPS="${REQUIRE_ENCRYPTED_BACKUPS:-1}"
 SMOKE_SCRIPT="$SOURCE_ROOT/deploy/smoke_check.sh"
 BACKUP_SCRIPT="$SOURCE_ROOT/deploy/backup_postgres.sh"
 RELEASE_ID="${RELEASE_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -158,6 +163,31 @@ assert_paths_safe() {
   [ "$source_real" != "$app_real" ] || fail "APP_ROOT must differ from SOURCE_ROOT for release-based deploys"
 }
 
+assert_git_deployable() {
+  if [ "$REQUIRE_CLEAN_GIT" != "1" ]; then
+    warn "Skipping clean git check (REQUIRE_CLEAN_GIT=0)"
+    return 0
+  fi
+
+  if ! git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    warn "Skipping clean git check: $SOURCE_ROOT is not a git worktree"
+    return 0
+  fi
+
+  local dirty=""
+  dirty="$(git -C "$SOURCE_ROOT" status --porcelain --untracked-files=all)"
+  [ -z "$dirty" ] || fail "Source tree has uncommitted changes. Deploy from a clean commit or set REQUIRE_CLEAN_GIT=0 intentionally."
+}
+
+assert_web_lockfile() {
+  [ "$REQUIRE_WEB_LOCKFILE" = "1" ] || return 0
+  [ -f "$SOURCE_ROOT/web/package-lock.json" ] || fail "web/package-lock.json is required for reproducible deploys"
+  if git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$SOURCE_ROOT" ls-files --error-unmatch web/package-lock.json >/dev/null 2>&1 \
+      || fail "web/package-lock.json exists but is not tracked by git"
+  fi
+}
+
 normalize_legacy_runtime_links() {
   if [ -d "$VENV_DIR" ] && [ ! -L "$VENV_DIR" ]; then
     local legacy_venv="$PYTHON_ENVS_DIR/legacy-runtime"
@@ -259,7 +289,12 @@ ensure_release_venv() {
 ensure_release_web_deps() {
   local lock_source deps_hash versioned_web_deps
   lock_source="$RELEASE_DIR/web/package-lock.json"
-  [ -f "$lock_source" ] || lock_source="$RELEASE_DIR/web/package.json"
+  if [ ! -f "$lock_source" ]; then
+    if [ "$REQUIRE_WEB_LOCKFILE" = "1" ]; then
+      fail "Release is missing web/package-lock.json"
+    fi
+    lock_source="$RELEASE_DIR/web/package.json"
+  fi
   deps_hash="$(hash_file "$lock_source")"
   versioned_web_deps="$SHARED_WEB_DEPS_ROOT/$deps_hash"
 
@@ -271,10 +306,14 @@ ensure_release_web_deps() {
     
     if [ -f "$RELEASE_DIR/web/package-lock.json" ]; then
       cp "$RELEASE_DIR/web/package-lock.json" "$versioned_web_deps/"
-      info "Attempting npm ci..."
+      info "Installing Astro dependencies with npm ci"
       (cd "$versioned_web_deps" && npm ci) || {
-        warn "npm ci failed; falling back to npm install"
-        (cd "$versioned_web_deps" && npm install)
+        if [ "$ALLOW_NPM_INSTALL_FALLBACK" = "1" ]; then
+          warn "npm ci failed; falling back to npm install (ALLOW_NPM_INSTALL_FALLBACK=1)"
+          (cd "$versioned_web_deps" && npm install)
+        else
+          fail "npm ci failed. Fix package-lock.json or set ALLOW_NPM_INSTALL_FALLBACK=1 intentionally."
+        fi
       }
     else
       warn "package-lock.json missing; using npm install"
@@ -339,7 +378,7 @@ PY
 run_migrations() {
   if [ "$BACKUP_BEFORE_MIGRATIONS" = "1" ]; then
     info "Creating database backup before schema updates"
-    APP_ROOT="$APP_ROOT" bash "$BACKUP_SCRIPT"
+    REQUIRE_BACKUP_ENCRYPTION="$REQUIRE_ENCRYPTED_BACKUPS" APP_ROOT="$APP_ROOT" bash "$BACKUP_SCRIPT"
     DB_BACKUP_CREATED=1
   else
     warn "Skipping pre-migration database backup (BACKUP_BEFORE_MIGRATIONS=0)"
@@ -381,7 +420,7 @@ restart_and_smoke() {
   sudo systemctl start "$SYSTEMD_TARGET" || return 1
 
   info "Running smoke checks"
-  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || return 1
+  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" ENABLE_ADMIN_CHECK="$ENABLE_ADMIN_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || return 1
 }
 
 rollback_release() {
@@ -412,7 +451,7 @@ rollback_release() {
     fi
   fi
   info "Running post-rollback smoke checks"
-  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
+  ENABLE_PUBLIC_CHECK="$ENABLE_PUBLIC_CHECK" ENABLE_ADMIN_CHECK="$ENABLE_ADMIN_CHECK" APP_ROOT="$APP_ROOT" bash "$SMOKE_SCRIPT" || warn "Post-rollback smoke checks also failed"
 }
 
 main() {
@@ -426,6 +465,8 @@ main() {
   need_cmd "$PYTHON_BIN"
 
   assert_paths_safe
+  assert_git_deployable
+  assert_web_lockfile
   ensure_layout
   normalize_legacy_runtime_links
 

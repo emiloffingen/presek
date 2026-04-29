@@ -85,6 +85,7 @@ node_modules/
 static/generated/
 static/uploads/
 package-lock.json
+!web/package-lock.json
 screenshots/
 static/dist/
 web/dist/

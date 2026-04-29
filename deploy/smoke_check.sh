@@ -7,8 +7,12 @@ HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:5001/api/health}"
 ASTRO_URL="${ASTRO_URL:-http://127.0.0.1:3000}"
 FASTAPI_URL="${FASTAPI_URL:-http://127.0.0.1:5001/api/health}"
 HOME_API_URL="${HOME_API_URL:-http://127.0.0.1:5001/api/home}"
+ADMIN_URL="${ADMIN_URL:-http://127.0.0.1:3000/admin}"
+ADMIN_API_URL="${ADMIN_API_URL:-http://127.0.0.1:5001/api/admin/dashboard}"
 ENABLE_FASTAPI_CHECK="${ENABLE_FASTAPI_CHECK:-1}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-0}"
+ENABLE_PUBLIC_SECURITY_HEADER_CHECK="${ENABLE_PUBLIC_SECURITY_HEADER_CHECK:-0}"
+ENABLE_ADMIN_CHECK="${ENABLE_ADMIN_CHECK:-1}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-15}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-2}"
 
@@ -41,6 +45,27 @@ wait_http_ok() {
         ok "$name responded with HTTP $code"
         return 0
       fi
+    fi
+    sleep "$SLEEP_SECONDS"
+  done
+
+  echo -e "${RED}x${RESET}  $name did not become healthy (last HTTP code: ${code:-none})" >&2
+  return 1
+}
+
+wait_http_ok_header() {
+  local name="$1"
+  local url="$2"
+  local header="$3"
+  local expected="${4:-200}"
+  local code=""
+
+  info "Checking $name at $url"
+  for _ in $(seq 1 "$MAX_ATTEMPTS"); do
+    code="$(curl -sS -o /dev/null -w "%{http_code}" -H "$header" "$url" 2>/dev/null || true)"
+    if [ "$code" = "$expected" ]; then
+      ok "$name responded with HTTP $code"
+      return 0
     fi
     sleep "$SLEEP_SECONDS"
   done
@@ -119,6 +144,13 @@ main() {
   need_cmd curl
   need_cmd python3
 
+  if [ -z "${PRESEK_ADMIN_TOKEN:-}" ] && [ -n "${APP_ROOT:-}" ] && [ -f "$APP_ROOT/shared/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$APP_ROOT/shared/.env"
+    set +a
+  fi
+
   wait_health_ready "API health" "$HEALTH_URL" 1 1
   wait_http_ok "Astro frontend" "$ASTRO_URL" 200
 
@@ -127,12 +159,28 @@ main() {
     wait_http_ok "Homepage API" "$HOME_API_URL" 200 "\"status\":\"success\""
   fi
 
+  if [ "$ENABLE_ADMIN_CHECK" = "1" ]; then
+    wait_http_ok "Admin page" "$ADMIN_URL" 200
+    wait_http_ok "Admin API without token" "$ADMIN_API_URL" 403
+    if [ -n "${PRESEK_ADMIN_TOKEN:-}" ]; then
+      wait_http_ok_header "Admin API with token" "$ADMIN_API_URL" "X-Admin-Token: $PRESEK_ADMIN_TOKEN" 200
+    else
+      warn "Skipping admin token smoke check because PRESEK_ADMIN_TOKEN is not available"
+    fi
+  fi
+
   if [ "$ENABLE_PUBLIC_CHECK" = "1" ]; then
+    public_base="${PUBLIC_URL%/}"
     # Allow 200 or 301 for the root domain as it often redirects to / or www.
     wait_http_ok "Public site" "$PUBLIC_URL" "200" || wait_http_ok "Public site" "$PUBLIC_URL" "301"
-    wait_http_ok "Public status page" "$PUBLIC_URL/status" 200 "Состојба на системот"
-    wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
-    wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
+    wait_http_ok "Public admin page" "$public_base/admin" 200
+    wait_http_ok "Public status page" "$public_base/status" 200 "Состојба на системот"
+    if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
+      wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
+      wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
+    else
+      warn "Skipping public security header checks (set ENABLE_PUBLIC_SECURITY_HEADER_CHECK=1 to enable)"
+    fi
   else
     warn "Skipping public URL check (set ENABLE_PUBLIC_CHECK=1 to enable)"
   fi
