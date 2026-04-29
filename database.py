@@ -28,11 +28,13 @@ SQL_ARTICLE_SEARCH = """
     WITH query AS (
         SELECT
             websearch_to_tsquery('simple', %s) AS ts_query,
-            lower(%s) AS query_text
+            lower(%s) AS query_text,
+            %s::vector AS query_vector
     )
     SELECT
         a.*,
         ts_rank_cd(a.search_vector, query.ts_query) AS rank,
+        (1 - (a.embedding <=> query.query_vector)) AS semantic_score,
         CASE
             WHEN lower(a.title) = query.query_text THEN 4
             WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
@@ -42,8 +44,8 @@ SQL_ARTICLE_SEARCH = """
         END AS match_score
     FROM articles a
     CROSS JOIN query
-    WHERE a.search_vector @@ query.ts_query
-    ORDER BY match_score DESC, rank DESC, created_at DESC
+    WHERE (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < 0.6)
+    ORDER BY (match_score * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) DESC
     LIMIT %s
 """
 
@@ -398,13 +400,18 @@ class DatabaseManager:
         if not q or len(q) > 500:
             return []
             
+        # Generate embedding for semantic search
+        from embeddings import generate_query_embedding
+        vector = generate_query_embedding(q)
+        vector_str = "[" + ",".join(map(str, vector)) + "]" if vector else None
+
         # Ensure limit is an integer
         try:
             limit = int(limit)
         except (ValueError, TypeError):
             limit = 100
             
-        return self.execute(SQL_ARTICLE_SEARCH, (q, q, limit))
+        return self.execute(SQL_ARTICLE_SEARCH, (q, q, vector_str, limit))
 
     def get_synthesis_ids(self, cluster_ids):
         if not cluster_ids: return []

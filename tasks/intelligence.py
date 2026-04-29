@@ -404,6 +404,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             generated_article = validate_person_names(generated_article)
             synthetic_headline = validate_person_names(synthetic_headline)
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
+            
+            # --- [NEW] 2026 Intelligence: Storyline & Impact ---
+            story_so_far = validate_person_names(res.get('story_so_far', '')) if isinstance(res, dict) else ''
+            impact_data = res.get('impact_analysis', {}) if isinstance(res, dict) else {}
+            impact_score = float(impact_data.get('score', 0.0))
+            impact_reasoning = impact_data.get('reasoning', '')
 
             # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
             comparison_text = (summary or "") + "\n" + (generated_article or "")
@@ -519,8 +525,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 )
             else:
                 db.execute(
-                    """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                        ON CONFLICT (cluster_id) DO UPDATE SET 
                            summary = EXCLUDED.summary, 
                            perspectives = EXCLUDED.perspectives, 
@@ -538,10 +544,19 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                            analyst_entities = EXCLUDED.analyst_entities,
                            pulse_score = EXCLUDED.pulse_score,
                            pluralism_score = EXCLUDED.pluralism_score,
-                           narrative_diversity = EXCLUDED.narrative_diversity""",
-                    (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data)),
+                           narrative_diversity = EXCLUDED.narrative_diversity,
+                           storyline_narrative = EXCLUDED.storyline_narrative""",
+                    (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data), story_so_far),
                     fetch=False
-                )            # Publish SSE event for Real-Time UI updates
+                )
+
+            # Update Metadata with Impact Score
+            db.execute("""
+                UPDATE cluster_metadata 
+                SET impact_score = %s, impact_explanation = %s 
+                WHERE cluster_id = %s
+            """, (impact_score, impact_reasoning, cluster_id), fetch=False)
+            # Publish SSE event for Real-Time UI updates
             try:
                 from utils import publish_event
                 # Determine if breaking
@@ -558,6 +573,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     "type": "cluster_synthesis_updated",
                     "cluster_id": cluster_id,
                     "is_breaking": is_breaking,
+                    "impact_score": impact_score,
                     "headline": synthetic_headline or article_rows[0].get('title', ''),
                     "snippet": snippet,
                     "time": datetime.datetime.now().isoformat()
