@@ -353,7 +353,7 @@ def auto_summarize_top_clusters():
             newest = max((a.get("ingested_at") or a.get("created_at")) for a in arts)
             ranked.append((cid, arts, len(unique_sources), newest))
 
-        ranked.sort(key=lambda x: (x[2], x[3]), reverse=True)
+        ranked.sort(key=lambda x: (x[3], x[2]), reverse=True)
         top = ranked[:AUTO_SUMMARIZE_TOP_N]
         if not top:
             return
