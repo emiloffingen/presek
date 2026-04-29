@@ -56,6 +56,39 @@ def _normalize_cluster_synthesis(summary, perspectives, article_rows):
     return clean_summary, clean_perspectives
 
 
+def _ensure_dict(value):
+    return value if isinstance(value, dict) else {}
+
+
+def _fallback_key_facts(article_rows, summary="", limit=4):
+    facts = []
+    seen = set()
+    for line in str(summary or "").splitlines():
+        clean = line.strip(" •-* \t")
+        if clean and len(clean) >= 20:
+            key = clean.casefold()
+            if key not in seen:
+                seen.add(key)
+                facts.append(clean[:220])
+        if len(facts) >= limit:
+            return facts
+
+    for article in article_rows or []:
+        source = str(article.get("source") or "Извор").strip()
+        title = deShout(str(article.get("title") or "").strip())
+        if not title:
+            continue
+        fact = f"{source}: {title}"
+        key = fact.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        facts.append(fact[:220])
+        if len(facts) >= limit:
+            break
+    return facts
+
+
 def _build_citation_sources(article_rows):
     ordered = []
     for item in article_rows or []:
@@ -379,6 +412,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         prompt_parts.append("[END_NEW_ARTICLES]")
         full_prompt = "\n\n".join(part for part in prompt_parts if part)
         raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=max_tokens)
+        res_data = {}
 
         if raw:
             try:
@@ -387,13 +421,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 log.error(f"[tasks/synthesis] JSON Parse Error for {cluster_id}: {e}. Raw: {raw[:200]}")
                 raise
 
-            summary = res.get('summary', '') if isinstance(res, dict) else res
-            generated_article = res.get('article', '') if isinstance(res, dict) else ''
-            synthetic_headline = res.get('synthetic_headline', '') if isinstance(res, dict) else ''
-            synthetic_standfirst = res.get('synthetic_standfirst', '') if isinstance(res, dict) else ''
-            verification_report = res.get('verification_report') if isinstance(res, dict) else None
-            perspectives = res.get('perspectives', []) if isinstance(res, dict) else []
-            quote = validate_person_names(res.get('quote', '')) if isinstance(res, dict) else ''
+            res_data = res if isinstance(res, dict) else {}
+            summary = res_data.get('summary', '') if res_data else res
+            generated_article = res_data.get('article', '')
+            synthetic_headline = res_data.get('synthetic_headline', '')
+            synthetic_standfirst = res_data.get('synthetic_standfirst', '')
+            verification_report = res_data.get('verification_report')
+            perspectives = res_data.get('perspectives', [])
+            quote = validate_person_names(res_data.get('quote', ''))
 
             if not summary or (isinstance(summary, str) and len(summary) < 20):
                  log.warning(f"[tasks/synthesis] AI returned empty or too short summary for {cluster_id}")
@@ -406,8 +441,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             synthetic_standfirst = validate_person_names(synthetic_standfirst)
             
             # --- [NEW] 2026 Intelligence: Storyline & Impact ---
-            story_so_far = validate_person_names(res.get('story_so_far', '')) if isinstance(res, dict) else ''
-            impact_data = res.get('impact_analysis', {}) if isinstance(res, dict) else {}
+            story_so_far = validate_person_names(res_data.get('story_so_far', ''))
+            impact_data = _ensure_dict(res_data.get('impact_analysis', {}))
             impact_score = float(impact_data.get('score', 0.0))
             impact_reasoning = impact_data.get('reasoning', '')
             log.debug(f"Impact score for {cluster_id}: {impact_score} (Reason: {impact_reasoning})")
@@ -420,8 +455,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 return
 
             sentiment_data = {
-                "sentiment": res.get('sentiment', {}),
-                "tone_analysis": res.get('tone_analysis', {})
+                "sentiment": res_data.get('sentiment', {}),
+                "tone_analysis": res_data.get('tone_analysis', {})
             }
 
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
@@ -482,6 +517,9 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 elif deep_metadata or pluralism_data:
                     log.info(f"[analyst] Pluralism and KG updated for cluster {cluster_id}")
 
+                deep_metadata = _ensure_dict(deep_metadata)
+                pluralism_data = _ensure_dict(pluralism_data)
+
         else:
             log.warning(f"[tasks/synthesis] AI provider {provider} returned no content for {cluster_id}, using enhanced fallback")
             fallback = synthesize_cluster_fallback(article_rows)
@@ -494,10 +532,25 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
             deep_metadata = {}
             pluralism_data = {}
+            impact_score = 0.0
+            impact_reasoning = ""
+            quote = ""
+            story_so_far = ""
             record_task_event(cluster_id, "synthesis_fallback", {"provider": provider})
             record_runtime_event("synthesis_path", mode="local_fallback_total")
 
         if summary or perspectives:
+            deep_metadata = _ensure_dict(deep_metadata)
+            pluralism_data = _ensure_dict(pluralism_data)
+            key_facts = deep_metadata.get("facts") or _fallback_key_facts(article_rows, summary)
+            analyst_entities = deep_metadata.get("entities") or []
+            pulse_score = deep_metadata.get("pulse", 50)
+            pluralism_score = pluralism_data.get("score", 50)
+            if not pluralism_data:
+                pluralism_data = {
+                    "score": pluralism_score,
+                    "verdict": "Локална проценка додека AI синтезата се освежува."
+                }
             # Calculate Cluster Centroid (Semantic Center)
             centroid = _compute_centroid_from_values([a.get("embedding") for a in article_rows if a.get("embedding")])
             centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
@@ -512,16 +565,21 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
 
             if fast_mode:
                 db.execute(
-                    """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """INSERT INTO cluster_summaries (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, created_at, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                        ON CONFLICT (cluster_id) DO UPDATE SET 
                            summary = EXCLUDED.summary, 
                            generated_article = EXCLUDED.generated_article, 
                            synthetic_headline = EXCLUDED.synthetic_headline,
                            synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                            created_at = EXCLUDED.created_at,
-                           citation_sources = EXCLUDED.citation_sources""",
-                    (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(citation_sources)),
+                           citation_sources = EXCLUDED.citation_sources,
+                           key_facts = EXCLUDED.key_facts,
+                           analyst_entities = EXCLUDED.analyst_entities,
+                           pulse_score = EXCLUDED.pulse_score,
+                           pluralism_score = EXCLUDED.pluralism_score,
+                           narrative_diversity = EXCLUDED.narrative_diversity""",
+                    (cluster_id, summary, generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(citation_sources), json.dumps(key_facts), json.dumps(analyst_entities), pulse_score, pluralism_score, json.dumps(pluralism_data)),
                     fetch=False
                 )
             else:
@@ -547,7 +605,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                            pluralism_score = EXCLUDED.pluralism_score,
                            narrative_diversity = EXCLUDED.narrative_diversity,
                            storyline_narrative = EXCLUDED.storyline_narrative""",
-                    (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res.get('tone_analysis', {}) if isinstance(res, dict) else {}), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(deep_metadata.get('facts', [])), json.dumps(deep_metadata.get('entities', [])), deep_metadata.get('pulse', 50), pluralism_data.get('score', 50), json.dumps(pluralism_data), story_so_far),
+                    (cluster_id, summary, json.dumps(perspectives), generated_article, synthetic_headline, synthetic_standfirst, datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(res_data.get('tone_analysis', {})), json.dumps(verification_report) if verification_report else None, quote, centroid_str, json.dumps(citation_sources), json.dumps(key_facts), json.dumps(analyst_entities), pulse_score, pluralism_score, json.dumps(pluralism_data), story_so_far),
                     fetch=False
                 )
 
@@ -636,9 +694,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             article_rows,
         )
         if summary or perspectives:
+            key_facts = _fallback_key_facts(article_rows, summary)
+            pluralism_data = {
+                "score": 50,
+                "verdict": "Локална проценка додека AI синтезата се освежува."
+            }
             db.execute(
-                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s)
+                """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (cluster_id) DO UPDATE
                    SET summary = EXCLUDED.summary,
                        perspectives = EXCLUDED.perspectives,
@@ -647,8 +710,13 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                        synthetic_standfirst = EXCLUDED.synthetic_standfirst,
                        created_at = EXCLUDED.created_at,
                        sentiment = EXCLUDED.sentiment,
-                       citation_sources = EXCLUDED.citation_sources""",
-                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources)),
+                       citation_sources = EXCLUDED.citation_sources,
+                       key_facts = EXCLUDED.key_facts,
+                       analyst_entities = EXCLUDED.analyst_entities,
+                       pulse_score = EXCLUDED.pulse_score,
+                       pluralism_score = EXCLUDED.pluralism_score,
+                       narrative_diversity = EXCLUDED.narrative_diversity""",
+                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources), json.dumps(key_facts), json.dumps([]), 50, 50, json.dumps(pluralism_data)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)
