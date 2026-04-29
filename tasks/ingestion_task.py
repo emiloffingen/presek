@@ -54,8 +54,11 @@ def crawl_article_task(article_id, url):
             sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"
             db.execute(sql, tuple(params), fetch=False)
             log.info(f"Updated article {article_id} with crawled data (method: {res.get('method')})")
+        else:
+            log.warning(f"Crawler retrieved no content/image for {article_id} (method: {res.get('method')})")
             
-            # Invalidate cache if we got new content
+        # Invalidate cache if we got new content
+        if res.get("content"):
             invalidate_public_data_caches()
             
     except Exception as e:
