@@ -12,6 +12,7 @@ export interface Article {
   ingested_at?: string;
   image_url: string | null;
   clicks: number;
+  credibility?: number;
   reading_time: number;
   summary?: string;
   is_translated: number;
@@ -62,6 +63,7 @@ export interface NewsCluster {
   analyst_entities?: string[];
   key_facts?: string[];
   pulse_score?: number;
+  pluralism_score?: number;
   homepage_score?: number;
   created_at?: string;
   display_name?: string;
@@ -95,6 +97,9 @@ export interface ClusterDetail extends NewsCluster {
     relationship_label?: string;
   }>;
   total_reading_time: number;
+  narrative_diversity?: {
+    verdict?: string;
+  };
 }
 
 export interface NewsResponse {

@@ -552,6 +552,16 @@ async def entity_graph_lookup(request: Request, entity_name: str):
         SELECT bio_summary, importance_score, last_seen, category 
         FROM entity_knowledge WHERE entity_name = %s
     """, (entity_name,))
+    if not row:
+        row = await db.async_execute_one("""
+            SELECT
+                COALESCE(metadata->>'bio_summary', '') AS bio_summary,
+                total_mentions AS importance_score,
+                last_seen,
+                COALESCE(type, 'ENTITY') AS category
+            FROM knowledge_entities
+            WHERE name = %s
+        """, (entity_name,))
     
     if not row:
         return {"status": "not_found"}

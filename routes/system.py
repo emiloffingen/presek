@@ -14,6 +14,11 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, Response, FileResponse
 from pathlib import Path
 
+try:
+    import pillow_avif
+except ImportError:
+    pass
+
 import redis as _redis_lib
 from database import db_manager as db
 from utils import (
@@ -259,7 +264,12 @@ async def get_cluster_share_card(cluster_id: str):
         try:
             if local_bg:
                 local_path = (_STATIC_ROOT / local_bg.lstrip("/")).resolve()
-                if local_path.exists(): bg_img = Image.open(local_path)
+                allowed_roots = [
+                    _STATIC_ROOT.resolve(),
+                    (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
+                ]
+                if any(_path_is_relative_to(local_path, root) for root in allowed_roots) and local_path.exists():
+                    bg_img = Image.open(local_path)
             
             if not bg_img and bg_url and bg_url.startswith("http"):
                 safe_ips = _resolve_public_ips(bg_url)
@@ -321,6 +331,14 @@ async def get_cluster_share_card(cluster_id: str):
         img = Image.new("RGB", (1200, 630), color=(15, 13, 12))
         out = BytesIO(); img.save(out, format="PNG")
         return Response(content=out.getvalue(), media_type="image/png")
+
+
+def _path_is_relative_to(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+        return True
+    except ValueError:
+        return False
 
 @router.get("/proxy")
 async def proxy_image(

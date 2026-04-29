@@ -50,6 +50,7 @@ import SystemAnalyst from '../../components/Cluster/SystemAnalyst.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
 import BriefingBox from '../../components/Cluster/BriefingBox.astro';
+import type { Article, ClusterDetail } from '../../types';
 
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
@@ -95,7 +96,7 @@ if (slug !== canonicalSlug && !error && cluster) {
 
 const headlineIsCyrillic = isMostlyCyrillic(displayHeadline);
 
-const allSourcesNames = Array.from(new Set(cluster?.articles?.map(a => a.source) || []));
+const allSourcesNames: string[] = Array.from(new Set((cluster?.articles || []).map((a: Article) => a.source)));
 const sourcePreview = allSourcesNames.slice(0, 5);
 const citationSources = cluster?.citation_sources || [];
 const hasCitationSources = citationSources.length > 0;
@@ -106,7 +107,9 @@ const perspectives = cluster?.perspectives || [];
 const verificationReport = cluster?.verification_report || null;
 const generatedArticle = cluster?.generated_article || null;
 
-const synthesisItems = (cluster?.ai_summary_bullets?.length ? cluster.ai_summary_bullets : (cluster?.synthesis || '').split('\n'))
+type SynthesisItem = { source: string | null; content: string };
+
+const synthesisItems: SynthesisItem[] = (cluster?.ai_summary_bullets?.length ? cluster.ai_summary_bullets : (cluster?.synthesis || '').split('\n'))
     .filter((line: string) => line.trim().length > 10)
     .map((line: string) => {
         const match = line.match(/^\[(.*?)\]\s*(.*)/);
@@ -116,7 +119,7 @@ const synthesisItems = (cluster?.ai_summary_bullets?.length ? cluster.ai_summary
         return { source: null, content: cleanAndDecode(line) };
     });
 
-const articleRows = (cluster?.articles || []).map((a, idx, arr) => {
+const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr: Article[]) => {
     const d = new Date(a.created_at);
     
     // Dynamic relationship label
@@ -129,7 +132,7 @@ const articleRows = (cluster?.articles || []).map((a, idx, arr) => {
     } else if (idx === 0 && !synthesisFreshness.is_stale) {
         relLabel = 'ПОСЛЕДЕН РАЗВОЈ';
         relTone = 'latest';
-    } else if (a.credibility > 1.2) {
+    } else if ((a.credibility || 0) > 1.2) {
         relLabel = 'ПРОШИРЕН ИЗВЕШТАЈ';
         relTone = 'deep';
     }
@@ -145,9 +148,9 @@ const articleRows = (cluster?.articles || []).map((a, idx, arr) => {
 });
 
 const relatedClusters = cluster?.related || [];
-const filteredRelated = relatedClusters.filter(c => c.cluster_id !== id).slice(0, 5);
+const filteredRelated = relatedClusters.filter((c: { cluster_id: string }) => c.cluster_id !== id).slice(0, 5);
 
-const adjacentTopic = cluster?.topics?.find(t => t !== 'Македонија') || cluster?.topics?.[0];
+const adjacentTopic = cluster?.topics?.find((t: string) => t !== 'Македонија') || cluster?.topics?.[0];
 
 const canonicalUrl = `https://presek.live/cluster/${id}`;
 const shareDescription = synthesisItems[0]?.content || mainArticle?.description || '';
@@ -170,11 +173,11 @@ function getLeadVisual(c: ClusterDetail | null) {
 const leadVisual = getLeadVisual(cluster);
 const imageUrl = leadVisual && !leadVisual.isWeak ? leadVisual.src : '/img/presek_emblem.png';
 
-const headerBriefItems = synthesisItems.map(item => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4);
+const headerBriefItems = synthesisItems.map((item: SynthesisItem) => item.content).filter((line: string) => line.trim().length > 4).slice(0, 4);
 const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim());
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
-const hasStrongLeadNarrative = hasGeneratedNarrative && cluster.articles.length >= 3;
+const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
 const primaryNarrativeLabel = 'СУБЛИМАТ';
 const primaryNarrativeEyebrow = 'РЕДАКЦИСКА СИНТЕЗА';
 
@@ -186,7 +189,7 @@ const sentimentData = cluster?.sentiment ? {
 // --- Momentum Kicker Logic ---
 const conflictsCount = verificationReport?.conflicts?.length || 0;
 const totalSourcesCount = cluster?.articles?.length || 0;
-const isBreakingFlag = cluster?.articles?.some(a => a.is_breaking) || false;
+const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
 let momentumKicker = { label: 'РЕДАКЦИСКИ УВИД', color: 'text-muted-foreground' };
 if (isBreakingFlag && totalSourcesCount >= 4) {
@@ -244,7 +247,7 @@ const articleSchema = cluster ? {
         category={cluster?.articles?.[0]?.category}
         topic={cluster?.topics?.[0]}
         primarySource={cluster?.articles?.[0]?.source}
-        sources={Array.from(new Set(cluster?.articles?.map(a => a.source) || []))}
+        sources={allSourcesNames}
         tags={cluster?.tags}
         client:idle 
     />
@@ -269,7 +272,7 @@ const articleSchema = cluster ? {
 					createdAt={cluster.articles?.[0].created_at}
 					displayHeadline={displayHeadline}
 					headlineIsCyrillic={headlineIsCyrillic}
-					syntheticStandfirst={cluster.synthetic_standfirst}
+					syntheticStandfirst={cluster.synthetic_standfirst || undefined}
 					canonicalUrl={canonicalUrl}
 					topics={cluster.topics || []}
 					getRelativeTimeStr={getRelativeTimeStr}
@@ -279,7 +282,7 @@ const articleSchema = cluster ? {
 				<div class="hero-grid mb-16">
 					<HeroVisual 
 						leadVisual={leadVisual}
-						dominantColor={cluster.dominant_color}
+						dominantColor={cluster.dominant_color || undefined}
 						displayHeadline={displayHeadline}
 						id={id || ''}
 						category={cluster.articles?.[0].category || ''}
@@ -421,7 +424,7 @@ const articleSchema = cluster ? {
                             <div class="sidebar-module">
                                 <h4 class="sidebar-label">СПЕКТАР НА ИЗВОРИ</h4>
                                 <div class="mt-6">
-                                    <SourceSpectrum articles={cluster.articles.map(a => ({ source: a.source })) as any} client:visible />
+                                    <SourceSpectrum articles={cluster.articles.map((a: Article) => ({ source: a.source })) as any} client:visible />
                                 </div>
                             </div>
 
@@ -468,7 +471,7 @@ const articleSchema = cluster ? {
 								<div class="sidebar-module">
 									<h4 class="sidebar-label">КЛУЧНИ СУБЈЕКТИ</h4>
 									<div class="flex flex-col gap-3 mt-4">
-										{cluster.analyst_entities.map(name => (
+											{cluster.analyst_entities.map((name: string) => (
 											<EntityContextCard name={name} client:load />
 										))}
 									</div>
@@ -479,7 +482,7 @@ const articleSchema = cluster ? {
 								<div class="sidebar-module">
 									<h4 class="sidebar-label">КЛУЧНИ ПОИМИ</h4>
 									<div class="flex flex-wrap gap-2 mt-4">
-										{cluster.tags.filter(t => !cluster.analyst_entities?.includes(t)).map(tag => (
+											{cluster.tags.filter((t: string) => !cluster.analyst_entities?.includes(t)).map((tag: string) => (
 											<a href={`/?q=${encodeURIComponent(tag)}`} class="tag-chip">
                                                 {deShout(tag)}
                                             </a>

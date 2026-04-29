@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import ThemeIsland from '../components/ThemeIsland';
 import ConsentBanner from '../components/ConsentBanner';
 import { ClientRouter } from 'astro:transitions';
 
@@ -100,17 +99,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
 		)}
 
-		<script is:inline>
-		// Register Service Worker for Offline Mode
-		if ('serviceWorker' in navigator) {
-		window.addEventListener('load', () => {
-		navigator.serviceWorker.register('/sw.js')
-		.then(reg => console.log('SW registered:', reg.scope))
-		.catch(err => console.log('SW error:', err));
-		});
-		}
-		</script>
-		</head>
 		<script is:inline>
 			/**
 			 * Immediate theme sync to prevent flicker. 

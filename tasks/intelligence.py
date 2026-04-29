@@ -410,6 +410,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             impact_data = res.get('impact_analysis', {}) if isinstance(res, dict) else {}
             impact_score = float(impact_data.get('score', 0.0))
             impact_reasoning = impact_data.get('reasoning', '')
+            log.debug(f"Impact score for {cluster_id}: {impact_score} (Reason: {impact_reasoning})")
 
             # AI Quality Gate: Hallucination Scanner (SKIP in fast_mode)
             comparison_text = (summary or "") + "\n" + (generated_article or "")

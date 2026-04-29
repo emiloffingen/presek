@@ -1,5 +1,5 @@
 ---
-import { getRelativeTimeStr, getEditionStr, cleanAndDecode, parseFootnotes } from '../../utils/textUtils';
+import { cleanAndDecode, parseFootnotes } from '../../utils/textUtils';
 import { sanitizeHtml } from '../../lib/sanitize';
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 	synthesisUpdatedAt?: string;
 	synthesisFreshness: { is_stale: boolean; new_article_count?: number };
 	hasCitationSources: boolean;
-    getRelativeTimeStr: (dateStr: string) => string;
+	getRelativeTimeStr: (dateStr: string) => string;
 }
 
 const { headerBriefItems, sourcePreview, synthesisUpdatedAt, synthesisFreshness, hasCitationSources, getRelativeTimeStr } = Astro.props;

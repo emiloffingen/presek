@@ -121,7 +121,7 @@ PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 # ── Additional AI Providers (Gemini) ───────────────────────────
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10

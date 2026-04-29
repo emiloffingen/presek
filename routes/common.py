@@ -22,7 +22,7 @@ from nlp.utils import cleanAndDecode
 
 log = logging.getLogger("presek")
 
-_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+_PROXY_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"}
 _PROXY_MAX_BYTES = 10 * 1024 * 1024
 SYNC_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
 

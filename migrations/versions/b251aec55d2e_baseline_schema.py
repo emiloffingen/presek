@@ -39,6 +39,7 @@ def upgrade() -> None:
         created_at TIMESTAMP NOT NULL,
         ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         image_url TEXT, 
+        local_image_path TEXT,
         clicks INTEGER DEFAULT 0, 
         original_description TEXT DEFAULT '',
         is_translated INTEGER DEFAULT 0, 
@@ -46,6 +47,8 @@ def upgrade() -> None:
         embedding vector(384),
         search_vector tsvector
     )""")
+
+    op.execute("ALTER TABLE articles ADD COLUMN IF NOT EXISTS local_image_path TEXT")
 
     # Handle vector dimension change if table already existed (migration support)
     op.execute("""
@@ -193,6 +196,17 @@ def upgrade() -> None:
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS entity_knowledge (
+            entity_name TEXT PRIMARY KEY,
+            bio_summary TEXT DEFAULT '',
+            importance_score REAL DEFAULT 0,
+            last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            category TEXT DEFAULT '',
+            metadata JSONB DEFAULT '{}'::jsonb
+        )
+    """)
+
     # 8. Sources
     op.execute("""CREATE TABLE IF NOT EXISTS sources (
         id SERIAL PRIMARY KEY,
@@ -274,6 +288,7 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS idx_articles_country_created ON articles(country, created_at DESC)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_articles_source_created ON articles(source, created_at DESC)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_articles_cat_created ON articles(category, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_local_image_path ON articles(local_image_path) WHERE local_image_path IS NOT NULL")
     op.execute("CREATE INDEX IF NOT EXISTS idx_articles_embedding ON articles USING hnsw (embedding vector_cosine_ops)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_cluster_metadata_tags ON cluster_metadata USING GIN (tags)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_cluster_summary_history_cid ON cluster_summary_history(cluster_id)")
@@ -285,6 +300,7 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_surface_kind ON suggestion_surface_events(surface, suggestion_kind, event_type, created_at DESC)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_suggestion_surface_events_sync_created ON suggestion_surface_events(sync_token, created_at DESC)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_failed_tasks_created ON failed_tasks(created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_entity_knowledge_last_seen ON entity_knowledge(last_seen DESC)")
 
     # 11. Triggers
     op.execute("""
