@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import re
+import random
 from typing import Dict, Any, Optional
 from urllib.parse import urljoin
 
@@ -14,16 +15,28 @@ log = logging.getLogger("presek.crawler")
 
 class CrawlerService:
     def __init__(self):
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+        ]
+
+    def _get_headers(self):
+        return {
+            "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
+            "Referer": "https://www.google.com/",
         }
 
     async def extract_all(self, url: str) -> Dict[str, Any]:
         """
         Main entry point: Try fast extraction first, fall back to headless browser if needed.
         """
+        # Ant-bot: Random sleep before fetch
+        await asyncio.sleep(random.uniform(0.5, 2.0))
+
         result = {
             "url": url,
             "title": None,
@@ -36,8 +49,9 @@ class CrawlerService:
 
         # 1. Fast path: HTTPX + Trafilatura
         try:
+            headers = self._get_headers()
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
@@ -103,9 +117,10 @@ class CrawlerService:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 # Set a common viewport and user agent
+                user_agent = random.choice(self.user_agents)
                 context = await browser.new_context(
-                    viewport={"width": 1280, "height": 800},
-                    user_agent=self.headers["User-Agent"]
+                    viewport={"width": random.randint(1200, 1920), "height": random.randint(800, 1080)},
+                    user_agent=user_agent
                 )
                 page = await context.new_page()
                 

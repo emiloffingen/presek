@@ -61,6 +61,7 @@ celery_app.conf.update(
     task_default_rate_limit='100/m',  # Global rate limit: 100 tasks per minute
     task_queues=(
         Queue('celery'),
+        Queue('ingestion'),
         Queue('fast-track'),
         Queue('intel-heavy'),
         Queue('delivery'),
@@ -69,7 +70,7 @@ celery_app.conf.update(
     task_routes={
         'tasks.ingestion_task.run_ingestion': {'queue': 'ingestion'},
         'tasks.ingestion_task.auto_repair_sources_task': {'queue': 'maintenance'},
-        'tasks.ingestion_task.crawl_article_task': {'queue': 'fast-track'},
+        'tasks.ingestion_task.crawl_article_task': {'queue': 'ingestion'},
         'tasks.intelligence.synthesize_cluster_task': {'queue': 'fast-track'},
         'tasks.intelligence.auto_summarize_task': {'queue': 'fast-track'},
         'tasks.intelligence.*': {'queue': 'intel-heavy'},
@@ -130,7 +131,7 @@ celery_app.conf.update(
     },
     # Task-specific rate limits
     task_annotations={
-        'tasks.ingestion_task.crawl_article_task': {'rate_limit': '20/m'},
+        'tasks.ingestion_task.crawl_article_task': {'rate_limit': '100/m'},
         'tasks.intelligence.generate_embeddings_task': {'rate_limit': '30/m'},
         'tasks.intelligence.synthesize_cluster_task': {'rate_limit': '10/m'},
     },

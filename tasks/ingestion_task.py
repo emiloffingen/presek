@@ -16,7 +16,7 @@ from image_service import image_service
 from health import record_refresh, record_task_event
 from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
 
-@celery_app.task(rate_limit='20/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(rate_limit='100/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
     """
     Background crawler task.
