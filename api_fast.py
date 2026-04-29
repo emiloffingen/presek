@@ -4,7 +4,6 @@ import json
 import datetime
 import time
 import re
-import requests
 import importlib.util
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
@@ -44,8 +43,6 @@ except ImportError:
     _rate_limiter_enabled = False
     limiter = None
 
-from api_helpers import is_safe_url
-
 # Initialize Logging - use centralized config
 # logging_config.early_setup() already called by import
 log = get_logger("presek.api")
@@ -75,6 +72,9 @@ app.add_middleware(
     max_age=600,
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+from routes.security import create_security_middleware
+create_security_middleware(app)
 
 
 # =============================================================================
@@ -139,11 +139,11 @@ async def startup_event():
         log.warning("Rate limiting disabled - slowapi not installed")
 
 # Import and include routers
-from routes import home, news, intelligence, profile, stats, system
+from routes import home, news, intelligence, profile, stats, system, admin
 
 # Apply rate limiting to routers if enabled
 if _rate_limiter_enabled:
-    for router in [home.router, news.router, intelligence.router, profile.router, stats.router, system.router]:
+    for router in [home.router, news.router, intelligence.router, profile.router, stats.router, system.router, admin.router]:
         router.dependencies.append(limiter)
 
 
@@ -197,32 +197,15 @@ async def metrics():
 
 # Proxy for images to avoid CORS/Mixed content issues on client
 @app.get("/proxy")
-async def image_proxy(url: str):
-    if not url:
-        raise HTTPException(status_code=400, detail="УРЛ адресата е задолжителна")
-
-    # Allow internal static files without full proxy fetch
-    if url.startswith("/static/"):
-        return RedirectResponse(url=url)
-
-    # SSRF protection: block local/private network ranges
-    if not is_safe_url(url):
-        log.warning(f"SSRF block triggered for proxy URL: {url}")
-        raise HTTPException(status_code=403, detail="Пристапот до оваа УРЛ адреса е ограничен од безбедносни причини")
-
-    try:
-        # Use a reasonable timeout and headers
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        response = requests.get(url, headers=headers, timeout=10, stream=True)
-        response.raise_for_status()
-        
-        from fastapi.responses import StreamingResponse
-        return StreamingResponse(response.iter_content(chunk_size=1024), media_type=response.headers.get("Content-Type"))
-    except Exception as e:
-        log.error(f"Proxy error for {url}: {e}")
-        return RedirectResponse(url="/static/img/placeholder.svg")
+async def image_proxy(
+    url: str,
+    w: str | None = None,
+    cid: str | None = None,
+    t: str | None = None,
+    cat: str | None = None,
+):
+    from routes.system import proxy_image
+    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat)
 
 # Legacy/Helper endpoints
 @app.get("/favicon.ico")
@@ -265,6 +248,7 @@ app.include_router(intelligence.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 # Decorator helper for custom rate limits
 def custom_rate_limit(limit_str):
@@ -284,6 +268,16 @@ async def entity_graph_lookup(request: Request, entity_name: str):
         SELECT bio_summary, importance_score, last_seen, category 
         FROM entity_knowledge WHERE entity_name = %s
     """, (entity_name,))
+    if not row:
+        row = db.execute_one("""
+            SELECT
+                COALESCE(metadata->>'bio_summary', '') AS bio_summary,
+                total_mentions AS importance_score,
+                last_seen,
+                COALESCE(type, 'ENTITY') AS category
+            FROM knowledge_entities
+            WHERE name = %s
+        """, (entity_name,))
     
     if not row:
         return {"status": "not_found"}
