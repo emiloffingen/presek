@@ -202,7 +202,7 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                                 <img 
                                     src={`/proxy?url=${encodeURIComponent(leadCluster.articles[0].image_url)}&w=1200`} 
                                     alt={leadCluster.synthetic_headline || leadCluster.articles[0].title}
-                                    class="hero-main-img"
+                                    class="hero-main-img animate-ken-burns"
                                 />
                             )}
                             <div class="hero-text-overlay">
@@ -243,7 +243,7 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
 </Layout>
 
 <style>
-    .briefing-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+    .briefing-container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
     
     .briefing-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
     @media (min-width: 1024px) {
@@ -252,7 +252,12 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
 
     .hero-image-card { position: relative; width: 100%; height: 450px; overflow: hidden; background: var(--secondary); border: 1px solid var(--border); }
     .hero-main-img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.05); }
-    .hero-text-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%); display: flex; align-items: flex-end; padding: 3rem; }
+    .animate-ken-burns { animation: ken-burns 20s linear infinite alternate; }
+    @keyframes ken-burns {
+        from { transform: scale(1); }
+        to { transform: scale(1.1); }
+    }
+    .hero-text-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%); display: flex; align-items: flex-end; padding: 3rem; }
     .hero-meta-info { color: white; max-width: 800px; }
     .hero-kicker-label { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.25em; color: var(--nyt-accent); }
     .hero-title-text { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 950; line-height: 1; margin: 1rem 0 1.5rem; text-wrap: balance; }
@@ -265,12 +270,12 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
     :global(.briefing-paragraph.drop-cap::first-letter) {
         float: left;
         font-family: var(--font-serif);
-        font-size: 5rem;
-        line-height: 0.85;
-        padding-top: 4px;
+        font-size: 4.5rem;
+        line-height: 0.8;
+        padding-top: 8px;
         padding-right: 12px;
-        padding-left: 3px;
+        padding-left: 0;
         font-weight: 900;
-        color: var(--foreground);
+        color: var(--nyt-accent);
     }
 </style>
