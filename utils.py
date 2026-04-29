@@ -34,6 +34,52 @@ except Exception as e:
     redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
 
 _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
+_SOURCE_REGISTRY_CACHE = {"time": 0.0, "data": {}}
+
+def get_source_registry(ttl_seconds: int = 300):
+    """
+    Returns a unified map of source metadata (credibility, category).
+    Prefer database values, fall back to hardcoded config.
+    """
+    now = time.time()
+    if _SOURCE_REGISTRY_CACHE["data"] and now - _SOURCE_REGISTRY_CACHE["time"] < ttl_seconds:
+        return _SOURCE_REGISTRY_CACHE["data"]
+
+    # Initialize with hardcoded defaults
+    registry = {}
+    
+    # We use a combined set of keys from hardcoded and DB
+    all_names = set(SOURCE_CREDIBILITY.keys()) | set(SOURCE_CATEGORIES.keys())
+    
+    for name in all_names:
+        registry[name] = {
+            "name": name,
+            "credibility": float(SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)),
+            "category": SOURCE_CATEGORIES.get(name, "Локални")
+        }
+
+    # Override/Extend with database values
+    try:
+        from database import db_manager as db
+        # We perform a raw query to avoid complex model overhead during config loading
+        rows = db.execute("SELECT name, credibility, category FROM sources WHERE is_active = TRUE")
+        for row in rows:
+            # psycopg row can be dict-like or list-like depending on cursor
+            name = row["name"] if isinstance(row, dict) else row[0]
+            cred = row["credibility"] if isinstance(row, dict) else row[1]
+            cat = row["category"] if isinstance(row, dict) else row[2]
+            
+            registry[name] = {
+                "name": name,
+                "credibility": float(cred if cred is not None else SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)),
+                "category": cat or SOURCE_CATEGORIES.get(name, "Локални")
+            }
+    except Exception as e:
+        log.warning(f"[source_registry] Database metadata unavailable, using hardcoded only: {e}")
+
+    _SOURCE_REGISTRY_CACHE["time"] = now
+    _SOURCE_REGISTRY_CACHE["data"] = registry
+    return registry
 
 class DateTimeEncoder(json.JSONEncoder):
     """Custom JSON encoder to handle datetime objects."""
@@ -327,7 +373,8 @@ def get_source_quality_multiplier(source: str) -> float:
 
 
 def get_source_effective_weight(source: str) -> float:
-    base = SOURCE_CREDIBILITY.get(source, DEFAULT_CREDIBILITY)
+    reg = get_source_registry()
+    base = reg.get(source, {}).get("credibility", DEFAULT_CREDIBILITY)
     mult = get_source_quality_multiplier(source)
     return base * mult
 
@@ -369,11 +416,12 @@ def build_cluster_source_signals(arts):
         )
 
     signals = []
+    reg = get_source_registry()
     for index, article in enumerate(ranked):
         source = str(article.get("source") or "")
         title = str(article.get("title") or "")
         effective_weight = get_source_effective_weight(source)
-        category = SOURCE_CATEGORIES.get(source, "Локални")
+        category = reg.get(source, {}).get("category", "Локални")
         trust_label = get_source_trust_label(source)
         article_dt = _coerce_datetime(article.get("created_at"))
         overlap_with_lead = 1.0 if index == 0 else _cluster_title_overlap(title, lead_title)
@@ -429,9 +477,10 @@ def annotate_cluster_articles(arts, prefer_recent=False):
         "Регионални": "R", "Алтернативни": "R", "Локални": "R"
     }
     tiers_present = set()
+    reg = get_source_registry()
     for art in ranked:
         src = art.get("source")
-        cat = SOURCE_CATEGORIES.get(src, "Локални")
+        cat = reg.get(src, {}).get("category", "Локални")
         tiers_present.add(TIER_MAP.get(cat, "R"))
     
     balance_score = len(tiers_present)
@@ -1127,16 +1176,16 @@ def rank_articles_in_cluster(arts, prefer_recent=False):
 
 def is_balanced(arts) -> bool:
     """True if cluster contains 3+ unique sources from different categories."""
-    from config import SOURCE_CATEGORIES, BALANCED_COVERAGE_THRESHOLD
+    from config import BALANCED_COVERAGE_THRESHOLD
     if len(arts) < BALANCED_COVERAGE_THRESHOLD:
         return False
-    
-    unique_categories = {SOURCE_CATEGORIES.get(a["source"], "Локални") for a in arts}
+
+    reg = get_source_registry()
+    unique_categories = {reg.get(a["source"], {}).get("category", "Локални") for a in arts}
     unique_sources = {a["source"] for a in arts}
-    
+
     # Balanced if 3+ sources OR 2+ distinct categories (e.g. Mainstream + Independent)
     return len(unique_sources) >= 4 or len(unique_categories) >= 2
-
 def publish_event(channel: str, data: dict):
     """Broadcast a JSON message to a Redis channel."""
     try:

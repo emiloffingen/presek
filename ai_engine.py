@@ -203,7 +203,7 @@ class GeminiProvider(AIProvider):
                         log.debug(f"Usage tracking failed: {usage_err}")
 
                     if model != GEMINI_MODEL:
-                        record_runtime_event("ai_gemini_fallback", {"task_type": task_type, "model": model})
+                        record_runtime_event("ai_gemini_fallback", task_type=task_type, model=model)
                     return response.text
                 except Exception as e:
                     message = str(e)

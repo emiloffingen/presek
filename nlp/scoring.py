@@ -36,39 +36,11 @@ def _cluster_title_overlap(left: str, right: str) -> float:
     union = len(left_terms | right_terms) or 1
     return len(left_terms & right_terms) / union
 
-def get_source_health_map():
-    from utils import redis_client
-    try:
-        raw = redis_client.hgetall("presek:source_statuses") or {}
-        return {key: (eval(value) if isinstance(value, str) else value) for key, value in raw.items()}
-    except Exception as e:
-        log.warning(f"[source_health] Redis unavailable: {e}")
-        return {}
-
-def get_source_quality_multiplier(source: str) -> float:
-    from utils import get_source_health_map
-    status = get_source_health_map().get(source) or {}
-    quality_score = status.get("quality_score")
-    if quality_score is None:
-        return 1.0
-    try:
-        quality_score = float(quality_score)
-    except Exception:
-        return 1.0
-    return max(0.45, min(1.05, 0.55 + quality_score * 0.5))
-
-def get_source_effective_weight(source: str) -> float:
-    base = SOURCE_CREDIBILITY.get(source, DEFAULT_CREDIBILITY)
-    mult = get_source_quality_multiplier(source)
-    return base * mult
-
-def get_source_trust_label(source: str) -> str:
-    weight = get_source_effective_weight(source)
-    if weight >= 1.75:
-        return "Висока доверба"
-    if weight >= 1.3:
-        return "Потврден извор"
-    return "Следен извор"
+from utils import (
+    get_source_health_map, get_source_quality_multiplier, 
+    get_source_effective_weight, get_source_trust_label,
+    is_balanced, get_source_registry
+)
 
 def score_cluster(arts):
     now = datetime.datetime.now()
@@ -128,7 +100,8 @@ def score_cluster_for_homepage(arts):
     trust_bonus = 1 + max(0.0, min(0.22, (avg_top_weight - 1.0) * 0.16))
     corroborated = sum(1 for signal in signals if signal.get("corroborated_by", 0) >= 1)
     corroboration_bonus = 1 + min(0.24, corroborated * 0.07)
-    category_count = len({SOURCE_CATEGORIES.get(str(article.get("source") or ""), "Локални") for article in ranked if article.get("source")})
+    reg = get_source_registry()
+    category_count = len({reg.get(str(article.get("source") or ""), {}).get("category", "Локални") for article in ranked if article.get("source")})
     breadth_bonus = 1 + min(0.2, max(0, source_count - 1) * 0.06) + min(0.08, max(0, category_count - 1) * 0.04)
     recent_cutoff = datetime.datetime.now() - datetime.timedelta(hours=6)
     recent_developments = sum(1 for article in ranked if (_coerce_datetime(article.get("created_at")) or datetime.datetime.min) >= recent_cutoff)
@@ -222,12 +195,6 @@ def annotate_cluster_articles(arts, prefer_recent=False):
             enriched["relationship_to_lead"] = {"tone": "neutral", "label": label}
         annotated.append(enriched)
     return annotated
-
-def is_balanced(arts) -> bool:
-    if len(arts) < BALANCED_COVERAGE_THRESHOLD: return False
-    unique_categories = {SOURCE_CATEGORIES.get(a["source"], "Локални") for a in arts}
-    unique_sources = {a["source"] for a in arts}
-    return len(unique_sources) >= 4 or len(unique_categories) >= 2
 
 def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
     if not arts:
