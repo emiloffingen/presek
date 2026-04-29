@@ -230,6 +230,8 @@ copy_release_tree() {
     --exclude '.runtime-meta' \
     --exclude '.env' \
     --exclude 'presek.db' \
+    --exclude 'list_gemini_models.py' \
+    --exclude 'test_gemini_key.py' \
     --exclude 'static/uploads/*' \
     --exclude 'static/generated/*' \
     --exclude 'models/' \
