@@ -3,6 +3,7 @@ import {
   Activity, 
   Cpu, 
   Database, 
+  Server,
   ShieldAlert, 
   RefreshCcw, 
   Globe, 
@@ -102,6 +103,7 @@ export default function AdminDashboard() {
   }
 
   const aiPercent = data ? Math.min(100, (data.ai.gemini_usage_today / data.ai.gemini_daily_limit) * 100) : 0;
+  const systemOk = Boolean(data?.db?.ok && data?.redis?.ok);
 
   return (
     <div className="space-y-8 font-sans">
@@ -138,6 +140,30 @@ export default function AdminDashboard() {
           sub="LAST 24 HOURS"
           trend={data.tasks.failed_recent.length > 0 ? 100 : 0}
           color={data.tasks.failed_recent.length > 0 ? "text-red-500" : "text-zinc-500"}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <StatusTile
+          icon={<Server size={18} />}
+          label="SYSTEM"
+          value={systemOk ? 'OPERATIONAL' : 'DEGRADED'}
+          detail={`Version ${data.system?.version_label || data.system?.version || 'unknown'}`}
+          ok={systemOk}
+        />
+        <StatusTile
+          icon={<Database size={18} />}
+          label="DATABASE"
+          value={data.db?.ok ? 'OK' : 'PROBLEM'}
+          detail={`${Number(data.db?.article_count || 0).toLocaleString()} articles · ${Number(data.db?.size_mb || 0).toFixed(0)} MB`}
+          ok={Boolean(data.db?.ok)}
+        />
+        <StatusTile
+          icon={<Activity size={18} />}
+          label="REDIS"
+          value={data.redis?.ok ? 'OK' : 'PROBLEM'}
+          detail={data.redis?.error || 'Cache and queues reachable'}
+          ok={Boolean(data.redis?.ok)}
         />
       </div>
 
@@ -261,6 +287,26 @@ function StatCard({ icon, label, value, sub, trend, color }: any) {
       <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
       <h3 className="text-2xl font-black text-white mb-1 tracking-tight">{value}</h3>
       <p className="text-[10px] font-mono text-zinc-500 uppercase">{sub}</p>
+    </div>
+  );
+}
+
+function StatusTile({ icon, label, value, detail, ok }: any) {
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800 p-5 rounded-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 bg-zinc-950 rounded-lg ${ok ? 'text-emerald-500' : 'text-red-500'}`}>
+            {icon}
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{label}</p>
+            <h3 className={`mt-1 text-sm font-black tracking-wide ${ok ? 'text-emerald-400' : 'text-red-400'}`}>{value}</h3>
+          </div>
+        </div>
+        <span className={`mt-1 w-2 h-2 rounded-full ${ok ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+      </div>
+      <p className="mt-4 text-[10px] font-mono text-zinc-500 break-words">{detail}</p>
     </div>
   );
 }

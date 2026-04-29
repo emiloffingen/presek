@@ -12,6 +12,8 @@ log = logging.getLogger("presek.analyst")
 # Config for Gemma 2 2B on 2-core CPU
 MODEL_PATH = os.environ.get("LOCAL_MODEL_PATH", "models/gemma-2-2b-it-Q4_K_M.gguf")
 N_THREADS = int(os.environ.get("MODEL_THREADS", "2")) 
+MODEL_CONTEXT = int(os.environ.get("LOCAL_MODEL_CONTEXT", "4096"))
+MAX_PROMPT_CHARS = int(os.environ.get("LOCAL_MODEL_MAX_PROMPT_CHARS", "9000"))
 
 class LocalAnalyst:
     _instance = None
@@ -40,10 +42,10 @@ class LocalAnalyst:
 
             try:
                 t0 = time.time()
-                # Optimized for 6GB RAM: small context window, limited threads
+                # Keep enough context for fallback brief/synthesis while staying within small-host RAM limits.
                 self.model = Llama(
                     model_path=MODEL_PATH,
-                    n_ctx=2048, 
+                    n_ctx=MODEL_CONTEXT,
                     n_threads=N_THREADS,
                     verbose=False
                 )
@@ -58,7 +60,12 @@ class LocalAnalyst:
             return None
 
         try:
-            # Gemma 2 Instruct format (Optimized for single user turn to ensure instruction following)
+            prompt = prompt or ""
+            system_prompt = system_prompt or ""
+            if len(prompt) > MAX_PROMPT_CHARS:
+                prompt = prompt[:MAX_PROMPT_CHARS] + "\n\n[Контекстот е скратен за локалниот модел.]"
+
+            # Gemma 2 Instruct format (optimized for a single user turn).
             full_prompt = f"<start_of_turn>user\n{system_prompt}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
             
             output = self.model(

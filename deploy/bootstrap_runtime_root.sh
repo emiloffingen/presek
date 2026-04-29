@@ -71,6 +71,12 @@ ensure_runtime_venv() {
   else
     ln -sfn "$versioned_venv" "$VENV_DIR"
   fi
+
+  if "$versioned_venv/bin/python3" -c "import playwright" >/dev/null 2>&1; then
+    info "Ensuring Playwright Chromium browser is installed"
+    "$versioned_venv/bin/python3" -m playwright install chromium
+    ok "Playwright Chromium browser is installed"
+  fi
 }
 
 ensure_shared_web_deps() {

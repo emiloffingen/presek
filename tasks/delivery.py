@@ -1372,7 +1372,8 @@ def _select_breaking_cluster_for_profile(profile, seen_cluster_ids, alert_contex
 @celery_app.task
 def generate_daily_brief_task(retry_attempt=0):
     """Generate the flagship morning briefing with intelligence signals."""
-    lock_key = f"lock:daily_brief:{datetime.date.today()}"
+    now = datetime.datetime.now()
+    lock_key = f"lock:daily_brief:{now.date()}:{now.hour // 6}"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=3600):
             log.info("Daily brief generation already in progress or completed for today.")

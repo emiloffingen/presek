@@ -12,7 +12,7 @@ from collections import defaultdict
 from typing import AsyncGenerator
 
 from config import (
-    GEMINI_API_KEY, GEMINI_MODEL,
+    GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
     POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
 )
 from prompts import (
@@ -148,6 +148,10 @@ class GeminiProvider(AIProvider):
     def __init__(self):
         self.client = None
         self.daily_limit = 2000000 # 2 million tokens safety budget (~$0.20)
+        self.models = []
+        for model in [GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]:
+            if model and model not in self.models:
+                self.models.append(model)
         if GEMINI_API_KEY:
             try:
                 from google import genai
@@ -171,35 +175,45 @@ class GeminiProvider(AIProvider):
         except Exception as e:
             log.error(f"[ai/gemini] Budget check error: {e}")
 
-        try:
-            # Modern SDK syntax for 2026
-            config = {
-                "system_instruction": system,
-                "max_output_tokens": max_tokens,
-                "temperature": 0.2,
-            }
-            if json_mode:
-                config["response_mime_type"] = "application/json"
+        # Modern SDK syntax for 2026
+        config = {
+            "system_instruction": system,
+            "max_output_tokens": max_tokens,
+            "temperature": 0.2,
+        }
+        if json_mode:
+            config["response_mime_type"] = "application/json"
 
-            response = self.client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-                config=config
-            )
+        for model in self.models:
+            for attempt in range(2):
+                try:
+                    response = self.client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                        config=config
+                    )
 
-            # 2. Track Usage
-            try:
-                # Use total_token_count from response if available
-                tokens_used = getattr(response, 'usage_metadata', {}).total_token_count or (len(prompt) + len(response.text)) // 2
-                redis_client.incrby(self._get_usage_key(), int(tokens_used))
-                redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
-            except Exception as usage_err:
-                log.debug(f"Usage tracking failed: {usage_err}")
+                    # 2. Track Usage
+                    try:
+                        metadata = getattr(response, 'usage_metadata', None)
+                        tokens_used = getattr(metadata, 'total_token_count', None) or (len(prompt) + len(response.text)) // 2
+                        redis_client.incrby(self._get_usage_key(), int(tokens_used))
+                        redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
+                    except Exception as usage_err:
+                        log.debug(f"Usage tracking failed: {usage_err}")
 
-            return response.text
-        except Exception as e:
-            log.warning(f"[ai/gemini] Call failed: {e}")
-            return None
+                    if model != GEMINI_MODEL:
+                        record_runtime_event("ai_gemini_fallback", {"task_type": task_type, "model": model})
+                    return response.text
+                except Exception as e:
+                    message = str(e)
+                    transient = any(code in message for code in ("429", "500", "502", "503", "504", "UNAVAILABLE", "RESOURCE_EXHAUSTED"))
+                    log.warning(f"[ai/gemini] Call failed for {model}: {e}")
+                    if transient and attempt == 0:
+                        time.sleep(1.5)
+                        continue
+                    break
+        return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         # For simplicity, we use non-streaming for now as Gemini SDK 

@@ -246,6 +246,13 @@ prepare_release_runtime_links() {
   ln -sfnT "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 }
 
+ensure_playwright_browsers() {
+  if "$RELEASE_VENV_TARGET/bin/python3" -c "import playwright" >/dev/null 2>&1; then
+    info "Ensuring Playwright Chromium browser is installed"
+    "$RELEASE_VENV_TARGET/bin/python3" -m playwright install chromium
+  fi
+}
+
 persist_release_runtime_meta() {
   local target_dir="$1"
   local venv_target="$2"
@@ -498,6 +505,7 @@ main() {
   copy_release_tree
   prepare_release_runtime_links
   ensure_release_venv
+  ensure_playwright_browsers
   ensure_release_web_deps
   
   # 2. Build and verify

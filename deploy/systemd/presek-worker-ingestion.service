@@ -12,7 +12,6 @@ User=emiloffingen
 Environment=PYTHONPATH=/home/emiloffingen/presek-runtime/current
 Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
-Environment=TRANSFORMERS_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/transformers
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
 ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/celery -A celery_app worker --loglevel=info -n fast-track@%h --concurrency=1 --queues=ingestion,fast-track,celery --max-memory-per-child=300000'

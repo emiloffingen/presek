@@ -3,8 +3,9 @@ import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
 from database import db_manager as db
 from config import PRESEK_ADMIN_TOKEN
-from health import get_source_statuses, _probe_database
+from health import get_source_statuses, _probe_database, _probe_redis
 from utils import redis_client
+from version import version_payload
 
 log = logging.getLogger("presek.api.admin")
 router = APIRouter()
@@ -30,6 +31,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     
     # 3. Database & Tasks
     db_health = _probe_database()
+    redis_health = _probe_redis()
     failed_tasks = db.execute("""
         SELECT task_name, error_message, created_at AS failed_at
         FROM failed_tasks 
@@ -59,7 +61,9 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "tasks": {
             "failed_recent": failed_tasks
         },
-        "db": db_health
+        "db": db_health,
+        "redis": redis_health,
+        "system": version_payload()
     }
 
 @router.post("/admin/tasks/retry-failed")

@@ -11,7 +11,6 @@ Type=simple
 User=emiloffingen
 Environment=HF_HOME=/home/emiloffingen/presek-runtime/shared/huggingface
 Environment=HF_HUB_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/hub
-Environment=TRANSFORMERS_CACHE=/home/emiloffingen/presek-runtime/shared/huggingface/transformers
 Environment=SENTENCE_TRANSFORMERS_HOME=/home/emiloffingen/presek-runtime/shared/huggingface/sentence_transformers
 WorkingDirectory=/home/emiloffingen/presek-runtime/current
 ExecStartPre=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && test -f api_fast.py'

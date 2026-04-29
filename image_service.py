@@ -6,6 +6,11 @@ from io import BytesIO
 from PIL import Image
 from typing import Optional
 
+try:
+    import pillow_avif  # noqa: F401 - registers AVIF support with Pillow
+except ImportError:
+    pass
+
 from utils import _resolve_public_ips, _peer_ip
 
 log = logging.getLogger("presek.image_service")
