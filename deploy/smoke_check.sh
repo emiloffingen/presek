@@ -174,8 +174,7 @@ main() {
     # Allow 200 or 301 for the root domain as it often redirects to / or www.
     wait_http_ok "Public site" "$PUBLIC_URL" "200" || wait_http_ok "Public site" "$PUBLIC_URL" "301"
     wait_http_ok "Public admin page" "$public_base/admin" 200
-    wait_http_ok "Public status page" "$public_base/status" 200 "Состојба на системот"
-    if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
+    wait_http_ok "Public status page" "$public_base/admin/status" 200 "Состојба на системот"    if [ "$ENABLE_PUBLIC_SECURITY_HEADER_CHECK" = "1" ]; then
       wait_header_contains "Public site CSP" "$PUBLIC_URL" "Content-Security-Policy" "default-src 'self'"
       wait_header_contains "Public site HSTS" "$PUBLIC_URL" "Strict-Transport-Security" "max-age=63072000"
     else

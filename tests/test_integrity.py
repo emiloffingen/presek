@@ -73,7 +73,7 @@ class TestAstroFrontendIntegrity:
         assert "'/api'" in helper or "\"/api\"" in helper
 
     def test_status_route_renders_live_health_page(self):
-        status_page = _read("web/src/pages/status.astro")
+        status_page = _read("web/src/pages/admin/status.astro")
         assert "fetch(`${API_URL}/health`)" in status_page
         assert "Состојба на системот" in status_page
 

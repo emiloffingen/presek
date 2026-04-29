@@ -188,7 +188,7 @@ def _safe_tracking_redirect_path(path: str) -> str:
     clean = str(path or "").strip()
     if not clean.startswith("/") or clean.startswith("//") or clean.startswith("/api/"): return "/briefing"
     if ".." in clean or "\\" in clean or ";" in clean: return "/briefing"
-    _allowed = ("/briefing", "/cluster/", "/trending", "/archive", "/stati", "/subjekt/", "/tema/", "/izvori", "/status", "/stats", "/about", "/contact", "/privacy", "/debug/")
+    _allowed = ("/briefing", "/cluster/", "/trending", "/archive", "/stati", "/subjekt/", "/tema/", "/izvori", "/admin/status", "/stats", "/about", "/contact", "/privacy", "/debug/")
     if not any(clean.startswith(prefix) for prefix in _allowed) and clean != "/": return "/briefing"
     return clean
 
