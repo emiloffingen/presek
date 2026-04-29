@@ -117,6 +117,7 @@ NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
+PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 # ── Additional AI Providers (Gemini) ───────────────────────────
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
