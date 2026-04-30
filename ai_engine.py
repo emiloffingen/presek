@@ -502,6 +502,9 @@ def auto_summarize_top_clusters():
         log.error(f"[auto-summarize] Error: {e}")
 
 
+def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
+    """Generate and save cover art for a cluster."""
+    try:
         path = f"static/generated/{safe_id}.svg"
         with open(path, "w", encoding="utf-8") as f:
             f.write(svg_content)
