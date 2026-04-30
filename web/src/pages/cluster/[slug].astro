@@ -56,8 +56,7 @@ const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
 
 // Extract ID from slug (matches first 8 hex chars at start of slug)
-const idMatch = slug?.match(/^([a-f0-9]{8})/i);
-const id = idMatch ? idMatch[1] : slug;
+const id = slug?.split('-')[0];
 
 let cluster: ClusterDetail | null = null;
 let error = null;
