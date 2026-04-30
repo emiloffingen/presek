@@ -21,6 +21,7 @@ SHARED_WEB_DEPS_ROOT="${SHARED_WEB_DEPS_ROOT:-$SHARED_DIR/web-deps}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
+SYNC_NGINX_SNIPPETS="${SYNC_NGINX_SNIPPETS:-1}"
 ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 ENABLE_ADMIN_CHECK="${ENABLE_ADMIN_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
@@ -415,6 +416,13 @@ restart_and_smoke() {
   if [ "$SKIP_RESTART" = "1" ]; then
     info "Skipping nginx reload, service restart, and smoke checks"
     return 0
+  fi
+
+  if [ "$SYNC_NGINX_SNIPPETS" = "1" ]; then
+    info "Syncing nginx snippets"
+    sudo install -d /etc/nginx/snippets || return 1
+    sudo cp "$RELEASE_DIR/deploy/nginx/security-headers.conf" /etc/nginx/snippets/presek-security-headers.conf || return 1
+    sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes.conf" /etc/nginx/snippets/presek-routes.conf || return 1
   fi
 
   info "Validating nginx configuration"
