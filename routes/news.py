@@ -566,6 +566,7 @@ async def get_cluster_detail(cluster_id: str):
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
+
     try:
         rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = %s ORDER BY created_at DESC", (cluster_id,))
         if not rows: raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
