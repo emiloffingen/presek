@@ -62,7 +62,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.api_key or not self.api_url:
-            return None
+        return None
 
         payload = {
             "model": self.model,
@@ -88,7 +88,7 @@ class OpenAICompatibleProvider(AIProvider):
                 return data["choices"][0]["message"]["content"]
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/{self.provider_name}] Call failed: {e}")
-            return None
+        return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
@@ -124,7 +124,7 @@ class LocalProvider(AIProvider):
         if res:
             if json_mode:
                 return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
-            return res
+        return res
 
         return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
 
@@ -151,7 +151,7 @@ class GeminiProvider(AIProvider):
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.client:
-            return None
+        return None
         
         # 1. Check Circuit Breaker
         try:
@@ -232,7 +232,7 @@ class NvidiaProvider(AIProvider):
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.api_key or not self.api_url:
-            return None
+        return None
 
         payload = {
             "model": self.model,
@@ -261,7 +261,7 @@ class NvidiaProvider(AIProvider):
                 return data["choices"][0]["message"]["content"]
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[ai/nvidia] Call failed: {e}")
-            return None
+        return None
 
     async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
         res = self.call(prompt, system, max_tokens, False)
@@ -373,7 +373,7 @@ def clean_json_response(text: str) -> dict | str | None:
                     val = list(data.values())[0]
                     if isinstance(val, (str, list, dict)):
                         return val
-            return data
+        return data
         except Exception:
             pass
 
@@ -383,7 +383,7 @@ def clean_json_response(text: str) -> dict | str | None:
         text = fenced.group(1).strip()
         # Try parsing again after stripping fences
         try:
-            return json.loads(text)
+        return json.loads(text)
         except:
             pass
 
@@ -410,7 +410,7 @@ def auto_summarize_top_clusters():
             "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
         )
         if not rows:
-            return
+        return
 
         clusters_map = defaultdict(list)
         for r in rows:
@@ -427,7 +427,7 @@ def auto_summarize_top_clusters():
         ranked.sort(key=lambda x: (x[3], x[2]), reverse=True)
         top = ranked[:AUTO_SUMMARIZE_TOP_N]
         if not top:
-            return
+        return
 
         top_cids = [r[0] for r in top]
         existing_rows = db.execute(
@@ -502,10 +502,10 @@ def auto_summarize_top_clusters():
         log.error(f"[auto-summarize] Error: {e}")
 
 
-            path = f"static/generated/{safe_id}.svg"
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(svg_content)
-            return f"/static/generated/{safe_id}.svg"
+        path = f"static/generated/{safe_id}.svg"
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+        return f"/static/generated/{safe_id}.svg"
     except Exception as e:
         log.warning(f"[ai] Local placeholder failed: {e}")
 
