@@ -427,7 +427,7 @@ def auto_summarize_top_clusters():
         ranked.sort(key=lambda x: (x[3], x[2]), reverse=True)
         top = ranked[:AUTO_SUMMARIZE_TOP_N]
         if not top:
-        return
+            return
 
         top_cids = [r[0] for r in top]
         existing_rows = db.execute(
