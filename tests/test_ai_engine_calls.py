@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 
 
 class TestCallAI:
-    def _mock_providers(self, mistral=None, local=None):
+    def _mock_providers(self, gemini=None, local=None):
         """Return the active PROVIDERS dict with mocked .call() results."""
         def make_provider(return_value):
             p = MagicMock()
@@ -16,7 +16,7 @@ class TestCallAI:
             return p
 
         return {
-            "mistral":    make_provider(mistral),
+            "gemini":     make_provider(gemini),
             "local":      make_provider(local),
         }
 
@@ -24,7 +24,7 @@ class TestCallAI:
     def test_default_uses_local_before_remote(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(mistral="Remote result", local="Local result")
+        providers = self._mock_providers(gemini="Remote result", local="Local result")
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
@@ -33,13 +33,13 @@ class TestCallAI:
         assert result == "Local result"
         assert tier == "local"
         providers["local"].call.assert_called_once()
-        providers["mistral"].call.assert_not_called()
+        providers["gemini"].call.assert_not_called()
 
     @patch('utils.redis_client')
     def test_all_fail_returns_none(self, mock_redis):
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
-        providers = self._mock_providers(local=None, mistral=None)
+        providers = self._mock_providers(local=None, gemini=None)
 
         with patch.dict('ai_engine.PROVIDERS', providers), \
              patch('ai_engine.redis_client', mock_redis):
@@ -96,7 +96,7 @@ class TestCallAI:
                 return "локален"
 
         providers = {
-            "mistral": EmptyStreamProvider(),
+            "gemini": EmptyStreamProvider(),
             "local": LocalStreamProvider(),
         }
 
@@ -151,16 +151,16 @@ class TestTranslateToMacedonian:
     @patch('ai_engine._call_ai')
     def test_records_ai_translation_path(self, mock_call_ai, mock_record_runtime_event):
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ('{"summary": "Владата најави нов пакет мерки."}', "mistral")
+        mock_call_ai.return_value = ('{"summary": "Владата најави нов пакет мерки."}', "gemini")
 
         translate_to_macedonian("Government announced a new package of measures.")
 
-        mock_record_runtime_event.assert_any_call("translation_path", source_lang="en", mode="ai", provider="mistral")
+        mock_record_runtime_event.assert_any_call("translation_path", source_lang="en", mode="ai", provider="gemini")
 
     @patch('ai_engine._call_ai')
     def test_successful_translation_via_ai(self, mock_call_ai):
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "mistral")
+        mock_call_ai.return_value = ('{"summary": "Преведен текст"}', "gemini")
         result = translate_to_macedonian("English text to translate")
         assert result == "Преведен текст"
 
@@ -181,14 +181,14 @@ class TestTranslateToMacedonian:
     def test_json_response_unwrapped(self, mock_call_ai):
         """If AI returns JSON with a 'summary' key, translation should unwrap it."""
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ('{"summary": "Преведено"}', "mistral")
+        mock_call_ai.return_value = ('{"summary": "Преведено"}', "gemini")
         result = translate_to_macedonian("Text")
         assert result == "Преведено"
 
     @patch('ai_engine._call_ai')
     def test_ai_unchanged_text_falls_back_to_original_when_local_rewrite_cannot_translate(self, mock_call_ai):
         from ai_engine import translate_to_macedonian
-        mock_call_ai.return_value = ("Qxzv blorf snth", "mistral")
+        mock_call_ai.return_value = ("Qxzv blorf snth", "gemini")
 
         result = translate_to_macedonian("Qxzv blorf snth")
 

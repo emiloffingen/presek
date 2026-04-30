@@ -20,7 +20,6 @@ REQUIRED_RUNTIME_ENV_KEYS = ("DATABASE_URL", "SECRET_KEY")
 # Optional but recommended for production
 RECOMMENDED_ENV_KEYS = (
     "REDIS_URL",
-    "MISTRAL_API_KEY",
     "PRESEK_ADMIN_TOKEN",
     "NTFY_TOPIC",
     "NTFY_TOKEN",
@@ -36,7 +35,6 @@ SENSITIVE_ENV_KEYS = (
     "REDIS_URL",
     "SECRET_KEY",
     "PRESEK_ADMIN_TOKEN",
-    "MISTRAL_API_KEY",
     "SMTP_PASS",
     "CLOUDFLARE_API_TOKEN",
     "R2_SECRET_ACCESS_KEY",
@@ -77,7 +75,6 @@ def check_sensitive_values():
         ("DATABASE_URL", ["password", "1234", "test", "changeme", "postgres://"]),
         ("SECRET_KEY", ["secret", "test", "changeme", "123"]),
         ("PRESEK_ADMIN_TOKEN", ["admin", "test", "123", "changeme"]),
-        ("MISTRAL_API_KEY", ["sk-", "test", "fake"]),
     ]
     
     issues = []
@@ -243,8 +240,8 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# mistral (Primary Research) -> gemini (Cloud) -> local (Gemma 2 2B)
-PROVIDER_FALLBACK_ORDER = ["mistral", "gemini", "local"]
+# gemini (Cloud) -> local (Gemma 2 2B)
+PROVIDER_FALLBACK_ORDER = ["gemini", "local"]
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

@@ -48,4 +48,3 @@ Ad hoc provider/key probes now live in [scripts](/home/emiloffingen/presek/scrip
 - `scripts/manual_check_ai_cascade.py`
 - `scripts/manual_check_cloudflare.py`
 - `scripts/manual_check_keys.py`
-- `scripts/manual_check_mistral.py`

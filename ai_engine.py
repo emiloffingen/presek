@@ -116,7 +116,7 @@ class LocalProvider(AIProvider):
             return rewrite_to_macedonian_locally(prompt)
 
         if "synthesis" in lowered_system or "синтез" in lowered_system or task_type == "synthesis":
-             # We use the analyst for local synthesis if mistral is offline
+             # We use the analyst for local synthesis if Gemini is offline
              res = analyst.analyze(prompt, system, max_tokens=max_tokens)
              if res: return res
              # Fallback to multi-source synthesis
@@ -237,53 +237,8 @@ class GeminiProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
-class MistralProvider(AIProvider):
-    def __init__(self, api_key: str, api_url: str, model: str):
-        self.api_key = api_key
-        self.api_url = api_url
-        self.model = model
-
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
-        if not self.api_key or not self.api_url:
-            return None
-
-        payload = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
-            "max_tokens": max_tokens,
-            "temperature": 0.2,
-        }
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        try:
-            with httpx.Client(timeout=60.0) as client:
-                resp = client.post(self.api_url, json=payload, headers=headers)
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            log.warning(f"[ai/mistral] Call failed: {e}")
-            return None
-
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        res = self.call(prompt, system, max_tokens, False)
-        if res: yield res
-
 PROVIDERS = {
     "gemini": GeminiProvider(),
-    "mistral": MistralProvider(
-        api_key=os.environ.get("MISTRAL_API_KEY", ""),
-        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
-        model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
-    ),
     "local": LocalProvider(),
 }
 
@@ -510,7 +465,7 @@ def auto_summarize_top_clusters():
 def translate_to_macedonian(text: str) -> str | None:
     """Translate text to Macedonian.
 
-    Priority: AI API (Gemma/Mistral) → local rewrite fallback.
+    Priority: AI API (Gemma/Gemini) → local rewrite fallback.
     """
     if not text or not text.strip():
         return text
@@ -557,7 +512,7 @@ def translate_to_macedonian(text: str) -> str | None:
             return normalized or candidate
         return None
 
-    # 1. Primary path: AI API (Gemma 2 2B or Mistral)
+    # 1. Primary path: AI API (Gemma 2 2B or Gemini)
     try:
         result, provider = _call_ai(
             prompt=text,

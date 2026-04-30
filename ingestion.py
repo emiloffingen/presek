@@ -734,7 +734,7 @@ async def ingest_all_sources_async():
                     if art["country"] != 'MK':
                         translate_article_task.delay(art["id"], art["title"], art["description"])
                     else:
-                        # Originality check (Gemma/Mistral)
+                        # Originality check (Gemma)
                         detect_global_story_task.delay(art["id"])
 
                         # Style normalization for lower credibility sources (noise reduction)
