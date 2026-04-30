@@ -16,8 +16,7 @@ from config import (
     POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
 )
 from prompts import (
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
-    TRANSLATION_SYSTEM_PROMPT
+    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 )
 
 from prometheus_client import Histogram, Counter
@@ -107,43 +106,31 @@ class LocalProvider(AIProvider):
         from local_analyst import analyst
         lowered_system = (system or "").lower()
 
-        # 1. Use the new Gemma 2 2B singleton for high-quality local tasks
-        if "translate" in lowered_system or "превед" in lowered_system or task_type == "translation":
-            # Gemma is better at literary translation than the old regex engine
-            res = analyst.analyze(prompt, system, max_tokens=max_tokens)
-            if res: return res
-            # Fallback to deterministic rewrite
-            return rewrite_to_macedonian_locally(prompt)
-
         if "synthesis" in lowered_system or "синтез" in lowered_system or task_type == "synthesis":
-             # We use the analyst for local synthesis if Gemini is offline
              res = analyst.analyze(prompt, system, max_tokens=max_tokens)
              if res: return res
-             # Fallback to multi-source synthesis
-             return synthesize_locally([], topic=topic) # Fallback doesn't easily take raw prompt yet
+             return synthesize_locally([], topic=topic)
 
         if "summarize" in lowered_system or task_type == "summarize":
-             # Native Gemma summarization
              res = analyst.analyze(prompt, system, max_tokens=max_tokens)
              if res: return res
 
         if task_type == "research":
-             # Native research answering
-             res = analyst.research_query(prompt, system) # system here acts as context in our wrapper
+             res = analyst.research_query(prompt, system)
              if res:
                  return json.dumps(res) if isinstance(res, dict) else res
 
-        # 2. General Local Analyst fallback
         res = analyst.analyze(prompt, system, max_tokens=max_tokens)
         if res:
             if json_mode:
-                # If we asked for JSON but got a string from basic analyze, wrap it
-                # to prevent frontend parsing errors.
                 return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
             return res
 
-        # Fallback to the old deterministic rules if Gemma is not suitable or fails
         return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
+
+class MistralProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, api_url: str, model: str):
+        super().__init__("mistral", api_key, api_url, model)
 class GeminiProvider(AIProvider):
     def __init__(self):
         self.client = None
@@ -286,6 +273,11 @@ PROVIDERS = {
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+    ),
+    "mistral": MistralProvider(
+        api_key=os.environ.get("MISTRAL_API_KEY", ""),
+        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
+        model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
     ),
     "local": LocalProvider(),
 }
@@ -510,157 +502,6 @@ def auto_summarize_top_clusters():
         log.error(f"[auto-summarize] Error: {e}")
 
 
-def translate_to_macedonian(text: str) -> str | None:
-    """Translate text to Macedonian.
-
-    Priority: AI API (Gemma/Gemini) → local rewrite fallback.
-    """
-    if not text or not text.strip():
-        return text
-
-    from language import detect_language
-    lang = detect_language(text)
-
-    # Already Macedonian — just normalize locally
-    if lang == "mk":
-        record_runtime_event("translation_path", source_lang=lang, mode="already_mk")
-        # If it's already Cyrillic, don't use the rewrite engine which might rephrase/damage it.
-        # Just do basic whitespace normalization.
-        cyrillic_chars = len(re.findall(r"[А-Яа-яЀ-ӿ]", text))
-        latin_chars = len(re.findall(r"[A-Za-z]", text))
-        if cyrillic_chars > latin_chars:
-            return re.sub(r"\s+", " ", text).strip()
-        return rewrite_to_macedonian_locally(text)
-
-    def _is_usable_macedonian_translation(candidate: str | None) -> bool:
-        candidate = str(candidate or "").strip()
-        if not candidate:
-            return False
-        if candidate.casefold() == text.strip().casefold():
-            return False
-
-        candidate_cyrillic = len(re.findall(r"[А-Яа-яЀ-ӿ]", candidate))
-        candidate_latin = len(re.findall(r"[A-Za-z]", candidate))
-        if candidate_cyrillic >= max(6, candidate_latin):
-            return True
-
-        rewritten = rewrite_to_macedonian_locally(candidate)
-        rewritten_cyrillic = len(re.findall(r"[А-Яа-яЀ-ӿ]", rewritten))
-        if rewritten and rewritten.casefold() != text.strip().casefold() and rewritten_cyrillic >= max(6, candidate_cyrillic):
-            return True
-        return False
-
-    def _normalize_translation_candidate(candidate: str | None) -> str | None:
-        candidate = str(candidate or "").strip()
-        if not candidate:
-            return None
-        if _is_usable_macedonian_translation(candidate):
-            normalized = rewrite_to_macedonian_locally(candidate)
-            normalized = str(normalized or "").strip()
-            return normalized or candidate
-        return None
-
-    # 1. Primary path: AI API (Gemma 2 2B or Gemini)
-    try:
-        result, provider = _call_ai(
-            prompt=text,
-            system=TRANSLATION_SYSTEM_PROMPT,
-            task_type="translation",
-            max_tokens=500,
-            json_mode=True,
-        )
-        if result:
-            parsed = clean_json_response(result)
-            if isinstance(parsed, dict) and "summary" in parsed:
-                translated = _normalize_translation_candidate(parsed["summary"])
-                if translated:
-                    record_runtime_event("translation_path", source_lang=lang, mode="ai", provider=provider or "unknown")
-                    log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
-                    return translated
-            elif isinstance(parsed, str):
-                translated = _normalize_translation_candidate(parsed)
-                if translated:
-                    record_runtime_event("translation_path", source_lang=lang, mode="ai", provider=provider or "unknown")
-                    log.info(f"[translate] {lang}→mk via {provider}: {text[:60]}...")
-                    return translated
-    except Exception as e:
-        log.warning(f"[translate] AI translation failed for {lang} text: {e}")
-
-    # 2. Last resort: local rewrite (best-effort)
-    rewritten = rewrite_to_macedonian_locally(text)
-    if rewritten and str(rewritten).strip() and str(rewritten).strip().casefold() != text.strip().casefold():
-        record_runtime_event("translation_path", source_lang=lang, mode="local_rewrite")
-        return rewritten
-
-    record_runtime_event("translation_path", source_lang=lang, mode="original_return")
-    return text
-
-def generate_cover_art(cluster_id: str, prompt: str) -> str | None:
-    """Generate a stylized AI cover image (Pollinations) or a fallback local placeholder."""
-    # Validate cluster_id early to prevent path traversal and ensure safe_id is available
-    safe_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(cluster_id))
-    if not safe_id:
-        log.warning("[ai] Invalid cluster_id for cover art: %s", cluster_id)
-        return None
-    
-    category = "Вести"
-    try:
-        row = db.execute_one("SELECT category FROM articles WHERE cluster_id = %s LIMIT 1", (cluster_id,))
-        if row: category = row.get("category", "Вести")
-    except: pass
-
-    cooldown_key = "ai:cover_art:pollinations:cooldown"
-
-    # 1. Try AI Generation (Pollinations)
-    if POLLINATIONS_API_KEY:
-        try:
-            if redis_client.get(cooldown_key):
-                raise RuntimeError("pollinations_cooldown_active")
-        except RuntimeError:
-            pass
-        except Exception:
-            pass
-
-        clean_prompt = re.sub(r'[^\w\s]', '', prompt[:300])
-        if len(clean_prompt) > 100:
-            styled_prompt = f"Professional editorial news illustration, high-quality journalism style, minimalistic, cinematic lighting, conceptual art about: {clean_prompt[:250]}"
-        else:
-            styled_prompt = f"Professional news illustration, cinematic lighting, minimalistic, {clean_prompt}"
-        
-        encoded_prompt = urllib.parse.quote(styled_prompt)
-        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=576&nologo=true&seed={cluster_id}"
-        
-        try:
-            with httpx.Client(timeout=15.0) as client:
-                resp = client.get(url)
-                resp.raise_for_status()
-                content = resp.content
-                if len(content) > 5000:
-                    os.makedirs("static/generated", exist_ok=True)
-                    path = f"static/generated/{safe_id}.jpg"
-                    with open(path, "wb") as f:
-                        f.write(content)
-                    return f"/static/generated/{safe_id}.jpg"
-        except httpx.HTTPStatusError as e:
-            if e.response is not None and e.response.status_code == 429:
-                try:
-                    redis_client.setex(cooldown_key, 1800, "1")
-                except Exception:
-                    pass
-                log.info("[ai] Pollinations rate-limited; enabling 30 minute cooldown")
-            else:
-                log.debug(f"[ai] AI cover art failed: {e}")
-        except (httpx.RequestError, httpx.HTTPStatusError) as e:
-            log.debug(f"[ai] AI cover art failed: {e}")
-        except RuntimeError as e:
-            if str(e) != "pollinations_cooldown_active":
-                log.debug(f"[ai] AI cover art failed: {e}")
-
-    # 2. Fallback to Local SVG Placeholder
-    try:
-        svg_content = nlp.generate_local_placeholder(cluster_id, prompt, category)
-        if svg_content:
-            os.makedirs("static/generated", exist_ok=True)
             path = f"static/generated/{safe_id}.svg"
             with open(path, "w", encoding="utf-8") as f:
                 f.write(svg_content)

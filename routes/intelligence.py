@@ -268,7 +268,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 
     return {"history": related_clusters}
 @router.get("/intelligence/cluster/{cluster_id}/research")
-@custom_rate_limit("10/minute")
+@custom_rate_limit("5/minute")
 async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = ""):
     """
     Performs on-demand cluster research with the best available AI provider.

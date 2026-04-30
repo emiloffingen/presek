@@ -182,7 +182,7 @@ class CrawlerService:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 try:
-                    page = await browser.new_page(user_agent=self.headers["User-Agent"])
+                    page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
                     # Increase timeout for potential redirects
                     await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
                     

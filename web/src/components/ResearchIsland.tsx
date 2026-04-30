@@ -24,7 +24,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       const url = `/api/intelligence/cluster/${clusterId}/research?${params.toString()}`;
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s limit
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s limit
 
       const resp = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);

@@ -506,16 +506,7 @@ async def ingest_all_sources_async():
         
         for source_name, entries, err in results:
             if len(candidates) >= 80:
-                continue
-            
-            source_stats[source_name]["fetched"] = len(entries)
-            INGESTION_TOTAL.labels(source=source_name).inc(len(entries))
-            if err:
-                source_stats[source_name]["status"] = "error"
-                source_stats[source_name]["error"] = str(err)
-                INGESTION_ERRORS.labels(source=source_name, error_type=type(err).__name__).inc()
-                errors.append((source_name, err))
-                continue
+                break
             
             # Per-source lock to prevent concurrent processing of the same feed across workers
             lock_key = f"lock:ingest:source:{source_name}"
@@ -525,8 +516,18 @@ async def ingest_all_sources_async():
                     continue
             except Exception as e:
                 log.debug(f"Redis lock error for source {source_name}: {e}")
+                continue
 
             try:
+                source_stats[source_name]["fetched"] = len(entries)
+                INGESTION_TOTAL.labels(source=source_name).inc(len(entries))
+                if err:
+                    source_stats[source_name]["status"] = "error"
+                    source_stats[source_name]["error"] = str(err)
+                    INGESTION_ERRORS.labels(source=source_name, error_type=type(err).__name__).inc()
+                    errors.append((source_name, err))
+                    continue
+                
                 source_meta = next(s for s in sources if s['name'] == source_name)
                 for e in entries:
                     if len(candidates) >= 80:
@@ -712,7 +713,7 @@ async def ingest_all_sources_async():
                 publish_event("updates", {"type": "new_articles_batch", "count": len(inserted_ids), "time": cycle_now})
                 
                 from tasks.ingestion_task import crawl_article_task
-                from tasks.intelligence import translate_article_task, summarize_article_task, standardize_article_style_task, detect_global_story_task
+                from tasks.intelligence import summarize_article_task, standardize_article_style_task, detect_global_story_task
 
                 inserted_data = db.execute(
                     "SELECT a.id, a.title, a.description, a.link, a.country, s.credibility, a.source, a.cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
@@ -731,17 +732,14 @@ async def ingest_all_sources_async():
                     # Always crawl for full content and better images
                     crawl_article_task.delay(art["id"], art["link"])
 
-                    if art["country"] != 'MK':
-                        translate_article_task.delay(art["id"], art["title"], art["description"])
-                    else:
-                        # Originality check (Gemma)
-                        detect_global_story_task.delay(art["id"])
+                    # Originality check (Gemma)
+                    detect_global_story_task.delay(art["id"])
 
-                        # Style normalization for lower credibility sources (noise reduction)
-                        if art.get("credibility", 1.5) < 1.2:
-                            standardize_article_style_task.delay(art["id"])
+                    # Style normalization for lower credibility sources (noise reduction)
+                    if art.get("credibility", 1.5) < 1.2:
+                        standardize_article_style_task.delay(art["id"])
 
-                        summarize_article_task.delay(art["id"], art["title"])
+                    summarize_article_task.delay(art["id"], art["title"])
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

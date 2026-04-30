@@ -14,7 +14,6 @@ from celery_app import celery_app
 from database import db_manager as db
 from config import CLUSTER_LOOKBACK
 from ai_engine import (
-    translate_to_macedonian,
     sync_call_ai as _call_ai, clean_json_response, generate_cover_art
 )
 from embeddings import average_embeddings, parse_embedding_value
@@ -141,25 +140,6 @@ def _cosine_dist(a, b):
     norm_b = sum(y * y for y in b) ** 0.5
     return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
-@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def translate_article_task(article_id, title, description):
-    """Translates non-Macedonian articles to Macedonian."""
-    try:
-        translated_title = translate_to_macedonian(title)
-        translated_desc = translate_to_macedonian(description) if description else None
-
-        title_changed = bool(translated_title and translated_title.strip() and translated_title != title)
-        desc_changed = bool(description and translated_desc is not None and translated_desc != description)
-
-        if translated_title:
-            db.execute(
-                "UPDATE articles SET title = %s, description = %s, is_translated = %s WHERE id = %s",
-                (translated_title, translated_desc, 1 if (title_changed or desc_changed) else 0, article_id), fetch=False
-            )
-            invalidate_public_data_caches()
-            log.info(f"Translated article {article_id}")
-            # Trigger summarization after translation
-            summarize_article_task.delay(article_id, translated_title)
     except Exception as e:
         log.error(f"[tasks] Translation failed for {article_id}: {e}")
         raise
@@ -249,25 +229,6 @@ def detect_global_story_task(article_id):
     except Exception as e:
         log.warning(f"[originality] Detection failed for {article_id}: {e}")
 
-@celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def summarize_article_task(article_id, title, retry_attempt=0):
-    """Generates an AI summary for a single article using Presek 4.0 DAL."""
-    row = db.execute_one("SELECT description, full_content, topic, cluster_id, created_at FROM articles WHERE id = %s", (article_id,))
-    if not row:
-        return
-        
-    description = row.get("description") or ""
-    full_content = row.get("full_content") or ""
-    topic = row.get("topic")
-    cluster_id = row.get("cluster_id")
-    
-    # [OPTIMIZATION] CPU Throttle: Only use AI for the "Lead" articles of a cluster.
-    # If this is the 3rd or later article in a cluster, use the fast local fallback to save CPU for Synthesis.
-    if cluster_id:
-        cluster_position = db.execute_one(
-            "SELECT COUNT(*) as pos FROM articles WHERE cluster_id = %s AND created_at < %s",
-            (cluster_id, row["created_at"])
-        )
         if cluster_position and cluster_position.get("pos", 0) >= 2:
             log.info(f"Skipping AI summary for supporting article {article_id} in cluster {cluster_id}")
             fallback = summarize_article_fallback(title, full_content or description, topic=topic)
@@ -463,6 +424,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
             record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode)
 
+# Add semaphore for CPU contention management
+from asyncio import Semaphore
+_analyst_semaphore = Semaphore(1)
+
+...
+
             # Phase 3: Deep Local Analyst (SKIP in fast_mode)
             deep_metadata = {}
             pluralism_data = {}
@@ -471,40 +438,42 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 def _run_analyst_logic():
                     nonlocal deep_metadata, pluralism_data
                     try:
-                        analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
-                        deep_metadata = analyst.extract_deep_metadata(analyst_text)
+                        # Use semaphore to limit concurrent heavy CPU tasks
+                        with _analyst_semaphore:
+                            analyst_text = f"НАСЛОВ: {synthetic_headline}\n{summary}"
+                            deep_metadata = analyst.extract_deep_metadata(analyst_text)
 
-                        # Phase 3.1: Pluralism Assessment
-                        titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
-                        pluralism_data = analyst.assess_pluralism(titles_sources)
+                            # Phase 3.1: Pluralism Assessment
+                            titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
+                            pluralism_data = analyst.assess_pluralism(titles_sources)
 
-                        # Phase 3.2: Knowledge Graph Update
-                        entities = deep_metadata.get('entities', [])
-                        for entity in entities:
-                            # 1. Ensure entity exists and update its score
-                            db.execute("""
-                                INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
-                                VALUES (%s, 'PERSON', NOW(), 1)
-                                ON CONFLICT (name) DO UPDATE SET 
-                                    last_seen = NOW()
-                            """, (entity,), fetch=False)
-
-                            # 2. Add a unique mention for THIS cluster on THIS day
-                            # This prevents inflation if a cluster is synthesized multiple times
-                            db.execute("""
-                                INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
-                                VALUES (%s, %s, CURRENT_DATE)
-                                ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
-                            """, (entity, cluster_id), fetch=False)
-
-                            # 3. Update total_mentions based on unique daily counts
-                            db.execute("""
-                                UPDATE knowledge_entities 
-                                SET total_mentions = (
-                                    SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
-                                )
-                                WHERE name = %s
-                            """, (entity, entity), fetch=False)
+                            # Phase 3.2: Knowledge Graph Update
+                            entities = deep_metadata.get('entities', [])
+                            for entity in entities:
+                                db.execute("BEGIN")
+                                try:
+                                    db.execute("""
+                                        INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
+                                        VALUES (%s, 'PERSON', NOW(), 1)
+                                        ON CONFLICT (name) DO UPDATE SET 
+                                            last_seen = NOW()
+                                    """, (entity,), fetch=False)
+                                    db.execute("""
+                                        INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
+                                        VALUES (%s, %s, CURRENT_DATE)
+                                        ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
+                                    """, (entity, cluster_id), fetch=False)
+                                    db.execute("""
+                                        UPDATE knowledge_entities 
+                                        SET total_mentions = (
+                                            SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
+                                        )
+                                        WHERE name = %s
+                                    """, (entity, entity), fetch=False)
+                                    db.execute("COMMIT")
+                                except:
+                                    db.execute("ROLLBACK")
+                                    raise
                     except Exception as e:
                         log.error(f"[analyst] Internal logic error: {e}")
 

@@ -36,7 +36,6 @@ __all__ = [
     'crawl_article_task',
     'run_ingestion',
     'auto_repair_sources_task',
-    'translate_article_task',
     'standardize_article_style_task',
     'detect_global_story_task',
     'summarize_article_task',
