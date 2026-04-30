@@ -11,7 +11,6 @@ import NewsletterIsland from '../components/NewsletterIsland.tsx';
 import LeadHero from '../components/home/LeadHero.astro';
 import SupportingBand from '../components/home/SupportingBand.astro';
 import DevelopmentsSection from '../components/home/DevelopmentsSection.astro';
-import AdUnit from '../components/AdUnit.astro';
 import FilterHeader from '../components/home/FilterHeader.astro';
 import HomeRail from '../components/home/HomeRail.astro';
 import EmptyState from '../components/home/EmptyState.astro';
@@ -274,8 +273,6 @@ function getBriefingSnippet(content: string) {
 		{(q || category || topic || entity || subcategory) && (
 			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
 		)}
-
-		<AdUnit slot="home_top" className="mt-0 mb-8" />
 
 		<div class="broadsheet-grid">
 			<div class="broadsheet-main">
