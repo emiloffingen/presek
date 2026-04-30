@@ -619,6 +619,7 @@ async def get_cluster_detail(cluster_id: str):
             )
         )
         if local_fallback_synthesis:
+            synthetic_standfirst = None
             freshness = {
                 **freshness,
                 "refresh_needed": True,
