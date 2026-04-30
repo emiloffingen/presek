@@ -59,7 +59,7 @@ class TestSynthesizeClusterTaskQuality:
         }
 
         with patch("tasks.intelligence.db") as mock_db, \
-             patch("tasks.intelligence._call_ai", return_value=(ai_payload, "gemini")), \
+             patch("tasks.intelligence._call_ai", return_value=(ai_payload, "nvidia")), \
              patch("tasks.intelligence.clean_json_response", side_effect=lambda value: value), \
              patch("tasks.intelligence.generate_cover_art", return_value=None), \
              patch("tasks.intelligence.invalidate_cluster_caches"), \
@@ -154,7 +154,7 @@ class TestSummarizeArticleTaskQuality:
         import tasks
 
         with patch("tasks.intelligence.db") as mock_db, \
-             patch("tasks.intelligence._call_ai", return_value=({'summary': 'Чисто резиме.'}, "gemini")) as mock_call_ai, \
+             patch("tasks.intelligence._call_ai", return_value=({'summary': 'Чисто резиме.'}, "nvidia")) as mock_call_ai, \
              patch("tasks.intelligence.clean_json_response", side_effect=lambda value: value), \
              patch("tasks.intelligence.invalidate_public_data_caches"), \
              patch("tasks.utils.record_task_event"):

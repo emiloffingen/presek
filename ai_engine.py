@@ -237,8 +237,56 @@ class GeminiProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
+class NvidiaProvider(AIProvider):
+    def __init__(self, api_key: str, api_url: str, model: str):
+        self.api_key = api_key
+        self.api_url = api_url
+        self.model = model
+
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
+        if not self.api_key or not self.api_url:
+            return None
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2,
+            "top_p": 0.7,
+        }
+        # Note: Some NVIDIA models might not support response_format="json_object"
+        # but most modern Llama/Nemotron models on NIM do.
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        try:
+            with httpx.Client(timeout=60.0) as client:
+                resp = client.post(self.api_url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
+            log.warning(f"[ai/nvidia] Call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 PROVIDERS = {
     "gemini": GeminiProvider(),
+    "nvidia": NvidiaProvider(
+        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+        api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
+        model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+    ),
     "local": LocalProvider(),
 }
 
