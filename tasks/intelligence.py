@@ -1128,6 +1128,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return True
     
     from tasks.delivery import _extract_capitalized_phrases
+    source_lower = source_context.casefold()
     context_entities = {
         phrase.casefold()
         for phrase in _extract_capitalized_phrases(source_context)
@@ -1168,6 +1169,15 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         
         folded = clean.casefold()
         if folded in context_entities or folded in allowed_singletons:
+            continue
+        if folded in source_lower:
+            continue
+        meaningful_words = [
+            word.casefold()
+            for word in re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9-]{4,}", clean)
+            if word.casefold() not in {"министерката", "министерот", "претседателот", "владата"}
+        ]
+        if meaningful_words and all(word in source_lower for word in meaningful_words):
             continue
             
         log.warning(f"[ai/hallucination] Hallucinated entity detected in synthesis: {clean}")
