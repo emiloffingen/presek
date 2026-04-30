@@ -9,6 +9,22 @@ interface ResearchIslandProps {
 
 type ResearchMode = 'facts' | 'perspectives' | 'context';
 
+const providerLabel = (provider?: string | null) => {
+  switch (provider) {
+    case 'nvidia':
+      return 'NVIDIA NIM';
+    case 'gemini':
+      return 'Gemini';
+    case 'mistral':
+      return 'Mistral';
+    case 'local':
+    case 'local_gemma':
+      return 'локален модел';
+    default:
+      return 'AI анализа';
+  }
+};
+
 export default function ResearchIsland({ clusterId, initialHeadline, sources = [] }: ResearchIslandProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
@@ -30,7 +46,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       clearTimeout(timeoutId);
 
       const result = await resp.json();
-      if (result.status === 'success') {
+      if (!resp.ok) {
+        setError(result?.message || result?.detail || 'Истражувањето моментално не е достапно.');
+      } else if (result.status === 'success') {
         // Robust result mapping: handle 'answer' (research API), 'report' (analyst API), or raw string
         const report = result.report || result.answer || (typeof result === 'string' ? result : null);
         const suggestions = result.suggestions || [];
@@ -147,17 +165,15 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <div className="w-8 h-[2px] bg-nyt-accent"></div>
             ИСТРАЖИ ПОДЛАБОКО
           </p>
-          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Nvidia Research</h1>
+          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
           <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Прашај за оваа приказна</h2>
           <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
-            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се генерира локално со Gemma и се базира на текстовите во овој кластер.
+            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се базира на текстовите во овој кластер и се генерира преку достапниот аналитички модел.
           </p>
         </div>
         <div className="hidden md:block pt-4">
             <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
-            {data?.provider === 'nvidia' ? 'Nvidia NIM' : 
-             data?.provider === 'gemini' ? 'Gemini Flash' : 
-             data?.provider === 'local_gemma' ? 'Gemma / локално' : 'Пресек Истражувач'}
+            {data?.provider ? providerLabel(data.provider) : 'Пресек Истражувач'}
             </p>
         </div>
       </div>
@@ -166,7 +182,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         {modes.map((m) => (
           <div
             key={m.id}
-            className={`group relative p-8 text-left border border-border bg-background shadow-sm transition-all hover:shadow-xl hover:border-nyt-accent/40 flex flex-col h-full`}
+            className={`group relative p-8 text-left border border-border bg-background shadow-sm transition-all hover:shadow-xl hover:border-nyt-accent/40 flex flex-col h-full ${loading && loading !== m.id ? 'opacity-60' : ''}`}
           >
             <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-6 transition-all bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white`}>
               {loading === m.id ? <Loader2 className="animate-spin" size={28} /> : <m.icon size={26} />}
@@ -180,9 +196,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <button
                 onClick={() => performResearch(m.id)}
                 disabled={!!loading}
-                className="w-full py-3 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-border/50 group-hover:border-transparent"
+                aria-busy={loading === m.id}
+                className="w-full py-3 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-border/50 group-hover:border-transparent disabled:cursor-wait disabled:opacity-70"
             >
-                {loading === m.id ? 'ВЧИТУВАЊЕ...' : 'Истражи'}
+                {loading === m.id ? 'СЕ АНАЛИЗИРА...' : 'Истражи'}
                 {!loading && <ChevronRight size={12} />}
             </button>
           </div>
@@ -200,15 +217,18 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                     value={customQuery}
                     onChange={(e) => setCustomQuery(e.target.value)}
                     className="w-full pl-14 pr-4 py-5 bg-transparent outline-none font-serif italic text-xl"
-                    onKeyDown={(e) => e.key === 'Enter' && customQuery && performResearch('custom', customQuery)}
+                    onKeyDown={(e) => e.key === 'Enter' && customQuery.trim() && performResearch('custom', customQuery.trim())}
                 />
             </div>
             <button 
-                onClick={() => performResearch('custom', customQuery)}
-                disabled={!customQuery || !!loading}
+                onClick={() => performResearch('custom', customQuery.trim())}
+                disabled={!customQuery.trim() || !!loading}
+                aria-busy={loading === 'custom'}
                 className="px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
             >
-                {loading === 'custom' ? <Loader2 className="animate-spin" size={18} /> : (
+                {loading === 'custom' ? (
+                    <><Loader2 className="animate-spin" size={18} /> Се анализира</>
+                ) : (
                     <>Истражи <ChevronRight size={14} /></>
                 )}
             </button>
@@ -236,7 +256,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             </div>
 
             <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              Локална Gemma анализа
+              {providerLabel(data.provider)}
             </span>
 
             <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">

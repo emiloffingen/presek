@@ -33,6 +33,7 @@ interface NavItem {
 
 let navigationData: { breaking: NavItem[]; sections: any[] } = { breaking: [], sections: [] };
 let stats = propStats;
+let latestTickerItems: any[] = [];
 
 try {
     const requests = [fetch(`${API_URL}/navigation`)];
@@ -48,12 +49,29 @@ try {
     if (shouldFetchStats && results[1]?.status === 'fulfilled' && results[1].value.ok) {
         stats = await results[1].value.json();
     }
+
+    if (!navigationData.breaking.length) {
+        const latestRes = await fetch(`${API_URL}/news?page_size=8&sort=recent`);
+        if (latestRes.ok) {
+            const latestData = await latestRes.json();
+            latestTickerItems = (latestData?.clusters || []).map((cluster: any) => {
+                const lead = Array.isArray(cluster?.articles) ? cluster.articles[0] : null;
+                return {
+                    label: cluster?.synthetic_headline || lead?.title || 'Најнова вест',
+                    href: `/cluster/${cluster?.cluster_id}`,
+                    type: cluster?.is_breaking ? 'breaking' : 'latest',
+                    created_at: lead?.ingested_at || lead?.created_at || null,
+                };
+            }).filter((item: any) => item.href && item.label).slice(0, 6);
+        }
+    }
 } catch (e) {
     console.error('[Header] Fetch error:', e);
 }
 
 const hasBreaking = navigationData.breaking.length > 0;
-const breakingItems = navigationData.breaking.slice(0, 5);
+const breakingItems = hasBreaking ? navigationData.breaking.slice(0, 5) : latestTickerItems;
+const hasTicker = breakingItems.length > 0;
 const visibleSections = (navigationData.sections || []).filter((section: any) => Array.isArray(section?.items) && section.items.length > 0);
 
 // Idea A: Verification Counter Logic
@@ -90,47 +108,38 @@ function getRelativeTimeStr(dateStr?: string) {
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
-    {(hasBreaking || hasDispatchStats) && (
+    {hasTicker && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
             <div class="ticker-prefix">
-                <span class="dispatch-item"><Radio size={10} className="animate-pulse text-nyt-red mr-2" /> <span class="hidden sm:inline">ВО ЖИВО:</span></span>
+                <span class="dispatch-item">
+                    <Radio size={10} className="animate-pulse text-nyt-red mr-2" />
+                    <span class="hidden sm:inline">{hasBreaking ? 'УДАРНО:' : 'НАЈНОВО:'}</span>
+                </span>
             </div>
-            {hasBreaking ? (
-                <div class="unified-ticker-track-wrap">
-                    <div class="unified-ticker-track">
-                        <div class="ticker-content-segment">
-                            {breakingItems.map((item: any) => (
-                                <a href={item.href} class="live-ticker-headline">
-                                    <span class="ticker-sep" aria-hidden="true">||</span>
-                                    <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                    {item.label}
-                                </a>
-                            ))}
-                        </div>
-                        {/* Duplicate for seamless looping */}
-                        <div class="ticker-content-segment" aria-hidden="true">
-                            {breakingItems.map((item: any) => (
-                                <a href={item.href} class="live-ticker-headline">
-                                    <span class="ticker-sep" aria-hidden="true">||</span>
-                                    <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                    {item.label}
-                                </a>
-                            ))}
-                        </div>
+            <div class="unified-ticker-track-wrap">
+                <div class="unified-ticker-track">
+                    <div class="ticker-content-segment">
+                        {breakingItems.map((item: any) => (
+                            <a href={item.href} class="live-ticker-headline">
+                                <span class="ticker-sep" aria-hidden="true">||</span>
+                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
+                                {item.label}
+                            </a>
+                        ))}
+                    </div>
+                    {/* Duplicate for seamless looping */}
+                    <div class="ticker-content-segment" aria-hidden="true">
+                        {breakingItems.map((item: any) => (
+                            <a href={item.href} class="live-ticker-headline">
+                                <span class="ticker-sep" aria-hidden="true">||</span>
+                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
+                                {item.label}
+                            </a>
+                        ))}
                     </div>
                 </div>
-            ) : (
-                <div class="dispatch-stats-track" aria-label="Тековна активност">
-                    <span class="dispatch-data">+{stats?.last_1h || 0} во последен час</span>
-                    <span class="dispatch-sep">/</span>
-                    <span class="dispatch-data">{stats?.last_24h || 0} извештаи 24ч</span>
-                    <span class="dispatch-sep">/</span>
-                    <span class="dispatch-data">{totalFeeds} редакции</span>
-                    <span class="dispatch-sep hidden sm:inline">/</span>
-                    <span class="dispatch-data hidden sm:inline">{pluralismPct}% плуралност</span>
-                </div>
-            )}
+            </div>
         </div>
     </div>
     )}
