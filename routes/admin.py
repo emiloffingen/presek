@@ -1,4 +1,5 @@
 import datetime
+import secrets
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
 from database import db_manager as db
@@ -11,8 +12,8 @@ log = logging.getLogger("presek.api.admin")
 router = APIRouter()
 
 async def verify_admin(request: Request):
-    token = request.headers.get("X-Admin-Token")
-    if not PRESEK_ADMIN_TOKEN or token != PRESEK_ADMIN_TOKEN:
+    token = (request.headers.get("X-Admin-Token") or "").strip()
+    if not PRESEK_ADMIN_TOKEN or not token or not secrets.compare_digest(token, PRESEK_ADMIN_TOKEN):
         raise HTTPException(status_code=403, detail="Неовластен пристап")
     return True
 

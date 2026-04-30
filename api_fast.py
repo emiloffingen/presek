@@ -33,6 +33,7 @@ try:
     from slowapi import Limiter
     from slowapi.util import get_remote_address
     from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIMiddleware
     _rate_limiter_enabled = True
     limiter = Limiter(
         key_func=get_remote_address,
@@ -72,6 +73,9 @@ app.add_middleware(
     max_age=600,
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+if _rate_limiter_enabled:
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
 
 from routes.security import create_security_middleware
 create_security_middleware(app)
@@ -99,11 +103,15 @@ async def validate_input_length(request: Request, call_next):
     # Check Content-Length for POST/PUT/PATCH requests
     if request.method in ("POST", "PUT", "PATCH"):
         content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > MAX_BODY_SIZE:
-            return JSONResponse(
-                status_code=413,
-                content={"error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"}
-            )
+        if content_length:
+            try:
+                if int(content_length) > MAX_BODY_SIZE:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"error": f"Големината на барањето ја надминува максималната дозволена големина од {MAX_BODY_SIZE // (1024*1024)}MB"}
+                    )
+            except ValueError:
+                return JSONResponse(status_code=400, content={"error": "Невалиден Content-Length наслов"})
     
     return await call_next(request)
 
@@ -140,12 +148,6 @@ async def startup_event():
 
 # Import and include routers
 from routes import home, news, intelligence, profile, stats, system, admin
-
-# Apply rate limiting to routers if enabled
-if _rate_limiter_enabled:
-    for router in [home.router, news.router, intelligence.router, profile.router, stats.router, system.router, admin.router]:
-        router.dependencies.append(limiter)
-
 
 # Decorator helpers that work with or without slowapi
 def exempt_from_rate_limit(func):
@@ -231,6 +233,7 @@ async def get_generated_image(filename: str):
 @app.get("/api/delivery/track/{event_type}")
 @exempt_from_rate_limit
 async def track_delivery_event(event_type: str, event_id: int, redirect: str = "/briefing"):
+    from routes.common import _safe_tracking_redirect_path
     p = await db.async_execute_one("SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s", (event_id,))
     if p:
         await db.async_execute(
@@ -239,6 +242,7 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
             fetch=False
         )
     _public_site_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live")
+    redirect = _safe_tracking_redirect_path(redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
 
 # Include routers with /api prefix (for Nginx/Public)

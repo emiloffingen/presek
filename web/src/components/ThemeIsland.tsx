@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
 export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-    }
-    return null;
-  });
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
 
   useEffect(() => {
     // Sync with actual class if it changed from OS or other script

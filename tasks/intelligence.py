@@ -677,9 +677,18 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 if img_url:
                     # Update all articles without images to use this generated one
                     db.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s AND (image_url IS NULL OR image_url LIKE '%%placeholder%%')", (img_url, cluster_id), fetch=False)
-            invalidate_cluster_caches(cluster_id)
-            generate_cluster_metadata_task.delay()
-            record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
+            try:
+                invalidate_cluster_caches(cluster_id)
+            except Exception as cache_err:
+                log.warning(f"[tasks] Failed to invalidate caches for {cluster_id}: {cache_err}")
+            try:
+                generate_cluster_metadata_task.delay()
+            except Exception as queue_err:
+                log.warning(f"[tasks] Failed to queue metadata refresh for {cluster_id}: {queue_err}")
+            try:
+                record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
+            except Exception as event_err:
+                log.warning(f"[tasks] Failed to record synthesis success for {cluster_id}: {event_err}")
             log.info(f"Successfully synthesized cluster {cluster_id}")
         else:
             record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
