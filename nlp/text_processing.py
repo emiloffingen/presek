@@ -254,11 +254,18 @@ def extract_entities_semantic(text: str) -> set[str]:
     if _ner_pipeline is None:
         try:
             from transformers import pipeline
+            import torch
             import logging
             log = logging.getLogger("presek.nlp")
-            log.info("Loading semantic NER model (Babelscape/wikineural-multilingual-ner)...")
-            # Using a smaller multilingual model trained on WikiNeural
-            _ner_pipeline = pipeline("ner", model="Babelscape/wikineural-multilingual-ner", aggregation_strategy="simple", device="cpu")
+            log.info("Loading semantic NER model in Bfloat16 (Babelscape/wikineural-multilingual-ner)...")
+            # Using bfloat16 to cut memory usage by ~50% on CPU while maintaining range
+            _ner_pipeline = pipeline(
+                "ner", 
+                model="Babelscape/wikineural-multilingual-ner", 
+                aggregation_strategy="simple", 
+                device="cpu",
+                torch_dtype=torch.bfloat16
+            )
         except Exception as e:
             import logging
             logging.getLogger("presek.nlp").error(f"Failed to load NER model: {e}")
