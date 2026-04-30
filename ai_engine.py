@@ -410,7 +410,7 @@ def auto_summarize_top_clusters():
             "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
         )
         if not rows:
-        return
+            return
 
         clusters_map = defaultdict(list)
         for r in rows:
