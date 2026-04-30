@@ -26,6 +26,7 @@ ENABLE_PUBLIC_CHECK="${ENABLE_PUBLIC_CHECK:-1}"
 ENABLE_ADMIN_CHECK="${ENABLE_ADMIN_CHECK:-1}"
 SKIP_RESTART="${SKIP_RESTART:-0}"
 REQUIRE_CLEAN_GIT="${REQUIRE_CLEAN_GIT:-1}"
+REQUIRE_PUSHED_GIT="${REQUIRE_PUSHED_GIT:-1}"
 REQUIRE_WEB_LOCKFILE="${REQUIRE_WEB_LOCKFILE:-1}"
 ALLOW_NPM_INSTALL_FALLBACK="${ALLOW_NPM_INSTALL_FALLBACK:-0}"
 REQUIRE_ENCRYPTED_BACKUPS="${REQUIRE_ENCRYPTED_BACKUPS:-1}"
@@ -53,41 +54,6 @@ fail() { echo -e "${RED}x${RESET}  $*"; exit 1; }
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
-}
-
-# --- Version Management ---
-
-bump_version() {
-  local version_file="$SOURCE_ROOT/VERSION"
-  local package_json="$SOURCE_ROOT/web/package.json"
-  
-  if [ ! -f "$version_file" ]; then
-    echo "5.3.0" > "$version_file"
-  fi
-
-  local current_version=$(cat "$version_file" | tr -d '[:space:]')
-  # Split version into parts (Major.Minor.Patch)
-  IFS='.' read -r major minor patch <<< "$current_version"
-  
-  # Increment minor version (e.g. 5.3 -> 5.4)
-  local next_minor=$((minor + 1))
-  local next_version="$major.$next_minor.0"
-  
-  info "Bumping version: $current_version -> $next_version"
-  
-  # Update VERSION file
-  echo "$next_version" > "$version_file"
-  
-  # Update web/package.json
-  if [ -f "$package_json" ]; then
-    sed -i "s/^[[:space:]]*\"version\": \".*\"/  \"version\": \"$next_version\"/" "$package_json"
-  fi
-  
-  # Commit version bump to git
-  cd "$SOURCE_ROOT"
-  git add VERSION web/package.json
-  git commit -m "Admin: Auto-bump version to $next_version" || true
-  cd - > /dev/null
 }
 
 cleanup_listener_port() {
@@ -179,6 +145,27 @@ assert_git_deployable() {
   local dirty=""
   dirty="$(git -C "$SOURCE_ROOT" status --porcelain --untracked-files=all)"
   [ -z "$dirty" ] || fail "Source tree has uncommitted changes. Deploy from a clean commit or set REQUIRE_CLEAN_GIT=0 intentionally."
+}
+
+assert_git_pushed() {
+  if [ "$REQUIRE_PUSHED_GIT" != "1" ]; then
+    warn "Skipping pushed git check (REQUIRE_PUSHED_GIT=0)"
+    return 0
+  fi
+
+  if ! git -C "$SOURCE_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    warn "Skipping pushed git check: $SOURCE_ROOT is not a git worktree"
+    return 0
+  fi
+
+  local upstream=""
+  upstream="$(git -C "$SOURCE_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+  [ -n "$upstream" ] || fail "Current branch has no upstream. Push it first or set REQUIRE_PUSHED_GIT=0 intentionally."
+
+  local head_sha upstream_sha
+  head_sha="$(git -C "$SOURCE_ROOT" rev-parse HEAD)"
+  upstream_sha="$(git -C "$SOURCE_ROOT" rev-parse '@{u}')"
+  [ "$head_sha" = "$upstream_sha" ] || fail "Local HEAD differs from $upstream. Push or pull before deploying, or set REQUIRE_PUSHED_GIT=0 intentionally."
 }
 
 assert_web_lockfile() {
@@ -364,7 +351,15 @@ invalidate_public_api_caches() {
   fi
 
   info "Clearing public API caches"
-  redis-cli EVAL "for _,p in ipairs(ARGV) do local cursor='0' repeat local r=redis.call('scan', cursor, 'match', p, 'count', 200) cursor=r[1] for _,k in ipairs(r[2]) do redis.call('del', k) end until cursor == '0' end" 0 \
+  local redis_args=()
+  if [ -f "$SHARED_DIR/.env" ]; then
+    local redis_url=""
+    redis_url="$(env -i bash -c 'set -a; source "$1"; set +a; printf "%s" "${REDIS_URL:-}"' _ "$SHARED_DIR/.env")"
+    if [ -n "$redis_url" ]; then
+      redis_args=(-u "$redis_url")
+    fi
+  fi
+  redis-cli "${redis_args[@]}" EVAL "for _,p in ipairs(ARGV) do local cursor='0' repeat local r=redis.call('scan', cursor, 'match', p, 'count', 200) cursor=r[1] for _,k in ipairs(r[2]) do redis.call('del', k) end until cursor == '0' end" 0 \
     "api:news:*" \
     "api:home:*" \
     "api:stats:summary:*" \
@@ -373,9 +368,23 @@ invalidate_public_api_caches() {
 }
 
 run_release_checks() {
+  info "Checking Python syntax in release runtime"
+  (
+    cd "$RELEASE_DIR"
+    find . \
+      -path './web/node_modules' -prune -o \
+      -path './web/dist' -prune -o \
+      -path './.venv' -prune -o \
+      -path './venv' -prune -o \
+      -name '*.py' -print0 \
+      | xargs -0 -r "$RELEASE_VENV_TARGET/bin/python3" -m py_compile
+  )
+
   info "Checking FastAPI import in release runtime"
   (cd "$RELEASE_DIR" && "$RELEASE_VENV_TARGET/bin/python3" - <<'PY'
 import api_fast
+import celery_app
+import tasks
 PY
   )
 
@@ -484,6 +493,7 @@ main() {
 
   assert_paths_safe
   assert_git_deployable
+  assert_git_pushed
   assert_web_lockfile
   ensure_layout
   normalize_legacy_runtime_links
@@ -523,17 +533,8 @@ main() {
   build_release
   run_release_checks
   
-  # 3. Only if everything above passed, we bump the version in the repo
-  # Default to 0 to prevent accidental version bumps in CI/staging
   if [ "${BUMP_VERSION:-0}" = "1" ]; then
-    # Check for uncommitted changes before bumping
-    cd "$SOURCE_ROOT"
-    if [ -n "$(git status --porcelain)" ]; then
-      warn "Not bumping version: repository has uncommitted changes"
-    else
-      bump_version
-    fi
-    cd - > /dev/null
+    fail "BUMP_VERSION is no longer supported during deploy. Bump VERSION, web/package.json, and web/package-lock.json before committing and deploying."
   fi
 
   # 4. Database migrations
