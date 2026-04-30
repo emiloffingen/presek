@@ -273,6 +273,7 @@ async def get_home():
     cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
+
     try:
         news_result = await get_news(page_size=48)
         recent_result = await get_news(sort="recent", page_size=24)

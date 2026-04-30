@@ -2961,6 +2961,7 @@ button:active,
 }
 .significance-dot-label { @apply flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400; }
 
+
 /* Mobile Layout Polish */
 @media (max-width: 768px) {
     :root {

@@ -132,6 +132,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Актери, цитати и различни агли присутни во покривањето.' },
     { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Позадина, слични настани и можни последици.' },
   ];
+  const displayedSources = [...new Set<string>(Array.isArray(data?.sources) ? data.sources : sources)];
 
   return (
     <section className="research-analyst-container mt-16 mb-20 border-y md:border border-border bg-secondary/5 p-6 md:p-10 relative overflow-hidden">
@@ -269,13 +270,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                   </div>
                 )}
 
-                {(data.sources || sources).length > 0 && (
+                {displayedSources.length > 0 && (
                   <div className="mt-16 pt-8 border-t border-border/40">
                     <p className="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
                       ИЗВОРИ КОРИСТЕНИ ЗА ОВОЈ ОДГОВОР
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      {[...new Set(data.sources || sources)].map((s, idx, arr) => (
+                      {displayedSources.map((s, idx, arr) => (
                         <span key={s} className="font-sans text-[10px] font-extrabold text-foreground/70 uppercase tracking-wider flex items-center">
                           {s}
                           {idx < arr.length - 1 && <span className="ml-4 opacity-30 text-muted-foreground">•</span>}
