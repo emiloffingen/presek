@@ -270,7 +270,7 @@ def _display_entity_name(name):
 @router.get("/home", response_model=HomeResponse)
 async def get_home():
     cache_key = "api:home:v3"
-    cached = cached_response(cache_key, ttl=120)
+    cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
     try:
@@ -350,7 +350,7 @@ async def get_home():
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
         }
-        set_cache(cache_key, response, ttl=120)
+        set_cache(cache_key, response, ttl=3600)
         return response
     except Exception as exc:
         log.error(f"Home Route Error: {exc}", exc_info=True)

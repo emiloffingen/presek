@@ -563,7 +563,7 @@ async def get_cluster_detail(cluster_id: str):
     # Validate cluster_id
     validate_cluster_id(cluster_id)
     cache_key = f"api:cluster:detail:v2:{cluster_id}"
-    cached = cached_response(cache_key, ttl=120)
+    cached = cached_response(cache_key, ttl=3600)
     if cached:
         return cached
     try:
@@ -705,7 +705,7 @@ async def get_cluster_detail(cluster_id: str):
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
         response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "citation_sources": citation_sources, "key_facts": key_facts, "analyst_entities": analyst_entities, "pulse_score": s_row.get("pulse_score") if s_row else None, "pluralism_score": s_row.get("pluralism_score") if s_row else None, "narrative_diversity": narrative_diversity, "storyline_narrative": s_row.get("storyline_narrative") if s_row else None, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
-        set_cache(cache_key, response, ttl=120)
+        set_cache(cache_key, response, ttl=3600)
         return response
 
     except HTTPException:
