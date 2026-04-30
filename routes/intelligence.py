@@ -3,6 +3,7 @@ import json
 import asyncio
 import logging
 import re
+import hashlib
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Request, HTTPException
@@ -41,6 +42,28 @@ _CASE_INSENSITIVE_TAG_EXISTS = (
     "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
 )
 
+_RESEARCH_MODE_QUERIES = {
+    "facts": (
+        "Извлечи ги најважните бројки, датуми, факти и временска рамка од оваа приказна. "
+        "Не додавај бројки што не постојат во контекстот."
+    ),
+    "perspectives": (
+        "Идентификувај ги клучните актери, нивните ставови, изјави и различните агли во приказната. "
+        "Не измислувај изјави што не се во контекстот."
+    ),
+    "context": (
+        "Објасни го поширокиот контекст, претходните поврзани случувања и можните последици од оваа приказна. "
+        "Јасно оддели што е во изворите од аналитичката рамка."
+    ),
+}
+
+_RESEARCH_MODE_LABELS = {
+    "facts": "Бројки и факти",
+    "perspectives": "Ставови и изјави",
+    "context": "Поширок контекст",
+    "custom": "Одговор на истражувањето",
+}
+
 _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
     "договор",
     "теснец",
@@ -49,6 +72,68 @@ _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
     "мерки",
     "избори",
 }
+
+async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -> tuple[str, list[str]]:
+    articles = await db.async_execute("""
+        SELECT title, full_content, source, embedding, created_at
+        FROM articles
+        WHERE cluster_id = %s
+        ORDER BY COALESCE(ingested_at, created_at) DESC
+        LIMIT 5
+    """, (cluster_id,))
+    if not articles:
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
+
+    summary_row = await db.async_execute_one("""
+        SELECT summary, generated_article
+        FROM cluster_summaries
+        WHERE cluster_id = %s
+    """, (cluster_id,))
+
+    parts = []
+    if summary_row:
+        if summary_row.get("summary"):
+            parts.append(f"УРЕДНИЧКО РЕЗИМЕ:\n{summary_row['summary']}")
+        if summary_row.get("generated_article"):
+            parts.append(f"СИНТЕЗА:\n{summary_row['generated_article']}")
+
+    sources = []
+    for article in articles:
+        source = str(article.get("source") or "Непознат извор").strip()
+        if source and source not in sources:
+            sources.append(source)
+        text = article.get("full_content") or article.get("title") or ""
+        parts.append(f"--- ИЗВОР: {source} ---\n{text}")
+
+    if mode == "context":
+        try:
+            import numpy as np
+            vecs = [
+                json.loads(a["embedding"]) if isinstance(a.get("embedding"), str) else list(a["embedding"])
+                for a in articles
+                if a.get("embedding")
+            ]
+            if vecs:
+                avg_vec = np.mean(vecs, axis=0).tolist()
+                vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
+                past_events = await db.async_execute("""
+                    SELECT title, created_at
+                    FROM articles
+                    WHERE embedding IS NOT NULL AND cluster_id != %s
+                      AND created_at < NOW() - INTERVAL '24 hours'
+                    ORDER BY (embedding <=> %s::vector) ASC
+                    LIMIT 5
+                """, (cluster_id, vec_str))
+                if past_events:
+                    history_list = "\n".join([
+                        f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})"
+                        for p in past_events
+                    ])
+                    parts.append(f"ПОВРЗАНИ ПРЕТХОДНИ НАСТАНИ ОД БАЗАТА:\n{history_list}")
+        except Exception as e:
+            log.warning(f"Failed to fetch Gemma research history context: {e}")
+
+    return "\n\n".join(parts)[:12000], sources
 
 def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     by_key = {str(item.get("name") or "").casefold(): dict(item) for item in items if str(item.get("name") or "").strip()}
@@ -181,186 +266,92 @@ async def get_cluster_storyline_history(cluster_id: str):
 
     return {"history": related_clusters}
 @router.get("/intelligence/cluster/{cluster_id}/research")
-async def get_deep_research(cluster_id: str):
+@custom_rate_limit("10/minute")
+async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = ""):
     """
-    Performs a structured deep-dive analysis using the configured paid AI provider.
+    Performs on-demand cluster research with the local Gemma analyst only.
     """
     validate_cluster_id(cluster_id)
-    cache_key = f"api:intelligence:research:{cluster_id}:v1"
+    clean_mode = (mode or "facts").strip().lower()
+    if clean_mode not in {"facts", "perspectives", "context", "custom"}:
+        clean_mode = "facts"
+    clean_query = validate_string_param(q, "q", max_length=300, allow_empty=True).strip()
+    if clean_mode == "custom" and not clean_query:
+        return {"status": "error", "message": "Внесете конкретно прашање за истражување."}
+
+    query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
+    query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
+    cache_key = f"api:intelligence:research:gemma:{cluster_id}:{clean_mode}:{query_hash}:v1"
     cached = cached_response(cache_key)
     if cached: return cached
 
-    # 1. Get cluster context
-    row = await db.async_execute_one("""
-        SELECT a.title, s.summary 
-        FROM articles a 
-        LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id 
-        WHERE a.cluster_id = %s 
-        ORDER BY a.created_at DESC LIMIT 1
-    """, (cluster_id,))
-    if not row:
-        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
-
-    title = row["title"]
-    summary = row["summary"] or ""
-    
-    # 2. Build the 'Researcher' Prompt
-    system_prompt = (
-        "Ти си врвен Аналитичар за новинската агенција 'Пресек'. "
-        "Твоја задача е да направиш ДЛАБОКА АНАЛИЗА на дадена вест користејќи го дадениот контекст и твоето општо знаење за дополнителна рамка. "
-        "Дај структуриран одговор на македонски јазик во неколку секции:\n"
-        "1. 🔑 Клучни факти и бројки\n"
-        "2. ⚖️ Ставови и реакции на засегнатите страни\n"
-        "3. ✅ Што е потврдено, а што останува нејасно\n"
-        "4. 💡 Широк контекст и минати настани поврзани со ова\n"
-        "Биди објективен, професионален и детален."
-    )
-    
-    user_prompt = f"Тема: {title}\n\nПостоечко резиме: {summary}\n\nДај длабок контекст, релевантни детали и јасно оддели што е потврдено од дадениот материјал од пошироката аналитичка рамка."
-
     try:
-        from ai_engine import sync_call_ai
-        response, provider = await asyncio.to_thread(
-            sync_call_ai,
-            prompt=user_prompt,
-            system=system_prompt,
-            task_type="research",
-            max_tokens=1500,
-        )
-        
-        if not response:
+        from local_analyst import analyst
+        context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
+        response = await asyncio.to_thread(analyst.research_query, query, context)
+        answer = response.get("answer") if isinstance(response, dict) else str(response or "")
+        suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
+
+        if not answer:
             return {"status": "error", "message": "Системот моментално не е достапен."}
 
         result = {
             "status": "success",
-            "research": response,
-            "provider": provider,
+            "report": answer,
+            "answer": answer,
+            "suggestions": suggestions,
+            "mode": clean_mode,
+            "label": _RESEARCH_MODE_LABELS[clean_mode],
+            "provider": "local_gemma",
+            "sources": sources,
             "timestamp": datetime.datetime.now()
         }
         
-        set_cache(cache_key, result, ttl=3600) # Cache for 1 hour
+        set_cache(cache_key, result, ttl=3600)
         return result
         
     except Exception as e:
-        log.error(f"Deep Research Error: {e}", exc_info=True)
+        log.error(f"Gemma research error: {e}", exc_info=True)
         return {"status": "error", "message": "Грешка при пребарувањето."}
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
 async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
     """
     Internal 'Deep Intel' Analyst.
-    Uses full content and a hybrid Local+Mistral approach.
+    Compatibility wrapper for the Gemma-only research endpoint.
     Modes: 'facts', 'perspectives', 'context'
     """
     validate_cluster_id(cluster_id)
-    cache_key = f"api:intelligence:analyst:{cluster_id}:{mode}:v2"
+    clean_mode = (mode or "facts").strip().lower()
+    if clean_mode not in _RESEARCH_MODE_QUERIES:
+        clean_mode = "facts"
+    cache_key = f"api:intelligence:analyst:gemma:{cluster_id}:{clean_mode}:v1"
     cached = cached_response(cache_key)
     if cached: return cached
 
-    # 1. Fetch all full content
-    arts = await db.async_execute("SELECT title, full_content, source, category, embedding FROM articles WHERE cluster_id = %s", (cluster_id,))
-    if not arts:
-        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
-
-    combined_text = "\n\n".join([f"--- ИЗВОР: {a['source']} ---\n{a['full_content'] or a['title']}" for a in arts[:5]])
-    
-    # 1.5 Fetch Data-Driven Context for 'context' mode
-    history_context = ""
-    if mode == "context":
-        try:
-            import numpy as np
-            import json
-            vecs = [json.loads(a['embedding']) if isinstance(a['embedding'], str) else list(a['embedding']) for a in arts if a.get('embedding')]
-            if vecs:
-                avg_vec = np.mean(vecs, axis=0).tolist()
-                vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
-                # Find historically similar clusters (excluding today)
-                past_events = await db.async_execute("""
-                    SELECT title, created_at, category
-                    FROM articles
-                    WHERE embedding IS NOT NULL AND cluster_id != %s
-                      AND created_at < NOW() - INTERVAL '24 hours'
-                    ORDER BY (embedding <=> %s::vector) ASC
-                    LIMIT 5
-                """, (cluster_id, vec_str))
-                if past_events:
-                    history_list = "\n".join([f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})" for p in past_events])
-                    history_context = f"\n\nРЕАЛНА ИСТОРИСКА ПОЗАДИНА ОД БАЗАТА (Користи го ова за контекст):\n{history_list}"
-        except Exception as e:
-            log.warning(f"Failed to fetch analyst history context: {e}")
-
-    # 2. Select Prompt based on Mode
-    prompts = {
-        "facts": (
-            "Ти си Економски Аналитичар за 'Пресек'. Твоја задача е да извлечеш клучни бројки, датуми и статистика.\n\n"
-            "СТРУКТУРА НА ОДГОВОРОТ:\n"
-            "# Сумарен преглед: Еден концизен воведен пасус (Lead).\n"
-            "# Клучни показатели: Јасни булети (користи '-') со најважните податоци. Користи БОЛД за сите бројки (пр. **15%**, **200 милиони**).\n"
-            "# Хронологија: Ако веста има временска рамка, претстави ја во булети (користи '-').\n\n"
-            "ПРАВИЛА: Не измислувај бројки. Не користи емоџи. Биди професионален. "
-            "ВАЖНО: За секој клучен факт или бројка, наведи го името на медиумот во заграда: (Извор: Име)."
-        ),
-        "perspectives": (
-            "Ти си Политички Аналитичар за 'Пресек'. Анализирај ги ставовите на клучните актери.\n\n"
-            "СТРУКТУРА НА ОДГОВОРОТ:\n"
-            "# Главниот спор: Опиши го јадрото на конфликтот или дебатата.\n"
-            "# Ставови на актерите: За секој клучен актер (личност или институција) наведи:\n"
-            "- Клучна порака или цитат (користи '-').\n"
-            "- Мотив или интерес (што сакаат да постигнат).\n\n"
-            "ПРАВИЛА: Користи БОЛД за имињата. СТРОГО: Не го менувај родот на титулите (пр. не 'Министерката' за машко име). "
-            "Не измислувај изјави што ги нема во текстот. ВАЖНО: Наведи го медиумот за секоја изјава: (Извор: Име)."
-        ),
-        "context": (
-            "Ти си Главен Уредник и Историчар. Твоја задача е да ја објасниш пошироката слика.\n\n"
-            "СТРУКТУРА НА ОДГОВОРОТ:\n"
-            "# Аналитички контекст: Напиши го ова како сериозна уредничка анализа.\n"
-            "# Поврзаност со минатото: Објасни како оваа вест се надоврзува на претходни настани (ако се дадени во позадината).\n"
-            "# Значење и последици: Што значи ова за иднината?\n\n"
-            "ПРАВИЛА: Користи префинет новинарски јазик. БОЛД за клучни термини. Без емоџи. "
-            "СТРОГО: Не измислувај имиња или настани што не се присутни во материјалите."
-        )
-    }
-    
-    system_prompt = prompts.get(mode, prompts["facts"])
-    user_prompt = f"АНАЛИЗИРАЈ ГИ СЛЕДНИТЕ СТАТИИ:\n\n{combined_text[:12000]}{history_context}"
-
     try:
-        from ai_engine import sync_call_ai
-        
-        log.info(f"[analyst] Generating report for {cluster_id} (mode={mode})")
-        # Use mistral for high-quality formatting
-        try:
-            response, provider = await asyncio.wait_for(
-                asyncio.to_thread(
-                    sync_call_ai,
-                    prompt=user_prompt,
-                    system=system_prompt,
-                    task_type="default",
-                    max_tokens=1200,
-                ),
-                timeout=45.0
-            )
-        except asyncio.TimeoutError:
-            log.warning(f"[analyst] Timeout for {cluster_id}, using local fallback")
-            from local_nlp import summarize_locally
-            response = summarize_locally(user_prompt, sentence_count=5)
-            provider = "local_timeout_fallback"
-        
-        if not response:
+        from local_analyst import analyst
+        log.info(f"[analyst] Generating Gemma report for {cluster_id} (mode={clean_mode})")
+        context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
+        response = await asyncio.to_thread(analyst.research_query, _RESEARCH_MODE_QUERIES[clean_mode], context)
+        report = response.get("answer") if isinstance(response, dict) else str(response or "")
+
+        if not report:
             return {"status": "error", "message": "Аналитичарот е зафатен."}
 
         # Apply final name validation on the report
         from entities import validate_person_names
-        response = validate_person_names(response)
+        report = validate_person_names(report)
 
         result = {
             "status": "success",
-            "report": response,
-            "mode": mode,
-            "provider": provider
+            "report": report,
+            "mode": clean_mode,
+            "provider": "local_gemma",
+            "sources": sources,
         }
         
-        set_cache(cache_key, result, ttl=7200) # Cache for 2 hours
+        set_cache(cache_key, result, ttl=7200)
         return result
         
     except Exception as e:

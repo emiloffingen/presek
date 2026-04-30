@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, BrainCircuit, BarChart3, Users, BookOpen, Loader2, X, CheckCircle2, ChevronRight, Search } from 'lucide-react';
+import { Sparkles, BarChart3, Users, BookOpen, Loader2, X, CheckCircle2, ChevronRight, Search } from 'lucide-react';
 
 interface ResearchIslandProps {
   clusterId: string;
@@ -19,10 +19,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     setLoading(mode);
     setError(null);
     try {
-      let url = `/api/intelligence/cluster/${clusterId}/analyst?mode=${mode}`;
-      if (mode === 'custom') {
-          url = `/api/research/${clusterId}?q=${encodeURIComponent(query || '')}`;
-      }
+      const params = new URLSearchParams({ mode });
+      if (mode === 'custom') params.set('q', query || '');
+      const url = `/api/intelligence/cluster/${clusterId}/research?${params.toString()}`;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s limit
@@ -40,7 +39,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         setData({ 
             report, 
             suggestions, 
-            mode: mode_actual 
+            mode: mode_actual,
+            provider: result.provider,
+            sources: result.sources || sources,
         });
       } else {
         setError(result.message || 'Грешка при анализата.');
@@ -127,9 +128,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Статистика, клучни податоци и размер на настанот.' },
-    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Клучни актери, цитати и спротивставени агли.' },
-    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Историска позадина и значење на развојот.' },
+    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Клучни бројки, датуми и проверливи податоци од изворите.' },
+    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Актери, цитати и различни агли присутни во покривањето.' },
+    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Позадина, слични настани и можни последици.' },
   ];
 
   return (
@@ -143,17 +144,17 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         <div className="max-w-3xl">
           <p className="mb-2 flex items-center gap-2 font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
             <div className="w-8 h-[2px] bg-nyt-accent"></div>
-            ДОПОЛНИТЕЛНА АНАЛИТИКА
+            ИСТРАЖИ ПОДЛАБОКО
           </p>
-          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Истражувачки Центар</h1>
-          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Подлабоко истражување</h2>
+          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Локален истражувач</h1>
+          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Прашај за оваа приказна</h2>
           <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
-            Активирајте дополнителен истражувачки слој само кога ви се потребни повеќе бројки, клучни актери или поширок контекст за приказната.
+            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се генерира локално со Gemma и се базира на текстовите во овој кластер.
           </p>
         </div>
         <div className="hidden md:block pt-4">
             <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
-            Увид по барање
+            Gemma / локално
             </p>
         </div>
       </div>
@@ -170,17 +171,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             
             <h4 className="font-black text-sm mb-1 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
             
-            {/* Complexity Indicator */}
-            <div className="flex items-center gap-2 mb-4 opacity-60">
-                <span className="text-[9px] font-black uppercase tracking-widest">Комплексност:</span>
-                <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className={`w-2.5 h-1 rounded-full ${i <= (m.id === 'facts' ? 2 : m.id === 'perspectives' ? 4 : 3) ? 'bg-nyt-accent' : 'bg-border'}`}></div>
-                    ))}
-                </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground leading-relaxed font-medium mb-10 flex-grow">{m.desc}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed font-medium mb-6 flex-grow">{m.desc}</p>
+            <p className="mb-10 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">Базирано на изворите во кластерот</p>
             
             <button
                 onClick={() => performResearch(m.id)}
@@ -201,7 +193,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={22} />
                 <input 
                     type="text" 
-                    placeholder="Поставете конкретно прашање за овој настан..."
+                    placeholder="Што сакате да дознаете за оваа приказна?"
                     value={customQuery}
                     onChange={(e) => setCustomQuery(e.target.value)}
                     className="w-full pl-14 pr-4 py-5 bg-transparent outline-none font-serif italic text-xl"
@@ -240,20 +232,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
               </span>
             </div>
 
-            {/* Complexity Meter */}
-            <div className="flex items-center gap-2 py-1 px-3 bg-background/50 rounded border border-nyt-accent/10">
-                <span className="text-[8px] font-black uppercase tracking-wider text-muted-foreground">Комплексност:</span>
-                <div className="flex gap-1">
-                    {[1, 2, 3].map((step) => {
-                        const content = String(data.report || '').toLowerCase();
-                        const level = (content.includes('разлики') || content.includes('контрадикторни')) ? 3 : 
-                                      (content.includes('дел од изворите') || content.includes('нејасно')) ? 2 : 1;
-                        const isActive = step <= level;
-                        const color = level === 3 ? 'bg-nyt-red' : level === 2 ? 'bg-amber-500' : 'bg-emerald-600';
-                        return <div key={step} className={`w-3 h-1 rounded-full transition-colors ${isActive ? color : 'bg-border'}`} />
-                    })}
-                </div>
-            </div>
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              Локална Gemma анализа
+            </span>
 
             <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">
                 <X size={20} />
@@ -288,13 +269,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                   </div>
                 )}
 
-                {sources.length > 0 && (
+                {(data.sources || sources).length > 0 && (
                   <div className="mt-16 pt-8 border-t border-border/40">
                     <p className="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
-                      РЕДАКЦИИ КОНСУЛТИРАНИ ЗА ОВАА СИНТЕЗА
+                      ИЗВОРИ КОРИСТЕНИ ЗА ОВОЈ ОДГОВОР
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      {[...new Set(sources)].map((s, idx, arr) => (
+                      {[...new Set(data.sources || sources)].map((s, idx, arr) => (
                         <span key={s} className="font-sans text-[10px] font-extrabold text-foreground/70 uppercase tracking-wider flex items-center">
                           {s}
                           {idx < arr.length - 1 && <span className="ml-4 opacity-30 text-muted-foreground">•</span>}
@@ -308,11 +289,11 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
              <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 opacity-60">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
-                   Автоматизирана уредничка синтеза
+                   Одговор генериран локално од кластерските извори
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">
-                        СИСТЕМСКА ВЕРИФИКАЦИЈА
+                        GEMMA
                     </span>
                 </div>
              </div>

@@ -295,16 +295,41 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     from local_analyst import analyst
     from database import db_manager as db
     
-    # Get cluster context
-    row = db.execute_one("""
-        SELECT summary, generated_article 
-        FROM cluster_summaries WHERE cluster_id = %s
+    summary_row = db.execute_one("""
+        SELECT summary, generated_article
+        FROM cluster_summaries
+        WHERE cluster_id = %s
+    """, (cluster_id,))
+    articles = db.execute("""
+        SELECT title, full_content, source
+        FROM articles
+        WHERE cluster_id = %s
+        ORDER BY COALESCE(ingested_at, created_at) DESC
+        LIMIT 5
     """, (cluster_id,))
     
-    if not row:
+    if not summary_row and not articles:
         raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
-        
-    context = f"{row['summary']}\n{row['generated_article']}"
+
+    context_parts = []
+    if summary_row:
+        if summary_row.get("summary"):
+            context_parts.append(f"УРЕДНИЧКО РЕЗИМЕ:\n{summary_row['summary']}")
+        if summary_row.get("generated_article"):
+            context_parts.append(f"СИНТЕЗА:\n{summary_row['generated_article']}")
+    for article in articles or []:
+        source = article.get("source") or "Непознат извор"
+        text = article.get("full_content") or article.get("title") or ""
+        context_parts.append(f"--- ИЗВОР: {source} ---\n{text}")
+
+    context = "\n\n".join(context_parts)[:12000]
     res = analyst.research_query(q, context)
     
-    return {"status": "success", "answer": res.get('answer'), "suggestions": res.get('suggestions', [])}
+    return {
+        "status": "success",
+        "answer": res.get("answer"),
+        "report": res.get("answer"),
+        "suggestions": res.get("suggestions", []),
+        "provider": "local_gemma",
+        "mode": "custom",
+    }
