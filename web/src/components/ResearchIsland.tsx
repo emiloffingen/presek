@@ -128,9 +128,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Бројки и факти', icon: BarChart3, desc: 'Клучни бројки, датуми и проверливи податоци од изворите.' },
-    { id: 'perspectives' as const, label: 'Ставови и изјави', icon: Users, desc: 'Актери, цитати и различни агли присутни во покривањето.' },
-    { id: 'context' as const, label: 'Поширок контекст', icon: BookOpen, desc: 'Позадина, слични настани и можни последици.' },
+    { id: 'facts' as const, label: 'Факти и податоци', icon: BarChart3, desc: 'Клучни бројки, датуми и проверливи податоци од изворите.' },
+    { id: 'perspectives' as const, label: 'Перспективи и изјави', icon: Users, desc: 'Актери, цитати и различни агли присутни во покривањето.' },
+    { id: 'context' as const, label: 'Контекстуална рамка', icon: BookOpen, desc: 'Позадина, слични настани и можни последици.' },
   ];
   const displayedSources = [...new Set<string>(Array.isArray(data?.sources) ? data.sources : sources)];
 

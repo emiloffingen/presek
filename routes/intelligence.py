@@ -60,9 +60,9 @@ _RESEARCH_MODE_QUERIES = {
 }
 
 _RESEARCH_MODE_LABELS = {
-    "facts": "Бројки и факти",
-    "perspectives": "Ставови и изјави",
-    "context": "Поширок контекст",
+    "facts": "Факти и податоци",
+    "perspectives": "Перспективи и изјави",
+    "context": "Контекстуална рамка",
     "custom": "Одговор на истражувањето",
 }
 
