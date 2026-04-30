@@ -62,7 +62,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.api_key or not self.api_url:
-        return None
+            return None
 
         payload = {
             "model": self.model,
