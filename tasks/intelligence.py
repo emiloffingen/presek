@@ -140,10 +140,6 @@ def _cosine_dist(a, b):
     norm_b = sum(y * y for y in b) ** 0.5
     return 1 - (dot / (norm_a * norm_b)) if norm_a and norm_b else 1.0
 
-    except Exception as e:
-        log.error(f"[tasks] Translation failed for {article_id}: {e}")
-        raise
-
 from local_analyst import analyst
 
 @celery_app.task(rate_limit='10/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
