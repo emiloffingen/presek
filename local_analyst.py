@@ -62,6 +62,10 @@ class LocalAnalyst:
         try:
             prompt = prompt or ""
             system_prompt = system_prompt or ""
+            # Enforce literary Macedonian
+            if "македонски" not in system_prompt.lower():
+                system_prompt = f"Зборувај ИСКЛУЧИВО на стандарден литературен македонски јазик. ЗАБРАНЕТО е користење на бугарски, српски или хрватски зборови или форми. {system_prompt}"
+
             if len(prompt) > MAX_PROMPT_CHARS:
                 prompt = prompt[:MAX_PROMPT_CHARS] + "\n\n[Контекстот е скратен за локалниот модел.]"
 

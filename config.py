@@ -134,12 +134,12 @@ GEMINI_FALLBACK_MODELS = [
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000
-CLUSTER_LOOKBACK = 500  # increased from 200 — handles 36 sources × 10 entries per refresh
+CLUSTER_LOOKBACK = 300  # Narrowed to reduce memory pressure
 BREAKING_SCORE_THRESHOLD = 4.5
 DB_RETAIN_DAYS = 180 # articles older than this are pruned daily
 
 # ── Auto-summarization settings ──────────────────────────────────
-AUTO_SUMMARIZE_TOP_N   = 25   # summarize the top N clusters each cycle
+AUTO_SUMMARIZE_TOP_N   = 15   # summarize the top N clusters each cycle
 AUTO_SUMMARIZE_MIN_SRC = 2    # only clusters with 2+ sources get synthesis
 AUTO_SUMMARIZE_DELAY   = 1.5  # seconds between API calls (rate limit protection)
 

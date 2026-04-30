@@ -237,8 +237,53 @@ class GeminiProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
+class MistralProvider(AIProvider):
+    def __init__(self, api_key: str, api_url: str, model: str):
+        self.api_key = api_key
+        self.api_url = api_url
+        self.model = model
+
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
+        if not self.api_key or not self.api_url:
+            return None
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2,
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        try:
+            with httpx.Client(timeout=60.0) as client:
+                resp = client.post(self.api_url, json=payload, headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
+            log.warning(f"[ai/mistral] Call failed: {e}")
+            return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 PROVIDERS = {
     "gemini": GeminiProvider(),
+    "mistral": MistralProvider(
+        api_key=os.environ.get("MISTRAL_API_KEY", ""),
+        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
+        model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
+    ),
     "local": LocalProvider(),
 }
 
@@ -295,13 +340,14 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
                 return res, provider_name
             else:
                 AI_CALLS.labels(provider=provider_name, task_type=task_type, status="failure").inc()
+                log.warning(f"[ai/cascade] Provider {provider_name} returned empty response for task {task_type}")
         except Exception as e:
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="error").inc()
-            log.warning(f"[ai/cascade] Provider {provider_name} failed: {e}")
+            log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
-            
-    return None, None
 
+    log.error(f"[ai/cascade] All providers in {PROVIDER_FALLBACK_ORDER} failed for task {task_type}")
+    return None, None
 def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
