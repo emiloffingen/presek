@@ -306,7 +306,7 @@ class DatabaseManager:
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
     async def async_search_articles(self, query: str, limit: int = 50):
-        return await self.async_execute(SQL_ARTICLE_SEARCH, (query, query, limit))
+        return await self.async_execute(SQL_ARTICLE_SEARCH, (query, query, None, limit))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str]):
         if not cluster_ids: return []

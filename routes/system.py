@@ -241,7 +241,6 @@ async def get_cluster_share_card(cluster_id: str):
     
     from PIL import Image, ImageDraw, ImageFont
     import textwrap
-    import requests
     
     try:
         # 1. Gather Cluster Info
@@ -275,10 +274,18 @@ async def get_cluster_share_card(cluster_id: str):
                 safe_ips = _resolve_public_ips(bg_url)
                 import httpx
                 async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
-                    resp = await client.get(bg_url)
-                p_ip = _peer_ip(resp)
-                if p_ip and p_ip in safe_ips and resp.status_code == 200:
-                    bg_img = Image.open(BytesIO(resp.content))
+                    async with client.stream("GET", bg_url) as resp:
+                        p_ip = _peer_ip(resp)
+                        ctype = str(resp.headers.get("Content-Type", "")).split(";")[0].strip()
+                        if p_ip and p_ip in safe_ips and resp.status_code == 200 and ctype in _PROXY_ALLOWED_TYPES:
+                            content = b""
+                            async for chunk in resp.aiter_bytes(chunk_size=16384):
+                                content += chunk
+                                if len(content) > _PROXY_MAX_BYTES:
+                                    content = b""
+                                    break
+                            if content:
+                                bg_img = Image.open(BytesIO(content))
         except: pass
 
         if bg_img:

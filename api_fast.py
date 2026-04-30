@@ -16,6 +16,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from limiter import (
+    _rate_limiter_enabled,
+    limiter,
+    RateLimitExceeded,
+    exempt_from_rate_limit,
+)
+
+if _rate_limiter_enabled:
+    from slowapi.middleware import SlowAPIMiddleware
 
 import database
 from database import db_manager as db
@@ -25,24 +34,6 @@ from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 # Initialize logging early (before other imports)
 from logging_config import setup_logging, get_logger, early_setup
 # early_setup() already called by logging_config import
-
-# =============================================================================
-# Rate Limiting Setup
-# =============================================================================
-try:
-    from slowapi import Limiter
-    from slowapi.util import get_remote_address
-    from slowapi.errors import RateLimitExceeded
-    from slowapi.middleware import SlowAPIMiddleware
-    _rate_limiter_enabled = True
-    limiter = Limiter(
-        key_func=get_remote_address,
-        default_limits=["100/minute", "1000/hour"],
-        storage_uri=os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    )
-except ImportError:
-    _rate_limiter_enabled = False
-    limiter = None
 
 # Initialize Logging - use centralized config
 # logging_config.early_setup() already called by import
@@ -130,7 +121,7 @@ if _rate_limiter_enabled:
                 "detail": f"Надминато е ограничувањето за барања: {exc.detail}",
                 "status": "rate_limit_exceeded"
             },
-            headers={"Retry-After": str(exc.retry_after)}
+            headers={"Retry-After": str(getattr(exc, "retry_after", 60))}
         )
 
 
@@ -149,13 +140,6 @@ async def startup_event():
 # Import and include routers
 from routes import home, news, intelligence, profile, stats, system, admin
 
-# Decorator helpers that work with or without slowapi
-def exempt_from_rate_limit(func):
-    """Decorator that exempts from rate limiting (no-op if slowapi not installed)."""
-    if _rate_limiter_enabled:
-        return limiter.exempt(func)
-    return func
-
 
 @app.get("/api/health")
 @exempt_from_rate_limit
@@ -166,6 +150,12 @@ async def health_check():
     
     db_status = _probe_database()
     redis_status = _probe_redis()
+    db_public = dict(db_status)
+    redis_public = dict(redis_status)
+    db_public.pop("error", None)
+    redis_public.pop("url", None)
+    redis_public.pop("error", None)
+    redis_public.pop("config", None)
     
     # Get last refresh from Redis
     last_refresh = {}
@@ -181,8 +171,8 @@ async def health_check():
         "status": "healthy" if db_status["ok"] and redis_status["ok"] else "degraded",
         "version": APP_VERSION,
         "uptime_seconds": int(time.time() - _start_time),
-        "database": db_status,
-        "redis": redis_status,
+        "database": db_public,
+        "redis": redis_public,
         "freshness": _freshness_payload(last_refresh.get("time")),
         "time": datetime.datetime.now().isoformat()
     }
@@ -253,83 +243,3 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
-
-# Decorator helper for custom rate limits
-def custom_rate_limit(limit_str):
-    """Factory for rate limit decorators (no-op if slowapi not installed)."""
-    if _rate_limiter_enabled:
-        return limiter.limit(limit_str)
-    return lambda f: f
-
-
-@app.get("/api/entity-graph/{entity_name}")
-@custom_rate_limit("30/minute")
-async def entity_graph_lookup(request: Request, entity_name: str):
-    """Fetches persistent knowledge about an entity from the local graph."""
-    from database import db_manager as db
-    
-    row = db.execute_one("""
-        SELECT bio_summary, importance_score, last_seen, category 
-        FROM entity_knowledge WHERE entity_name = %s
-    """, (entity_name,))
-    if not row:
-        row = db.execute_one("""
-            SELECT
-                COALESCE(metadata->>'bio_summary', '') AS bio_summary,
-                total_mentions AS importance_score,
-                last_seen,
-                COALESCE(type, 'ENTITY') AS category
-            FROM knowledge_entities
-            WHERE name = %s
-        """, (entity_name,))
-    
-    if not row:
-        return {"status": "not_found"}
-        
-    return {"status": "success", "data": row}
-
-@app.get("/api/research/{cluster_id}")
-@custom_rate_limit("10/minute")
-async def cluster_research(request: Request, cluster_id: str, q: str):
-    """Researches a cluster based on a user query using Gemma 2."""
-    from local_analyst import analyst
-    from database import db_manager as db
-    
-    summary_row = db.execute_one("""
-        SELECT summary, generated_article
-        FROM cluster_summaries
-        WHERE cluster_id = %s
-    """, (cluster_id,))
-    articles = db.execute("""
-        SELECT title, full_content, source
-        FROM articles
-        WHERE cluster_id = %s
-        ORDER BY COALESCE(ingested_at, created_at) DESC
-        LIMIT 5
-    """, (cluster_id,))
-    
-    if not summary_row and not articles:
-        raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
-
-    context_parts = []
-    if summary_row:
-        if summary_row.get("summary"):
-            context_parts.append(f"УРЕДНИЧКО РЕЗИМЕ:\n{summary_row['summary']}")
-        if summary_row.get("generated_article"):
-            context_parts.append(f"СИНТЕЗА:\n{summary_row['generated_article']}")
-    for article in articles or []:
-        source = article.get("source") or "Непознат извор"
-        text = article.get("full_content") or article.get("title") or ""
-        context_parts.append(f"--- ИЗВОР: {source} ---\n{text}")
-
-    context = "\n\n".join(context_parts)[:12000]
-    res = analyst.research_query(q, context)
-    
-    return {
-        "status": "success",
-        "answer": res.get("answer"),
-        "report": res.get("answer"),
-        "suggestions": res.get("suggestions", []),
-        "provider": "local_gemma",
-        "mode": "custom",
-    }
