@@ -273,8 +273,8 @@ def extract_entities_semantic(text: str) -> set[str]:
             
     if _ner_pipeline == "failed":
         # Fallback to regex if model fails to load
-        from clustering import _extract_title_entities
-        return _extract_title_entities(text)
+        from nlp.extraction import extract_title_entities_regex
+        return extract_title_entities_regex(text)
         
     try:
         # aggregation_strategy="simple" groups subwords into single entities

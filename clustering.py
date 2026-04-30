@@ -156,26 +156,17 @@ MAX_CLUSTER_SIZE     = CLUSTERING_THRESHOLDS["MAX_CLUSTER_SIZE"]
 # strict that it misses near-duplicate stories from different sources.
 VECTOR_THRESHOLD     = CLUSTERING_THRESHOLDS["VECTOR_THRESHOLD"]
 
+from nlp.extraction import extract_title_entities_regex
+from nlp.text_processing import extract_entities_semantic
+
 def _extract_title_entities(title: str) -> set[str]:
     """Extracts entities using a semantic NER model (Transformers), falling back to Regex."""
-    try:
-        from nlp.text_processing import extract_entities_semantic
-        # Run semantic extraction (lazy-loads model on first call)
-        entities = extract_entities_semantic(str(title or ""))
-        if entities:
-            return entities
-    except ImportError:
-        pass
+    # Run semantic extraction (lazy-loads model on first call)
+    entities = extract_entities_semantic(str(title or ""))
+    if entities:
+        return entities
         
-    # Use precise Macedonian Cyrillic ranges to avoid matching lowercase words as entities
-    uc = "А-ЯЁЂЃЄЅІЇЈЉЊЋЌЎЏ"
-    lc = "а-яёђѓєѕіїјљњћќўџ"
-    pattern = rf'[{uc}][{lc}]+(?:\s+[{uc}][{lc}]+)*'
-    return {
-        match.strip()
-        for match in re.findall(pattern, str(title or ""))
-        if match.strip()
-    }
+    return extract_title_entities_regex(str(title or ""))
 
 
 def _entity_token_overlap(left_entities: set[str], right_entities: set[str]) -> set[str]:
