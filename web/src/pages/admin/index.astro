@@ -2,6 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import Footer from '../../components/Footer.astro';
 import AdminDashboard from '../../components/AdminDashboard.tsx';
+
+const versionLabel = import.meta.env.PUBLIC_PRESEK_VERSION || '5.47';
 ---
 
 <Layout 
@@ -16,7 +18,7 @@ import AdminDashboard from '../../components/AdminDashboard.tsx';
                     <div class="w-10 h-10 bg-nyt-accent rounded-lg flex items-center justify-center text-black font-black">P</div>
                     <div>
                         <h1 class="text-xl font-bold tracking-tight">OPERATIONAL COCKPIT</h1>
-                        <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Presek Intelligence v4.0</p>
+                        <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Presek Intelligence v{versionLabel}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-6 text-[11px] font-mono">

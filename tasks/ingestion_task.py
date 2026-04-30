@@ -15,6 +15,7 @@ from crawler import crawler
 from image_service import image_service
 from health import record_refresh, record_task_event
 from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
+from version import APP_VERSION_LABEL
 
 @celery_app.task(rate_limit='100/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
@@ -80,11 +81,11 @@ def run_ingestion():
         log.error(f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}")
         return # Fail-closed: better to skip a minute than crash the DB
     if not acquired:
-        log.info("Presek 4.0: ingestion cycle already in flight, skipping duplicate dispatch.")
+        log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
         return
     try:
         from ingestion import ingest_feeds
-        log.info("Presek 4.0: Starting unified ingestion cycle...")
+        log.info(f"Presek {APP_VERSION_LABEL}: Starting unified ingestion cycle...")
         new_count, errors = ingest_feeds()
 
         # Record health metrics

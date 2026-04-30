@@ -12,8 +12,15 @@ import datetime
 import logging
 import time
 import os
+from version import APP_VERSION_LABEL
 
 # --- SQL Query Catalog ---
+
+DB_SESSION_OPTIONS = (
+    "-c statement_timeout=120000 "
+    "-c idle_in_transaction_session_timeout=60000 "
+    "-c timezone=Europe/Skopje"
+)
 
 SQL_SEMANTIC_SEARCH = """
     SELECT *, (1 - (embedding <=> %s::vector)) as similarity
@@ -144,11 +151,11 @@ class AsyncDatabaseManager:
                 kwargs={
                     "row_factory": dict_row,
                     "connect_timeout": 5,
-                    "options": "-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
+                    "options": DB_SESSION_OPTIONS
                 }
             )
             await self._pool.open()
-            log.info(f"Presek 4.0: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
+            log.info(f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
 
     async def execute(self, sql, params=None, fetch=True):
         await self._ensure_pool()
@@ -161,7 +168,7 @@ class AsyncDatabaseManager:
                     await conn.commit()
                     return cur.rowcount
         except Exception as e:
-            log.error(f"Presek 4.0 Async DB Error: {e}")
+            log.error(f"Presek {APP_VERSION_LABEL} Async DB Error: {e}")
             raise
 
     async def execute_one(self, sql, params=None):
@@ -175,7 +182,7 @@ class AsyncDatabaseManager:
             yield conn
 
 class DatabaseManager:
-    """Centralized Database Access Layer (DAL) for Presek 4.0."""
+    """Centralized Database Access Layer (DAL) for Presek 5.x."""
     _instance = None
     _pool = None
 
@@ -194,10 +201,10 @@ class DatabaseManager:
                     maxconn=DB_POOL_MAXCONN,
                     dsn=DATABASE_URL,
                     connect_timeout=5,
-                    options="-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000"
+                    options=DB_SESSION_OPTIONS
                 )
                 log.info(
-                    "Presek 4.0: Database connection pool initialized "
+                    f"Presek {APP_VERSION_LABEL}: Database connection pool initialized "
                     f"(min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}, connect_timeout=5s)."
                 )
                 return
@@ -255,7 +262,7 @@ class DatabaseManager:
         except Exception as e:
             if conn:
                 conn.rollback()
-            log.error(f"Presek 4.0 DB Error: {e}")
+            log.error(f"Presek {APP_VERSION_LABEL} DB Error: {e}")
             raise
         finally:
             if conn:
@@ -479,9 +486,9 @@ class DatabaseManager:
             # Ensure URL is set correctly from env
             cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
             
-            log.info("Presek 4.0: Running database migrations...")
+            log.info(f"Presek {APP_VERSION_LABEL}: Running database migrations...")
             alembic.command.upgrade(cfg, "head")
-            log.info("Presek 4.0: Schema verification complete.")
+            log.info(f"Presek {APP_VERSION_LABEL}: Schema verification complete.")
         except Exception as e:
             log.error(f"Migration error: {e}")
             # Fallback to legacy behavior if migrations fail during transition?

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Presek 4.0 Database Optimization Script
+# Presek 5.x Database Optimization Script
 # Purpose: Maintain index performance and reclaim space as news articles accumulate.
 
 DB_NAME="presek"

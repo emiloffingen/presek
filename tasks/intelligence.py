@@ -420,12 +420,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             summary, perspectives = _normalize_cluster_synthesis(summary, perspectives, article_rows)
             record_runtime_event("synthesis_path", mode=provider or "unknown", fast_mode=fast_mode)
 
-# Add semaphore for CPU contention management
-from asyncio import Semaphore
-_analyst_semaphore = Semaphore(1)
-
-...
-
             # Phase 3: Deep Local Analyst (SKIP in fast_mode)
             deep_metadata = {}
             pluralism_data = {}
