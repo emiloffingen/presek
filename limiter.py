@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 
 log = logging.getLogger("presek.limiter")
 
@@ -23,7 +24,9 @@ try:
         default_limits=["100/minute", "1000/hour"],
         storage_uri=os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     )
-except ImportError:
+except ImportError as exc:
+    if os.environ.get("ENV") == "production" and "pytest" not in sys.modules:
+        raise RuntimeError("slowapi is required when ENV=production") from exc
     log.warning("Rate limiting disabled - slowapi not installed")
 
 def custom_rate_limit(limit_str):

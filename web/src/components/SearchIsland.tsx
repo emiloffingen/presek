@@ -201,7 +201,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, isOpen]);
+  }, [query, isOpen, timespan]);
 
   const closeSearch = () => {
     setIsOpen(false);

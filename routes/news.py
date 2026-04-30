@@ -698,6 +698,69 @@ async def get_cluster_detail(cluster_id: str):
                         "has_synthesis": item["cluster_id"] in synthesis_ids,
                     })
 
+        if not related:
+            fallback_topics = sorted(current_topics | {
+                str(article.get("topic") or "").strip()
+                for article in articles
+                if str(article.get("topic") or "").strip()
+            })
+            fallback_categories = sorted({
+                str(article.get("category") or "").strip()
+                for article in articles
+                if str(article.get("category") or "").strip()
+            })
+            match_clauses = []
+            fallback_params = [cluster_id]
+            if fallback_topics:
+                match_clauses.append(
+                    "(a.topic = ANY(%s) OR EXISTS (SELECT 1 FROM unnest(COALESCE(m.topics, '{}')) AS topic WHERE topic = ANY(%s)))"
+                )
+                fallback_params.extend([fallback_topics, fallback_topics])
+            if fallback_categories:
+                match_clauses.append("a.category = ANY(%s)")
+                fallback_params.append(fallback_categories)
+            if current_tags:
+                match_clauses.append(
+                    "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE tag = ANY(%s))"
+                )
+                fallback_params.append(sorted(current_tags))
+
+            if match_clauses:
+                fallback_rows = await db.async_execute(f"""
+                    SELECT a.*, COALESCE(m.tags, '{{}}') as cluster_tags
+                    FROM articles a
+                    LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
+                    WHERE a.cluster_id != %s
+                      AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days'
+                      AND ({' OR '.join(match_clauses)})
+                    ORDER BY COALESCE(a.ingested_at, a.created_at) DESC
+                    LIMIT 200
+                """, tuple(fallback_params))
+                scored_related = build_read_next_clusters(
+                    cluster_id,
+                    articles,
+                    tags,
+                    fallback_rows,
+                    limit=5,
+                )
+                related_cids = [item["cluster_id"] for item in scored_related]
+                synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()
+                for item in scored_related:
+                    shared_tags = item.get("shared_tags", [])
+                    shared_topics = item.get("shared_topics", [])
+                    shared_entities = item.get("shared_entities", [])
+                    related.append({
+                        "cluster_id": item["cluster_id"],
+                        "title": item["title"],
+                        "image_url": item.get("image_url"),
+                        "tags": shared_tags,
+                        "relationship_label": item.get("relationship_label") or "Сродна тема",
+                        "shared_tags": shared_tags,
+                        "shared_topics": shared_topics,
+                        "shared_entities": shared_entities,
+                        "has_synthesis": item["cluster_id"] in synthesis_ids,
+                    })
+
         chrono = sorted(articles, key=lambda x: x['created_at'])
         timeline = []
         for i, a in enumerate(chrono):

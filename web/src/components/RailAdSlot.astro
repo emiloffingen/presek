@@ -1,0 +1,50 @@
+---
+const adKey = String(import.meta.env.PUBLIC_RAIL_AD_KEY || '5f5588ec156dbf13cc167f9a6ea88e4f').trim();
+const adsEnabled = String(import.meta.env.PUBLIC_ENABLE_ADS ?? '1') !== '0' && Boolean(adKey);
+---
+
+{adsEnabled && (
+  <aside class="rail-ad-slot" aria-label="Advertisement">
+    <span class="rail-ad-label">Оглас</span>
+    <div class="rail-ad-creative">
+      <script is:inline define:vars={{ adKey }}>
+        window.atOptions = {
+          key: adKey,
+          format: 'iframe',
+          height: 250,
+          width: 300,
+          params: {}
+        };
+      </script>
+      <script type="text/javascript" src={`https://www.highperformanceformat.com/${adKey}/invoke.js`}></script>
+    </div>
+  </aside>
+)}
+
+<style>
+  .rail-ad-slot {
+    width: min(100%, 300px);
+    min-height: 274px;
+    margin: 0 auto 2.5rem;
+    overflow: hidden;
+  }
+
+  .rail-ad-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .rail-ad-creative {
+    width: 300px;
+    height: 250px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+</style>

@@ -177,6 +177,14 @@ async def health_check():
         "time": datetime.datetime.now().isoformat()
     }
 
+
+if hasattr(app, "head"):
+    @app.head("/api/health")
+    @exempt_from_rate_limit
+    async def health_check_head():
+        """Allow HEAD-based uptime probes to validate that the health route exists."""
+        return Response(status_code=200)
+
 @app.get("/api/version")
 async def version_info():
     return get_full_version_info()

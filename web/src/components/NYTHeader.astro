@@ -90,35 +90,47 @@ function getRelativeTimeStr(dateStr?: string) {
 ---
 
 <div class="header-sticky-wrapper" id="main-header">
-    {hasBreaking && (
+    {(hasBreaking || hasDispatchStats) && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
             <div class="ticker-prefix">
                 <span class="dispatch-item"><Radio size={10} className="animate-pulse text-nyt-red mr-2" /> <span class="hidden sm:inline">ВО ЖИВО:</span></span>
             </div>
-            <div class="unified-ticker-track-wrap">
-                <div class="unified-ticker-track">
-                    <div class="ticker-content-segment">
-                        {breakingItems.map((item: any) => (
-                            <a href={item.href} class="live-ticker-headline">
-                                <span class="ticker-sep" aria-hidden="true">||</span>
-                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                {item.label}
-                            </a>
-                        ))}
-                    </div>
-                    {/* Duplicate for seamless looping */}
-                    <div class="ticker-content-segment" aria-hidden="true">
-                        {breakingItems.map((item: any) => (
-                            <a href={item.href} class="live-ticker-headline">
-                                <span class="ticker-sep" aria-hidden="true">||</span>
-                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                {item.label}
-                            </a>
-                        ))}
+            {hasBreaking ? (
+                <div class="unified-ticker-track-wrap">
+                    <div class="unified-ticker-track">
+                        <div class="ticker-content-segment">
+                            {breakingItems.map((item: any) => (
+                                <a href={item.href} class="live-ticker-headline">
+                                    <span class="ticker-sep" aria-hidden="true">||</span>
+                                    <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
+                                    {item.label}
+                                </a>
+                            ))}
+                        </div>
+                        {/* Duplicate for seamless looping */}
+                        <div class="ticker-content-segment" aria-hidden="true">
+                            {breakingItems.map((item: any) => (
+                                <a href={item.href} class="live-ticker-headline">
+                                    <span class="ticker-sep" aria-hidden="true">||</span>
+                                    <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
+                                    {item.label}
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div class="dispatch-stats-track" aria-label="Тековна активност">
+                    <span class="dispatch-data">+{stats?.last_1h || 0} во последен час</span>
+                    <span class="dispatch-sep">/</span>
+                    <span class="dispatch-data">{stats?.last_24h || 0} извештаи 24ч</span>
+                    <span class="dispatch-sep">/</span>
+                    <span class="dispatch-data">{totalFeeds} редакции</span>
+                    <span class="dispatch-sep hidden sm:inline">/</span>
+                    <span class="dispatch-data hidden sm:inline">{pluralismPct}% плуралност</span>
+                </div>
+            )}
         </div>
     </div>
     )}
@@ -230,6 +242,7 @@ function getRelativeTimeStr(dateStr?: string) {
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     
     .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; }
+    .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
     .stats-group { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
     .dispatch-item { display: flex; align-items: center; gap: 0.35rem; color: var(--foreground); }
     .dispatch-data { color: var(--foreground); white-space: nowrap; }

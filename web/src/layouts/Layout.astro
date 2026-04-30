@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ConsentBanner from '../components/ConsentBanner';
+import TopAdSlot from '../components/TopAdSlot.astro';
 import { ClientRouter } from 'astro:transitions';
 
 interface Props {
@@ -130,18 +131,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 	</head>
 	<body id="top" class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full">
 		<div class="noise-overlay"></div>
-		<div class="flex justify-center my-4">
-			<script is:inline>
-				atOptions = {
-					'key' : '7fc6fdd34e30aa1a598c4d35b0b073b2',
-					'format' : 'iframe',
-					'height' : 90,
-					'width' : 728,
-					'params' : {}
-				};
-			</script>
-			<script type="text/javascript" src="https://www.highperformanceformat.com/7fc6fdd34e30aa1a598c4d35b0b073b2/invoke.js"></script>
-		</div>
+		<TopAdSlot />
 		<div id="loading-bar" class="fixed top-0 left-0 h-[2px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<ConsentBanner client:idle />

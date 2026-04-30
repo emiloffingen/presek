@@ -1,0 +1,44 @@
+---
+const adKey = String(import.meta.env.PUBLIC_NATIVE_AD_KEY || '296a1fe73bb9df07e8b654fca4cfa807').trim();
+const adHost = String(import.meta.env.PUBLIC_NATIVE_AD_HOST || 'pl29303547.profitablecpmratenetwork.com').trim();
+const containerId = `container-${adKey}`;
+const adsEnabled = String(import.meta.env.PUBLIC_ENABLE_ADS ?? '1') !== '0' && Boolean(adKey && adHost);
+---
+
+{adsEnabled && (
+  <aside class="native-ad-slot" aria-label="Advertisement">
+    <span class="native-ad-label">Оглас</span>
+    <div class="native-ad-creative" id={containerId}></div>
+    <script async data-cfasync="false" src={`https://${adHost}/${adKey}/invoke.js`}></script>
+  </aside>
+)}
+
+<style>
+  .native-ad-slot {
+    width: 100%;
+    min-height: 180px;
+    margin: 0 0 4rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .native-ad-label {
+    display: block;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .native-ad-creative {
+    width: 100%;
+    min-height: 140px;
+    overflow: hidden;
+  }
+</style>
