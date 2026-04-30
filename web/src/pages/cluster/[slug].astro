@@ -14,7 +14,6 @@ import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
 import NewsletterIsland from '../../components/NewsletterIsland.tsx';
-import AdUnit from '../../components/AdUnit.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic, getEditionStr, parseFootnotes, deShout, slugify } from '../../utils/textUtils';
 
@@ -433,10 +432,6 @@ const articleSchema = cluster ? {
                                     <SourceComparisonIsland allSources={allSourcesNames} client:visible />
                                 </div>
                             )}
-
-							<div class="sidebar-module">
-								<AdUnit slot="cluster_sidebar" />
-							</div>
 
 							<NewsletterIsland client:visible />
 

@@ -25,8 +25,6 @@ const {
 
 const siteUrl = (Astro.site?.origin || import.meta.env.PUBLIC_SITE_URL || "https://presek.live").replace(/\/+$/, "");
 const pageTitle = title.includes("Пресек") ? title.replace("Пресек", "ПРЕСЕК.мк") : `${title} | ПРЕСЕК.мк`;
-const adSenseClient = String(import.meta.env.PUBLIC_ADSENSE_CLIENT || '').trim();
-const shouldLoadAds = /^ca-pub-\d{10,}$/.test(adSenseClient) && adSenseClient !== 'ca-pub-0000000000000000';
 
 /**
  * Build a strict canonical URL:
@@ -53,6 +51,14 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 <!doctype html>
 <html lang="mk">
 	<head>
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
+		<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+
+			gtag('config', 'G-SV2R3LZJ5C');
+		</script>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -86,10 +92,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 		<meta name="twitter:title" content={pageTitle} />
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={imageUrl} />
-		
-		{shouldLoadAds && (
-			<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adSenseClient}`} crossorigin="anonymous"></script>
-		)}
 		
 		<title>{pageTitle}</title>
 

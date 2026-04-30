@@ -275,6 +275,8 @@ function getBriefingSnippet(content: string) {
 			<FilterHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} />
 		)}
 
+		<AdUnit slot="home_top" className="mt-0 mb-8" />
+
 		<div class="broadsheet-grid">
 			<div class="broadsheet-main">
                 {error && (
@@ -302,8 +304,6 @@ function getBriefingSnippet(content: string) {
 						/>
 					</div>
 				)}
-
-				<AdUnit slot="home_top" />
 
 				{leadCluster && supportingClusters.length > 0 && (
 					<div class="section-wrapper">
