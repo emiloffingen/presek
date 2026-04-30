@@ -243,9 +243,8 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# gemini (Cloud) is the PRIMARY choice for volume tasks (2026 standard).
-# local (Gemma 2 2B) is the SECONDARY fallback for privacy/offline.
-PROVIDER_FALLBACK_ORDER = ["gemini", "local"]
+# mistral (Primary Research) -> gemini (Cloud) -> local (Gemma 2 2B)
+PROVIDER_FALLBACK_ORDER = ["mistral", "gemini", "local"]
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

@@ -147,15 +147,17 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             <div className="w-8 h-[2px] bg-nyt-accent"></div>
             ИСТРАЖИ ПОДЛАБОКО
           </p>
-          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Локален истражувач</h1>
+          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
           <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Прашај за оваа приказна</h2>
           <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
-            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се генерира локално со Gemma и се базира на текстовите во овој кластер.
+            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се базира на текстовите во овој кластер.
           </p>
         </div>
         <div className="hidden md:block pt-4">
             <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
-            Gemma / локално
+            {data?.provider === 'mistral' ? 'Mistral Large' : 
+             data?.provider === 'gemini' ? 'Gemini Flash' : 
+             data?.provider === 'local_gemma' ? 'Gemma / локално' : 'Пресек Истражувач'}
             </p>
         </div>
       </div>

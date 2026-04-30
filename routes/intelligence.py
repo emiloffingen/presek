@@ -16,6 +16,8 @@ from entities import normalize_entity_name, normalize_person_surface_name
 from .common import cleanAndDecode, _is_valid_focus_entity
 from .security import validate_cluster_id, validate_list_param, validate_string_param
 from limiter import custom_rate_limit
+from ai_engine import sync_call_ai, clean_json_response
+from prompts import RESEARCH_SYSTEM_PROMPT
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -269,7 +271,7 @@ async def get_cluster_storyline_history(cluster_id: str):
 @custom_rate_limit("10/minute")
 async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = ""):
     """
-    Performs on-demand cluster research with the local Gemma analyst only.
+    Performs on-demand cluster research with the best available AI provider.
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
@@ -281,19 +283,27 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
 
     query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[clean_mode]
     query_hash = hashlib.sha1(query.encode("utf-8")).hexdigest()[:12]
-    cache_key = f"api:intelligence:research:gemma:{cluster_id}:{clean_mode}:{query_hash}:v1"
+    cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:v1"
     cached = cached_response(cache_key)
     if cached: return cached
 
     try:
-        from local_analyst import analyst
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
-        response = await asyncio.to_thread(analyst.research_query, query, context)
+        prompt = f"ПРАШАЊЕ: {query}\n\nКОНТЕКСТ ЗА АНАЛИЗА:\n{context}"
+        
+        # Use cascading AI engine
+        raw, provider = sync_call_ai(prompt, RESEARCH_SYSTEM_PROMPT, task_type="research", json_mode=True, max_tokens=800)
+        
+        if not raw:
+            return {"status": "error", "message": "Системот моментално не е достапен."}
+
+        # Parse structured response
+        response = clean_json_response(raw)
         answer = response.get("answer") if isinstance(response, dict) else str(response or "")
         suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
 
         if not answer:
-            return {"status": "error", "message": "Системот моментално не е достапен."}
+            return {"status": "error", "message": "Не успеав да генерирам одговор."}
 
         result = {
             "status": "success",
@@ -302,7 +312,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
             "suggestions": suggestions,
             "mode": clean_mode,
             "label": _RESEARCH_MODE_LABELS[clean_mode],
-            "provider": "local_gemma",
+            "provider": provider,
             "sources": sources,
             "timestamp": datetime.datetime.now()
         }
@@ -311,7 +321,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         return result
         
     except Exception as e:
-        log.error(f"Gemma research error: {e}", exc_info=True)
+        log.error(f"Deep research error: {e}", exc_info=True)
         return {"status": "error", "message": "Грешка при пребарувањето."}
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
