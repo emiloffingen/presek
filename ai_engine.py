@@ -151,7 +151,7 @@ class GeminiProvider(AIProvider):
 
     def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
         if not self.client:
-        return None
+            return None
         
         # 1. Check Circuit Breaker
         try:
