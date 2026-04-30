@@ -526,7 +526,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             summary = fallback["summary"]
             perspectives = fallback["perspectives"]
             synthetic_headline = deShout(article_rows[0]["title"])
-            synthetic_standfirst = "Аналитички преглед на новинарските извештаи од денот."
+            synthetic_standfirst = "Автоматски преглед од достапните извори; длабоката синтеза ќе се обиде повторно."
             generated_article = ""
             verification_report = None
             sentiment_data = {"sentiment": {"score": 0, "tone": "неутрален"}, "tone_analysis": {}}
@@ -706,7 +706,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             key_facts = _fallback_key_facts(article_rows, summary)
             pluralism_data = {
                 "score": 50,
-                "verdict": "Локална проценка додека AI синтезата се освежува."
+                "verdict": "Автоматска проценка од достапните извори."
             }
             db.execute(
                 """INSERT INTO cluster_summaries (cluster_id, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, verification_report, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity)
@@ -725,7 +725,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                        pulse_score = EXCLUDED.pulse_score,
                        pluralism_score = EXCLUDED.pluralism_score,
                        narrative_diversity = EXCLUDED.narrative_diversity""",
-                (cluster_id, summary, json.dumps(perspectives), "", "", "", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources), json.dumps(key_facts), json.dumps([]), 50, 50, json.dumps(pluralism_data)),
+                (cluster_id, summary, json.dumps(perspectives), "", deShout(article_rows[0]["title"]) if article_rows else "", "Автоматски преглед од достапните извори; длабоката синтеза ќе се обиде повторно.", datetime.datetime.now(), json.dumps(sentiment_data), json.dumps(citation_sources), json.dumps(key_facts), json.dumps([]), 50, 50, json.dumps(pluralism_data)),
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)

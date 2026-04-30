@@ -607,6 +607,24 @@ async def get_cluster_detail(cluster_id: str):
         analyst_entities = _as_list(s_row.get("analyst_entities")) if s_row else []
         narrative_diversity = _parse_maybe_json(s_row.get("narrative_diversity")) if s_row else None
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
+        local_fallback_synthesis = bool(
+            s_row
+            and not str(generated_article or "").strip()
+            and not verification_report
+            and (
+                "Локален сублимат" in str(synthetic_standfirst or "")
+                or "Автоматски преглед" in str(synthetic_standfirst or "")
+                or "AI анализа" in str(synthetic_standfirst or "")
+            )
+        )
+        if local_fallback_synthesis:
+            freshness = {
+                **freshness,
+                "refresh_needed": True,
+                "is_stale": True,
+                "freshness_score": max(float(freshness.get("freshness_score") or 0.0), 2.0),
+                "reasons": [*freshness.get("reasons", []), "local_fallback_synthesis"],
+            }
 
         m_row = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
         tags = filter_cluster_tags((m_row.get("tags") or []) if m_row else [])

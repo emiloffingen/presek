@@ -121,12 +121,12 @@ PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 # ── Additional AI Providers (Gemini) ───────────────────────────
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 GEMINI_FALLBACK_MODELS = [
     model.strip()
     for model in os.environ.get(
         "GEMINI_FALLBACK_MODELS",
-        "gemini-2.5-flash-lite,gemini-2.5-flash,gemini-flash-lite-latest",
+        "gemini-2.5-flash,gemini-flash-lite-latest,gemini-3.1-flash-lite-preview",
     ).split(",")
     if model.strip()
 ]

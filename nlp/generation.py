@@ -438,21 +438,30 @@ def synthesize_cluster_fallback(articles):
     
     # 1. Smarter Context Extraction
     desc = cleanAndDecode(lead.get("description", ""))
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', desc) if len(s.strip()) > 20]
+    sentences = [
+        _normalize_briefing_line(s)
+        for s in re.split(r'(?<=[.!?])\s+', desc)
+        if len(s.strip()) > 20
+    ]
+    sentences = [s for s in sentences if s and not _is_noisy_summary_sentence(s)]
     
     # 2. Build Summary Points
     summary_lines = []
-    summary_lines.append(f"• {lead['title']}")
+    lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
+    if lead_title:
+        summary_lines.append(f"• Што се случи: {lead_title}")
     
     if sentences:
-        summary_lines.append(f"• {sentences[0]}")
+        summary_lines.append(f"• Контекст: {sentences[0]}")
         
     common = comparison.get("common_line", "").replace("Повеќето извори се согласуваат околу ", "").replace(" како теми во фокус.", "").strip()
-    if common and len(common) > 5:
+    if common and len(common) > 18 and "," not in common:
         summary_lines.append(f"• Потврден е фокусот на: {common}")
     
     sources_str = _source_list(articles, limit=4)
-    summary_lines.append(f"• Развојот го следат {len(articles)} медиуми, вклучувајќи ги {sources_str}.")
+    summary_lines.append(f"• Покриеност: Развојот го следат {len(articles)} медиуми, вклучувајќи ги {sources_str}.")
+    if comparison.get("open_points"):
+        summary_lines.append(f"• Што останува отворено: {comparison['open_points'][0]}")
 
     summary = "\n".join(summary_lines)
 
@@ -461,7 +470,7 @@ def synthesize_cluster_fallback(articles):
     if len(articles) > 1:
         perspectives.append({
             "angle": "Консензус", 
-            "content": f"Водечките извештаи од {articles[0]['source']} и {articles[1]['source']} се усогласени околу главните параметри на настанот."
+            "content": f"{articles[0]['source']} и {articles[1]['source']} ја потврдуваат истата основна линија на настанот."
         })
     
     if comparison["difference_points"]:

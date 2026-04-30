@@ -185,6 +185,13 @@ class GeminiProvider(AIProvider):
             config["response_mime_type"] = "application/json"
 
         for model in self.models:
+            cooldown_key = f"ai:gemini:model_cooldown:{model}"
+            try:
+                if redis_client.get(cooldown_key):
+                    log.info(f"[ai/gemini] Skipping {model}; temporary cooldown active.")
+                    continue
+            except Exception:
+                pass
             for attempt in range(2):
                 try:
                     response = self.client.models.generate_content(
@@ -192,23 +199,32 @@ class GeminiProvider(AIProvider):
                         contents=prompt,
                         config=config
                     )
+                    text = response.text
 
                     # 2. Track Usage
                     try:
                         metadata = getattr(response, 'usage_metadata', None)
-                        tokens_used = getattr(metadata, 'total_token_count', None) or (len(prompt) + len(response.text)) // 2
+                        tokens_used = getattr(metadata, 'total_token_count', None) or (len(prompt) + len(text)) // 2
                         redis_client.incrby(self._get_usage_key(), int(tokens_used))
                         redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
                     except Exception as usage_err:
                         log.debug(f"Usage tracking failed: {usage_err}")
 
                     if model != GEMINI_MODEL:
-                        record_runtime_event("ai_gemini_fallback", task_type=task_type, model=model)
-                    return response.text
+                        try:
+                            record_runtime_event("ai_gemini_fallback", task_type=task_type, model=model)
+                        except Exception as event_err:
+                            log.debug(f"Gemini fallback telemetry failed: {event_err}")
+                    return text
                 except Exception as e:
                     message = str(e)
                     transient = any(code in message for code in ("429", "500", "502", "503", "504", "UNAVAILABLE", "RESOURCE_EXHAUSTED"))
                     log.warning(f"[ai/gemini] Call failed for {model}: {e}")
+                    if transient:
+                        try:
+                            redis_client.set(cooldown_key, 1, ex=300)
+                        except Exception:
+                            pass
                     if transient and attempt == 0:
                         time.sleep(1.5)
                         continue
@@ -360,10 +376,15 @@ def auto_summarize_top_clusters():
 
         top_cids = [r[0] for r in top]
         existing_rows = db.execute(
-            "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)",
+            """
+            SELECT cluster_id, created_at, generated_article, synthetic_standfirst,
+                   verification_report
+            FROM cluster_summaries
+            WHERE cluster_id = ANY(%s)
+            """,
             (top_cids,)
         ) or []
-        existing_map = {r["cluster_id"]: r["created_at"] for r in existing_rows}
+        existing_map = {r["cluster_id"]: r for r in existing_rows}
 
         STALE_THRESHOLD = datetime.timedelta(minutes=30)
 
@@ -375,8 +396,22 @@ def auto_summarize_top_clusters():
         skipped_locked = 0
         skipped_fresh = 0
         for cid, arts, _src_count, newest in top:
-            existing_at = existing_map.get(cid)
-            if existing_at is not None and (newest - existing_at) <= STALE_THRESHOLD:
+            existing = existing_map.get(cid)
+            existing_at = existing.get("created_at") if existing else None
+            standfirst = str((existing or {}).get("synthetic_standfirst") or "")
+            generated_article = str((existing or {}).get("generated_article") or "")
+            verification_report = (existing or {}).get("verification_report")
+            local_fallback_synthesis = bool(
+                existing
+                and not generated_article.strip()
+                and not verification_report
+                and (
+                    "Локален сублимат" in standfirst
+                    or "Автоматски преглед" in standfirst
+                    or "AI анализа" in standfirst
+                )
+            )
+            if existing_at is not None and not local_fallback_synthesis and (newest - existing_at) <= STALE_THRESHOLD:
                 skipped_fresh += 1
                 continue
 
@@ -394,6 +429,8 @@ def auto_summarize_top_clusters():
                 tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": True})
                 # Stage 2: Deep Synthesis (Scheduled 2 mins later)
                 tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False}, countdown=120)
+            elif local_fallback_synthesis:
+                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False})
             else:
                 # Just update existing stale synthesis
                 tasks_mod.synthesize_cluster_task.delay(cid, lines)
