@@ -316,27 +316,41 @@ def clean_json_response(text: str) -> dict | str | None:
     if not text:
         return ""
 
-    # Look for JSON structure
+    # 1. Try to find and parse a JSON block (greedy match for the largest {} or [])
     match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
     if match:
         json_text = match.group(1)
         try:
             data = json.loads(json_text)
             if isinstance(data, dict):
-                # Valid keys check
-                if any(k in data for k in ('summary', 'perspectives', 'entities', 'topic', 'category', 'article', 'synthetic_headline')):
+                # If it's a valid structured response, return the dict
+                valid_keys = ('summary', 'perspectives', 'entities', 'topic', 'category', 'article', 'synthetic_headline', 'facts')
+                if any(k in data for k in valid_keys):
                     return data
-                # Single-key bridge
+                # Single-key bridge: if the model wrapped everything in a single key, extract it
                 if len(data) == 1:
-                    return str(list(data.values())[0]).strip()
+                    val = list(data.values())[0]
+                    if isinstance(val, (str, list, dict)):
+                        return val
             return data
         except Exception:
             pass
 
-    # Strip optional markdown fences while keeping plain-text fallbacks usable.
+    # 2. Strip optional markdown fences
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
     if fenced:
         text = fenced.group(1).strip()
+        # Try parsing again after stripping fences
+        try:
+            return json.loads(text)
+        except:
+            pass
+
+    # 3. Last resort: If the text looks like raw JSON but failed parsing, 
+    # we don't want to return it as a "summary". 
+    if text.startswith('{') and '":' in text:
+        log.warning(f"[ai/clean] Text looks like malformed JSON, returning empty: {text[:100]}...")
+        return ""
 
     return text
 

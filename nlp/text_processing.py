@@ -242,3 +242,47 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
         res.append(f"• {txt}")
     return "\n".join(res)
 
+
+# Lazy-loaded NER pipeline
+_ner_pipeline = None
+
+def extract_entities_semantic(text: str) -> set[str]:
+    """Extracts named entities using a multilingual BERT model."""
+    global _ner_pipeline
+    if not text: return set()
+    
+    if _ner_pipeline is None:
+        try:
+            from transformers import pipeline
+            import logging
+            log = logging.getLogger("presek.nlp")
+            log.info("Loading semantic NER model (Babelscape/wikineural-multilingual-ner)...")
+            # Using a smaller multilingual model trained on WikiNeural
+            _ner_pipeline = pipeline("ner", model="Babelscape/wikineural-multilingual-ner", aggregation_strategy="simple", device="cpu")
+        except Exception as e:
+            import logging
+            logging.getLogger("presek.nlp").error(f"Failed to load NER model: {e}")
+            _ner_pipeline = "failed"
+            
+    if _ner_pipeline == "failed":
+        # Fallback to regex if model fails to load
+        from clustering import _extract_title_entities
+        return _extract_title_entities(text)
+        
+    try:
+        # aggregation_strategy="simple" groups subwords into single entities
+        results = _ner_pipeline(text)
+        entities = set()
+        for res in results:
+            # We only care about PER (Person), ORG (Organization), LOC (Location), MISC
+            if res['entity_group'] in ('PER', 'ORG', 'LOC', 'MISC'):
+                ent_text = res['word'].strip()
+                # Clean up ## subword artifacts just in case
+                ent_text = ent_text.replace(" ##", "").replace("##", "")
+                if len(ent_text) >= 3:
+                    entities.add(ent_text)
+        return entities
+    except Exception as e:
+        import logging
+        logging.getLogger("presek.nlp").error(f"NER extraction failed: {e}")
+        return set()

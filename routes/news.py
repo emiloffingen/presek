@@ -648,21 +648,29 @@ async def get_cluster_detail(cluster_id: str):
                 await db.async_execute("UPDATE cluster_metadata SET dominant_color = %s WHERE cluster_id = %s", (dominant_color, cluster_id), fetch=False)
 
         related = []
-        lead_article = articles[0] if articles else None
-        if lead_article and lead_article.get("embedding"):
-            lead_vec = json.loads(lead_article["embedding"]) if isinstance(lead_article["embedding"], str) else list(lead_article["embedding"])
-            # Tightened limit and threshold
-            related_results = await db.async_search_semantic(lead_vec, limit=20)
+        if cluster_meta and cluster_meta.get("centroid"):
+            centroid_vec = json.loads(cluster_meta["centroid"]) if isinstance(cluster_meta["centroid"], str) else list(cluster_meta["centroid"])
+            vec_str = "[" + ",".join(map(str, centroid_vec)) + "]"
+            
+            # Use pgvector directly on cluster_metadata for lightning-fast related cluster discovery
+            related_query = """
+                SELECT cluster_id, (1 - (centroid <=> %s::vector)) as similarity
+                FROM cluster_metadata
+                WHERE cluster_id != %s
+                  AND centroid IS NOT NULL
+                  AND updated_at >= NOW() - INTERVAL '14 days'
+                ORDER BY centroid <=> %s::vector
+                LIMIT 15
+            """
+            related_results = await db.async_execute(related_query, (vec_str, cluster_id, vec_str))
+            
             related_cids = []
-            seen = {cluster_id}
             for r in related_results:
-                cid = r.get("cluster_id")
                 similarity = float(r.get("similarity", 0))
-                if cid and cid not in seen and similarity >= 0.72:
-                    related_cids.append(cid)
-                    seen.add(cid)
-                    if len(related_cids) >= 10:
-                        break
+                # We can be slightly more lenient here since the centroid is a stable representation
+                if similarity >= 0.65:
+                    related_cids.append(r["cluster_id"])
+                    
             if related_cids:
                 r_rows = await db.async_execute("SELECT a.*, COALESCE(m.tags, '{}') as cluster_tags FROM articles a LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id WHERE a.cluster_id = ANY(%s)", (related_cids,))
                 synthesis_ids = set(await db.async_get_synthesis_ids(related_cids)) if related_cids else set()

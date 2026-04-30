@@ -157,6 +157,16 @@ MAX_CLUSTER_SIZE     = CLUSTERING_THRESHOLDS["MAX_CLUSTER_SIZE"]
 VECTOR_THRESHOLD     = CLUSTERING_THRESHOLDS["VECTOR_THRESHOLD"]
 
 def _extract_title_entities(title: str) -> set[str]:
+    """Extracts entities using a semantic NER model (Transformers), falling back to Regex."""
+    try:
+        from nlp.text_processing import extract_entities_semantic
+        # Run semantic extraction (lazy-loads model on first call)
+        entities = extract_entities_semantic(str(title or ""))
+        if entities:
+            return entities
+    except ImportError:
+        pass
+        
     # Use precise Macedonian Cyrillic ranges to avoid matching lowercase words as entities
     uc = "А-ЯЁЂЃЄЅІЇЈЉЊЋЌЎЏ"
     lc = "а-яёђѓєѕіїјљњћќўџ"
@@ -202,11 +212,11 @@ def _rep_age_hours(created_at) -> float:
 
 
 def _topic_bridge_allowed(incoming_topic: str, rep_topic: str, category: str | None, rep_category: str | None, phrase_overlap: float, lexical_overlap: float, shared_entities: set[str], freshest_rep_hours: float) -> bool:
-    """Allow tight same-story continuations to survive small topic-label drift."""
+    """Allow tight same-story continuations to survive small topic-label drift and category evolution."""
     incoming_clean = str(incoming_topic or "Вести").strip() or "Вести"
     rep_clean = str(rep_topic or "Вести").strip() or "Вести"
     
-    if incoming_clean == rep_clean:
+    if incoming_clean == rep_clean and category == rep_category:
         return True
 
     # Sports should remain strictly isolated; score updates and match reports
@@ -214,14 +224,21 @@ def _topic_bridge_allowed(incoming_topic: str, rep_topic: str, category: str | N
     if "Спорт" in {incoming_clean, rep_clean}:
         return False
 
-    # Cross-category merges remain unsafe in practice.
-    if category and rep_category and category != rep_category:
-        return False
-
     shared_count = len(shared_entities or set())
-    generic_mismatch = "Вести" in {incoming_clean, rep_clean}
     recent_cycle = freshest_rep_hours <= 8
     same_day = freshest_rep_hours <= 18
+
+    # Category Evolution (Category Drift)
+    # If the category changed (e.g. Crime -> Politics), we only allow it if it's clearly the same story:
+    # Requires high phrase overlap OR high lexical overlap with shared entities.
+    if category and rep_category and category != rep_category:
+        if shared_count >= 2 and (phrase_overlap >= 0.45 or lexical_overlap >= 0.65):
+            return True
+        if shared_count >= 1 and phrase_overlap >= 0.55 and lexical_overlap >= 0.70:
+            return True
+        return False
+
+    generic_mismatch = "Вести" in {incoming_clean, rep_clean}
 
     if generic_mismatch:
         return (
@@ -236,6 +253,7 @@ def _topic_bridge_allowed(incoming_topic: str, rep_topic: str, category: str | N
         or phrase_overlap >= (0.50 if recent_cycle else 0.56)
         or lexical_overlap >= (0.60 if recent_cycle else (0.66 if same_day else 0.72))
     )
+
 
 def find_cluster_semantic(conn, embedding: list[float], lookback_hours: int = 48, category: str | None = None, topic: str | None = None, title: str | None = None) -> str | None:
     if not embedding: return None
