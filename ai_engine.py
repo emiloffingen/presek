@@ -373,7 +373,7 @@ def clean_json_response(text: str) -> dict | str | None:
                     val = list(data.values())[0]
                     if isinstance(val, (str, list, dict)):
                         return val
-        return data
+            return data
         except Exception:
             pass
 
@@ -383,8 +383,8 @@ def clean_json_response(text: str) -> dict | str | None:
         text = fenced.group(1).strip()
         # Try parsing again after stripping fences
         try:
-        return json.loads(text)
-        except:
+            return json.loads(text)
+        except Exception:
             pass
 
     # 3. Last resort: If the text looks like raw JSON but failed parsing, 
