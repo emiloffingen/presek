@@ -626,11 +626,11 @@ async def get_cluster_detail(cluster_id: str):
                 "reasons": [*freshness.get("reasons", []), "local_fallback_synthesis"],
             }
 
-        m_row = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
-        tags = filter_cluster_tags((m_row.get("tags") or []) if m_row else [])
-        topics = (m_row.get("topics") or []) if m_row else []
-        rep_image = m_row.get("representative_image") if m_row else None
-        dominant_color = m_row.get("dominant_color") if m_row else None
+        cluster_meta = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
+        tags = filter_cluster_tags((cluster_meta.get("tags") or []) if cluster_meta else [])
+        topics = (cluster_meta.get("topics") or []) if cluster_meta else []
+        rep_image = cluster_meta.get("representative_image") if cluster_meta else None
+        dominant_color = cluster_meta.get("dominant_color") if cluster_meta else None
         current_tags = {str(tag or "").strip() for tag in tags if str(tag or "").strip()}
         current_topics = {str(topic or "").strip() for topic in topics if str(topic or "").strip()}
         current_entities = {
