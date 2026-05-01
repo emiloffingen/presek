@@ -323,45 +323,44 @@ async def get_news(
             rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif entity:
             rows = await db.async_execute("""
-                SELECT cluster_id, updated_at as last_article 
-                FROM cluster_metadata m
-                JOIN cluster_entities ce USING (cluster_id)
-                WHERE ce.entity_name = %s 
-                ORDER BY updated_at DESC LIMIT %s
-            """, (entity, page_size * (page + 1)))
-            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            
-            # Fallback: if no clusters found for this entity name, try searching for it
-            if not cids and page == 0:
-                rows = await db.async_execute("""
-                    SELECT cluster_id, MAX(created_at) as last_article
-                    FROM articles
-                    WHERE title ILIKE %s OR summary ILIKE %s OR description ILIKE %s
-                    GROUP BY cluster_id
-                    ORDER BY last_article DESC LIMIT %s
-                """, (f"%{entity}%", f"%{entity}%", f"%{entity}%", page_size))
-                cids = [r['cluster_id'] for r in rows]
+                WITH entity_clusters AS (
+                    SELECT ce.cluster_id
+                    FROM cluster_entities ce
+                    WHERE LOWER(ce.entity_name) = LOWER(%s)
+                    UNION
+                    SELECT a.cluster_id
+                    FROM articles a
+                    WHERE a.title ILIKE %s
+                       OR a.summary ILIKE %s
+                       OR a.description ILIKE %s
+                )
+                SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) as last_article
+                FROM articles a
+                JOIN entity_clusters ec ON ec.cluster_id = a.cluster_id
+                GROUP BY a.cluster_id
+                ORDER BY last_article DESC LIMIT %s
+            """, (entity, f"%{entity}%", f"%{entity}%", f"%{entity}%", page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows]
 
             rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif topic:
             rows = await db.async_execute("""
-                SELECT cluster_id, updated_at as last_article 
-                FROM cluster_metadata m
-                WHERE %s = ANY(topics)
-                ORDER BY updated_at DESC LIMIT %s
-            """, (topic, page_size * (page + 1)))
-            cids = [r['cluster_id'] for r in rows[page*page_size:(page+1)*page_size]]
-            
-            # Fallback for topics like 'Политика' which might be in the article's topic column but not metadata topics array
-            if not cids and page == 0:
-                rows = await db.async_execute("""
-                    SELECT cluster_id, MAX(created_at) as last_article
-                    FROM articles
-                    WHERE topic = %s OR category = %s
-                    GROUP BY cluster_id
-                    ORDER BY last_article DESC LIMIT %s
-                """, (topic, topic, page_size))
-                cids = [r['cluster_id'] for r in rows]
+                WITH topic_clusters AS (
+                    SELECT m.cluster_id
+                    FROM cluster_metadata m
+                    WHERE %s = ANY(m.topics)
+                    UNION
+                    SELECT a.cluster_id
+                    FROM articles a
+                    WHERE a.topic = %s OR a.category = %s
+                )
+                SELECT a.cluster_id, MAX(COALESCE(a.ingested_at, a.created_at)) as last_article
+                FROM articles a
+                JOIN topic_clusters tc ON tc.cluster_id = a.cluster_id
+                GROUP BY a.cluster_id
+                ORDER BY last_article DESC LIMIT %s
+            """, (topic, topic, topic, page_size * (page + 1)))
+            cids = [r['cluster_id'] for r in rows]
 
             rows = await db.async_execute("SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (cids,)) if cids else []
         elif category:

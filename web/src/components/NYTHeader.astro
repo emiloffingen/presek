@@ -9,11 +9,13 @@ import Branding from './Branding.astro';
 interface Props {
     category?: string | null;
     topic?: string | null;
+    entity?: string | null;
+    subcategory?: string | null;
     q?: string | null;
     stats?: any | null;
 }
 
-const { category, topic, q, stats: propStats } = Astro.props;
+const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
 
 const currentDate = new Intl.DateTimeFormat('mk-MK', {
     weekday: 'short',
@@ -203,8 +205,10 @@ function getRelativeTimeStr(dateStr?: string) {
                                             ? category === item.label
                                             : item.href.includes('topic=')
                                             ? topic === item.label
+                                            : item.href.includes('entity=')
+                                            ? entity === item.label || entity === item.label.replace('#', '')
                                             : item.href.includes('subcategory=')
-                                            ? (Astro.url.searchParams.get('subcategory') === item.label)
+                                            ? subcategory === item.label
                                             : Astro.url.pathname === item.href || Astro.url.pathname + '/' === item.href;
                                         return (
                                             <a href={item.href} class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>

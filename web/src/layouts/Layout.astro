@@ -110,7 +110,7 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			 */
 			function applyTheme() {
 				const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-				const isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				const isDark = stored ? stored === 'dark' : true;
 				
 				if (isDark) {
 					document.documentElement.classList.add('dark');

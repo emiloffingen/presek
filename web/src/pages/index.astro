@@ -261,12 +261,12 @@ function getBriefingSnippet(content: string) {
 ---
 
 <Layout
-	title={q || category || topic || "Пресек | Повеќе од вести"}
-	description={q || category || topic
+	title={q || entity || subcategory || category || topic || "Пресек | Повеќе од вести"}
+	description={q || entity || subcategory || category || topic
 		? "Пресек ги групира поврзаните вести, ги споредува изворите и ви овозможува побрз преглед на контекстот."
 		: "Пресек е македонски информативен агрегатор што ги собира вестите од сите медиуми, ги групира по тема и покажува како различните извори известуваат за ист настан."}
 >
-    <NYTHeader q={q} category={category} topic={topic} stats={stats} />
+    <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} />
 
 	<main class="site-layout broadsheet-layout py-[var(--page-py)] overflow-x-hidden max-w-full">
 		{/* Filtering Status */}

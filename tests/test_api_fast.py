@@ -416,7 +416,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
     import routes.news as news
 
     async def execute_side_effect(query, params=None, fetch=True):
-        if "FROM cluster_metadata m" in query and "%s = ANY(topics)" in query:
+        if "WITH topic_clusters AS" in query:
             return [{"cluster_id": "mixed", "last_article": "2026-04-22T20:00:00Z"}]
         if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
             return [
@@ -460,6 +460,64 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
     assert len(data["clusters"]) == 1
     assert [article["topic"] for article in data["clusters"][0]["articles"]] == ["Спорт"]
     assert data["clusters"][0]["articles"][0]["source"] == "SportSport"
+
+
+def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
+    import routes.news as news
+
+    async def execute_side_effect(query, params=None, fetch=True):
+        if "WITH entity_clusters AS" in query:
+            return [
+                {"cluster_id": "fresh-text-match", "last_article": "2026-04-30T23:20:00Z"},
+                {"cluster_id": "old-entity-match", "last_article": "2026-04-27T12:00:00Z"},
+            ]
+        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+            return [
+                {
+                    "id": 1,
+                    "cluster_id": "fresh-text-match",
+                    "source": "MIA",
+                    "title": "Иран испрати нов предлог",
+                    "description": "Нови детали за разговорите.",
+                    "summary": "Иран е дел од актуелниот предлог.",
+                    "topic": "Свет",
+                    "category": "Свет",
+                    "created_at": "2026-04-30T23:20:00Z",
+                    "ingested_at": "2026-04-30T23:21:00Z",
+                },
+                {
+                    "id": 2,
+                    "cluster_id": "old-entity-match",
+                    "source": "Archive",
+                    "title": "Постара вест за Иран",
+                    "description": "",
+                    "summary": "",
+                    "topic": "Свет",
+                    "category": "Свет",
+                    "created_at": "2026-04-27T12:00:00Z",
+                    "ingested_at": "2026-04-27T12:01:00Z",
+                },
+            ]
+        if "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata" in query:
+            return [
+                {"cluster_id": "fresh-text-match", "representative_image": None, "dominant_color": None},
+                {"cluster_id": "old-entity-match", "representative_image": None, "dominant_color": None},
+            ]
+        if "FROM cluster_summaries" in query and "key_facts" in query:
+            return []
+        raise AssertionError(f"Unexpected query: {query}")
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+    mock_all["db"].async_get_synthesis_ids.return_value = []
+
+    with patch("routes.news.cached_response", return_value=None), \
+         patch("routes.news.set_cache"), \
+         patch("routes.news.score_cluster", return_value=1.0), \
+         patch("routes.news.score_cluster_for_homepage", return_value=1.0):
+        data = asyncio.run(news.get_news(entity="Иран", page_size=10))
+
+    assert data["status"] == "success"
+    assert [cluster["cluster_id"] for cluster in data["clusters"]] == ["fresh-text-match", "old-entity-match"]
 
 
 def test_news_category_response_filters_mixed_cluster_articles(mock_all):
