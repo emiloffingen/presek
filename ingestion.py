@@ -16,7 +16,6 @@ except ModuleNotFoundError:
     httpx = None
 
 import clustering
-from ai_engine import translate_to_macedonian
 from nlp.categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
 from database import db_manager as db, get_db
 from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
