@@ -186,6 +186,7 @@ const effectiveLeadSignal = isHomepage
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
+const activeFilterLabel = subcategory || entity || category || topic || q || null;
 
 if (!isHomepage) {
     const FOR_YOU_START = 5;
@@ -298,6 +299,8 @@ function getBriefingSnippet(content: string) {
 							leadVisual={leadVisual}
 							dominantColor={leadCluster.dominant_color}
 							getTimeStr={getTimeStr}
+							filtered={!isHomepage}
+							filterLabel={activeFilterLabel}
 						/>
 					</div>
 				)}

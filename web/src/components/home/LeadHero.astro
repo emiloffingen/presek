@@ -14,6 +14,8 @@ interface Props {
     leadVisual: any;
     dominantColor?: string | null;
     getTimeStr: (date: string) => string;
+    filtered?: boolean;
+    filterLabel?: string | null;
 }
 
 const { 
@@ -25,16 +27,19 @@ const {
     leadSummaryIsCyrillic, 
     leadVisual,
     dominantColor,
-    getTimeStr
+    getTimeStr,
+    filtered = false,
+    filterLabel = null
 } = Astro.props;
 
 const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
 const relatedArticles = leadCluster.articles.slice(1, 4);
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.subcategory || primaryArticle.category || 'Водечка тема';
 ---
 
-<section class="lead-hero motion-rise">
+<section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
     <div class="lead-hero-tint" style={`--tint-color: ${tintColor};`}></div>
     <a href={`/cluster/${leadCluster.cluster_id}`} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1">
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-fallback": leadVisual?.isWeak }]}>
@@ -58,7 +63,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
                             <p class="lead-media-kicker">ПРЕСЕК.мк Преглед</p>
                             <p class="lead-media-chip">Без визуел</p>
                         </div>
-                        <h2>{leadCluster.articles?.[0].category || 'Водечка тема'}</h2>
+                        <h2>{mediaLabel}</h2>
                     </div>
                 </>
             ) : (
@@ -72,7 +77,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
                         </div>
                     </div>
                     <div class="lead-media-content">
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadCluster.articles?.[0].category || 'Водечка тема'}</h2>
+                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{mediaLabel}</h2>
                         <p class="lead-media-fallback-source">{leadCluster.articles?.[0].source}</p>
                     </div>
                 </div>
@@ -172,7 +177,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
                             <p class="lead-media-kicker">ПРЕСЕК.мк Преглед</p>
                             <p class="lead-media-chip">Без визуел</p>
                         </div>
-                        <h2>{leadCluster.articles?.[0].category || 'Водечка тема'}</h2>
+                        <h2>{mediaLabel}</h2>
                     </div>
                 </>
             ) : (
@@ -186,7 +191,7 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
                         </div>
                     </div>
                     <div class="lead-media-content">
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadCluster.articles?.[0].category || 'Водечка тема'}</h2>
+                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{mediaLabel}</h2>
                         <p class="lead-media-fallback-source">{leadCluster.articles?.[0].source}</p>
                     </div>
                 </div>
@@ -614,8 +619,35 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
 		margin: 0;
 		font-size: clamp(1.4rem, 1.05rem + 1vw, 2rem);
 		line-height: 1.04;
-		max-width: 10ch;
+		max-width: 14ch;
 		color: white;
+		overflow-wrap: anywhere;
+	}
+
+	.lead-hero-filtered {
+		gap: 1rem;
+	}
+
+	.lead-hero-filtered .lead-copy {
+		order: 1;
+	}
+
+	.lead-hero-filtered .lead-media-mobile {
+		order: 2;
+	}
+
+	.lead-hero-filtered .lead-media-desktop {
+		order: 2;
+	}
+
+	.lead-hero-filtered .headline-lead {
+		font-size: 2.75rem;
+		line-height: 1.02;
+		max-width: 18ch;
+	}
+
+	.lead-hero-filtered .lead-media-frame {
+		aspect-ratio: 16 / 10;
 	}
 
 	.lead-media-fallback-source {
@@ -665,6 +697,20 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
 			height: 400px;
 		}
 
+		.lead-hero-filtered {
+			grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 0.78fr);
+			align-items: start;
+			gap: 1.5rem;
+		}
+
+		.lead-hero-filtered .lead-media-frame {
+			height: 300px;
+		}
+
+		.lead-hero-filtered .lead-media-placeholder {
+			padding: 1.65rem;
+		}
+
 		.lead-media img {
 			aspect-ratio: 16 / 9;
 			object-position: center;
@@ -690,6 +736,16 @@ const relatedArticles = leadCluster.articles.slice(1, 4);
 			aspect-ratio: 3 / 2;
 			height: auto;
             max-height: none;
+		}
+
+		.lead-hero-filtered .lead-media-frame {
+			aspect-ratio: 16 / 9;
+		}
+
+		.lead-hero-filtered .headline-lead {
+			font-size: 2.1rem !important;
+			line-height: 1.08 !important;
+			max-width: 100%;
 		}
 
 		.lead-media-placeholder {
