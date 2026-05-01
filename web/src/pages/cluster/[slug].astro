@@ -10,7 +10,6 @@ import { MediaPulseRadar } from '../../components/MediaPulseRadar.tsx';
 import ResearchIsland from '../../components/ResearchIsland.tsx';
 import StorylineHistoryIsland from '../../components/StorylineHistoryIsland.tsx';
 import ClusterHistoryIsland from '../../components/ClusterHistoryIsland.tsx';
-import NativeAdSlot from '../../components/NativeAdSlot.astro';
 import { SourceSpectrum } from '../../components/SourceSpectrum.tsx';
 import SourceComparisonIsland from '../../components/SourceComparisonIsland.tsx';
 import ClusterFollowSuggestionsIsland from '../../components/ClusterFollowSuggestionsIsland.tsx';
@@ -385,18 +384,15 @@ const articleSchema = cluster ? {
                                                     <span class="card-kicker">{rel.relationship_label || 'Сродна тема'}</span>
                                                     <h3 class="card-title">{deShout(cleanAndDecode(rel.title))}</h3>
                                                 </div>
-                                            </a>
-                                        );
-                                    })}
-								</div>
-							</section>
-						)}
-                        
-                        <NativeAdSlot />
+                                                </a>
+                                                );
+                                                })}
+                                                </div>
+                                                </section>
+                                                )}
 
-						{/* ADVANCED ANALYTICS */}
-						<section class="editorial-section advanced-tools mb-16 bg-secondary/5 p-10 border-y border-border/40">
-							<div class="section-eyebrow mb-10">
+                                                {/* ADVANCED ANALYTICS */}
+                                                <section class="editorial-section advanced-tools mb-16 bg-secondary/5 p-10 border-y border-border/40">							<div class="section-eyebrow mb-10">
 								<Radio size={18} className="text-muted-foreground" />
 								<h2 class="section-label">ДОПОЛНИТЕЛНА АНАЛИТИКА</h2>
 								<div class="section-divider"></div>
