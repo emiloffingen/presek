@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import ConsentBanner from '../components/ConsentBanner';
-import TopAdSlot from '../components/TopAdSlot.astro';
 import { ClientRouter } from 'astro:transitions';
 
 interface Props {
@@ -131,7 +130,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 	</head>
 	<body id="top" class="antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full">
 		<div class="noise-overlay"></div>
-		<TopAdSlot />
 		<div id="loading-bar" class="fixed top-0 left-0 h-[2px] bg-nyt-accent z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 		<slot />
 		<ConsentBanner client:idle />
