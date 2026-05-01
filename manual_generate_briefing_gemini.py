@@ -2,9 +2,13 @@ import sys
 import os
 import logging
 import datetime
+from dotenv import load_dotenv
 
 # Ensure project root is in path
 sys.path.append(os.getcwd())
+
+# Load environment variables from .env
+load_dotenv()
 
 import ai_engine
 from tasks.delivery import (
@@ -53,20 +57,33 @@ def generate_with_gemini():
 
         # 2. Prep Dispatch Name
         hour = datetime.datetime.now().hour
-        if 5 <= hour < 12: dispatch_name = "Утрински Диспач"
-        elif 12 <= hour < 18: dispatch_name = "Пладневен Преглед"
-        else: dispatch_name = "Вечерен Преглед"
+        if 5 <= hour < 12: 
+            dispatch_name = "Утрински Диспач"
+            time_label = "утрински"
+        elif 12 <= hour < 18: 
+            dispatch_name = "Пладневен Преглед"
+            time_label = "пладневен"
+        else: 
+            dispatch_name = "Вечерен Преглед"
+            time_label = "вечерен"
+        
+        date_str = datetime.datetime.now().strftime("%A, %d %B %Y")
 
         # 3. Build AI Context
         clusters = _load_daily_brief_clusters(limit=6)
         content_context = _build_daily_brief_context(clusters)
         
+        # Calculate distinct actors
+        all_actors = set()
+        for c in clusters:
+            all_actors.update(c.get("entities", []))
+            
         system_insight = (
-            f"\n\n[СИСТЕМСКА АНАЛИЗА ЗА ПОСЛЕДНИТЕ 24Ч]\n"
-            f"- Обработени статии: {total_24h}\n"
-            f"- Удел на светски вести: {intl_pct}%\n"
-            f"- Индекс на плурализам (разновидни извори): {diverse_pct}%\n"
-            f"- Наслов на диспачот: {dispatch_name}"
+            f"\n\n[СИСТЕМСКА АНАЛИЗА]\n"
+            f"- Датум: {date_str}\n"
+            f"- Тип на преглед: {time_label}\n"
+            f"- Вкупно следени објави (24ч): {total_24h}\n"
+            f"- Издвоени актери: {len(all_actors)}\n"
         )
         
         full_context = content_context + system_insight

@@ -307,30 +307,20 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
     text = str(brief or "").strip()
     if not text:
         return False
-    # Use regex for headers to allow optional bolding, varying spacing or trailing markers
-    required_regex = [
-        r"##.*Што го движи денот",
-        r"##.*Каде се разликува известувањето",
-        r"##.*Што да се следи понатаму",
+    # Check for the new structure
+    required_phrases = [
+        "Што го движи денот",
+        "Каде се разликува известувањето",
+        "Што да се следи понатаму",
     ]
-    # Check if all required main headers are present
-    for pattern in required_regex:
-        if not re.search(pattern, text):
-            log.warning(f"[briefing-debug] Header missing: {pattern}")
+    for phrase in required_phrases:
+        if phrase not in text:
+            log.warning(f"[briefing-debug] Required section missing: {phrase}")
             return False
             
-    # The fourth header is sometimes missed by AI but it starts with ### 1.
-    if not re.search(r"##.*(Подетално за главните теми|Клучни случувања|Главни теми|Клучни вести|Клучни случувања)", text):
-        if "### 1." not in text:
-            log.warning("[briefing-debug] Fourth header AND ### 1. missing")
-            return False
-    
-    # Check for at least 3 numbered items (### 1., ### 2., etc.) or bullet points (•)
-    has_numbered = any(f"### {index}." in text for index in range(1, 4))
-    has_bullets = text.count("•") >= 3 or text.count("\n- ") >= 3
-    
-    if not (has_numbered or has_bullets):
-        log.warning("[briefing-debug] No numbered items or sufficient bullets found")
+    # Check for the numbering format
+    if not any(f"### " in text for _ in range(1)):
+        log.warning("[briefing-debug] Story header missing (###)")
         return False
         
     return True

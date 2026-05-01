@@ -388,11 +388,8 @@ def clean_json_response(text: str) -> dict | str | None:
             pass
 
     # 3. Last resort: If the text looks like raw JSON but failed parsing, 
-    # we don't want to return it as a "summary". 
-    if text.startswith('{') and '":' in text:
-        log.warning(f"[ai/clean] Text looks like malformed JSON, returning empty: {text[:100]}...")
-        return ""
-
+    # we now return the cleaned text instead of an empty string, 
+    # to maintain backward compatibility with non-strict inputs.
     return text
 
 def auto_summarize_top_clusters():

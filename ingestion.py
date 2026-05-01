@@ -104,8 +104,10 @@ def is_junk(title: str, desc: str) -> bool:
         if quality["score"] < 0.3:
             log.info(f"[ingestion] Rejecting low-quality content: {title[:50]}... (Score: {quality['score']}, Reason: {quality['reason']})")
             return True
+    except (ImportError, TypeError, ValueError, KeyError) as e:
+        log.warning(f"[ingestion] Quality classifier configuration or data error: {e}")
     except Exception as e:
-        log.warning(f"[ingestion] Quality classifier failed: {e}")
+        log.error(f"[ingestion] Unexpected error in quality classifier: {e}", exc_info=True)
         
     return False
 
@@ -154,14 +156,22 @@ def normalize_feed_link(link: str) -> str:
         ]
         normalized_path = parts.path.rstrip("/") or "/"
         return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), normalized_path, urlencode(query_items), ""))
-    except Exception:
+    except (ValueError, TypeError, AttributeError) as e:
+        log.debug(f"[ingestion] URL normalization failed: {e}")
+        return link.strip()
+    except Exception as e:
+        log.error(f"[ingestion] Unexpected error in URL normalization: {e}", exc_info=True)
         return link.strip()
 
 
 def canonical_hostname(url: str) -> str:
     try:
         host = (urlsplit(url).hostname or "").lower()
-    except Exception:
+    except (ValueError, TypeError, AttributeError) as e:
+        log.debug(f"[ingestion] Hostname resolution failed for {url}: {e}")
+        return ""
+    except Exception as e:
+        log.error(f"[ingestion] Unexpected error resolving hostname for {url}: {e}", exc_info=True)
         return ""
     if host.startswith("www."):
         host = host[4:]
