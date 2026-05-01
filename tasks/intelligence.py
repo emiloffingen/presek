@@ -31,6 +31,47 @@ from api_helpers import normalize_summary_text, normalize_perspectives, normaliz
 from utils import get_dominant_color
 from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, safe_async_run, redis_client
 
+@celery_app.task(rate_limit='50/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def summarize_article_task(article_id, final_title=None):
+    """Refines article content using AI summarization."""
+    row = db.execute_one("SELECT title, description, full_content, topic, category FROM articles WHERE id = %s", (article_id,))
+    if not row: return
+    
+    title = final_title or row.get("title")
+    description = row.get("description", "")
+    full_content = row.get("full_content", "")
+    topic = row.get("topic")
+    
+    context_text = full_content if len(full_content) > len(description) else description
+    
+    # AI summarization logic
+    prompt_parts = [f"Наслов: {str(title or '').strip()}"]
+    if context_text:
+        prompt_parts.append(f"Текст за резимирање:\n[START_ARTICLE_TEXT]\n{str(context_text).strip()[:10000]}\n[END_ARTICLE_TEXT]")
+    prompt = "\n".join(part for part in prompt_parts if part)
+    
+    raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic, json_mode=False)
+    
+    final_text = None
+    if raw_output:
+        parsed = clean_json_response(raw_output)
+        if isinstance(parsed, dict) and 'summary' in parsed:
+            final_text = parsed['summary']
+        else:
+            final_text = re.sub(r'^```(json)?\s*', '', raw_output.strip())
+            final_text = re.sub(r'\s*```$', '', final_text)
+
+    if final_text:
+        final_text = validate_person_names(final_text)
+        db.execute("UPDATE articles SET summary = %s WHERE id = %s", (final_text, article_id), fetch=False)
+        invalidate_public_data_caches()
+        log.info(f"Successfully summarized article {article_id}")
+    else:
+        fallback = summarize_article_fallback(title, context_text, topic=topic)
+        if fallback:
+            db.execute("UPDATE articles SET summary = %s WHERE id = %s", (fallback, article_id), fetch=False)
+            invalidate_public_data_caches()
+
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
         "SELECT title, description, summary, full_content, source, link, created_at, category, topic, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
