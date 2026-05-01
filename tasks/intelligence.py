@@ -4,6 +4,9 @@ import logging
 import os
 import re
 import sys
+import threading
+
+_analyst_semaphore = threading.Semaphore(2)
 
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -523,7 +526,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                     except Exception as e:
                         log.error(f"[analyst] Internal logic error: {e}")
 
-                import threading
                 analyst_thread = threading.Thread(target=_run_analyst_logic)
                 analyst_thread.start()
                 analyst_thread.join(timeout=240) # 4 minute limit for low-core CPUs
