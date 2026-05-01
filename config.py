@@ -244,7 +244,7 @@ ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "f
 
 # ── AI Routing Configuration ────────────────────────────────────
 # nvidia (Cloud Research) -> gemini (Cloud) -> local (Gemma 2 2B)
-PROVIDER_FALLBACK_ORDER = ["nvidia", "gemini", "local"]
+PROVIDER_FALLBACK_ORDER = ["nvidia", "mistral", "gemini", "local"]
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
