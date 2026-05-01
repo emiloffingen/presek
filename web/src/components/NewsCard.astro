@@ -60,7 +60,7 @@ function getCardSummary(article: Article, lead = false) {
 	return highlightScores(truncated);
 }
 
-const displaySummary = cluster.synthetic_standfirst || getCardSummary(main, isLead);
+const displaySummary = cluster.synthetic_standfirst || cluster.summary || getCardSummary(main, isLead);
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
 
 const hasSynthesis = cluster.has_synthesis;
