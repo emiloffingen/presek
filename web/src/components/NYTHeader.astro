@@ -113,31 +113,30 @@ function getRelativeTimeStr(dateStr?: string) {
     {hasTicker && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
-            <div class="ticker-prefix">
-                <span class="dispatch-item">
-                    <span class="ticker-label">{hasBreaking ? 'УДАРНО:' : 'НАЈНОВО:'}</span>
-                </span>
-            </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
                     <div class="ticker-content-segment">
-                        {breakingItems.map((item: any) => (
-                            <a href={item.href} class="live-ticker-headline">
-                                <span class="ticker-sep" aria-hidden="true">||</span>
-                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                {item.label}
-                            </a>
-                        ))}
+                        {breakingItems.map((item: any) => {
+                            const relativeTime = getRelativeTimeStr(item.created_at);
+                            return (
+                                <a href={item.href} class="live-ticker-headline">
+                                    {relativeTime && <span class="ticker-time">{relativeTime}</span>}
+                                    <span class="ticker-title">{item.label}</span>
+                                </a>
+                            );
+                        })}
                     </div>
                     {/* Duplicate for seamless looping */}
                     <div class="ticker-content-segment" aria-hidden="true">
-                        {breakingItems.map((item: any) => (
-                            <a href={item.href} class="live-ticker-headline">
-                                <span class="ticker-sep" aria-hidden="true">||</span>
-                                <span class="ticker-time">{getRelativeTimeStr(item.created_at)}</span>
-                                {item.label}
-                            </a>
-                        ))}
+                        {breakingItems.map((item: any) => {
+                            const relativeTime = getRelativeTimeStr(item.created_at);
+                            return (
+                                <a href={item.href} class="live-ticker-headline">
+                                    {relativeTime && <span class="ticker-time">{relativeTime}</span>}
+                                    <span class="ticker-title">{item.label}</span>
+                                </a>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -240,6 +239,12 @@ function getRelativeTimeStr(dateStr?: string) {
         z-index: 101;
         overflow: hidden;
     }
+    .dispatch-container {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        min-width: 0;
+    }
     .ticker-prefix {
         display: flex; align-items: center; gap: 0.35rem; 
         font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900;
@@ -260,9 +265,9 @@ function getRelativeTimeStr(dateStr?: string) {
     .dispatch-data { color: var(--foreground); white-space: nowrap; }
     .dispatch-sep { opacity: 0.3; }
 
-    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.64rem; font-weight: 700; color: var(--foreground); text-decoration: none; display: flex; align-items: center; white-space: nowrap; }
+    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.64rem; line-height: 1; font-weight: 700; color: var(--foreground); text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
     .ticker-time { font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; margin-right: 0.5rem; background: var(--secondary); padding: 1px 4px; border-radius: 2px; }
-    .ticker-sep { margin: 0 1rem; opacity: 0.2; font-weight: 300; }
+    .ticker-title { line-height: 1.1; }
 
     /* ── Editorial Topbar ─────────────────────────────── */
     .header-sticky-wrapper {
