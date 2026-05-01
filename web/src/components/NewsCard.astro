@@ -171,7 +171,7 @@ function getTimeStr(dateStr: string) {
 		</div>
 
 
-		<a href={clusterUrl} class="headline-link group">
+		<a href={clusterUrl} class="headline-link group" onmouseenter={`fetch('${clusterUrl}', { priority: 'low' })`}>
 			<h2 class:list={["headline", isLead ? "headline-lead" : "headline-standard", { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
 			</h2>
 		</a>
