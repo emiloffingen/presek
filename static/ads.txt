@@ -1,1 +1,3 @@
 google.com, pub-1724921768403014, DIRECT, f08c47fec0942fa0
+infolinks.com, 3445227, DIRECT, f08c47fec0942fa0
+adcash.com, 10949929, DIRECT, f08c47fec0942fa0
