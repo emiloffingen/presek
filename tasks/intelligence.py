@@ -421,12 +421,27 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 raise
 
             res_data = res if isinstance(res, dict) else {}
-            summary = res_data.get('summary', '') if res_data else res
-            generated_article = res_data.get('article', '')
-            synthetic_headline = res_data.get('synthetic_headline', '')
-            synthetic_standfirst = res_data.get('synthetic_standfirst', '')
+            
+            # If the AI returned a string instead of a dict, or if the dict is missing core fields,
+            # we should treat it as a partial failure and merge with local fallback
+            if not isinstance(res, dict) or not res.get('summary') or not res.get('article'):
+                log.info(f"[tasks/synthesis] AI returned unstructured or partial response for {cluster_id}, merging with enhanced fallback.")
+                fallback = synthesize_cluster_fallback(article_rows)
+                
+                # Merge: Prefer AI summary if it exists and is long enough, otherwise fallback
+                summary = res_data.get('summary') or (res if isinstance(res, str) and len(res) > 30 else fallback['summary'])
+                generated_article = res_data.get('article') or fallback['generated_article']
+                synthetic_headline = res_data.get('synthetic_headline') or fallback['synthetic_headline']
+                synthetic_standfirst = res_data.get('synthetic_standfirst') or fallback['synthetic_standfirst']
+                perspectives = res_data.get('perspectives') or fallback['perspectives']
+            else:
+                summary = res_data.get('summary', '')
+                generated_article = res_data.get('article', '')
+                synthetic_headline = res_data.get('synthetic_headline', '')
+                synthetic_standfirst = res_data.get('synthetic_standfirst', '')
+                perspectives = res_data.get('perspectives', [])
+
             verification_report = res_data.get('verification_report')
-            perspectives = res_data.get('perspectives', [])
             quote = validate_person_names(res_data.get('quote', ''))
 
             if not summary or (isinstance(summary, str) and len(summary) < 20):

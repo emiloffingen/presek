@@ -431,7 +431,7 @@ def compare_cluster_sources(articles):
 
 def synthesize_cluster_fallback(articles):
     articles = _normalize_articles_for_local_use(articles)
-    if not articles: return {"summary": "", "perspectives": []}
+    if not articles: return {"summary": "", "perspectives": [], "synthetic_headline": "", "generated_article": ""}
     
     lead = articles[0]
     comparison = compare_cluster_sources(articles)
@@ -456,16 +456,31 @@ def synthesize_cluster_fallback(articles):
         
     common = comparison.get("common_line", "").replace("Повеќето извори се согласуваат околу ", "").replace(" како теми во фокус.", "").strip()
     if common and len(common) > 18 and "," not in common:
-        summary_lines.append(f"• Потврден е фокусот на: {common}")
+        summary_lines.append(f"• Потврда: {common}")
     
     sources_str = _source_list(articles, limit=4)
-    summary_lines.append(f"• Покриеност: Развојот го следат {len(articles)} медиуми, вклучувајќи ги {sources_str}.")
+    summary_lines.append(f"• Извори: Развојот го следат {len(articles)} медиуми ({sources_str}).")
     if comparison.get("open_points"):
-        summary_lines.append(f"• Што останува отворено: {comparison['open_points'][0]}")
+        summary_lines.append(f"• Што е следно: {comparison['open_points'][0]}")
 
     summary = "\n".join(summary_lines)
 
-    # 3. Perspectives
+    # 3. Build a "Generated Article" from available snippets
+    article_body = []
+    if sentences:
+        article_body.append(f"{lead_title}. {'. '.join(sentences[:2])}.")
+    else:
+        article_body.append(f"{lead_title}. Настанот е под лупа на медиумите.")
+    
+    if comparison.get("common_line"):
+        article_body.append(comparison["common_line"])
+    
+    if comparison.get("difference_points"):
+        article_body.append(comparison["difference_points"][0])
+
+    generated_article = "\n\n".join(article_body)
+
+    # 4. Perspectives
     perspectives = []
     if len(articles) > 1:
         perspectives.append({
@@ -486,7 +501,13 @@ def synthesize_cluster_fallback(articles):
         })
 
     record_runtime_event("local_synthesis_path", mode="enhanced_fallback")
-    return {"summary": summary, "perspectives": perspectives[:3]}
+    return {
+        "summary": summary, 
+        "perspectives": perspectives[:3],
+        "synthetic_headline": lead_title,
+        "generated_article": generated_article,
+        "synthetic_standfirst": f"Уреднички преглед базиран на {len(articles)} извори."
+    }
 
 def generate_daily_brief_fallback(clusters):
     if not clusters: return "## Дневен Брифинг\n\nНема доволно достапни вести."
