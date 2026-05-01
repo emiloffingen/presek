@@ -22,6 +22,7 @@ from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK
 from embeddings import generate_embeddings_batch
 from health import record_source_fetch, get_source_statuses
 from language import is_cyrillic_south_slavic
+from api_helpers import is_safe_url
 
 from prometheus_client import Counter
 
@@ -340,6 +341,9 @@ def extract_image_url(entry):
 
 async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     """Fetch only the head of an article page and extract the og:image meta tag."""
+    if not is_safe_url(url):
+        return None
+
     try:
         async with client.stream("GET", url, timeout=8.0, follow_redirects=True) as resp:
             resp.raise_for_status()
