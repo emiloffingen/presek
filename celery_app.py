@@ -41,6 +41,11 @@ def on_task_failure(sender=None, task_id=None, exception=None, args=None, kwargs
             INSERT INTO failed_tasks (task_name, args, kwargs, error_message)
             VALUES (%s, %s::jsonb, %s::jsonb, %s)
         """, (sender.name, json.dumps(args or []), json.dumps(kwargs or {}), str(exception)), fetch=False)
+        
+        # Proactively check and log the recent failure context
+        from scripts.monitor_errors import check_failed_tasks
+        check_failed_tasks()
+        
     except Exception as e:
         log.error(f"[celery-dlq] Failed to store task error in DB: {e}")
 
