@@ -391,6 +391,8 @@ const articleSchema = cluster ? {
 								</div>
 							</section>
 						)}
+                        
+                        <NativeAdSlot />
 
 						{/* ADVANCED ANALYTICS */}
 						<section class="editorial-section advanced-tools mb-16 bg-secondary/5 p-10 border-y border-border/40">
@@ -405,8 +407,6 @@ const articleSchema = cluster ? {
 								<ClusterHistoryIsland client:visible clusterId={id || ''} />
 							</div>
 						</section>
-
-                        <NativeAdSlot />
 					</div>
 
 					{/* 4. SIDEBAR COLUMN */}
