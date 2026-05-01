@@ -51,7 +51,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 <!doctype html>
 <html lang="mk">
 	<head>
-		<script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SV2R3LZJ5C"></script>
 		<script is:inline>
 			window.dataLayer = window.dataLayer || [];
@@ -178,11 +177,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			}
 			initParallax();
 			document.addEventListener('astro:page-load', initParallax);
-		</script>
-		<script is:inline type="text/javascript">
-			aclib.runAutoTag({
-				zoneId: 'ntctzqqvyu',
-			});
 		</script>
 	</body>
 </html>
