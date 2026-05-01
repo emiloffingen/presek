@@ -189,8 +189,9 @@ function getTimeStr(dateStr: string) {
 				</p>
 
 				{displaySummary && (
-					<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}>
-					</p>
+					<div class="summary-container">
+						<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
+					</div>
 				)}
 			</div>
 		)}
@@ -264,6 +265,15 @@ function getTimeStr(dateStr: string) {
 	.nyt-article {
 		--news-card-cache-bust-20260424: 1;
 	}
+
+    .summary-container {
+        max-height: 4.5em; /* Approximately 3 lines */
+        overflow: hidden;
+        transition: max-height 0.4s ease-in-out;
+    }
+    .article-body:hover .summary-container {
+        max-height: 20em; /* Expand to show full summary */
+    }
 
     .article-image-placeholder {
         width: 100%;
