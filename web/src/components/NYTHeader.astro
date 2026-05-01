@@ -115,8 +115,7 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="dispatch-container site-layout">
             <div class="ticker-prefix">
                 <span class="dispatch-item">
-                    <Radio size={10} className="animate-pulse text-nyt-red mr-2" />
-                    <span class="hidden sm:inline">{hasBreaking ? 'УДАРНО:' : 'НАЈНОВО:'}</span>
+                    <span class="ticker-label">{hasBreaking ? 'УДАРНО:' : 'НАЈНОВО:'}</span>
                 </span>
             </div>
             <div class="unified-ticker-track-wrap">
@@ -324,7 +323,8 @@ function getRelativeTimeStr(dateStr?: string) {
 
     @media (max-width: 960px) {
         .unified-dispatch-bar { height: 1.4rem; }
-        .ticker-prefix { padding-right: 0.5rem; }
+        .ticker-prefix { padding-right: 0.5rem; display: flex; align-items: center; justify-content: center; }
+    .ticker-label { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 900; letter-spacing: 0.05em; color: var(--nyt-red); }
         .ticker-content-segment { gap: 1rem; padding-right: 1rem; }
         .editorial-topbar { padding: 0.25rem 0.5rem 0.35rem; }
         .topbar-main { grid-template-columns: auto 1fr auto; gap: 0.5rem; }

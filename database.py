@@ -1,7 +1,6 @@
 import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
-import psycopg
 from psycopg_pool import AsyncConnectionPool
 from psycopg.rows import dict_row
 from contextlib import contextmanager, asynccontextmanager

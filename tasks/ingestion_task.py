@@ -15,6 +15,7 @@ from crawler import crawler
 from image_service import image_service
 from health import record_refresh, record_task_event
 from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_async_run
+from tasks.notifier import Notifier
 from version import APP_VERSION_LABEL
 
 @celery_app.task(rate_limit='100/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
@@ -64,6 +65,7 @@ def crawl_article_task(article_id, url):
             
     except Exception as e:
         log.error(f"Error in crawl_article_task for {article_id}: {e}")
+        Notifier.send_alert("CRAWL_FAILURE", f"Article {article_id} failed: {e}", {"article_id": article_id})
         raise
 
 @celery_app.task(acks_late=True, reject_on_worker_lost=True)
@@ -79,6 +81,7 @@ def run_ingestion():
         acquired = redis_client.set(lock_key, "1", nx=True, ex=900)
     except Exception as e:
         log.error(f"[ingestion] Redis lock check failed, skipping cycle for safety: {e}")
+        Notifier.send_alert("INGESTION_LOCK_FAILURE", f"Redis lock check failed: {e}")
         return # Fail-closed: better to skip a minute than crash the DB
     if not acquired:
         log.info(f"Presek {APP_VERSION_LABEL}: ingestion cycle already in flight, skipping duplicate dispatch.")
@@ -180,3 +183,4 @@ def auto_repair_sources_task():
                 
     except Exception as e:
         log.error(f"[tasks] Auto-repair failed: {e}")
+        Notifier.send_alert("AUTO_REPAIR_FAILURE", f"Auto-repair failed: {e}")
