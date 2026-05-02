@@ -64,6 +64,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     const intelligence = globalPulse?.intelligence ?? {};
     const velocityData = globalPulse?.velocity ?? [];
     const topEntities = globalPulse?.top_entities ?? [];
+    const topicPulse = globalPulse?.by_topic_sentiment ?? [];
     const pulseLeaders = pulseData.slice(0, 15);
 
     function getSentimentLabel(score: number) {
@@ -185,6 +186,40 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         </div>
                         <PulseLandscapeIsland data={pulseData} loading={loading} />
                     </section>
+
+                    {/* 1b. TOPIC PULSE */}
+                    {topicPulse.length > 0 && (
+                        <section className="mb-16">
+                            <div className="flex items-center justify-between mb-8 border-b border-border pb-4">
+                                <h2 className="section-title-italic !mb-0 text-3xl">Тематски Пулс</h2>
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                    <Zap size={12} /> во последните 24ч
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {topicPulse.slice(0, 6).map((tp: any) => (
+                                    <div key={tp.topic} className="p-4 border border-border bg-secondary/5 rounded-lg flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black uppercase text-nyt-accent mb-1">{tp.topic}</span>
+                                            <span className="text-xs font-serif italic text-muted-foreground">{tp.n} стории анализирани</span>
+                                        </div>
+                                        <div className="flex gap-6 items-center">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[8px] font-black uppercase opacity-50">Објективност</span>
+                                                <span className="text-sm font-black">{(tp.avg_objectivity * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[8px] font-black uppercase opacity-50">Сензација</span>
+                                                <span className={`text-sm font-black ${tp.avg_sensationalism > 0.4 ? 'text-nyt-red' : 'text-emerald-600'}`}>
+                                                    {(tp.avg_sensationalism * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
 
                     {/* 2. KEY ACTORS GRID */}
                     <section className="mb-20">

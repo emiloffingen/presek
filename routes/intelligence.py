@@ -36,6 +36,7 @@ class GlobalPulseResponse(BaseModel):
     last_24h: int
     velocity: List[PulseVelocity]
     by_category: List[PulseCategory]
+    by_topic_sentiment: List[Dict[str, Any]] = []
     intelligence: Dict[str, Any]
     top_entities: List[Dict[str, Any]] = []
 
@@ -519,6 +520,21 @@ async def get_global_pulse(category: Optional[str] = None):
           AND a.category != ''
         GROUP BY a.category ORDER BY n DESC
     """)
+
+    # 2b. Topic Pulse (Sentiment per topic)
+    by_topic_sentiment = await db.async_execute(f"""
+        SELECT 
+            m.topic,
+            AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
+            AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
+            AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+            COUNT(*) as n
+        FROM cluster_summaries s
+        JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+        WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
+          AND m.topic IS NOT NULL AND m.topic != ''
+        GROUP BY m.topic ORDER BY n DESC
+    """)
     
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload
@@ -561,6 +577,7 @@ async def get_global_pulse(category: Optional[str] = None):
         "last_24h": last_24h,
         "velocity": velocity,
         "by_category": by_category,
+        "by_topic_sentiment": by_topic_sentiment,
         "intelligence": intel,
         "top_entities": top_entities
     }
