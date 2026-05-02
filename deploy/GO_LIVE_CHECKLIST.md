@@ -35,8 +35,11 @@ This now checks:
 ## 3. Deploy
 
 ```sh
+sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh
 APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/deploy_release.sh
 ```
+
+Skip the `install_server.sh` step only when the release does not change systemd or installer files.
 
 ## 4. Service verification
 
@@ -45,6 +48,7 @@ sudo systemctl status presek.target --no-pager
 sudo journalctl -u presek-astro.service -n 50 --no-pager
 sudo journalctl -u presek-fastapi.service -n 50 --no-pager
 sudo journalctl -u presek-worker.service -n 50 --no-pager
+sudo journalctl -u presek-ingestion-worker.service -n 50 --no-pager
 sudo journalctl -u presek-beat.service -n 50 --no-pager
 ```
 
@@ -92,4 +96,5 @@ Then rerun:
 ```sh
 bash deploy/smoke_check.sh
 sudo systemctl status presek.target --no-pager
+sudo systemctl status presek-ingestion-worker.service --no-pager
 ```

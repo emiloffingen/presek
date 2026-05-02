@@ -60,7 +60,6 @@ replace_paths() {
 
 main() {
   need_cmd systemctl
-  need_cmd nginx
   need_cmd sed
   need_cmd curl
   require_root
@@ -82,6 +81,10 @@ main() {
   if [ "$INSTALL_NGINX" = "1" ]; then
     [ -f "$CERT_FULLCHAIN" ] || { echo "Missing TLS certificate at $CERT_FULLCHAIN" >&2; exit 1; }
     [ -f "$CERT_PRIVKEY" ] || { echo "Missing TLS private key at $CERT_PRIVKEY" >&2; exit 1; }
+  fi
+
+  if [ "$INSTALL_NGINX" = "1" ] || [ "$INSTALL_NGINX" = "nossl" ] || [ "$INSTALL_NGINX" = "auto" ]; then
+    need_cmd nginx
   fi
 
   install -d -o "$SERVER_USER" -g "$SERVER_USER" "$APP_ROOT"
@@ -146,7 +149,9 @@ main() {
   echo "Deployment files installed."
   echo "Check services with:"
   echo "  sudo systemctl status presek.target"
+  echo "  sudo systemctl status presek-ingestion-worker.service"
   echo "  sudo journalctl -u presek-fastapi.service -f"
+  echo "  sudo journalctl -u presek-ingestion-worker.service -f"
   echo "Release root:"
   echo "  $APP_ROOT"
   if [ "$INSTALL_NGINX" = "1" ]; then

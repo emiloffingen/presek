@@ -19,6 +19,7 @@ ENSURE_ASTRO_BUILD="$APP_DIR/deploy/ensure_astro_build.sh"
 
 WEB_LOG="$LOG_DIR/web.log"
 WORKER_LOG="$LOG_DIR/worker.log"
+INGESTION_WORKER_LOG="$LOG_DIR/ingestion-worker.log"
 BEAT_LOG="$LOG_DIR/beat.log"
 FASTAPI_LOG="$LOG_DIR/fastapi.log"
 ASTRO_LOG="$LOG_DIR/astro.log"
