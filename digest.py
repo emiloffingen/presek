@@ -18,14 +18,12 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
 
-import urllib.request
-import json as _json
 
 def send_newsletter_to_all_subscribers(days: int = 1) -> int:
     """Sends the daily HTML digest to all active newsletter subscribers."""

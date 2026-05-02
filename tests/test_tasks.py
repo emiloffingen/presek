@@ -1,6 +1,6 @@
 import json
 import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 class TestBackfillCoverArtTask:

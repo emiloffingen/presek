@@ -8,14 +8,12 @@ sys.path.append(os.getcwd())
 
 import ai_engine
 from tasks.delivery import (
-    generate_daily_brief_task, 
     _load_daily_brief_clusters, 
-    _build_daily_brief_context,
-    _has_valid_daily_brief_structure
+    _build_daily_brief_context
 )
 from prompts import DAILY_BRIEF_SYSTEM_PROMPT
 from database import db_manager as db
-from utils import redis_client, delete_cache
+from utils import delete_cache
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek")

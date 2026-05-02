@@ -4,9 +4,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from database import db_manager as db
-from utils import delete_cache, delete_cache_prefix, redis_client
-from health import record_task_event
+from utils import delete_cache, delete_cache_prefix
 from logging_config import get_logger
 
 log = get_logger("presek_celery")
@@ -43,7 +41,6 @@ def send_email(html: str, subject: str,
 
 _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 
-import asyncio
 
 def invalidate_public_data_caches():
     delete_cache_prefix("v4:news:")

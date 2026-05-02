@@ -1,4 +1,3 @@
-import pytest
 import datetime
 from unittest.mock import patch, MagicMock
 from clustering import mk_stem, text_to_vector, get_cosine, find_or_create_cluster, _title_phrase_overlap, _topic_bridge_allowed

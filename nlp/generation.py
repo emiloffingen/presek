@@ -1,15 +1,12 @@
 import re
-import json
 import math
-import datetime
 from collections import Counter
-from database import db_manager as db
 from trending import STOPWORDS
 from nlp.utils import _articles_cache_key, _cache_get, _cache_set, _comparison_cache, _question_evidence_cache, _normalize_articles_for_local_use, cleanAndDecode, deShout
 from utils import record_runtime_event
 
 from nlp.keywords import _sentence_tokens, _extract_capitalized_phrases, extract_keyphrases_locally, normalize_tag_name, SOURCE_NOISE_WORDS, TAG_NOISE_WORDS
-from nlp.text_processing import _normalize_summary_sentence, _jaccard_similarity, _is_noisy_summary_sentence
+from nlp.text_processing import _normalize_summary_sentence, _is_noisy_summary_sentence
 
 def _clean_briefing_snippet(text):
     clean = str(text or "").strip()

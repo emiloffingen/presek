@@ -2,7 +2,6 @@ import json
 import time
 import datetime
 import httpx
-import urllib.parse
 import re
 import logging
 import asyncio
@@ -13,10 +12,7 @@ from typing import AsyncGenerator
 
 from config import (
     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
-    POLLINATIONS_API_KEY, PROVIDER_FALLBACK_ORDER
-)
-from prompts import (
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
+    PROVIDER_FALLBACK_ORDER
 )
 
 from prometheus_client import Histogram, Counter
@@ -24,9 +20,7 @@ from prometheus_client import Histogram, Counter
 log = logging.getLogger("presek")
 
 from utils import redis_client, record_runtime_event
-from database import db_manager as db
-import nlp
-from nlp import summarize_locally, summarize_article_fallback, rewrite_to_macedonian_locally, synthesize_locally
+from nlp import summarize_locally, synthesize_locally
 
 # --- Prometheus Metrics ---
 AI_LATENCY = Histogram(
@@ -395,7 +389,6 @@ def clean_json_response(text: str) -> dict | str | None:
 def auto_summarize_top_clusters():
     """Dispatch synthesis tasks for the top recent clusters."""
     import sys
-    from collections import defaultdict
     try:
         from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
         from database import db_manager as db

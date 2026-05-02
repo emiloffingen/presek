@@ -1,17 +1,14 @@
 import os
 import re
-import json
-import asyncio
 import logging
-import datetime
 import time
 import urllib.parse
 import secrets
 from collections import defaultdict
 from io import BytesIO
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse, Response, FileResponse
+from fastapi.responses import Response, FileResponse
 from pathlib import Path
 
 try:
@@ -22,7 +19,7 @@ except ImportError:
 import redis as _redis_lib
 from database import db_manager as db
 from utils import (
-    cached_response, set_cache, record_runtime_event, redis_client
+    cached_response, set_cache
 )
 
 log = logging.getLogger("presek.routes.system")
@@ -37,14 +34,12 @@ except Exception as e:
     binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
 from health import _probe_database, _probe_redis
 from nlp import generate_local_placeholder
-from ai_engine import _call_ai_async
-from prompts import SYNTHESIS_SYSTEM_PROMPT
 from version import version_payload
+from utils import _resolve_public_ips, _peer_ip
 from .common import (
-    _error_json, _resolve_public_ips, _peer_ip, 
-    _preferred_cluster_headline, cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
+    cleanAndDecode, _PROXY_ALLOWED_TYPES, _PROXY_MAX_BYTES
 )
-from .security import validate_cluster_id, validate_string_param
+from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
 router = APIRouter()

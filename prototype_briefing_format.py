@@ -1,5 +1,3 @@
-import sys
-import os
 import datetime
 
 # Mocking the structure based on the request

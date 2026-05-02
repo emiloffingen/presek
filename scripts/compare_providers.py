@@ -1,6 +1,5 @@
 import os
 import asyncio
-import httpx
 import time
 from dotenv import load_dotenv
 
@@ -9,7 +8,6 @@ import sys
 sys.path.append(os.getcwd())
 
 from ai_engine import PROVIDERS
-from prompts import SUMMARY_SYSTEM_PROMPT
 
 load_dotenv()
 

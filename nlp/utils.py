@@ -3,7 +3,6 @@ import html as _html
 import logging
 import threading
 from collections import OrderedDict
-from utils import record_runtime_event
 
 log = logging.getLogger("presek")
 

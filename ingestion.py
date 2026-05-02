@@ -16,9 +16,9 @@ except ModuleNotFoundError:
     httpx = None
 
 import clustering
-from nlp.categories import detect_category, detect_subcategory, detect_country, normalize_headline, detect_topic
-from database import db_manager as db, get_db
-from config import FEED_LIMIT, CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
+from nlp.categories import detect_category, detect_subcategory, normalize_headline, detect_topic
+from database import db_manager as db
+from config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from embeddings import generate_embeddings_batch
 from health import record_source_fetch, get_source_statuses
 from language import is_cyrillic_south_slavic

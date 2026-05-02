@@ -1,10 +1,9 @@
-import json
 import logging
 import datetime
 import asyncio
 import re
-from pydantic import BaseModel, Field
-from typing import Optional, List, Any, Dict
+from pydantic import BaseModel
+from typing import Optional, Any, Dict
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse
@@ -20,7 +19,7 @@ from health import get_source_statuses, reset_source_policy
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
 from nlp import generate_daily_brief_fallback
 from .common import _source_admin_authorized, _error_json
-from .security import validate_date, validate_cluster_id, require_admin_token, verify_admin_token, validate_string_param, validate_email
+from .security import validate_date, validate_string_param, validate_email
 
 log = logging.getLogger("presek")
 router = APIRouter()

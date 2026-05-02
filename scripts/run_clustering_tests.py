@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import clustering
-import database
 from nlp.categories import detect_category, detect_topic
 
 def simple_extract_entities(text):

@@ -1,7 +1,5 @@
 """Tests for Redis-backed utilities: caching and rate limiting."""
-import pytest
 import json
-import time
 from unittest.mock import patch, MagicMock
 
 

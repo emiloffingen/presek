@@ -2,10 +2,11 @@
 clustering.py — Advanced Hybrid News Clustering for Пресек
 Combines Title Fingerprinting, Semantic (Vector) Search, and Weighted TF-IDF.
 """
-import math, uuid, re
+import math
+import uuid
+import re
 import datetime
 from collections import Counter
-from database import get_db
 from config import CLUSTERING_THRESHOLDS
 
 # ── Macedonian stemmer ────────────────────────────────────────────
@@ -492,7 +493,6 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
         
         # Sports Match Validation (Avoid mixing different matches)
         if topic == "Спорт" and rep_0.get("topic") == "Спорт":
-            from nlp.generation import _extract_sports_scores
             # We check if they share any common "team-like" entities
             if potential_entities and rep_entities:
                 shared_entities = potential_entities.intersection(rep_entities)

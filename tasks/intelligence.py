@@ -1,6 +1,5 @@
 import datetime
 import json
-import logging
 import os
 import re
 import sys
@@ -21,10 +20,9 @@ from ai_engine import (
 )
 from embeddings import average_embeddings, parse_embedding_value
 from prompts import (
-    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT, 
-    TOPIC_SYSTEM_PROMPT, FACTCHECK_SYSTEM_PROMPT
+    SUMMARY_SYSTEM_PROMPT, SYNTHESIS_SYSTEM_PROMPT
 )
-from nlp.categories import ALLOWED_CATEGORIES, detect_topic, detect_category, THEMATIC_TOPICS
+from nlp.categories import detect_topic, detect_category
 from entities import extract_entities, validate_person_names
 from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
@@ -32,7 +30,7 @@ from nlp import (
 )
 from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color
-from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, safe_async_run, redis_client
+from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, redis_client
 
 @celery_app.task(rate_limit='50/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def summarize_article_task(article_id, final_title=None):
@@ -808,7 +806,6 @@ def classify_topics_task():
         log.error(f"[tasks] Topic classification failed: {e}")
     else:
         invalidate_public_data_caches()
-        from tasks.utils import record_task_event
         record_task_event("classify_topics", "ok", "clusters:recent:local")
 @celery_app.task
 def recategorize_clusters_task():

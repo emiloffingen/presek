@@ -1,6 +1,5 @@
 import asyncio
 import httpx
-import sys
 
 async def test_search():
     async with httpx.AsyncClient(base_url="http://localhost:5001") as client:

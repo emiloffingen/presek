@@ -3,20 +3,19 @@ import logging
 import re
 import datetime
 
-from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, Field
+from typing import Optional, List, Any
+from pydantic import BaseModel
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from database import db_manager as db
 from utils import (
-    score_cluster, rank_articles_in_cluster, calculate_reading_time,
+    score_cluster, calculate_reading_time,
     cached_response, set_cache, is_balanced, assess_cluster_synthesis_freshness,
     annotate_cluster_articles, score_cluster_for_homepage, build_read_next_clusters,
-    event_stream, record_runtime_event, get_source_effective_weight, _coerce_datetime,
+    event_stream, get_source_effective_weight, _coerce_datetime,
 )
-from ai_engine import PROVIDERS, _call_ai_async, clean_json_response
 from config import (
     BREAKING_SCORE_THRESHOLD,
     API_MAX_PAGE,
@@ -27,11 +26,11 @@ from nlp import (
 )
 from language import is_cyrillic_south_slavic
 from api_helpers import (
-    normalize_summary_text, normalize_perspectives, normalize_citation_sources
+    normalize_citation_sources
 )
-from .common import _source_admin_authorized, _error_json, cleanAndDecode, _news_row_limit
+from .common import cleanAndDecode, _news_row_limit
 
-from .security import validate_cluster_id, validate_string_param
+from .security import validate_cluster_id
 
 log = logging.getLogger("presek")
 router = APIRouter()

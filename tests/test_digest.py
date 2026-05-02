@@ -1,4 +1,3 @@
-import pytest
 from datetime import datetime
 from digest import mk_date, render_html, MK_MONTHS, MK_DAYS
 

@@ -1,5 +1,4 @@
-import pytest
-from trending import extract_words_with_flags, STOPWORDS, MIN_WORD_LEN
+from trending import extract_words_with_flags
 
 
 class TestExtractWordsWithFlags:

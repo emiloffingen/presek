@@ -1,6 +1,5 @@
 import datetime
 import json
-import logging
 import math
 import re
 import urllib.parse
@@ -22,7 +21,7 @@ from api_helpers import normalize_perspectives
 from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
 from nlp.keywords import _extract_capitalized_phrases
-from tasks.utils import invalidate_public_data_caches, delete_cache, record_runtime_event, log, _PUBLIC_SITE_URL, redis_client
+from tasks.utils import delete_cache, log, _PUBLIC_SITE_URL, redis_client
 
 _BRIEFING_PARTISAN_MARKERS = {
     "во очајна потрага", "крах систем", "слави победа", "предавство",
@@ -319,7 +318,7 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
             return False
             
     # Check for the numbering format
-    if not any(f"### " in text for _ in range(1)):
+    if not any("### " in text for _ in range(1)):
         log.warning("[briefing-debug] Story header missing (###)")
         return False
         
@@ -351,7 +350,7 @@ def _is_high_quality_briefing(brief: str) -> bool:
     sentence_starts = [l[:15].lower() for l in lines if len(l) > 15]
     unique_starts = len(set(sentence_starts))
     if len(sentence_starts) > 5 and unique_starts < 3:
-        log.warning(f"[editorial] Briefing rejected: repetitive sentence structure")
+        log.warning("[editorial] Briefing rejected: repetitive sentence structure")
         return False
         
     return True

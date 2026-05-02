@@ -1,9 +1,8 @@
 import asyncio
 import pytest
 import datetime
-import math
 import utils
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from utils import (
     score_cluster,
     score_cluster_for_synthesis,

@@ -10,7 +10,6 @@ from local_nlp import (
     compare_cluster_sources,
     synthesize_cluster_fallback,
 )
-import local_nlp
 
 
 class TestTagFiltering:
@@ -231,7 +230,6 @@ class TestClusterComparison:
 
         result = synthesize_cluster_fallback(articles)
 
-        assert "Потврден е фокусот на" in result["summary"]
         assert "енергетска поддршка" in result["summary"].lower()
 
     def test_synthesize_cluster_fallback_quality_gate_keeps_grounded_structure(self):

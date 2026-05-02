@@ -1,13 +1,10 @@
 import logging
-import datetime
 import json
 import re
-from typing import List, Dict, Any, Optional
-from urllib.parse import quote
+from typing import Dict, Any
 
 from database import db_manager as db
-from embeddings import generate_embedding
-from local_nlp import extract_cluster_tags_locally, summarize_locally
+from local_nlp import extract_cluster_tags_locally
 
 log = logging.getLogger("presek.topic_discovery")
 

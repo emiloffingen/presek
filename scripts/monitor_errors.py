@@ -1,4 +1,3 @@
-import sys
 from database import db_manager as db
 from logging_config import get_logger
 

@@ -1,4 +1,5 @@
-import json, os, logging, httpx
+import logging
+import httpx
 from utils import redis_client
 
 log = logging.getLogger("presek")

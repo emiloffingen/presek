@@ -4,7 +4,7 @@ import asyncio
 import logging
 import re
 import hashlib
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Request, HTTPException
 
@@ -444,7 +444,7 @@ async def get_entity_profile(name: str):
         (name,),
     )
     recent = await db.async_execute(
-        f"SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{{}}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
+        "SELECT c.cluster_id, (SELECT title FROM articles WHERE cluster_id = c.cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1) as title, c.updated_at as created_at, s.summary, s.sentiment FROM cluster_metadata c LEFT JOIN cluster_summaries s ON c.cluster_id = s.cluster_id WHERE EXISTS (SELECT 1 FROM unnest(COALESCE(c.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s)) ORDER BY c.updated_at DESC LIMIT 10",
         (name,),
     )
     
@@ -489,7 +489,7 @@ async def get_global_pulse(category: Optional[str] = None):
     """, tuple(params))
     
     # 2. Category Distribution
-    by_category = await db.async_execute(f"""
+    by_category = await db.async_execute("""
         SELECT a.category, COUNT(*) AS n 
         FROM articles a
         WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
@@ -658,7 +658,6 @@ async def get_personalized_recommendations(request: Request):
         rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL LIMIT 20", (recent_ids,))
         for r in rows:
             if r["embedding"]: user_vectors.append(json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"]))
-    from embeddings import generate_query_embedding
     for t in followed:
         vec = generate_query_embedding(t)
         if vec: user_vectors.append(vec)

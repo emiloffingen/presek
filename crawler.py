@@ -1,8 +1,7 @@
 import logging
 import asyncio
-import re
 import random
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from urllib.parse import urljoin
 
 import httpx

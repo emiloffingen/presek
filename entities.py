@@ -10,7 +10,6 @@ Pipeline:
 import re
 import logging
 import threading
-from collections import Counter
 
 log = logging.getLogger("presek")
 

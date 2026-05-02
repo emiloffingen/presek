@@ -2,8 +2,7 @@ import datetime
 import math
 import logging
 from config import (
-    SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES,
-    BALANCED_COVERAGE_THRESHOLD
+    SOURCE_CATEGORIES
 )
 
 log = logging.getLogger("presek")
@@ -37,7 +36,6 @@ def _cluster_title_overlap(left: str, right: str) -> float:
     return len(left_terms & right_terms) / union
 
 from utils import (
-    get_source_health_map, get_source_quality_multiplier, 
     get_source_effective_weight, get_source_trust_label,
     is_balanced, get_source_registry
 )
@@ -218,7 +216,6 @@ def assess_cluster_synthesis_freshness(arts, synthesis_created_at):
     if net_new:
         score += min(2.0, 1.0 + len(net_new) * 0.4)
         reasons.append("new_sources")
-    from nlp.generation import _extract_number_tokens
     def get_nums(arts):
         nums = set()
         for a in arts: nums |= set(re.findall(r"\b\d+(?::\d+)?(?:[%.,]\d+)?\b", f"{a.get('title')} {a.get('description')}"))

@@ -12,7 +12,6 @@ and cached at ~/.cache/fasttext/lid.176.ftz so subsequent runs are offline.
 import logging
 import os
 import threading
-import urllib.request
 
 log = logging.getLogger("presek")
 

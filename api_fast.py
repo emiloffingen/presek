@@ -1,12 +1,8 @@
 import os
-import secrets
 import json
 import datetime
 import time
-import re
-import importlib.util
-from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import Response
 import fastapi
 if not hasattr(fastapi, "responses"):
@@ -26,13 +22,11 @@ from limiter import (
 if _rate_limiter_enabled:
     from slowapi.middleware import SlowAPIMiddleware
 
-import database
 from database import db_manager as db
-import config
 from version import APP_VERSION, APP_VERSION_LABEL, get_full_version_info
 
 # Initialize logging early (before other imports)
-from logging_config import setup_logging, get_logger, early_setup
+from logging_config import get_logger
 # early_setup() already called by logging_config import
 
 # Initialize Logging - use centralized config

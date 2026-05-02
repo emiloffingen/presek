@@ -5,7 +5,7 @@ import os
 import re
 import secrets
 import logging
-from typing import Callable, Awaitable
+from typing import Callable
 from fastapi import Request, HTTPException
 from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -293,7 +293,6 @@ def create_security_middleware(app):
 # Dependency Injectors for Route Protection
 # =============================================================================
 
-from fastapi import Depends
 
 
 async def admin_user(request: Request) -> bool:

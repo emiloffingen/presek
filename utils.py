@@ -6,10 +6,8 @@ import redis
 import json
 import os
 import time
-import urllib.request
 from PIL import Image
 from io import BytesIO
-import requests
 from config import (
     SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY, SOURCE_CATEGORIES
 )

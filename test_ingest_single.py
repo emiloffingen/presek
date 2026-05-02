@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from ingestion import fetch_feed_async, ingest_all_sources_async
+from ingestion import fetch_feed_async
 from database import db_manager as db
 import httpx
 

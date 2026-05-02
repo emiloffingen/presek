@@ -2,7 +2,6 @@ import sys
 import os
 import importlib.util
 import logging
-import pytest
 from unittest.mock import MagicMock
 
 # Create a mock for tasks.utils

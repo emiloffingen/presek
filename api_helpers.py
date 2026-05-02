@@ -10,7 +10,6 @@ import re
 import socket
 import ipaddress
 import logging
-from typing import Optional
 
 log = logging.getLogger("presek.api.helpers")
 
@@ -78,8 +77,6 @@ def is_safe_url(url: str) -> bool:
         log.error(f"is_safe_url error for {hostname}: {e}")
         return False
 
-from nlp.keywords import ENTITY_NOISE_WORDS
-from utils import get_source_trust_label, build_cluster_source_signals
 
 _EXTRA_NOISE = {"вести", "вест", "извор", "извори", "кластер"}
 _GENERIC_ANGLES = {"перспектива", "агол", "точка", "став", "гледиште"}

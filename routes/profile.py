@@ -1,9 +1,8 @@
 import json
 import secrets
 import logging
-import asyncio
-from pydantic import BaseModel, Field
-from typing import Optional, List, Any, Dict
+from pydantic import BaseModel
+from typing import List
 from fastapi import APIRouter, Request, HTTPException
 
 from database import db_manager as db
@@ -14,7 +13,6 @@ from utils import (
 from config import BREAKING_SCORE_THRESHOLD
 from api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from .common import _normalize_sync_list, _extract_sync_token, _normalize_suggestion_surface, _normalize_suggestion_kind, _normalize_suggestion_event_type, _validate_sync_token_value
-from .security import validate_string_param
 
 log = logging.getLogger("presek")
 router = APIRouter()

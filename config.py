@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 try:
     from dotenv import load_dotenv

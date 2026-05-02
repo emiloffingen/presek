@@ -128,7 +128,7 @@ class TestGetDb:
 class TestSchemaMigrations:
     def test_init_schema_calls_alembic_upgrade(self):
         from database import DatabaseManager
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
 
         manager = DatabaseManager.__new__(DatabaseManager)
         

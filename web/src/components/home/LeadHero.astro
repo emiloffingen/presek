@@ -36,7 +36,7 @@ const tintColor = dominantColor || '#1e40af';
 const primaryArticle = leadCluster.articles?.[0] || {};
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
 const relatedArticles = leadCluster.articles.slice(1, 4);
-const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.subcategory || primaryArticle.category || 'Водечка тема';
+const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Водечка тема';
 ---
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>

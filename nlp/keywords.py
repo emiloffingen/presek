@@ -1,6 +1,5 @@
 import re
 import threading
-import logging
 from collections import Counter
 from trending import STOPWORDS
 from nlp.utils import log

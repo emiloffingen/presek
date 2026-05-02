@@ -102,7 +102,6 @@ def test_get_personalized_news_sync_empty_profile():
 
 def test_get_personalized_news_sync_with_history():
     from routes.profile import get_personalized_news_sync
-    import routes.news
     
     # Mock data
     recent = [{"cluster_id": "c1"}]

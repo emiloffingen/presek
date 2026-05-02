@@ -1,23 +1,14 @@
 import os
 import secrets
-import json
 import logging
 import datetime
-import time
 import re
 import ipaddress
-import html as _html
-import urllib.request
-import urllib.parse
-import socket
-from typing import Optional, List
-from pathlib import Path
+from typing import Optional
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
 from database import db_manager as db
-from config import API_MAX_Q_LEN
-from utils import _resolve_public_ips, _peer_ip
 from nlp.utils import cleanAndDecode
 
 log = logging.getLogger("presek")

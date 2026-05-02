@@ -1,5 +1,4 @@
 import re
-import logging
 from typing import Set
 
 def extract_title_entities_regex(title: str) -> Set[str]:

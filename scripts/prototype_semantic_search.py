@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("presek.semantic_prototype")
 
 async def run_semantic_search_test(query: str, limit: int = 5):
-    print(f"\n--- Presek Semantic Search Prototype (MiniLM) ---")
+    print("\n--- Presek Semantic Search Prototype (MiniLM) ---")
     print(f"Query: \"{query}\"")
-    print(f"Goal: Find Macedonian news semantically related to this (even if English).\n")
+    print("Goal: Find Macedonian news semantically related to this (even if English).\n")
 
     # 1. Generate the embedding for the query (English or Macedonian)
     vector = generate_query_embedding(query)

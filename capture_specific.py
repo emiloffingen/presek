@@ -1,7 +1,6 @@
 import asyncio
 import sys
 from playwright.async_api import async_playwright
-import os
 
 async def run(url, output):
     async with async_playwright() as p:

@@ -1,5 +1,3 @@
-import logging
-import asyncio
 import httpx
 import os
 import sys
