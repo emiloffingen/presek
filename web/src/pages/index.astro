@@ -25,12 +25,22 @@ const API_URL = apiBaseUrl();
 
 // Get search params for SSR filtering
 const { searchParams } = Astro.url;
-const category = searchParams.get('category');
-const topic = searchParams.get('topic');
-const entity = searchParams.get('entity');
-const subcategory = searchParams.get('subcategory');
-const q = searchParams.get('q');
-const timespan = searchParams.get('timespan');
+function cleanFilterParam(value: string | null) {
+    if (!value) return null;
+    const cleaned = value
+        .trim()
+        .replace(/^[#\s]+/, '')
+        .replace(/(?:\.{2,}|…)+$/u, '')
+        .trim();
+    return cleaned || null;
+}
+
+const category = cleanFilterParam(searchParams.get('category'));
+const topic = cleanFilterParam(searchParams.get('topic'));
+const entity = cleanFilterParam(searchParams.get('entity'));
+const subcategory = cleanFilterParam(searchParams.get('subcategory'));
+const q = searchParams.get('q')?.trim() || null;
+const timespan = searchParams.get('timespan')?.trim() || null;
 
 let clusters: NewsCluster[] = [];
 let globalClusters: NewsCluster[] = [];

@@ -36,10 +36,16 @@ const { q, category, topic, entity, subcategory } = Astro.props;
 <style>
     .filter-header { padding: 2rem 0; border-bottom: 3px solid var(--foreground); }
     .filter-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted-foreground); margin-bottom: 0.4rem; }
-    .filter-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; italic: true; line-height: 1; margin: 0 0 1.25rem; }
+    .filter-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; font-style: italic; line-height: 1; margin: 0 0 1.25rem; overflow-wrap: anywhere; }
     .filter-meta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
-    .filter-chips { display: flex; gap: 0.5rem; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .filter-chip { padding: 0.35rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
     .system-status { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--nyt-accent); }
     .clear-filter { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
+
+    @media (max-width: 640px) {
+        .filter-header { padding: 1.5rem 0; margin-bottom: 2rem; }
+        .filter-meta-row { align-items: flex-start; gap: 1rem; }
+        .clear-filter { margin-left: auto; }
+    }
 </style>
