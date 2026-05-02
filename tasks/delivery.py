@@ -1404,6 +1404,23 @@ def generate_daily_brief_task(retry_attempt=0):
         """)
         diverse_pct = round((balance_stats["diverse"] / total_24h) * 100) if total_24h > 0 else 0
 
+        # Top Subjects and Locations
+        subjects_rows = db.execute("""
+            SELECT name, total_mentions
+            FROM knowledge_entities
+            WHERE type = 'PERSON' AND last_seen >= NOW() - INTERVAL '24 hours'
+            ORDER BY total_mentions DESC LIMIT 5
+        """)
+        top_subjects = ", ".join(f"{r['name']} ({r['total_mentions']})" for r in subjects_rows)
+
+        locations_rows = db.execute("""
+            SELECT name, total_mentions
+            FROM knowledge_entities
+            WHERE type = 'GPE' AND last_seen >= NOW() - INTERVAL '24 hours'
+            ORDER BY total_mentions DESC LIMIT 5
+        """)
+        top_locations = ", ".join(f"{r['name']} ({r['total_mentions']})" for r in locations_rows)
+
         # 2. Prep Dispatch Name
         hour = datetime.datetime.now().hour
         if 5 <= hour < 12: dispatch_name = "Утрински Диспач"
@@ -1419,6 +1436,8 @@ def generate_daily_brief_task(retry_attempt=0):
             f"- Обработени статии: {total_24h}\n"
             f"- Удел на светски вести: {intl_pct}%\n"
             f"- Индекс на плурализам (разновидни извори): {diverse_pct}%\n"
+            f"- Најзастапени актери: {top_subjects or 'Нема'}\n"
+            f"- Во фокус локации: {top_locations or 'Нема'}\n"
             f"- Наслов на диспачот: {dispatch_name}"
         )
         
