@@ -1,6 +1,6 @@
 ---
 import { Zap, Activity, Users, MapPin } from 'lucide-react';
-import BriefingDeliveryIsland from '../BriefingDeliveryIsland.tsx';
+import NewsletterIsland from '../NewsletterIsland.tsx';
 
 interface Props {
 	stats: any;
@@ -15,8 +15,7 @@ const { stats, health, leadCluster, briefing } = Astro.props;
 <aside class="briefing-sidebar">
 	<div class="sidebar-sticky">
 		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm">
-			<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6">ДИГИТАЛНА ИСПОРАКА</h4>
-			<BriefingDeliveryIsland client:load />
+			<NewsletterIsland client:load />
 		</section>
 
 		{stats?.intelligence?.pluralism && (

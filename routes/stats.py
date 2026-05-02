@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, Any, Dict
 from collections import defaultdict
 from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
 from database import db_manager as db
 from utils import (
@@ -311,6 +311,15 @@ async def subscribe_newsletter(request: Request):
         log.warning(f"[subscribe] DB error: {e}")
         return {"status": "error", "message": "Грешка при зачувување. Обидете се подоцна."}
     return {"status": "success", "message": "Успешно се пријавивте!"}
+
+@router.get("/newsletter/unsubscribe")
+async def unsubscribe_newsletter(email: str):
+    try:
+        await db.async_execute("UPDATE subscribers SET is_active = FALSE WHERE email = %s", (email,), fetch=False)
+    except Exception as e:
+        log.warning(f"[unsubscribe] DB error: {e}")
+        return HTMLResponse(content="<h1>Грешка при одјавување.</h1>", status_code=500)
+    return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Пресек.</h1>")
 
 @router.get("/stats/full")
 async def get_stats_full(request: Request):

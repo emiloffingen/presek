@@ -53,7 +53,11 @@ def send_newsletter_to_all_subscribers(days: int = 1) -> int:
 
         sent_count = 0
         for sub in subscribers:
-            if send_email(html, subject, smtp_user, smtp_pass, sub["email"]):
+            user_email = sub["email"]
+            unsubscribe_url = f"https://presek.live/api/newsletter/unsubscribe?email={user_email}"
+            personalized_html = html.replace("{{UNSUBSCRIBE_URL}}", unsubscribe_url)
+            
+            if send_email(personalized_html, subject, smtp_user, smtp_pass, user_email):
                 sent_count += 1
         
         return sent_count
@@ -211,7 +215,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
 
     period_str = f"{mk_date(period_start)} — {mk_date(period_end)}"
     
-    return f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="mk">
 <head>
   <meta charset="UTF-8">
@@ -280,7 +284,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
             </p>
             <p style="margin:8px 0 0;font-family:sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
               Овој преглед е генериран автоматски од нашите алгоритми за групирање.<br>
-              Доколку сакате да се одјавите, променете ги вашите <a href="https://presek.live/settings" style="color:#6b7280;text-decoration:underline">поставки</a>.
+              Доколку сакате да се одјавите, кликнете <a href="{{UNSUBSCRIBE_URL}}" style="color:#6b7280;text-decoration:underline">овде</a>.
             </p>
           </td>
         </tr>
@@ -301,6 +305,8 @@ def render_html(stories_by_cat: dict[str, list[dict]],
 
 </body>
 </html>"""
+
+    return html.replace("{{UNSUBSCRIBE_URL}}", "https://presek.live/settings")
 
 
 def send_email(html: str, subject: str,
