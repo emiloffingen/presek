@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, BarChart3, Users, BookOpen, Loader2, X, CheckCircle2, ChevronRight, Search } from 'lucide-react';
 
 interface ResearchIslandProps {
@@ -30,6 +30,31 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [customQuery, setCustomQuery] = useState('');
+
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const placeholders = [
+      "Што сакате да дознаете за оваа приказна?",
+      "Кој е главниот конфликт?",
+      "Што велат бројките?",
+      "Какви се реакциите?"
+  ];
+
+  useEffect(() => {
+      const interval = setInterval(() => {
+          setPlaceholderIdx((prev) => (prev + 1) % placeholders.length);
+      }, 4000);
+      return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+      if (data && resultsRef.current) {
+          // Delay slightly to allow DOM to render
+          setTimeout(() => {
+              resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+      }
+  }, [data]);
 
   const performResearch = async (mode: ResearchMode | 'custom', query?: string) => {
     setLoading(mode);
@@ -102,11 +127,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     
     return lines.map((line, i) => {
       const trimmed = line.trim();
+      const animStyle = { animationDelay: `${i * 150}ms` };
+      const animClass = "animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both";
       
       // Pull Quotes Detection
       if ((trimmed.startsWith('„') && trimmed.endsWith('“')) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
           return (
-            <div key={i} className="my-12 py-8 border-y-2 border-double border-border text-center">
+            <div key={i} className={`my-12 py-8 border-y-2 border-double border-border text-center ${animClass}`} style={animStyle}>
                 <blockquote className="font-serif italic text-2xl md:text-3xl text-foreground/90 leading-tight px-4">
                     {parseBoldText(trimmed)}
                 </blockquote>
@@ -117,14 +144,14 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       // Headers (robust: matches '# Header' or '1. # Header')
       if (trimmed.includes('#')) {
           const headerText = trimmed.split('#')[1].trim();
-          return <h3 key={i} className="font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight">{parseBoldText(headerText)}</h3>;
+          return <h3 key={i} className={`font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
       }
       
       // List items (robust: matches '-', '•', '*', '1. ', etc.)
       if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
           const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
-            <div key={i} className="flex gap-4 mb-4 items-start pl-2">
+            <div key={i} className={`flex gap-4 mb-4 items-start pl-2 ${animClass}`} style={animStyle}>
               <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
               <span className="text-lg md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(cleanItem)}</span>
             </div>
@@ -134,7 +161,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       // First paragraph (Drop Cap style)
       if (i === 0) {
           return (
-            <div key={i} className="mb-10">
+            <div key={i} className={`mb-10 ${animClass}`} style={animStyle}>
                 <span className="editorial-byline">Од уредничкиот тим на Пресек</span>
                 <p className="mb-8 text-xl md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
                     {parseBoldText(trimmed)}
@@ -144,7 +171,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       }
 
       // Regular paragraphs
-      return <p key={i} className="mb-6 text-lg md:text-xl leading-relaxed text-foreground/80 font-nyt-body">{parseBoldText(trimmed)}</p>;
+      return <p key={i} className={`mb-6 text-lg md:text-xl leading-relaxed text-foreground/80 font-nyt-body ${animClass}`} style={animStyle}>{parseBoldText(trimmed)}</p>;
     });
   };
 
@@ -216,10 +243,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={22} />
                 <input 
                     type="text" 
-                    placeholder="Што сакате да дознаете за оваа приказна?"
+                    placeholder={placeholders[placeholderIdx]}
                     value={customQuery}
                     onChange={(e) => setCustomQuery(e.target.value)}
-                    className="w-full pl-14 pr-4 py-5 bg-transparent outline-none font-serif italic text-xl"
+                    className="w-full pl-14 pr-4 py-5 bg-transparent outline-none font-serif italic text-xl transition-all duration-300"
                     onKeyDown={(e) => e.key === 'Enter' && customQuery.trim() && performResearch('custom', customQuery.trim())}
                 />
             </div>
@@ -249,7 +276,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       )}
 
       {data && (
-        <div className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise">
+        <div ref={resultsRef} className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise">
           <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-5 py-4 md:px-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
