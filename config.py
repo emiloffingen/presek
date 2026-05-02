@@ -130,6 +130,10 @@ GEMINI_FALLBACK_MODELS = [
     if model.strip()
 ]
 
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
+
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000
