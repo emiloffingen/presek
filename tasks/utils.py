@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime, timezone
 import asyncio
 import smtplib
 import ssl
@@ -72,3 +74,24 @@ def record_runtime_event(event: str, **fields):
     """Bridge to the main record_runtime_event in utils."""
     from utils import record_runtime_event as _record
     _record(event, **fields)
+
+_TASK_REDIS_KEY = "presek:task_statuses"
+
+def record_task_event(task_name: str, status: str, detail: str | None = None):
+    """Persist a lightweight task-status event for operational visibility."""
+    if not task_name or not status:
+        return
+
+    payload = {
+        "task": task_name,
+        "status": status,
+        "detail": detail or "",
+        "time": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        redis_client.hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
+        redis_client.expire(_TASK_REDIS_KEY, 3600 * 12)
+    except Exception:
+        pass
+
+
