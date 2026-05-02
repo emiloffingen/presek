@@ -166,10 +166,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         <div className="max-w-3xl">
           <p className="mb-2 flex items-center gap-2 font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
             <div className="w-8 h-[2px] bg-nyt-accent"></div>
-            ИСТРАЖИ ПОДЛАБОКО
+            ДИЈАЛОГ СО ПРИКАЗНАТА
           </p>
           <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
-          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Прашај за оваа приказна</h2>
+          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Постави прашање или побарај анализа</h2>
           <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
             Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се базира на текстовите во овој кластер и се генерира преку достапниот аналитички модел.
           </p>
