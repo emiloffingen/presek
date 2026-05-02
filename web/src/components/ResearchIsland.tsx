@@ -254,7 +254,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 onClick={() => performResearch('custom', customQuery.trim())}
                 disabled={!customQuery.trim() || !!loading}
                 aria-busy={loading === 'custom'}
-                className="px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                className="w-full md:w-auto px-12 py-5 bg-foreground text-background font-black uppercase tracking-[0.2em] text-[11px] hover:bg-nyt-accent transition-all disabled:opacity-30 flex items-center justify-center gap-2"
             >
                 {loading === 'custom' ? (
                     <><Loader2 className="animate-spin" size={18} /> Се анализира</>
@@ -266,12 +266,12 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       </div>
 
       {error && (
-        <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex justify-between items-center">
+        <div className="mt-8 p-5 border-2 border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
-             <X size={18} />
+             <X size={18} className="flex-shrink-0" />
              <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="uppercase text-[10px] tracking-widest underline">Затвори</button>
+          <button onClick={() => setError(null)} className="uppercase text-[10px] tracking-widest underline whitespace-nowrap">Затвори</button>
         </div>
       )}
 
@@ -339,14 +339,14 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 )}
              </div>
              
-             <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 opacity-60">
-                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
-                   <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse"></div>
-                   Одговор генериран локално од кластерските извори
+             <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-60">
+                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-left">
+                   <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
+                   Одговор генериран од кластерските извори
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">
-                        GEMMA
+                        {data.provider ? data.provider.toUpperCase() : 'AI'}
                     </span>
                 </div>
              </div>
