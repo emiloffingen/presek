@@ -63,10 +63,24 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             <div class="masthead-top">
                 <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
-                    <span class="meta-item"><Timer size={11} /> {globalPulse?.last_24h ? Math.max(3, Math.ceil(globalPulse.last_24h / 150)) : 5} МИН. ПРЕГЛЕД</span>
+                    <span class="meta-item"><Timer size={11} /> <span id="last-updated">ВО ЖИВО</span></span>
                     <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
                 </div>
             </div>
+            
+            <script is:inline>
+                const lastUpdatedEl = document.getElementById('last-updated');
+                const startTime = new Date();
+                
+                function updateTicker() {
+                    const now = new Date();
+                    const diffMins = Math.floor((now - startTime) / 60000);
+                    lastUpdatedEl.textContent = diffMins === 0 ? 'ВО ЖИВО (СЕГА)' : `ПРЕД ${diffMins} ${diffMins === 1 ? 'МИН.' : 'МИН.'}`;
+                }
+                
+                updateTicker();
+                setInterval(updateTicker, 60000);
+            </script>
 
             <div class="masthead-main">
                 <div class="masthead-branding">
