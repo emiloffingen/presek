@@ -1585,9 +1585,17 @@ def send_profile_weekly_digests_task():
 @celery_app.task
 def send_profile_breaking_alerts_task():
     """Send breaking alerts for followed topics and sources through active synced subscriptions."""
+    if not acquire_task_lock(_BREAKING_ALERT_TASK_LOCK, ttl_seconds=_BREAKING_ALERT_LOCK_TTL):
+        log.info("[tasks] Skipping breaking alerts run because another run is already active.")
+        return
+
     sent = 0
 
     try:
+        if get_celery_queue_depth() >= _BREAKING_ALERT_QUEUE_DEPTH_LIMIT:
+            log.info("[tasks] Skipping breaking alerts run while queue backlog is high.")
+            return
+
         rows = _load_active_delivery_rows()
         for row in rows:
             if not row.get("breaking_topics") and not row.get("breaking_sources"):
@@ -1690,6 +1698,8 @@ def send_profile_breaking_alerts_task():
     else:
         if sent:
             log.info(f"[tasks] Sent {sent} profile breaking alerts.")
+    finally:
+        release_task_lock(_BREAKING_ALERT_TASK_LOCK)
 
 @celery_app.task
 def send_newsletter_task():

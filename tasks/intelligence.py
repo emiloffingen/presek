@@ -79,6 +79,15 @@ def _load_cluster_articles_for_synthesis(cluster_id):
         (cluster_id,)
     )
 
+
+def _build_cluster_synthesis_content(article_rows):
+    rows = article_rows or []
+    return "\n".join(
+        f"- [{row.get('source') or 'Извор'}]: {row.get('title') or ''}"
+        for row in rows[:10]
+        if row.get("title")
+    )
+
 def _normalize_cluster_synthesis(summary, perspectives, article_rows):
     clean_summary = normalize_summary_text(summary)
     clean_perspectives = normalize_perspectives(perspectives)
@@ -974,6 +983,9 @@ def auto_repair_sources_task():
 @celery_app.task(rate_limit='5/m')
 def backfill_cover_art_single_task(cluster_id, title):
     """Generate cover art for a single cluster without blocking a worker."""
+    if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
+        log.info("[tasks] Skipping cover art generation for %s while queue backlog is high.", cluster_id)
+        return
     try:
         img_url = generate_cover_art(cluster_id, title or '')
         if img_url:
@@ -1022,7 +1034,7 @@ def backfill_cover_art_task():
                   OR m.representative_image LIKE '%default%'
               )
               AND (m.representative_image IS NULL OR m.representative_image NOT LIKE '/static/generated/%.jpg')
-            LIMIT 50
+            LIMIT 12
         """)
         for idx, r in enumerate(rows):
             prompt_text = r['summary'] or r['title'] or ''

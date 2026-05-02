@@ -206,13 +206,27 @@ async def get_personalized_news_sync(request: Request):
     
     profile = _normalize_synced_profile(payload.get("profile") or {})
     recent = profile.get("recentClusters") or []
-    if not recent:
-        return {"status": "success", "results": []}
-
+    
     # 1. Fetch embeddings for recent clusters
     recent_ids = [r['cluster_id'] for r in recent[:10]] # Limit to last 10 for speed
-    vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
     
+    vec_rows = []
+    if recent_ids:
+        vec_rows = await db.async_execute("SELECT embedding FROM articles WHERE cluster_id = ANY(%s) AND embedding IS NOT NULL", (recent_ids,))
+    
+    # 1b. Fallback: If no recent clusters, use followed topics to find recent popular clusters as seeds
+    if not vec_rows and profile.get("followedTopics"):
+        topics = profile.get("followedTopics")
+        seed_rows = await db.async_execute("""
+            SELECT embedding FROM articles 
+            WHERE (topic = ANY(%s) OR category = ANY(%s))
+            AND created_at >= NOW() - INTERVAL '72 hours'
+            AND embedding IS NOT NULL
+            ORDER BY created_at DESC
+            LIMIT 20
+        """, (topics, topics))
+        vec_rows = seed_rows
+
     if not vec_rows:
         return {"status": "success", "results": []}
 

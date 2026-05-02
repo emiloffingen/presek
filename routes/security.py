@@ -12,6 +12,15 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 log = logging.getLogger("presek")
 
+
+def _raise_http_error(status_code: int, detail: str):
+    try:
+        fastapi_mod = importlib.import_module("fastapi")
+        exc_cls = getattr(fastapi_mod, "HTTPException", HTTPException)
+    except Exception:
+        exc_cls = HTTPException
+    raise exc_cls(status_code=status_code, detail=detail)
+
 # =============================================================================
 # Input Validation Helpers
 # =============================================================================
@@ -29,10 +38,7 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     if not isinstance(cluster_id, str):
         raise HTTPException(status_code=400, detail=f"{param_name} мора да биде текст")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
     return cluster_id
 
 
@@ -41,10 +47,7 @@ def validate_date(date_str: str, param_name: str = "date") -> str:
     if not date_str:
         raise HTTPException(status_code=400, detail=f"{param_name} е задолжително")
     if not DATE_PATTERN.match(date_str):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid {param_name}. Must be in YYYY-MM-DD format."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be in YYYY-MM-DD format.")
     return date_str
 
 
@@ -198,28 +201,19 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
         if content_length:
             try:
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail="Request body exceeds maximum size"
-                    )
+                    _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Невалиден Content-Length наслов")
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Query parameter '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
         
         # Check headers
         for key, value in request.headers.items():
             if isinstance(value, str) and len(value) > MAX_HEADER_VALUE_LENGTH:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Header '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Header '{key}' exceeds maximum length")
         
         response = await call_next(request)
         return response

@@ -3,6 +3,7 @@ import logging
 from database import db_manager as db
 from embeddings import generate_embedding
 from tasks import synthesize_cluster_task
+from tasks.intelligence import _build_cluster_synthesis_content, _load_cluster_articles_for_synthesis
 
 
 logging.basicConfig(level=logging.INFO)
@@ -52,7 +53,13 @@ def backfill_cluster_summaries():
     log.info(f"Queueing {len(clusters)} clusters for re-synthesis...")
 
     for cluster in clusters:
-        synthesize_cluster_task.delay(cluster["cluster_id"])
+        cluster_id = cluster["cluster_id"]
+        article_rows = _load_cluster_articles_for_synthesis(cluster_id)
+        content = _build_cluster_synthesis_content(article_rows)
+        if not content:
+            log.warning(f"Skipping cluster {cluster_id}: no synthesis content available")
+            continue
+        synthesize_cluster_task.delay(cluster_id, content)
 
     log.info("Finished queueing cluster synthesis tasks.")
 

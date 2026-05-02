@@ -27,6 +27,26 @@ class TestBackfillCoverArtTask:
         assert countdowns == [0, 5, 10]
         assert args == [("a1", "A"), ("b2", "B"), ("c3", "C")]
 
+    def test_backfill_skips_when_queue_backlog_is_high(self):
+        import tasks
+
+        with patch("tasks.intelligence.get_celery_queue_depth", return_value=150), \
+             patch("tasks.intelligence.db") as mock_db, \
+             patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
+            tasks.backfill_cover_art_task()
+
+        mock_db.execute.assert_not_called()
+        mock_apply.assert_not_called()
+
+    def test_backfill_single_skips_when_queue_backlog_is_high(self):
+        import tasks
+
+        with patch("tasks.intelligence.get_celery_queue_depth", return_value=150), \
+             patch("tasks.intelligence.generate_cover_art") as mock_cover_art:
+            tasks.backfill_cover_art_single_task("cluster-1", "Prompt")
+
+        mock_cover_art.assert_not_called()
+
 class TestSynthesizeClusterTaskQuality:
     def test_normalizes_ai_summary_and_perspectives_before_store(self):
         import tasks
@@ -807,7 +827,10 @@ class TestProfileDeliveryTasks:
             "cluster_summary": "Главниот развој.",
         }
 
-        with patch("tasks.delivery._load_active_delivery_rows", return_value=rows), \
+        with patch("tasks.delivery.acquire_task_lock", return_value=True), \
+             patch("tasks.delivery.release_task_lock"), \
+             patch("tasks.delivery.get_celery_queue_depth", return_value=0), \
+             patch("tasks.delivery._load_active_delivery_rows", return_value=rows), \
              patch("tasks.delivery._select_breaking_cluster_for_profile", return_value=candidate), \
              patch("tasks.delivery._record_delivery_tracking_event", return_value=33), \
              patch("tasks.delivery._send_ntfy_message", return_value=True) as mock_send, \
@@ -821,6 +844,27 @@ class TestProfileDeliveryTasks:
         assert "new-cluster" in params[0]
         assert "topic:Политика" in json.loads(params[1])
         assert "event_id=33" in mock_send.call_args.kwargs["click_url"]
+
+    def test_breaking_alerts_skip_when_queue_backlog_is_high(self):
+        import tasks
+
+        with patch("tasks.delivery.acquire_task_lock", return_value=True), \
+             patch("tasks.delivery.release_task_lock") as mock_release, \
+             patch("tasks.delivery.get_celery_queue_depth", return_value=200), \
+             patch("tasks.delivery._load_active_delivery_rows") as mock_rows:
+            tasks.send_profile_breaking_alerts_task()
+
+        mock_rows.assert_not_called()
+        mock_release.assert_called_once()
+
+    def test_breaking_alerts_skip_when_lock_is_held(self):
+        import tasks
+
+        with patch("tasks.delivery.acquire_task_lock", return_value=False), \
+             patch("tasks.delivery._load_active_delivery_rows") as mock_rows:
+            tasks.send_profile_breaking_alerts_task()
+
+        mock_rows.assert_not_called()
 
     def test_select_breaking_cluster_skips_recent_topic_cooldown(self):
         import tasks

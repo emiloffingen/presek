@@ -117,10 +117,8 @@ def _client_ip_for_request(request: Request) -> str:
 def _source_admin_authorized(request: Request) -> bool:
     token = (request.headers.get("X-Admin-Token") or "").strip()
     expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
-    client_host = _client_ip_for_request(request)
-    forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
     if not expected:
-        return client_host in {"127.0.0.1", "::1"} and not forwarded_for
+        return False
     if not token:
         return False
     return secrets.compare_digest(token, expected)
