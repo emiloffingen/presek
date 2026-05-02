@@ -103,27 +103,27 @@ const IzvoriPage: React.FC = () => {
       <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="editorial-source-item group">
         <div className="item-main">
           <div className="item-head">
-            <div className={`health-dot ${health}`}></div>
+            <div className={`health-dot ${health}`} title={health === 'active' ? 'Ажурирано неодамна' : health === 'stale' ? 'Постојат доцнења' : 'Нема свеж сигнал'}></div>
             <h3 className="item-title">{source.source}</h3>
-            <span className="item-tier">{source.trust_tier}</span>
+            <span className="item-tier" title="Репутациски статус во системот">{source.trust_tier}</span>
           </div>
           <p className="item-tendency">{source.tendency}</p>
           <div className="item-meta">
             <span className="meta-tag">{source.country || 'MK'}</span>
             {source.top_categories?.slice(0, 2).map(cat => <span key={cat} className="meta-tag-outline">{cat}</span>)}
-            <span className="meta-time">{formatLastFetched(source.last_fetched)}</span>
+            <span className="meta-time" title="Време на последна синхронизација">⏱ {formatLastFetched(source.last_fetched)}</span>
           </div>
         </div>
         <div className="item-stats">
-          <div className="stat-box">
+          <div className="stat-box" title="Квалитетен Индекс (Брзина + Точност)">
             <span>QI</span>
             <strong>{reliabilityIndex}</strong>
           </div>
-          <div className="stat-box">
+          <div className="stat-box" title="Број на објавени вести во последните 24 часа">
             <span>24ч</span>
             <strong>{source.recent_volume}</strong>
           </div>
-          <div className="stat-box accent">
+          <div className="stat-box accent" title="Број на стории кои медиумот ги објавил прв (последни 7 дена)">
             <span>ПРВ</span>
             <strong>{source.speed_first_count}</strong>
           </div>
@@ -267,9 +267,9 @@ const IzvoriPage: React.FC = () => {
         .dir-row .val { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); }
 
         @media (max-width: 640px) {
-          .item-stats { display: none; }
+          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1.25rem 0; }
+          .item-stats { display: flex; width: 100%; justify-content: flex-start; gap: 2rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
           .masthead-controls { flex-direction: column; align-items: stretch; }
-          .editorial-source-item { padding: 1.25rem 0; }
         }
       `}</style>
     </div>
