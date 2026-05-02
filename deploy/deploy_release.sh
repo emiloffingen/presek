@@ -275,7 +275,7 @@ ensure_release_venv() {
     info "Creating versioned Python runtime $versioned_venv"
     rm -rf "$versioned_venv"
     "$PYTHON_BIN" -m venv "$versioned_venv"
-    "$versioned_venv/bin/python3" -m pip install --upgrade pip
+    "$versioned_venv/bin/python3" -m pip install --no-cache-dir --upgrade pip
     "$versioned_venv/bin/pip" install --no-cache-dir -q -r "$RELEASE_DIR/requirements.txt"
   else
     info "Reusing versioned Python runtime $versioned_venv"

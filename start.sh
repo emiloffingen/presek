@@ -90,8 +90,8 @@ bootstrap_runtime() {
 
   if [ "$FORCE_PY_DEPS" = "1" ] || [ ! -x "$CELERY" ] || [ ! -x "$UVICORN" ]; then
     info "Installing Python dependencies"
-    "$PYTHON" -m pip install --upgrade pip
-    "$PYTHON" -m pip install -r "$APP_DIR/requirements.txt"
+    "$PYTHON" -m pip install --no-cache-dir --upgrade pip
+    "$PYTHON" -m pip install --no-cache-dir -r "$APP_DIR/requirements.txt"
   fi
 
   if [ "$ENABLE_ASTRO" = "1" ]; then
