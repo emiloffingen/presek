@@ -4,7 +4,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from utils import delete_cache, delete_cache_prefix
+from utils import delete_cache, delete_cache_prefix, redis_client
 from logging_config import get_logger
 
 log = get_logger("presek_celery")
