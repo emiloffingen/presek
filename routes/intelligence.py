@@ -288,17 +288,22 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     if cached: return cached
 
     try:
-        from local_analyst import analyst
-        log.info(f"[research] Generating Gemma report for {cluster_id} (mode={clean_mode})")
         context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
+        prompt = f"ПРАШАЊЕ: {query}\n\nКОНТЕКСТ ЗА АНАЛИЗА:\n{context}"
         
-        # Force local analysis
-        response = await asyncio.to_thread(analyst.research_query, query, context)
+        # Use cascading AI engine (will route to mistral -> local based on task_type="research")
+        raw, provider = sync_call_ai(prompt, RESEARCH_SYSTEM_PROMPT, task_type="research", json_mode=True, max_tokens=800)
+        
+        if not raw:
+            return {"status": "error", "message": "Системот моментално не е достапен."}
+
+        # Parse structured response
+        response = clean_json_response(raw)
         answer = response.get("answer") if isinstance(response, dict) else str(response or "")
         suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
 
         if not answer:
-            return {"status": "error", "message": "Не успеав да генерирам одговор локално."}
+            return {"status": "error", "message": "Не успеав да генерирам одговор."}
 
         result = {
             "status": "success",
@@ -307,7 +312,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
             "suggestions": suggestions,
             "mode": clean_mode,
             "label": _RESEARCH_MODE_LABELS[clean_mode],
-            "provider": "local_gemma",
+            "provider": provider,
             "sources": sources,
             "timestamp": datetime.datetime.now()
         }

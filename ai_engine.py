@@ -12,7 +12,7 @@ from typing import AsyncGenerator
 
 from config import (
     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
-    PROVIDER_FALLBACK_ORDER
+    PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
 )
 
 from prometheus_client import Histogram, Counter
@@ -286,7 +286,13 @@ async def _stream_with_initial_chunk(generator: AsyncGenerator[str, None], first
 
 async def _call_ai_async(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, stream: bool = False, topic: str = None):
     """Entrypoint with cascading failover."""
-    for provider_name in PROVIDER_FALLBACK_ORDER:
+    fallback_order = PROVIDER_FALLBACK_ORDER
+    if task_type == "research":
+        fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
+    elif task_type in ("summarize", "synthesis"):
+        fallback_order = PROVIDER_FALLBACK_ORDER_SUMMARY
+        
+    for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:
@@ -319,7 +325,13 @@ async def _call_ai_async(prompt: str, system: str, task_type: str = "default", m
 
 def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Synchronous AI entrypoint with cascading failover."""
-    for provider_name in PROVIDER_FALLBACK_ORDER:
+    fallback_order = PROVIDER_FALLBACK_ORDER
+    if task_type == "research":
+        fallback_order = PROVIDER_FALLBACK_ORDER_RESEARCH
+    elif task_type in ("summarize", "synthesis"):
+        fallback_order = PROVIDER_FALLBACK_ORDER_SUMMARY
+        
+    for provider_name in fallback_order:
         provider = PROVIDERS[provider_name]
         start_time = time.time()
         try:
@@ -336,7 +348,7 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
             continue
 
-    log.error(f"[ai/cascade] All providers in {PROVIDER_FALLBACK_ORDER} failed for task {task_type}")
+    log.error(f"[ai/cascade] All providers in {fallback_order} failed for task {task_type}")
     return None, None
 def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
