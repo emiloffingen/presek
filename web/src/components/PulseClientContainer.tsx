@@ -109,7 +109,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </nav>
 
             <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                <div className="pulse-card">
+                <div className="pulse-card" title="Вкупен број на обработени објави во последните 24 часа.">
                     <p className="card-label"><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
                     <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</p>
                     <div className="card-sparkline">
@@ -123,19 +123,19 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     </div>
                 </div>
 
-                <div className="pulse-card border-t-4 border-t-nyt-accent">
+                <div className="pulse-card border-t-4 border-t-nyt-accent" title="Процент на теми кои се покриени од повеќе различни извори (покажува медиумски фокус).">
                     <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
                     <p className="card-value">{intelligence.pluralism?.pluralism_pct || 0}%</p>
                     <p className="card-note">{(intelligence.pluralism?.pluralism_pct || 0) > 0 ? `${intelligence.pluralism?.high_consensus_pct}% медиумски консензус` : 'Системот анализира нови кластери'}</p>
                 </div>
 
-                <div className="pulse-card">
+                <div className="pulse-card" title="Процент на меѓународни извори што известуваат.">
                     <p className="card-label"><Globe size={12}/> СВЕТОТ КАЈ НАС</p>
                     <p className="card-value">{intelligence.international_share_pct || 0}%</p>
                     <p className="card-note">Вести од меѓународни извори</p>
                 </div>
 
-                <div className="pulse-card">
+                <div className="pulse-card" title="Субјекти кои моментално се најзастапени во вестите.">
                     <p className="card-label"><Zap size={12}/> ТРЕНДИНГ {category && <span className="text-[8px] opacity-60">ВО {category}</span>}</p>
                     <div className="card-list">
                         {topEntities.length > 0 ? topEntities.slice(0, 3).map((e: any, i: number) => (
@@ -292,10 +292,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                         <table className="broadsheet-table">
                             <thead>
                                 <tr>
-                                    <th>РЕДАКЦИЈА</th>
-                                    <th>ТОН</th>
-                                    <th className="text-right">ОБЈЕКТИВНОСТ</th>
-                                    <th className="text-right">СЕНЗАЦИОНАЛИЗАМ</th>
+                                    <th title="Медиум или извор на информации">РЕДАКЦИЈА</th>
+                                    <th title="Просечен сентимент (позитивен, негативен, неутрален)">ТОН</th>
+                                    <th className="text-right" title="Процент на фактичко известување без субјективни коментари">ОБЈЕКТИВНОСТ</th>
+                                    <th className="text-right" title="Процент на емотивно набиен или преувеличен речник">СЕНЗАЦИОНАЛИЗАМ</th>
                                 </tr>
                             </thead>
                             <tbody>
