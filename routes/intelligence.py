@@ -75,19 +75,31 @@ _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
     "избори",
 }
 
-async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -> tuple[str, list[str]]:
-    articles = await db.async_execute("""
-        SELECT title, full_content, source, embedding, created_at
-        FROM articles
-        WHERE cluster_id = %s
-        ORDER BY COALESCE(ingested_at, created_at) DESC
-        LIMIT 5
-    """, (cluster_id,))
+async def _build_gemma_research_context(cluster_id: str, mode: str = "custom", query: str = "") -> tuple[str, list[str]]:
+    if mode == "custom" and query:
+        # Generate embedding for the query if we have the cache mechanism or rely on basic full text / vector search if possible.
+        # However, to avoid slowing down with synchronous embedding calls here, we'll fetch more articles and let the LLM handle semantic relevance within a larger context.
+        articles = await db.async_execute("""
+            SELECT title, full_content, source, embedding, created_at
+            FROM articles
+            WHERE cluster_id = %s
+            ORDER BY COALESCE(ingested_at, created_at) DESC
+            LIMIT 20
+        """, (cluster_id,))
+    else:
+        articles = await db.async_execute("""
+            SELECT title, full_content, source, embedding, created_at
+            FROM articles
+            WHERE cluster_id = %s
+            ORDER BY COALESCE(ingested_at, created_at) DESC
+            LIMIT 20
+        """, (cluster_id,))
+
     if not articles:
         raise HTTPException(status_code=404, detail="Кластерот не е пронајден")
 
     summary_row = await db.async_execute_one("""
-        SELECT summary, generated_article
+        SELECT summary, generated_article, verification_report, perspectives
         FROM cluster_summaries
         WHERE cluster_id = %s
     """, (cluster_id,))
@@ -98,6 +110,16 @@ async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -
             parts.append(f"УРЕДНИЧКО РЕЗИМЕ:\n{summary_row['summary']}")
         if summary_row.get("generated_article"):
             parts.append(f"СИНТЕЗА:\n{summary_row['generated_article']}")
+        if summary_row.get("verification_report"):
+            try:
+                vr = json.loads(summary_row["verification_report"]) if isinstance(summary_row["verification_report"], str) else summary_row["verification_report"]
+                parts.append(f"ПРОВЕРКА НА ФАКТИ (Системска анализа):\n{json.dumps(vr, ensure_ascii=False, indent=2)}")
+            except Exception: pass
+        if summary_row.get("perspectives"):
+            try:
+                pers = json.loads(summary_row["perspectives"]) if isinstance(summary_row["perspectives"], str) else summary_row["perspectives"]
+                parts.append(f"МЕДИУМСКИ ПЕРСПЕКТИВИ (Системска анализа):\n{json.dumps(pers, ensure_ascii=False, indent=2)}")
+            except Exception: pass
 
     sources = []
     for article in articles:
@@ -105,7 +127,7 @@ async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -
         if source and source not in sources:
             sources.append(source)
         text = article.get("full_content") or article.get("title") or ""
-        parts.append(f"--- ИЗВОР: {source} ---\n{text}")
+        parts.append(f"--- ИЗВОР: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}")
 
     if mode == "context":
         try:
@@ -124,7 +146,7 @@ async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -
                     WHERE embedding IS NOT NULL AND cluster_id != %s
                       AND created_at < NOW() - INTERVAL '24 hours'
                     ORDER BY (embedding <=> %s::vector) ASC
-                    LIMIT 5
+                    LIMIT 10
                 """, (cluster_id, vec_str))
                 if past_events:
                     history_list = "\n".join([
@@ -135,7 +157,7 @@ async def _build_gemma_research_context(cluster_id: str, mode: str = "custom") -
         except Exception as e:
             log.warning(f"Failed to fetch Gemma research history context: {e}")
 
-    return "\n\n".join(parts)[:12000], sources
+    return "\n\n".join(parts)[:45000], sources
 
 def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     by_key = {str(item.get("name") or "").casefold(): dict(item) for item in items if str(item.get("name") or "").strip()}
@@ -288,7 +310,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
     if cached: return cached
 
     try:
-        context, sources = await _build_gemma_research_context(cluster_id, clean_mode)
+        context, sources = await _build_gemma_research_context(cluster_id, clean_mode, clean_query)
         prompt = f"ПРАШАЊЕ: {query}\n\nКОНТЕКСТ ЗА АНАЛИЗА:\n{context}"
         
         # Use cascading AI engine (will route to mistral -> local based on task_type="research")
