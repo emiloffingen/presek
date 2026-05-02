@@ -39,6 +39,15 @@ app = FastAPI(
     docs_url="/api/docs" if os.environ.get("ENV") != "production" else None,
     redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None
 )
+from health import _probe_database, _probe_redis
+from api_helpers import (
+    normalize_perspectives as _parse_perspectives_blob,
+    default_related_questions as _default_related_questions,
+    related_questions_from_context as _related_questions_from_context,
+    text_terms as _text_terms,
+    rank_cluster_citations as _rank_cluster_citations,
+    normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
+)
 
 # Middleware
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
@@ -73,6 +82,16 @@ create_security_middleware(app)
 MAX_QUERY_PARAM_LENGTH = 500
 MAX_BODY_SIZE = 10 * 1024 * 1024  # 10MB
 
+    if not local_answer and articles:
+        lead = articles[0]
+        lead_title = str(lead.get("title") or "Оваа приказна")
+        lead_source = str(lead.get("source") or "Извор").strip()
+        local_answer = {
+            "answer": f"Најважното во овој момент е: {lead_title}. Водечкиот достапен извор во овој кластер е {lead_source}.",
+            "citations": articles[:2],
+            "related_questions": _default_related_questions(question, category),
+            "confidence": "low",
+        }
 
 @app.middleware("http")
 async def validate_input_length(request: Request, call_next):
@@ -134,6 +153,14 @@ async def startup_event():
 # Import and include routers
 from routes import home, news, intelligence, profile, stats, system, admin
 
+
+
+def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
+    try:
+        return _rank_cluster_citations(question, answer, articles, citation_numbers)
+    except Exception as e:
+        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
+        return _fallback_citations(articles)
 
 @app.get("/api/health")
 @exempt_from_rate_limit

@@ -73,6 +73,52 @@ def _probe_redis():
     return result
 
 
+def _probe_database():
+    result = {
+        "ok": False,
+        "article_count": 0,
+        "size_mb": 0.0,
+        "error": "",
+    }
+
+    conn = None
+    try:
+        conn = database.get_db()
+        row = conn.execute("SELECT COUNT(*) FROM articles").fetchone()
+        result["article_count"] = row[0] if row else 0
+        result["ok"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+        return result
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    try:
+        result["size_mb"] = database.get_db_size()
+    except Exception as exc:
+        result["error"] = f"db_size probe failed: {exc}"
+
+    return result
+
+
+def _probe_redis():
+    result = {
+        "ok": False,
+        "url": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "error": "",
+    }
+    try:
+        _get_redis().ping()
+        result["ok"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
 def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))

@@ -254,6 +254,7 @@ function getTimeStr(dateStr: string) {
 					</div>
 				)}
 			</a>
+            {isFallbackArt && <span class="fallback-badge">Пресек графика</span>}
             {isLead && main.image_caption && (
                 <p class="image-caption">{main.image_caption}</p>
             )}
@@ -333,4 +334,85 @@ function getTimeStr(dateStr: string) {
         position: relative;
         z-index: 2;
     }
+
+	@media (min-width: 768px) {
+		.headline-lead {
+			font-size: 2.25rem;
+			line-height: 0.98;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.nyt-article:not(.lead-story) {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) clamp(6.4rem, 28vw, 7.6rem);
+			align-items: start;
+			gap: 0.95rem;
+			padding-bottom: 1.1rem;
+		}
+
+		.nyt-article:not(.lead-story) .article-body {
+			grid-column: 1;
+			grid-row: 1;
+		}
+
+		.nyt-article:not(.lead-story) .image-wrap {
+			grid-column: 2;
+			grid-row: 1;
+		}
+
+		.nyt-article:not(.lead-story) .article-image,
+		.nyt-article:not(.lead-story) .article-image-fallback {
+			aspect-ratio: 1 / 1;
+			height: auto;
+			max-height: 7.75rem;
+		}
+
+		.nyt-article:not(.lead-story) .headline-standard {
+			font-size: 1.1rem;
+			line-height: 1.1;
+			margin-bottom: 0.4rem;
+		}
+
+		.nyt-article:not(.lead-story) .article-meta {
+			margin-bottom: 0.4rem;
+			gap: 0.35rem 0.45rem;
+		}
+
+		.nyt-article:not(.lead-story) .why-it-matters {
+			display: none;
+		}
+
+		.nyt-article:not(.lead-story) .summary {
+			font-size: 0.92rem;
+			line-height: 1.52;
+			-webkit-line-clamp: 3;
+			margin-bottom: 0.6rem;
+		}
+
+		.nyt-article:not(.lead-story) .footer-meta {
+			font-size: 0.64rem;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+		}
+
+		.nyt-article:not(.lead-story) .fallback-badge {
+			left: 0.45rem;
+			top: 0.45rem;
+			padding: 0.16rem 0.28rem;
+			font-size: 0.46rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.article-image {
+			aspect-ratio: 16 / 10;
+			max-height: 14rem;
+			object-fit: cover;
+		}
+
+		.article-image-fallback {
+			max-height: none;
+		}
+	}
 </style>

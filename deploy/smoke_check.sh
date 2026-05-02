@@ -140,6 +140,49 @@ PY
   return 1
 }
 
+wait_health_ready() {
+  local name="$1"
+  local url="$2"
+  local expect_db="${3:-1}"
+  local expect_redis="${4:-1}"
+  local code=""
+  local body=""
+
+  info "Checking $name at $url"
+  for _ in $(seq 1 "$MAX_ATTEMPTS"); do
+    code="$(curl -sS -o /tmp/presek-smoke-body.$$ -w "%{http_code}" "$url" 2>/dev/null || true)"
+    body="$(cat /tmp/presek-smoke-body.$$ 2>/dev/null || true)"
+    rm -f /tmp/presek-smoke-body.$$ 2>/dev/null || true
+
+    if [ "$code" = "200" ]; then
+      if BODY="$body" EXPECT_DB="$expect_db" EXPECT_REDIS="$expect_redis" python3 - <<'PY'
+import json, os, sys
+body = os.environ.get("BODY", "")
+expect_db = os.environ.get("EXPECT_DB") == "1"
+expect_redis = os.environ.get("EXPECT_REDIS") == "1"
+try:
+    data = json.loads(body)
+except Exception:
+    sys.exit(1)
+if "status" not in data:
+    sys.exit(1)
+if expect_db and not data.get("database", {}).get("ok"):
+    sys.exit(1)
+if expect_redis and not data.get("redis", {}).get("ok"):
+    sys.exit(1)
+sys.exit(0)
+PY
+      then
+        ok "$name responded healthy"
+        return 0
+      fi
+    fi
+    sleep "$SLEEP_SECONDS"
+  done
+
+  fail "$name did not become healthy (last HTTP code: ${code:-none})"
+}
+
 main() {
   need_cmd curl
   need_cmd python3

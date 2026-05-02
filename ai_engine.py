@@ -18,6 +18,7 @@ from config import (
 from prometheus_client import Histogram, Counter
 
 log = logging.getLogger("presek")
+GEMINI_MODEL = "gemini-2.0-flash"
 
 from utils import redis_client, record_runtime_event
 from nlp import summarize_locally, synthesize_locally

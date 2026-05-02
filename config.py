@@ -151,6 +151,21 @@ API_MAX_Q_LEN = 500           # Maximum search query length
 
 HARDCODED_FEED_CATEGORIES: dict[str, str] = {}
 
+CURATED_INTERNATIONAL_SOURCES = (
+    "N1 Info",
+    "Klix.ba",
+    "Index.hr",
+    "Jutarnji",
+    "Vijesti.me",
+    "EuroNews",
+    "BBC News",
+    "Deutsche Welle EN",
+    "Deutsche Welle DE",
+    "FAZ",
+    "Reuters",
+    "AP News",
+)
+
 # Specific per-source limits to prevent low-quality aggregators from flooding the system
 SOURCE_LIMITS = {
     "Kurir": 5,
