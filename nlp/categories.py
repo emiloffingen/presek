@@ -368,10 +368,9 @@ def normalize_headline(title: str) -> str:
     t = re.sub(tags_pattern, '', t, flags=re.IGNORECASE)
     
     # Common prefix labels (standing alone or followed by colon/dash)
-    t = re.sub(r'^(ВИДЕО|ФОТО|ГАЛЕРИЈА|БРИФИНГ|VIDEO|PHOTO|GALLERY|LIVE|УЖИВО|НОВО|ИТНО|ВНИМАНИЕ)[\s\|:–—-]+', '', t, flags=re.IGNORECASE)
-    
     sensationalist = [
         "ВИДЕО", "ФОТО", "ГАЛЕРИЈА", "VIDEO", "PHOTO", "GALLERY",
+        "БРИФИНГ", "УЖИВО", "НОВО", "ИТНО", "ВНИМАНИЕ", "LIVE",
         "БРЕЈКИНГ", "ЕКСКЛУЗИВНО", "ПОТВРДЕНО", "СКАНДАЛ", "УЖАС", "ТРАГЕДИЈА", 
         "ИНТЕРВЈУ", "АНАЛИЗА", "СТРАВИЧНО", "ШОКАНТНО", "НЕВЕРОЈАТНО", 
         "ГЛЕДАЈТЕ", "ВЕЧЕР", "МАКФАКС", "ФОКУС", "ДЕНЕШЕН", "КУРИР", "РЕПУБЛИКА",
@@ -379,7 +378,7 @@ def normalize_headline(title: str) -> str:
         "ВИДЕО-ИНТЕРВЈУ"
     ]
     prefix_pattern = r'^(' + '|'.join(sensationalist) + r')[\s\|:–—-]+'
-    t = re.sub(prefix_pattern, '', t, flags=re.IGNORECASE)
+    t = re.sub(prefix_pattern, '', t, count=1, flags=re.IGNORECASE)
     
     # Strip any remaining all-caps prefix followed by colon (e.g. "СКОПЈЕ: ...")
     t = re.sub(r'^[А-ЯЁЂЃЄЅІЇЈЉЊЋЌЍЎЏ\s]{3,}:', '', t).strip()

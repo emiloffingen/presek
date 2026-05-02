@@ -82,16 +82,6 @@ create_security_middleware(app)
 MAX_QUERY_PARAM_LENGTH = 500
 MAX_BODY_SIZE = 10 * 1024 * 1024  # 10MB
 
-    if not local_answer and articles:
-        lead = articles[0]
-        lead_title = str(lead.get("title") or "Оваа приказна")
-        lead_source = str(lead.get("source") or "Извор").strip()
-        local_answer = {
-            "answer": f"Најважното во овој момент е: {lead_title}. Водечкиот достапен извор во овој кластер е {lead_source}.",
-            "citations": articles[:2],
-            "related_questions": _default_related_questions(question, category),
-            "confidence": "low",
-        }
 
 @app.middleware("http")
 async def validate_input_length(request: Request, call_next):

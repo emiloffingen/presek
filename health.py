@@ -216,10 +216,6 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
         pass  # Non-critical; health endpoint falls back gracefully
 
 
-def record_task_event(task_name: str, status: str, detail: str | None = None):
-    from tasks.utils import record_task_event as _record
-    return _record(task_name, status, detail)
-
 def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepted: int = 0, error: str | None = None):
     """Persist per-source fetch results for operational visibility."""
     if not source_name or not status:
@@ -271,5 +267,24 @@ def _freshness_payload(last_refresh_time: str | None):
     if age_minutes <= 45:
         return {"status": "aging", "age_minutes": age_minutes, "label": "Мало доцнење"}
     return {"status": "stale", "age_minutes": age_minutes, "label": "Освежувањето доцни"}
+
+
+
+def record_task_event(task_name: str, status: str, detail: str | None = None):
+    """Persist a lightweight task-status event for operational visibility."""
+    if not task_name or not status:
+        return
+
+    payload = {
+        "task": task_name,
+        "status": status,
+        "detail": detail or "",
+        "time": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
+        _get_redis().expire(_TASK_REDIS_KEY, 3600 * 12)
+    except Exception:
+        pass
 
 

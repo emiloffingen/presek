@@ -96,20 +96,5 @@ def record_runtime_event(event: str, **fields):
 _TASK_REDIS_KEY = "presek:task_statuses"
 
 def record_task_event(task_name: str, status: str, detail: str | None = None):
-    """Persist a lightweight task-status event for operational visibility."""
-    if not task_name or not status:
-        return
-
-    payload = {
-        "task": task_name,
-        "status": status,
-        "detail": detail or "",
-        "time": datetime.now(timezone.utc).isoformat(),
-    }
-    try:
-        redis_client.hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
-        redis_client.expire(_TASK_REDIS_KEY, 3600 * 12)
-    except Exception:
-        pass
-
-
+    from health import record_task_event as _record
+    return _record(task_name, status, detail)

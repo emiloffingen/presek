@@ -6,6 +6,7 @@ import sys
 import threading
 
 _analyst_semaphore = threading.Semaphore(2)
+_BACKFILL_QUEUE_DEPTH_LIMIT = 100
 
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -30,7 +31,10 @@ from nlp import (
 )
 from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color
-from tasks.utils import invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, log, redis_client
+from tasks.utils import (
+    invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, 
+    log, redis_client, get_celery_queue_depth, acquire_task_lock, release_task_lock
+)
 
 @celery_app.task(rate_limit='50/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def summarize_article_task(article_id, final_title=None):

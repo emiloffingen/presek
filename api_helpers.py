@@ -10,6 +10,7 @@ import re
 import socket
 import ipaddress
 import logging
+from typing import Optional, List
 
 log = logging.getLogger("presek.api.helpers")
 
@@ -256,3 +257,144 @@ def normalize_server_delivery_subscription(payload) -> dict:
         "isActive": is_active,
     }
 
+
+def default_related_questions(question: str, category: Optional[str] = None) -> list[str]:
+    fallback = [
+        "Што е главниот развој во оваа приказна?",
+        "Како се разликуваат изворите во известувањето?",
+        "Што сè уште не е потврдено?",
+    ]
+    if category:
+        fallback[0] = f"Кој е најважниот развој во темата {str(category).lower()}?"
+    return [q for q in fallback if q.strip() and q.strip() != question.strip()][:3]
+
+
+def related_questions_from_context(
+    question: str,
+    category: Optional[str] = None,
+    *,
+    has_perspectives: bool = False,
+    has_multiple_sources: bool = False,
+    has_unclear_points: bool = False,
+) -> list[str]:
+    suggestions = []
+    lowered = (question or "").strip().lower()
+
+    def add(text: str):
+        text = str(text or "").strip()
+        if text and text.casefold() != lowered and text not in suggestions:
+            suggestions.append(text)
+
+    if not any(token in lowered for token in ("разлику", "извор", "перспектив")) and (has_perspectives or has_multiple_sources):
+        add("Како се разликуваат изворите во известувањето?")
+    if not any(token in lowered for token in ("нејас", "непотвр", "отворено")):
+        add("Што останува нејасно или непотврдено?")
+    if not any(token in lowered for token in ("следно", "понатаму", "последиц", "реакц")):
+        add("Што следува понатаму во оваа приказна?")
+    if has_multiple_sources and not any(token in lowered for token in ("најваж", "ново", "главно")):
+        add("Што е најважното ново во оваа вест?")
+
+    for item in default_related_questions(question, category):
+        add(item)
+
+    if has_unclear_points:
+        add("Кои детали сè уште зависат од следни потвди?")
+
+    return suggestions[:3]
+
+
+def text_terms(text: str) -> set[str]:
+    from nlp.keywords import TAG_NOISE_WORDS
+    terms = re.findall(r"[A-Za-zА-Яа-яЀ-ӿ0-9]{3,}", (text or "").lower())
+    return {t for t in terms if t not in TAG_NOISE_WORDS and t not in _EXTRA_NOISE}
+
+
+def build_citation_snippet(article):
+    from nlp import summarize_locally
+    title = str((article or {}).get("title") or "").strip()
+    description = str((article or {}).get("description") or "").strip()
+    if description:
+        snippet = summarize_locally(description, sentence_count=1)
+        if snippet:
+            return snippet.strip()[:220]
+    return title[:220]
+
+
+def rank_cluster_citations(
+    question: str,
+    answer: str,
+    articles: list[dict],
+    preferred_numbers: list,
+) -> list[dict]:
+    from utils import build_cluster_source_signals, get_source_trust_label
+    
+    question_terms = text_terms(question)
+    answer_terms = text_terms(answer)
+    combined_terms = question_terms | answer_terms
+
+    preferred_order = []
+    for raw in preferred_numbers or []:
+        try:
+            idx = int(raw)
+        except Exception:
+            continue
+        if idx not in preferred_order:
+            preferred_order.append(idx)
+
+    source_signals = build_cluster_source_signals(articles)
+    signal_by_key = {}
+    for article, signal in zip(articles, source_signals):
+        key = (
+            str(article.get("source") or ""),
+            str(article.get("title") or ""),
+            str(article.get("link") or ""),
+        )
+        signal_by_key[key] = signal
+
+    ranked = []
+    for idx, article in enumerate(articles, start=1):
+        article_text = " ".join([
+            str(article.get("title") or ""),
+            str(article.get("description") or ""),
+            str(article.get("source") or ""),
+        ])
+        article_terms = text_terms(article_text)
+        overlap = len(combined_terms & article_terms)
+        preferred_bonus = 5 if idx in preferred_order else 0
+        title_bonus = 1 if question_terms & text_terms(str(article.get("title") or "")) else 0
+        trust_bonus = 1 if get_source_trust_label(str(article.get("source") or "")) == "Висока доверба" else 0
+        signal = signal_by_key.get((
+            str(article.get("source") or ""),
+            str(article.get("title") or ""),
+            str(article.get("link") or ""),
+        )) or {}
+        ranked.append((
+            preferred_bonus + overlap + title_bonus + trust_bonus,
+            -idx,
+            {
+                "source": article.get("source"),
+                "title": article.get("title"),
+                "link": article.get("link"),
+                "created_at": article.get("created_at"),
+                "snippet": build_citation_snippet(article),
+                "trust_label": signal.get("trust_label") or get_source_trust_label(str(article.get("source") or "")),
+                "role_label": signal.get("role_label", ""),
+            },
+        ))
+
+    ranked.sort(reverse=True)
+    top = [item[2] for item in ranked if item[0] > 0]
+    if top:
+        return top[:3]
+    return [
+        {
+            "source": article.get("source"),
+            "title": article.get("title"),
+            "link": article.get("link"),
+            "created_at": article.get("created_at"),
+            "snippet": build_citation_snippet(article),
+            "trust_label": get_source_trust_label(str(article.get("source") or "")),
+            "role_label": "",
+        }
+        for article in articles[:2]
+    ]

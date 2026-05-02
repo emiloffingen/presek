@@ -909,16 +909,6 @@ def build_cluster_source_signals(arts):
     return signals
 
 
-def annotate_cluster_articles(arts):
-    ranked = rank_articles_in_cluster(arts)
-    signals = build_cluster_source_signals(ranked)
-    annotated = []
-    for article, signal in zip(ranked, signals):
-        enriched = dict(article)
-        enriched["source_signal"] = signal
-        annotated.append(enriched)
-    return annotated
-
 
 def build_read_next_clusters(current_cluster_id, current_articles, current_tags, candidate_rows, limit=4):
     current_ranked = annotate_cluster_articles(current_articles or [])

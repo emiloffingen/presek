@@ -21,7 +21,14 @@ from api_helpers import normalize_perspectives
 from utils import rank_articles_in_cluster, score_cluster_for_homepage, assess_cluster_synthesis_freshness
 from nlp import generate_daily_brief_fallback
 from nlp.keywords import _extract_capitalized_phrases
-from tasks.utils import delete_cache, log, _PUBLIC_SITE_URL, redis_client
+from tasks.utils import (
+    delete_cache, log, _PUBLIC_SITE_URL, redis_client, 
+    get_celery_queue_depth, acquire_task_lock, release_task_lock
+)
+
+_BREAKING_ALERT_QUEUE_DEPTH_LIMIT = 100
+_BREAKING_ALERT_TASK_LOCK = "lock:breaking_alerts"
+_BREAKING_ALERT_LOCK_TTL = 300
 
 _BRIEFING_PARTISAN_MARKERS = {
     "во очајна потрага", "крах систем", "слави победа", "предавство",
