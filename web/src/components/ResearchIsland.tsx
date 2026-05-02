@@ -9,22 +9,6 @@ interface ResearchIslandProps {
 
 type ResearchMode = 'facts' | 'perspectives' | 'context';
 
-const providerLabel = (provider?: string | null) => {
-  switch (provider) {
-    case 'nvidia':
-      return 'NVIDIA NIM';
-    case 'gemini':
-      return 'Gemini';
-    case 'mistral':
-      return 'Mistral';
-    case 'local':
-    case 'local_gemma':
-      return 'локален модел';
-    default:
-      return 'AI анализа';
-  }
-};
-
 export default function ResearchIsland({ clusterId, initialHeadline, sources = [] }: ResearchIslandProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<ResearchMode | 'custom' | null>(null);
@@ -203,7 +187,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
         </div>
         <div className="hidden md:block pt-4">
             <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
-            {data?.provider ? providerLabel(data.provider) : 'Пресек Истражувач'}
+            Пресек Истражувач
             </p>
         </div>
       </div>
@@ -286,7 +270,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             </div>
 
             <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              {providerLabel(data.provider)}
+              Пресек Истражувач
             </span>
 
             <button onClick={() => setData(null)} className="p-1 hover:bg-foreground/5 rounded-lg transition-colors ml-auto">
@@ -343,11 +327,6 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-left">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
                    Одговор генериран од кластерските извори
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-[9px] font-black tracking-[0.24em] border border-foreground px-3 py-1.5 rounded-full">
-                        {data.provider ? data.provider.toUpperCase() : 'AI'}
-                    </span>
                 </div>
              </div>
           </div>
