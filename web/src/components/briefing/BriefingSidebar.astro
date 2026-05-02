@@ -7,9 +7,10 @@ interface Props {
 	health: any;
 	leadCluster: any;
 	briefing?: any;
+	historicalDates?: any[];
 }
 
-const { stats, health, leadCluster, briefing } = Astro.props;
+const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.props;
 ---
 
 <aside class="briefing-sidebar">
@@ -17,6 +18,25 @@ const { stats, health, leadCluster, briefing } = Astro.props;
 		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm">
 			<NewsletterIsland client:load />
 		</section>
+
+		{historicalDates.length > 0 && (
+			<section class="sidebar-module">
+				<div class="flex items-center gap-2 mb-4 pb-2 border-b border-border">
+					<Activity size={14} className="text-foreground" />
+					<h4 class="text-[10px] font-black uppercase tracking-widest">ПРЕТХОДНИ ИЗДАНИЈА</h4>
+				</div>
+				<div class="flex flex-col gap-2">
+					{historicalDates.map((d: any) => (
+						<a 
+							href={`/briefing?date=${d.day}`} 
+							class={`text-xs font-bold hover:text-nyt-accent transition-colors ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+						>
+							● {new Date(d.day).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' })}
+						</a>
+					))}
+				</div>
+			</section>
+		)}
 
 		{stats?.intelligence?.pluralism && (
 			<section class="sidebar-module">

@@ -12,37 +12,48 @@ import { cleanAndDecode, parseFootnotes } from '../utils/textUtils';
 
 const API_URL = apiBaseUrl();
 
+const dateParam = Astro.url.searchParams.get('date') || null;
+
 let briefing: any = null;
 let stats: any = null;
 let health: any = null;
 let leadCluster: any = null;
+let historicalDates: any[] = [];
 let error = null;
 
 try {
-    const [briefRes, statsRes, healthRes, leadRes] = await Promise.all([
-        fetch(`${API_URL}/briefing`),
+    const briefUrl = dateParam ? `${API_URL}/briefing?date=${dateParam}` : `${API_URL}/briefing`;
+    const [briefRes, statsRes, healthRes, leadRes, archiveRes] = await Promise.all([
+        fetch(briefUrl),
         fetch(`${API_URL}/stats/summary`),
         fetch(`${API_URL}/health`),
-        fetch(`${API_URL}/news?page_size=1`)
+        fetch(`${API_URL}/news?page_size=1`),
+        fetch(`${API_URL}/archive/heatmap?limit=10`) // Reusing heatmap for dates or similar
     ]);
     
     if (briefRes.ok) {
         briefing = await briefRes.json();
         if (briefing.detail || briefing.error || !briefing.content) {
             briefing = null;
-            error = "Брифингот моментално не е достапен.";
+            error = "Брифингот за овој датум моментално не е достапен.";
             Astro.response.status = 500;
         }
     } else {
         error = "Брифингот моментално не е достапен.";
         Astro.response.status = 500;
     }
-    if (statsRes.ok) {
-        stats = await statsRes.json();
+    
+    // Fetch specifically for briefing history
+    const historyRes = await fetch(`${API_URL}/archive/heatmap`); // Adjust if there is a better endpoint
+    if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        historicalDates = (historyData.data || [])
+            .filter((d: any) => d.total_clusters > 5) // Dates that likely have briefings
+            .slice(0, 10);
     }
-    if (healthRes.ok) {
-        health = await healthRes.json();
-    }
+
+    if (statsRes.ok) stats = await statsRes.json();
+    if (healthRes.ok) health = await healthRes.json();
     if (leadRes.ok) {
         const json = await leadRes.json();
         leadCluster = json.clusters?.[0];
@@ -52,6 +63,8 @@ try {
     error = "Грешка при вчитување на брифингот.";
     Astro.response.status = 500;
 }
+
+const briefingReadingTime = briefing?.content ? Math.max(1, Math.ceil(briefing.content.split(/\s+/).length / 200)) : 0;
 
 const currentDate = briefing?.date ? new Date(briefing.date).toLocaleDateString('mk-MK', { 
     weekday: 'long', 
@@ -185,15 +198,22 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
 <Layout title="Дневен Брифинг — Пресек" description="Синтетизиран преглед на најважните вести и трендови во Македонија.">
     <NYTHeader stats={stats} />
 
+    <div id="read-progress" class="fixed top-0 left-0 h-1 bg-nyt-accent z-[102] transition-all duration-100 opacity-0 w-0"></div>
+
 	<main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
         {error ? (
             <div class="py-24 text-center">
                 <h1 class="font-serif text-3xl mb-4">{error}</h1>
-                <a href="/" class="text-nyt-accent hover:underline font-bold uppercase tracking-widest text-xs">Назад на почетна</a>
+                <a href="/briefing" class="text-nyt-accent hover:underline font-bold uppercase tracking-widest text-xs">Види го денешниот брифинг</a>
             </div>
         ) : briefing && (
             <div class="briefing-container">
-                <BriefingHeader currentDate={currentDate} dispatchIcon={dispatchIcon} stats={stats} />
+                <BriefingHeader 
+                    currentDate={currentDate} 
+                    dispatchIcon={dispatchIcon} 
+                    stats={stats} 
+                    readingTime={briefingReadingTime} 
+                />
 
                 {leadCluster && (
                     <div class="briefing-hero-wrapper mt-12 mb-16 motion-rise">
@@ -233,11 +253,40 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                         </div>
                     </div>
 
-                    <BriefingSidebar stats={stats} health={health} leadCluster={leadCluster} briefing={briefing} />
+                    <BriefingSidebar 
+                        stats={stats} 
+                        health={health} 
+                        leadCluster={leadCluster} 
+                        briefing={briefing} 
+                        historicalDates={historicalDates}
+                    />
                 </div>
             </div>
         )}
 	</main>
+
+    <script is:inline>
+        (function() {
+            const bar = document.getElementById('read-progress');
+            if (!bar) return;
+
+            const updateProgress = () => {
+                const winScroll = document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                
+                if (winScroll > 150) {
+                    bar.style.opacity = '1';
+                } else {
+                    bar.style.opacity = '0';
+                }
+                
+                bar.style.width = scrolled + "%";
+            };
+
+            window.addEventListener('scroll', updateProgress, { passive: true });
+        })();
+    </script>
 
 	<Footer />
 </Layout>

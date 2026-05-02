@@ -5,17 +5,18 @@ interface Props {
 	currentDate: string;
 	dispatchIcon: any;
 	stats: any;
+	readingTime?: number;
 }
 
-const { currentDate, dispatchIcon: DispatchIcon, stats } = Astro.props;
+const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5 } = Astro.props;
 ---
 
 <header class="briefing-masthead masthead-double-rule motion-rise">
 	<div class="masthead-top">
 		<span class="masthead-kicker">УРЕДНИЧКИ БРИФИНГ</span>
 		<div class="masthead-meta">
-			<span class="meta-item"><Timer size={11} /> {stats?.last_24h ? Math.max(3, Math.ceil(stats.last_24h / 150)) : 5} МИН. ЧИТАЊЕ</span>
-			<span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 4.2</span>
+			<span class="meta-item"><Timer size={11} /> {readingTime} МИН. ЧИТАЊЕ</span>
+			<span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
 		</div>
 	</div>
 
