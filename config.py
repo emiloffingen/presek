@@ -261,10 +261,10 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# nvidia (Cloud Research) -> gemini (Cloud) -> local (Gemma 2 2B)
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "local"]
-PROVIDER_FALLBACK_ORDER = ["mistral", "gemini", "local"] # default
+# Use paid Gemini as primary, then Mistral, then Local fallback
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "mistral", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "mistral", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini", "mistral", "local"] # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
