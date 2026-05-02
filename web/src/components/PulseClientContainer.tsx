@@ -256,6 +256,35 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                 </aside>
             </div>
 
+            {/* Transparency Scoreboard */}
+            <section className="mt-20">
+                <h2 className="section-title-italic mb-8 masthead-double-rule">Индекс на Транспарентност</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="border border-border p-6 bg-emerald-50/50 dark:bg-emerald-950/10">
+                        <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-6">Најобјективни извори (24ч)</h4>
+                        <div className="flex flex-col gap-4">
+                            {[...pulseLeaders].sort((a,b) => b.avg_objectivity - a.avg_objectivity).slice(0, 3).map(s => (
+                                <div key={s.source} className="flex justify-between items-center">
+                                    <span className="font-bold text-sm">{s.source}</span>
+                                    <span className="text-xs font-black text-emerald-600">{(s.avg_objectivity * 100).toFixed(0)}% Објективност</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="border border-border p-6 bg-red-50/50 dark:bg-red-950/10">
+                        <h4 className="sidebar-label !border-red-500 !text-red-700 dark:!text-red-400 mb-6">Најнизок сензационализам</h4>
+                        <div className="flex flex-col gap-4">
+                            {[...pulseLeaders].sort((a,b) => a.avg_sensationalism - b.avg_sensationalism).slice(0, 3).map(s => (
+                                <div key={s.source} className="flex justify-between items-center">
+                                    <span className="font-bold text-sm">{s.source}</span>
+                                    <span className="text-xs font-black text-red-600">{(s.avg_sensationalism * 100).toFixed(0)}% Сензација</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {(!loading || pulseLeaders.length > 0) && (
                 <section className={`mt-20 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                     <h2 className="section-title-italic mb-8 masthead-double-rule">Ранг на редакции (24ч)</h2>
