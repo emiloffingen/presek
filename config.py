@@ -195,7 +195,7 @@ MK_LANGUAGE_SOURCES: frozenset[str] = frozenset({
     "Vreme", "Frontline", "Nacional", "Antropol", "Brif",
     "Pressing TV", "Inbox7", "Kanal77", "Glas", "Vistina",
     "Vesnik", "Sloboden Svet", "BiznisInfo", "Bitola News",
-    "PopUp", "Kultura.mk", "Reper",
+    "PopUp", "Kultura.mk", "Reper", "Muzika24",
 })
 
 DIASPORA_FEEDS = []
@@ -220,7 +220,7 @@ SOURCE_CREDIBILITY = {
     "Antropol": 1.1, "Brif": 0.9, "Pressing TV": 1.2, "Inbox7": 0.9,
     "Kanal77": 1.0, "Glas": 0.8, "Vistina": 0.8,
     "Vesnik": 0.9, "Sloboden Svet": 0.8, "BiznisInfo": 1.0, "Bitola News": 0.8,
-    "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1,
+    "PopUp": 1.1, "Kultura.mk": 1.2, "Reper": 1.1, "Muzika24": 1.0,
 }
 DEFAULT_CREDIBILITY = 0.8
 
@@ -234,7 +234,7 @@ SOURCE_CATEGORIES = {
     "Pressing TV": "Главни", "Antropol": "Независни",
     "Bitola News": "Регионални",
     "PopUp": "Култура", "Kultura.mk": "Култура",
-    "Reper": "Култура",
+    "Reper": "Култура", "Muzika24": "Забава",
 }
 DEFAULT_SOURCE_CATEGORY = "Локални"
 

@@ -74,4 +74,5 @@ DEFAULT_SOURCE_CATALOG = [
     ("Smartportal", "https://smartportal.mk/feed/"),
     ("USB.mk", "https://usb.mk/feed/"),
     ("Hashtag", "https://hashtag.mk/feed/"),
+    ("Muzika24", "https://muzika24.mk/feed/"),
 ]
