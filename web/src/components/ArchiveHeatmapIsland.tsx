@@ -8,7 +8,11 @@ interface HeatmapDay {
   breaking_clusters: number;
 }
 
-export default function ArchiveHeatmapIsland() {
+interface Props {
+  selectedDate?: string;
+}
+
+export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
   const [data, setData] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,16 +104,17 @@ export default function ArchiveHeatmapIsland() {
             // Highlight every start of week/month or first item
             const d = new Date(dayData.day);
             const isMarker = idx === 0 || idx === grid.length - 1 || d.getDate() === 1;
+            const isActive = dayData.day === selectedDate;
 
             return (
               <a 
                 key={dayData.day} 
                 href={`/archive?date=${dayData.day}`}
-                className="group flex flex-col items-center justify-end h-full gap-1"
+                className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
                 title={`${getLabel(dayData.day)}: ${dayData.total_clusters} вести, ${dayData.breaking_clusters} итни`}
               >
                 <div 
-                  className={`w-3 sm:w-4 rounded-sm transition-all hover:opacity-80 relative ${intensity}`}
+                  className={`w-3 sm:w-4 rounded-sm transition-all hover:opacity-80 relative ${intensity} ${isActive ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''}`}
                   style={{ height: `${heightTotal}%` }}
                 >
                   {/* Tooltip on hover */}

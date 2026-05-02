@@ -67,20 +67,42 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         </p>
 
         <div class="archive-controls mt-10">
-            <form method="get" class="date-form">
-                <div class="date-input-wrap">
-                    <CalendarDays size={16} />
-                    <input type="date" name="date" value={date} onchange="this.form.submit()" />
+            <div class="flex items-center gap-4 flex-wrap">
+                <form method="get" class="date-form">
+                    <div class="date-input-wrap">
+                        <CalendarDays size={16} />
+                        <input type="date" name="date" value={date} onchange="this.form.submit()" />
+                    </div>
+                </form>
+
+                <div class="flex items-center gap-2">
+                    <a 
+                        href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
+                        class="nav-step-btn"
+                        title="Претходен ден"
+                    >
+                        ← Позади
+                    </a>
+                    {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
+                        <a 
+                            href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
+                            class="nav-step-btn"
+                            title="Следен ден"
+                        >
+                            Напред →
+                        </a>
+                    )}
                 </div>
-                <p class="date-display-label">{formattedDisplayDate}</p>
-            </form>
+
+                <p class="date-display-label ml-4">{formattedDisplayDate}</p>
+            </div>
         </div>
     </header>
 
     <details class="archive-heatmap-toggle mb-12">
         <summary>Интензитет на циклусот <span>Отвори преглед ↓</span></summary>
         <div class="heatmap-panel pt-8">
-            <ArchiveHeatmapIsland client:load />
+            <ArchiveHeatmapIsland client:load selectedDate={date} />
         </div>
     </details>
 
@@ -112,6 +134,12 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         </section>
 
         <aside class="broadsheet-rail">
+            <div class="rail-block mb-10">
+                <a href="/archive" class="reset-today-btn">
+                    Врати се денес
+                </a>
+            </div>
+
             <div class="rail-block rail-block-featured">
                 <p class="rail-kicker">Индекс</p>
                 <h3 class="rail-title">ТЕМИ</h3>
@@ -159,7 +187,45 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     .date-form { display: flex; align-items: center; gap: 1.5rem; }
     .date-input-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); }
     .date-input-wrap input { background: transparent; border: 0; font-family: var(--font-serif); font-size: 1rem; font-weight: 800; outline: none; }
-    .date-display-label { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 900; italic: true; }
+    /* ── Date Navigation ────────────────────────────── */
+    .nav-step-btn {
+        padding: 0.5rem 0.8rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.64rem;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        color: var(--foreground);
+        transition: all 0.2s;
+    }
+    .nav-step-btn:hover {
+        background: var(--foreground);
+        color: var(--background);
+        border-color: var(--foreground);
+    }
+    .reset-today-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 0.75rem;
+        background: var(--foreground);
+        color: var(--background);
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .reset-today-btn:hover {
+        background: var(--nyt-accent);
+        transform: translateY(-2px);
+    }
+    .date-display-label { font-family: var(--font-serif); font-size: clamp(1rem, 1.25rem, 1.5rem); font-weight: 900; italic: true; }
 
     /* ── Heatmap Toggle ──────────────────────────────── */
     .archive-heatmap-toggle { border: 1px solid var(--border); background: var(--secondary); }
