@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, BellRing, Copy, Mail, Radio, Save } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, $deliveryPrefs, $syncToken, updateDeliveryPrefs } from '../lib/store.ts';
 import AccountSyncIsland from './AccountSyncIsland.tsx';
 import {
   buildSyncTokenHeaders,
   buildDeliveryDigest,
   createDefaultServerDeliverySettings,
   loadDeliveryPreferences,
-  loadReaderProfile,
-  loadSyncToken,
   normalizeServerDeliverySettings,
   saveDeliveryPreferences,
   setBrowserPermissionStatus,
-  subscribeToReaderProfile,
   toggleDeliveryPreference,
 } from '../lib/personalization.js';
 
@@ -42,9 +41,10 @@ export default function BriefingDeliveryIsland({
   dateLabel?: string;
   variant?: 'full' | 'summary';
 }) {
-  const [profile, setProfile] = useState(() => loadReaderProfile());
-  const [prefs, setPrefs] = useState(() => loadDeliveryPreferences());
-  const [syncToken, setSyncToken] = useState(() => loadSyncToken());
+  const profile = useStore($profile);
+  const prefs = useStore($deliveryPrefs);
+  const syncToken = useStore($syncToken);
+  
   const [serverDelivery, setServerDelivery] = useState(() => createDefaultServerDeliverySettings());
   const [serverStatus, setServerStatus] = useState<'idle' | 'working' | 'done' | 'error'>('idle');
   const [serverMessage, setServerMessage] = useState('');
@@ -55,11 +55,8 @@ export default function BriefingDeliveryIsland({
     const nextPrefs = saveDeliveryPreferences(
       { ...loadDeliveryPreferences(), browserPermission: permission },
     );
-    setPrefs(nextPrefs);
-    setProfile(loadReaderProfile());
+    updateDeliveryPrefs(nextPrefs);
   }, []);
-
-  useEffect(() => subscribeToReaderProfile(setProfile), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,7 +108,7 @@ export default function BriefingDeliveryIsland({
     if (typeof Notification === 'undefined') return;
     const status = await Notification.requestPermission();
     const next = setBrowserPermissionStatus(status);
-    setPrefs(next);
+    updateDeliveryPrefs(next);
 
     if (status === 'granted' && 'serviceWorker' in navigator && 'PushManager' in window) {
         try {
@@ -152,7 +149,7 @@ export default function BriefingDeliveryIsland({
 
   const togglePref = (field: 'morningBriefing' | 'breakingAlerts') => {
     const next = toggleDeliveryPreference(field);
-    setPrefs(next);
+    updateDeliveryPrefs(next);
   };
 
   const copyDigest = async () => {
@@ -378,7 +375,7 @@ export default function BriefingDeliveryIsland({
         {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}
       </div>
 
-      <AccountSyncIsland onTokenChange={setSyncToken} />
+      <AccountSyncIsland />
     </div>
   );
 }

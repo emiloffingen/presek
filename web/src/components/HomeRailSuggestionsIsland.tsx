@@ -1,21 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile } from '../lib/store.ts';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
   hasPersonalizationSignal,
-  loadReaderProfile,
   recordSuggestionImpressions,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
 } from '../lib/personalization.js';
 
 export default function HomeRailSuggestionsIsland() {
-  const [profile, setProfile] = useState(() => loadReaderProfile());
-
-  useEffect(() => {
-    return subscribeToReaderProfile(setProfile);
-  }, []);
+  const profile = useStore($profile);
 
   const suggestions = useMemo(
     () => buildSurfaceFollowSuggestions(profile, 'home_rail', { topicLimit: 2, sourceLimit: 1 }),
@@ -68,9 +64,6 @@ export default function HomeRailSuggestionsIsland() {
               value={item.value}
               label={`тема: ${item.value}`}
               analyticsSurface="home_rail"
-              onChanged={(isFollowing) => {
-                if (!isFollowing) setProfile(loadReaderProfile());
-              }}
             />
           </div>
         ))}
@@ -87,9 +80,6 @@ export default function HomeRailSuggestionsIsland() {
               value={item.value}
               label={`извор: ${item.value}`}
               analyticsSurface="home_rail"
-              onChanged={(isFollowing) => {
-                if (!isFollowing) setProfile(loadReaderProfile());
-              }}
             />
           </div>
         ))}

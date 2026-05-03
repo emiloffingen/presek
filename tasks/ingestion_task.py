@@ -7,7 +7,7 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from celery import chain
+from celery import chain, group
 from celery_app import celery_app
 from database import db_manager as db
 from crawler import crawler
@@ -21,7 +21,7 @@ from version import APP_VERSION_LABEL
 def crawl_article_task(article_id, url):
     """
     Main crawler orchestrator.
-    Triggers content crawling and, if successful, queues image processing.
+    Triggers content crawling and, if successful, queues image processing and cache invalidation.
     """
     try:
         res = safe_async_run(crawler.extract_all(url))
@@ -38,8 +38,6 @@ def crawl_article_task(article_id, url):
             
         image_url = res.get("image_url")
         if image_url:
-            # We don't wait for image processing here. 
-            # We save the raw URL and queue a separate background task.
             updates.append("image_url = %s")
             params.append(image_url)
             
@@ -48,12 +46,19 @@ def crawl_article_task(article_id, url):
             db.execute(f"UPDATE articles SET {', '.join(updates)} WHERE id = %s", tuple(params), fetch=False)
             log.info(f"Updated article {article_id} with crawled content.")
             
-            # Queue image processing if we have an image
+            # Post-crawl pipeline
+            post_crawl_tasks = []
             if image_url:
-                process_article_image_task.delay(article_id, image_url)
+                post_crawl_tasks.append(process_article_image_task.signature(args=(article_id, image_url)))
             
             if res.get("content"):
-                invalidate_public_data_caches()
+                post_crawl_tasks.append(post_crawl_invalidation_task.signature(args=(article_id,)))
+
+            if post_crawl_tasks:
+                if len(post_crawl_tasks) > 1:
+                    group(post_crawl_tasks).apply_async()
+                else:
+                    post_crawl_tasks[0].apply_async()
         else:
             log.warning(f"Crawler retrieved no content for {article_id}")
             
@@ -73,6 +78,12 @@ def process_article_image_task(article_id, image_url):
     except Exception as e:
         log.error(f"Failed to process image for {article_id}: {e}")
         raise
+
+@celery_app.task
+def post_crawl_invalidation_task(article_id):
+    """Handles cache invalidation after a successful crawl."""
+    invalidate_public_data_caches()
+    log.debug(f"Invalidated caches for article {article_id}")
 
 @celery_app.task(acks_late=True, reject_on_worker_lost=True)
 def run_ingestion():
@@ -100,10 +111,10 @@ def run_ingestion():
         # Record health metrics
         record_refresh(new_count, errors)
         record_task_event("run_ingestion", "ok" if not errors else "warning", f"new_articles:{new_count}")
+        
         if new_count > 0:
             invalidate_public_data_caches()
-
-        if new_count > 0:
+            
             # Lazy import to avoid circular dependencies
             from tasks.intelligence import (
                 generate_embeddings_task,

@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Clock3, Compass, Sparkles, BrainCircuit } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, $syncToken } from '../lib/store.ts';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
   buildPersonalizedClusters,
   hasPersonalizationSignal,
-  loadReaderProfile,
-  loadSyncToken,
   recordSuggestionImpressions,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
 } from '../lib/personalization.js';
 import { sanitizeHtml } from '../lib/sanitize';
 import { getDisplaySummary, getDisplayTitle, highlightScores } from '../utils/textUtils';
@@ -30,21 +29,13 @@ interface ForYouIslandProps {
 }
 
 export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: ForYouIslandProps) {
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(() => loadReaderProfile());
+  const profile = useStore($profile);
+  const syncToken = useStore($syncToken);
+  
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [semanticLoading, setSemanticLoading] = useState(false);
 
-  // 1. Load Local Profile & Subscribe
-  useEffect(() => {
-    const unsubscribe = subscribeToReaderProfile((nextProfile: any) => {
-      setProfile(nextProfile);
-    });
-    setLoading(false);
-    return unsubscribe;
-  }, []);
-
-  // 2. Fetch Semantic Recommendations from API
+  // Fetch Semantic Recommendations from API
   useEffect(() => {
     const hasSignals = hasPersonalizationSignal(profile);
     if (!hasSignals) return;
@@ -56,7 +47,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            token: loadSyncToken(),
+            token: syncToken,
             profile: profile
           })
         });
@@ -72,7 +63,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
     };
 
     fetchSemantic();
-  }, [profile]);
+  }, [profile, syncToken]);
 
   const hasSignals = useMemo(() => hasPersonalizationSignal(profile), [profile]);
 
@@ -105,8 +96,6 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
 
   // Track impressions
   useEffect(() => {
-    if (loading) return;
-    
     const suggestionList = [
       ...recommendations.topics.map((item) => ({ kind: 'topic' as const, value: item.value })),
       ...recommendations.sources.map((item) => ({ kind: 'source' as const, value: item.value })),
@@ -125,32 +114,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
         }))
       );
     }
-  }, [recommendations, loading]);
-
-  if (loading) {
-    return (
-      <section className="for-you-module skeleton-fade" aria-busy="true" aria-label="Вчитување на персонализирани вести">
-        <div className="for-you-head">
-          <div>
-            <div className="skeleton h-4 w-24 mb-2"></div>
-            <div className="skeleton h-8 w-64"></div>
-          </div>
-        </div>
-        <div className="for-you-grid">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="for-you-card">
-              <div className="skeleton h-3 w-32 mb-4"></div>
-              <div className="skeleton h-6 w-full mb-2"></div>
-              <div className="skeleton h-6 w-3/4 mb-4"></div>
-              <div className="skeleton h-4 w-full mb-1"></div>
-              <div className="skeleton h-4 w-full mb-1"></div>
-              <div className="skeleton h-4 w-1/2 mb-6"></div>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
+  }, [recommendations]);
 
   // Case 1: Has signals and found personalized content
   if (hasSignals && displayItems.length > 0) {

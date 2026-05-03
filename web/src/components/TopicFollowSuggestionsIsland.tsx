@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile } from '../lib/store.ts';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildSurfaceFollowSuggestions,
-  loadReaderProfile,
   recordSuggestionImpressions,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
 } from '../lib/personalization.js';
 
 type TopicSuggestion = {
@@ -28,11 +28,7 @@ export default function TopicFollowSuggestionsIsland({
   relatedTopics?: TopicSuggestion[];
   strongSources?: SourceSuggestion[];
 }) {
-  const [profile, setProfile] = useState(() => loadReaderProfile());
-
-  useEffect(() => {
-    return subscribeToReaderProfile(setProfile);
-  }, []);
+  const profile = useStore($profile);
 
   const suggestions = useMemo(() => {
     const followedTopics = new Set(profile?.followedTopics || []);
@@ -105,9 +101,6 @@ export default function TopicFollowSuggestionsIsland({
               value={item.topic}
               label={`тема: ${item.topic}`}
               analyticsSurface="topic"
-              onChanged={(isFollowing) => {
-                if (!isFollowing) setProfile(loadReaderProfile());
-              }}
             />
           </div>
         ))}
@@ -124,9 +117,6 @@ export default function TopicFollowSuggestionsIsland({
               value={item.source}
               label={`извор: ${item.source}`}
               analyticsSurface="topic"
-              onChanged={(isFollowing) => {
-                if (!isFollowing) setProfile(loadReaderProfile());
-              }}
             />
           </div>
         ))}

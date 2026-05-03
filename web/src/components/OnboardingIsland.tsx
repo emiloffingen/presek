@@ -1,32 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Sparkles, X } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, $onboarding, updateProfile, updateOnboarding, getStoredOnboardingProgress } from '../lib/store.ts';
 import {
   buildSurfaceFollowSuggestions,
   completeOnboarding,
   dismissOnboarding,
-  getOnboardingProgress,
-  loadReaderProfile,
   recordSuggestionDismiss,
   recordSuggestionFollow,
   recordSuggestionImpressions,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
-  toggleFollowedValue,
 } from '../lib/personalization.js';
 
 export default function OnboardingIsland({ compact = false }: { compact?: boolean }) {
-  const [progress, setProgress] = useState(() => getOnboardingProgress());
-  const [profile, setProfile] = useState(() => loadReaderProfile());
+  const profile = useStore($profile);
+  const onboarding = useStore($onboarding);
+  const progress = useMemo(() => getStoredOnboardingProgress(), [profile, onboarding]);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const p = getOnboardingProgress();
-    setProgress(p);
-    if (!p.shouldShow) {
+    if (!progress.shouldShow) {
       setVisible(false);
     }
-    return subscribeToReaderProfile(setProfile);
-  }, []);
+  }, [progress.shouldShow]);
 
   const recommendations = useMemo(
     () => buildSurfaceFollowSuggestions(profile, 'onboarding', { topicLimit: compact ? 2 : 3, sourceLimit: compact ? 1 : 2 }),
@@ -58,12 +54,12 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     e.stopPropagation();
     try {
       const next = dismissOnboarding();
+      updateOnboarding(next);
       const tracked = recordSuggestionDismiss('onboarding');
       if (tracked.recorded) {
         sendSuggestionEvents([{ surface: 'onboarding', eventType: 'dismiss' }]);
       }
       setVisible(false);
-      setProgress((current) => ({ ...current, dismissed: next.dismissed, shouldShow: false }));
     } catch (err) {
       console.error('Failed to dismiss onboarding:', err);
       setVisible(false);
@@ -74,9 +70,9 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
     e.preventDefault();
     e.stopPropagation();
     try {
-      completeOnboarding();
+      const next = completeOnboarding();
+      updateOnboarding(next);
       setVisible(false);
-      setProgress((current) => ({ ...current, completed: true, shouldShow: false }));
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
       setVisible(false);
@@ -84,15 +80,16 @@ export default function OnboardingIsland({ compact = false }: { compact?: boolea
   };
 
   const quickFollow = (kind: 'topic' | 'source', value: string) => {
-    const result = toggleFollowedValue(kind, value);
-    if (result.isFollowing) {
-      const tracked = recordSuggestionFollow('onboarding', kind, value);
-      if (tracked.recorded) {
+    const field = kind === 'source' ? 'followedSources' : 'followedTopics';
+    const currentList = profile[field] || [];
+    const newList = [...new Set([...currentList, value])].slice(0, 12);
+    
+    updateProfile({ [field]: newList });
+
+    const tracked = recordSuggestionFollow('onboarding', kind, value);
+    if (tracked.recorded) {
         sendSuggestionEvents([{ surface: 'onboarding', eventType: 'follow', suggestionKind: kind, value }]);
-      }
     }
-    setProfile(result.profile);
-    setProgress(getOnboardingProgress());
   };
 
   return (

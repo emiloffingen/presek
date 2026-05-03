@@ -7,7 +7,11 @@ const ONBOARDING_KEY = 'presek_onboarding_v1';
 const SUGGESTION_ANALYTICS_KEY = 'presek_suggestion_analytics_v1';
 const CLIENT_ID_KEY = 'presek_client_id_v1';
 const MAX_SUGGESTION_IMPRESSION_KEYS = 240;
-const PROFILE_UPDATED_EVENT = 'presek:reader-profile-updated';
+export const PROFILE_UPDATED_EVENT = 'presek:reader-profile-updated';
+export const SYNC_TOKEN_UPDATED_EVENT = 'presek:sync-token-updated';
+export const DELIVERY_PREFS_UPDATED_EVENT = 'presek:delivery-prefs-updated';
+export const ONBOARDING_STATE_UPDATED_EVENT = 'presek:onboarding-updated';
+
 const FOLLOW_RECOMMENDATION_MIN_SIGNAL = 1.25;
 const HOME_RAIL_TOPIC_MIN_SIGNAL = 1.8;
 const HOME_RAIL_SOURCE_MIN_SIGNAL = 3;
@@ -301,9 +305,11 @@ export function saveSyncToken(token, storage = globalThis?.localStorage) {
   if (!storage) return clean;
   if (!clean) {
     storage.removeItem(SYNC_TOKEN_KEY);
+    globalThis?.dispatchEvent?.(new CustomEvent(SYNC_TOKEN_UPDATED_EVENT, { detail: '' }));
     return '';
   }
   storage.setItem(SYNC_TOKEN_KEY, clean);
+  globalThis?.dispatchEvent?.(new CustomEvent(SYNC_TOKEN_UPDATED_EVENT, { detail: clean }));
   return clean;
 }
 
@@ -352,6 +358,27 @@ export function subscribeToReaderProfile(listener) {
     globalThis.removeEventListener(PROFILE_UPDATED_EVENT, onProfileUpdated);
     globalThis.removeEventListener('storage', onStorage);
   };
+}
+
+export function subscribeToSyncToken(listener) {
+    if (!globalThis?.addEventListener || typeof listener !== 'function') return () => {};
+    const onUpdated = () => listener(loadSyncToken());
+    globalThis.addEventListener(SYNC_TOKEN_UPDATED_EVENT, onUpdated);
+    return () => globalThis.removeEventListener(SYNC_TOKEN_UPDATED_EVENT, onUpdated);
+}
+
+export function subscribeToDeliveryPrefs(listener) {
+    if (!globalThis?.addEventListener || typeof listener !== 'function') return () => {};
+    const onUpdated = () => listener(loadDeliveryPreferences());
+    globalThis.addEventListener(DELIVERY_PREFS_UPDATED_EVENT, onUpdated);
+    return () => globalThis.removeEventListener(DELIVERY_PREFS_UPDATED_EVENT, onUpdated);
+}
+
+export function subscribeToOnboarding(listener) {
+    if (!globalThis?.addEventListener || typeof listener !== 'function') return () => {};
+    const onUpdated = () => listener(loadOnboardingState());
+    globalThis.addEventListener(ONBOARDING_STATE_UPDATED_EVENT, onUpdated);
+    return () => globalThis.removeEventListener(ONBOARDING_STATE_UPDATED_EVENT, onUpdated);
 }
 
 export function createDefaultDeliveryPreferences() {
@@ -412,6 +439,7 @@ export function saveDeliveryPreferences(prefs, storage = globalThis?.localStorag
     browserPermission: normalizeValue(prefs?.browserPermission) || 'default',
   };
   storage.setItem(DELIVERY_KEY, JSON.stringify(normalized));
+  globalThis?.dispatchEvent?.(new CustomEvent(DELIVERY_PREFS_UPDATED_EVENT, { detail: normalized }));
   return normalized;
 }
 
@@ -757,6 +785,7 @@ export function saveOnboardingState(state, storage = globalThis?.localStorage) {
   };
   if (storage) {
     storage.setItem(ONBOARDING_KEY, JSON.stringify(normalized));
+    globalThis?.dispatchEvent?.(new CustomEvent(ONBOARDING_STATE_UPDATED_EVENT, { detail: normalized }));
   }
   return normalized;
 }

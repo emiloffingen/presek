@@ -1,14 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ArrowUpRight, Clock3, Newspaper, Sparkles, X } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, updateProfile } from '../lib/store.ts';
 import {
   buildSurfaceFollowSuggestions,
-  loadReaderProfile,
   recordSuggestionFollow,
   recordSuggestionImpressions,
-  saveReaderProfile,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
-  toggleFollowedValue,
 } from '../lib/personalization.js';
 
 function summarizeRecent(profile: any) {
@@ -22,11 +20,7 @@ function summarizeRecent(profile: any) {
 }
 
 export default function SettingsProfileIsland() {
-  const [profile, setProfile] = useState(() => loadReaderProfile());
-
-  useEffect(() => {
-    return subscribeToReaderProfile(setProfile);
-  }, []);
+  const profile = useStore($profile);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,12 +42,8 @@ export default function SettingsProfileIsland() {
         const invalidIds = new Set(checks.filter((item) => !item.ok).map((item) => item.clusterId));
         if (invalidIds.size === 0) return;
 
-        const nextProfile = {
-          ...profile,
-          recentClusters: (profile?.recentClusters || []).filter((item: any) => !invalidIds.has(String(item?.cluster_id || '').trim())),
-        };
-        const saved = saveReaderProfile(nextProfile);
-        setProfile(saved);
+        const nextRecent = (profile?.recentClusters || []).filter((item: any) => !invalidIds.has(String(item?.cluster_id || '').trim()));
+        updateProfile({ recentClusters: nextRecent });
       } catch {
         // Ignore cleanup failures; they should not block the settings view.
       }
@@ -63,7 +53,7 @@ export default function SettingsProfileIsland() {
     return () => {
       cancelled = true;
     };
-  }, [profile]);
+  }, [profile.recentClusters]);
 
   const followedTopics = useMemo(() => profile?.followedTopics || [], [profile]);
   const followedSources = useMemo(() => profile?.followedSources || [], [profile]);
@@ -101,19 +91,22 @@ export default function SettingsProfileIsland() {
   }, [recommendations]);
 
   const removeFollow = (kind: 'topic' | 'source', value: string) => {
-    const result = toggleFollowedValue(kind, value);
-    setProfile(result.profile);
+    const field = kind === 'source' ? 'followedSources' : 'followedTopics';
+    const newList = (profile[field] || []).filter((v: string) => v !== value);
+    updateProfile({ [field]: newList });
   };
 
   const addFollow = (kind: 'topic' | 'source', value: string) => {
-    const result = toggleFollowedValue(kind, value);
-    if (result.isFollowing) {
-      const tracked = recordSuggestionFollow('settings', kind, value);
-      if (tracked.recorded) {
+    const field = kind === 'source' ? 'followedSources' : 'followedTopics';
+    const currentList = profile[field] || [];
+    const newList = [...new Set([...currentList, value])].slice(0, 12);
+    
+    updateProfile({ [field]: newList });
+
+    const tracked = recordSuggestionFollow('settings', kind, value);
+    if (tracked.recorded) {
         sendSuggestionEvents([{ surface: 'settings', eventType: 'follow', suggestionKind: kind, value }]);
-      }
     }
-    setProfile(result.profile);
   };
 
   return (
