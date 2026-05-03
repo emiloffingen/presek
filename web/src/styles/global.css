@@ -199,7 +199,7 @@
 
 	.nyt-article.variant-compact:not(.lead-story) {
 		display: grid;
-		grid-template-columns: 1fr 80px; /* Smaller image on mobile compact */
+		grid-template-columns: minmax(0, 1fr) 80px; /* Smaller image on mobile compact */
 		gap: 0.75rem;
 		align-items: start;
         flex-direction: row;
@@ -217,7 +217,7 @@
 
 	.nyt-article.variant-wire:not(.lead-story) {
 		display: grid;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 0.75rem;
 		padding: 0.75rem 0;
 		border-top: 1px solid var(--border);
@@ -282,27 +282,31 @@
         font-size: var(--text-2xl);
         font-weight: 900;
         line-height: 1.1;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
 		margin-bottom: 0.25rem;
 		color: var(--foreground);
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        hyphens: auto;
 	}
 
 	.headline-lead {
 		font-size: clamp(2rem, 5.5vw, 3.8rem);
 		line-height: 0.95;
-        letter-spacing: -0.04em;
+        letter-spacing: 0;
 	}
 
 	.headline-cyrillic {
 		line-height: 1.08;
 		text-wrap: balance;
-        letter-spacing: -0.01em;
+        letter-spacing: 0;
 	}
 
 	.headline-standard {
 		font-size: var(--text-xl);
         line-height: 1.1;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
 	}
 
     @media (min-width: 768px) {
@@ -921,7 +925,7 @@ button:active,
 .headline-cyrillic, 
 .editorial-headline-cyrillic {
     line-height: 1.12; /* Slightly more air for Cyrillic heights */
-    letter-spacing: -0.01em; /* Less aggressive tracking for Cyrillic */
+    letter-spacing: 0;
     text-wrap: pretty;
 }
 /* ── Editorial Imagery ───────────────────────────── */

@@ -40,6 +40,8 @@ const { mode = 'full', class: className } = Astro.props;
         gap: 0.8rem;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         color: var(--foreground);
+        min-width: 0;
+        max-width: 100%;
     }
 
     .emblem-container {
@@ -57,6 +59,9 @@ const { mode = 'full', class: className } = Astro.props;
 
     .presek-logo-svg {
         height: auto;
+        min-width: 0;
+        max-width: 100%;
+        flex: 1 1 auto;
     }
 
     /* --- LIVE PULSE EFFECT --- */
@@ -94,4 +99,29 @@ const { mode = 'full', class: className } = Astro.props;
     /* --- SIZE VARIANTS --- */
     .presek-branding.footer-mode .presek-emblem-svg { width: 50px; height: 50px; }
     .presek-branding.footer-mode .presek-logo-svg { width: 240px; }
+
+    @media (max-width: 960px) {
+        .presek-branding.full {
+            gap: 0.45rem;
+        }
+
+        .presek-branding.full .emblem-container {
+            flex: 0 0 auto;
+        }
+
+        .presek-branding.full .presek-emblem-svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .presek-branding.full .presek-logo-svg {
+            width: clamp(96px, 34vw, 150px);
+        }
+    }
+
+    @media (max-width: 400px) {
+        .presek-branding.full .presek-logo-svg {
+            width: clamp(82px, 30vw, 118px);
+        }
+    }
 </style>

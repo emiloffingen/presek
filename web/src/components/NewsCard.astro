@@ -272,6 +272,14 @@ function getTimeStr(dateStr: string) {
 <style>
 	.nyt-article {
 		--news-card-cache-bust-20260424: 1;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	.headline-link {
+		display: block;
+		min-width: 0;
+		max-width: 100%;
 	}
 
     /* --- Intelligence Badges --- */
@@ -403,6 +411,8 @@ function getTimeStr(dateStr: string) {
 		.nyt-article:not(.lead-story) .article-body {
 			grid-column: 1;
 			grid-row: 1;
+			min-width: 0;
+			max-width: 100%;
 		}
 
 		.nyt-article:not(.lead-story) .image-wrap {

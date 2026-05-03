@@ -238,12 +238,14 @@ function getRelativeTimeStr(dateStr?: string) {
         align-items: center;
         z-index: 101;
         overflow: hidden;
+        max-width: 100%;
     }
     .dispatch-container {
         display: flex;
         align-items: center;
         height: 100%;
         min-width: 0;
+        max-width: 100%;
     }
     .ticker-prefix {
         display: flex; align-items: center; gap: 0.35rem; 
@@ -254,7 +256,7 @@ function getRelativeTimeStr(dateStr?: string) {
         background: var(--background); z-index: 2;
         flex-shrink: 0;
     }
-    .unified-ticker-track-wrap { flex: 1; overflow: hidden; position: relative; }
+    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; max-width: 100%; }
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 60s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     
@@ -273,22 +275,25 @@ function getRelativeTimeStr(dateStr?: string) {
     .header-sticky-wrapper {
         position: sticky; top: 0; z-index: 100; background: var(--background);
         border-bottom: 1px solid var(--border); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
     }
     .header-sticky-wrapper.header-hidden { transform: translateY(-100%); }
 
     .editorial-topbar { padding: 0.5rem 0 0.65rem; }
-    .topbar-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+    .topbar-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; min-width: 0; max-width: 100%; }
     
-    .topbar-left-stack { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start; }
+    .topbar-left-stack { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start; min-width: 0; }
     .topbar-date-display { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
 
-    .topbar-branding { display: flex; justify-content: center; }
-    .brand-link { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+    .topbar-branding { display: flex; justify-content: center; min-width: 0; max-width: 100%; }
+    .brand-link { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; min-width: 0; max-width: 100%; }
     .brand-emblem { height: 1.35rem; }
     .brand-logo { height: 1.65rem; }
 
-    .topbar-actions { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; }
-    .topbar-modes-rail { display: flex; align-items: center; gap: 0.3rem; }
+    .topbar-actions { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; min-width: 0; }
+    .topbar-modes-rail { display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
     .mode-link {
         display: flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.5rem; border-radius: 4px;
         font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase;
@@ -332,7 +337,7 @@ function getRelativeTimeStr(dateStr?: string) {
         .ticker-label { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 900; letter-spacing: 0.05em; color: var(--nyt-red); white-space: nowrap; }
         .ticker-content-segment { gap: 1rem; padding-right: 1rem; }
         .editorial-topbar { padding: 0.25rem 0.5rem 0.35rem; width: 100%; box-sizing: border-box; }
-        .topbar-main { grid-template-columns: auto 1fr auto; gap: 0.4rem; width: 100%; min-width: 0; }
+        .topbar-main { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.4rem; width: 100%; min-width: 0; }
         .topbar-left-stack { order: 1; flex-direction: row; align-items: center; min-width: 0; flex-shrink: 1; }
         .topbar-date-display { display: none; }
         .topbar-branding { order: 2; flex: 1; justify-content: flex-start; min-width: 0; overflow: hidden; }
