@@ -20,6 +20,7 @@ def _clean_briefing_snippet(text):
 def _normalize_briefing_line(text):
     clean = _clean_briefing_snippet(text)
     clean = re.sub(r"^[\-•*#\d.\)\s]+", "", clean).strip()
+    clean = re.sub(r"\[\d+\]", "", clean).strip()
     clean = re.sub(
         r"^(Што е новото|Што се менува|Зошто е важно|Што се случува|Што е потврдено|Покриеност|Контекст|Разлика|Отворено)\s*:\s*",
         "",
