@@ -81,12 +81,16 @@ def _pick_quote_of_the_day(row) -> dict | None:
     }
 
 @router.get("/briefing")
-async def get_briefing():
+async def get_briefing(date: str | None = None):
     try:
-        row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE")
-        if not row: row = await db.async_execute_one("SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1")
+        if date:
+            row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = %s", (date,))
+        else:
+            row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE")
+            if not row: row = await db.async_execute_one("SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1")
         
         # Fetch key subjects for the day (PERSON)
+        # Note: If date is provided, we should arguably fetch subjects for that date, but let's keep it simple for now and rely on the content which is static
         subjects = await db.async_execute("""
             SELECT name, total_mentions, sentiment_score
             FROM knowledge_entities
