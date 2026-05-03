@@ -24,6 +24,7 @@ def lemmatize_mk(word: str) -> str:
     # Selective suffix stripping (adjectives -> nouns where clear)
     # PROTECT stems that are common in news and shouldn't be truncated to fragments
     if any(w.startswith(p) for p in ["македон", "мицкос", "америк", "европ", "русиј", "израел", "украин"]):
+        if w == "македон": return "Македон" # Preserve name
         if w.startswith("македон"): return "Македонија"
         if w.startswith("америк"): return "Америка"
         if w.startswith("европ"): return "Европа"

@@ -149,13 +149,14 @@ def normalize_tag_name(name):
         "поранешн": "Поранешен",
     }
 
-    PROTECTED_NAMES = {"македонија", "македонци", "македонски", "македонец", "америка", "американски"}
+    PROTECTED_NAMES = {"македонија", "македонци", "македонски", "македонец", "америка", "американски", "македон"}
     lowered = clean.lower()
     
     if lowered in mapping:
         return mapping[lowered]
         
     if lowered in PROTECTED_NAMES:
+        if lowered == "македон": return "Македон"
         if "македон" in lowered: return "Македонија"
         if "америка" in lowered: return "Америка"
         return clean.capitalize()
