@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Compass, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, updateProfile } from '../lib/store.ts';
+import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
 import {
   buildPersonalizedClusters,
-  loadReaderProfile,
-  subscribeToReaderProfile,
   hasPersonalizationSignal,
   buildSurfaceFollowSuggestions,
 } from '../lib/personalization.js';
@@ -18,25 +19,11 @@ interface ForYouPageIslandProps {
   initialError?: string | null;
 }
 
-interface ReaderProfile {
-  recentClusters: any[];
-  followedTopics: string[];
-  followedSources: string[];
-}
-
 export default function ForYouPageIsland({ initialClusters, initialError = null }: ForYouPageIslandProps) {
-  const [profile, setProfile] = useState<ReaderProfile>(loadReaderProfile());
+  const profile = useStore($profile);
   const [semanticResults, setSemanticResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [semanticError, setSemanticError] = useState<string | null>(null);
-
-  // 1. Load Local Profile & Subscribe
-  useEffect(() => {
-    const unsubscribe = subscribeToReaderProfile((nextProfile: ReaderProfile) => {
-      setProfile(nextProfile);
-    });
-    return unsubscribe;
-  }, []);
 
   // 2. Fetch semantic recommendations whenever personalization signals change.
   useEffect(() => {

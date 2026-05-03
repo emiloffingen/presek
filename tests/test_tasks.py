@@ -145,7 +145,7 @@ class TestReclusterRecentArticlesTask:
              patch("tasks.utils.record_task_event"), \
              patch.object(tasks.extract_entities_task, "delay") as mock_extract_delay, \
              patch.object(tasks.generate_cluster_metadata_task, "delay") as mock_meta_delay, \
-             patch.object(tasks.auto_summarize_task, "delay") as mock_summary_delay:
+             patch.object(tasks.intelligence.auto_summarize_task, "delay") as mock_summary_delay:
             mock_db.execute.side_effect = [
                 recent_rows,
                 1,

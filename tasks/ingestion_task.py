@@ -7,6 +7,7 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+from celery import chain
 from celery_app import celery_app
 from database import db_manager as db
 from crawler import crawler
@@ -19,13 +20,11 @@ from version import APP_VERSION_LABEL
 @celery_app.task(rate_limit='100/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
     """
-    Background crawler task.
-    Fetches full content and high-res images for an article.
+    Main crawler orchestrator.
+    Triggers content crawling and, if successful, queues image processing.
     """
     try:
-        # Use our new resilient crawler
         res = safe_async_run(crawler.extract_all(url))
-        
         if res.get("error"):
             log.warning(f"Crawl failed for article {article_id}: {res['error']}")
             return
@@ -37,33 +36,42 @@ def crawl_article_task(article_id, url):
             updates.append("full_content = %s")
             params.append(res["content"])
             
-        final_image_url = res.get("image_url")
-        if final_image_url:
-            # Prefer the high-res image discovered by the crawler
+        image_url = res.get("image_url")
+        if image_url:
+            # We don't wait for image processing here. 
+            # We save the raw URL and queue a separate background task.
             updates.append("image_url = %s")
-            params.append(final_image_url)
-
-            # 2. Process and save a local version for the lightning-fast proxy
-            local_path = safe_async_run(image_service.process_and_save(final_image_url, article_id))
-            if local_path:
-                updates.append("local_image_path = %s")
-                params.append(local_path)
+            params.append(image_url)
             
         if updates:
             params.append(article_id)
-            sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"
-            db.execute(sql, tuple(params), fetch=False)
-            log.info(f"Updated article {article_id} with crawled data (method: {res.get('method')})")
-        else:
-            log.warning(f"Crawler retrieved no content/image for {article_id} (method: {res.get('method')})")
+            db.execute(f"UPDATE articles SET {', '.join(updates)} WHERE id = %s", tuple(params), fetch=False)
+            log.info(f"Updated article {article_id} with crawled content.")
             
-        # Invalidate cache if we got new content
-        if res.get("content"):
-            invalidate_public_data_caches()
+            # Queue image processing if we have an image
+            if image_url:
+                process_article_image_task.delay(article_id, image_url)
+            
+            if res.get("content"):
+                invalidate_public_data_caches()
+        else:
+            log.warning(f"Crawler retrieved no content for {article_id}")
             
     except Exception as e:
         log.error(f"Error in crawl_article_task for {article_id}: {e}")
         Notifier.send_alert("CRAWL_FAILURE", f"Article {article_id} failed: {e}", {"article_id": article_id})
+        raise
+
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def process_article_image_task(article_id, image_url):
+    """Processes and locally caches an article image."""
+    try:
+        local_path = safe_async_run(image_service.process_and_save(image_url, article_id))
+        if local_path:
+            db.execute("UPDATE articles SET local_image_path = %s WHERE id = %s", (local_path, article_id), fetch=False)
+            log.info(f"Processed local image for article {article_id}")
+    except Exception as e:
+        log.error(f"Failed to process image for {article_id}: {e}")
         raise
 
 @celery_app.task(acks_late=True, reject_on_worker_lost=True)
@@ -105,14 +113,17 @@ def run_ingestion():
                 recategorize_clusters_task,
                 auto_summarize_task
             )
-            # Dispatch post-ingestion tasks individually so a failure in one
-            # doesn't block the rest (unlike a chain where errors halt propagation).
-            generate_embeddings_task.apply_async(countdown=2)
-            generate_cluster_metadata_task.apply_async(countdown=30)
-            classify_topics_task.apply_async(countdown=60)
-            extract_entities_task.apply_async(countdown=90)
-            recategorize_clusters_task.apply_async(countdown=120)
-            auto_summarize_task.apply_async(countdown=150)
+            # Create a chain of post-ingestion tasks
+            # This ensures they run sequentially immediately after ingestion completes.
+            ingestion_chain = chain(
+                generate_embeddings_task.signature(),
+                generate_cluster_metadata_task.signature(),
+                classify_topics_task.signature(),
+                extract_entities_task.signature(),
+                recategorize_clusters_task.signature(),
+                auto_summarize_task.signature()
+            )
+            ingestion_chain.apply_async()
 
         log.info(f"Ingestion cycle orchestrated. Added {new_count} articles.")
     finally:
@@ -126,59 +137,56 @@ def run_ingestion():
 @celery_app.task
 def auto_repair_sources_task():
     """
-    Looks for sources that have been auto-paused due to errors
-    and attempts to find new RSS feeds on their homepages.
+    Identifies paused sources and dispatches individual repair tasks.
     """
     try:
-        # Find sources that are inactive and were auto-paused
         paused_sources = db.execute(
-            "SELECT name, url FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'"
+            "SELECT name FROM sources WHERE is_active = FALSE AND pause_mode = 'auto'"
         )
-        if not paused_sources:
-            return
-
         for source in paused_sources:
-            name = source['name']
-            current_url = source['url']
-            
-            # Try to derive a homepage from the feed URL
-            from urllib.parse import urlsplit, urlunsplit
-            parts = urlsplit(current_url)
-            homepage = urlunsplit((parts.scheme, parts.netloc, "/", "", ""))
-            
-            log.info(f"Attempting to repair source '{name}' via {homepage}")
-            
-            # 1. Find potential feeds
-            potential_feeds = safe_async_run(crawler.find_feeds(homepage))
-            
-            found_valid = False
-            for feed_url in potential_feeds:
-                # 2. Validate feed
-                try:
-                    import feedparser
-                    with httpx.Client(timeout=10.0) as client:
-                        resp = client.get(feed_url, follow_redirects=True)
-                        if resp.status_code == 200:
-                            f = feedparser.parse(resp.content)
-                            if not f.bozo and len(f.entries) > 0:
-                                # Found a working feed!
-                                log.info(f"Source '{name}' repaired with new URL: {feed_url}")
-                                db.execute(
-                                    """UPDATE sources 
-                                       SET url = %s, is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL
-                                       WHERE name = %s""",
-                                    (feed_url, name), fetch=False
-                                )
-                                from health import reset_source_policy
-                                reset_source_policy(name)
-                                found_valid = True
-                                break
-                except Exception as e:
-                    log.debug(f"Validation failed for candidate {feed_url}: {e}")
-                    
-            if not found_valid:
-                log.warning(f"Could not repair source '{name}' after checking {len(potential_feeds)} candidates.")
-                
+            repair_single_source_task.delay(source['name'])
     except Exception as e:
-        log.error(f"[tasks] Auto-repair failed: {e}")
-        Notifier.send_alert("AUTO_REPAIR_FAILURE", f"Auto-repair failed: {e}")
+        log.error(f"[tasks] Auto-repair dispatch failed: {e}")
+        Notifier.send_alert("AUTO_REPAIR_FAILURE", f"Failed to dispatch repairs: {e}")
+
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def repair_single_source_task(name):
+    """Attempts to find a new feed for a single paused source."""
+    try:
+        source_data = db.execute_one("SELECT url FROM sources WHERE name = %s", (name,))
+        if not source_data:
+            return
+        
+        current_url = source_data['url']
+        from urllib.parse import urlsplit, urlunsplit
+        parts = urlsplit(current_url)
+        homepage = urlunsplit((parts.scheme, parts.netloc, "/", "", ""))
+        
+        log.info(f"Attempting to repair source '{name}' via {homepage}")
+        potential_feeds = safe_async_run(crawler.find_feeds(homepage))
+        
+        import feedparser
+        for feed_url in potential_feeds:
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.get(feed_url, follow_redirects=True)
+                    if resp.status_code == 200:
+                        f = feedparser.parse(resp.content)
+                        if not f.bozo and len(f.entries) > 0:
+                            log.info(f"Source '{name}' repaired with new URL: {feed_url}")
+                            db.execute(
+                                """UPDATE sources 
+                                   SET url = %s, is_active = TRUE, pause_mode = NULL, pause_reason = NULL, paused_at = NULL
+                                   WHERE name = %s""",
+                                (feed_url, name), fetch=False
+                            )
+                            from health import reset_source_policy
+                            reset_source_policy(name)
+                            return
+            except Exception as e:
+                log.debug(f"Validation failed for candidate {feed_url}: {e}")
+                
+        log.warning(f"Could not repair source '{name}' after checking candidates.")
+    except Exception as e:
+        log.error(f"[tasks] Repair failed for {name}: {e}")
+        raise

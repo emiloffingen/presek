@@ -343,13 +343,13 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
     2. Semantic Vector Match (local MiniLM embeddings via pgvector)
     3. Multi-representative TF-IDF with Entity & Recency Boosting
     """
-    # 1. Title Fingerprinting
-    input_fp = _get_fingerprint(title)
-    
-    # 2. Semantic Search
+    # 1. Semantic Vector Match (Primary Path)
     if embedding:
         cid = find_cluster_semantic(conn, embedding, category=category, topic=topic, title=title)
         if cid: return cid
+
+    # 2. Title Fingerprinting (Fallback for same-story duplicates)
+    input_fp = _get_fingerprint(title)
 
     # 3. TF-IDF Hybrid Fallback
     vec1 = text_to_vector(title)
@@ -521,4 +521,10 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
             best_score = current_best_rep_score
             best_cid = cid
 
-    return best_cid if best_cid else str(uuid.uuid4())[:8]
+    if best_cid:
+        # Dispatch dynamic centroid update
+        from tasks.intelligence import refresh_cluster_centroid_task
+        refresh_cluster_centroid_task.apply_async(args=(best_cid,), countdown=30)
+        return best_cid
+
+    return str(uuid.uuid4())[:8]

@@ -477,8 +477,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             impact_reasoning = ""
             quote = ""
             story_so_far = ""
-            record_task_event(cluster_id, "synthesis_fallback", {"provider": provider})
-            record_runtime_event("synthesis_path", mode="local_fallback_total")
+            try:
+                from tasks import utils
+                utils.record_task_event(cluster_id, "synthesis_fallback", {"provider": provider})
+                record_runtime_event("synthesis_path", mode="local_fallback_total")
+            except Exception as event_err:
+                log.warning(f"[tasks] Failed to record fallback event for {cluster_id}: {event_err}")
 
         if summary or perspectives:
             deep_metadata = _ensure_dict(deep_metadata)
@@ -627,12 +631,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             except Exception as queue_err:
                 log.warning(f"[tasks] Failed to queue metadata refresh for {cluster_id}: {queue_err}")
             try:
-                record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
+                from tasks import utils
+                utils.record_task_event("synthesize_cluster", "ok", f"cluster:{cluster_id}")
             except Exception as event_err:
                 log.warning(f"[tasks] Failed to record synthesis success for {cluster_id}: {event_err}")
             log.info(f"Successfully synthesized cluster {cluster_id}")
         else:
-            record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
+            from tasks import utils
+            utils.record_task_event("synthesize_cluster", "empty", f"cluster:{cluster_id}")
             log.warning(f"No synthesis generated for cluster {cluster_id}")
     except Exception as e:
         record_runtime_event("synthesis_path", mode="local_exception_fallback")
@@ -670,7 +676,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 fetch=False
             )
             invalidate_cluster_caches(cluster_id)
-            record_task_event("synthesize_cluster", "fallback", f"cluster:{cluster_id}")
+            from tasks import utils
+            utils.record_task_event("synthesize_cluster", "fallback", f"cluster:{cluster_id}")
             log.warning(f"[tasks] Synthesis failed for {cluster_id}; stored local fallback")
             if retry_attempt < 2:
                 synthesize_cluster_task.apply_async(args=(cluster_id, content, retry_attempt + 1), countdown=1800)
@@ -681,6 +688,26 @@ def auto_summarize_task():
     """Dispatch summarization/synthesis tasks for top clusters."""
     from ai_engine import auto_summarize_top_clusters
     auto_summarize_top_clusters()
+
+
+@celery_app.task
+def refresh_cluster_centroid_task(cluster_id):
+    """
+    Recalculates and updates the semantic centroid for a cluster.
+    """
+    from embeddings import get_cluster_embedding
+    from database import db_manager as db
+
+    new_centroid = get_cluster_embedding(cluster_id)
+    if new_centroid:
+        vec_str = "[" + ",".join(map(str, new_centroid)) + "]"
+        db.execute(
+            "UPDATE cluster_metadata SET centroid = %s::vector WHERE cluster_id = %s",
+            (vec_str, cluster_id),
+            fetch=False
+        )
+        log.info(f"[tasks] Centroid updated for cluster {cluster_id}")
+
 
 @celery_app.task
 def extract_entities_task(hours=24):
@@ -712,7 +739,8 @@ def extract_entities_task(hours=24):
                     )
 
         invalidate_public_data_caches()
-        record_task_event("extract_entities", "ok", "clusters:recent:local")
+        from tasks import utils
+        utils.record_task_event("extract_entities", "ok", "clusters:recent:local")
     except Exception as e:
         log.error(f"[tasks] Local entity extraction failed: {e}")
 
@@ -731,7 +759,8 @@ def classify_topics_task():
         log.error(f"[tasks] Topic classification failed: {e}")
     else:
         invalidate_public_data_caches()
-        record_task_event("classify_topics", "ok", "clusters:recent:local")
+        from tasks import utils
+        utils.record_task_event("classify_topics", "ok", "clusters:recent:local")
 @celery_app.task
 def recategorize_clusters_task():
     """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
@@ -745,13 +774,14 @@ def recategorize_clusters_task():
                 db.execute("UPDATE articles SET category = %s WHERE cluster_id = %s", (res, r['cluster_id']), fetch=False)
                 continue
     except Exception as e:
-        from tasks.utils import record_task_event
-        record_task_event("recategorize_clusters", "error", "clusters:recent")
+        from tasks import utils
+        utils.record_task_event("recategorize_clusters", "error", "clusters:recent")
         log.error(f"[tasks] Recategorization failed: {e}")
     else:
         from tasks.utils import record_task_event
         invalidate_public_data_caches()
-        record_task_event("recategorize_clusters", "ok", "clusters:recent")
+        from tasks import utils
+        utils.record_task_event("recategorize_clusters", "ok", "clusters:recent")
 
 @celery_app.task
 def generate_cluster_metadata_task(hours=24):
@@ -846,10 +876,11 @@ def generate_cluster_metadata_task(hours=24):
                 (r['cluster_id'], final_tags, r['topics'], rep_image, dominant_color, centroid_str, r['dominant_category']), fetch=False
             )
         invalidate_public_data_caches()
-        record_task_event("cluster_metadata", "ok", "clusters:recent")
+        from tasks import utils
+        utils.record_task_event("cluster_metadata", "ok", "clusters:recent")
     except Exception as e:
-        from tasks.utils import record_task_event
-        record_task_event("cluster_metadata", "error", "clusters:recent")
+        from tasks import utils
+        utils.record_task_event("cluster_metadata", "error", "clusters:recent")
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
 
 
@@ -875,7 +906,8 @@ def recluster_recent_articles_task(hours=24, limit=800):
         ) or []
 
         if not rows:
-            record_task_event("recluster_recent", "empty", f"hours:{hours}")
+            from tasks import utils
+            utils.record_task_event("recluster_recent", "empty", f"hours:{hours}")
             return {"reclustered": 0, "touched_clusters": 0, "hours": hours, "limit": limit}
 
         recent_articles = []
@@ -965,7 +997,8 @@ def recluster_recent_articles_task(hours=24, limit=800):
             auto_summarize_task.delay()
             invalidate_public_data_caches()
 
-        record_task_event("recluster_recent", "ok", f"articles:{len(updates)}")
+        from tasks import utils
+        utils.record_task_event("recluster_recent", "ok", f"articles:{len(updates)}")
         return {
             "reclustered": len(updates),
             "touched_clusters": len(touched_clusters),
@@ -973,8 +1006,8 @@ def recluster_recent_articles_task(hours=24, limit=800):
             "limit": limit,
         }
     except Exception as e:
-        from tasks.utils import record_task_event
-        record_task_event("recluster_recent", "error", "clusters:recent")
+        from tasks import utils
+        utils.record_task_event("recluster_recent", "error", "clusters:recent")
         log.error(f"[tasks] Recent recluster failed: {e}")
         raise
 
@@ -1013,6 +1046,10 @@ def backfill_cover_art_task():
         log.warning(f"Redis lock check failed for backfill_cover_art: {e}")
 
     try:
+        if get_celery_queue_depth() >= _BACKFILL_QUEUE_DEPTH_LIMIT:
+            log.info("[tasks] Backfill cover art skipping: queue depth limit exceeded.")
+            return
+            
         try:
             if redis_client.get(cooldown_key):
                 log.info("Cover art backfill paused due to Pollinations cooldown.")
