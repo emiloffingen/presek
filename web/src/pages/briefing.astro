@@ -200,7 +200,7 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
 
     <div id="read-progress" class="fixed top-0 left-0 h-1 bg-nyt-accent z-[102] transition-all duration-100 opacity-0 w-0"></div>
 
-	<main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
+	<main class="site-layout broadsheet-layout pt-28 pb-[var(--page-py)]">
         {error ? (
             <div class="py-24 text-center">
                 <h1 class="font-serif text-3xl mb-4">{error}</h1>
@@ -216,13 +216,14 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                 />
 
                 {leadCluster && (
-                    <div class="briefing-hero-wrapper mt-0 mb-16 motion-rise">
+                    <div class="briefing-hero-wrapper mt-0 mb-12 motion-rise">
                         <div class="hero-image-card shadow-editorial">
                             {leadCluster.articles?.[0]?.image_url && (
                                 <img 
                                     src={`/proxy?url=${encodeURIComponent(leadCluster.articles[0].image_url)}&w=1200`} 
                                     alt={leadCluster.synthetic_headline || leadCluster.articles[0].title}
                                     class="hero-main-img animate-ken-burns"
+                                    loading="lazy"
                                 />
                             )}
                             <div class="hero-text-overlay">
@@ -240,7 +241,7 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                     </div>
                 )}
 
-                <div class="briefing-grid mt-16">
+                <div class="briefing-grid">
                     <div class="briefing-main-col">
                         <BriefingContent formattedBriefing={formattedBriefingContent} />
 
@@ -294,27 +295,88 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
 <style>
     .briefing-container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
     
-    .briefing-grid { display: grid; grid-template-columns: 1fr; gap: 4rem; }
+    .briefing-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) {
-        .briefing-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+        .briefing-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 4rem; }
     }
 
-    .hero-image-card { position: relative; width: 100%; height: 450px; overflow: hidden; background: var(--secondary); border: 1px solid var(--border); }
+    .hero-image-card { 
+        position: relative; 
+        width: 100%; 
+        height: 450px; 
+        overflow: hidden; 
+        background: var(--secondary); 
+        border: 1px solid var(--border); 
+    }
+    @media (max-width: 768px) {
+        .hero-image-card { height: 300px; }
+    }
+    @media (max-width: 480px) {
+        .hero-image-card { height: 220px; }
+    }
+    
     .hero-main-img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.05); }
     .animate-ken-burns { animation: ken-burns 20s linear infinite alternate; }
     @keyframes ken-burns {
         from { transform: scale(1); }
         to { transform: scale(1.1); }
     }
-    .hero-text-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%); display: flex; align-items: flex-end; padding: 3rem; }
+    .hero-text-overlay { 
+        position: absolute; 
+        inset: 0; 
+        background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%); 
+        display: flex; 
+        align-items: flex-end; 
+        padding: clamp(1.5rem, 5vw, 3rem); 
+    }
     .hero-meta-info { color: white; max-width: 800px; }
-    .hero-kicker-label { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; letter-spacing: 0.25em; color: var(--nyt-accent); }
-    .hero-title-text { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 950; line-height: 1; margin: 1rem 0 1.5rem; text-wrap: balance; }
-    .hero-footer-info { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 900; letter-spacing: 0.05em; opacity: 0.9; display: flex; align-items: center; }
-    .hero-cta-link { color: var(--nyt-accent); text-decoration: none; border-bottom: 1px solid transparent; margin-left: 0.5rem; }
+    .hero-kicker-label { 
+        font-family: var(--font-sans); 
+        font-size: 0.75rem; 
+        font-weight: 950; 
+        letter-spacing: 0.25em; 
+        color: var(--nyt-accent); 
+    }
+    .hero-title-text { 
+        font-family: var(--font-serif); 
+        font-size: clamp(1.5rem, 4vw, 2.5rem); 
+        font-weight: 950; 
+        line-height: 1.1; 
+        margin: 1rem 0 1.5rem; 
+        text-wrap: balance; 
+    }
+    .hero-footer-info { 
+        font-family: var(--font-sans); 
+        font-size: 0.7rem; 
+        font-weight: 900; 
+        letter-spacing: 0.05em; 
+        opacity: 0.9; 
+        display: flex; 
+        align-items: center; 
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    .hero-cta-link { 
+        color: var(--nyt-accent); 
+        text-decoration: none; 
+        border-bottom: 1px solid transparent; 
+        margin-left: 0.5rem; 
+        white-space: nowrap;
+    }
     .hero-cta-link:hover { border-bottom-color: var(--nyt-accent); }
 
-    .editorial-byline { display: block; font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+    .editorial-byline { 
+        display: block; 
+        font-family: var(--font-sans); 
+        font-size: 0.65rem; 
+        font-weight: 950; 
+        text-transform: uppercase; 
+        letter-spacing: 0.1em; 
+        color: var(--muted-foreground); 
+        margin-bottom: 2rem; 
+        border-bottom: 1px solid var(--border); 
+        padding-bottom: 1rem; 
+    }
 
     :global(.briefing-paragraph.drop-cap::first-letter) {
         float: left;
@@ -326,5 +388,13 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
         padding-left: 0;
         font-weight: 900;
         color: var(--nyt-accent);
+    }
+    
+    :global(.briefing-signature) {
+        margin-top: 3rem;
+    }
+    
+    :global(.briefing-main-col) {
+        max-width: 100%;
     }
 </style>

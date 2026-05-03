@@ -42,23 +42,24 @@ const { currentDate, dispatchIcon: DispatchIcon, stats, readingTime = 5 } = Astr
 </header>
 
 <style>
-    .briefing-masthead { margin-bottom: 4rem; }
+    .briefing-masthead { margin-bottom: 3rem; }
     .masthead-double-rule { border-top: 4px double var(--foreground); padding-top: 1.5rem; }
-    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; letter-spacing: 0.2em; color: var(--foreground); }
     .masthead-meta { display: flex; gap: 1.5rem; }
     .meta-item { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; color: var(--muted-foreground); text-transform: uppercase; }
-    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; }
+    .masthead-main { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.25rem; }
     .masthead-branding { display: flex; align-items: center; gap: 1.25rem; }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; line-height: 0.85; letter-spacing: -0.04em; margin: 0; }
+    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.2rem, 7vw, 4.5rem); font-weight: 900; line-height: 0.9; letter-spacing: -0.03em; margin: 0; }
     .masthead-title span { font-weight: 400; font-style: italic; }
-    .masthead-date { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 700; text-transform: capitalize; border-y: 1px solid var(--border); padding: 0.75rem 2rem; }
-    .masthead-standfirst { max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.4; color: var(--foreground); font-style: italic; }
-    .masthead-deck { display: flex; justify-content: center; gap: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
-    .deck-item { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); }
+    .masthead-date { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; text-transform: capitalize; border-y: 1px solid var(--border); padding: 0.75rem 2rem; }
+    .masthead-standfirst { max-width: 800px; margin-left: auto; margin-right: auto; text-align: center; font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.45; color: var(--foreground); font-style: italic; }
+    .masthead-deck { display: flex; justify-content: center; gap: 2.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem; flex-wrap: wrap; }
+    .deck-item { font-family: var(--font-sans); font-size: 0.62rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); }
     .deck-item strong { color: var(--foreground); margin-right: 0.4rem; }
 
     @media (max-width: 640px) {
-        .masthead-deck { gap: 1.5rem; flex-wrap: wrap; }
+        .masthead-deck { gap: 1.25rem; }
+        .masthead-title { line-height: 0.95; }
     }
 </style>

@@ -15,7 +15,7 @@ const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.pro
 
 <aside class="briefing-sidebar">
 	<div class="sidebar-sticky">
-		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm">
+		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm mb-6">
 			<NewsletterIsland client:load />
 		</section>
 
@@ -29,7 +29,7 @@ const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.pro
 					{historicalDates.map((d: any) => (
 						<a 
 							href={`/briefing?date=${d.day}`} 
-							class={`text-xs font-bold hover:text-nyt-accent transition-colors ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
+							class={`text-xs font-bold hover:text-nyt-accent transition-colors block py-1 ${briefing?.date === d.day ? 'text-nyt-accent' : 'text-muted-foreground'}`}
 						>
 							● {new Date(d.day).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' })}
 						</a>
@@ -106,7 +106,7 @@ const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.pro
 					<Zap size={14} className="text-nyt-accent" />
 					<h4 class="text-[10px] font-black uppercase tracking-widest">АКТУЕЛНО СЕГА</h4>
 				</div>
-				<a href={`/cluster/${leadCluster.cluster_id}`} class="group">
+				<a href={`/cluster/${leadCluster.cluster_id}`} class="group block">
 					<p class="font-serif font-bold text-sm leading-snug group-hover:text-nyt-accent transition-colors">
 						{leadCluster.articles?.[0]?.title}
 					</p>
@@ -120,8 +120,12 @@ const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.pro
 </aside>
 
 <style>
-    .briefing-sidebar { display: flex; flex-direction: column; gap: 3rem; }
-    .sidebar-sticky { position: sticky; top: 7rem; display: flex; flex-direction: column; gap: 3rem; }
+    .briefing-sidebar { display: flex; flex-direction: column; gap: 2rem; }
+    .sidebar-sticky { position: sticky; top: 8rem; display: flex; flex-direction: column; gap: 2rem; }
     .sidebar-module { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     .sidebar-module:first-child { border-top: none; padding-top: 0; }
+    
+    @media (max-width: 1024px) {
+        .sidebar-sticky { position: static; }
+    }
 </style>
