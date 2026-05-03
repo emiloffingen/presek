@@ -98,12 +98,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </span>
           )}
 
-          {main.coverage_balance?.label && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-500">
-              <CheckCircle2 size={11} /> {main.coverage_balance.label}
-            </span>
-          )}
-
           {cluster.is_breaking && (
 
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
