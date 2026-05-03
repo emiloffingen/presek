@@ -87,8 +87,39 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
 </Layout>
 
 <style>
-  .editorial-headline span {
+  .settings-headline {
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 0.95;
+    margin-bottom: 1.5rem;
+  }
+
+  .settings-headline span {
     font-weight: 300;
+  }
+
+  .settings-lede {
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    line-height: 1.6;
+    max-width: 46rem;
+  }
+
+  .settings-page-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  @media (min-width: 1024px) {
+    .settings-page-grid {
+      grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+      gap: 4rem;
+    }
+  }
+
+  .settings-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
   }
 
   .settings-rail-links {
@@ -113,5 +144,38 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
   .settings-rail-links a:hover {
     color: var(--nyt-accent);
     border-bottom-color: var(--nyt-accent);
+  }
+
+  .sidebar-label {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 950;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin: 0;
+  }
+
+  .section-label {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--foreground);
+    display: inline;
+    margin: 0;
+  }
+
+  .section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-divider {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 </style>
