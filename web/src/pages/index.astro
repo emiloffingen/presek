@@ -301,22 +301,24 @@ function getBriefingSnippet(content: string) {
 
                 {/* THEMATIC QUICK PILLS */}
                 {isHomepage && !error && (
-                    <div class="quick-pills-container mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
-                        <div class="flex items-center gap-3">
-                            <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2">Истражи:</span>
-                            {[
-                                { id: 'mk', label: 'Македонија', href: '/?category=Македонија' },
-                                { id: 'pol', label: 'Политика', href: '/?topic=Политика' },
-                                { id: 'eco', label: 'Економија', href: '/?topic=Економија' },
-                                { id: 'spo', label: 'Спорт', href: '/?topic=Спорт' },
-                                { id: 'cul', label: 'Култура', href: '/?topic=Култура' },
-                                { id: 'tech', label: 'Технологија', href: '/?topic=Технологија' },
-                                { id: 'sk', label: 'Скопје', href: '/?subcategory=Скопје' }
-                            ].map(pill => (
-                                <a href={pill.href} class="quick-pill">
-                                    {pill.label}
-                                </a>
-                            ))}
+                    <div class="max-w-full overflow-hidden mb-10">
+                        <div class="quick-pills-container overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Истражи:</span>
+                                {[
+                                    { id: 'mk', label: 'Македонија', href: '/?category=Македонија' },
+                                    { id: 'pol', label: 'Политика', href: '/?topic=Политика' },
+                                    { id: 'eco', label: 'Економија', href: '/?topic=Економија' },
+                                    { id: 'spo', label: 'Спорт', href: '/?topic=Спорт' },
+                                    { id: 'cul', label: 'Култура', href: '/?topic=Култура' },
+                                    { id: 'tech', label: 'Технологија', href: '/?topic=Технологија' },
+                                    { id: 'sk', label: 'Скопје', href: '/?subcategory=Скопје' }
+                                ].map(pill => (
+                                    <a href={pill.href} class="quick-pill shrink-0">
+                                        {pill.label}
+                                    </a>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
