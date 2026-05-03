@@ -21,7 +21,7 @@ export default defineConfig({
     sitemap(),
     partytown({
       config: {
-        forward: ['dataLayer.push', 'gtag', 'aclib.runAutoTag'],
+        forward: ['dataLayer.push', 'gtag'],
       },
     }),
   ],
