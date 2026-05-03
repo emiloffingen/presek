@@ -215,61 +215,62 @@ const IzvoriPage: React.FC = () => {
         .broadsheet-sources { width: 100%; }
         .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
         .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-        .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
+        .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; line-height: 0.9; margin: 1rem 0; letter-spacing: -0.02em; }
         .masthead-title span { font-weight: 400; font-style: italic; }
         
-        .masthead-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-top: 2rem; }
-        .search-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); background: var(--background); flex: 1; max-width: 400px; }
-        .search-wrap input { background: transparent; border: 0; outline: none; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 700; width: 100%; }
-        .filter-group { display: flex; gap: 0.5rem; }
-        .filter-group button { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--background); transition: all 0.2s; }
+        .masthead-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+        .search-wrap { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--foreground); background: var(--background); flex: 1; min-width: 200px; max-width: 400px; }
+        .search-wrap input { background: transparent; border: 0; outline: none; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 700; width: 100%; }
+        .filter-group { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+        .filter-group button { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; padding: 0.4rem 0.75rem; border: 1px solid var(--border); background: var(--background); transition: all 0.2s; white-space: nowrap; }
         .filter-group button.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
 
-        .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+        .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
         @media (min-width: 1024px) {
-          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
-          .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
-          .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
+          .broadsheet-main { border-right: 1px solid var(--border); padding-right: 2rem; }
+          .broadsheet-rail { position: sticky; top: 7rem; align-self: start; }
         }
 
-        .section-title-italic { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+        .section-title-italic { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.7rem); font-weight: 900; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.25rem; }
 
         .editorial-list { display: flex; flex-direction: column; }
-        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
+        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
         .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%); }
-        .item-main { flex: 1; }
-        .item-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
-        .health-dot { width: 6px; height: 6px; border-radius: 50%; }
-        .health-dot.active { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .item-main { flex: 1; padding-right: 1.5rem; }
+        .item-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+        .health-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .health-dot.active { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
         .health-dot.stale { background: #f59e0b; }
         .health-dot.critical { background: #ef4444; }
-        .item-title { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 850; }
-        .item-tier { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); padding: 0.1rem 0.4rem; border: 1px solid var(--nyt-accent); }
-        .item-tendency { font-family: var(--font-nyt-body); font-size: 0.95rem; color: var(--secondary-foreground); margin-bottom: 0.75rem; line-height: 1.4; }
-        .item-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-        .meta-tag { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; background: var(--foreground); color: var(--background); padding: 0.1rem 0.4rem; }
-        .meta-tag-outline { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 850; border: 1px solid var(--border); padding: 0.1rem 0.4rem; color: var(--muted-foreground); }
-        .meta-time { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 800; opacity: 0.5; }
+        .item-title { font-family: var(--font-serif); font-size: clamp(1.1rem, 2vw, 1.25rem); font-weight: 850; }
+        .item-tier { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); padding: 0.1rem 0.3rem; border: 1px solid var(--nyt-accent); white-space: nowrap; }
+        .item-tendency { font-family: var(--font-nyt-body); font-size: 0.9rem; color: var(--secondary-foreground); margin-bottom: 0.5rem; line-height: 1.4; }
+        .item-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .meta-tag { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; background: var(--foreground); color: var(--background); padding: 0.1rem 0.3rem; }
+        .meta-tag-outline { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 850; border: 1px solid var(--border); padding: 0.1rem 0.3rem; color: var(--muted-foreground); }
+        .meta-time { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; opacity: 0.4; }
 
-        .item-stats { display: flex; gap: 1.5rem; }
-        .stat-box { text-align: center; min-width: 3rem; }
-        .stat-box span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--muted-foreground); display: block; margin-bottom: 0.2rem; }
-        .stat-box strong { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 900; }
+        .item-stats { display: flex; gap: 1rem; }
+        .stat-box { text-align: center; min-width: 2.5rem; }
+        .stat-box span { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; color: var(--muted-foreground); display: block; margin-bottom: 0.1rem; }
+        .stat-box strong { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 900; }
         .stat-box.accent strong { color: var(--nyt-accent); }
 
-        .rail-block { margin-bottom: 2.5rem; }
-        .rail-block-alt { padding: 1.25rem; background: var(--secondary); border-radius: 4px; }
-        .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-        .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .rail-block { margin-bottom: 2rem; }
+        .rail-block-alt { padding: 1rem; background: var(--secondary); border-radius: 2px; }
+        .rail-kicker { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.4rem; }
+        .rail-title { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.8rem; }
         .rail-directory { display: flex; flex-direction: column; }
-        .dir-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
-        .dir-row .name { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 700; }
-        .dir-row .val { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; color: var(--nyt-accent); }
+        .dir-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+        .dir-row .name { font-family: var(--font-serif); font-size: 0.85rem; font-weight: 700; }
+        .dir-row .val { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); }
 
         @media (max-width: 640px) {
-          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1.25rem 0; }
-          .item-stats { display: flex; width: 100%; justify-content: flex-start; gap: 2rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1rem 0; }
+          .item-stats { width: 100%; justify-content: flex-start; gap: 1.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
           .masthead-controls { flex-direction: column; align-items: stretch; }
+          .filter-group { justify-content: space-between; }
         }
       `}</style>
     </div>
