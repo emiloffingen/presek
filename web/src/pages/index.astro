@@ -384,7 +384,7 @@ function getBriefingSnippet(content: string) {
 
                 {clusters.length > 4 && (
 					<div class="section-wrapper for-you-wrapper">
-					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
+					    <ForYouIsland client:load clusters={forYouClusters} excludeClusterIds={excludedClusterIds} />
                     </div>
 				)}
 
