@@ -93,9 +93,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     // First, handle literal \n if they escaped as characters
     const cleanText = text.replace(/\\n/g, '\n');
 
-    // Regex to match either **bold** or [Citation]
-    // Group 1: Bold content
-    // Group 2: Citation content
+    // Sources list from props to help match raw citations
+    const knownSources = (sources || []).filter(s => s.length > 2);
+
+    // Regex to match:
+    // 1. **bold**
+    // 2. [Citation]
+    // 3. Raw citations at end of sentence or clause: "Source. ", "Source, ", "Source\n"
     const combinedRegex = /(\*\*(.*?)\*\*)|\[([^\d\]]+?)\]/g;
     
     const parts = [];
@@ -103,16 +107,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     let match;
 
     while ((match = combinedRegex.exec(cleanText)) !== null) {
-      // Add plain text before the match
       if (match.index > lastIndex) {
         parts.push(cleanText.substring(lastIndex, match.index));
       }
 
       if (match[1]) {
-        // It's a bold match
         parts.push(<strong key={match.index} className="font-black text-foreground">{match[2]}</strong>);
       } else if (match[3]) {
-        // It's a citation match
         parts.push(
           <span key={match.index} className="inline-flex items-center px-1.5 py-0.5 mx-1 bg-secondary/80 border border-border rounded text-[9px] font-black text-nyt-accent uppercase tracking-tighter leading-none align-middle" title="Кредибилен извор">
             {match[3]}
@@ -122,9 +123,23 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       lastIndex = combinedRegex.lastIndex;
     }
 
-    // Add remaining plain text
     if (lastIndex < cleanText.length) {
-      parts.push(cleanText.substring(lastIndex));
+      let remaining = cleanText.substring(lastIndex);
+      
+      // Final pass: Catch trailing raw source names that missed brackets
+      // We look for known sources followed by punctuation or end of string
+      knownSources.forEach(src => {
+          const escaped = src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const srcRegex = new RegExp(`\\b(${escaped})(?=[\\s,.\n]|$)`, 'g');
+          remaining = remaining.replace(srcRegex, `[${src}]`);
+      });
+
+      // If we added new brackets, recursively call to render them as badges
+      if (remaining.includes('[')) {
+          return [...parts, ...parseBoldText(remaining) as any];
+      }
+      
+      parts.push(remaining);
     }
 
     return parts.length > 0 ? parts : cleanText;

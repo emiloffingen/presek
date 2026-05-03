@@ -355,55 +355,63 @@ def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_token
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
 
 def clean_json_response(text: str) -> dict | str | None:
-    if text is None:
+    if text is None or not isinstance(text, str):
         return ""
-    if not isinstance(text, str):
-        return ""
-
     text = text.strip()
     if not text:
         return ""
 
-    # 1. Try to find and parse a JSON block (greedy match for the largest {} or [])
-    match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
-    if match:
-        json_text = match.group(1)
-        try:
-            data = json.loads(json_text)
+    # 1. Strip markdown fences if present
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    text = text.strip()
+
+    # 2. Try direct JSON parse
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict):
+            # If it's the expected structure, return it
+            if "answer" in data: return data
+            if "report" in data: return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+            # Single key unwrapping
+            if len(data) == 1:
+                val = list(data.values())[0]
+                if isinstance(val, str) and (len(val) > 20 or " " in val):
+                    return {"answer": val, "suggestions": []}
+        return data
+    except Exception:
+        pass
+
+    # 3. Aggressive Regex Extraction (if JSON parse failed)
+    # This handles cases where the model returns broken JSON or text with JSON inside
+    # Look for "answer": "..." OR "report": "..."
+    for key in ("answer", "report", "summary"):
+        pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            clean_text = match.group(1).replace('\\n', '\n').replace('\\"', '"').replace('\\\'', "'")
+            return {"answer": clean_text, "suggestions": []}
+
+    # 4. Brute force: find the first { and last } and try parsing that
+    try:
+        first = text.find('{')
+        last = text.rfind('}')
+        if first != -1 and last > first:
+            candidate = text[first:last+1]
+            data = json.loads(candidate)
             if isinstance(data, dict):
-                # If it's a valid structured response, return the dict
-                valid_keys = ('summary', 'perspectives', 'entities', 'topic', 'category', 'article', 'synthetic_headline', 'facts')
-                if any(k in data for k in valid_keys):
-                    return data
-                # Single-key bridge: if the model wrapped everything in a single key, extract it
-                if len(data) == 1:
-                    val = list(data.values())[0]
-                    if isinstance(val, (str, list, dict)):
-                        return val
-            return data
-        except Exception:
-            pass
+                if "answer" in data: return data
+                if "report" in data: return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
+    except Exception:
+        pass
 
-    # 2. Strip optional markdown fences
-    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
-    if fenced:
-        text = fenced.group(1).strip()
-        # Try parsing again after stripping fences
-        try:
-            return json.loads(text)
-        except Exception:
-            pass
-
-    # 3. Last resort recovery for common LLM failure modes
-    # If it looks like JSON but failed to parse, try to regex-extract the answer
-    if text.startswith("{") and '"answer"' in text:
-        # Simple non-greedy match for the answer field value
-        ans_match = re.search(r'"answer":\s*"(.*?)(?<!\\)"', text, re.DOTALL)
-        if ans_match:
-            return {"answer": ans_match.group(1).replace('\\n', '\n').replace('\\"', '"')}
-
-    # 4. Final fallback
-    return text
+    # 5. Final Fallback: Return the raw text but strip common JSON artifacts 
+    # if it obviously leaked (e.g. starts with { "answer": )
+    text = re.sub(r'^\{\s*"answer"\s*:\s*"', '', text)
+    text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', '', text, flags=re.DOTALL)
+    text = re.sub(r'"\s*\}\s*$', '', text)
+    
+    return text.replace('\\n', '\n').replace('\\"', '"').strip()
 
 def auto_summarize_top_clusters():
     """Dispatch synthesis tasks for the top recent clusters."""
