@@ -76,6 +76,11 @@ def _install_httpx_stub():
     httpx.HTTPStatusError = HTTPStatusError
     httpx.Client = Client
     httpx.AsyncClient = AsyncClient
+    httpx.Response = MagicMock
+    httpx.BaseTransport = MagicMock
+    httpx.URL = lambda x: x
+    httpx.Proxy = lambda x: x
+    httpx.Timeout = lambda x: x
     sys.modules["httpx"] = httpx
 
 
@@ -130,6 +135,15 @@ def _install_starlette_stub():
             self.headers = headers or {}
             self.media_type = media_type
 
+    class JSONResponse(Response):
+        pass
+
+    class HTMLResponse(Response):
+        pass
+
+    class RedirectResponse(Response):
+        pass
+
     class BaseHTTPMiddleware:
         def __init__(self, app=None, dispatch=None):
             self.app = app
@@ -141,6 +155,9 @@ def _install_starlette_stub():
             return await call_next(request)
 
     responses.Response = Response
+    responses.JSONResponse = JSONResponse
+    responses.HTMLResponse = HTMLResponse
+    responses.RedirectResponse = RedirectResponse
     middleware_base.BaseHTTPMiddleware = BaseHTTPMiddleware
     middleware.base = middleware_base
     starlette.responses = responses
@@ -150,6 +167,13 @@ def _install_starlette_stub():
     sys.modules["starlette.responses"] = responses
     sys.modules["starlette.middleware"] = middleware
     sys.modules["starlette.middleware.base"] = middleware_base
+
+    # Also stub fastapi.responses to avoid confusion
+    fastapi_responses = types.ModuleType("fastapi.responses")
+    fastapi_responses.JSONResponse = JSONResponse
+    fastapi_responses.HTMLResponse = HTMLResponse
+    fastapi_responses.RedirectResponse = RedirectResponse
+    sys.modules["fastapi.responses"] = fastapi_responses
 
 
 def _install_trafilatura_stub():

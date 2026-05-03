@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { BellPlus, BellRing } from 'lucide-react';
+import { useStore } from '@nanostores/react';
+import { $profile, updateProfile } from '../lib/store.ts';
 import {
-  isFollowingValue,
   recordSuggestionFollow,
   sendSuggestionEvents,
-  subscribeToReaderProfile,
-  toggleFollowedValue,
 } from '../lib/personalization.js';
 
 export default function PreferenceToggle({
@@ -20,40 +19,43 @@ export default function PreferenceToggle({
   onChanged?: (isFollowing: boolean) => void;
   analyticsSurface?: string;
 }) {
-  const [isFollowing, setIsFollowing] = useState(() => isFollowingValue(kind, value));
+  const profile = useStore($profile);
+  const field = kind === 'source' ? 'followedSources' : 'followedTopics';
+  const isFollowing = useMemo(() => (profile[field] || []).includes(value), [profile, field, value]);
+  
   const [feedback, setFeedback] = useState('');
   const feedbackTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const sync = () => setIsFollowing(isFollowingValue(kind, value));
-    sync();
-    return subscribeToReaderProfile(sync);
-  }, [kind, value]);
-
-  useEffect(() => () => {
-    if (feedbackTimerRef.current) {
-      window.clearTimeout(feedbackTimerRef.current);
-    }
-  }, []);
-
   const onToggle = () => {
-    const result = toggleFollowedValue(kind, value);
-    if (result.isFollowing && analyticsSurface) {
-      const tracked = recordSuggestionFollow(analyticsSurface, kind, value);
-      if (tracked.recorded) {
-        sendSuggestionEvents([{ surface: analyticsSurface, eventType: 'follow', suggestionKind: kind, value }]);
-      }
+    const nextFollowing = !isFollowing;
+    const currentList = profile[field] || [];
+    const newList = nextFollowing 
+        ? [...new Set([...currentList, value])].slice(0, 12)
+        : currentList.filter(v => v !== value);
+    
+    updateProfile({ [field]: newList });
+
+    if (nextFollowing && analyticsSurface) {
+      recordSuggestionFollow(analyticsSurface, kind, value);
+      sendSuggestionEvents([{ surface: analyticsSurface, eventType: 'follow', suggestionKind: kind, value }]);
     }
 
     if (feedbackTimerRef.current) {
       window.clearTimeout(feedbackTimerRef.current);
     }
 
-    setFeedback(result.isFollowing ? 'Зачувано' : 'Отстрането');
+    setFeedback(nextFollowing ? 'Зачувано' : 'Отстрането');
     feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
-    setIsFollowing(result.isFollowing);
-    onChanged?.(result.isFollowing);
+    onChanged?.(nextFollowing);
   };
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) {
+        window.clearTimeout(feedbackTimerRef.current);
+      }
+    };
+  }, []);
 
   const statusId = `pref-status-${kind}-${String(value || '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value'}`;
 

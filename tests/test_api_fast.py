@@ -99,6 +99,7 @@ def _get_fake_fastapi_modules():
     
     r = make_mod("fastapi.responses")
     r.JSONResponse = _FakeJSONResponse
+    r.HTMLResponse = MagicMock
     r.RedirectResponse = MagicMock
     r.FileResponse = MagicMock
     r.StreamingResponse = MagicMock
@@ -271,10 +272,11 @@ def test_global_pulse_uses_common_intelligence_summary_builder(mock_all):
             return [{"t": "2026-04-22T10:00:00Z", "n": 3}]
         if "GROUP BY a.category" in query or ("GROUP BY category" in query and "ORDER BY n DESC" in query):
             return [{"category": "Македонија", "n": 12}]
+        if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
+            return [{"topic": "Политика", "avg_sentiment": 0.2, "avg_objectivity": 0.8, "avg_sensationalism": 0.1, "n": 5}]
         if "FROM knowledge_entities" in query:
             return [{"name": "Иран", "total_mentions": 9, "sentiment_score": 0.1, "type": "GPE"}]
         raise AssertionError(f"Unexpected query: {query}")
-
     mock_all["db"].async_execute_one.side_effect = async_execute_one_side_effect
     mock_all["db"].async_execute.side_effect = async_execute_side_effect
 
@@ -745,10 +747,11 @@ def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(m
             assert "category IS NOT NULL" in query
             assert "category != ''" in query
             return [{"category": "Македонија", "n": 12}]
+        if "FROM cluster_summaries s" in query and "AVG(CAST(s.sentiment" in query:
+            return [{"topic": "Политика", "avg_sentiment": 0.2, "avg_objectivity": 0.8, "avg_sensationalism": 0.1, "n": 5}]
         if "FROM knowledge_entities" in query:
             return [{"name": "Иран", "total_mentions": 9, "sentiment_score": 0.1, "type": "GPE"}]
         raise AssertionError(f"Unexpected query: {query}")
-
     mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
     mock_all["db"].async_execute.side_effect = execute_side_effect
 
