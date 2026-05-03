@@ -422,30 +422,31 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                             # Phase 3.2: Knowledge Graph Update
                             entities = deep_metadata.get('entities', [])
                             for entity in entities:
-                                db.execute("BEGIN")
-                                try:
-                                    db.execute("""
-                                        INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
-                                        VALUES (%s, 'PERSON', NOW(), 1)
-                                        ON CONFLICT (name) DO UPDATE SET 
-                                            last_seen = NOW()
-                                    """, (entity,), fetch=False)
-                                    db.execute("""
-                                        INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
-                                        VALUES (%s, %s, CURRENT_DATE)
-                                        ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
-                                    """, (entity, cluster_id), fetch=False)
-                                    db.execute("""
-                                        UPDATE knowledge_entities 
-                                        SET total_mentions = (
-                                            SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
-                                        )
-                                        WHERE name = %s
-                                    """, (entity, entity), fetch=False)
-                                    db.execute("COMMIT")
-                                except:
-                                    db.execute("ROLLBACK")
-                                    raise
+                                with db.connection() as conn:
+                                    with conn.cursor() as cur:
+                                        try:
+                                            cur.execute("""
+                                                INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
+                                                VALUES (%s, 'PERSON', NOW(), 1)
+                                                ON CONFLICT (name) DO UPDATE SET 
+                                                    last_seen = NOW()
+                                            """, (entity,))
+                                            cur.execute("""
+                                                INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
+                                                VALUES (%s, %s, CURRENT_DATE)
+                                                ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
+                                            """, (entity, cluster_id))
+                                            cur.execute("""
+                                                UPDATE knowledge_entities 
+                                                SET total_mentions = (
+                                                    SELECT COUNT(*) FROM entity_mentions_daily WHERE entity_name = %s
+                                                )
+                                                WHERE name = %s
+                                            """, (entity, entity))
+                                            conn.commit()
+                                        except:
+                                            conn.rollback()
+                                            raise
                     except Exception as e:
                         log.error(f"[analyst] Internal logic error: {e}")
 
@@ -494,7 +495,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             if not pluralism_data:
                 pluralism_data = {
                     "score": pluralism_score,
-                    "verdict": "Локална проценка додека AI синтезата се освежува."
+                    "verdict": "Проценката е во тек. Диверзитетот на изворите се анализира за целосен плуралистички приказ."
                 }
             # Calculate Cluster Centroid (Semantic Center)
             centroid = _compute_centroid_from_values([a.get("embedding") for a in article_rows if a.get("embedding")])

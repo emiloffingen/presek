@@ -447,7 +447,7 @@ const articleSchema = cluster ? {
 								client:visible 
 							/>
 
-							{cluster.pluralism_score !== undefined && (
+							{cluster.pluralism_score != null && (
 								<div class="sidebar-module p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-200/50 rounded-sm">
 									<h4 class="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400">МЕДИУМСКИ ПЛУРАЛИЗАМ</h4>
 									<div class="mt-4">
