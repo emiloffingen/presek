@@ -16,9 +16,13 @@
   "dependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^10.0.6",
+    "@astrojs/partytown": "^2.1.7",
     "@astrojs/react": "^5.0.4",
     "@astrojs/sitemap": "^3.7.2",
     "@base-ui/react": "^1.4.1",
+    "@fontsource/manrope": "^5.2.8",
+    "@fontsource/noto-serif": "^5.2.9",
+    "@fontsource/source-serif-4": "^5.2.9",
     "@nanostores/react": "^1.1.0",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",

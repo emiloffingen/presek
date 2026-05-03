@@ -1,5 +1,6 @@
-/* Fonts are loaded via <link rel="preconnect"> + <link rel="stylesheet"> in Layout.astro
-   so they don't render-block the Tailwind stylesheet via @import. */
+@import '@fontsource/manrope';
+@import '@fontsource/noto-serif';
+@import '@fontsource/source-serif-4';
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";

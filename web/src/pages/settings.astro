@@ -37,7 +37,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
                     <h2 class="section-label">ВАШИ ИНТЕРЕСИ</h2>
                     <div class="section-divider"></div>
                 </div>
-                <SettingsProfileIsland client:load />
+                <SettingsProfileIsland client:visible />
             </section>
 
             {/* 2. ONBOARDING / DISCOVERY */}
@@ -48,7 +48,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
                     <div class="section-divider"></div>
                 </div>
                 <div class="bg-secondary/5 p-8 rounded-2xl border border-border/40">
-                    <OnboardingIsland client:load />
+                    <OnboardingIsland client:visible />
                 </div>
             </section>
         </div>
@@ -58,7 +58,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
           <div class="sidebar-module">
             <h3 class="sidebar-label flex items-center gap-2"><KeyRound size={14} /> ДИГИТАЛЕН ПАСОШ</h3>
             <div class="mt-6">
-                <AccountSyncIsland client:load />
+                <AccountSyncIsland client:visible />
             </div>
           </div>
 
@@ -66,7 +66,7 @@ import { KeyRound, Radio, ShieldCheck, UserCircle2, Sparkles, ArrowUpRight } fro
           <div class="sidebar-module border-t border-border pt-12">
             <h3 class="sidebar-label flex items-center gap-2"><Radio size={14} /> ДОСТАВА</h3>
             <div class="mt-6 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl">
-                <BriefingDeliveryIsland client:load variant="full" />
+                <BriefingDeliveryIsland client:visible variant="full" />
             </div>
           </div>
 

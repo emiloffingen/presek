@@ -62,12 +62,6 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Noto+Serif:ital,wght@0,400..900;1,400..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap&subset=cyrillic,cyrillic-ext"
-		/>
 		<link rel="icon" type="image/svg+xml" href="/img/presek_emblem.svg?v=4" />
 		<link rel="apple-touch-icon" href="/img/presek_emblem.png?v=4" />
 		<link rel="manifest" href="/manifest.json" />
@@ -178,12 +172,11 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
 			initParallax();
 			document.addEventListener('astro:page-load', initParallax);
 		</script>
-		<script type="text/javascript">
+		<script type="text/partytown">
 			aclib.runAutoTag({
 				zoneId: 'ntctzqqvyu',
 			});
 		</script>
-		<script type="text/javascript"> var infolinks_pid = 3445227; var infolinks_wsid = 0; </script> <script type="text/javascript" src="//resources.infolinks.com/js/infolinks_main.js"></script>
 	</body>
 </html>
 
@@ -291,5 +284,8 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         max-width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+    }
+</style>
+w-scrolling: touch;
     }
 </style>
