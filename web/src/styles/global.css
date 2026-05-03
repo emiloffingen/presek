@@ -60,6 +60,17 @@
         box-sizing: border-box;
     }
 
+    /* Force all flex and grid children to be able to shrink */
+    html, body, *:not(body) {
+        min-width: 0;
+    }
+
+    /* Constrain all images and video to container width */
+    img, video, iframe {
+        max-width: 100%;
+        height: auto;
+    }
+
     html, body {
         overflow-x: hidden;
         width: 100%;
