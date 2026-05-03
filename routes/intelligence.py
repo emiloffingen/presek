@@ -23,7 +23,7 @@ log = logging.getLogger("presek")
 router = APIRouter()
 
 class PulseVelocity(BaseModel):
-    t: str
+    t: datetime.datetime
     n: int
 
 class PulseCategory(BaseModel):
@@ -404,7 +404,12 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse(category: Optional[str] = None):
-    from utils import get_source_trust_label, get_source_effective_weight
+    from utils import get_source_trust_label, get_source_effective_weight, cached_response, set_cache
+    
+    cat_id = f"cat-{category}" if category else "all"
+    cache_key = f"api:intelligence:source-pulse:{cat_id}:v2"
+    cached = cached_response(cache_key)
+    if cached: return cached
     
     cat_filter = ""
     params = []
@@ -440,7 +445,9 @@ async def get_source_pulse(category: Optional[str] = None):
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
         
-    return {"status": "success", "data": rows}
+    result = {"status": "success", "data": rows}
+    set_cache(cache_key, result, ttl=300)
+    return result
 
 @router.get("/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
@@ -510,43 +517,51 @@ async def get_global_pulse(category: Optional[str] = None):
         cat_filter = "AND a.category = %s"
         params.append(category)
 
-    # Use explicit COALESCE(a.ingested_at, a.created_at) to avoid schema errors
-    last_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
-    last_24h = last_24h_res["count"] if last_24h_res else 0
-    
-    # 1. News Velocity
-    velocity = await db.async_execute(f"""
-        SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
-        FROM articles a
-        WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
-        GROUP BY t ORDER BY t
-    """, tuple(params))
-    
-    # 2. Category Distribution
-    by_category = await db.async_execute("""
-        SELECT a.category, COUNT(*) AS n 
-        FROM articles a
-        WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
-          AND a.category IS NOT NULL
-          AND a.category != ''
-        GROUP BY a.category ORDER BY n DESC
-    """)
+    # Run all DB queries in parallel for better performance
+    async def get_last_24h():
+        res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
+        return res["count"] if res else 0
 
-    # 2b. Topic Pulse (Sentiment per topic)
-    by_topic_sentiment = await db.async_execute(f"""
-        SELECT 
-            m.topics,
-            AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
-            AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
-            AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
-            COUNT(*) as n
-        FROM cluster_summaries s
-        JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
-        WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
-          AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
-        GROUP BY m.topics ORDER BY n DESC
-    """)
-    
+    async def get_velocity():
+        return await db.async_execute(f"""
+            SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
+            FROM articles a
+            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours' {cat_filter}
+            GROUP BY t ORDER BY t
+        """, tuple(params))
+
+    async def get_by_category():
+        return await db.async_execute("""
+            SELECT a.category, COUNT(*) AS n 
+            FROM articles a
+            WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '24 hours'
+              AND a.category IS NOT NULL
+              AND a.category != ''
+            GROUP BY a.category ORDER BY n DESC
+        """)
+
+    async def get_topic_sentiment():
+        return await db.async_execute(f"""
+            SELECT 
+                m.topics,
+                AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+                COUNT(*) as n
+            FROM cluster_summaries s
+            JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+            WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
+              AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
+            GROUP BY m.topics ORDER BY n DESC
+        """)
+
+    last_24h, velocity, by_category, by_topic_sentiment = await asyncio.gather(
+        get_last_24h(),
+        get_velocity(),
+        get_by_category(),
+        get_topic_sentiment()
+    )
+
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload
     intel = await build_intelligence_summary_payload(last_24h, category=category)
