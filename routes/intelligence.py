@@ -543,7 +543,7 @@ async def get_global_pulse(category: Optional[str] = None):
         FROM cluster_summaries s
         JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
         WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
-          AND m.topics IS NOT NULL AND m.topics != ''
+          AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
         GROUP BY m.topics ORDER BY n DESC
     """)
     
