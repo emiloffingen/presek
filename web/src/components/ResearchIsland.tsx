@@ -88,21 +88,46 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const parseBoldText = (text: string) => {
-    // 1. Handle Citations: [Name] (excluding numbers like [1])
-    const withCitations = text.replace(/\[([^\d\]]+?)\]/g, '<span class="citation-badge">$1</span>');
+    if (!text) return null;
     
-    // 2. Handle Bold: **text**
-    const parts = withCitations.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-black text-foreground">{part.slice(2, -2)}</strong>;
+    // First, handle literal \n if they escaped as characters
+    const cleanText = text.replace(/\\n/g, '\n');
+
+    // Regex to match either **bold** or [Citation]
+    // Group 1: Bold content
+    // Group 2: Citation content
+    const combinedRegex = /(\*\*(.*?)\*\*)|\[([^\d\]]+?)\]/g;
+    
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = combinedRegex.exec(cleanText)) !== null) {
+      // Add plain text before the match
+      if (match.index > lastIndex) {
+        parts.push(cleanText.substring(lastIndex, match.index));
       }
-      if (part.includes('class="citation-badge"')) {
-          const name = part.match(/>(.*)</)?.[1] || '';
-          return <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-1 bg-secondary/80 border border-border rounded text-[9px] font-black text-nyt-accent uppercase tracking-tighter leading-none align-middle" title="Кредибилен извор">{name}</span>;
+
+      if (match[1]) {
+        // It's a bold match
+        parts.push(<strong key={match.index} className="font-black text-foreground">{match[2]}</strong>);
+      } else if (match[3]) {
+        // It's a citation match
+        parts.push(
+          <span key={match.index} className="inline-flex items-center px-1.5 py-0.5 mx-1 bg-secondary/80 border border-border rounded text-[9px] font-black text-nyt-accent uppercase tracking-tighter leading-none align-middle" title="Кредибилен извор">
+            {match[3]}
+          </span>
+        );
       }
-      return part;
-    });
+      lastIndex = combinedRegex.lastIndex;
+    }
+
+    // Add remaining plain text
+    if (lastIndex < cleanText.length) {
+      parts.push(cleanText.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : cleanText;
   };
 
   const formatText = (text: string) => {

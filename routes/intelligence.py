@@ -325,6 +325,17 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         answer = response.get("answer") if isinstance(response, dict) else str(response or "")
         suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
 
+        # Emergency cleanup: If we still have raw JSON string as answer, strip it
+        if isinstance(answer, str) and answer.strip().startswith("{"):
+            # If it failed all parsing but is clearly JSON, don't show it to user
+            log.warning(f"[research] Model returned raw JSON string that failed all cleaning: {answer[:100]}...")
+            if '"answer":' in answer:
+                # One last attempt to grab the text inside answer key
+                m = re.search(r'"answer":\s*"(.*?)"', answer, re.DOTALL)
+                if m: answer = m.group(1).replace('\\n', '\n')
+            else:
+                return {"status": "error", "message": "Системот врати невалиден формат. Обидете се со друго прашање."}
+
         if not answer:
             return {"status": "error", "message": "Не успеав да генерирам одговор."}
 

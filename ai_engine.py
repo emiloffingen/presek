@@ -394,9 +394,15 @@ def clean_json_response(text: str) -> dict | str | None:
         except Exception:
             pass
 
-    # 3. Last resort: If the text looks like raw JSON but failed parsing, 
-    # we now return the cleaned text instead of an empty string, 
-    # to maintain backward compatibility with non-strict inputs.
+    # 3. Last resort recovery for common LLM failure modes
+    # If it looks like JSON but failed to parse, try to regex-extract the answer
+    if text.startswith("{") and '"answer"' in text:
+        # Simple non-greedy match for the answer field value
+        ans_match = re.search(r'"answer":\s*"(.*?)(?<!\\)"', text, re.DOTALL)
+        if ans_match:
+            return {"answer": ans_match.group(1).replace('\\n', '\n').replace('\\"', '"')}
+
+    # 4. Final fallback
     return text
 
 def auto_summarize_top_clusters():
