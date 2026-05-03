@@ -174,10 +174,11 @@ async def get_navigation():
     sub_act = {r['subcategory']: r['n'] for r in sub_activity}
 
     # 3. GEOGRAPHY (Excluding Macedonia as it's the home default)
-    geography = []
+    # The header "Географија" is defined by the section label in the final payload structure
+    geo_items = []
     for label, display in [("Балкан", "Балкан"), ("Европа", "Европа"), ("Свет", "Свет")]:
         count = cat_act.get(label, 0)
-        geography.append({"label": display, "href": f"/?category={urllib.parse.quote(display)}", "count": count})
+        geo_items.append({"label": display, "href": f"/?category={urllib.parse.quote(display)}", "count": count})
 
     # 4. CORE NEWS (The Pillars + Skopje)
     news_items = []
@@ -220,7 +221,7 @@ async def get_navigation():
     res = {
         "breaking": breaking_items,
         "sections": [
-            {"label": "Географија", "items": geography, "type": "core"},
+            {"label": "Географија", "items": geo_items, "type": "core"},
             {"label": "Вести", "items": news_items, "type": "dynamic"},
             {"label": "Магазин", "items": magazine_items, "type": "magazine"},
             {"label": "Во Фокус", "items": entities[:5], "type": "trending"}
