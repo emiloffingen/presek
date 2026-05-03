@@ -148,15 +148,15 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
   }
 
   return (
-    <div className="for-you-page-grid grid grid-cols-1 lg:grid-cols-3 gap-16 mt-12">
+    <div className="for-you-page-grid grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16 mt-12">
       <div className="lg:col-span-2 space-y-12">
         <header className="pb-10 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="text-nyt-accent" size={18} />
-            <span className="font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА ИНТЕЛИГЕНЦИЈА</span>
+            <Sparkles className="text-nyt-accent" size={16} />
+            <span className="font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">УРЕДНИЧКА ИНТЕЛИГЕНЦИЈА</span>
           </div>
-          <h1 className="font-serif text-4xl md:text-6xl font-black leading-none mb-6 italic">Личен <span className="serif-display">Пресек</span></h1>
-          <p className="mt-4 font-nyt-body text-xl text-secondary-foreground leading-relaxed italic max-w-2xl">
+          <h1 className="font-serif text-[clamp(2rem,6vw,4rem)] font-black leading-[0.9] mb-6 italic">Личен <span className="serif-display font-light not-italic">Пресек</span></h1>
+          <p className="mt-4 font-nyt-body text-[clamp(1rem,2vw,1.25rem)] text-secondary-foreground leading-relaxed italic max-w-2xl">
              Вашиот дневен преглед, синтетизиран според темите, личностите и изворите што ги следите.
           </p>
         </header>
@@ -198,13 +198,13 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
       <aside className="space-y-12">
         {/* Following Section */}
-        <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
-          <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">Ваши Интереси</h3>
+        <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 lg:p-8 shadow-sm">
+          <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-foreground mb-8 pb-3 border-b border-zinc-100 dark:border-zinc-800">Ваши Интереси</h3>
           
           <div className="space-y-10">
             {profile.followedTopics.length > 0 && (
                 <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Теми</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Теми</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedTopics.map((t: string) => (
                             <PreferenceToggle key={t} kind="topic" value={t} analyticsSurface="for_you_page" />
@@ -215,7 +215,7 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
             {profile.followedSources.length > 0 && (
                 <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Извори</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground mb-4 tracking-widest">Извори</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.followedSources.map((s: string) => (
                             <PreferenceToggle key={s} kind="source" value={s} analyticsSurface="for_you_page" />
@@ -232,14 +232,14 @@ export default function ForYouPageIsland({ initialClusters, initialError = null 
 
         {/* Discovery Suggestions */}
         {followSuggestions.length > 0 && (
-            <section className="bg-secondary/10 border border-border rounded-2xl p-8">
-                <h3 className="font-sans text-[11px] font-black uppercase tracking-widest text-nyt-accent mb-8">Откријте повеќе</h3>
+            <section className="bg-secondary/10 border border-border rounded-lg p-6 lg:p-8">
+                <h3 className="font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-8">Откријте повеќе</h3>
                 <div className="space-y-4">
                     {followSuggestions.map(item => (
                         <div key={item.value} className="flex items-center justify-between gap-4 p-3 bg-background border border-border rounded-lg group hover:border-nyt-accent/30 transition-all">
                             <div className="min-w-0">
-                                <p className="text-xs font-black truncate uppercase tracking-tighter">{item.value}</p>
-                                <p className="text-[9px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Тема' : 'Извор'}</p>
+                                <p className="text-[10px] font-black truncate uppercase tracking-tighter">{item.value}</p>
+                                <p className="text-[8px] text-muted-foreground uppercase font-bold">{item.kind === 'topic' ? 'Тема' : 'Извор'}</p>
                             </div>
                             <PreferenceToggle 
                                 kind={item.kind as any} 
