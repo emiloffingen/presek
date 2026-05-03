@@ -120,19 +120,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               ФАКТ-ЧЕК
             </span>
           )}
-
-          {cluster.has_synthesis && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-nyt-accent" title="Уредничка Синтеза достапна">
-              <Sparkles size={11} className="fill-nyt-accent/20" /> АНАЛИЗА
-            </span>
-          )}
-
-          {showSignificanceLabel && !cluster.is_breaking && (
-            <span className="significance-dot-label" title={significanceLabel}>
-              <span className={`h-1.5 w-1.5 rounded-full ${sourceCount >= 6 ? 'bg-purple-500' : 'bg-blue-400'}`}></span>
-              {sourceCount >= 6 ? 'Ударна' : 'Следена'}
-            </span>
-          )}
         </div>
 
 
