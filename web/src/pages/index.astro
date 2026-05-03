@@ -233,6 +233,12 @@ const railWireArticles = [...wireArticles].sort((a: any, b: any) => {
     return bTime - aTime;
 });
 
+// Identify High Consensus Clusters (5+ sources)
+const consensusClusters = clusters
+    .filter((c: NewsCluster) => (c.articles?.length || 0) >= 5 && c.cluster_id !== leadCluster?.cluster_id)
+    .slice(0, 3);
+const consensusIds = new Set(consensusClusters.map(c => c.cluster_id));
+
 if (!isHomepage) {
     excludedClusterIds = [
       leadCluster?.cluster_id,
@@ -293,6 +299,28 @@ function getBriefingSnippet(content: string) {
                     </div>
                 )}
 
+                {/* THEMATIC QUICK PILLS */}
+                {isHomepage && !error && (
+                    <div class="quick-pills-container mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 pb-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2">Истражи:</span>
+                            {[
+                                { id: 'mk', label: 'Македонија', href: '/?category=Македонија' },
+                                { id: 'pol', label: 'Политика', href: '/?topic=Политика' },
+                                { id: 'eco', label: 'Економија', href: '/?topic=Економија' },
+                                { id: 'spo', label: 'Спорт', href: '/?topic=Спорт' },
+                                { id: 'cul', label: 'Култура', href: '/?topic=Култура' },
+                                { id: 'tech', label: 'Технологија', href: '/?topic=Технологија' },
+                                { id: 'sk', label: 'Скопје', href: '/?subcategory=Скопје' }
+                            ].map(pill => (
+                                <a href={pill.href} class="quick-pill">
+                                    {pill.label}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {!error && clusters.length === 0 && (
                     <EmptyState trending={trending} />
                 )}
@@ -323,6 +351,22 @@ function getBriefingSnippet(content: string) {
 						/>
 					</div>
 				)}
+
+                {/* THE BIG PICTURE (HIGH CONSENSUS) */}
+                {isHomepage && consensusClusters.length > 0 && (
+                    <div class="section-wrapper consensus-section bg-secondary/10 p-8 border-y border-border/40">
+                        <div class="section-heading-row mb-8">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">СИСТЕМСКИ КОНСЕНЗУС</span>
+                            <h2 class="font-serif text-3xl font-black italic">Широка Слика</h2>
+                            <p class="text-sm text-muted-foreground mt-2">Настани за кои известуваат голем број медиуми со висок степен на согласување.</p>
+                        </div>
+                        <div class="news-feed-grid news-feed-grid-compact">
+                            {consensusClusters.map((cluster: NewsCluster) => (
+                                <NewsCard cluster={cluster} variant="compact" />
+                            ))}
+                        </div>
+                    </div>
+                )}
 
 				{feedClusters.length > 0 && (
 					<div class="section-wrapper">
@@ -404,6 +448,32 @@ function getBriefingSnippet(content: string) {
         border-y: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
     }
     .editorial-briefing-wrap { padding-bottom: 2.25rem; }
+
+    /* ── Quick Pills ─────────────────────────────────── */
+    .quick-pill {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+        color: var(--foreground);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+    }
+    .quick-pill:hover {
+        background: var(--nyt-accent);
+        color: white;
+        border-color: var(--nyt-accent);
+        transform: translateY(-1px);
+    }
+    .dark .quick-pill {
+        background: var(--card);
+    }
 
     @media (max-width: 768px) {
         .broadsheet-main { border-right: none; padding-right: 0; }

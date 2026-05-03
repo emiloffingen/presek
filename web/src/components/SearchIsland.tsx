@@ -40,6 +40,22 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const placeholders = [
+    "Пребарувај низ архивата...",
+    "Кој е главниот конфликт?",
+    "Што велат бројките?",
+    "Какви се реакциите?",
+    "Што се случува во Скопје?"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setPlaceholderIdx((prev) => (prev + 1) % placeholders.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -348,11 +364,15 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors"
+        className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors group"
         aria-label="Пребарај"
       >
         <Search size={18} />
-        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Пребарај</span>
+        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline relative overflow-hidden h-4">
+            <span key={placeholderIdx} className="animate-in slide-in-from-bottom-2 duration-300 block">
+                {placeholders[placeholderIdx]}
+            </span>
+        </span>
       </button>
 
       {isOpen && (
@@ -397,7 +417,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Внесете клучни зборови..."
+                  placeholder={placeholders[placeholderIdx]}
                   className="w-full bg-transparent py-3 text-2xl md:text-4xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground min-w-0"
                   aria-label="Пребарај вести"
                   role="combobox"
