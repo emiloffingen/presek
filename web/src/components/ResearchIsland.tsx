@@ -90,56 +90,23 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   const parseBoldText = (text: string) => {
     if (!text) return null;
     
-    // First, handle literal \n if they escaped as characters
     const cleanText = text.replace(/\\n/g, '\n');
-
-    // Sources list from props to help match raw citations
-    const knownSources = (sources || []).filter(s => s.length > 2);
-
-    // Regex to match:
-    // 1. **bold**
-    // 2. [Citation]
-    // 3. Raw citations at end of sentence or clause: "Source. ", "Source, ", "Source\n"
-    const combinedRegex = /(\*\*(.*?)\*\*)|\[([^\d\]]+?)\]/g;
+    const boldRegex = /\*\*(.*?)\*\*/g;
     
     const parts = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = combinedRegex.exec(cleanText)) !== null) {
+    while ((match = boldRegex.exec(cleanText)) !== null) {
       if (match.index > lastIndex) {
         parts.push(cleanText.substring(lastIndex, match.index));
       }
-
-      if (match[1]) {
-        parts.push(<strong key={match.index} className="font-black text-foreground">{match[2]}</strong>);
-      } else if (match[3]) {
-        parts.push(
-          <span key={match.index} className="inline-flex items-center px-1.5 py-0.5 mx-1 bg-secondary/80 border border-border rounded text-[9px] font-black text-nyt-accent uppercase tracking-tighter leading-none align-middle" title="Кредибилен извор">
-            {match[3]}
-          </span>
-        );
-      }
-      lastIndex = combinedRegex.lastIndex;
+      parts.push(<strong key={match.index} className="font-black text-foreground">{match[1]}</strong>);
+      lastIndex = boldRegex.lastIndex;
     }
 
     if (lastIndex < cleanText.length) {
-      let remaining = cleanText.substring(lastIndex);
-      
-      // Final pass: Catch trailing raw source names that missed brackets
-      // We look for known sources followed by punctuation or end of string
-      knownSources.forEach(src => {
-          const escaped = src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const srcRegex = new RegExp(`\\b(${escaped})(?=[\\s,.\n]|$)`, 'g');
-          remaining = remaining.replace(srcRegex, `[${src}]`);
-      });
-
-      // If we added new brackets, recursively call to render them as badges
-      if (remaining.includes('[')) {
-          return [...parts, ...parseBoldText(remaining) as any];
-      }
-      
-      parts.push(remaining);
+      parts.push(cleanText.substring(lastIndex));
     }
 
     return parts.length > 0 ? parts : cleanText;
@@ -346,25 +313,10 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
                   </div>
                 )}
 
-                {displayedSources.length > 0 && (
-                  <div className="mt-16 pt-8 border-t border-border/40">
-                    <p className="font-sans text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
-                      ИЗВОРИ КОРИСТЕНИ ЗА ОВОЈ ОДГОВОР
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      {displayedSources.map((s, idx, arr) => (
-                        <span key={s} className="font-sans text-[10px] font-extrabold text-foreground/70 uppercase tracking-wider flex items-center">
-                          {s}
-                          {idx < arr.length - 1 && <span className="ml-4 opacity-30 text-muted-foreground">•</span>}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
              </div>
              
-             <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-60">
-                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-left">
+             <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 opacity-40">
+                <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-left">
                    <div className="w-2 h-2 rounded-full bg-nyt-accent animate-pulse flex-shrink-0"></div>
                    Одговор генериран од кластерските извори
                 </div>
