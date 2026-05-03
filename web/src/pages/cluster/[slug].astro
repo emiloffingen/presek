@@ -504,10 +504,9 @@ const articleSchema = cluster ? {
 	.cluster-article-container {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 0 1.25rem;
+		padding: 0 1rem;
         width: 100%;
-        overflow-x: hidden;
-        word-wrap: break-word;
+        box-sizing: border-box;
 	}
 
     @media (max-width: 640px) {
@@ -519,20 +518,21 @@ const articleSchema = cluster ? {
 	/* --- 1. THE LEDE --- */
 	.editorial-lede {
 		text-align: center;
-		padding-top: 2rem;
+		padding: 2rem 0.5rem 3.5rem;
 	}
 
 	.editorial-headline {
 		font-family: var(--font-serif);
-		font-size: clamp(2.5rem, 6vw, 4.2rem);
+		font-size: clamp(2rem, 8vw, 4.2rem);
 		font-weight: 950;
-		line-height: 0.95;
+		line-height: 1.0;
 		letter-spacing: -0.04em;
 		color: var(--foreground);
 		text-wrap: balance;
 		max-width: 1000px;
-		margin-left: auto;
-		margin-right: auto;
+		margin: 0 auto;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
 	}
 
 	.editorial-headline.is-cyrillic {
@@ -549,14 +549,14 @@ const articleSchema = cluster ? {
 	/* --- 2. HERO GRID --- */
 	.hero-grid {
 		display: grid;
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 2rem;
 		align-items: stretch;
 	}
 
 	@media (min-width: 1024px) {
 		.hero-grid {
-			grid-template-columns: 1fr 340px;
+			grid-template-columns: minmax(0, 1fr) 340px;
 		}
 	}
 
@@ -670,15 +670,21 @@ const articleSchema = cluster ? {
 	/* --- 3. EDITORIAL GRID --- */
 	.editorial-grid {
 		display: grid;
-		grid-template-columns: 1fr;
-		gap: 4rem;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 3rem;
 	}
 
 	@media (min-width: 1024px) {
 		.editorial-grid {
 			grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 4rem;
 		}
 	}
+
+    .editorial-main-col {
+        min-width: 0;
+        width: 100%;
+    }
 
 	.section-eyebrow {
 		display: flex;
@@ -713,17 +719,17 @@ const articleSchema = cluster ? {
 
 	.narrative-p {
 		font-family: var(--font-serif);
-		font-size: 1.35rem;
-		line-height: 1.6;
+		font-size: 1.25rem;
+		line-height: 1.65;
 		margin-bottom: 2rem;
 		color: var(--foreground);
-		text-align: justify;
-		hyphens: auto;
+		text-align: left;
+        overflow-wrap: break-word;
 	}
 
 	.narrative-p.drop-cap::first-letter {
 		float: left;
-		font-size: 5.2rem;
+		font-size: clamp(3.5rem, 12vw, 5.2rem);
 		line-height: 0.85;
 		padding-top: 4px;
 		padding-right: 12px;
@@ -1238,27 +1244,30 @@ const articleSchema = cluster ? {
 	}
 
 	@media (max-width: 768px) {
-		.editorial-headline { font-size: 2.2rem; }
-		.hero-fallback { min-height: 300px; padding: 2rem; }
-		.hero-main-image { min-height: 300px; }
-		.narrative-p { font-size: 1.15rem; }
+        .cluster-article-container { padding: 0 0.75rem; }
+		.editorial-headline { font-size: clamp(2rem, 8vw, 2.8rem); line-height: 1.1; }
+		.hero-fallback { min-height: 250px; padding: 1.5rem; }
+		.hero-main-image { min-height: 250px; }
+		.narrative-p { font-size: 1.1rem; line-height: 1.6; }
 		.row-title { font-size: 1.2rem; }
 
+        .editorial-section {
+            padding: 1.5rem 0 !important;
+            margin-bottom: 2.5rem !important;
+        }
+
         .analyst-section {
-            padding: 1.5rem !important;
-            margin-bottom: 3rem !important;
-        }
-
-        .analyst-facts-grid {
-            gap: 2rem !important;
-        }
-
-        .fact-text {
-            font-size: 1.05rem !important;
+            padding: 1.25rem !important;
         }
 
         .sidebar-module {
-            padding: 1.5rem !important;
+            padding: 1.25rem !important;
+        }
+
+        .advanced-tools {
+            padding: 1rem 0 !important;
+            border-left: none;
+            border-right: none;
         }
 	}
 </style>
