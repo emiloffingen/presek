@@ -3151,13 +3151,10 @@ button:active,
     .analyst-facts-grid, 
     .story-timeline-container,
     .media-pulse-radar-wrap {
-        max-width: 100vw;
+        max-width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        margin-left: -1rem;
-        margin-right: -1rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-bottom: 0.5rem;
     }
 
     /* Compact UI elements */
