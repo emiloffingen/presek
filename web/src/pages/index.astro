@@ -440,6 +440,31 @@ function getBriefingSnippet(content: string) {
     .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
     .section-wrapper:last-child { border-bottom: none; }
     .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    
+    /* ── Supporting Band & Developments Grids ────────── */
+    .supporting-featured-grid, 
+    .news-feed-grid-featured {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .supporting-compact-grid,
+    .news-feed-grid-compact {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+        .supporting-featured-grid, 
+        .news-feed-grid-featured {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 2rem;
+        }
+    }
+
     .for-you-wrapper {
         background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
         margin-left: -1.5rem;

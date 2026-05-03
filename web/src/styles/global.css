@@ -824,8 +824,9 @@
 .site-layout {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 clamp(1rem, 2.5vw, 2rem);
+    padding: 0 clamp(0.75rem, 3vw, 2rem);
     width: 100%;
+    box-sizing: border-box;
 }
 
 @keyframes pulse {
@@ -1506,7 +1507,7 @@ button:active,
 /* News Feed Grid */
 .news-feed-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     column-gap: 2rem;
     row-gap: 1.25rem;
 }
