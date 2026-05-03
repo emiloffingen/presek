@@ -134,11 +134,24 @@ function getTimeStr(dateStr: string) {
 				</span>
 				)}
 
+                {/* INTELLIGENCE BADGES */}
 				{main.coverage_balance?.label && (
-				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-500">
-					<CheckCircle2 size={11} /> {main.coverage_balance.label}
+				<span class="intel-badge badge-balanced" title="Оваа сторија вклучува разновидни медиумски перспективи и балансирано известување.">
+					<CheckCircle2 size={11} /> БАЛАНСИРАНО
 				</span>
 				)}
+
+                {hasSynthesis && (
+                    <span class="intel-badge badge-research" title="Достапна е длабинска синтеза и анализа на овој настан од вештачка интелигенција.">
+                        <Sparkles size={11} /> ИСТРАЖУВАЊЕ
+                    </span>
+                )}
+
+                {cluster.pulse_score && cluster.pulse_score >= 80 && (
+                    <span class="intel-badge badge-pulse" title="Висока медиумска динамика: приказната е во центарот на вниманието.">
+                        <Zap size={11} fill="currentColor" /> ВИСОК ПУЛС
+                    </span>
+                )}
 
 				{cluster.is_breaking && (
 				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
@@ -151,14 +164,8 @@ function getTimeStr(dateStr: string) {
 			)}
 
 			{cluster.articles.some(a => a.is_fact_check) && (
-				<span class="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1">
+				<span class="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1" title="Системска верификација на факти">
 					ФАКТ-ЧЕК
-				</span>
-			)}
-
-			{hasSynthesis && (
-				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-nyt-accent" title="Системска синтеза достапна">
-					<Zap size={11} className="fill-nyt-accent/20" fill="currentColor" /> СИНТЕЗА
 				</span>
 			)}
 
@@ -266,6 +273,48 @@ function getTimeStr(dateStr: string) {
 	.nyt-article {
 		--news-card-cache-bust-20260424: 1;
 	}
+
+    /* --- Intelligence Badges --- */
+    .intel-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-family: var(--font-sans);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.1rem 0.4rem;
+        border-radius: 2px;
+    }
+
+    .badge-balanced {
+        color: #15803d;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+    }
+    .dark .badge-balanced {
+        background: #064e3b20;
+        color: #34d399;
+        border-color: #064e3b;
+    }
+
+    .badge-research {
+        color: var(--nyt-accent);
+        background: color-mix(in srgb, var(--nyt-accent) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+    }
+
+    .badge-pulse {
+        color: #9333ea;
+        background: #faf5ff;
+        border: 1px solid #f3e8ff;
+    }
+    .dark .badge-pulse {
+        background: #581c8720;
+        color: #c084fc;
+        border-color: #581c87;
+    }
 
     .summary-container {
         max-height: 4.5em; /* Approximately 3 lines */
