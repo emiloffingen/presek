@@ -164,68 +164,56 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   };
 
   const modes = [
-    { id: 'facts' as const, label: 'Факти и податоци', icon: BarChart3, desc: 'Клучни бројки, датуми и проверливи податоци од изворите.' },
-    { id: 'perspectives' as const, label: 'Перспективи и изјави', icon: Users, desc: 'Актери, цитати и различни агли присутни во покривањето.' },
-    { id: 'context' as const, label: 'Контекстуална рамка', icon: BookOpen, desc: 'Позадина, слични настани и можни последици.' },
+    { id: 'facts' as const, label: 'Факти', icon: BarChart3, desc: 'Бројки и податоци.' },
+    { id: 'perspectives' as const, label: 'Перспективи', icon: Users, desc: 'Изјави и агли.' },
+    { id: 'context' as const, label: 'Контекст', icon: BookOpen, desc: 'Позадина и последици.' },
   ];
   const displayedSources = [...new Set<string>(Array.isArray(data?.sources) ? data.sources : sources)];
 
   return (
-    <section className="research-analyst-container mt-12 mb-16 border-y md:border border-border bg-secondary/5 p-4 md:p-10 relative overflow-hidden break-words">
-      {/* Editorial Watermark */}
-      <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none overflow-hidden">
-          <Sparkles size={240} />
-      </div>
-
-      <div className="relative z-10 mb-8 md:mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <section className="research-analyst-container mt-8 mb-10 border border-border bg-secondary/5 p-4 md:p-6 relative overflow-hidden break-words">
+      <div className="relative z-10 mb-6 flex flex-col gap-2">
         <div className="max-w-full md:max-w-3xl">
-          <p className="mb-2 flex items-center gap-2 font-sans text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
-            <div className="w-6 md:w-8 h-[2px] bg-nyt-accent"></div>
-            ДИЈАЛОГ СО ПРИКАЗНАТА
+          <p className="mb-2 flex items-center gap-2 font-sans text-[9px] font-black uppercase tracking-[0.2em] text-nyt-accent">
+            <div className="w-4 h-[2px] bg-nyt-accent"></div>
+            ПРЕСЕК ИСТРАЖУВАЧ
           </p>
-          <h1 className="font-serif text-lg md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
-          <h2 className="font-serif text-2xl md:text-[2.75rem] font-black text-foreground mb-4 md:mb-6 leading-[1.1] tracking-tight">Постави прашање или побарај анализа</h2>
-          <p className="font-serif text-base md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
-            Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се базира на текстовите во овој кластер и се генерира преку достапниот аналитички модел.
+          <h2 className="font-serif text-xl md:text-2xl font-black text-foreground mb-2 leading-tight tracking-tight">Постави прашање или побарај анализа</h2>
+          <p className="font-serif text-sm md:text-base leading-relaxed text-secondary-foreground italic opacity-90">
+            Изберете што ви недостига: бројки, ставови на актери или поширок контекст.
           </p>
-        </div>
-        <div className="hidden md:block pt-4">
-            <p className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-l-2 border-border pl-4 py-1">
-            Пресек Истражувач
-            </p>
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
         {modes.map((m) => (
           <div
             key={m.id}
-            className={`group relative p-8 text-left border border-border bg-background shadow-sm transition-all hover:shadow-xl hover:border-nyt-accent/40 flex flex-col h-full ${loading && loading !== m.id ? 'opacity-60' : ''}`}
+            className={`group relative p-5 text-left border border-border bg-background shadow-sm transition-all hover:shadow-md hover:border-nyt-accent/40 flex flex-col h-full ${loading && loading !== m.id ? 'opacity-60' : ''}`}
           >
-            <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-6 transition-all bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white`}>
-              {loading === m.id ? <Loader2 className="animate-spin" size={28} /> : <m.icon size={26} />}
+            <div className={`w-10 h-10 flex items-center justify-center rounded-full mb-4 transition-all bg-secondary text-muted-foreground group-hover:bg-nyt-accent group-hover:text-white`}>
+              {loading === m.id ? <Loader2 className="animate-spin" size={20} /> : <m.icon size={18} />}
             </div>
             
-            <h4 className="font-black text-sm mb-1 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
+            <h4 className="font-black text-xs mb-1 uppercase tracking-[0.14em] text-foreground group-hover:text-nyt-accent transition-colors">{m.label}</h4>
             
-            <p className="text-sm text-muted-foreground leading-relaxed font-medium mb-6 flex-grow">{m.desc}</p>
-            <p className="mb-10 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">Базирано на изворите во кластерот</p>
+            <p className="text-xs text-muted-foreground leading-snug font-medium mb-4 flex-grow">{m.desc}</p>
             
             <button
                 onClick={() => performResearch(m.id)}
                 disabled={!!loading}
                 aria-busy={loading === m.id}
-                className="w-full py-3 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-border/50 group-hover:border-transparent disabled:cursor-wait disabled:opacity-70"
+                className="w-full py-2 bg-secondary/50 group-hover:bg-nyt-accent group-hover:text-white transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1 border border-border/50 group-hover:border-transparent disabled:cursor-wait disabled:opacity-70"
             >
-                {loading === m.id ? 'СЕ АНАЛИЗИРА...' : 'Истражи'}
-                {!loading && <ChevronRight size={12} />}
+                {loading === m.id ? 'Анализира...' : 'Истражи'}
+                {!loading && <ChevronRight size={10} />}
             </button>
           </div>
         ))}
       </div>
 
       {/* Custom Research Input */}
-      <div className="relative z-10 mt-10 bg-background p-2 border border-border focus-within:border-nyt-accent/50 shadow-inner">
+      <div className="relative z-10 mt-6 bg-background p-1.5 border border-border focus-within:border-nyt-accent/50 shadow-inner">
         <div className="flex flex-col md:flex-row gap-2">
             <div className="relative flex-grow">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" size={22} />
