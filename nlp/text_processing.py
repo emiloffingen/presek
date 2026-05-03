@@ -22,12 +22,22 @@ def lemmatize_mk(word: str) -> str:
     if w in _MK_IRREGULAR_LEMMAS: return _MK_IRREGULAR_LEMMAS[w]
     
     # Selective suffix stripping (adjectives -> nouns where clear)
-    # Don't strip if it looks like a known name stem we want to keep
-    if not any(w.startswith(p) for p in ["македон", "мицкос"]):
-        # Strip common adjective suffixes to get to the root/noun form
-        # But only if it leaves a reasonable word behind
-        if len(w) > 6:
-            w = re.sub(r"(скиот|ската|ското|ските|ски)$", "", w)
+    # PROTECT stems that are common in news and shouldn't be truncated to fragments
+    if any(w.startswith(p) for p in ["македон", "мицкос", "америк", "европ", "русиј", "израел", "украин"]):
+        if w.startswith("македон"): return "Македонија"
+        if w.startswith("америк"): return "Америка"
+        if w.startswith("европ"): return "Европа"
+        if w.startswith("русиј"): return "Русија"
+        if w.startswith("украин"): return "Украина"
+        if w.startswith("израел"): return "Израел"
+        return w 
+
+    # Strip common adjective suffixes to get to the root/noun form
+    # But only if it leaves a reasonable word behind
+    if len(w) > 7:
+        # Avoid stripping if it ends with 'нија' (like Македонија, Германија)
+        if not w.endswith("нија"):
+            w = re.sub(r"(овски|евски|скиот|ската|ското|ските|ски)$", "", w)
     
     if len(w) <= 3: return w
 
