@@ -374,8 +374,6 @@ export default function BriefingDeliveryIsland({
 
         {serverMessage && <p className={`account-sync-message is-${serverStatus}`}>{serverMessage}</p>}
       </div>
-
-      <AccountSyncIsland />
     </div>
   );
 }
