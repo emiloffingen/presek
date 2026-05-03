@@ -535,7 +535,7 @@ async def get_global_pulse(category: Optional[str] = None):
     # 2b. Topic Pulse (Sentiment per topic)
     by_topic_sentiment = await db.async_execute(f"""
         SELECT 
-            m.topic,
+            m.topics,
             AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
             AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
             AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
@@ -543,8 +543,8 @@ async def get_global_pulse(category: Optional[str] = None):
         FROM cluster_summaries s
         JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
         WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
-          AND m.topic IS NOT NULL AND m.topic != ''
-        GROUP BY m.topic ORDER BY n DESC
+          AND m.topics IS NOT NULL AND m.topics != ''
+        GROUP BY m.topics ORDER BY n DESC
     """)
     
     # 3. Pluralism & AI Metrics (Aggregated)
