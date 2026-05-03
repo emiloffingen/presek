@@ -30,17 +30,22 @@ def _keyword_matches(text: str, keyword: str) -> bool:
     return bool(re.search(pattern, text))
 
 
-def _score_keyword_group(text: str, keywords: list[str]) -> float:
+def _score_keyword_group(text: str, keywords: list[str], topic_name: str = "") -> float:
     score = 0.0
     for kw in sorted(keywords, key=len, reverse=True):
         if not _keyword_matches(text, kw):
             continue
         if " " in kw:
-            score += 2.5 # Multi-word matches are very strong signals
-        elif len(kw) >= 7: # Lowered from 8 to catch 'Владата', 'Партија', etc.
+            score += 2.5
+        elif len(kw) >= 7: 
             score += 1.5
         else:
             score += 1.0
+            
+    # Boost economy specifically if keywords are found
+    if topic_name == "Економија" and any(k in text for k in ["буџет", "инфлација", "економија", "финансии"]):
+        score += 1.0
+        
     return score
 
 
@@ -335,19 +340,24 @@ TOPICS = [
 ]
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def detect_topic(title: str, description: str = "") -> str:
     """Detect thematic topic (Sport, Tech, Economy, etc.). Defaults to 'Вести'."""
     text = (title + " " + description).lower()
     best_topic = None
     best_score = 0.0
     for topic_name, keywords in TOPICS:
-        score = _score_keyword_group(text, keywords)
+        score = _score_keyword_group(text, keywords, topic_name=topic_name)
         if score > best_score:
             best_topic = topic_name
             best_score = score
-    if best_topic and best_score >= 1.5:
-        return best_topic
-    return "Вести"
+    
+    result = best_topic if (best_topic and best_score >= 1.5) else "Вести"
+    logger.debug(f"Categorizing article: title='{title}', detected_topic='{result}', score={best_score}")
+    return result
 
 
 def detect_country(source_name: str) -> str:
