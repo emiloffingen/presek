@@ -119,8 +119,9 @@ const synthesisItems: SynthesisItem[] = (cluster?.ai_summary_bullets?.length ? c
 
 const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr: Article[]) => {
     const d = new Date(a.created_at);
+    const signal = a.source_signal || {};
     
-    // Dynamic relationship label
+    // 1. Dynamic Journalistic Role (Timeline)
     let relLabel = 'ПОВРЗАНА ПРИКАЗНА';
     let relTone = 'neutral';
     
@@ -130,10 +131,17 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
     } else if (idx === 0 && !synthesisFreshness.is_stale) {
         relLabel = 'ПОСЛЕДЕН РАЗВОЈ';
         relTone = 'latest';
+    } else if (signal.role_label) {
+        relLabel = signal.role_label.toUpperCase();
+        relTone = signal.role_tone || 'deep';
     } else if ((a.credibility || 0) > 1.2) {
         relLabel = 'ПРОШИРЕН ИЗВЕШТАЈ';
         relTone = 'deep';
     }
+
+    // 2. Individual Quality Signals
+    const isObjective = (a.credibility || 0) >= 1.4 || signal.trust_label === 'Висока доверба';
+    const isSensational = (a.credibility || 0) < 0.8 && !isObjective;
 
     return {
         ...a,
@@ -141,7 +149,8 @@ const articleRows = (cluster?.articles || []).map((a: Article, idx: number, arr:
         description: cleanAndDecode(a.description || a.summary || ''),
         exactTime: d.toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' }),
         relativeTime: getRelativeTimeStr(a.created_at),
-        relationship: { tone: relTone, label: relLabel }
+        relationship: { tone: relTone, label: relLabel },
+        quality: { isObjective, isSensational }
     };
 });
 
@@ -350,7 +359,8 @@ const articleSchema = cluster ? {
 								<div class="section-divider"></div>
 							</div>
 
-							<div class="editorial-article-list">
+							<div class="editorial-article-list editorial-timeline">
+								<div class="timeline-v-line"></div>
 								{articleRows.map((a: any) => (
 									<ArticleItem article={a} />
 								))}
@@ -930,7 +940,19 @@ const articleSchema = cluster ? {
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+        position: relative;
 	}
+
+    .timeline-v-line {
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+        opacity: 0.5;
+        z-index: 0;
+    }
 
 	.article-editorial-row {
 		padding: 1.5rem;

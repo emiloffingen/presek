@@ -1,5 +1,5 @@
 ---
-import { Link2 } from 'lucide-react';
+import { Link2, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
 
 interface Props {
@@ -9,16 +9,23 @@ interface Props {
 const { article: a } = Astro.props;
 ---
 
-<div class={`article-editorial-row tone-${a.relationship.tone}`} data-article-link={encodeURIComponent(a.link || '')}>
-	<div class="row-header">
+<div class={`article-editorial-row tone-${a.relationship.tone} timeline-item`} data-article-link={encodeURIComponent(a.link || '')}>
+	<div class="timeline-dot"></div>
+    <div class="row-header">
 		<div class="row-source-info">
 			<span class="source-name">{a.source}</span>
 			<span class={`tone-badge tone-${a.relationship.tone}`}>{a.relationship.label}</span>
-			{a.sourceSignal?.trust_label && (
-				<span class={`trust-badge trust-${a.sourceSignal.trust_label === 'Висока доверба' ? 'high' : a.sourceSignal.trust_label === 'Потвреден извор' ? 'medium' : 'low'}`}>
-					{a.sourceSignal.trust_label}
-				</span>
-			)}
+			
+            {a.quality.isObjective && (
+                <span class="quality-badge badge-obj" title="Висок степен на фактичко известување">
+                    <ShieldCheck size={10} /> ОБЈЕКТИВНО
+                </span>
+            )}
+            {a.quality.isSensational && (
+                <span class="quality-badge badge-sens" title="Емотивно нагласен или преувеличен речник">
+                    <TriangleAlert size={10} /> СЕНЗАЦИЈА
+                </span>
+            )}
 		</div>
 		<div class="row-time">
 			<span class="exact">{a.exactTime}</span>
@@ -38,10 +45,27 @@ const { article: a } = Astro.props;
 
 <style>
 	.article-editorial-row {
-		padding: 1.5rem 0;
+		padding: 1.5rem 0 1.5rem 3rem;
 		border-bottom: 1px solid var(--border);
 		transition: background-color 0.2s ease;
+        position: relative;
 	}
+
+    .timeline-dot {
+        position: absolute;
+        left: 0.45rem;
+        top: 2rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--border);
+        border: 2px solid var(--background);
+        z-index: 1;
+    }
+
+    .article-editorial-row.tone-latest .timeline-dot { background: #10b981; }
+    .article-editorial-row.tone-origin .timeline-dot { background: var(--nyt-accent); }
+    .article-editorial-row.tone-deep .timeline-dot { background: #6366f1; }
 
 	.article-editorial-row:last-child {
 		border-bottom: none;
@@ -58,6 +82,7 @@ const { article: a } = Astro.props;
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+        flex-wrap: wrap;
 	}
 
 	.source-name {
@@ -77,22 +102,27 @@ const { article: a } = Astro.props;
 		text-transform: uppercase;
 	}
 
-	.tone-badge.tone-positive { background: color-mix(in srgb, var(--nyt-accent) 10%, transparent); color: var(--nyt-accent); }
-	.tone-badge.tone-negative { background: color-mix(in srgb, var(--nyt-red) 10%, transparent); color: var(--nyt-red); }
-	.tone-badge.tone-neutral { background: var(--secondary); color: var(--muted-foreground); }
+    .tone-badge.tone-latest { background: #dcfce7; color: #166534; }
+	.tone-badge.tone-origin { background: #f1f5f9; color: #475569; }
+    .tone-badge.tone-deep { background: #e0e7ff; color: #3730a3; }
+    .tone-badge.tone-neutral { background: #f8fafc; color: #64748b; }
 
-	.trust-badge {
-		font-family: var(--font-sans);
-		font-size: 0.55rem;
-		font-weight: 900;
-		padding: 1px 6px;
-		border-radius: 2px;
-		text-transform: uppercase;
-	}
+    /* Quality Badges */
+    .quality-badge {
+        font-family: var(--font-sans);
+        font-size: 0.5rem;
+        font-weight: 950;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 5px;
+        border-radius: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
 
-	.trust-badge.trust-high { background: #10b981; color: white; }
-	.trust-badge.trust-medium { background: #3b82f6; color: white; }
-	.trust-badge.trust-low { background: #6b7280; color: white; }
+    .badge-obj { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-sens { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
 	.row-time {
 		display: flex;
