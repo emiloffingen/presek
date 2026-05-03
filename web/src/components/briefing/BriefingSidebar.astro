@@ -11,6 +11,25 @@ interface Props {
 }
 
 const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.props;
+
+function getTimeStr(dateStr: string) {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMins / 60);
+
+        if (diffMins < 1) return 'ШТОТУКУ';
+        if (diffMins < 60) return `ПРЕД ${diffMins} МИН`;
+        if (diffHours < 24) return `ПРЕД ${diffHours} ЧАСА`;
+        
+        return date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }).toUpperCase();
+    } catch {
+        return '';
+    }
+}
 ---
 
 <aside class="briefing-sidebar">
@@ -111,7 +130,7 @@ const { stats, health, leadCluster, briefing, historicalDates = [] } = Astro.pro
 						{leadCluster.articles?.[0]?.title}
 					</p>
 					<span class="block mt-2 text-[9px] font-black uppercase text-muted-foreground">
-						{leadCluster.articles?.[0]?.source} · ПРЕД {Math.floor((new Date().getTime() - new Date(leadCluster.articles?.[0]?.created_at).getTime()) / 60000)} МИН
+						{leadCluster.articles?.[0]?.source} · {getTimeStr(leadCluster.articles?.[0]?.created_at || leadCluster.articles?.[0]?.ingested_at)}
 					</span>
 				</a>
 			</section>
