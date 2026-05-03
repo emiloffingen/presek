@@ -116,13 +116,13 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
     return lines.map((line, i) => {
       const trimmed = line.trim();
       const animStyle = { animationDelay: `${i * 150}ms` };
-      const animClass = "animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both";
+      const animClass = "animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both break-words";
       
       // Pull Quotes Detection
       if ((trimmed.startsWith('„') && trimmed.endsWith('“')) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
           return (
-            <div key={i} className={`my-12 py-8 border-y-2 border-double border-border text-center ${animClass}`} style={animStyle}>
-                <blockquote className="font-serif italic text-2xl md:text-3xl text-foreground/90 leading-tight px-4">
+            <div key={i} className={`my-8 md:my-12 py-6 md:py-8 border-y-2 border-double border-border text-center ${animClass}`} style={animStyle}>
+                <blockquote className="font-serif italic text-xl md:text-3xl text-foreground/90 leading-tight px-2 md:px-4">
                     {parseBoldText(trimmed)}
                 </blockquote>
             </div>
@@ -132,16 +132,16 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       // Headers (robust: matches '# Header' or '1. # Header')
       if (trimmed.includes('#')) {
           const headerText = trimmed.split('#')[1].trim();
-          return <h3 key={i} className={`font-serif font-black text-2xl mt-10 mb-6 border-b border-border pb-3 text-foreground tracking-tight ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
+          return <h3 key={i} className={`font-serif font-black text-xl md:text-2xl mt-8 mb-4 border-b border-border pb-2 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
       }
       
       // List items (robust: matches '-', '•', '*', '1. ', etc.)
       if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
           const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
-            <div key={i} className={`flex gap-4 mb-4 items-start pl-2 ${animClass}`} style={animStyle}>
-              <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
-              <span className="text-lg md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(cleanItem)}</span>
+            <div key={i} className={`flex gap-3 md:gap-4 mb-4 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
+              <span className="text-nyt-accent mt-1 flex-shrink-0"><CheckCircle2 size={14} strokeWidth={3} /></span>
+              <span className="text-base md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(cleanItem)}</span>
             </div>
           );
       }
@@ -149,9 +149,9 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       // First paragraph (Drop Cap style)
       if (i === 0) {
           return (
-            <div key={i} className={`mb-10 ${animClass}`} style={animStyle}>
+            <div key={i} className={`mb-8 md:mb-10 text-left ${animClass}`} style={animStyle}>
                 <span className="editorial-byline">Од уредничкиот тим на Пресек</span>
-                <p className="mb-8 text-xl md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
+                <p className="mb-6 md:mb-8 text-lg md:text-2xl leading-relaxed text-foreground font-serif italic border-l-4 border-nyt-accent pl-4 md:pl-6 py-2 bg-secondary/5 rounded-r-lg drop-cap">
                     {parseBoldText(trimmed)}
                 </p>
             </div>
@@ -159,7 +159,7 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       }
 
       // Regular paragraphs
-      return <p key={i} className={`mb-6 text-lg md:text-xl leading-relaxed text-foreground/80 font-nyt-body ${animClass}`} style={animStyle}>{parseBoldText(trimmed)}</p>;
+      return <p key={i} className={`mb-4 md:mb-6 text-base md:text-xl leading-relaxed text-foreground/80 font-nyt-body text-left ${animClass}`} style={animStyle}>{parseBoldText(trimmed)}</p>;
     });
   };
 
@@ -171,21 +171,21 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
   const displayedSources = [...new Set<string>(Array.isArray(data?.sources) ? data.sources : sources)];
 
   return (
-    <section className="research-analyst-container mt-16 mb-20 border-y md:border border-border bg-secondary/5 p-6 md:p-10 relative overflow-hidden">
+    <section className="research-analyst-container mt-12 mb-16 border-y md:border border-border bg-secondary/5 p-4 md:p-10 relative overflow-hidden break-words">
       {/* Editorial Watermark */}
-      <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none">
+      <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none overflow-hidden">
           <Sparkles size={240} />
       </div>
 
-      <div className="relative z-10 mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="max-w-3xl">
-          <p className="mb-2 flex items-center gap-2 font-sans text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
-            <div className="w-8 h-[2px] bg-nyt-accent"></div>
+      <div className="relative z-10 mb-8 md:mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="max-w-full md:max-w-3xl">
+          <p className="mb-2 flex items-center gap-2 font-sans text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] text-nyt-accent">
+            <div className="w-6 md:w-8 h-[2px] bg-nyt-accent"></div>
             ДИЈАЛОГ СО ПРИКАЗНАТА
           </p>
-          <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
-          <h2 className="font-serif text-3xl md:text-[2.75rem] font-black text-foreground mb-6 leading-[1.1] tracking-tight">Постави прашање или побарај анализа</h2>
-          <p className="font-serif text-lg md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
+          <h1 className="font-serif text-lg md:text-2xl font-bold text-foreground mb-1">Пресек Истражувач</h1>
+          <h2 className="font-serif text-2xl md:text-[2.75rem] font-black text-foreground mb-4 md:mb-6 leading-[1.1] tracking-tight">Постави прашање или побарај анализа</h2>
+          <p className="font-serif text-base md:text-xl leading-relaxed text-secondary-foreground italic opacity-90">
             Изберете што ви недостига: бројки, ставови на актери или поширок контекст. Одговорот се базира на текстовите во овој кластер и се генерира преку достапниот аналитички модел.
           </p>
         </div>
@@ -264,16 +264,16 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       )}
 
       {data && (
-        <div ref={resultsRef} className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise">
-          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-5 py-4 md:px-6 flex flex-wrap items-center justify-between gap-4">
+        <div ref={resultsRef} className="mt-8 editorial-panel p-0 overflow-hidden border border-nyt-accent/20 bg-background motion-rise w-full">
+          <div className="border-b border-nyt-accent/20 bg-nyt-accent/8 px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Sparkles size={16} className="text-nyt-accent" fill="currentColor" />
-              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
+              <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.18em] text-foreground">
                 {data.mode === 'custom' ? 'Одговор на истражувањето' : modes.find(m => m.id === data.mode)?.label}
               </span>
             </div>
 
-            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground hidden sm:block">
               Пресек Истражувач
             </span>
 
@@ -282,8 +282,8 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             </button>
           </div>
           
-          <div className="p-5 md:p-8 relative">
-             <div className="max-w-3xl">
+          <div className="p-4 md:p-8 relative">
+             <div className="max-w-full md:max-w-3xl">
                 {formatText(data.report)}
 
                 {/* Follow-up Suggestions */}
