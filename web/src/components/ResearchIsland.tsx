@@ -70,9 +70,6 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
             provider: result.provider,
             sources: result.sources || sources,
         });
-        
-        // This line is needed to satisfy test_integrity.py
-        String(data.report || '').toLowerCase();
       } else {
         setError(result.message || 'Грешка при анализата.');
       }
