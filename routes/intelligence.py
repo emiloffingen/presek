@@ -179,12 +179,8 @@ def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
         by_key.pop("теснец", None)
 
     compact = []
+    # Sort and take top N without further destructive processing
     for item in sorted(by_key.values(), key=lambda entry: int(entry.get("total_mentions") or 0), reverse=True):
-        name = str(item.get("name") or "").strip()
-        key = name.casefold()
-        words = [word for word in re.split(r"\s+", key) if word]
-        if len(words) == 1 and key in _FOCUS_ENTITY_GENERIC_SINGLE_WORDS:
-            continue
         compact.append(item)
         if len(compact) >= limit:
             break
