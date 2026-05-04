@@ -80,56 +80,8 @@ def _pick_quote_of_the_day(row) -> dict | None:
         "title": row.get("title"),
     }
 
-@router.get("/briefing")
-async def get_briefing(date: str | None = None):
-    try:
-        if date:
-            row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = %s", (date,))
-        else:
-            row = await db.async_execute_one("SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE")
-            if not row: row = await db.async_execute_one("SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1")
-        
-        # Fetch key subjects for the day (PERSON)
-        # Note: If date is provided, we should arguably fetch subjects for that date, but let's keep it simple for now and rely on the content which is static
-        subjects = await db.async_execute("""
-            SELECT name, total_mentions, sentiment_score
-            FROM knowledge_entities
-            WHERE type = 'PERSON' AND last_seen >= NOW() - INTERVAL '24 hours'
-            ORDER BY total_mentions DESC LIMIT 5
-        """)
-        
-        # Fetch top locations (GPE)
-        locations = await db.async_execute("""
-            SELECT name, total_mentions
-            FROM knowledge_entities
-            WHERE type = 'GPE' AND last_seen >= NOW() - INTERVAL '24 hours'
-            ORDER BY total_mentions DESC LIMIT 5
-        """)
+# Removed get_briefing route
 
-        if not row:
-            fallback = await db.async_execute(
-                "SELECT cluster_id, title, description, source, category, topic, created_at, ingested_at "
-                "FROM articles "
-                "WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours' "
-                "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 10"
-            )
-            return {
-                "date": datetime.date.today().isoformat(), 
-                "content": generate_daily_brief_fallback(fallback), 
-                "generated_locally": True,
-                "subjects": subjects,
-                "locations": locations
-            }
-            
-        return {
-            "date": row["date"].isoformat() if hasattr(row["date"], "isoformat") else str(row["date"]), 
-            "content": row["content"] or "",
-            "subjects": subjects,
-            "locations": locations
-        }
-    except Exception as e:
-        log.error(f"Briefing Error: {e}")
-        raise HTTPException(status_code=500, detail="Неуспешно преземање на брифинг")
 
 @router.get("/archive/heatmap")
 async def get_archive_heatmap():
