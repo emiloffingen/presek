@@ -15,14 +15,15 @@ from typing import AsyncGenerator
 #     PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
 # )
 
-from config import *
+from config import (
+    PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
+)
 
 
 from prometheus_client import Histogram, Counter
 
 log = logging.getLogger("presek")
 
-from utils import redis_client, record_runtime_event
 
 from nlp import summarize_locally, synthesize_locally
 

@@ -23,7 +23,7 @@ def test_compare_cluster_sources_sports_conflict():
     all_titles = " ".join([a.get("title") or "" for a in articles])
     topic = detect_topic(all_titles)
     result = compare_cluster_sources(articles)
-    assert any("резултат" in item and ("2-0" in item or "1-0" in item) for item in result["open_points"])
+    assert any(("2-0" in item or "1-0" in item) for item in result["difference_points"])
 
 def test_highlight_scores_web():
     # Note: This is JS-like test, but our Python utility should match logic

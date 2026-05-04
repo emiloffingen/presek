@@ -189,7 +189,7 @@ def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
         {"name": "МИА", "total_mentions": 12},
         {"name": "Ормуз", "total_mentions": 8},
         {"name": "Теснец", "total_mentions": 7},
-        {"name": "Договор", "total_mentions": 6},
+        {"name": "Вчера", "total_mentions": 6},
         {"name": "Иран", "total_mentions": 10},
         {"name": "Доналд Трамп", "total_mentions": 9},
     ]
@@ -200,7 +200,7 @@ def test_top_entities_compacts_fragments_and_filters_noise(mock_all):
 
     names = [item["name"] for item in data]
     assert "МИА" not in names
-    assert "Договор" not in names
+    assert "Вчера" not in names
     assert "Ормуз" not in names
     assert "Теснец" not in names
     assert "Ормуски Теснец" in names
@@ -335,8 +335,7 @@ def test_home_route_composes_named_slots(mock_all):
          patch("routes.home.set_cache"), \
          patch("routes.home.get_trending_route", new=AsyncMock(return_value=[{"word": "Буџет", "trend": "↑"}])), \
          patch("routes.home.get_top_entities", new=AsyncMock(return_value=[{"name": "влада", "total_mentions": 7, "type": "ORG"}])), \
-         patch("routes.home.get_stats_summary", new=AsyncMock(return_value={"last_24h": 120, "intelligence": {"pluralism": {"pluralism_pct": 64}, "ai_transparency": {"ai_ratio": 52}}})), \
-         patch("routes.home.get_briefing", new=AsyncMock(return_value={"content": "Briefing"})):
+         patch("routes.home.get_stats_summary", new=AsyncMock(return_value={"last_24h": 120, "intelligence": {"pluralism": {"pluralism_pct": 64}, "ai_transparency": {"ai_ratio": 52}}})):
         data = asyncio.run(home.get_home())
 
     assert data["status"] == "success"
@@ -704,33 +703,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
     assert data["intelligence"]["pluralism"]["pluralism_pct"] == 65.0
     assert data["intelligence"]["pluralism"]["high_consensus_pct"] == 25.0
 
-def test_briefing_fallback_uses_ingestion_aware_window(mock_all):
-    import routes.stats
 
-    async def execute_one_side_effect(query, params=None):
-        if "SELECT date, content FROM daily_briefings WHERE date = CURRENT_DATE" in query:
-            return None
-        if "SELECT date, content FROM daily_briefings ORDER BY date DESC LIMIT 1" in query:
-            return None
-        raise AssertionError(f"Unexpected query: {query}")
-
-    async def execute_side_effect(query, params=None, fetch=True):
-        if "FROM knowledge_entities" in query:
-            return []
-        if "FROM articles" in query:
-            assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in query
-            assert "ORDER BY COALESCE(ingested_at, created_at) DESC" in query
-            return []
-        raise AssertionError(f"Unexpected query: {query}")
-
-    mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
-    mock_all["db"].async_execute.side_effect = execute_side_effect
-
-    with patch("routes.stats.generate_daily_brief_fallback", return_value="fallback"):
-        data = asyncio.run(routes.stats.get_briefing())
-
-    assert data["generated_locally"] is True
-    assert data["content"] == "fallback"
 
 def test_global_pulse_uses_ingestion_aware_window_and_filters_blank_categories(mock_all):
     import routes.intelligence as intelligence

@@ -15,6 +15,7 @@ class TestBackfillCoverArtTask:
 
         with patch("tasks.intelligence.db") as mock_db, \
              patch("tasks.intelligence.redis_client") as mock_redis, \
+             patch("tasks.intelligence.get_celery_queue_depth", return_value=0), \
              patch.object(tasks.backfill_cover_art_single_task, "apply_async") as mock_apply:
             mock_db.execute.return_value = rows
             mock_redis.set.return_value = True

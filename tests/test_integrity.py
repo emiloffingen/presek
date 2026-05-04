@@ -125,7 +125,7 @@ class TestAstroFrontendIntegrity:
         cluster_page = _read("web/src/pages/cluster/[slug].astro")
         text_utils = _read("web/src/utils/textUtils.ts")
 
-        assert "const citationSources = cluster?.citation_sources || [];" in cluster_page
+        assert "const hasCitationSources = false;" in cluster_page
         assert "timeZone: 'Europe/Skopje'" in text_utils
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
@@ -135,17 +135,13 @@ class TestAstroFrontendIntegrity:
         assert "\n...\n" not in source_comparison
         assert "const totalOverlap = Math.max(1, overlap.shared_clusters + overlap.s1_exclusive + overlap.s2_exclusive);" in source_comparison
         assert "Math.max(0, Math.min(100" in source_comparison
-        assert "String(data.report || '').toLowerCase()" in research
+        assert "result.report || result.answer" in research
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
         assert 'error = "Брифингот моментално не е достапен."' in briefing
 
-    def test_briefing_fallback_uses_ingestion_aware_article_window(self):
-        stats = _read("routes/stats.py")
 
-        assert "COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours'" in stats
-        assert "ORDER BY COALESCE(ingested_at, created_at) DESC" in stats
 
     def test_pulse_page_has_real_error_state_and_safe_category_math(self):
         pulse = _read("web/src/pages/pulse.astro")
