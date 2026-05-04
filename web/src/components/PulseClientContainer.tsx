@@ -67,10 +67,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     const topicPulse = globalPulse?.by_topic_sentiment ?? [];
     const pulseLeaders = pulseData.slice(0, 15);
 
-    function getSentimentLabel(score: number) {
-        if (score > 0.2) return { label: 'Позитивен', color: 'text-green-600' };
-        if (score < -0.2) return { label: 'Критичен', color: 'text-nyt-red' };
-        return { label: 'Неутрален', color: 'text-muted-foreground' };
+    function getSentimentIcon(score: number) {
+        if (score > 0.2) return { icon: <Activity size={14} />, color: 'text-green-600', title: 'Позитивен' };
+        if (score < -0.2) return { icon: <Activity size={14} />, color: 'text-nyt-red', title: 'Критичен' };
+        return { icon: <Activity size={14} />, color: 'text-muted-foreground', title: 'Неутрален' };
     }
 
     function formatStat(val: number) {
@@ -342,7 +342,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                                 <span>{row.cluster_count} теми</span>
                                             </div>
                                         </td>
-                                        <td><span className={`tone-label ${getSentimentLabel(row.avg_sentiment).color}`}>{getSentimentLabel(row.avg_sentiment).label}</span></td>
+                                        <td><span className={`tone-label ${getSentimentIcon(row.avg_sentiment).color}`} title={getSentimentIcon(row.avg_sentiment).title}>{getSentimentIcon(row.avg_sentiment).icon}</span></td>
                                         <td className="text-right">
                                             <div className="stat-row">
                                                 <div className="stat-bar"><div style={{ width: `${row.avg_objectivity * 100}%` }}></div></div>
