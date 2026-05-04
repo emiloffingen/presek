@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: presek
+      POSTGRES_USER: presek
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+    networks:
+      - presek-net
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - presek-net
+
+  api:
+    build: .
+    command: python api_fast.py
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD:-password}@db:5432/presek
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - presek-net
+
+  worker:
+    build: .
+    command: celery -A celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD:-password}@db:5432/presek
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - presek-net
+
+networks:
+  presek-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
