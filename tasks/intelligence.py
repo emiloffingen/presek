@@ -36,6 +36,24 @@ from tasks.utils import (
     log, redis_client, get_celery_queue_depth, acquire_task_lock, release_task_lock
 )
 
+@celery_app.task
+def summarize_articles_batch_task(article_ids):
+    """Batch processes AI summarization for articles."""
+    for article_id in article_ids:
+        summarize_article_task(article_id)
+
+@celery_app.task
+def detect_global_stories_batch_task(article_ids):
+    """Batch processes global story detection for articles."""
+    for article_id in article_ids:
+        detect_global_story_task(article_id)
+
+@celery_app.task
+def standardize_article_styles_batch_task(article_ids):
+    """Batch processes style standardization for articles."""
+    for article_id in article_ids:
+        standardize_article_style_task(article_id)
+
 @celery_app.task(rate_limit='50/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def summarize_article_task(article_id, final_title=None):
     """Refines article content using AI summarization."""

@@ -724,16 +724,13 @@ async def ingest_all_sources_async():
             if inserted_ids:
                 from utils import publish_event
                 publish_event("updates", {"type": "new_articles_batch", "count": len(inserted_ids), "time": cycle_now})
-                
-                from tasks.ingestion_task import crawl_article_task
-                from tasks.intelligence import summarize_article_task, standardize_article_style_task, detect_global_story_task
 
                 inserted_data = db.execute(
                     "SELECT a.id, a.title, a.description, a.link, a.country, s.credibility, a.source, a.cluster_id FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = ANY(%s)",
                     (inserted_ids,)
                 )
+                # Broadcast each non-junk article to the Live feed individually
                 for art in inserted_data:
-                    # Broadcast each non-junk article to the Live feed individually
                     publish_event("updates", {
                         "type": "new_article",
                         "title": art["title"],
@@ -742,17 +739,27 @@ async def ingest_all_sources_async():
                         "time": cycle_now
                     })
 
-                    # Always crawl for full content and better images
+                from tasks.ingestion_task import crawl_article_task
+                from tasks.intelligence import (
+                    summarize_articles_batch_task, 
+                    standardize_article_styles_batch_task, 
+                    detect_global_stories_batch_task
+                )
+
+                # 1. Batch Crawl
+                for art in inserted_data:
                     crawl_article_task.delay(art["id"], art["link"])
 
-                    # Originality check (Gemma)
-                    detect_global_story_task.delay(art["id"])
+                # 2. Batch Global Story Detection
+                detect_global_stories_batch_task.delay(inserted_ids)
 
-                    # Style normalization for lower credibility sources (noise reduction)
-                    if art.get("credibility", 1.5) < 1.2:
-                        standardize_article_style_task.delay(art["id"])
+                # 3. Batch Style Normalization
+                credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
+                if credibility_ids:
+                    standardize_article_styles_batch_task.delay(credibility_ids)
 
-                    summarize_article_task.delay(art["id"], art["title"])
+                # 4. Batch Summarization
+                summarize_articles_batch_task.delay(inserted_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

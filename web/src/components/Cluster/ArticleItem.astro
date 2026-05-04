@@ -18,12 +18,7 @@ const { article: a } = Astro.props;
 			
             {a.quality.isObjective && (
                 <span class="quality-badge badge-obj" title="Висок степен на фактичко известување">
-                    <ShieldCheck size={10} /> ОБЈЕКТИВНО
-                </span>
-            )}
-            {a.quality.isSensational && (
-                <span class="quality-badge badge-sens" title="Емотивно нагласен или преувеличен речник">
-                    <TriangleAlert size={10} /> СЕНЗАЦИЈА
+                    <ShieldCheck size={10} />
                 </span>
             )}
 		</div>

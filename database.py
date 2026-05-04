@@ -1,4 +1,5 @@
 import psycopg2
+import asyncio
 from psycopg2.extras import DictCursor
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg_pool import AsyncConnectionPool
@@ -117,12 +118,13 @@ def _int_env(name: str, default: int) -> int:
 
 
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
-DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 20))
+DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 5))
 
 class AsyncDatabaseManager:
     """Modern Async Database Layer using psycopg 3."""
     _instance = None
     _pool = None
+    _lock = asyncio.Lock()
 
     def __new__(cls):
         if cls._instance is None:
@@ -140,20 +142,21 @@ class AsyncDatabaseManager:
                 pass
 
     async def _ensure_pool(self):
-        if self._pool is None:
-            self._pool = AsyncConnectionPool(
-                conninfo=DATABASE_URL,
-                min_size=DB_POOL_MINCONN,
-                max_size=DB_POOL_MAXCONN,
-                open=False,
-                kwargs={
-                    "row_factory": dict_row,
-                    "connect_timeout": 5,
-                    "options": DB_SESSION_OPTIONS
-                }
-            )
-            await self._pool.open()
-            log.info(f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
+        async with self._lock:
+            if self._pool is None:
+                self._pool = AsyncConnectionPool(
+                    conninfo=DATABASE_URL,
+                    min_size=DB_POOL_MINCONN,
+                    max_size=DB_POOL_MAXCONN,
+                    open=False,
+                    kwargs={
+                        "row_factory": dict_row,
+                        "connect_timeout": 5,
+                        "options": DB_SESSION_OPTIONS
+                    }
+                )
+                await self._pool.open()
+                log.info(f"Presek {APP_VERSION_LABEL}: Async database pool initialized (min={DB_POOL_MINCONN}, max={DB_POOL_MAXCONN}).")
 
     async def execute(self, sql, params=None, fetch=True):
         await self._ensure_pool()

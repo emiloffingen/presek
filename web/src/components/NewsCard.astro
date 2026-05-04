@@ -129,45 +129,35 @@ function getTimeStr(dateStr: string) {
 				</span>
 
 				{main.is_global && (
-				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-500">
-					<Globe size={11} /> МЕЃУНАРОДЕН КОНТЕКСТ
+				<span class="flex items-center text-emerald-800 dark:text-emerald-500" title="Меѓународен контекст">
+					<Globe size={13} />
 				</span>
 				)}
 
                 {/* INTELLIGENCE BADGES */}
-				{main.coverage_balance?.label && (
-				<span class="intel-badge badge-balanced" title="Оваа сторија вклучува разновидни медиумски перспективи и балансирано известување.">
-					<CheckCircle2 size={11} /> БАЛАНСИРАНО
-				</span>
-				)}
+
 
                 {hasSynthesis && (
-                    <span class="intel-badge badge-research" title="Достапна е длабинска синтеза и анализа на овој настан од вештачка интелигенција.">
-                        <Sparkles size={11} /> ИСТРАЖУВАЊЕ
+                    <span class="intel-badge badge-research" title="Достапна е длабинска синтеза и анализа од вештачка интелигенција.">
+                        <Sparkles size={13} />
                     </span>
                 )}
 
                 {cluster.pulse_score && cluster.pulse_score >= 80 && (
                     <span class="intel-badge badge-pulse" title="Висока медиумска динамика: приказната е во центарот на вниманието.">
-                        <Zap size={11} fill="currentColor" /> ВИСОК ПУЛС
+                        <Zap size={13} fill="currentColor" />
                     </span>
                 )}
 
 				{cluster.is_breaking && (
-				<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-500">
-					<span class="relative flex h-2 w-2">
+				<span class="flex items-center text-red-600 dark:text-red-500" title="Ударна вест">
+					<span class="relative flex h-2.5 w-2.5">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
 					</span>
-					ВО ЖИВО
 				</span>
 			)}
 
-			{cluster.articles.some(a => a.is_fact_check) && (
-				<span class="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/50 flex items-center gap-1" title="Системска верификација на факти">
-					ФАКТ-ЧЕК
-				</span>
-			)}
 
 			{showSignificanceLabel && !cluster.is_breaking && (
 				<span class="significance-dot-label" title={significanceLabel}>
