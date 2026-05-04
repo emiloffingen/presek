@@ -35,16 +35,6 @@ const { pulseScore, keyFacts, analystEntities } = Astro.props;
 		))}
 	</div>
 	
-	{analystEntities && analystEntities.length > 0 && (
-		<div class="analyst-entities mt-10 pt-6 border-t border-border/40">
-			<span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-4">КЛУЧНИ СУБЈЕКТИ:</span>
-			<div class="flex flex-wrap gap-2 mt-3">
-				{analystEntities.map((entity: string) => (
-					<span class="px-2 py-1 bg-background border border-border/60 text-[11px] font-bold rounded-sm shadow-sm">{entity}</span>
-				))}
-			</div>
-		</div>
-	)}
 </section>
 
 <style>
