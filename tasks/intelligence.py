@@ -298,8 +298,14 @@ def detect_global_story_task(article_id):
     except Exception as e:
         log.warning(f"[originality] Detection failed for {article_id}: {e}")
 
-@celery_app.task(rate_limit='15/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+@celery_app.task(queue='fast-track', rate_limit='60/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+def synthesize_urgent_task(cluster_id, content=None):
+    """Priority synthesis for new clusters."""
+    return synthesize_cluster_task(cluster_id, content, fast_mode=True)
+
+@celery_app.task(rate_limit='60/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
+
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     article_rows = _load_cluster_articles_for_synthesis(cluster_id)
     citation_sources = _build_citation_sources(article_rows)

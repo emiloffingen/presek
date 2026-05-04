@@ -137,14 +137,13 @@ celery_app.conf.update(
     task_annotations={
         'tasks.ingestion_task.crawl_article_task': {'rate_limit': '100/m'},
         'tasks.intelligence.generate_embeddings_task': {'rate_limit': '30/m'},
-        'tasks.intelligence.synthesize_cluster_task': {'rate_limit': '10/m'},
     },
     # Worker prefetch multiplier - reduce from default 4 to 1 to prevent memory over-commitment
     worker_prefetch_multiplier=1,
     # Disable result persistence for tasks that don't need it (reduces memory/RPC overhead)
     result_expires=3600,  # Results expire after 1 hour
     # Concurrent task execution limits per worker
-    worker_concurrency=2,  # Reduced from default 4 to prevent resource exhaustion
+    worker_concurrency=4,  # Increased from 2 to allow more parallel processing
 )
 
 # Setup logging for Celery workers

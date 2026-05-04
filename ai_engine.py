@@ -497,9 +497,9 @@ def auto_summarize_top_clusters():
             lines = "\n".join(f"- [{a.get('source', 'Извор')}]: {a.get('title', '')}" for a in arts[:10])
             
             if existing_at is None:
-                # Stage 1: Fast Draft (Immediate)
-                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": True})
-                # Stage 2: Deep Synthesis (Scheduled 2 mins later)
+                # Stage 1: Fast Draft (Immediate - Priority)
+                tasks_mod.synthesize_urgent_task.delay(cid, lines)
+                # Stage 2: Deep Synthesis (Scheduled 2 mins later - Routine)
                 tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False}, countdown=120)
             elif local_fallback_synthesis:
                 tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False})
