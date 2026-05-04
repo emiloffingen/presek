@@ -477,19 +477,6 @@ const articleSchema = cluster ? {
 									</div>
 								</div>
 							)}
-
-							{cluster.tags && cluster.tags.length > 0 && (
-								<div class="sidebar-module">
-									<h4 class="sidebar-label">КЛУЧНИ ПОИМИ</h4>
-									<div class="flex flex-wrap gap-2 mt-4">
-											{cluster.tags.filter((t: string) => !cluster.analyst_entities?.includes(t)).map((tag: string) => (
-											<a href={`/?q=${encodeURIComponent(tag)}`} class="tag-chip">
-                                                {deShout(tag)}
-                                            </a>
-										))}
-									</div>
-								</div>
-							)}
 						</div>
 					</aside>
 				</div>
