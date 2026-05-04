@@ -38,7 +38,6 @@ SENSITIVE_ENV_KEYS = (
     "CLOUDFLARE_API_TOKEN",
     "R2_SECRET_ACCESS_KEY",
     "POLLINATIONS_API_KEY",
-    "GOOGLE_API_KEY",
     "VAPID_PRIVATE_KEY",
     "CF_AI_GATEWAY_TOKEN",
 )
@@ -117,12 +116,12 @@ PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 # ── Additional AI Providers (Gemini) ───────────────────────────
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_FALLBACK_MODELS = [
     model.strip()
     for model in os.environ.get(
         "GEMINI_FALLBACK_MODELS",
-        "gemini-2.5-flash,gemini-flash-lite-latest,gemini-3.1-flash-lite-preview",
+        "gemini-2.5-flash,gemini-2.5-pro",
     ).split(",")
     if model.strip()
 ]
@@ -258,10 +257,10 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# Use paid Gemini as primary, then Mistral, then Local fallback
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "mistral", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "mistral", "local"]
-PROVIDER_FALLBACK_ORDER = ["gemini", "mistral", "local"] # default
+# Use Mistral, then Local fallback
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral", "local"]
+PROVIDER_FALLBACK_ORDER = ["mistral", "local"] # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

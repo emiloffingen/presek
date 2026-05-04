@@ -10,17 +10,20 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import AsyncGenerator
 
-from config import (
-    GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
-    PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
-)
+# from config import (
+#     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
+#     PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
+# )
+
+from config import *
+
 
 from prometheus_client import Histogram, Counter
 
 log = logging.getLogger("presek")
-GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 from utils import redis_client, record_runtime_event
+
 from nlp import summarize_locally, synthesize_locally
 
 # --- Prometheus Metrics ---
@@ -126,98 +129,6 @@ class LocalProvider(AIProvider):
 class MistralProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, api_url: str, model: str):
         super().__init__("mistral", api_key, api_url, model)
-class GeminiProvider(AIProvider):
-    def __init__(self):
-        self.client = None
-        self.daily_limit = 2000000 # 2 million tokens safety budget (~$0.20)
-        self.models = []
-        for model in [GEMINI_MODEL, *GEMINI_FALLBACK_MODELS]:
-            if model and model not in self.models:
-                self.models.append(model)
-        if GEMINI_API_KEY:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=GEMINI_API_KEY)
-            except Exception as e:
-                log.error(f"[ai/gemini] SDK init failed: {e}")
-
-    def _get_usage_key(self):
-        return f"ai:gemini:usage:{datetime.date.today().isoformat()}"
-
-    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
-        if not self.client:
-            return None
-        
-        # 1. Check Circuit Breaker
-        try:
-            usage = int(redis_client.get(self._get_usage_key()) or 0)
-            if usage > self.daily_limit:
-                log.warning(f"[ai/gemini] Budget exceeded ({usage} tokens). Circuit breaker active.")
-                return None
-        except Exception as e:
-            log.error(f"[ai/gemini] Budget check error: {e}")
-
-        # Modern SDK syntax for 2026
-        config = {
-            "system_instruction": system,
-            "max_output_tokens": max_tokens,
-            "temperature": 0.2,
-        }
-        if json_mode:
-            config["response_mime_type"] = "application/json"
-
-        for model in self.models:
-            cooldown_key = f"ai:gemini:model_cooldown:{model}"
-            try:
-                if redis_client.get(cooldown_key):
-                    log.info(f"[ai/gemini] Skipping {model}; temporary cooldown active.")
-                    continue
-            except Exception:
-                pass
-            for attempt in range(2):
-                try:
-                    response = self.client.models.generate_content(
-                        model=model,
-                        contents=prompt,
-                        config=config
-                    )
-                    text = response.text
-
-                    # 2. Track Usage
-                    try:
-                        metadata = getattr(response, 'usage_metadata', None)
-                        tokens_used = getattr(metadata, 'total_token_count', None) or (len(prompt) + len(text)) // 2
-                        redis_client.incrby(self._get_usage_key(), int(tokens_used))
-                        redis_client.expire(self._get_usage_key(), 172800) # 48h expiry
-                    except Exception as usage_err:
-                        log.debug(f"Usage tracking failed: {usage_err}")
-
-                    if model != GEMINI_MODEL:
-                        try:
-                            record_runtime_event("ai_gemini_fallback", task_type=task_type, model=model)
-                        except Exception as event_err:
-                            log.debug(f"Gemini fallback telemetry failed: {event_err}")
-                    return text
-                except Exception as e:
-                    message = str(e)
-                    transient = any(code in message for code in ("429", "500", "502", "503", "504", "UNAVAILABLE", "RESOURCE_EXHAUSTED"))
-                    log.warning(f"[ai/gemini] Call failed for {model}: {e}")
-                    if transient:
-                        try:
-                            redis_client.set(cooldown_key, 1, ex=300)
-                        except Exception:
-                            pass
-                    if transient and attempt == 0:
-                        time.sleep(1.5)
-                        continue
-                    break
-        return None
-
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
-        # For simplicity, we use non-streaming for now as Gemini SDK 
-        # is often used synchronously in these legacy wrappers
-        res = self.call(prompt, system, max_tokens, False)
-        if res: yield res
 
 class NvidiaProvider(AIProvider):
     def __init__(self, api_key: str, api_url: str, model: str):
@@ -263,7 +174,6 @@ class NvidiaProvider(AIProvider):
         if res: yield res
 
 PROVIDERS = {
-    "gemini": GeminiProvider(),
     "nvidia": NvidiaProvider(
         # api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_key=None,
