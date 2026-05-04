@@ -7,7 +7,7 @@ from utils import cached_response, set_cache
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import get_news
-from .stats import get_briefing, get_stats_summary
+from .stats import get_stats_summary
 from .system import get_trending_route
 
 log = logging.getLogger("presek")
@@ -25,7 +25,6 @@ class HomeResponse(BaseModel):
     latest_wire: List[Any] = Field(default_factory=list)
     global_: List[Any] = Field(default_factory=list, alias="global")
     trending: List[Any] = Field(default_factory=list)
-    briefing: Dict[str, Any] = Field(default_factory=dict)
     stats: Dict[str, Any] = Field(default_factory=dict)
     focus_entities: List[Any] = Field(default_factory=list)
     excluded_cluster_ids: List[str] = Field(default_factory=list)
@@ -280,7 +279,6 @@ async def get_home():
         trending = await get_trending_route()
         top_entities = await get_top_entities(limit=12)
         stats = await get_stats_summary()
-        briefing = await get_briefing()
 
         if not isinstance(news_result, dict):
             raise RuntimeError("Homepage news payload unavailable")
@@ -346,7 +344,6 @@ async def get_home():
             "latest_wire": _decorate_articles_display(latest_wire),
             "global": _decorate_clusters_display(global_clusters),
             "stats": stats,
-            "briefing": briefing,
             "trending": trending if isinstance(trending, list) else [],
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
