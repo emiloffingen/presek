@@ -537,7 +537,7 @@ async def get_global_pulse(category: Optional[str] = None):
         """)
 
     async def get_topic_sentiment():
-        return await db.async_execute(f"""
+        return await db.async_execute("""
             SELECT 
                 m.topics,
                 AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,

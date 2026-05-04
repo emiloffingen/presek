@@ -1,6 +1,4 @@
 import os
-import json
-from datetime import datetime, timezone
 import asyncio
 import smtplib
 import ssl

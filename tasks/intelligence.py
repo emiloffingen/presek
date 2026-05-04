@@ -33,7 +33,7 @@ from api_helpers import normalize_summary_text, normalize_perspectives, normaliz
 from utils import get_dominant_color
 from tasks.utils import (
     invalidate_public_data_caches, invalidate_cluster_caches, record_runtime_event, 
-    log, redis_client, get_celery_queue_depth, acquire_task_lock, release_task_lock
+    log, redis_client, get_celery_queue_depth
 )
 
 @celery_app.task
@@ -345,7 +345,6 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
 
     try:
-        from tasks.utils import record_task_event
         legacy_summary = str(content or "").strip()
         prompt_parts = []
         if fast_mode:
@@ -738,7 +737,6 @@ def refresh_cluster_centroid_task(cluster_id):
 def extract_entities_task(hours=24):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
-        from tasks.utils import record_task_event
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
         rows = db.execute("""
             SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
@@ -773,7 +771,6 @@ def extract_entities_task(hours=24):
 def classify_topics_task():
     """Classify default 'Вести' clusters using local rule-based detection."""
     try:
-        from tasks.utils import record_task_event
         # Increased limit as local classification is nearly free
         rows = db.execute("SELECT cluster_id, title FROM articles WHERE topic = 'Вести' LIMIT 200")
         for r in rows:
@@ -790,7 +787,6 @@ def classify_topics_task():
 def recategorize_clusters_task():
     """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
     try:
-        from tasks.utils import record_task_event
         rows = db.execute("SELECT cluster_id, title, description FROM articles WHERE category = 'Македонија' LIMIT 20")
         for r in rows:
             # Rule-based first (Free)
@@ -803,7 +799,6 @@ def recategorize_clusters_task():
         utils.record_task_event("recategorize_clusters", "error", "clusters:recent")
         log.error(f"[tasks] Recategorization failed: {e}")
     else:
-        from tasks.utils import record_task_event
         invalidate_public_data_caches()
         from tasks import utils
         utils.record_task_event("recategorize_clusters", "ok", "clusters:recent")
@@ -812,7 +807,6 @@ def recategorize_clusters_task():
 def generate_cluster_metadata_task(hours=24):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
-        from tasks.utils import record_task_event
 
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
         rows = db.execute("""
@@ -913,7 +907,6 @@ def generate_cluster_metadata_task(hours=24):
 def recluster_recent_articles_task(hours=24, limit=800):
     """Re-assign cluster IDs for recent articles using the current clustering logic."""
     try:
-        from tasks.utils import record_task_event
         import clustering
 
         hours = max(1, int(hours or 24))

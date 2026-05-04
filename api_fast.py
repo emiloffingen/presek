@@ -41,12 +41,7 @@ app = FastAPI(
 )
 from health import _probe_database, _probe_redis
 from api_helpers import (
-    normalize_perspectives as _parse_perspectives_blob,
-    default_related_questions as _default_related_questions,
-    related_questions_from_context as _related_questions_from_context,
-    text_terms as _text_terms,
     rank_cluster_citations as _rank_cluster_citations,
-    normalize_server_delivery_subscription as _normalize_server_delivery_subscription,
 )
 
 # Middleware
@@ -157,7 +152,7 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
 async def health_check():
     """Comprehensive health check for smoke tests and monitoring."""
     import health
-    from health import _probe_database, _probe_redis, _freshness_payload, _start_time
+    from health import _freshness_payload, _start_time
     
     db_status = _probe_database()
     redis_status = _probe_redis()

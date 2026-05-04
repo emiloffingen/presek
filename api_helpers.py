@@ -10,7 +10,7 @@ import re
 import socket
 import ipaddress
 import logging
-from typing import Optional, List
+from typing import Optional
 
 log = logging.getLogger("presek.api.helpers")
 

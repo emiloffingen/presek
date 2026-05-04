@@ -1,5 +1,4 @@
 import logging
-import datetime
 import asyncio
 import re
 from pydantic import BaseModel
@@ -17,7 +16,6 @@ from utils import (
 )
 from health import get_source_statuses, reset_source_policy
 from config import BREAKING_SCORE_THRESHOLD, SOURCE_CREDIBILITY, DEFAULT_CREDIBILITY
-from nlp import generate_daily_brief_fallback
 from .common import _source_admin_authorized, _error_json
 from .security import validate_date, validate_string_param, validate_email
 
