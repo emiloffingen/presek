@@ -265,7 +265,8 @@ class NvidiaProvider(AIProvider):
 PROVIDERS = {
     "gemini": GeminiProvider(),
     "nvidia": NvidiaProvider(
-        api_key=os.environ.get("NVIDIA_API_KEY", ""),
+        # api_key=os.environ.get("NVIDIA_API_KEY", ""),
+        api_key=None,
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
     ),
