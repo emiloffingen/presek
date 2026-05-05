@@ -9,12 +9,15 @@ import { apiBaseUrl } from '../lib/apiBase';
 import { CalendarDays, ChevronRight, Hash, Building2 } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+const q = Astro.url.searchParams.get('q') || '';
 const source = Astro.url.searchParams.get('source') || '';
 const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
 let archive = { clusters: [], total: 0, sources: 0, date, page, page_size: 50, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
+let briefingData = { briefing: null };
+let onThisDay = { on_this_day: null };
 let error = null;
 
 try {
@@ -22,11 +25,21 @@ try {
   archiveUrl.searchParams.set('date', date);
   archiveUrl.searchParams.set('page', String(page));
   archiveUrl.searchParams.set('page_size', '50');
+  if (q) archiveUrl.searchParams.set('q', q);
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
-  const res = await fetch(archiveUrl);
+  
+  const [res, briefRes, otdRes] = await Promise.all([
+    fetch(archiveUrl),
+    fetch(`${API_URL}/archive/daily-briefing?date=${date}`),
+    fetch(`${API_URL}/archive/on-this-day?date=${date}`)
+  ]);
+
   if (res.ok) archive = await res.json();
-  else {
+  if (briefRes.ok) briefingData = await briefRes.json();
+  if (otdRes.ok) onThisDay = await otdRes.json();
+
+  if (!res.ok) {
     error = 'Архивата моментално не е достапна.';
     Astro.response.status = 500;
   }
@@ -35,10 +48,11 @@ try {
   Astro.response.status = 500;
 }
 
-const buildFilterHref = (kind: 'source' | 'topic', value: string) => {
+const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   const params = new URLSearchParams({ date });
-  if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); }
-  else { if (source) params.set('source', source); if (value) params.set('topic', value); }
+  if (kind === 'source') { if (value) params.set('source', value); if (topic) params.set('topic', topic); if (q) params.set('q', q); }
+  else if (kind === 'topic') { if (source) params.set('source', source); if (value) params.set('topic', value); if (q) params.set('q', q); }
+  else { if (source) params.set('source', source); if (topic) params.set('topic', topic); if (value) params.set('q', value); }
   return `/archive?${params.toString()}`;
 };
 
@@ -52,6 +66,13 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     <header class="editorial-masthead mb-12">
         <div class="masthead-top">
             <span class="masthead-kicker">МЕДИУМСКА МЕМОРИЈА</span>
+            <div class="masthead-data-bar-compact ml-auto hidden md:flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter opacity-60">
+                <span>{formattedDisplayDate}</span>
+                <span class="dot">·</span>
+                <span>{archive.total_clusters} теми</span>
+                <span class="dot">·</span>
+                <span>{archive.sources} медиуми</span>
+            </div>
         </div>
         <div class="masthead-main">
             <h1 class="masthead-title">Архива на <span>Изданија</span></h1>
@@ -62,11 +83,14 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
             </div>
         </div>
 
-        <p class="masthead-intro mt-6 font-nyt-body text-[1.15rem] leading-relaxed text-secondary-foreground max-w-[42rem]">
-            Пребарувајте низ историјата на македонските медиуми. Секој настан е трајно зачуван и анализиран од нашиот систем за длабока интелигенција.
-        </p>
+        {briefingData.briefing && (
+            <div class="daily-briefing-box mt-6 py-4 border-y border-foreground/10 flex items-start gap-3">
+                <Sparkles size={16} className="text-nyt-accent shrink-0 mt-1" />
+                <p class="font-nyt-body text-[1.05rem] leading-relaxed italic opacity-80" set:html={sanitizeHtml(briefingData.briefing)}></p>
+            </div>
+        )}
 
-        <div class="archive-controls mt-10">
+        <div class="archive-controls mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div class="flex items-center gap-4 flex-wrap">
                 <form method="get" class="date-form">
                     <div class="date-input-wrap">
@@ -96,6 +120,15 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
                 <p class="date-display-label ml-4">{formattedDisplayDate}</p>
             </div>
+
+            <form method="get" class="search-form-archive">
+                <input type="hidden" name="date" value={date} />
+                <div class="search-input-wrap-archive">
+                    <Hash size={16} />
+                    <input type="text" name="q" value={q} placeholder="Пребарај во овој ден..." />
+                    <button type="submit" class="hidden">Search</button>
+                </div>
+            </form>
         </div>
     </header>
 
@@ -108,10 +141,11 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
     <div class="broadsheet-grid">
         <section class="broadsheet-main">
-            {source || topic ? (
+            {q || source || topic ? (
                 <div class="filter-status-bar mb-8">
                     <span class="label">АКТИВЕН ФИЛТЕР:</span>
                     <div class="chips">
+                        {q && <span class="chip">🔍 {q} <a href={buildFilterHref('q', '')}>×</a></span>}
                         {source && <span class="chip">🏢 {source} <a href={buildFilterHref('source', '')}>×</a></span>}
                         {topic && <span class="chip"># {topic} <a href={buildFilterHref('topic', '')}>×</a></span>}
                     </div>
@@ -123,7 +157,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
                 {error ? (
                     <div class="empty-state"><p>{error}</p></div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} source={source} topic={topic} />
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} />
                 ) : (
                     <div class="empty-state">
                         <h2>Нема пронајдени вести.</h2>
@@ -139,6 +173,22 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
                     Врати се денес
                 </a>
             </div>
+
+            {onThisDay && onThisDay.cluster_id && (
+                <div class="rail-block rail-block-featured mb-10">
+                    <p class="rail-kicker">На овој ден</p>
+                    <h3 class="rail-title">ПРЕД {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'ГОДИНА' : 'ГОДИНИ'}</h3>
+                    <div class="otd-card mt-4">
+                        {onThisDay.image && (
+                            <img src={onThisDay.image} alt="" class="w-full aspect-[3/2] object-cover mb-3" />
+                        )}
+                        <a href={`/cluster/${onThisDay.cluster_id}`} class="block group">
+                            <h4 class="font-serif font-black text-lg leading-tight group-hover:underline">{onThisDay.title}</h4>
+                        </a>
+                        <p class="font-nyt-body text-sm mt-2 opacity-70 line-clamp-3">{onThisDay.summary}</p>
+                    </div>
+                </div>
+            )}
 
             <div class="rail-block rail-block-featured">
                 <p class="rail-kicker">Индекс</p>
@@ -159,7 +209,10 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
                 <div class="rail-directory">
                     {archive.top_sources?.slice(0, 12).map((item: any) => (
                         <a href={buildFilterHref('source', item.source)} class="dir-link">
-                            <span class="name">{item.source}</span>
+                            <span class="name flex items-center gap-2">
+                                <Building2 size={12} className="opacity-40" />
+                                {item.source}
+                            </span>
                             <span class="val">{item.n}</span>
                         </a>
                     ))}
@@ -174,10 +227,11 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
 <style>
     /* ── Masthead ────────────────────────────────────── */
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; }
+    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; position: relative; }
+    .masthead-top { display: flex; align-items: center; justify-content: space-between; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; italic: true; }
+    .masthead-title span { font-weight: 400; font-style: italic; color: var(--nyt-accent); }
     
     .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem; }
     .masthead-data-bar { display: flex; gap: 2rem; }
@@ -185,8 +239,12 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     .m-stat strong { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; }
 
     .date-form { display: flex; align-items: center; gap: 1.5rem; }
-    .date-input-wrap { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); }
-    .date-input-wrap input { background: transparent; border: 0; font-family: var(--font-serif); font-size: 1rem; font-weight: 800; outline: none; }
+    .date-input-wrap, .search-input-wrap-archive { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); transition: all 0.2s; }
+    .date-input-wrap:focus-within, .search-input-wrap-archive:focus-within { border-color: var(--nyt-accent); box-shadow: 0 0 0 1px var(--nyt-accent); }
+    .date-input-wrap input, .search-input-wrap-archive input { background: transparent; border: 0; font-family: var(--font-serif); font-size: 1rem; font-weight: 800; outline: none; width: 100%; }
+    
+    .search-form-archive { width: 100%; max-width: 400px; }
+    
     /* ── Date Navigation ────────────────────────────── */
     .nav-step-btn {
         padding: 0.5rem 0.8rem;
@@ -225,7 +283,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         background: var(--nyt-accent);
         transform: translateY(-2px);
     }
-    .date-display-label { font-family: var(--font-serif); font-size: clamp(1rem, 1.25rem, 1.5rem); font-weight: 900; italic: true; }
+    .date-display-label { font-family: var(--font-serif); font-size: clamp(1rem, 1.25rem, 1.5rem); font-weight: 900; font-style: italic; }
 
     /* ── Heatmap Toggle ──────────────────────────────── */
     .archive-heatmap-toggle { border: 1px solid var(--border); background: var(--secondary); }
@@ -250,7 +308,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 
     /* ── Rail ────────────────────────────────────────── */
     .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-featured { padding: 1.5rem; background: var(--secondary); }
+    .rail-block-featured { padding: 1.5rem; background: var(--secondary); border: 1px solid var(--border); }
     .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
     .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
     .rail-directory { display: flex; flex-direction: column; }

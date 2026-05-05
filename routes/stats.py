@@ -112,10 +112,11 @@ async def get_archive_heatmap():
     return {"status": "success", "data": fmt}
 
 @router.get("/archive")
-async def get_archive(date: str = Query(...), source: str = "", topic: str = "", page: int = 0, page_size: int = 50):
+async def get_archive(date: str = Query(...), q: str = "", source: str = "", topic: str = "", page: int = 0, page_size: int = 50):
     try:
         # Validate inputs
         validate_date(date)
+        q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
         source = validate_string_param(source, "source", max_length=200, allow_empty=True)
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
         
@@ -125,22 +126,50 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
             raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
         
         # Build parameterized query safely
-        base_sql = "SELECT * FROM articles WHERE created_at::date = %s"
-        params = [date]
+        if q:
+            base_sql = """
+                SELECT * FROM articles 
+                WHERE created_at::date = %s 
+                  AND (title ILIKE %s OR summary ILIKE %s OR description ILIKE %s)
+            """
+            params = [date, f"%{q}%", f"%{q}%", f"%{q}%"]
+        else:
+            base_sql = "SELECT * FROM articles WHERE created_at::date = %s"
+            params = [date]
+
         if source:
             base_sql += " AND source = %s"
             params.append(source)
         if topic:
             base_sql += " AND topic = %s"
             params.append(topic)
+        
         base_sql += " ORDER BY created_at DESC LIMIT 1500"
         rows = await db.async_execute(base_sql, tuple(params))
         clusters = defaultdict(list)
         for r in rows:
             r["reading_time"] = calculate_reading_time(r.get("description", ""))
             clusters[r["cluster_id"]].append(r)
+        
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
-        ranked.sort(key=score_cluster, reverse=True)
+        
+        if q:
+             from embeddings import generate_query_embedding
+             import numpy as np
+             query_vec = generate_query_embedding(q)
+             if query_vec:
+                 for arts in ranked:
+                     best_sim = 0
+                     for a in arts:
+                         if a.get('embedding'):
+                             a_vec = parse_embedding_value(a['embedding'])
+                             sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
+                             if sim > best_sim: best_sim = sim
+                     arts[0]['match_score'] = best_sim
+                 ranked.sort(key=lambda x: x[0].get('match_score', 0), reverse=True)
+        else:
+            ranked.sort(key=score_cluster, reverse=True)
+
         offset = page * page_size
         paged = ranked[offset: offset + page_size]
         cids = [c[0]["cluster_id"] for c in paged]
@@ -151,6 +180,9 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
         # Build count queries safely
         count_sql = "SELECT COUNT(*) FROM articles WHERE created_at::date = %s"
         count_params = [date]
+        if q:
+            count_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
+            count_params.extend([f"%{q}%", f"%{q}%"])
         if source:
             count_sql += " AND source = %s"
             count_params.append(source)
@@ -191,7 +223,7 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
             "clusters": payload, 
             "total": (await db.async_execute_one(count_sql, tuple(count_params)))["count"],
             "sources": (await db.async_execute_one(dist_source_sql, tuple(dist_source_params)))["count"],
-            "date": date, "source": source, "topic": topic, "page": page, "page_size": page_size, 
+            "date": date, "q": q, "source": source, "topic": topic, "page": page, "page_size": page_size, 
             "has_more": offset + page_size < len(ranked), 
             "total_clusters": len(ranked),
             "top_sources": await db.async_execute(group_source_sql, tuple(group_source_params)),
@@ -202,6 +234,70 @@ async def get_archive(date: str = Query(...), source: str = "", topic: str = "",
     except Exception as e:
         log.error(f"Archive Error: {e}")
         raise HTTPException(status_code=500, detail="Неуспешно вчитување на архива")
+
+@router.get("/archive/daily-briefing")
+async def get_archive_daily_briefing(date: str = Query(...)):
+    """Provides an AI-generated briefing for a specific historical date."""
+    validate_date(date)
+    cache_key = f"archive:briefing:{date}:v1"
+    cached = cached_response(cache_key, ttl=86400)
+    if cached: return cached
+
+    # Find the top 3 clusters for that day and their summaries
+    top_clusters = await db.async_execute("""
+        SELECT s.cluster_id, s.summary, s.synthetic_headline
+        FROM cluster_summaries s
+        JOIN articles a ON s.cluster_id = a.cluster_id
+        WHERE a.created_at::date = %s
+        GROUP BY s.cluster_id, s.summary, s.synthetic_headline, s.pluralism_score
+        ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
+        LIMIT 3
+    """, (date,))
+
+    if not top_clusters:
+        return {"briefing": None}
+
+    briefing_parts = []
+    for c in top_clusters:
+        title = c['synthetic_headline'] or "Важна тема"
+        summary = (c['summary'] or "").split('\n')[0] # Take first bullet
+        briefing_parts.append(f"**{title}**: {summary}")
+
+    briefing = " • ".join(briefing_parts)
+    res = {"briefing": briefing}
+    set_cache(cache_key, res, ttl=86400)
+    return res
+
+@router.get("/archive/on-this-day")
+async def get_archive_on_this_day(date: str = Query(...)):
+    """Finds a significant cluster from exactly 1 or 2 years ago."""
+    validate_date(date)
+    dt = datetime.datetime.strptime(date, "%Y-%m-%d")
+    
+    for years in [1, 2]:
+        past_date = (dt - datetime.timedelta(days=365 * years)).strftime("%Y-%m-%d")
+        past_cluster = await db.async_execute_one("""
+            SELECT s.cluster_id, s.summary, s.synthetic_headline, m.representative_image
+            FROM cluster_summaries s
+            JOIN articles a ON s.cluster_id = a.cluster_id
+            JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+            WHERE a.created_at::date = %s
+            GROUP BY s.cluster_id, s.summary, s.synthetic_headline, m.representative_image, s.pluralism_score
+            ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
+            LIMIT 1
+        """, (past_date,))
+        
+        if past_cluster:
+            return {
+                "years_ago": years,
+                "date": past_date,
+                "cluster_id": past_cluster['cluster_id'],
+                "title": past_cluster['synthetic_headline'],
+                "summary": past_cluster['summary'],
+                "image": past_cluster['representative_image']
+            }
+            
+    return {"on_this_day": None}
 
 @router.get("/stats")
 async def get_stats_route():
