@@ -236,17 +236,6 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                                     <span class="hero-kicker-label">ТЕМА НА ДЕНОТ</span>
                                     <h2 class="hero-title-text">{leadCluster.synthetic_headline || leadCluster.articles[0].title}</h2>
                                     <div class="hero-footer-info">
-                        </div>
-                    </div>
-                )}
-
-
-    // Fetch home data to populate visual clusters
-    const homeRes = await fetch(`${API_URL}/home`);
-    let homeData = null;
-    if (homeRes.ok) homeData = await homeRes.json();
-
-    if (briefRes.ok) {
         briefing = await briefRes.json();
         // ... (rest of the check)
     }
