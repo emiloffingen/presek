@@ -21,7 +21,7 @@ try:
     _rate_limiter_enabled = True
     limiter = Limiter(
         key_func=get_remote_address,
-        default_limits=["100/minute", "1000/hour"],
+        default_limits=["500/minute", "5000/hour"],
         storage_uri=os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     )
 except ImportError as exc:
