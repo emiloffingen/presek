@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import re
-import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional, Any, Dict
 from collections import defaultdict
@@ -273,10 +273,10 @@ async def get_archive_daily_briefing(date: str = Query(...)):
 async def get_archive_on_this_day(date: str = Query(...)):
     """Finds a significant cluster from exactly 1 or 2 years ago."""
     validate_date(date)
-    dt = datetime.datetime.strptime(date, "%Y-%m-%d")
-    
+    dt = datetime.strptime(date, "%Y-%m-%d")
+
     for years in [1, 2]:
-        past_date = (dt - datetime.timedelta(days=365 * years)).strftime("%Y-%m-%d")
+        past_date = (dt - timedelta(days=365 * years)).strftime("%Y-%m-%d")
         past_cluster = await db.async_execute_one("""
             SELECT s.cluster_id, s.summary, s.synthetic_headline, m.representative_image
             FROM cluster_summaries s
