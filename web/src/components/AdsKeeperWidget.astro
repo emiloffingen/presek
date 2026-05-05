@@ -1,9 +1,10 @@
 ---
 interface Props {
     placement?: 'in-article' | 'under-article' | 'sidebar';
+    class?: string;
 }
 
-const { placement = 'under-article' } = Astro.props;
+const { placement = 'under-article', class: className } = Astro.props;
 
 let desktopId = '2006214';
 let mobileId = '2006241';
@@ -17,7 +18,7 @@ if (placement === 'in-article') {
 }
 ---
 
-<div class="adskeeper-container my-8 p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm">
+<div class:list={["adskeeper-container p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm", className, { "my-8": !className }]}>
     <!-- Desktop Widget -->
     <div class="adskeeper-desktop hidden md:block">
         <div data-type="_mgwidget" data-widget-id={desktopId}></div>
