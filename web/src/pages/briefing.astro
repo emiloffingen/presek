@@ -9,27 +9,51 @@ import BriefingDigest from '../components/briefing/BriefingDigest.astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
 const API_URL = apiBaseUrl();
-const briefRes = await fetch(`${API_URL}/briefing`);
-const briefing = briefRes.ok ? await briefRes.json() : null;
-const homeRes = await fetch(`${API_URL}/home`);
-const homeData = homeRes.ok ? await homeRes.json() : null;
-const statsRes = await fetch(`${API_URL}/stats/summary`);
-const stats = statsRes.ok ? await statsRes.json() : null;
+const dateParam = Astro.url.searchParams.get('date') || null;
+
+let briefing: any = null;
+let homeData: any = null;
+let stats: any = null;
+let error = null;
+
+try {
+    const briefUrl = dateParam ? `${API_URL}/briefing?date=${dateParam}` : `${API_URL}/briefing`;
+    const [briefRes, homeRes, statsRes] = await Promise.all([
+        fetch(briefUrl),
+        fetch(`${API_URL}/home`),
+        fetch(`${API_URL}/stats/summary`)
+    ]);
+
+    if (briefRes.ok) briefing = await briefRes.json();
+    if (homeRes.ok) homeData = await homeRes.json();
+    if (statsRes.ok) stats = await statsRes.json();
+
+    if (!briefing && !error) error = "Брифингот е моментално недостапен.";
+} catch (e) {
+    error = "Грешка при вчитување на брифингот.";
+}
 ---
 
-<Layout title="Дневен Брифинг — Пресек">
+<Layout title="Дневен Дигест — Пресек">
     <NYTHeader stats={stats} />
     <main class="site-layout broadsheet-layout pt-28 pb-10">
         <div class="briefing-container">
-            {briefing ? (
+            {error ? (
+                <div class="py-20 text-center font-serif text-xl">{error}</div>
+            ) : briefing ? (
                 <>
+                    <h1 class="font-serif text-4xl font-black mb-2">Дневен Дигест</h1>
                     <BriefingContent formattedBriefing={briefing.content} />
                     <BriefingDigest homeData={homeData} />
                 </>
             ) : (
-                <div class="py-20 text-center">Брифингот е моментално недостапен.</div>
+                <div class="py-20 text-center">Се вчитува...</div>
             )}
         </div>
     </main>
     <Footer />
 </Layout>
+
+<style>
+    .briefing-container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+</style>
