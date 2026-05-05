@@ -157,12 +157,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Content Security Policy
         csp = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://jsc.adskeeper.com https://*.adskeeper.com https://*.mgid.com; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
             "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; "
-            "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com; "
-            "frame-src 'self'; "
+            "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com https://*.adskeeper.com https://*.mgid.com; "
+            "connect-src 'self' https: https://www.google-analytics.com https://analytics.google.com wss:; "
+            "frame-src 'self' https://*.adskeeper.com https://*.mgid.com; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "form-action 'self';"
