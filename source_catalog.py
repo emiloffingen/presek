@@ -75,4 +75,11 @@ DEFAULT_SOURCE_CATALOG = [
     ("USB.mk", "https://usb.mk/feed/"),
     ("Hashtag", "https://hashtag.mk/feed/"),
     ("Muzika24", "https://muzika24.mk/feed/"),
+    ("Lokalno", "https://lokalno.mk/feed/"),
+    ("Denar", "https://denar.mk/feed/"),
+    ("Ekonomski", "https://ekonomski.mk/feed/"),
+    ("Kapital", "https://kapital.mk/feed/"),
+    ("Inovativnost", "https://inovativnost.mk/feed/"),
+    ("Motika", "https://motika.mk/feed/"),
+    ("Espreso", "https://www.espreso.mk/feed/"),
 ]
