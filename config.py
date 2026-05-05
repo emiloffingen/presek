@@ -257,10 +257,10 @@ LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").
 ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
 
 # ── AI Routing Configuration ────────────────────────────────────
-# Use Mistral, then Local fallback
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral", "local"]
-PROVIDER_FALLBACK_ORDER = ["mistral", "local"] # default
+# Use Mistral large (free) first, then small (paid), then Local fallback
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "local"]
+PROVIDER_FALLBACK_ORDER = ["mistral_large", "mistral_small", "local"] # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {

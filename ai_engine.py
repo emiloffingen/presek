@@ -181,10 +181,15 @@ PROVIDERS = {
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
     ),
-    "mistral": MistralProvider(
+    "mistral_large": MistralProvider(
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
         api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
         model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest")
+    ),
+    "mistral_small": MistralProvider(
+        api_key=os.environ.get("MISTRAL_SMALL_API_KEY", ""),
+        api_url=os.environ.get("MISTRAL_API_URL", "https://api.mistral.ai/v1/chat/completions"),
+        model=os.environ.get("MISTRAL_SMALL_MODEL", "mistral-small-latest")
     ),
     "local": LocalProvider(),
 }
