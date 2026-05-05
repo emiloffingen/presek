@@ -3,8 +3,9 @@
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
-import { ShieldCheck, Globe, CheckCircle2, Sparkles, Zap, AlertCircle, Palette, Layers, Clock } from 'lucide-react';
+import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
+import { AdsKeeperWidget } from './AdsKeeperWidget';
 
 interface Props {
 	cluster: NewsCluster;
@@ -266,6 +267,7 @@ function getTimeStr(dateStr: string) {
             )}
 		</div>
 	)}
+    <AdsKeeperWidget />
 </article>
 
 <style>
