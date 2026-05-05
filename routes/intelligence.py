@@ -401,50 +401,84 @@ async def get_cluster_analyst_report(cluster_id: str, mode: str = "facts"):
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse(category: Optional[str] = None):
     from utils import get_source_trust_label, get_source_effective_weight, cached_response, set_cache
-    
+
     cat_id = f"cat-{category}" if category else "all"
-    cache_key = f"api:intelligence:source-pulse:{cat_id}:v2"
+    cache_key = f"api:intelligence:source-pulse:{cat_id}:v3"
     cached = cached_response(cache_key)
     if cached: return cached
-    
+
     cat_filter = ""
     params = []
     if category:
         cat_filter = "AND a.category = %s"
         params.append(category)
 
+    # Combined query to get current stats, recent headline, and historical baseline
     sql = f"""
-        WITH first_reporters AS (
+        WITH source_stats AS (
+            SELECT
+                a.source,
+                AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+                COUNT(DISTINCT a.cluster_id) as cluster_count
+            FROM cluster_summaries s
+            JOIN articles a ON s.cluster_id = a.cluster_id
+            WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '48 hours'
+            {cat_filter}
+            GROUP BY a.source
+        ),
+        historical_baseline AS (
+            SELECT
+                a.source,
+                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as historical_objectivity
+            FROM cluster_summaries s
+            JOIN articles a ON s.cluster_id = a.cluster_id
+            WHERE s.sentiment IS NOT NULL 
+              AND s.created_at >= NOW() - INTERVAL '14 days'
+              AND s.created_at < NOW() - INTERVAL '48 hours'
+            {cat_filter}
+            GROUP BY a.source
+        ),
+        latest_headlines AS (
+            SELECT DISTINCT ON (source) source, title, cluster_id
+            FROM articles
+            WHERE created_at >= NOW() - INTERVAL '48 hours'
+            ORDER BY source, created_at DESC
+        ),
+        first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
             FROM articles
             ORDER BY cluster_id, COALESCE(ingested_at, created_at) ASC, created_at ASC
         )
-        SELECT 
-            a.source,
-            AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
-            AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
-            AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
-            COUNT(DISTINCT a.cluster_id) as cluster_count,
-            (SELECT COUNT(*) FROM first_reporters fr 
-             WHERE fr.source = a.source 
+        SELECT
+            curr.*,
+            lh.title as latest_headline,
+            lh.cluster_id as latest_cluster_id,
+            COALESCE(hb.historical_objectivity, curr.avg_objectivity) as baseline_objectivity,
+            (SELECT COUNT(*) FROM first_reporters fr
+             WHERE fr.source = curr.source
                AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' {cat_filter.replace('a.category', 'category')})
             ) as first_report_count
-        FROM cluster_summaries s
-        JOIN articles a ON s.cluster_id = a.cluster_id
-        WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '7 days'
-        {cat_filter}
-        GROUP BY a.source HAVING COUNT(DISTINCT a.cluster_id) >= 1
-        ORDER BY cluster_count DESC
+        FROM source_stats curr
+        LEFT JOIN latest_headlines lh ON curr.source = lh.source
+        LEFT JOIN historical_baseline hb ON curr.source = hb.source
+        WHERE curr.cluster_count >= 1
+        ORDER BY curr.cluster_count DESC
     """
-    rows = await db.async_execute(sql, tuple(params + params))
+
+    # We pass params 3 times because cat_filter is used 3 times in the CTEs
+    rows = await db.async_execute(sql, tuple(params * 3))
+
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
-        
+        # Calculate delta
+        r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
+
     result = {"status": "success", "data": rows}
     set_cache(cache_key, result, ttl=300)
     return result
-
 @router.get("/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
     # Validate name parameter

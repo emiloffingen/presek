@@ -63,7 +63,14 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             <div class="masthead-top">
                 <span class="masthead-kicker">ЕДИТОРИЈАЛНО ИЗДАНИЕ</span>
                 <div class="masthead-meta">
-                    <span class="meta-item"><Timer size={11} /> <span id="last-updated">ВО ЖИВО</span></span>
+                    <span class="meta-item">
+                        <svg class="live-heartbeat mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 12H5L9 4L15 20L19 12H22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <animate attributeName="stroke-dasharray" from="0, 50" to="50, 0" dur="2s" repeatCount="indefinite" />
+                            </path>
+                        </svg>
+                        <Timer size={11} /> <span id="last-updated">ВО ЖИВО</span>
+                    </span>
                     <span class="meta-item"><Activity size={11} /> ВЕРЗИЈА 5.2</span>
                 </div>
             </div>
@@ -84,8 +91,8 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
 
             <div class="masthead-main">
                 <div class="masthead-branding">
-                    <Zap size={32} className="text-nyt-accent" fill="currentColor" />
-                    <h1 class="masthead-title">Медиумски <span>Пулс</span></h1>
+                    <Zap size={32} className="text-nyt-accent pulse-zap-icon" fill="currentColor" />
+                    <h1 class="masthead-title">Медиумски <span class="italic-serif">Пулс</span></h1>
                 </div>
                 <div class="masthead-date">
                     <p>{currentDate}</p>
@@ -133,6 +140,30 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
         border-top: 1px solid var(--foreground);
         border-bottom: 4px solid var(--foreground);
     }
+    .live-heartbeat {
+        color: var(--nyt-red);
+    }
+    .italic-serif {
+        font-style: italic;
+        font-weight: 400;
+        color: var(--nyt-accent);
+    }
+    .pulse-zap-icon {
+        animation: pulse-icon 2.5s infinite;
+    }
+    @keyframes pulse-icon {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    :global(.animate-rise) {
+        animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes rise {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
     .masthead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
     .masthead-meta { display: flex; gap: 1.25rem; }
