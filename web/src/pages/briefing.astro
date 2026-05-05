@@ -2,48 +2,43 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import BriefingHeader from '../components/briefing/BriefingHeader.astro';
-import BriefingContent from '../components/briefing/BriefingContent.astro';
-import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../components/briefing/BriefingDigest.astro';
 import { apiBaseUrl } from '../lib/apiBase';
 
 const API_URL = apiBaseUrl();
-const dateParam = Astro.url.searchParams.get('date') || null;
 
-let briefing: any = null;
 let homeData: any = null;
 let stats: any = null;
 let error = null;
 
 try {
-    const briefUrl = dateParam ? `${API_URL}/briefing?date=${dateParam}` : `${API_URL}/briefing`;
-    const [briefRes, homeRes, statsRes] = await Promise.all([
-        fetch(briefUrl),
+    const [homeRes, statsRes] = await Promise.all([
         fetch(`${API_URL}/home`),
         fetch(`${API_URL}/stats/summary`)
     ]);
 
-    if (briefRes.ok) briefing = await briefRes.json();
     if (homeRes.ok) homeData = await homeRes.json();
     if (statsRes.ok) stats = await statsRes.json();
 
-    if (!briefing && !error) error = "Брифингот е моментално недостапен.";
+    if (!homeData && !error) error = "Дигестот е моментално недостапен.";
 } catch (e) {
-    error = "Грешка при вчитување на брифингот.";
+    error = "Грешка при вчитување на податоците.";
 }
 ---
 
 <Layout title="Дневен Дигест — Пресек">
     <NYTHeader stats={stats} />
-    <main class="site-layout broadsheet-layout pt-28 pb-10">
+    <main class="site-layout broadsheet-layout pt-28 pb-16">
         <div class="briefing-container">
             {error ? (
                 <div class="py-20 text-center font-serif text-xl">{error}</div>
-            ) : briefing ? (
+            ) : homeData ? (
                 <>
-                    <h1 class="font-serif text-4xl font-black mb-2">Дневен Дигест</h1>
-                    <BriefingContent formattedBriefing={briefing.content} />
+                    <header class="mb-10 pb-8 border-b border-border/50 text-center">
+                        <span class="inline-block px-3 py-1 mb-6 bg-nyt-accent/10 text-nyt-accent font-sans text-[10px] font-black uppercase tracking-widest rounded-full">Уреднички преглед</span>
+                        <h1 class="font-serif text-4xl md:text-5xl font-black mb-4">Дневен Дигест</h1>
+                        <p class="text-muted-foreground font-serif text-lg italic max-w-2xl mx-auto">Синтетизиран преглед на темите со највисока медиумска динамика во моментов.</p>
+                    </header>
                     <BriefingDigest homeData={homeData} />
                 </>
             ) : (
