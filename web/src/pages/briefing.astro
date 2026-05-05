@@ -236,12 +236,6 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                                     <span class="hero-kicker-label">ТЕМА НА ДЕНОТ</span>
                                     <h2 class="hero-title-text">{leadCluster.synthetic_headline || leadCluster.articles[0].title}</h2>
                                     <div class="hero-footer-info">
-                                        <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'редакција' : 'редакции'} анализирани</span>
-                                        <span class="mx-2 opacity-30">|</span>
-                                        <a href={`/cluster/${leadCluster.cluster_id}`} class="hero-cta-link">ЦЕЛОСНА СТОРИЈА →</a>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 )}
