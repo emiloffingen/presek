@@ -177,6 +177,13 @@ def set_cache(key: str, val, ttl: int = 60):
     except Exception as e:
         log.warning(f"[cache] write error on {key}: {e}")
 
+def format_sources(count: int) -> str:
+    if count == 1:
+        return "1 извор"
+    elif 2 <= count <= 4:
+        return f"{count} извора"
+    return f"{count} извори"
+
 def delete_cache(key: str):
     try:
         redis_client.delete(key)

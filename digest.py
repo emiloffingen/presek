@@ -81,7 +81,7 @@ def send_ntfy_digest(stories_by_cat: dict, topic: str, period_days: int = 1) -> 
         lines.append(f"▌ {cat}")
         for a in articles[:2]:   # max 2 per category
             src_count = a.get("source_count", 1)
-            badge = f" [{src_count} извори]" if src_count > 1 else ""
+            badge = f" [{format_sources(src_count)}]" if src_count > 1 else ""
             lines.append(f"  • {a['title'][:80]}{badge}")
         lines.append("")
 
@@ -181,7 +181,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
-                sources_badge = f'<span style="background:#b91c1c;color:#ffffff;font-family:sans-serif;font-size:10px;font-weight:bold;padding:2px 6px;text-transform:uppercase;letter-spacing:0.05em;border-radius:2px;margin-left:8px;vertical-align:middle">{a["source_count"]} извори</span>'
+                sources_badge = f'<span style="background:#b91c1c;color:#ffffff;font-family:sans-serif;font-size:10px;font-weight:bold;padding:2px 6px;text-transform:uppercase;letter-spacing:0.05em;border-radius:2px;margin-left:8px;vertical-align:middle">{format_sources(a["source_count"])}</span>'
 
             items += f"""
             <tr>
