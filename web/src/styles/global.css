@@ -90,7 +90,7 @@
         --secondary-foreground: #2f3b4c;
         --border: #e5e7eb;
         --muted: #f9fafb;
-        --muted-foreground: #596273;
+        --muted-foreground: #454e5e;
         --surface-soft: #f3f4f2;
         --surface-strong: #e7e9e4;
 
@@ -1568,8 +1568,8 @@ button:active,
 }
 
 .masthead-double-rule {
-    border-top: 1px solid var(--foreground);
-    border-bottom: 3px solid var(--foreground);
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 80%, transparent);
+    border-bottom: 3px solid color-mix(in srgb, var(--foreground) 80%, transparent);
     height: 6px;
     padding: 0;
     margin-bottom: 1.5rem;
@@ -1767,7 +1767,7 @@ button:active,
 .rail-card-title {
     margin: 0 0 1.25rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--foreground);
+    border-bottom: 2px solid color-mix(in srgb, var(--foreground) 70%, transparent);
     font-family: var(--font-serif);
     font-size: var(--text-xl);
     font-weight: 800;

@@ -446,17 +446,17 @@ function getBriefingSnippet(content: string) {
 <style>
     /* ── Broadsheet Layout ───────────────────────────── */
     .broadsheet-layout { background: var(--background); }
-    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+    .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
     
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 2rem; }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1.2); }
     }
 
     /* ── Section Dividers ────────────────────────────── */
-    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 3rem; margin-bottom: 3rem; }
     .section-wrapper:last-child { border-bottom: none; }
-    .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .lead-wrapper { padding-bottom: 2.5rem; margin-bottom: 2.5rem; }
     
     /* ── Supporting Band & Developments Grids ────────── */
     .supporting-featured-grid, 

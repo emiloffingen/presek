@@ -249,26 +249,27 @@ function getRelativeTimeStr(dateStr?: string) {
     }
     .ticker-prefix {
         display: flex; align-items: center; gap: 0.35rem; 
-        font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900;
-        letter-spacing: 0.08em; text-transform: uppercase;
+        font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900;
+        letter-spacing: 0.12em; text-transform: uppercase;
         color: var(--muted-foreground);
         padding-right: 1rem; border-right: 1px solid var(--border);
         background: var(--background); z-index: 2;
         flex-shrink: 0;
+        opacity: 0.85;
     }
-    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; max-width: 100%; }
+    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; max-width: 100%; opacity: 0.9; }
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 60s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     
     .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; }
-    .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
-    .stats-group { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
+    .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
+    .stats-group { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
     .dispatch-item { display: flex; align-items: center; gap: 0.35rem; color: var(--foreground); }
     .dispatch-data { color: var(--foreground); white-space: nowrap; }
     .dispatch-sep { opacity: 0.3; }
 
-    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.64rem; line-height: 1; font-weight: 700; color: var(--foreground); text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
-    .ticker-time { font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; margin-right: 0.5rem; background: var(--secondary); padding: 1px 4px; border-radius: 2px; }
+    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.7rem; line-height: 1; font-weight: 700; color: var(--foreground); text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
+    .ticker-time { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; margin-right: 0.5rem; background: var(--secondary); padding: 1px 4px; border-radius: 2px; }
     .ticker-title { line-height: 1.1; }
 
     /* ── Editorial Topbar ─────────────────────────────── */
@@ -285,12 +286,12 @@ function getRelativeTimeStr(dateStr?: string) {
     .topbar-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; min-width: 0; max-width: 100%; }
     
     .topbar-left-stack { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start; min-width: 0; }
-    .topbar-date-display { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.04em; }
+    .topbar-date-display { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
 
     .topbar-branding { display: flex; justify-content: center; min-width: 0; max-width: 100%; }
     .brand-link { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; min-width: 0; max-width: 100%; }
-    .brand-emblem { height: 1.35rem; }
-    .brand-logo { height: 1.65rem; }
+    .brand-emblem { height: 1.55rem; }
+    .brand-logo { height: 1.9rem; }
 
     .topbar-actions { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; min-width: 0; }
     .topbar-modes-rail { display: flex; align-items: center; gap: 0.3rem; min-width: 0; }

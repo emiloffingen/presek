@@ -38,11 +38,12 @@ function renderSynthesisHtml(text: string) {
 
 <div class="editorial-narrative prose-editorial">
 	{hasStrongLeadNarrative && generatedArticle ? (
-		<div class="narrative-body font-serif">
+		<div class="narrative-body font-serif is-collapsible is-collapsed" id="narrative-body">
 			{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
 			))}
 		</div>
+        <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">Прочитај повеќе</button>
 	) : (
 		<div class="synthesis-list">
 			{synthesisItems.map(item => (
@@ -58,7 +59,37 @@ function renderSynthesisHtml(text: string) {
 <style>
 	.editorial-narrative {
 		margin-bottom: 3rem;
+        position: relative;
 	}
+
+    .narrative-body.is-collapsible {
+        max-height: 800px;
+        overflow: hidden;
+        transition: max-height 0.6s cubic-bezier(0.2, 0, 0, 1);
+    }
+    
+    .narrative-body.is-collapsed {
+        mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    }
+
+    .narrative-toggle {
+        display: none;
+        margin-top: 1rem;
+        width: 100%;
+        padding: 0.75rem;
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: var(--nyt-accent);
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .narrative-toggle { display: block; }
+    }
 
 	.narrative-p {
 		font-family: var(--font-nyt-body);
@@ -80,7 +111,6 @@ function renderSynthesisHtml(text: string) {
 		font-weight: 900;
 		color: var(--foreground);
 	}
-
 
     @media (max-width: 640px) {
         .narrative-p {
@@ -116,14 +146,21 @@ function renderSynthesisHtml(text: string) {
 	:global(.citation-badge) {
 		display: inline-block;
 		font-family: var(--font-sans);
-		font-size: 0.6rem;
-		font-weight: 900;
-		padding: 0 0.4rem;
-		background: var(--secondary);
-		color: var(--muted-foreground);
-		border-radius: 2px;
+		font-size: 0.65rem;
+		font-weight: 950;
+		padding: 0.1rem 0.5rem;
+		background: color-mix(in srgb, var(--nyt-accent) 10%, var(--secondary) 90%);
+		color: var(--nyt-accent);
+		border: 1px solid color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+		border-radius: 4px;
 		vertical-align: middle;
-		margin: 0 0.2rem;
+		margin: 0 0.25rem;
 		text-transform: uppercase;
+        cursor: help;
+        transition: all 0.2s;
 	}
+    :global(.citation-badge:hover) {
+        background: var(--nyt-accent);
+        color: white;
+    }
 </style>

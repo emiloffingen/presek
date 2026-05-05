@@ -63,10 +63,10 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
   <NYTHeader />
   
   <main class="site-layout broadsheet-layout py-[var(--page-py)]">
-    <header class="editorial-masthead mb-12">
+    <header class="editorial-masthead mb-[clamp(2rem, 5vw, 4rem)]">
         <div class="masthead-top">
-            <span class="masthead-kicker">МЕДИУМСКА МЕМОРИЈА</span>
-            <div class="masthead-data-bar-compact ml-auto hidden md:flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter opacity-60">
+            <span class="masthead-kicker text-[var(--text-xs)]">МЕДИУМСКА МЕМОРИЈА</span>
+            <div class="masthead-data-bar-compact ml-auto hidden md:flex items-center gap-4 text-[var(--text-xs)] font-black uppercase tracking-tighter opacity-60">
                 <span>{formattedDisplayDate}</span>
                 <span class="dot">·</span>
                 <span>{archive.total_clusters} теми</span>
@@ -75,8 +75,8 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
             </div>
         </div>
         <div class="masthead-main">
-            <h1 class="masthead-title">Архива на <span>Изданија</span></h1>
-            <div class="masthead-data-bar">
+            <h1 class="masthead-title text-[clamp(2rem, 4vw, 3.5rem)] font-serif italic">Архива на <span>Изданија</span></h1>
+            <div class="masthead-data-bar text-[var(--text-sm)]">
                 <div class="m-stat"><span>Објави</span><strong>{archive.total.toLocaleString('mk-MK')}</strong></div>
                 <div class="m-stat"><span>Редакции</span><strong>{archive.sources}</strong></div>
                 <div class="m-stat"><span>Теми</span><strong>{archive.total_clusters}</strong></div>
@@ -84,13 +84,13 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
         </div>
 
         {briefingData.briefing && (
-            <div class="daily-briefing-box mt-6 py-4 border-y border-foreground/10 flex items-start gap-3">
+            <div class="daily-briefing-box mt-6 py-4 border-y border-border flex items-start gap-3">
                 <Sparkles size={16} className="text-nyt-accent shrink-0 mt-1" />
-                <p class="font-nyt-body text-[1.05rem] leading-relaxed italic opacity-80" set:html={sanitizeHtml(briefingData.briefing)}></p>
+                <p class="font-nyt-body text-[var(--text-base)] leading-relaxed italic opacity-80" set:html={sanitizeHtml(briefingData.briefing)}></p>
             </div>
         )}
 
-        <div class="archive-controls mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+        <div class="archive-controls mt-10 grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)] items-end">
             <div class="flex items-center gap-4 flex-wrap">
                 <form method="get" class="date-form">
                     <div class="date-input-wrap">

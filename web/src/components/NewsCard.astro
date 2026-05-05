@@ -272,6 +272,7 @@ function getTimeStr(dateStr: string) {
 		--news-card-cache-bust-20260424: 1;
 		min-width: 0;
 		max-width: 100%;
+        padding-bottom: 0.75rem;
 	}
 
 	.headline-link {
@@ -286,11 +287,11 @@ function getTimeStr(dateStr: string) {
         align-items: center;
         gap: 0.25rem;
         font-family: var(--font-sans);
-        font-size: 10px;
+        font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 0.1rem 0.4rem;
+        letter-spacing: 0.08em;
+        padding: 0.15rem 0.45rem;
         border-radius: 2px;
     }
 
@@ -352,13 +353,13 @@ function getTimeStr(dateStr: string) {
         height: 100%;
         display: grid;
         align-content: space-between;
-        padding: 1.5rem;
+        padding: 1.75rem;
         position: relative;
         overflow: hidden;
         background: 
-            linear-gradient(135deg, 
-                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, black) 0%, 
-                color-mix(in srgb, var(--placeholder-bg, #132a4f) 60%, black) 100%
+            linear-gradient(145deg, 
+                color-mix(in srgb, var(--placeholder-bg, #070c16) 100%, #1a1a1a) 0%, 
+                color-mix(in srgb, var(--placeholder-bg, #132a4f) 70%, black) 100%
             );
     }
 
@@ -464,8 +465,8 @@ function getTimeStr(dateStr: string) {
 		}
 
 		.nyt-article:not(.lead-story) .footer-meta {
-			font-size: 0.64rem;
-			letter-spacing: 0.04em;
+			font-size: 0.68rem;
+			letter-spacing: 0.05em;
 			text-transform: uppercase;
 		}
 
