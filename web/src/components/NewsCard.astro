@@ -3,7 +3,7 @@
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
-import { ShieldCheck, Globe, CheckCircle2, Sparkles, Zap } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2, Sparkles, Zap, AlertCircle, Palette, Layers, Clock } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
 
 interface Props {
@@ -134,7 +134,7 @@ function getTimeStr(dateStr: string) {
 				</span>
 				)}
 
-                {/* INTELLIGENCE BADGES */}
+                {/* INTELLIGENCE BADGES (Icon only with tooltips) */}
 
 
                 {hasSynthesis && (
@@ -150,19 +150,20 @@ function getTimeStr(dateStr: string) {
                 )}
 
 				{cluster.is_breaking && (
-				<span class="flex items-center text-red-600 dark:text-red-500" title="Ударна вест">
-					<span class="relative flex h-2.5 w-2.5">
+				<span class="flex items-center gap-1.5 text-red-600 dark:text-red-500 font-bold text-[10px] tracking-wider uppercase" title="Ударна вест">
+					<span class="relative flex h-2 w-2">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+						<span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
 					</span>
+                    <span>Ударна</span>
 				</span>
 			)}
 
 
 			{showSignificanceLabel && !cluster.is_breaking && (
-				<span class="significance-dot-label" title={significanceLabel}>
-					<span class:list={["h-1.5 w-1.5 rounded-full", totalSources >= 6 ? "bg-purple-500" : "bg-blue-400"]}></span>
-					{totalSources >= 6 ? 'Ударна' : 'Следена'}
+				<span class="significance-dot-label flex items-center gap-1.5" title={significanceLabel}>
+					<Layers size={11} className={totalSources >= 6 ? "text-purple-500" : "text-blue-400"} />
+					<span class="text-[10px] uppercase font-bold tracking-wider">{totalSources >= 6 ? 'Ударна' : 'Следена'}</span>
 				</span>
 			)}
 		</div>
@@ -205,12 +206,18 @@ function getTimeStr(dateStr: string) {
         )}
 
 
-		<div class="footer-meta">
-			<span>{getTimeStr(main.ingested_at || main.created_at)}</span>
-			<span class="dot">·</span>
-			<span>{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</span>
-			{totalSources > uniqueSources && <span class="text-muted-foreground ml-1">({totalSources} вкупно)</span>}
+		<div class="footer-meta flex items-center gap-3">
+			<span class="flex items-center gap-1">
+		<Clock size={11} className="opacity-70" />
+		{getTimeStr(main.ingested_at || main.created_at)}
+		</span>
+			<span class="flex items-center gap-1">
+		<Layers size={11} className="opacity-70" />
+		{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}
+		{totalSources > uniqueSources && <span class="text-muted-foreground ml-0.5">({totalSources})</span>}
+		</span>
 		</div>
+
 		</div>
 
 		{thumbSrc && (
@@ -251,7 +258,11 @@ function getTimeStr(dateStr: string) {
 					</div>
 				)}
 			</a>
-            {isFallbackArt && <span class="fallback-badge">Пресек графика</span>}
+            {isFallbackArt && (
+                <span class="fallback-badge-icon" title="Пресек графика">
+                    <Palette size={14} />
+                </span>
+            )}
             {isLead && main.image_caption && (
                 <p class="image-caption">{main.image_caption}</p>
             )}
@@ -312,6 +323,22 @@ function getTimeStr(dateStr: string) {
         background: #581c8720;
         color: #c084fc;
         border-color: #581c87;
+    }
+
+    .fallback-badge-icon {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 0.35rem;
+        border-radius: 4px;
+        backdrop-filter: blur(4px);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .summary-container {
@@ -445,11 +472,10 @@ function getTimeStr(dateStr: string) {
 			text-transform: uppercase;
 		}
 
-		.nyt-article:not(.lead-story) .fallback-badge {
+		.nyt-article:not(.lead-story) .fallback-badge-icon {
 			left: 0.45rem;
 			top: 0.45rem;
 			padding: 0.16rem 0.28rem;
-			font-size: 0.46rem;
 		}
 	}
 
