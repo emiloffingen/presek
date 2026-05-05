@@ -25,7 +25,7 @@ const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview,
 				<div class="hero-fallback">
 					<p class="hero-fallback-kicker">ПРЕСЕК.мк Преглед</p>
 					<h2 class="font-serif font-black">{category || 'Главна Приказна'}</h2>
-					<p class="hero-fallback-meta">{articlesCount} извора · {sourcePreview.slice(0, 2).join(' · ')}</p>
+					<p class="hero-fallback-meta">{articlesCount} {articlesCount === 1 ? 'извор' : 'извори'} · {sourcePreview.slice(0, 2).join(' · ')}</p>
 				</div>
 			) : (
 				<img
@@ -38,7 +38,7 @@ const { leadVisual, dominantColor, displayHeadline, id, category, sourcePreview,
 				/>
 			)}
 			<div class="hero-caption py-3 px-4 bg-background/80 backdrop-blur-sm border-t border-border/40 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-				Илустрација од водечките извештаи · {articlesCount} редакции анализирани
+				Илустрација од водечките извештаи · {articlesCount} {articlesCount === 1 ? 'редакција' : 'редакции'} анализирани
 			</div>
 		</div>
 	) : (

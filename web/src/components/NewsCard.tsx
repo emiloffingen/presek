@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Globe, CheckCircle2, Sparkles } from 'lucide-react';
+import { ShieldCheck, Globe, CheckCircle2, Sparkles, Activity } from 'lucide-react';
 import { chooseClusterImage } from '../utils/imageSelection';
 import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
@@ -57,7 +57,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       return `${sourceSignal.role_label}. Следете ја за нови потврди и реакции.`;
     }
     if (sourceCount >= 6) {
-      return `Развој со широко медиумско покривање од ${sourceCount} извора.`;
+      return `Развој со широко медиумско покривање од ${sourceCount} ${sourceCount === 1 ? 'извор' : 'извори'}.`;
     }
     if (sourceCount >= 4) {
       return 'Повеќе редакции веќе додаваат нови детали.';
@@ -153,7 +153,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="footer-meta">
           <span>{getTimeStr(main.ingested_at || main.created_at)}</span>
           <span className="dot">·</span>
-          <span>{cluster.articles.length} извора</span>
+          <span>{cluster.articles.length} {cluster.articles.length === 1 ? 'извор' : 'извори'}</span>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <div className="article-image-placeholder">
                 <div className="article-image-placeholder-topline">
                   <p className="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
-                  <p className="article-image-placeholder-chip">{cluster.articles.length} извора</p>
+                  <p className="article-image-placeholder-chip">{cluster.articles.length} {cluster.articles.length === 1 ? 'извор' : 'извори'}</p>
                 </div>
                 <h3>{main.category || 'Вести'}</h3>
                 <p className="article-image-placeholder-source">{main.source}</p>

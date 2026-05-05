@@ -602,7 +602,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                                 <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
                                   Кластер
                                   {item.source || item.sourceCount ? ' · ' : ''}
-                                  {[item.source, item.sourceCount ? `${item.sourceCount} извори` : ''].filter(Boolean).join(' · ')}
+                                  {[item.source, item.sourceCount ? `${item.sourceCount} ${item.sourceCount === 1 ? 'извор' : 'извори'}` : ''].filter(Boolean).join(' · ')}
+
                                 </p>
                               </div>
 

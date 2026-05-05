@@ -150,7 +150,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
                   <div className="for-you-card-meta">
                     <span>{article.source || 'Извор'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} извори</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'извор' : 'извори' }</span>
                   </div>
                   <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
                 </div>
@@ -195,7 +195,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [] }: 
                   <div className="for-you-card-meta">
                     <span>{article.source || 'Извор'}</span>
                     <span>·</span>
-                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} извори</span>
+                    <span>{cluster.sources_count ?? cluster.articles?.length ?? 0} { (cluster.sources_count ?? cluster.articles?.length ?? 0) === 1 ? 'извор' : 'извори' }</span>
                   </div>
                   <span className="for-you-card-cta">Отвори <ArrowUpRight size={12} /></span>
                 </div>
