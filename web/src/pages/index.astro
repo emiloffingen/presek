@@ -307,13 +307,13 @@ function getBriefingSnippet(content: string) {
                             <div class="flex items-center gap-3">
                                 <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-2 shrink-0">Истражи:</span>
                                 {[
-                                    { id: 'mk', label: 'Македонија', href: '/?category=Македонија' },
-                                    { id: 'pol', label: 'Политика', href: '/?topic=Политика' },
-                                    { id: 'eco', label: 'Економија', href: '/?topic=Економија' },
-                                    { id: 'spo', label: 'Спорт', href: '/?topic=Спорт' },
-                                    { id: 'cul', label: 'Култура', href: '/?topic=Култура' },
-                                    { id: 'tech', label: 'Технологија', href: '/?topic=Технологија' },
-                                    { id: 'sk', label: 'Скопје', href: '/?subcategory=Скопје' }
+                                    { id: 'mk', label: 'Македонија', href: '/?category=' + encodeURIComponent('Македонија') },
+                                    { id: 'pol', label: 'Политика', href: '/?topic=' + encodeURIComponent('Политика') },
+                                    { id: 'eco', label: 'Економија', href: '/?topic=' + encodeURIComponent('Економија') },
+                                    { id: 'spo', label: 'Спорт', href: '/?topic=' + encodeURIComponent('Спорт') },
+                                    { id: 'cul', label: 'Култура', href: '/?topic=' + encodeURIComponent('Култура') },
+                                    { id: 'tech', label: 'Технологија', href: '/?topic=' + encodeURIComponent('Технологија') },
+                                    { id: 'sk', label: 'Скопје', href: '/?subcategory=' + encodeURIComponent('Скопје') }
                                 ].map(pill => (
                                     <a href={pill.href} class="quick-pill shrink-0">
                                         {pill.label}
