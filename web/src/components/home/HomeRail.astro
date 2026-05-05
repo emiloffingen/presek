@@ -19,8 +19,57 @@ const { railWireArticles, briefing, stats, focusEntities, getTimeStr, getBriefin
 ---
 
 <aside class="broadsheet-rail">
-    <!-- ... (rest of the file remains same) ... -->
-    <section class="rail-block rail-block-quiet">
+
+	<section class="rail-block rail-priority-block">
+		<p class="rail-kicker">Редакциски деск</p>
+		<div class="rail-head-red">
+			<Activity size={12} strokeWidth={3} />
+			<h3>ПОСЛЕДНО НА ЛЕНТАТА</h3>
+		</div>
+		<div class="rail-wire-list">
+			{railWireArticles.slice(0, 10).map((art: any) => (
+				<a href={`/cluster/${art.cluster_id}`} class="rail-wire-item">
+					<p>{getDisplayTitle(art)}</p>
+					<div class="rail-wire-meta">{art.source} <span>·</span> {getTimeStr(art.ingested_at || art.created_at)}</div>
+				</a>
+			))}
+		</div>
+		<a href="/pulse" class="rail-cta-plain">СИТЕ ВЕСТИ</a>
+	</section>
+
+	{briefing && briefing.content && (
+		<section class="rail-block rail-block-alt rail-priority-block">
+			<p class="rail-kicker">Брифинг</p>
+			<h3 class="rail-title">КЛУЧНО ЗА ДЕНЕС</h3>
+			<p class="rail-brief-text">
+				{getBriefingSnippet(briefing.content)}
+			</p>
+			<a href="/briefing" class="rail-cta">ЦЕЛОСЕН ПРЕГЛЕД <TrendingUp size={10} /></a>
+		</section>
+	)}
+
+	<NationalMoodIsland client:load />
+
+	<HomeRailSuggestionsIsland client:load />
+
+	<NewsletterIsland client:load />
+
+	{stats?.quote_of_the_day && (
+		<section class="rail-block">
+			<p class="rail-kicker">Цитат на денот</p>
+			<blockquote class="rail-quote-block">
+				<p>„{stats.quote_of_the_day.quote}“</p>
+				<cite>
+					<span>ПОВРЗАНА ПРИКАЗНА</span>
+					<a href={`/cluster/${stats.quote_of_the_day.cluster_id}`}>
+						{stats.quote_of_the_day.title}
+					</a>
+				</cite>
+			</blockquote>
+		</section>
+	)}
+	
+	<section class="rail-block rail-block-quiet">
 		<p class="rail-kicker">Теми во фокус</p>
 		<div class="rail-tag-cloud">
 			{focusEntities.map((ent: any) => (
