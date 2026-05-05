@@ -5,12 +5,17 @@ import Footer from '../components/Footer.astro';
 import BriefingHeader from '../components/briefing/BriefingHeader.astro';
 import BriefingContent from '../components/briefing/BriefingContent.astro';
 import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
+import BriefingDigest from "../components/briefing/BriefingDigest.astro";
 import { Sparkles, Coffee, Moon, Sun, Timer, Activity, Zap } from 'lucide-react';
 import { sanitizeHtml } from '../lib/sanitize';
 import { apiBaseUrl } from '../lib/apiBase';
 import { cleanAndDecode, parseFootnotes } from '../utils/textUtils';
 
 const API_URL = apiBaseUrl();
+
+    const homeRes = await fetch(`${API_URL}/home`);
+    let homeData = null;
+    if (homeRes.ok) homeData = await homeRes.json();
 
 const dateParam = Astro.url.searchParams.get('date') || null;
 
@@ -236,6 +241,23 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                                     <span class="hero-kicker-label">ТЕМА НА ДЕНОТ</span>
                                     <h2 class="hero-title-text">{leadCluster.synthetic_headline || leadCluster.articles[0].title}</h2>
                                     <div class="hero-footer-info">
+                                        <span>{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'редакција' : 'редакции'} анализирани</span>
+                                        <span class="mx-2 opacity-30">|</span>
+                                        <a href={`/cluster/${leadCluster.cluster_id}`} class="hero-cta-link">ЦЕЛОСНА СТОРИЈА →</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
+    // Fetch home data to populate visual clusters
+    const homeRes = await fetch(`${API_URL}/home`);
+    let homeData = null;
+    if (homeRes.ok) homeData = await homeRes.json();
+
+    if (briefRes.ok) {
         briefing = await briefRes.json();
         // ... (rest of the check)
     }
@@ -245,6 +267,8 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                 <div class="briefing-grid">
                     <div class="briefing-main-col">
                         <BriefingContent formattedBriefing={formattedBriefingContent} />
+                        <BriefingDigest homeData={homeData} />
+
                         
                         {/* New Visual Digest Section */}
                         {homeData && (
