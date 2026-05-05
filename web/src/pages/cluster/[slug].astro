@@ -44,7 +44,8 @@ import EntityContextCard from '../../components/EntityContextCard.tsx';
 import ClusterHeader from '../../components/Cluster/ClusterHeader.astro';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
-import CitationSources from '../../components/Cluster/CitationSources.astro';
+import { AdsKeeperWidget } from '../../components/AdsKeeperWidget';
+import CitationSources from '../../components/CitationSources.astro';
 import SystemAnalyst from '../../components/Cluster/SystemAnalyst.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
@@ -329,6 +330,7 @@ const articleSchema = cluster ? {
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
 							/>
+                            <AdsKeeperWidget placement="in-article" />
 						</section>
 						)}
 
