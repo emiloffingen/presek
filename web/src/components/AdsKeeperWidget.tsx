@@ -1,15 +1,22 @@
-export const AdsKeeperWidget = ({ placement = 'under-article' }: { placement?: 'in-article' | 'under-article' }) => {
-    // Under-Article IDs (previous)
-    // Desktop: 2006214, Mobile: 2006241
+export const AdsKeeperWidget = ({ placement = 'under-article' }: { placement?: 'in-article' | 'under-article' | 'sidebar' }) => {
+    // Mapping IDs
+    // Under-Article: D: 2006214, M: 2006241
+    // In-Article:    D: 2006251, M: 2006255
+    // Sidebar:       D: 2006255, M: 2006272
     
-    // In-Article IDs (new)
-    // Desktop: 2006251, Mobile: 2006255
-    
-    const desktopId = placement === 'under-article' ? '2006214' : '2006251';
-    const mobileId = placement === 'under-article' ? '2006241' : '2006255';
+    let desktopId = '2006214';
+    let mobileId = '2006241';
+
+    if (placement === 'in-article') {
+        desktopId = '2006251';
+        mobileId = '2006255';
+    } else if (placement === 'sidebar') {
+        desktopId = '2006255';
+        mobileId = '2006272';
+    }
 
     return (
-        <div className="adskeeper-container my-8">
+        <div className="adskeeper-container my-8 p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm">
             {/* Desktop Widget */}
             <div className="adskeeper-desktop hidden md:block">
                 <div data-type="_mgwidget" data-widget-id={desktopId}></div>
