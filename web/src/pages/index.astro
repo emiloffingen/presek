@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 import NewsCard from '../components/NewsCard.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import { AdsKeeperWidget } from '../components/AdsKeeperWidget';
 import ForYouIsland from '../components/ForYouIsland.tsx';
 import HomeRailSuggestionsIsland from '../components/HomeRailSuggestionsIsland.tsx';
 import NationalMoodIsland from '../components/NationalMoodIsland.tsx';
@@ -381,6 +382,8 @@ function getBriefingSnippet(content: string) {
 						/>
 					</div>
 				)}
+
+                <AdsKeeperWidget />
 
                 {clusters.length > 4 && (
 					<div class="section-wrapper for-you-wrapper">
