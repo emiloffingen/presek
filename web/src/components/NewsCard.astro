@@ -150,20 +150,18 @@ function getTimeStr(dateStr: string) {
                 )}
 
 				{cluster.is_breaking && (
-				<span class="flex items-center gap-1.5 text-red-600 dark:text-red-500 font-bold text-[10px] tracking-wider uppercase" title="Ударна вест">
-					<span class="relative flex h-2 w-2">
+				<span class="flex items-center" title="Ударна вест">
+					<span class="relative flex h-2.5 w-2.5">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
 					</span>
-                    <span>Ударна</span>
 				</span>
 			)}
 
 
 			{showSignificanceLabel && !cluster.is_breaking && (
-				<span class="significance-dot-label flex items-center gap-1.5" title={significanceLabel}>
-					<Layers size={11} className={totalSources >= 6 ? "text-purple-500" : "text-blue-400"} />
-					<span class="text-[10px] uppercase font-bold tracking-wider">{totalSources >= 6 ? 'Ударна' : 'Следена'}</span>
+				<span class="significance-dot-label flex items-center" title={significanceLabel}>
+					<Layers size={13} className={totalSources >= 6 ? "text-purple-500" : "text-blue-400"} />
 				</span>
 			)}
 		</div>
