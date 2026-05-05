@@ -10,9 +10,34 @@ import re
 import socket
 import ipaddress
 import logging
+import time
+from threading import Lock
 from typing import Optional
 
 log = logging.getLogger("presek.api.helpers")
+
+# Simple thread-safe DNS cache for is_safe_url to reduce redundant network lookups
+_dns_cache = {}
+_dns_cache_lock = Lock()
+DNS_CACHE_TTL = 300  # 5 minutes
+
+def _get_cached_addrinfo(hostname):
+    now = time.time()
+    with _dns_cache_lock:
+        if hostname in _dns_cache:
+            result, timestamp = _dns_cache[hostname]
+            if now - timestamp < DNS_CACHE_TTL:
+                return result
+            else:
+                del _dns_cache[hostname]
+    return None
+
+def _set_cached_addrinfo(hostname, addr_infos):
+    with _dns_cache_lock:
+        # Prevent unbounded growth
+        if len(_dns_cache) > 1000:
+            _dns_cache.clear()
+        _dns_cache[hostname] = (addr_infos, time.time())
 
 def is_safe_url(url: str) -> bool:
     """Rigorous SSRF protection: block local/private network ranges and DNS rebinding."""
@@ -51,7 +76,12 @@ def is_safe_url(url: str) -> bool:
     
     # 3. Resolve hostname and check all resolved IPs (DNS rebinding protection)
     try:
-        addr_infos = socket.getaddrinfo(hostname, None)
+        addr_infos = _get_cached_addrinfo(hostname)
+        if addr_infos is None:
+            addr_infos = socket.getaddrinfo(hostname, None)
+            if addr_infos:
+                _set_cached_addrinfo(hostname, addr_infos)
+
         if not addr_infos:
             return False
         
