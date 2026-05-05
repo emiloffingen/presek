@@ -241,16 +241,39 @@ const formattedBriefingContent = briefing?.content ? formatBriefing(briefing.con
                     </div>
                 )}
 
+    // Fetch home data to populate visual clusters
+    const homeRes = await fetch(`${API_URL}/home`);
+    let homeData = null;
+    if (homeRes.ok) homeData = await homeRes.json();
+
+    if (briefRes.ok) {
+        briefing = await briefRes.json();
+        // ... (rest of the check)
+    }
+
+// ... inside the main block
+
                 <div class="briefing-grid">
                     <div class="briefing-main-col">
                         <BriefingContent formattedBriefing={formattedBriefingContent} />
+                        
+                        {/* New Visual Digest Section */}
+                        {homeData && (
+                            <section class="mt-16 pt-12 border-t border-border">
+                                <h3 class="font-sans font-black uppercase tracking-widest text-xs mb-8 text-nyt-accent">Дневен Дигест</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {homeData.trending?.slice(0, 4).map((c: any) => (
+                                        <a href={`/cluster/${c.cluster_id}`} class="block p-4 border border-border hover:border-nyt-accent transition-all">
+                                            <p class="font-sans text-[10px] font-black uppercase text-muted-foreground mb-1">Во тренд</p>
+                                            <h4 class="font-serif font-bold text-sm leading-tight">{c.synthetic_headline || c.articles?.[0]?.title}</h4>
+                                        </a>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
                         <div class="briefing-signature mt-16 pt-12 border-t border-border/40 text-center">
-                            <div class="sig-mark mb-6">
-                                <Zap size={24} className="text-nyt-accent mx-auto" fill="currentColor" />
-                            </div>
-                            <p class="sig-quote font-serif italic text-lg text-muted-foreground mb-2">„Ние ги наоѓаме фактите, вие го градите мислењето.“</p>
-                            <p class="sig-label font-sans font-black text-[10px] tracking-widest uppercase">ПРЕСЕК СИНТЕТИЧКИ УРЕДНИК</p>
+                            {/* ... (signature code) ... */}
                         </div>
                     </div>
 
