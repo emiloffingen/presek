@@ -1,0 +1,36 @@
+---
+interface Props {
+    placement?: 'in-article' | 'under-article' | 'sidebar';
+}
+
+const { placement = 'under-article' } = Astro.props;
+
+let desktopId = '2006214';
+let mobileId = '2006241';
+
+if (placement === 'in-article') {
+    desktopId = '2006251';
+    mobileId = '2006255';
+} else if (placement === 'sidebar') {
+    desktopId = '2006255';
+    mobileId = '2006272';
+}
+---
+
+<div class="adskeeper-container my-8 p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm">
+    <!-- Desktop Widget -->
+    <div class="adskeeper-desktop hidden md:block">
+        <div data-type="_mgwidget" data-widget-id={desktopId}></div>
+        <script is:inline data-astro-rerun>
+            (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
+        </script>
+    </div>
+    
+    <!-- Mobile Widget -->
+    <div class="adskeeper-mobile block md:hidden">
+        <div data-type="_mgwidget" data-widget-id={mobileId}></div>
+        <script is:inline data-astro-rerun>
+            (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
+        </script>
+    </div>
+</div>

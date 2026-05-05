@@ -5,7 +5,7 @@ import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, 
 import { sanitizeHtml } from '../lib/sanitize';
 import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
-import { AdsKeeperWidget } from './AdsKeeperWidget';
+import AdsKeeperWidget from './AdsKeeperWidget.astro';
 
 interface Props {
 	cluster: NewsCluster;
