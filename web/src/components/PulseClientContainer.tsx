@@ -182,27 +182,27 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </div>
 
             {/* Quick Insights Deck */}
-            <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-8 items-center border-l-4 border-l-nyt-accent shadow-sm">
-                <div className="flex-1">
+            <div className="bg-secondary/10 border border-border p-6 rounded-lg mb-20 flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center border-l-4 border-l-nyt-accent shadow-sm">
+                <div className="flex-1 w-full">
                     <div className="flex items-center gap-2 mb-2">
                          <h3 className="text-[11px] font-black uppercase tracking-widest text-nyt-accent">Клучни Увиди</h3>
                          <span className="h-px flex-1 bg-nyt-accent/10"></span>
                     </div>
-                    <p className="font-serif italic text-xl leading-snug">
+                    <p className="font-serif italic text-lg md:text-xl leading-snug">
                         {intelligence.pluralism?.pluralism_pct > 50 
                             ? "Забележан е висок степен на медиумски консензус кај водечките стории денес."
                             : "Низок плурализам: темите се обработуваат со специфични, дивергентни агли."
                         }
                     </p>
                 </div>
-                <div className="flex-1 grid grid-cols-2 gap-8 border-l border-border pl-8">
-                    <div className="group cursor-help">
+                <div className="flex-1 w-full grid grid-cols-2 gap-6 md:gap-8 border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8">
+                    <div className="group cursor-help relative">
                         <div className="flex items-center gap-1.5 mb-1">
                             <span className="block text-[9px] font-black uppercase text-muted-foreground">Транспарентност</span>
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
                         <span className="text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio || 0}%</span>
-                        <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans">
+                        <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans left-0 md:left-auto">
                             Процент на објави чија содржина е потврдена низ системот.
                         </div>
                     </div>
