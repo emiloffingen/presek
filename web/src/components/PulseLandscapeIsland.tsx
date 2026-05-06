@@ -62,10 +62,10 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
         <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden shadow-sm">
             <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
                 {/* Quadrant Labels */}
-                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/60 backdrop-blur-md px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">Субјективни & Сензационални</div>
-                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/60 backdrop-blur-md px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">Објективни & Динамични</div>
-                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/60 backdrop-blur-md px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">Традиционални & Статични</div>
-                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/60 backdrop-blur-md px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">Прецизни & Аналитички</div>
+                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">Субјективни & Сензационални</div>
+                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-accent/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-accent/10 shadow-sm z-10">Објективни & Динамични</div>
+                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">Традиционални & Статични</div>
+                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">Прецизни & Аналитички</div>
 
                 {/* Axes */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-px bg-foreground/10 dashed"></div>
@@ -101,7 +101,7 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
                             </div>
 
                             {/* Label */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-0.5 bg-background/90 backdrop-blur-md border border-border/50 rounded shadow-sm whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:border-nyt-accent/50 transition-all z-20">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-0.5 bg-background/95 border border-border/50 rounded shadow-sm whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:border-nyt-accent/50 transition-all z-20">
                                 <span className={`text-[9px] font-black uppercase tracking-tight ${source.trust_label === 'Висока доверба' ? 'text-nyt-accent' : 'text-foreground'}`}>
                                     {source.source}
                                 </span>

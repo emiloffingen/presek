@@ -130,20 +130,22 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <p className="card-label"><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
                     <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</p>
                     <div className="card-sparkline group">
-                        {velocityData.length > 0 ? velocityData.slice(-12).map((v: any, i: number) => {
+                        {velocityData.length > 0 ? (() => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
-                            const height = Math.max(15, ((v.n || 0) / maxVelocity) * 100);
-                            return (
-                                <div 
-                                    key={i} 
-                                    className="bar animate-rise" 
-                                    style={{ 
-                                        height: `${height}%`,
-                                        animationDelay: `${i * 0.05}s`
-                                    }}
-                                ></div>
-                            )
-                        }) : (
+                            return velocityData.slice(-12).map((v: any, i: number) => {
+                                const height = Math.max(15, ((v.n || 0) / maxVelocity) * 100);
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className="bar animate-rise" 
+                                        style={{ 
+                                            height: `${height}%`,
+                                            animationDelay: `${i * 0.05}s`
+                                        }}
+                                    ></div>
+                                );
+                            });
+                        })() : (
                             <div className="w-full h-px bg-border opacity-20 self-center"></div>
                         )}
                     </div>
