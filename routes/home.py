@@ -274,14 +274,30 @@ async def get_home():
         return cached
 
     try:
-        news_result = await get_news(page_size=48)
-        recent_result = await get_news(sort="recent", page_size=24)
-        trending = await get_trending_route()
-        top_entities = await get_top_entities(limit=12)
-        stats = await get_stats_summary()
+        # Fetch all dependencies in parallel
+        results = await asyncio.gather(
+            get_news(page_size=48),
+            get_news(sort="recent", page_size=24),
+            get_trending_route(),
+            get_top_entities(limit=12),
+            get_stats_summary(),
+            return_exceptions=True
+        )
+        
+        news_result, recent_result, trending, top_entities, stats = results
 
+        # Basic error check (ensure news_result is a dict)
+        if isinstance(news_result, Exception):
+            log.error(f"Home Route dependency error (news): {news_result}")
+            raise news_result
         if not isinstance(news_result, dict):
             raise RuntimeError("Homepage news payload unavailable")
+        
+        # Unpack other results, handling exceptions
+        if isinstance(recent_result, Exception): recent_result = {}
+        if isinstance(trending, Exception): trending = []
+        if isinstance(top_entities, Exception): top_entities = []
+        if isinstance(stats, Exception): stats = {}
 
         clusters = news_result.get("clusters") or []
         global_clusters = news_result.get("global") or []
