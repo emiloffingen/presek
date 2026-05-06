@@ -216,7 +216,7 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
     
     cat_id = f"cat-{category}" if category else "all"
     cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v3"
-    cached = cached_response(cache_key, ttl=300)
+    cached = cached_response(cache_key, ttl=600)
     if cached: return cached
 
     # Count articles and international share in one query
@@ -290,5 +290,5 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
             "diverse_sources_pct": round(balance_stats["diverse_sources"] / max(1, balance_stats["total_clusters"]) * 100, 1)
         }
     }
-    set_cache(cache_key, res, ttl=300)
+    set_cache(cache_key, res, ttl=600)
     return res

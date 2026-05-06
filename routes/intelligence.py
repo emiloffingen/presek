@@ -478,7 +478,7 @@ async def get_source_pulse(category: Optional[str] = None):
         r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
 
     result = {"status": "success", "data": rows}
-    set_cache(cache_key, result, ttl=300)
+    set_cache(cache_key, result, ttl=600)
     return result
 @router.get("/intelligence/entity/{name}")
 async def get_entity_profile(name: str):
@@ -639,7 +639,7 @@ async def get_global_pulse(category: Optional[str] = None):
         "intelligence": intel,
         "top_entities": top_entities
     }
-    set_cache(cache_key, res, ttl=300)
+    set_cache(cache_key, res, ttl=600)
     return res
 
 @router.get("/entity-graph/{entity_name}")
