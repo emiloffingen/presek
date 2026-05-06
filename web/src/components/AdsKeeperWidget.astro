@@ -36,9 +36,18 @@ if (placement === 'in-article') {
     </div>
 </div>
 
-<style>
-    /* Ensure the ad slot collapses if empty (no ad filled or blocked) */
-    .ad-slot:empty {
-        display: none !important;
-    }
-</style>
+<script>
+    // Cleanup script to hide ad slots if they are blocked by Brave or remain unfilled
+    // Runs on every page transition
+    document.addEventListener('astro:page-load', () => {
+        setTimeout(() => {
+            document.querySelectorAll('.ad-slot').forEach((slot) => {
+                const el = slot as HTMLElement;
+                // If it has no content (blocked) or is practically empty (no fill)
+                if (el.innerHTML.trim() === '' || el.clientHeight <= 20) {
+                    el.style.display = 'none';
+                }
+            });
+        }, 3500); // Give AdsKeeper 3.5 seconds to populate
+    });
+</script>
