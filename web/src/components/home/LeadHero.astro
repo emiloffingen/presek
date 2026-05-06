@@ -104,11 +104,16 @@ const IconComponent =
         <div class="lead-kicker">
             <span class="source-label">{leadCluster.articles?.[0].source}</span>
             {leadCluster.is_breaking && <span class="live-pill">Ударна вест</span>}
+            {leadSignal && (
+                <span class="lead-signal-badge" title="Медиумски Пулс">
+                    <TrendingUp size={12} className="opacity-70" />
+                    <span>{leadSignal}</span>
+                </span>
+            )}
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
             <h1 class:list={["headline headline-lead", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>
         </a>
-        <p class="lead-signal">{leadSignal}</p>
         {leadSummary && (
             <p class:list={["lead-summary", { "lead-summary-cyrillic": leadSummaryIsCyrillic }]} set:html={sanitizeHtml(leadSummary)}></p>
         )}
@@ -305,6 +310,14 @@ const IconComponent =
 		text-transform: uppercase;
 	}
 
+	.lead-kicker {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.75rem;
+	}
+
 	.lead-summary {
 		font-family: var(--font-nyt-body);
 		font-size: 0.98rem;
@@ -324,15 +337,18 @@ const IconComponent =
 		max-width: 56ch;
 	}
 
-	.lead-signal {
-		margin: 0;
+	.lead-signal-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		background: var(--secondary);
+		color: var(--secondary-foreground);
+		padding: 0.25rem 0.55rem;
+		border-radius: 4px;
 		font-family: var(--font-sans);
-		font-size: 0.72rem;
-		font-weight: 800;
-		letter-spacing: 0.08em;
-		line-height: 1.2;
-		text-transform: uppercase;
-		color: color-mix(in srgb, var(--muted-foreground) 90%, var(--foreground) 10%);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
 	}
 
     .lead-analyst-box {
@@ -775,8 +791,9 @@ const IconComponent =
             margin-bottom: 0.5rem;
 		}
 
-		.lead-signal {
+		.lead-signal-badge {
 			font-size: 0.6rem;
+            padding: 0.2rem 0.45rem;
 		}
 
 		.lead-meta {
