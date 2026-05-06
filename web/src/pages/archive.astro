@@ -6,7 +6,7 @@ import NewsCard from '../components/NewsCard.astro';
 import ArchiveFeedIsland from '../components/ArchiveFeedIsland.tsx';
 import ArchiveHeatmapIsland from '../components/ArchiveHeatmapIsland.tsx';
 import { apiBaseUrl } from '../lib/apiBase';
-import { CalendarDays, ChevronRight, Hash, Building2 } from 'lucide-react';
+import { CalendarDays, ChevronRight, Hash, Building2, Sparkles } from 'lucide-react';
 
 const date = Astro.url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 const q = Astro.url.searchParams.get('q') || '';
