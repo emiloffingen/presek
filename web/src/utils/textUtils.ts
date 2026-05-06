@@ -254,6 +254,32 @@ export function getEditionStr(dateInput: any): string {
 }
 
 /**
+ * Returns context for designed fallback cards.
+ */
+export function getDesignCardContext(cluster: any) {
+    const topic = (cluster.topics?.[0] || cluster.articles?.[0]?.topic || '').toLowerCase();
+    const category = (cluster.articles?.[0]?.category || '').toLowerCase();
+    
+    if (topic.includes('култура') || category.includes('култура') || topic.includes('уметност')) {
+        return { label: 'КУЛТУРНА ПРЕПОРАКА', icon: 'palette', sub: 'Преглед на најзначајните дела од историјата на македонската уметност.' };
+    }
+    if (topic.includes('политика') || category.includes('политика')) {
+        return { label: 'ПОЛИТИЧКИ ФОКУС', icon: 'building-2', sub: 'Длабинска анализа на клучните политички процеси и одлуки.' };
+    }
+    if (topic.includes('економија') || category.includes('економија') || topic.includes('бизнис')) {
+        return { label: 'ЕКОНОМСКИ БРИФИНГ', icon: 'trending-up', sub: 'Преглед на економските трендови и финансиските пазари.' };
+    }
+    if (topic.includes('спорт') || category.includes('спорт')) {
+        return { label: 'СПОРТСКИ ПУЛС', icon: 'award', sub: 'Најважните настани и резултати од светот на спортот.' };
+    }
+    if (topic.includes('технологија') || category.includes('технологија') || topic.includes('наука')) {
+        return { label: 'ТЕХНОЛОШКИ ПРЕСЕК', icon: 'cpu', sub: 'Иновации и откритија кои ја обликуваат нашата иднина.' };
+    }
+    
+    return { label: 'СИСТЕМСКИ ПРЕГЛЕД', icon: 'newspaper', sub: 'Алгоритамска синтеза на водечките информации од домашните медиуми.' };
+}
+
+/**
  * Converts [1], [2], [1, 2] or even raw trailing numbers like "fact 46" into superscript links.
  */
 export function parseFootnotes(text: string): string {

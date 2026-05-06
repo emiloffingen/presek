@@ -1,9 +1,9 @@
 ---
 /* Cache-bust marker for NewsCard stylesheet hashing. */
 import { chooseClusterImage } from '../utils/imageSelection';
-import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify } from '../utils/textUtils';
+import { getDisplayTitle, getDisplaySummary, isMostlyCyrillic, highlightScores, slugify, getDesignCardContext } from '../utils/textUtils';
 import { sanitizeHtml } from '../lib/sanitize';
-import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette } from 'lucide-react';
+import { Clock, Layers, ShieldCheck, Globe, Sparkles, Zap, AlertCircle, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 import type { NewsCluster, Article } from '../types';
 
 interface Props {
@@ -38,6 +38,15 @@ const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main))
 const clusterUrl = `/cluster/${cluster.cluster_id}-${clusterSlug}`;
 
 const uniqueSources = new Set(cluster.articles.map(a => a.source)).size;
+
+const cardContext = getDesignCardContext(cluster);
+const IconComponent = 
+    cardContext.icon === 'palette' ? Palette :
+    cardContext.icon === 'building-2' ? Building2 :
+    cardContext.icon === 'trending-up' ? TrendingUp :
+    cardContext.icon === 'award' ? Award :
+    cardContext.icon === 'cpu' ? Cpu :
+    Newspaper;
 
 const slimCluster = {
 	cluster_id: cluster.cluster_id,
@@ -222,15 +231,20 @@ function getTimeStr(dateStr: string) {
 		<div class:list={["image-wrap", { "image-wrap-fallback": isFallbackArt }]}>
 			<a href={clusterUrl} class="block h-full">
 				{isFallbackArt ? (
-					<div class="article-image-placeholder" style={`--placeholder-bg: ${tintColor};`}>
-                        <div class="article-image-placeholder-bg-text" set:html={sanitizeHtml(rawLeadTitle)}></div>
-						<div class="article-image-placeholder-topline">
-							<p class="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
-							<p class="article-image-placeholder-chip">{uniqueSources} {uniqueSources === 1 ? 'извор' : 'извори'}</p>
-						</div>
-                        <div class="article-image-placeholder-content">
-						    <h3>{main?.category || 'Вести'}</h3>
-						    <p class="article-image-placeholder-source">{main.source}</p>
+					<div class="article-image-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
+                        <div class="design-card-pattern"></div>
+                        <div class="design-card-ribbon">
+                            <span>{cardContext.label}</span>
+                        </div>
+                        <div class="design-card-main">
+                            <div class="design-card-icon-wrap">
+                                <IconComponent size={32} strokeWidth={1.5} className="text-white/90" />
+                            </div>
+                            <h3 class:list={[{ "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
+                            <p class="design-card-sub">{cardContext.sub}</p>
+                        </div>
+                        <div class="design-card-footer">
+                            <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={12} className="ml-1" /></span>
                         </div>
 					</div>
 				) : (
@@ -247,12 +261,14 @@ function getTimeStr(dateStr: string) {
 						onload="this.classList.add('is-loaded')"
 						onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
 					/>
-					<div class="article-image-placeholder is-error-fallback" style="display: none;">
-						<div class="article-image-placeholder-topline">
-							<p class="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
-							<p class="article-image-placeholder-chip">Без визуел</p>
-						</div>
-						<p class="article-image-placeholder-source">{main.source}</p>
+					<div class="article-image-placeholder design-card is-error-fallback" style="display: none; --placeholder-bg: #1a1a1a;">
+                        <div class="design-card-pattern"></div>
+                        <div class="design-card-main">
+                            <h3 class:list={[{ "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
+                        </div>
+                        <div class="design-card-footer">
+						    <p class="article-image-placeholder-source">{main.source}</p>
+                        </div>
 					</div>
 				)}
 			</a>
@@ -405,6 +421,100 @@ function getTimeStr(dateStr: string) {
     .article-image-placeholder-content {
         position: relative;
         z-index: 2;
+    }
+
+    /* --- Design Card Enhancements --- */
+    .design-card {
+        padding: 1.5rem !important;
+        text-align: center;
+        align-content: center;
+    }
+
+    .design-card-pattern {
+        position: absolute;
+        inset: 0;
+        opacity: 0.1;
+        background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.4) 1px, transparent 0);
+        background-size: 24px 24px;
+        z-index: 0;
+    }
+
+    .design-card-ribbon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: #fdf6e3; /* Cream */
+        color: #1a1a1a;
+        padding: 0.25rem 0.75rem;
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        z-index: 3;
+        border-bottom-right-radius: 4px;
+    }
+
+    .design-card-main {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .design-card-icon-wrap {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        margin-bottom: 0.15rem;
+    }
+
+    .design-card h3 {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        font-weight: 900;
+        line-height: 1.2;
+        color: #fdf6e3;
+        margin: 0;
+        max-width: 24ch;
+    }
+
+    .design-card-sub {
+        font-family: var(--font-serif);
+        font-size: 0.72rem;
+        font-style: italic;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+        max-width: 32ch;
+    }
+
+    .design-card-footer {
+        position: absolute;
+        bottom: 0.75rem;
+        right: 0.75rem;
+        z-index: 2;
+    }
+
+    .design-card-cta {
+        display: inline-flex;
+        align-items: center;
+        background: #d4af37; /* Goldish */
+        color: #fdf6e3;
+        padding: 0.3rem 0.6rem;
+        border-radius: 99px;
+        font-family: var(--font-sans);
+        font-size: 0.5rem;
+        font-weight: 950;
+        letter-spacing: 0.05em;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
 	@media (min-width: 768px) {

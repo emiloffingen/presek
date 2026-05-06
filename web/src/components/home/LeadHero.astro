@@ -1,8 +1,8 @@
 ---
 import { sanitizeHtml } from '../../lib/sanitize';
-import { getDisplayTitle, highlightScores } from '../../utils/textUtils';
+import { getDisplayTitle, highlightScores, getDesignCardContext } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
-import { Zap } from 'lucide-react';
+import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
 
 interface Props {
     leadCluster: NewsCluster;
@@ -37,6 +37,15 @@ const primaryArticle = leadCluster.articles?.[0] || {};
 const primaryDisplayTitle = getDisplayTitle(primaryArticle, 'Водечка приказна');
 const relatedArticles = leadCluster.articles.slice(1, 4);
 const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.category || 'Водечка тема';
+
+const cardContext = getDesignCardContext(leadCluster);
+const IconComponent = 
+    cardContext.icon === 'palette' ? Palette :
+    cardContext.icon === 'building-2' ? Building2 :
+    cardContext.icon === 'trending-up' ? TrendingUp :
+    cardContext.icon === 'award' ? Award :
+    cardContext.icon === 'cpu' ? Cpu :
+    Newspaper;
 ---
 
 <section class:list={["lead-hero motion-rise", { "lead-hero-filtered": filtered }]}>
@@ -58,27 +67,30 @@ const mediaLabel = filterLabel || primaryArticle.topic || primaryArticle.categor
                         onload="this.classList.add('is-loaded')"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
                     />
-                    <div class="lead-media-placeholder lead-media-placeholder-error" style="display: none;">
-                        <div class="lead-media-topline">
-                            <p class="lead-media-kicker">ПРЕСЕК.мк Преглед</p>
-                            <p class="lead-media-chip">Без визуел</p>
+                    <div class="lead-media-placeholder lead-media-placeholder-error design-card" style="display: none; --placeholder-bg: #1a1a1a;">
+                        <div class="design-card-pattern"></div>
+                        <div class="design-card-main">
+                            <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
                         </div>
-                        <h2>{mediaLabel}</h2>
                     </div>
                 </>
             ) : (
-                <div class="lead-media-placeholder" style={`--placeholder-bg: ${tintColor};`}>
-                    <div class="lead-media-placeholder-bg-text" set:html={sanitizeHtml(leadTitle)}></div>
-                    <div class="lead-media-topline">
-                        <p class="lead-media-kicker">ПРЕСЕК.мк Преглед</p>
-                        <div class="lead-media-status">
-                           {leadCluster.is_breaking && <Zap size={10} fill="currentColor" />}
-                           <p class="lead-media-chip">{leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'извор' : 'извори'}</p>
-                        </div>
+                <div class="lead-media-placeholder design-card" style={`--placeholder-bg: ${tintColor};`}>
+                    <div class="design-card-pattern"></div>
+                    <div class="design-card-ribbon">
+                        <span>{cardContext.label}</span>
                     </div>
-                    <div class="lead-media-content">
-                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{mediaLabel}</h2>
-                        <p class="lead-media-fallback-source">{leadCluster.articles?.[0].source}</p>
+                    
+                    <div class="design-card-main">
+                        <div class="design-card-icon-wrap">
+                            <IconComponent size={48} strokeWidth={1.2} className="text-white/90" />
+                        </div>
+                        <h2 class:list={[{ "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
+                        <p class="design-card-sub">{cardContext.sub}</p>
+                    </div>
+
+                    <div class="design-card-footer">
+                        <span class="design-card-cta">ОДИ ДО СТАТИЈАТА <ArrowRight size={14} className="ml-1" /></span>
                     </div>
                 </div>
             )}
