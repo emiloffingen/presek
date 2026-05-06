@@ -219,7 +219,7 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
     cached = cached_response(cache_key, ttl=300)
     if cached: return cached
 
-    # Count international articles based on categories since is_global flag is unreliable
+    # Count articles and international share in one query
     freshness_expr = "COALESCE(ingested_at, created_at)"
     cat_filter = ""
     params = []
@@ -227,15 +227,16 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
         cat_filter = "AND category = %s"
         params.append(category)
 
-    total_articles_24h_res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
-    total_articles_24h = total_articles_24h_res["count"] if total_articles_24h_res else 0
-
-    intl_articles_24h_res = await db.async_execute_one(f"""
-        SELECT COUNT(*) FROM articles 
+    counts_res = await db.async_execute_one(f"""
+        SELECT 
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE) as intl
+        FROM articles 
         WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
-          AND (category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE)
     """, tuple(params))
-    intl_articles_24h = intl_articles_24h_res["count"] if intl_articles_24h_res else 0
+    
+    total_articles_24h = counts_res["total"] if counts_res else 0
+    intl_articles_24h = counts_res["intl"] if counts_res else 0
 
     bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
     ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}

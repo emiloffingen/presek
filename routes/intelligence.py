@@ -449,6 +449,7 @@ async def get_source_pulse(category: Optional[str] = None):
         first_reporters AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
             FROM articles
+            WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '10 days'
             ORDER BY cluster_id, COALESCE(ingested_at, created_at) ASC, created_at ASC
         )
         SELECT
@@ -547,11 +548,7 @@ async def get_global_pulse(category: Optional[str] = None):
         cat_filter = "AND a.category = %s"
         params.append(category)
 
-    # Run all DB queries in parallel for better performance
-    async def get_last_24h():
-        res = await db.async_execute_one(f"SELECT COUNT(*) FROM articles a WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}", tuple(params))
-        return res["count"] if res else 0
-
+    # Run DB queries in parallel
     async def get_velocity():
         return await db.async_execute(f"""
             SELECT date_trunc('hour', COALESCE(a.ingested_at, a.created_at)) AS t, COUNT(*) AS n 
@@ -561,6 +558,8 @@ async def get_global_pulse(category: Optional[str] = None):
         """, tuple(params))
 
     async def get_by_category():
+        # Only needed if not filtering by category
+        if category: return []
         return await db.async_execute("""
             SELECT a.category, COUNT(*) AS n 
             FROM articles a
@@ -571,7 +570,7 @@ async def get_global_pulse(category: Optional[str] = None):
         """)
 
     async def get_topic_sentiment():
-        return await db.async_execute("""
+        return await db.async_execute(f"""
             SELECT 
                 m.topics,
                 AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
@@ -582,15 +581,18 @@ async def get_global_pulse(category: Optional[str] = None):
             JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
             WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
               AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
+              {cat_filter.replace('a.category', 'm.category')}
             GROUP BY m.topics ORDER BY n DESC
         """)
 
-    last_24h, velocity, by_category, by_topic_sentiment = await asyncio.gather(
-        get_last_24h(),
+    velocity, by_category, by_topic_sentiment = await asyncio.gather(
         get_velocity(),
         get_by_category(),
         get_topic_sentiment()
     )
+    
+    # Calculate last_24h from velocity to avoid extra query
+    last_24h = sum(row["n"] for row in velocity)
 
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload

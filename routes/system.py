@@ -83,6 +83,14 @@ async def serve_manifest(): return FileResponse(os.path.join("static", "manifest
 @router.get("/robots.txt")
 async def robots_txt(): return Response("User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: https://presek.live/sitemap-index.xml\n", media_type="text/plain")
 
+@router.get("/categories")
+async def get_categories():
+    """Returns the canonical list of geographic categories for Pulse filtering."""
+    from nlp.categories import ALLOWED_CATEGORIES
+    # Pulse page expects { categories: [ { name: "..." }, ... ] }
+    items = [{"name": cat} for cat in sorted(list(ALLOWED_CATEGORIES))]
+    return {"categories": items}
+
 @router.get("/weather")
 async def get_weather():
     cached = cached_response("weather:skopje", ttl=900)
