@@ -21,7 +21,7 @@ if (placement === 'in-article') {
 <div class:list={[className, { "my-8": !className }]}>
     <!-- Desktop Widget -->
     <div class="adskeeper-desktop hidden md:block">
-        <div data-type="_mgwidget" class="ad-slot p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm" data-widget-id={desktopId}></div>
+        <div data-type="_mgwidget" class="ad-slot" data-widget-id={desktopId}></div>
         <script is:inline data-astro-rerun>
             (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
         </script>
@@ -29,25 +29,9 @@ if (placement === 'in-article') {
     
     <!-- Mobile Widget -->
     <div class="adskeeper-mobile block md:hidden">
-        <div data-type="_mgwidget" class="ad-slot p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm" data-widget-id={mobileId}></div>
+        <div data-type="_mgwidget" class="ad-slot" data-widget-id={mobileId}></div>
         <script is:inline data-astro-rerun>
             (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
         </script>
     </div>
 </div>
-
-<script>
-    // Cleanup script to hide ad slots if they are blocked by Brave or remain unfilled
-    // Runs on every page transition
-    document.addEventListener('astro:page-load', () => {
-        setTimeout(() => {
-            document.querySelectorAll('.ad-slot').forEach((slot) => {
-                const el = slot as HTMLElement;
-                // If it has no content (blocked) or is practically empty (no fill)
-                if (el.innerHTML.trim() === '' || el.clientHeight <= 20) {
-                    el.style.display = 'none';
-                }
-            });
-        }, 3500); // Give AdsKeeper 3.5 seconds to populate
-    });
-</script>
