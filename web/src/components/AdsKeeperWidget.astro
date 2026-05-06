@@ -18,10 +18,10 @@ if (placement === 'in-article') {
 }
 ---
 
-<div class:list={["adskeeper-container p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm", className, { "my-8": !className }]}>
+<div class:list={[className, { "my-8": !className }]}>
     <!-- Desktop Widget -->
     <div class="adskeeper-desktop hidden md:block">
-        <div data-type="_mgwidget" data-widget-id={desktopId}></div>
+        <div data-type="_mgwidget" class="ad-slot p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm" data-widget-id={desktopId}></div>
         <script is:inline data-astro-rerun>
             (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
         </script>
@@ -29,9 +29,16 @@ if (placement === 'in-article') {
     
     <!-- Mobile Widget -->
     <div class="adskeeper-mobile block md:hidden">
-        <div data-type="_mgwidget" data-widget-id={mobileId}></div>
+        <div data-type="_mgwidget" class="ad-slot p-4 border border-[var(--border)] bg-[var(--secondary)] rounded-sm" data-widget-id={mobileId}></div>
         <script is:inline data-astro-rerun>
             (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
         </script>
     </div>
 </div>
+
+<style>
+    /* Ensure the ad slot collapses if empty (no ad filled or blocked) */
+    .ad-slot:empty {
+        display: none !important;
+    }
+</style>
