@@ -41,6 +41,16 @@ class StatsSummaryResponse(BaseModel):
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
 
+def get_date_range(date_str: str):
+    """Returns (start, end) timestamps for a given YYYY-MM-DD string.
+    The end is the start of the NEXT day for use with created_at < end.
+    """
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    start = dt
+    end = dt + timedelta(days=1)
+    return start, end
+
+
 def _pick_quote_of_the_day(row) -> dict | None:
     if not row:
         return None
@@ -96,7 +106,7 @@ async def get_archive_heatmap():
                 cluster_id,
                 COUNT(*) as source_count
             FROM articles
-            WHERE created_at >= NOW() - INTERVAL '90 days'
+            WHERE created_at >= NOW() - INTERVAL '180 days'
             GROUP BY day, cluster_id
         )
         SELECT 
@@ -126,17 +136,28 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         if page_size < 1 or page_size > 50:
             raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
         
-        # Build parameterized query safely
+        # 1. Caching - Only for historical dates (older than today)
+        cache_key = f"api:archive:v3:{date}:{q}:{source}:{topic}:{page}:{page_size}"
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        is_today = (date == today_str)
+        
+        if not is_today:
+            cached = cached_response(cache_key)
+            if cached: return cached
+
+        d_start, d_end = get_date_range(date)
+
+        # 2. Main content query
         if q:
             base_sql = """
                 SELECT * FROM articles 
-                WHERE created_at::date = %s 
+                WHERE created_at >= %s AND created_at < %s 
                   AND (title ILIKE %s OR summary ILIKE %s OR description ILIKE %s)
             """
-            params = [date, f"%{q}%", f"%{q}%", f"%{q}%"]
+            params = [d_start, d_end, f"%{q}%", f"%{q}%", f"%{q}%"]
         else:
-            base_sql = "SELECT * FROM articles WHERE created_at::date = %s"
-            params = [date]
+            base_sql = "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s"
+            params = [d_start, d_end]
 
         if source:
             base_sql += " AND source = %s"
@@ -146,7 +167,50 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
             params.append(topic)
         
         base_sql += " ORDER BY created_at DESC LIMIT 1500"
-        rows = await db.async_execute(base_sql, tuple(params))
+        
+        # 3. Optimized metrics queries (combined where possible)
+        # Combined count and unique sources
+        metrics_sql = f"SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s"
+        metrics_params = [d_start, d_end]
+        if q:
+            metrics_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
+            metrics_params.extend([f"%{q}%", f"%{q}%"])
+        if source:
+            metrics_sql += " AND source = %s"
+            metrics_params.append(source)
+        if topic:
+            metrics_sql += " AND topic = %s"
+            metrics_params.append(topic)
+        
+        # Groupings
+        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
+        group_source_params = [d_start, d_end]
+        if source:
+            group_source_sql += " AND source = %s"
+            group_source_params.append(source)
+        if topic:
+            group_source_sql += " AND topic = %s"
+            group_source_params.append(topic)
+        group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
+        
+        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s"
+        group_topic_params = [d_start, d_end]
+        if source:
+            group_topic_sql += " AND source = %s"
+            group_topic_params.append(source)
+        if topic:
+            group_topic_sql += " AND topic = %s"
+            group_topic_params.append(topic)
+        group_topic_sql += " GROUP BY topic ORDER BY n DESC LIMIT 8"
+
+        # Execute in parallel
+        rows, metrics, top_sources, top_topics = await asyncio.gather(
+            db.async_execute(base_sql, tuple(params)),
+            db.async_execute_one(metrics_sql, tuple(metrics_params)),
+            db.async_execute(group_source_sql, tuple(group_source_params)),
+            db.async_execute(group_topic_sql, tuple(group_topic_params))
+        )
+
         clusters = defaultdict(list)
         for r in rows:
             r["reading_time"] = calculate_reading_time(r.get("description", ""))
@@ -157,6 +221,7 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         if q:
              from embeddings import generate_query_embedding
              import numpy as np
+             from nlp.utils import parse_embedding_value
              query_vec = generate_query_embedding(q)
              if query_vec:
                  for arts in ranked:
@@ -178,63 +243,31 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         rep_images = {r["cluster_id"]: r["representative_image"] for r in await db.async_execute("SELECT cluster_id, representative_image FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))} if cids else {}
         payload = [{"cluster_id": c[0]["cluster_id"], "articles": c, "representative_image": rep_images.get(c[0]["cluster_id"]), "reading_time": c[0].get('reading_time', 1), "score": round(score_cluster(c), 3), "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD, "has_synthesis": c[0]["cluster_id"] in s_ids, "has_balanced": is_balanced(c)} for c in paged]
         
-        # Build count queries safely
-        count_sql = "SELECT COUNT(*) FROM articles WHERE created_at::date = %s"
-        count_params = [date]
-        if q:
-            count_sql += " AND (title ILIKE %s OR summary ILIKE %s)"
-            count_params.extend([f"%{q}%", f"%{q}%"])
-        if source:
-            count_sql += " AND source = %s"
-            count_params.append(source)
-        if topic:
-            count_sql += " AND topic = %s"
-            count_params.append(topic)
-        
-        dist_source_sql = "SELECT COUNT(DISTINCT source) FROM articles WHERE created_at::date = %s"
-        dist_source_params = [date]
-        if source:
-            dist_source_sql += " AND source = %s"
-            dist_source_params.append(source)
-        if topic:
-            dist_source_sql += " AND topic = %s"
-            dist_source_params.append(topic)
-        
-        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at::date = %s"
-        group_source_params = [date]
-        if source:
-            group_source_sql += " AND source = %s"
-            group_source_params.append(source)
-        if topic:
-            group_source_sql += " AND topic = %s"
-            group_source_params.append(topic)
-        group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
-        
-        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at::date = %s"
-        group_topic_params = [date]
-        if source:
-            group_topic_sql += " AND source = %s"
-            group_topic_params.append(source)
-        if topic:
-            group_topic_sql += " AND topic = %s"
-            group_topic_params.append(topic)
-        group_topic_sql += " GROUP BY topic ORDER BY n DESC LIMIT 8"
-        
-        return {
+        res = {
             "clusters": payload, 
-            "total": (await db.async_execute_one(count_sql, tuple(count_params)))["count"],
-            "sources": (await db.async_execute_one(dist_source_sql, tuple(dist_source_params)))["count"],
+            "total": metrics["total"],
+            "sources": metrics["source_count"],
             "date": date, "q": q, "source": source, "topic": topic, "page": page, "page_size": page_size, 
             "has_more": offset + page_size < len(ranked), 
             "total_clusters": len(ranked),
-            "top_sources": await db.async_execute(group_source_sql, tuple(group_source_params)),
-            "top_topics": await db.async_execute(group_topic_sql, tuple(group_topic_params))
+            "top_sources": top_sources,
+            "top_topics": top_topics
         }
+        
+        # Set cache with long TTL for past dates
+        if not is_today:
+            set_cache(cache_key, res, ttl=43200) # 12 hours
+        else:
+            set_cache(cache_key, res, ttl=300) # 5 mins for today
+            
+        return res
     except ValueError:
         raise HTTPException(status_code=400, detail="Невалиден формат на датум. Користете YYYY-MM-DD")
     except Exception as e:
-        log.error(f"Archive Error: {e}")
+        log.error(f"Archive Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Неуспешно вчитување на архива")
+
+
 
 @router.get("/archive/daily-briefing")
 async def get_archive_daily_briefing(date: str = Query(...)):
@@ -244,16 +277,18 @@ async def get_archive_daily_briefing(date: str = Query(...)):
     cached = cached_response(cache_key, ttl=86400)
     if cached: return cached
 
+    d_start, d_end = get_date_range(date)
+
     # Find the top 3 clusters for that day and their summaries
     top_clusters = await db.async_execute("""
         SELECT s.cluster_id, s.summary, s.synthetic_headline
         FROM cluster_summaries s
         JOIN articles a ON s.cluster_id = a.cluster_id
-        WHERE a.created_at::date = %s
+        WHERE a.created_at >= %s AND a.created_at <= %s
         GROUP BY s.cluster_id, s.summary, s.synthetic_headline, s.pluralism_score
         ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
         LIMIT 3
-    """, (date,))
+    """, (d_start, d_end))
 
     if not top_clusters:
         return {"briefing": None}
@@ -277,16 +312,18 @@ async def get_archive_on_this_day(date: str = Query(...)):
 
     for years in [1, 2]:
         past_date = (dt - timedelta(days=365 * years)).strftime("%Y-%m-%d")
+        d_start, d_end = get_date_range(past_date)
+        
         past_cluster = await db.async_execute_one("""
             SELECT s.cluster_id, s.summary, s.synthetic_headline, m.representative_image
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
             JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
-            WHERE a.created_at::date = %s
+            WHERE a.created_at >= %s AND a.created_at <= %s
             GROUP BY s.cluster_id, s.summary, s.synthetic_headline, m.representative_image, s.pluralism_score
             ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
             LIMIT 1
-        """, (past_date,))
+        """, (d_start, d_end))
         
         if past_cluster:
             return {
