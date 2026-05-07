@@ -803,3 +803,69 @@ async def get_personalized_recommendations(request: Request):
         m_row = await db.async_execute_one("SELECT representative_image FROM cluster_metadata WHERE cluster_id = %s", (cid,))
         formatted.append({"cluster_id": cid, "articles": arts, "representative_image": m_row["representative_image"] if m_row else None, "score": score_cluster(arts), "has_synthesis": bool(s_row and s_row["summary"]), "is_breaking": any(a.get("is_breaking") for a in arts), "reason": "Предлог за Вас"})
     return {"status": "success", "clusters": formatted}
+
+@router.get("/intelligence/briefing")
+async def get_latest_briefing(date: Optional[str] = None):
+    """Fetch the latest or specific AI-generated daily briefing."""
+    if date:
+        from .security import validate_date
+        validate_date(date)
+        row = await db.async_execute_one("SELECT * FROM daily_briefings WHERE date = %s", (date,))
+    else:
+        row = await db.async_execute_one("SELECT * FROM daily_briefings ORDER BY date DESC LIMIT 1")
+    
+    if not row:
+        return {"status": "error", "message": "Брифингот не е пронајден"}
+
+    target_date = row["date"]
+    
+    # 1. Fetch metadata for the sidebar
+    subjects = await db.async_execute("""
+        SELECT name, total_mentions 
+        FROM knowledge_entities 
+        WHERE type = 'PERSON' AND last_seen >= %s::date - INTERVAL '24 hours' 
+          AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
+        ORDER BY total_mentions DESC LIMIT 6
+    """, (target_date, target_date))
+
+    locations = await db.async_execute("""
+        SELECT name, total_mentions 
+        FROM knowledge_entities 
+        WHERE type = 'GPE' AND last_seen >= %s::date - INTERVAL '24 hours'
+          AND last_seen <= %s::date + INTERVAL '23 hours 59 minutes'
+        ORDER BY total_mentions DESC LIMIT 8
+    """, (target_date, target_date))
+
+    # 2. Historical dates for navigation
+    historical = await db.async_execute("SELECT date::text as day FROM daily_briefings ORDER BY date DESC LIMIT 14")
+
+    # 3. Lead cluster for the day
+    lead_cluster = await db.async_execute_one("""
+        SELECT s.cluster_id, s.synthetic_headline, m.representative_image
+        FROM cluster_summaries s
+        JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+        JOIN articles a ON s.cluster_id = a.cluster_id
+        WHERE a.created_at >= %s::date AND a.created_at < %s::date + INTERVAL '1 day'
+        ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
+        LIMIT 1
+    """, (target_date, target_date))
+
+    # Fetch stats for that day
+    stats_res = await db.async_execute_one("""
+        SELECT 
+            COUNT(*) as total_articles,
+            COUNT(DISTINCT source) as total_sources
+        FROM articles 
+        WHERE created_at >= %s::date AND created_at < %s::date + INTERVAL '1 day'
+    """, (target_date, target_date))
+
+    return {
+        "status": "success",
+        "date": target_date,
+        "content": row["content"],
+        "subjects": subjects,
+        "locations": locations,
+        "historical_dates": historical,
+        "lead_cluster": lead_cluster,
+        "day_stats": stats_res
+    }

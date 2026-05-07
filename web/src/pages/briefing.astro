@@ -2,53 +2,137 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
+import BriefingHeader from '../components/briefing/BriefingHeader.astro';
+import BriefingContent from '../components/briefing/BriefingContent.astro';
+import BriefingSidebar from '../components/briefing/BriefingSidebar.astro';
 import BriefingDigest from '../components/briefing/BriefingDigest.astro';
 import { apiBaseUrl } from '../lib/apiBase';
+import { formatBriefing } from '../utils/briefingFormatter';
+import { Newspaper } from 'lucide-react';
 
 const API_URL = apiBaseUrl();
+const url = new URL(Astro.request.url);
+const dateParam = url.searchParams.get('date');
 
+let briefingData: any = null;
 let homeData: any = null;
 let stats: any = null;
 let error = null;
 
 try {
-    const [homeRes, statsRes] = await Promise.all([
+    const briefingUrl = dateParam 
+        ? `${API_URL}/intelligence/briefing?date=${dateParam}` 
+        : `${API_URL}/intelligence/briefing`;
+
+    const [briefRes, homeRes, statsRes] = await Promise.all([
+        fetch(briefingUrl),
         fetch(`${API_URL}/home`),
         fetch(`${API_URL}/stats/summary`)
     ]);
 
+    if (briefRes.ok) briefingData = await briefRes.json();
     if (homeRes.ok) homeData = await homeRes.json();
     if (statsRes.ok) stats = await statsRes.json();
 
-    if (!homeData && !error) error = "Брифингот моментално не е достапен.";
+    if (!briefingData || briefingData.status === 'error') {
+        error = briefingData?.message || "Брифингот моментално не е достапен.";
+    }
 } catch (e) {
     error = "Грешка при вчитување на податоците.";
 }
+
+const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content) : "";
+
+const displayDate = briefingData?.date 
+    ? new Date(briefingData.date).toLocaleDateString('mk-MK', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    })
+    : "";
 ---
 
-<Layout title="Дневен Дигест — Пресек">
+<Layout title="Уреднички Брифинг — Пресек">
     <NYTHeader stats={stats} />
+    
     <main class="site-layout broadsheet-layout py-[var(--page-py)]">
-        <div class="briefing-container">
+        <div class="briefing-page-container">
             {error ? (
-                <div class="py-20 text-center font-serif text-xl">{error}</div>
-            ) : homeData ? (
-                <>
-                    <header class="mb-[clamp(2rem, 4vw, 4rem)] pb-[clamp(1rem, 2vw, 2rem)] border-b border-border text-center">
-                        <span class="inline-block px-3 py-1 mb-6 bg-nyt-accent/10 text-nyt-accent font-sans text-[var(--text-xs)] font-black uppercase tracking-widest rounded-full">Уреднички преглед</span>
-                        <h1 class="font-serif text-[clamp(2rem, 4vw, 3.5rem)] font-black mb-4 italic">Дневен Дигест</h1>
-                        <p class="text-muted-foreground font-serif text-[var(--text-lg)] italic max-w-2xl mx-auto">Синтетизиран преглед на темите со највисока медиумска динамика во моментов.</p>
-                    </header>
-                    <BriefingDigest homeData={homeData} />
-                </>
+                <div class="py-20 text-center">
+                    <h2 class="font-serif text-2xl mb-4">{error}</h2>
+                    <a href="/briefing" class="text-nyt-accent hover:underline font-sans font-bold text-sm">Врати се на последното издание</a>
+                </div>
+            ) : briefingData ? (
+                <div class="briefing-layout-grid">
+                    <div class="briefing-main-col">
+                        <BriefingHeader 
+                            currentDate={displayDate}
+                            dispatchIcon={Newspaper}
+                            stats={{
+                                total_feeds: briefingData.day_stats?.total_sources || stats?.total_feeds || 0,
+                                last_24h: briefingData.day_stats?.total_articles || stats?.last_24h || 0,
+                                intelligence: stats?.intelligence
+                            }}
+                        />
+
+                        <BriefingContent formattedBriefing={formattedBriefing} />
+
+                        {homeData && (
+                            <div class="mt-20 pt-10 border-t-4 border-foreground">
+                                <BriefingDigest homeData={homeData} />
+                            </div>
+                        )}
+                    </div>
+
+                    <div class="briefing-sidebar-col">
+                        <BriefingSidebar 
+                            stats={stats}
+                            health={{}} 
+                            leadCluster={briefingData.lead_cluster}
+                            briefing={{
+                                date: briefingData.date,
+                                subjects: briefingData.subjects,
+                                locations: briefingData.locations
+                            }}
+                            historicalDates={briefingData.historical_dates}
+                        />
+                    </div>
+                </div>
             ) : (
                 <div class="py-20 text-center">Се вчитува...</div>
             )}
         </div>
     </main>
+
     <Footer />
 </Layout>
 
 <style>
-    .briefing-container { max-width: 850px; margin: 0 auto; padding: 0 [var(--grid-gap)]; }
+    .briefing-page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .briefing-layout-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4rem;
+    }
+
+    @media (min-width: 1024px) {
+        .briefing-layout-grid {
+            grid-template-columns: minmax(0, 1fr) 300px;
+        }
+    }
+
+    .briefing-main-col {
+        min-width: 0;
+    }
+
+    /* Override BriefingHeader margin if needed */
+    :global(.briefing-masthead) {
+        margin-bottom: 4rem;
+    }
 </style>

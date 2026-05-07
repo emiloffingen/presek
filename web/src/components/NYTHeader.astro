@@ -163,6 +163,9 @@ function getRelativeTimeStr(dateStr?: string) {
 
             <div class="topbar-actions">
                 <div class="topbar-modes-rail">
+                    <a href="/briefing" class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
+                        <Radio size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Брифинг</span>
+                    </a>
                     <a href="/archive" class={`mode-link ${Astro.url.pathname === '/archive' ? 'is-active' : ''}`}>
                         <Sparkles size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Архива</span>
                     </a>
