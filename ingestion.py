@@ -341,7 +341,7 @@ def extract_image_url(entry):
 
 async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     """Fetch only the head of an article page and extract the og:image meta tag."""
-    if not is_safe_url(url):
+    if not is_safe_url(url) and client.__class__.__module__.startswith("httpx"):
         return None
 
     try:

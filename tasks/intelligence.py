@@ -651,7 +651,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             except Exception as cache_err:
                 log.warning(f"[tasks] Failed to invalidate caches for {cluster_id}: {cache_err}")
             try:
-                generate_cluster_metadata_task.delay()
+                if os.environ.get("REDIS_URL"):
+                    generate_cluster_metadata_task.delay()
             except Exception as queue_err:
                 log.warning(f"[tasks] Failed to queue metadata refresh for {cluster_id}: {queue_err}")
             try:

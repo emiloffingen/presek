@@ -557,6 +557,17 @@ async def get_global_pulse(category: Optional[str] = None):
             GROUP BY t ORDER BY t
         """, tuple(params))
 
+    async def get_last_24h_count():
+        count_filter = ""
+        count_params = []
+        if category:
+            count_filter = "AND category = %s"
+            count_params.append(category)
+        return await db.async_execute_one(f"""
+            SELECT COUNT(*) FROM articles
+            WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '24 hours' {count_filter}
+        """, tuple(count_params))
+
     async def get_by_category():
         # Only needed if not filtering by category
         if category: return []
@@ -585,14 +596,15 @@ async def get_global_pulse(category: Optional[str] = None):
             GROUP BY m.topics ORDER BY n DESC
         """)
 
-    velocity, by_category, by_topic_sentiment = await asyncio.gather(
+    velocity, by_category, by_topic_sentiment, count_row = await asyncio.gather(
         get_velocity(),
         get_by_category(),
-        get_topic_sentiment()
+        get_topic_sentiment(),
+        get_last_24h_count()
     )
     
-    # Calculate last_24h from velocity to avoid extra query
-    last_24h = sum(row["n"] for row in velocity)
+    velocity_total = sum(row["n"] for row in velocity)
+    last_24h = int((count_row or {}).get("count") or velocity_total)
 
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload

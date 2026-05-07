@@ -20,7 +20,7 @@ try {
     if (homeRes.ok) homeData = await homeRes.json();
     if (statsRes.ok) stats = await statsRes.json();
 
-    if (!homeData && !error) error = "Дигестот е моментално недостапен.";
+    if (!homeData && !error) error = "Брифингот моментално не е достапен.";
 } catch (e) {
     error = "Грешка при вчитување на податоците.";
 }

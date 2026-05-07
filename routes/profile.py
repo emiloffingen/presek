@@ -41,6 +41,8 @@ class SyncedProfile(BaseModel):
 class ProfileInitResponse(BaseModel):
     status: str
     sync_token: str
+    token: str
+    profile: SyncedProfile
 
 class ProfileGetResponse(BaseModel):
     status: str
@@ -128,7 +130,7 @@ async def init_profile_sync():
     token = _validate_sync_token_value(secrets.token_urlsafe(24))
     empty = _normalize_synced_profile({})
     await db.async_execute("INSERT INTO synced_reader_profiles (sync_token, profile_data) VALUES (%s, %s::jsonb)", (token, json.dumps(empty)), fetch=False)
-    return {"status": "success", "token": token, "profile": empty}
+    return {"status": "success", "sync_token": token, "token": token, "profile": empty}
 
 @router.get("/profile/sync", response_model=ProfileGetResponse)
 async def get_profile_sync(request: Request):

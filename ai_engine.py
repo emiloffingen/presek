@@ -20,7 +20,7 @@ from config import (
 )
 
 
-from prometheus_client import Histogram, Counter
+from prometheus_client import Histogram, Counter, REGISTRY
 
 log = logging.getLogger("presek")
 
@@ -28,12 +28,22 @@ log = logging.getLogger("presek")
 from nlp import summarize_locally, synthesize_locally
 
 # --- Prometheus Metrics ---
-AI_LATENCY = Histogram(
+def _metric_or_existing(factory, name: str, *args, **kwargs):
+    try:
+        return factory(name, *args, **kwargs)
+    except ValueError:
+        for registered_name in (name, name.removesuffix("_total")):
+            if registered_name in REGISTRY._names_to_collectors:
+                return REGISTRY._names_to_collectors[registered_name]
+        raise
+
+
+AI_LATENCY = _metric_or_existing(Histogram,
     "presek_ai_latency_seconds",
     "Latency of AI provider calls",
     ["provider", "task_type"]
 )
-AI_CALLS = Counter(
+AI_CALLS = _metric_or_existing(Counter,
     "presek_ai_calls_total",
     "Total number of AI provider calls",
     ["provider", "task_type", "status"]

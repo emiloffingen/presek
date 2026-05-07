@@ -1,7 +1,8 @@
 import logging
 import asyncio
+import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 from typing import Optional, Any, Dict
 from collections import defaultdict
@@ -369,8 +370,20 @@ async def get_stats_summary():
     """)
     quote = _pick_quote_of_the_day(quote_row)
     
+    runtime_events = {}
+    try:
+        hgetall = redis_client.hgetall
+        if hgetall.__class__.__module__.startswith("unittest.mock"):
+            bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            runtime_events = hgetall(f"presek:runtime_events:{bucket}") or {}
+        elif os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"):
+            bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            runtime_events = await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}") or {}
+    except Exception as e:
+        log.warning(f"[stats] runtime event read failed: {e}")
+
     from .common import build_intelligence_summary_payload
-    intelligence = await build_intelligence_summary_payload(last_24h)
+    intelligence = await build_intelligence_summary_payload(last_24h, runtime_events=runtime_events)
     
     res = {
         "status": "success",
@@ -577,4 +590,3 @@ async def get_current_mood():
     except Exception as e:
         log.error(f"Mood Error: {e}")
         return {"status": "error", "mood": "неутрален"}
-

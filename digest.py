@@ -114,6 +114,12 @@ MK_MONTHS = ["јануари","февруари","март","април","мај
 MK_DAYS = ["Понеделник","Вторник","Среда","Четврток","Петок","Сабота","Недела"]
 
 
+def format_sources(count: int) -> str:
+    if count == 1:
+        return "1 извор"
+    return f"{count} извори"
+
+
 def mk_date(dt: datetime) -> str:
     return f"{MK_DAYS[dt.weekday()]}, {dt.day} {MK_MONTHS[dt.month-1]} {dt.year}"
 

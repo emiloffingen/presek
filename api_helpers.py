@@ -128,11 +128,11 @@ def _clean_text_block(value) -> str:
 def _infer_perspective_angle(content: str, fallback: str = "Клучен агол") -> str:
     lowered = content.lower()
     if any(token in lowered for token in ("разлик", "акцент", "формулац", "наглас")):
-        return "Дивергентни акценти"
+        return "Различни акценти"
     if any(token in lowered for token in ("заеднич", "повеќето извори", "иста линија", "сите извори")):
-        return "Усогласена линија"
+        return "Заедничка линија"
     if any(token in lowered for token in ("отворено", "нејас", "непотвр", "сè уште не", "останува")):
-        return "Отворени прашања"
+        return "Што останува отворено"
     if any(token in lowered for token in ("реакц", "одговор", "коментар", "осуд")):
         return "Реакции и одговори"
     if any(token in lowered for token in ("контекст", "позадин", "поширок")):

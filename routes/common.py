@@ -209,14 +209,15 @@ def _is_rate_limited_path(path: str) -> bool:
 def _rate_limit_error_payload() -> dict:
     return {"error": "Синтезата се подготвува... Ве молиме обидете се повторно за некоја минута."}
 
-async def build_intelligence_summary_payload(last_24h: int, category: Optional[str] = None) -> dict:
+async def build_intelligence_summary_payload(last_24h: int, category: Optional[str] = None, runtime_events: Optional[dict] = None) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category filter."""
     from utils import cached_response, set_cache, redis_client
     import asyncio
     
     cat_id = f"cat-{category}" if category else "all"
     cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v3"
-    cached = cached_response(cache_key, ttl=600)
+    use_redis = bool(os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"))
+    cached = cached_response(cache_key, ttl=600) if use_redis else None
     if cached: return cached
 
     # Count articles and international share in one query
@@ -235,11 +236,20 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
         WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
     """, tuple(params))
     
-    total_articles_24h = counts_res["total"] if counts_res else 0
-    intl_articles_24h = counts_res["intl"] if counts_res else 0
+    total_articles_24h = counts_res.get("total", last_24h) if counts_res else 0
+    intl_articles_24h = counts_res.get("intl", counts_res.get("count", 0)) if counts_res else 0
 
-    bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
-    ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
+    if runtime_events is not None:
+        ai_events = runtime_events or {}
+    elif use_redis:
+        bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+        try:
+            ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
+        except Exception as e:
+            log.warning(f"[stats] runtime event read failed: {e}")
+            ai_events = {}
+    else:
+        ai_events = {}
     
     # Robustly count summaries (Systemic vs Local)
     # Note: Runtime events are global, not per-category for now
@@ -290,5 +300,6 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
             "diverse_sources_pct": round(balance_stats["diverse_sources"] / max(1, balance_stats["total_clusters"]) * 100, 1)
         }
     }
-    set_cache(cache_key, res, ttl=600)
+    if use_redis:
+        set_cache(cache_key, res, ttl=600)
     return res

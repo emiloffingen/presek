@@ -6,8 +6,12 @@ import math
 import uuid
 import re
 import datetime
+import logging
+import os
 from collections import Counter
 from config import CLUSTERING_THRESHOLDS
+
+log = logging.getLogger("presek")
 
 # ── Macedonian stemmer ────────────────────────────────────────────
 MK_SUFFIXES = [
@@ -523,8 +527,12 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
 
     if best_cid:
         # Dispatch dynamic centroid update
-        from tasks.intelligence import refresh_cluster_centroid_task
-        refresh_cluster_centroid_task.apply_async(args=(best_cid,), countdown=30)
+        if os.environ.get("REDIS_URL"):
+            try:
+                from tasks.intelligence import refresh_cluster_centroid_task
+                refresh_cluster_centroid_task.apply_async(args=(best_cid,), countdown=30)
+            except Exception as e:
+                log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
         return best_cid
 
     return str(uuid.uuid4())[:8]
