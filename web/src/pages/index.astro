@@ -451,8 +451,13 @@ function getBriefingSnippet(content: string) {
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: var(--grid-gap); }
     
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 1.5); }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1.2); }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: calc(var(--grid-gap) * 2); }
+        .broadsheet-main { border-right: 1px solid var(--border); padding-right: calc(var(--grid-gap) * 1.5); }
+    }
+
+    @media (min-width: 1440px) {
+        :global(.site-layout) { max-width: 1400px; }
+        .broadsheet-grid { gap: calc(var(--grid-gap) * 3); }
     }
 
     /* ── Section Dividers ────────────────────────────── */

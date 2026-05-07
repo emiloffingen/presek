@@ -250,10 +250,6 @@
 		gap: 0.35rem;
 	}
 
-	.why-it-matters, .summary {
-		width: 100%;
-	}
-
     /* Responsive Spacing & Layout */
 	@media (min-width: 768px) {
         .nyt-article {
@@ -263,19 +259,26 @@
         .nyt-article.variant-compact:not(.lead-story) {
             grid-template-columns: 1fr 90px;
         }
-		.card-content-stack {
+
+        /* Lead story or featured variants can afford side-by-side */
+        .lead-story .card-content-stack,
+        .variant-featured .card-content-stack {
 			flex-direction: row;
 			gap: 1rem;
 			align-items: flex-start;
 		}
-		.why-it-matters {
-			width: 33.333%;
+		.lead-story .why-it-matters,
+        .variant-featured .why-it-matters {
+			width: 30%;
 			flex-shrink: 0;
+            min-width: 120px;
 		}
-		.summary {
+		.lead-story .summary,
+        .variant-featured .summary {
 			flex: 1;
 			min-width: 0;
 		}
+
         .lead-story {
             flex-direction: row;
             gap: 1.5rem;
