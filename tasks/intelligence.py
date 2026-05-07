@@ -511,7 +511,14 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         if summary or perspectives:
             deep_metadata = _ensure_dict(deep_metadata)
             pluralism_data = _ensure_dict(pluralism_data)
-            key_facts = deep_metadata.get("facts") or _fallback_key_facts(article_rows, summary)
+            
+            # Prefer AI-generated key_facts from synthesis if available
+            ai_key_facts = res_data.get("key_facts")
+            if ai_key_facts and isinstance(ai_key_facts, list):
+                key_facts = ai_key_facts
+            else:
+                key_facts = deep_metadata.get("facts") or _fallback_key_facts(article_rows, summary)
+            
             analyst_entities = deep_metadata.get("entities") or []
             pulse_score = deep_metadata.get("pulse", 50)
             pluralism_score = pluralism_data.get("score", 50)

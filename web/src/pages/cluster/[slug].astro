@@ -46,7 +46,6 @@ import HeroVisual from '../../components/Cluster/HeroVisual.astro';
 import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
 import AdsKeeperWidget from '../../components/AdsKeeperWidget.astro';
 import CitationSources from '../../components/CitationSources.astro';
-import SystemAnalyst from '../../components/Cluster/SystemAnalyst.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
 import BriefingBox from '../../components/Cluster/BriefingBox.astro';
@@ -186,8 +185,8 @@ const hasGeneratedNarrative = Boolean(generatedArticle && generatedArticle.trim(
 const hasSublimat = synthesisItems.length > 0;
 const hasFactcheck = Boolean(verificationReport && (verificationReport.agreements?.length > 0 || verificationReport.conflicts?.length > 0));
 const hasStrongLeadNarrative = hasGeneratedNarrative && (cluster?.articles?.length || 0) >= 3;
-const primaryNarrativeLabel = 'РЕДАКЦИСКИ СУБЛИМАТ';
-const primaryNarrativeEyebrow = 'РЕДАКЦИСКА СИНТЕЗА';
+const primaryNarrativeLabel = 'СИНТЕЗА';
+const primaryNarrativeEyebrow = 'РЕДАКЦИСКИ ПРЕГЛЕД';
 
 const sentimentData = cluster?.sentiment ? {
     sentiment: cluster.sentiment.sentiment || { score: 0, tone: 'неутрално' },
@@ -329,18 +328,10 @@ const articleSchema = cluster ? {
 								generatedArticle={generatedArticle}
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
+                                keyFacts={cluster.key_facts}
 							/>
                             <AdsKeeperWidget placement="in-article" />
 						</section>
-						)}
-
-						{/* DEEP LOCAL ANALYST */}
-						{cluster.key_facts && cluster.key_facts.length > 0 && (
-							<SystemAnalyst 
-								pulseScore={cluster.pulse_score}
-								keyFacts={cluster.key_facts}
-								analystEntities={cluster.analyst_entities || []}
-							/>
 						)}
 
 						{/* ANALYSIS SECTION: Fact Check & Comparison */}
