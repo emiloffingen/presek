@@ -510,10 +510,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </div>
                     )}
 
-                    {!isLoading && entityResult && (
-                      <button
-                        onClick={() => { closeSearch(); navigate(`/?entity=${encodeURIComponent(entityResult.name)}`); }}
-                        className="w-full mb-6 p-5 border-2 border-nyt-accent/20 bg-nyt-accent/[0.03] hover:bg-nyt-accent/[0.06] transition-colors flex items-center gap-6 group text-left"
+                    {entityResult && (
+                      <a
+                        href={`/?entity=${encodeURIComponent(entityResult.name)}`}
+                        onClick={(e) => { e.preventDefault(); closeSearch(); navigate(`/?entity=${encodeURIComponent(entityResult.name)}`); }}
+                        className="w-full mb-6 p-5 border-2 border-nyt-accent/20 bg-nyt-accent/[0.03] hover:bg-nyt-accent/[0.06] transition-colors flex items-center gap-6 group text-left no-underline"
                       >
                         <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden">
                            {entityResult.image_url ? (
@@ -530,7 +531,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                           </p>
                         </div>
                         <ArrowUpRight size={20} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
-                      </button>
+                      </a>
                     )}
 
                     {!isLoading && !error && suggestions.length === 0 && !entityResult && (
@@ -546,31 +547,31 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                           >
                             Отвори ги сите резултати
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => navigate('/archive')}
+                          <a
+                            href="/archive"
+                            onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/archive'); }}
                             className="px-4 py-2 border border-border font-sans text-[10px] font-black uppercase tracking-[0.16em] text-foreground"
                           >
                             Архива
-                          </button>
+                          </a>
                         </div>
                       </div>
                     )}
 
                     {!isLoading &&
                       suggestions.map((item, index) => (
-                        <button
+                        <a
                           key={item.cluster_id}
                           id={`search-suggestion-${item.cluster_id}`}
-                          type="button"
+                          href={`/cluster/${item.cluster_id}`}
                           role="option"
                           aria-selected={activeIndex === index}
-                          onClick={() => navigateToCluster(item.cluster_id)}
-                        className={`w-full text-left border-b border-border py-4 transition-colors ${
-                          activeIndex === index
-                              ? 'text-nyt-accent bg-secondary'
-                              : 'text-foreground hover:text-nyt-accent'
-                        }`}
+                          onClick={(e) => { e.preventDefault(); navigateToCluster(item.cluster_id); }}
+                          className={`w-full text-left border-b border-border py-4 transition-colors block no-underline ${
+                            activeIndex === index
+                                ? 'text-nyt-accent bg-secondary'
+                                : 'text-foreground hover:text-nyt-accent'
+                          }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -620,7 +621,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                             </div>
                             <ArrowUpRight size={16} className="mt-1 shrink-0" />
                           </div>
-                        </button>
+                        </a>
                       ))}
                   </div>
                 )}
@@ -640,13 +641,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </button>
                     </div>
                     {recentSearches.map((item) => (
-                      <button
+                      <a
                         key={item}
-                        onClick={() => navigateToQuery(item)}
-                        className="w-full text-left font-serif font-black text-xl text-foreground hover:text-nyt-accent transition-colors"
+                        href={`/?q=${encodeURIComponent(item)}`}
+                        onClick={(e) => { e.preventDefault(); navigateToQuery(item); }}
+                        className="w-full text-left font-serif font-black text-xl text-foreground hover:text-nyt-accent transition-colors block no-underline mb-2"
                       >
                         {item}
-                      </button>
+                      </a>
                     ))}
                   </div>
                 )}
@@ -662,15 +664,15 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         {SUGGESTED_CATEGORIES.map(cat => (
-                          <button
+                          <a
                             key={cat.name}
-                            type="button"
-                            onClick={() => { closeSearch(); navigate(`/?category=${encodeURIComponent(cat.name)}`); }}
-                            className="flex items-center justify-between p-3 border border-border hover:border-nyt-accent hover:bg-secondary transition-all text-left group"
+                            href={`/?category=${encodeURIComponent(cat.name)}`}
+                            onClick={(e) => { e.preventDefault(); closeSearch(); navigate(`/?category=${encodeURIComponent(cat.name)}`); }}
+                            className="flex items-center justify-between p-3 border border-border hover:border-nyt-accent hover:bg-secondary transition-all text-left group no-underline"
                           >
                             <span className={`font-serif font-bold ${cat.color}`}>{cat.name}</span>
                             <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </button>
+                          </a>
                         ))}
                       </div>
                     </div>
@@ -694,10 +696,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                         { word: 'Скопје' },
                       ]
                   ).map((item, index) => (
-                    <button
+                    <a
                       key={item.word}
-                      onClick={() => navigateToQuery(item.word)}
-                      className="w-full flex items-center justify-between gap-3 border-b border-border py-3 text-left text-foreground hover:text-nyt-accent transition-colors"
+                      href={`/?q=${encodeURIComponent(item.word)}`}
+                      onClick={(e) => { e.preventDefault(); navigateToQuery(item.word); }}
+                      className="w-full flex items-center justify-between gap-3 border-b border-border py-3 text-left text-foreground hover:text-nyt-accent transition-colors no-underline"
                     >
                       <span className="flex items-center gap-3 min-w-0">
                         <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground shrink-0">
@@ -706,7 +709,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                         <span className="font-serif font-bold text-lg text-balance">{item.word}</span>
                       </span>
                       <ArrowUpRight size={15} className="shrink-0" />
-                    </button>
+                    </a>
                   ))}
                 </div>
 
@@ -715,20 +718,20 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     Брзи Патеки
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <button
-                      type="button"
-                      onClick={() => { closeSearch(); navigate('/briefing'); }}
+                    <a
+                      href="/briefing"
+                      onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/briefing'); }}
                       className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
                     >
                       Брифинг
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { closeSearch(); navigate('/archive'); }}
+                    </a>
+                    <a
+                      href="/archive"
+                      onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/archive'); }}
                       className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
                     >
                       Архива
-                    </button>
+                    </a>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
