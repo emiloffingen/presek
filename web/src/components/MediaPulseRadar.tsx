@@ -62,10 +62,10 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="media-pulse-card bg-zinc-50/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 rounded-xl shadow-sm">
-      <div className="flex flex-col lg:flex-row gap-10 items-center">
+    <div className="media-pulse-card bg-zinc-50/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-5 md:p-8 rounded-xl shadow-sm overflow-hidden">
+      <div className="flex flex-col gap-8 md:gap-10 items-center">
         {/* Radar Visualization */}
-        <div className="relative w-56 h-56 flex-shrink-0">
+        <div className="relative w-56 h-56 flex-shrink-0 mx-auto">
           <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-sm">
             {/* Background circles */}
             {[1, 0.75, 0.5, 0.25].map((lvl) => (
@@ -110,18 +110,18 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
 
         {/* Text Metrics */}
         <div className="flex-1 w-full space-y-6">
-          <div>
+          <div className="text-center md:text-left">
             <span className="inline-block bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-2">Медиумски Пулс</span>
-            <p className="text-3xl font-serif font-black leading-tight text-zinc-900 dark:text-zinc-100">
+            <p className="text-2xl md:text-3xl font-serif font-black leading-tight text-zinc-900 dark:text-zinc-100">
               Тон: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Објективност</span>
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-black tabular-nums">{objectivity.toFixed(0)}%</span>
+                <span className="text-2xl md:text-3xl font-black tabular-nums">{objectivity.toFixed(0)}%</span>
                 <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-1000 delay-300" style={{ width: isMounted ? `${objectivity}%` : '0%' }}></div>
                 </div>
@@ -130,7 +130,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Сензационализам</span>
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-black tabular-nums">{sensationalism.toFixed(0)}%</span>
+                <span className="text-2xl md:text-3xl font-black tabular-nums">{sensationalism.toFixed(0)}%</span>
                 <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-red-600 transition-all duration-1000 delay-500" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}></div>
                 </div>
@@ -139,7 +139,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Емоционалност</span>
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-black tabular-nums">{emotionalCharge.toFixed(0)}%</span>
+                <span className="text-2xl md:text-3xl font-black tabular-nums">{emotionalCharge.toFixed(0)}%</span>
                 <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-amber-500 transition-all duration-1000 delay-700" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}></div>
                 </div>
@@ -147,7 +147,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
             </div>
           </div>
 
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed italic border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 py-1">
+          <p className="text-[10px] md:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed italic border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 py-1">
             * Оваа анализа е генерирана автоматски преку споредба на јазичните форми и структурата на известување кај сите вклучени медиуми.
           </p>
         </div>
