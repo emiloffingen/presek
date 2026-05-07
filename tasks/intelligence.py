@@ -1198,4 +1198,3 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return False
         
     return True
-rn True
