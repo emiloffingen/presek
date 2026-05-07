@@ -219,9 +219,8 @@ async def get_archive(date: str = Query(...), q: str = "", source: str = "", top
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
         
         if q:
-             from embeddings import generate_query_embedding
+             from embeddings import generate_query_embedding, parse_embedding_value
              import numpy as np
-             from nlp.utils import parse_embedding_value
              query_vec = generate_query_embedding(q)
              if query_vec:
                  for arts in ranked:

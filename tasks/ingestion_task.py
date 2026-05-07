@@ -115,6 +115,11 @@ def run_ingestion():
         if new_count > 0:
             invalidate_public_data_caches()
             
+            # Extract modified cluster IDs for targeted updates
+            # We fetch from DB to get cluster_ids for all inserted articles
+            inserted_data = db.execute("SELECT cluster_id FROM articles WHERE id = ANY(%s)", (inserted_ids,))
+            modified_cluster_ids = list(set(art["cluster_id"] for art in inserted_data if art.get("cluster_id")))
+
             # Lazy import to avoid circular dependencies
             from tasks.intelligence import (
                 generate_embeddings_task,
@@ -132,7 +137,7 @@ def run_ingestion():
                 classify_topics_task.signature(),
                 extract_entities_task.signature(),
                 recategorize_clusters_task.signature(),
-                auto_summarize_task.signature()
+                auto_summarize_task.signature(kwargs={"cluster_ids": modified_cluster_ids})
             )
             ingestion_chain.apply_async()
 

@@ -708,10 +708,10 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         log.error(f"[tasks] Synthesis failed for {cluster_id}: {e}")
 
 @celery_app.task
-def auto_summarize_task():
-    """Dispatch summarization/synthesis tasks for top clusters."""
+def auto_summarize_task(cluster_ids: list[str] = None):
+    """Dispatch summarization/synthesis tasks for top clusters or targeted clusters."""
     from ai_engine import auto_summarize_top_clusters
-    auto_summarize_top_clusters()
+    auto_summarize_top_clusters(target_cluster_ids=cluster_ids)
 
 
 @celery_app.task

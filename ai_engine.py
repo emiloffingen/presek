@@ -306,7 +306,7 @@ def clean_json_response(text: str) -> dict | str | None:
         pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
         match = re.search(pattern, text, re.DOTALL)
         if match:
-            clean_text = match.group(1).replace('\\n', '\n').replace('\\"', '"').replace('\\\'', "'")
+            clean_text = match.group(1).replace('\\n', '\n').replace('\"', '"').replace('\\\'', "'")
             return {"answer": clean_text, "suggestions": []}
 
     # 4. Brute force: find the first { and last } and try parsing that
@@ -328,21 +328,30 @@ def clean_json_response(text: str) -> dict | str | None:
     text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', '', text, flags=re.DOTALL)
     text = re.sub(r'"\s*\}\s*$', '', text)
     
-    return text.replace('\\n', '\n').replace('\\"', '"').strip()
+    return text.replace('\\n', '\n').replace('\"', '"').strip()
 
-def auto_summarize_top_clusters():
-    """Dispatch synthesis tasks for the top recent clusters."""
+def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
+    """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
     import sys
     try:
         from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
         from database import db_manager as db
         from utils import redis_client
 
-        rows = db.execute(
-            "SELECT * FROM articles "
-            "WHERE COALESCE(ingested_at, created_at) >= NOW() - make_interval(days => 1) "
-            "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
-        )
+        if target_cluster_ids:
+            # If specific clusters are targeted (e.g. from fresh ingestion), 
+            # we fetch all their articles to build context.
+            rows = db.execute(
+                "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                (target_cluster_ids,)
+            )
+        else:
+            # Default: global top-N discovery
+            rows = db.execute(
+                "SELECT * FROM articles "
+                "WHERE COALESCE(ingested_at, created_at) >= NOW() - make_interval(days => 1) "
+                "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
+            )
         if not rows:
             return
 
@@ -359,7 +368,10 @@ def auto_summarize_top_clusters():
             ranked.append((cid, arts, len(unique_sources), newest))
 
         ranked.sort(key=lambda x: (x[3], x[2]), reverse=True)
-        top = ranked[:AUTO_SUMMARIZE_TOP_N]
+        
+        # Only slice if we are in discovery mode; if targeted, we process all provided
+        top = ranked[:AUTO_SUMMARIZE_TOP_N] if not target_cluster_ids else ranked
+        
         if not top:
             return
 
@@ -425,7 +437,8 @@ def auto_summarize_top_clusters():
                 tasks_mod.synthesize_cluster_task.delay(cid, lines)
             dispatched += 1
         log.info(
-            "[auto-summarize] ranked=%s top=%s dispatched=%s skipped_fresh=%s skipped_locked=%s",
+            "[auto-summarize] mode=%s ranked=%s top=%s dispatched=%s skipped_fresh=%s skipped_locked=%s",
+            "targeted" if target_cluster_ids else "discovery",
             len(ranked),
             len(top),
             dispatched,
