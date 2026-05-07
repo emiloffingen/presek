@@ -414,6 +414,7 @@ async def get_source_pulse(category: Optional[str] = None):
         params.append(category)
 
     # Combined query to get current stats, recent headline, and historical baseline
+    # Refactored first_report_count to avoid slow correlated subquery
     sql = f"""
         WITH source_stats AS (
             SELECT
@@ -446,30 +447,38 @@ async def get_source_pulse(category: Optional[str] = None):
             WHERE created_at >= NOW() - INTERVAL '48 hours'
             ORDER BY source, created_at DESC
         ),
-        first_reporters AS (
+        first_reporters_base AS (
             SELECT DISTINCT ON (cluster_id) source, cluster_id
             FROM articles
             WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '10 days'
             ORDER BY cluster_id, COALESCE(ingested_at, created_at) ASC, created_at ASC
+        ),
+        first_report_counts AS (
+            SELECT fr.source, COUNT(*) as first_report_count
+            FROM first_reporters_base fr
+            WHERE fr.cluster_id IN (
+                SELECT cluster_id FROM articles 
+                WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' 
+                  {cat_filter.replace('a.category', 'category')}
+            )
+            GROUP BY fr.source
         )
         SELECT
             curr.*,
             lh.title as latest_headline,
             lh.cluster_id as latest_cluster_id,
             COALESCE(hb.historical_objectivity, curr.avg_objectivity) as baseline_objectivity,
-            (SELECT COUNT(*) FROM first_reporters fr
-             WHERE fr.source = curr.source
-               AND fr.cluster_id IN (SELECT cluster_id FROM articles WHERE COALESCE(ingested_at, created_at) >= NOW() - INTERVAL '7 days' {cat_filter.replace('a.category', 'category')})
-            ) as first_report_count
+            COALESCE(frc.first_report_count, 0) as first_report_count
         FROM source_stats curr
         LEFT JOIN latest_headlines lh ON curr.source = lh.source
         LEFT JOIN historical_baseline hb ON curr.source = hb.source
+        LEFT JOIN first_report_counts frc ON curr.source = frc.source
         WHERE curr.cluster_count >= 1
         ORDER BY curr.cluster_count DESC
     """
 
-    # We pass params 3 times because cat_filter is used 3 times in the CTEs
-    rows = await db.async_execute(sql, tuple(params * 3))
+    # We pass params 4 times because cat_filter is used 4 times in the CTEs
+    rows = await db.async_execute(sql, tuple(params * 4))
 
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
