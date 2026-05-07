@@ -588,43 +588,21 @@ async def get_cluster_detail(cluster_id: str):
         )
         log.debug(f"[debug] s_row found: {bool(s_row)}")
         
-        synthesis = s_row["summary"] if s_row else None
-        generated_article = s_row["generated_article"] if s_row else None
-        synthetic_headline = s_row["synthetic_headline"] if s_row else None
-        synthetic_standfirst = s_row["synthetic_standfirst"] if s_row else None
-        
-        sentiment = _parse_maybe_json(s_row.get("sentiment")) if s_row else None
-        tone_analysis = _parse_maybe_json(s_row.get("tone_analysis")) if s_row else None
-        if isinstance(sentiment, dict) and tone_analysis and not sentiment.get("tone_analysis"):
-            sentiment["tone_analysis"] = tone_analysis
-        verification_report = _parse_maybe_json(s_row.get("verification_report")) if s_row else None
-        ai_summary_bullets = [re.sub(r'^[-•*]\s*', '', line).strip() for line in synthesis.split('\n') if line.strip() and not line.strip().lower().startswith('статии:')] if synthesis else []
-        perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
-        if not perspectives: perspectives = []
-        citation_sources = normalize_citation_sources(_parse_maybe_json(s_row.get("citation_sources")) if s_row else [])
-        key_facts = _as_list(s_row.get("key_facts")) if s_row else []
-        analyst_entities = _as_list(s_row.get("analyst_entities")) if s_row else []
-        narrative_diversity = _parse_maybe_json(s_row.get("narrative_diversity")) if s_row else None
+        # New simplified synthesis processing
+        overview = s_row.get("overview") if s_row else None
+        key_developments = s_row.get("key_developments") if s_row else None
+        context_analysis = s_row.get("context_analysis") if s_row else None
+        synthetic_headline = s_row.get("synthetic_headline") if s_row else None
+
         freshness = assess_cluster_synthesis_freshness(articles, (s_row or {}).get("created_at"))
-        local_fallback_synthesis = bool(
-            s_row
-            and not str(generated_article or "").strip()
-            and not verification_report
-            and (
-                "Локален сублимат" in str(synthetic_standfirst or "")
-                or "Автоматски преглед" in str(synthetic_standfirst or "")
-                or "AI анализа" in str(synthetic_standfirst or "")
-            )
-        )
-        if local_fallback_synthesis:
-            synthetic_standfirst = None
-            freshness = {
-                **freshness,
-                "refresh_needed": True,
-                "is_stale": True,
-                "freshness_score": max(float(freshness.get("freshness_score") or 0.0), 2.0),
-                "reasons": [*freshness.get("reasons", []), "local_fallback_synthesis"],
-            }
+        
+        # Build synthesis response
+        synthesis = {
+            "overview": overview,
+            "key_developments": key_developments,
+            "context_analysis": context_analysis
+        }
+        has_synthesis = bool(overview and key_developments)
 
         cluster_meta = await db.async_execute_one("SELECT tags, topics, representative_image, dominant_color, centroid FROM cluster_metadata WHERE cluster_id = %s", (cluster_id,))
         tags = filter_cluster_tags((cluster_meta.get("tags") or []) if cluster_meta else [])
@@ -767,7 +745,7 @@ async def get_cluster_detail(cluster_id: str):
             milestone = "ПОЧЕТОК" if i == 0 else ("КОНСЕНЗУС" if i == len(chrono)-1 and len(chrono)>=3 else "РАЗВОЈ")
             timeline.append({"article_id": a['id'], "title": cleanAndDecode(a['title']), "source": a['source'], "created_at": a['created_at'], "is_first": i == 0, "is_major": is_major, "milestone": milestone})
 
-        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": bool(synthesis), "generated_article": generated_article, "synthetic_headline": synthetic_headline, "synthetic_standfirst": synthetic_standfirst, "sentiment": sentiment, "verification_report": verification_report, "ai_summary_bullets": ai_summary_bullets, "citation_sources": citation_sources, "key_facts": key_facts, "analyst_entities": analyst_entities, "pulse_score": s_row.get("pulse_score") if s_row else None, "pluralism_score": s_row.get("pluralism_score") if s_row else None, "narrative_diversity": narrative_diversity, "storyline_narrative": s_row.get("storyline_narrative") if s_row else None, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "perspectives": perspectives, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
+        response = {"status": "success", "data": {"cluster_id": cluster_id, "articles": public_articles, "timeline": timeline, "synthesis": synthesis, "has_synthesis": has_synthesis, "synthetic_headline": synthetic_headline, "synthesis_updated_at": freshness["synthesis_updated_at"], "synthesis_freshness": freshness, "tags": tags, "topics": topics, "representative_image": rep_image, "dominant_color": dominant_color, "related": related, "total_reading_time": sum(a['reading_time'] for a in articles)}}
         set_cache(cache_key, response, ttl=3600)
         return response
 
