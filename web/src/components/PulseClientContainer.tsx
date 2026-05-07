@@ -369,7 +369,9 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
             {/* Transparency Scoreboard */}
             <section className="mt-20">
-                <h2 className="section-title-italic mb-8 masthead-double-rule">Индекс на Транспарентност</h2>
+                <div className="section-heading-row masthead-double-rule mb-8">
+                    <h2 className="section-title-italic !mb-0">Индекс на Транспарентност</h2>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="border border-border p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border-l-4 border-l-emerald-500">
                         <h4 className="sidebar-label !border-emerald-500 !text-emerald-700 dark:!text-emerald-400 mb-6">Најобјективни извори (24ч)</h4>
@@ -397,8 +399,10 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             </section>
 
             {(!loading || pulseLeaders.length > 0) && (
-                <section id="leaderboard" className={`mt-20 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                    <h2 className="section-title-italic mb-8 masthead-double-rule">Ранг на редакции (24ч)</h2>
+                <section id="leaderboard" className={`mt-24 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                    <div className="section-heading-row masthead-double-rule mb-8">
+                        <h2 className="section-title-italic !mb-0">Ранг на редакции (24ч)</h2>
+                    </div>
                     <div className="broadsheet-table-wrapper">
                         <table className="broadsheet-table">
                             <thead>

@@ -241,15 +241,21 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
     :global(.broadsheet-table-wrapper) { overflow-x: auto; border-top: 2px solid var(--foreground); }
     :global(.broadsheet-table) { width: 100%; border-collapse: collapse; min-width: 600px; }
     :global(.broadsheet-table th) { text-align: left; padding: 0.75rem; font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; border-bottom: 1px solid var(--border); color: var(--muted-foreground); text-transform: uppercase; }
-    :global(.broadsheet-table td) { padding: 1rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    :global(.table-source strong) { font-family: var(--font-serif); font-size: 1rem; font-weight: 800; display: block; }
-    :global(.table-source span) { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); }
-    :global(.tone-label) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
-    :global(.stat-row) { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; }
-    :global(.stat-bar) { height: 4px; width: 60px; background: var(--secondary); overflow: hidden; }
+    :global(.broadsheet-table td) { padding: 1.25rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    
+    :global(.broadsheet-table th:nth-child(1)) { width: 35%; }
+    :global(.broadsheet-table th:nth-child(2)) { width: 10%; }
+    :global(.broadsheet-table th:nth-child(3)) { width: 27.5%; }
+    :global(.broadsheet-table th:nth-child(4)) { width: 27.5%; }
+
+    :global(.table-source strong) { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 800; display: block; line-height: 1.1; margin-bottom: 0.25rem; }
+    :global(.table-source span) { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.05em; }
+    :global(.tone-label) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
+    :global(.stat-row) { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
+    :global(.stat-bar) { height: 6px; width: 80px; background: var(--secondary); overflow: hidden; border-radius: 999px; }
     :global(.stat-bar div) { height: 100%; background: var(--nyt-accent); }
     :global(.stat-bar.bar-red div) { background: var(--nyt-red); }
-    :global(.stat-num) { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; width: 2.25rem; }
+    :global(.stat-num) { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; width: 2.75rem; tabular-nums: true; }
 
     @media (max-width: 640px) {
         .editorial-masthead { padding-bottom: 0.5rem; }
