@@ -525,11 +525,12 @@ def get_db(): return DBWrapper(db_manager)
 def get_db_size(): return db_manager.get_db_size()
 def init_db(): db_manager.init_schema()
 def prune_db():
-    from config import DB_RETAIN_DAYS
+    from config import DB_RETAIN_DAYS, DB_RETAIN_FAILED_TASKS_DAYS
     interval = f"{int(DB_RETAIN_DAYS)} days"
+    failed_interval = f"{int(DB_RETAIN_FAILED_TASKS_DAYS)} days"
     # Delete old articles
     db_manager.execute("DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s", (interval,), fetch=False)
-    
+
     # Clean up orphaned metadata/summaries efficiently using NOT EXISTS
     db_manager.execute("""
         DELETE FROM cluster_summaries cs WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cs.cluster_id);
@@ -537,4 +538,4 @@ def prune_db():
         DELETE FROM cluster_entities ce WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = ce.cluster_id);
         DELETE FROM reactions r WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = r.cluster_id);
         DELETE FROM failed_tasks WHERE created_at < NOW() - INTERVAL %s;
-    """, (f"{int(DB_RETAIN_DAYS) * 2} days",), fetch=False)
+    """, (failed_interval,), fetch=False)

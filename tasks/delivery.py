@@ -1441,7 +1441,7 @@ def generate_daily_brief_task(retry_attempt=0):
             f"- Наслов на диспачот: {dispatch_name}"
         )
         
-        full_context = content_context + system_insight
+        full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
 
         brief, _ = _call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
         if brief and not _has_valid_daily_brief_structure(brief):

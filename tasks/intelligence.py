@@ -70,7 +70,7 @@ def summarize_article_task(article_id, final_title=None):
     # AI summarization logic
     prompt_parts = [f"Наслов: {str(title or '').strip()}"]
     if context_text:
-        prompt_parts.append(f"Текст за резимирање:\n[START_ARTICLE_TEXT]\n{str(context_text).strip()[:10000]}\n[END_ARTICLE_TEXT]")
+        prompt_parts.append(f"Текст за резимирање:\n<article_content>\n{str(context_text).strip()[:10000]}\n</article_content>")
     prompt = "\n".join(part for part in prompt_parts if part)
     
     raw_output, provider = _call_ai(prompt, SUMMARY_SYSTEM_PROMPT, task_type="summarize", topic=topic, json_mode=False)
@@ -340,7 +340,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 r = related[0]
                 prev_text = r['generated_article'] or r['summary']
                 if prev_text:
-                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n[START_HISTORICAL_CONTEXT]\n{prev_text[:1000]}\n[END_HISTORICAL_CONTEXT]"
+                    history_context = f"\nПРЕТХОДЕН КОНТЕКСТ (за овој настан или поврзана тема од изминатите денови):\n<historical_context>\n{prev_text[:1000]}\n</historical_context>"
     except Exception as e:
         log.warning(f"[tasks/memory] Failed to fetch history for {cluster_id}: {e}")
 
@@ -352,12 +352,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
         elif history_context:
             prompt_parts.append(history_context)
             
-        prompt_parts.append("НОВИ СТАТИИ ОД ДЕНЕС:\n[START_NEW_ARTICLES]")
+        prompt_parts.append("НОВИ СТАТИИ ОД ДЕНЕС:\n<articles_context>")
         if source_context:
             prompt_parts.append(source_context)
         elif legacy_summary:
             prompt_parts.append(legacy_summary)
-        prompt_parts.append("[END_NEW_ARTICLES]")
+        prompt_parts.append("</articles_context>")
         full_prompt = "\n\n".join(part for part in prompt_parts if part)
         raw, provider = _call_ai(full_prompt, SYNTHESIS_SYSTEM_PROMPT, json_mode=True, task_type="synthesis", max_tokens=max_tokens)
         res_data = {}
@@ -1191,3 +1191,4 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         return False
         
     return True
+rn True

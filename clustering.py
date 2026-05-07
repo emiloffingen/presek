@@ -535,4 +535,4 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                 log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
         return best_cid
 
-    return str(uuid.uuid4())[:8]
+    return str(uuid.uuid4())[:12]
