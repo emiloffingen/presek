@@ -846,6 +846,7 @@ async def get_latest_briefing(date: Optional[str] = None):
         JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
         JOIN articles a ON s.cluster_id = a.cluster_id
         WHERE a.created_at >= %s::date AND a.created_at < %s::date + INTERVAL '1 day'
+        GROUP BY s.cluster_id, s.synthetic_headline, m.representative_image, s.pluralism_score
         ORDER BY s.pluralism_score DESC, COUNT(a.id) DESC
         LIMIT 1
     """, (target_date, target_date))
