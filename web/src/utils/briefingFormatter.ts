@@ -30,15 +30,17 @@ export function formatBriefing(markdown: string): string {
 
     // 4. Handle Paragraphs
     const blocks = html.split(/\n\n+/);
+    let hasAppliedDropCap = false;
     html = blocks.map(block => {
         const trimmed = block.trim();
         if (!trimmed) return "";
         if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li') || trimmed.startsWith('<blockquote')) {
             return trimmed;
         }
-        // Bold the first few words if it looks like a lead paragraph
-        if (trimmed.length > 100 && !trimmed.includes('<')) {
-            // Apply drop-cap to the macro overview paragraphs
+        
+        // Apply drop-cap only to the very first regular paragraph
+        if (!hasAppliedDropCap && trimmed.length > 100 && !trimmed.includes('<')) {
+             hasAppliedDropCap = true;
              return `<p class="briefing-paragraph drop-cap">${trimmed}</p>`;
         }
         return `<p class="briefing-paragraph">${trimmed}</p>`;
