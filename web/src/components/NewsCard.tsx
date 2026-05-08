@@ -134,10 +134,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         )}
 
         <div className="card-content-stack">
-          <p className="why-it-matters">
-            <span className="label">ЗНАЧЕЊЕ:</span> {whyItMatters}
-          </p>
-
           {displaySummary && (
             <p
               className={`summary ${summaryIsCyrillic ? 'summary-cyrillic' : ''}`}

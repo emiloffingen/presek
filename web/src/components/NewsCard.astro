@@ -162,10 +162,6 @@ function getTimeStr(dateStr: string) {
 
 		{!isLead && variant === 'compact' ? null : (
 			<div class="card-content-stack">
-				<p class="why-it-matters">
-                    <span class="label">ЗНАЧЕЊЕ:</span> {whyItMatters}
-				</p>
-
 				{displaySummary && (
 					<div class="summary-container">
 						<p class:list={["summary", { "summary-cyrillic": summaryIsCyrillic }]} set:html={sanitizeHtml(displaySummary)}></p>
