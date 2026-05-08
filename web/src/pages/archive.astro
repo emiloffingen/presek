@@ -63,158 +63,208 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 <Layout title="Архива — Пресек" description="Пребарувајте низ историјата на македонските медиуми.">
   <NYTHeader />
   
-  <main class="site-layout broadsheet-layout py-[var(--page-py)]">
-    <header class="editorial-masthead mb-[clamp(2rem, 5vw, 4rem)]">
-        <div class="masthead-top">
-            <span class="masthead-kicker text-[var(--text-xs)]">МЕДИУМСКА МЕМОРИЈА</span>
-            <div class="masthead-data-bar-compact ml-auto hidden md:flex items-center gap-4 text-[var(--text-xs)] font-black uppercase tracking-tighter opacity-60">
-                <span>{formattedDisplayDate}</span>
-                <span class="dot">·</span>
+  <main class="site-layout broadsheet-layout pt-32 pb-[var(--page-py)]">
+    <header class="editorial-masthead mb-16 border-t border-foreground pt-4">
+        <div class="masthead-top mb-8 flex justify-between items-center">
+            <span class="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">МЕДИУМСКА МЕМОРИЈА</span>
+            <div class="masthead-meta-compact hidden md:flex items-center gap-6 font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                <span class="flex items-center gap-2"><CalendarDays size={12} /> {formattedDisplayDate}</span>
+                <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{archive.total_clusters} теми</span>
-                <span class="dot">·</span>
+                <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{archive.sources} медиуми</span>
             </div>
         </div>
-        <div class="masthead-main">
-            <h1 class="masthead-title text-[clamp(2rem, 4vw, 3.5rem)] font-serif italic">Архива на <span>Изданија</span></h1>
-            <div class="masthead-data-bar text-[var(--text-sm)]">
-                <div class="m-stat"><span>Објави</span><strong>{archive.total.toLocaleString('mk-MK')}</strong></div>
-                <div class="m-stat"><span>Редакции</span><strong>{archive.sources}</strong></div>
-                <div class="m-stat"><span>Теми</span><strong>{archive.total_clusters}</strong></div>
+
+        <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-12">
+            <div class="max-w-3xl">
+                <h1 class="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-4">Архива на <span class="text-nyt-accent italic font-light">Изданија</span></h1>
+                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Преглед на медиумскиот циклус и историскиот наратив низ консолидираните извештаи на Пресек.</p>
+            </div>
+            <div class="masthead-data-deck grid grid-cols-3 gap-0 border border-border/60 bg-secondary/10 overflow-hidden rounded-sm w-full md:w-auto min-w-[320px]">
+                <div class="deck-stat p-6 border-r border-border/60 text-center">
+                    <span class="block text-2xl font-black tabular-nums">{archive.total.toLocaleString('mk-MK')}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Објави</span>
+                </div>
+                <div class="deck-stat p-6 border-r border-border/60 text-center">
+                    <span class="block text-2xl font-black tabular-nums">{archive.sources}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Редакции</span>
+                </div>
+                <div class="deck-stat p-6 bg-nyt-accent/5 text-center">
+                    <span class="block text-2xl font-black tabular-nums text-nyt-accent">{archive.total_clusters}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-nyt-accent/70">Теми</span>
+                </div>
             </div>
         </div>
 
         {briefingData.briefing && (
-            <div class="daily-briefing-box mt-6 py-4 border-y border-border flex items-start gap-3">
-                <Sparkles size={16} className="text-nyt-accent shrink-0 mt-1" />
-                <p class="font-nyt-body text-[var(--text-base)] leading-relaxed italic opacity-80" set:html={sanitizeHtml(briefingData.briefing)}></p>
+            <div class="daily-briefing-highlight mb-16 p-8 bg-background border-l-4 border-nyt-accent shadow-editorial">
+                <div class="flex items-center gap-2 mb-3">
+                    <Sparkles size={14} className="text-nyt-accent" />
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТОК БРИФИНГ ЗА ДЕНОТ</span>
+                </div>
+                <p class="font-nyt-body text-xl md:text-2xl leading-relaxed italic text-foreground/90" set:html={sanitizeHtml(briefingData.briefing)}></p>
             </div>
         )}
 
-        <div class="archive-controls mt-10 grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)] items-end">
-            <div class="flex items-center gap-4 flex-wrap">
-                <form method="get" class="date-form">
-                    <div class="date-input-wrap">
-                        <CalendarDays size={16} />
-                        <input type="date" name="date" value={date} onchange="this.form.submit()" />
+        <div class="archive-nav-bar sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 mb-16">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <form method="get" class="date-select-form">
+                        <div class="relative group">
+                            <input 
+                                type="date" 
+                                name="date" 
+                                value={date} 
+                                onchange="this.form.submit()" 
+                                class="bg-secondary/40 border border-border px-4 py-2 rounded font-sans text-xs font-black uppercase tracking-widest outline-none focus:border-nyt-accent transition-all cursor-pointer"
+                            />
+                            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
+                                <CalendarDays size={14} />
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="flex items-center gap-1">
+                        <a 
+                            href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
+                            class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                        >
+                            ← ПРЕТХОДЕН
+                        </a>
+                        {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
+                            <a 
+                                href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
+                                class="px-4 py-2 bg-secondary/50 border border-border/60 rounded font-sans text-[10px] font-black uppercase tracking-widest hover:bg-foreground hover:text-background transition-all"
+                            >
+                                СЛЕДЕН →
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <form method="get" class="w-full md:w-80">
+                    <input type="hidden" name="date" value={date} />
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="q" 
+                            value={q} 
+                            placeholder="Пребарај во овој ден..." 
+                            class="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+                        />
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
+                            <Search size={18} />
+                        </div>
                     </div>
                 </form>
-
-                <div class="flex items-center gap-2">
-                    <a 
-                        href={`/archive?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`} 
-                        class="nav-step-btn"
-                        title="Претходен ден"
-                    >
-                        ← Позади
-                    </a>
-                    {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
-                        <a 
-                            href={`/archive?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`} 
-                            class="nav-step-btn"
-                            title="Следен ден"
-                        >
-                            Напред →
-                        </a>
-                    )}
-                </div>
-
-                <p class="date-display-label ml-4">{formattedDisplayDate}</p>
             </div>
-
-            <form method="get" class="search-form-archive">
-                <input type="hidden" name="date" value={date} />
-                <div class="search-input-wrap-archive">
-                    <Hash size={16} />
-                    <input type="text" name="q" value={q} placeholder="Пребарај во овој ден..." />
-                    <button type="submit" class="hidden">Search</button>
-                </div>
-            </form>
         </div>
     </header>
 
-    <details class="archive-heatmap-toggle mb-12">
-        <summary>Интензитет на циклусот <span>Отвори преглед ↓</span></summary>
-        <div class="heatmap-panel pt-8">
+    <details class="archive-pulse-toggle mb-20 group border border-border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+        <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
+            <div class="flex items-center gap-4">
+                <div class="p-2 bg-nyt-accent/10 rounded-lg text-nyt-accent">
+                    <Activity size={18} />
+                </div>
+                <div>
+                    <span class="block font-sans text-[11px] font-black uppercase tracking-widest">Медиумски Пулс</span>
+                    <span class="text-xs text-muted-foreground">Интензитет на известување и тематски циклуси</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent">
+                <span class="group-open:hidden">ОТВОРИ ПРЕГЛЕД ↓</span>
+                <span class="hidden group-open:inline">ЗАТВОРИ ПРЕГЛЕД ↑</span>
+            </div>
+        </summary>
+        <div class="p-8 border-t border-border bg-white dark:bg-zinc-950/50">
             <ArchiveHeatmapIsland client:visible selectedDate={date} />
         </div>
     </details>
 
     <div class="broadsheet-grid">
-        <section class="broadsheet-main">
+        <section class="broadsheet-main pr-12 border-r border-border/40">
             {q || source || topic ? (
-                <div class="filter-status-bar mb-8">
-                    <span class="label">АКТИВЕН ФИЛТЕР:</span>
-                    <div class="chips">
-                        {q && <span class="chip">🔍 {q} <a href={buildFilterHref('q', '')}>×</a></span>}
-                        {source && <span class="chip">🏢 {source} <a href={buildFilterHref('source', '')}>×</a></span>}
-                        {topic && <span class="chip"># {topic} <a href={buildFilterHref('topic', '')}>×</a></span>}
+                <div class="active-filters mb-12 flex items-center gap-4 p-4 bg-nyt-accent/[0.03] border border-nyt-accent/10 rounded-lg">
+                    <span class="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground">АКТИВЕН ФИЛТЕР:</span>
+                    <div class="flex flex-wrap gap-2">
+                        {q && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {source && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2">🏢 {source} <a href={buildFilterHref('source', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
+                        {topic && <span class="px-3 py-1 bg-foreground text-background rounded-full font-sans text-[10px] font-black uppercase tracking-widest flex items-center gap-2"># {topic} <a href={buildFilterHref('topic', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
                     </div>
-                    <a href={`/archive?date=${date}`} class="clear">Исчисти сè</a>
+                    <a href={`/archive?date=${date}`} class="ml-auto font-sans text-[10px] font-black uppercase tracking-widest text-nyt-accent underline decoration-2 underline-offset-4">ИСЧИСТИ СÈ</a>
                 </div>
             ) : null}
 
-            <div class="archive-results">
+            <div class="archive-feed-wrapper">
                 {error ? (
-                    <div class="empty-state"><p>{error}</p></div>
+                    <div class="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+                        <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
+                    </div>
                 ) : archive.clusters.length > 0 ? (
                     <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} />
                 ) : (
-                    <div class="empty-state">
-                        <h2>Нема пронајдени вести.</h2>
-                        <p>Пробајте со друг датум или исчистете ги филтрите.</p>
+                    <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
+                        <h2 class="font-serif text-3xl font-black italic mb-4">Нема пронајдени изданија.</h2>
+                        <p class="font-nyt-body text-muted-foreground">Пробајте со друг датум или прилагодете ги филтрите за пребарување.</p>
+                        <a href="/archive" class="mt-8 inline-block px-8 py-3 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-widest hover:bg-nyt-accent transition-all">Врати се денес</a>
                     </div>
                 )}
             </div>
         </section>
 
-        <aside class="broadsheet-rail">
-            <div class="rail-block mb-10">
-                <a href="/archive" class="reset-today-btn">
-                    Врати се денес
+        <aside class="broadsheet-rail pl-4">
+            <div class="rail-nav-block mb-12">
+                <a href="/archive" class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-nyt-accent shadow-lg shadow-black/5 hover:-translate-y-1">
+                    <span class="font-sans text-[11px] font-black uppercase tracking-widest">ВРАТИ СЕ ДЕНЕС</span>
+                    <ChevronRight size={16} />
                 </a>
             </div>
 
             {onThisDay && onThisDay.cluster_id && (
-                <div class="rail-block rail-block-featured mb-10">
-                    <p class="rail-kicker">На овој ден</p>
-                    <h3 class="rail-title">ПРЕД {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'ГОДИНА' : 'ГОДИНИ'}</h3>
-                    <div class="otd-card mt-4">
+                <div class="rail-module mb-12 p-6 bg-secondary/10 border border-border/40 rounded-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <CalendarDays size={64} />
+                    </div>
+                    <span class="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">НА ОВОЈ ДЕН</span>
+                    <h3 class="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">ПРЕД {onThisDay.years_ago} {onThisDay.years_ago === 1 ? 'ГОДИНА' : 'ГОДИНИ'}</h3>
+                    <div class="otd-content group">
                         {onThisDay.image && (
-                            <img src={onThisDay.image} alt="" class="w-full aspect-[3/2] object-cover mb-3" />
+                            <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
+                                <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
+                            </div>
                         )}
                         <a href={`/cluster/${onThisDay.cluster_id}`} class="block group">
-                            <h4 class="font-serif font-black text-lg leading-tight group-hover:underline">{onThisDay.title}</h4>
+                            <h4 class="font-serif font-black text-lg leading-tight group-hover:text-nyt-accent transition-colors mb-3">{onThisDay.title}</h4>
                         </a>
-                        <p class="font-nyt-body text-sm mt-2 opacity-70 line-clamp-3">{onThisDay.summary}</p>
+                        <p class="font-nyt-body text-sm leading-relaxed text-muted-foreground line-clamp-4 italic">"{onThisDay.summary}"</p>
                     </div>
                 </div>
             )}
 
-            <div class="rail-block rail-block-featured">
-                <p class="rail-kicker">Индекс</p>
-                <h3 class="rail-title">ТЕМИ</h3>
-                <div class="rail-directory">
-                    {archive.top_topics?.slice(0, 12).map((item: any) => (
-                        <a href={buildFilterHref('topic', item.topic)} class="dir-link">
-                            <span class="name">{item.topic}</span>
-                            <span class="val">{item.n}</span>
+            <div class="rail-directory-module mb-12">
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ТЕМИ ВО ФОКУС</h3>
+                <div class="flex flex-col gap-1">
+                    {archive.top_topics?.slice(0, 15).map((item: any) => (
+                        <a href={buildFilterHref('topic', item.topic)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors">{item.topic}</span>
+                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
                         </a>
                     ))}
                 </div>
             </div>
 
-            <div class="rail-block">
-                <p class="rail-kicker">Канали</p>
-                <h3 class="rail-title">РЕДАКЦИИ</h3>
-                <div class="rail-directory">
-                    {archive.top_sources?.slice(0, 12).map((item: any) => (
-                        <a href={buildFilterHref('source', item.source)} class="dir-link">
-                            <span class="name flex items-center gap-2">
-                                <Building2 size={12} className="opacity-40" />
+            <div class="rail-directory-module">
+                <h3 class="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">ВОДЕЧКИ КАНАЛИ</h3>
+                <div class="flex flex-col gap-1">
+                    {archive.top_sources?.slice(0, 15).map((item: any) => (
+                        <a href={buildFilterHref('source', item.source)} class="group flex items-center justify-between py-2 border-b border-border/40 hover:bg-secondary/20 transition-all px-1">
+                            <span class="font-serif font-bold text-base group-hover:text-nyt-accent transition-colors flex items-center gap-2">
+                                <Building2 size={12} className="opacity-30 group-hover:opacity-100 transition-opacity" />
                                 {item.source}
                             </span>
-                            <span class="val">{item.n}</span>
+                            <span class="font-sans text-[10px] font-black text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">{item.n}</span>
                         </a>
                     ))}
                 </div>
@@ -227,97 +277,14 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
 </Layout>
 
 <style>
-    /* ── Masthead ────────────────────────────────────── */
-    .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; position: relative; }
-    .masthead-top { display: flex; align-items: center; justify-content: space-between; }
-    .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-    .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 0.9; margin: 1.5rem 0; letter-spacing: -0.02em; }
-    .masthead-title span { font-weight: 400; font-style: italic; color: var(--nyt-accent); }
-    
-    .masthead-main { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem; }
-    .masthead-data-bar { display: flex; gap: 2rem; }
-    .m-stat span { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); display: block; margin-bottom: 0.2rem; }
-    .m-stat strong { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; }
-
-    .date-form { display: flex; align-items: center; gap: 1.5rem; }
-    .date-input-wrap, .search-input-wrap-archive { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; border: 1px solid var(--foreground); transition: all 0.2s; }
-    .date-input-wrap:focus-within, .search-input-wrap-archive:focus-within { border-color: var(--nyt-accent); box-shadow: 0 0 0 1px var(--nyt-accent); }
-    .date-input-wrap input, .search-input-wrap-archive input { background: transparent; border: 0; font-family: var(--font-serif); font-size: 1rem; font-weight: 800; outline: none; width: 100%; }
-    
-    .search-form-archive { width: 100%; max-width: 400px; }
-    
-    /* ── Date Navigation ────────────────────────────── */
-    .nav-step-btn {
-        padding: 0.5rem 0.8rem;
-        background: var(--secondary);
-        border: 1px solid var(--border);
-        font-family: var(--font-sans);
-        font-size: 0.64rem;
-        font-weight: 850;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        text-decoration: none;
-        color: var(--foreground);
-        transition: all 0.2s;
-    }
-    .nav-step-btn:hover {
-        background: var(--foreground);
-        color: var(--background);
-        border-color: var(--foreground);
-    }
-    .reset-today-btn {
-        display: block;
-        width: 100%;
-        text-align: center;
-        padding: 0.75rem;
-        background: var(--foreground);
-        color: var(--background);
-        font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 950;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-    .reset-today-btn:hover {
-        background: var(--nyt-accent);
-        transform: translateY(-2px);
-    }
-    .date-display-label { font-family: var(--font-serif); font-size: clamp(1rem, 1.25rem, 1.5rem); font-weight: 900; font-style: italic; }
-
-    /* ── Heatmap Toggle ──────────────────────────────── */
-    .archive-heatmap-toggle { border: 1px solid var(--border); background: var(--secondary); }
-    .archive-heatmap-toggle summary { list-style: none; padding: 1rem 1.5rem; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 900; text-transform: uppercase; cursor: pointer; display: flex; justify-content: space-between; }
-    .archive-heatmap-toggle summary span { color: var(--nyt-accent); }
-
-    /* ── Broadsheet Grid ────────────────────────────── */
+    /* Clean up legacy styles, keeping only layout-critical ones */
     .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
     @media (min-width: 1024px) {
-        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; }
-        .broadsheet-main { border-right: 1px solid var(--border); padding-right: 3rem; }
+        .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
         .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
     }
-
-    /* ── Filter Bar ──────────────────────────────────── */
-    .filter-status-bar { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--foreground); }
-    .filter-status-bar .label { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; }
-    .filter-status-bar .chips { display: flex; gap: 0.5rem; }
-    .filter-status-bar .chip { padding: 0.25rem 0.5rem; background: var(--foreground); color: var(--background); font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem; }
-    .filter-status-bar .chip a { color: inherit; text-decoration: none; font-size: 1rem; line-height: 1; }
-    .filter-status-bar .clear { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-decoration: underline; color: var(--nyt-accent); }
-
-    /* ── Rail ────────────────────────────────────────── */
-    .rail-block { margin-bottom: 2.5rem; }
-    .rail-block-featured { padding: 1.5rem; background: var(--secondary); border: 1px solid var(--border); }
-    .rail-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .rail-title { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    .rail-directory { display: flex; flex-direction: column; }
-    .dir-link { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
-    .dir-link:last-child { border-bottom: none; }
-    .dir-link .name { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700; }
-    .dir-link .val { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; background: var(--border); padding: 2px 6px; }
-    .dir-link:hover .name { color: var(--nyt-accent); text-decoration: underline; }
-
-    .empty-state { text-align: center; padding: 5rem 1rem; border: 1px dashed var(--border); }
+    
+    /* Custom scrollbar for heatmaps */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

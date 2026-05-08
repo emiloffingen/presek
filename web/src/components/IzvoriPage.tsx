@@ -93,39 +93,47 @@ const IzvoriPage: React.FC = () => {
 
   const mkSources = filtered.filter((s) => s.country === 'MK' || !s.country);
   const intSources = filtered.filter((s) => s.country && s.country !== 'MK');
-  const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 6);
+  const fastMovers = [...filtered].sort((a, b) => b.speed_first_count - a.speed_first_count).slice(0, 10);
 
   const renderSourceRow = (source: SourceRow) => {
     const health = getHealthStatus(source.last_fetched);
     const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
     
     return (
-      <a key={source.source} href={`/?q=${encodeURIComponent(source.source)}`} className="editorial-source-item group">
+      <a key={source.source} href={`/?source=${encodeURIComponent(source.source)}`} className="editorial-source-item group no-underline">
         <div className="item-main">
-          <div className="item-head">
+          <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? 'Ажурирано неодамна' : health === 'stale' ? 'Постојат доцнења' : 'Нема свеж сигнал'}></div>
-            <h3 className="item-title">{source.source}</h3>
-            <span className="item-tier" title="Репутациски статус во системот">{source.trust_tier}</span>
+            <h3 className="item-title font-serif text-2xl font-black group-hover:text-nyt-accent transition-colors">{source.source}</h3>
+            {source.trust_tier === 'Висока доверба' && (
+                <ShieldCheck size={14} className="text-nyt-accent" />
+            )}
           </div>
-          <p className="item-tendency">{source.tendency}</p>
-          <div className="item-meta">
-            <span className="meta-tag">{source.country || 'MK'}</span>
-            {source.top_categories?.slice(0, 2).map(cat => <span key={cat} className="meta-tag-outline">{cat}</span>)}
-            <span className="meta-time" title="Време на последна синхронизација">⏱ {formatLastFetched(source.last_fetched)}</span>
+          <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-3">{source.tendency}</p>
+          <div className="item-meta flex items-center gap-3">
+            <span className="px-2 py-0.5 bg-foreground text-background font-sans text-[9px] font-black uppercase tracking-widest">{source.country || 'MK'}</span>
+            <div className="flex gap-1.5">
+                {source.top_categories?.slice(0, 2).map(cat => (
+                    <span key={cat} className="px-2 py-0.5 border border-border rounded-sm font-sans text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">{cat}</span>
+                ))}
+            </div>
+            <span className="font-sans text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 ml-auto flex items-center gap-1.5">
+                <Activity size={10} /> {formatLastFetched(source.last_fetched)}
+            </span>
           </div>
         </div>
-        <div className="item-stats">
-          <div className="stat-box" title="Квалитетен Индекс (Брзина + Точност)">
-            <span>QI</span>
-            <strong>{reliabilityIndex}</strong>
+        <div className="item-stats grid grid-cols-3 gap-6 ml-12">
+          <div className="stat-box flex flex-col items-center">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">QI</span>
+            <strong className="text-xl font-black tabular-nums">{reliabilityIndex}</strong>
           </div>
-          <div className="stat-box" title="Број на објавени вести во последните 24 часа">
-            <span>24ч</span>
-            <strong>{source.recent_volume}</strong>
+          <div className="stat-box flex flex-col items-center">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">24Ч</span>
+            <strong className="text-xl font-black tabular-nums">{source.recent_volume}</strong>
           </div>
-          <div className="stat-box accent" title="Број на стории кои медиумот ги објавил прв (последни 7 дена)">
-            <span>ПРВ</span>
-            <strong>{source.speed_first_count}</strong>
+          <div className="stat-box flex flex-col items-center text-nyt-accent">
+            <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">ПРВ</span>
+            <strong className="text-xl font-black tabular-nums">{source.speed_first_count}</strong>
           </div>
         </div>
       </a>
@@ -133,23 +141,46 @@ const IzvoriPage: React.FC = () => {
   };
 
   return (
-    <div className="broadsheet-sources">
-      <header className="editorial-masthead mb-12">
-        <div className="masthead-top">
-          <span className="masthead-kicker">МЕДИУМСКА РЕПУТАЦИЈА</span>
+    <div className="broadsheet-sources pt-12">
+      <header className="editorial-masthead mb-16 border-t border-foreground pt-4">
+        <div class="masthead-top mb-8">
+          <span className="masthead-kicker font-sans text-[10px] font-black uppercase tracking-[0.25em] text-nyt-accent">МЕДИУМСКА РЕПУТАЦИЈА</span>
         </div>
-        <div className="masthead-main">
-          <h1 className="masthead-title">Медиумски <span>Извори</span></h1>
+        <div className="masthead-main mb-12">
+          <h1 className="masthead-title font-serif text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter">Медиумски <span className="text-nyt-accent italic font-light">Извори</span></h1>
+          <p className="mt-6 font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">Рангирање и детална статистика на сите медиуми што Пресек ги следи — по активност, брзина и доверливост.</p>
         </div>
-        <div className="masthead-controls">
-          <div className="search-wrap">
-            <Search size={16} />
-            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Пребарај редакции..." />
+        
+        <div className="masthead-controls sticky top-[72px] z-30 bg-background/80 backdrop-blur-xl border-y border-border py-4 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="relative w-full md:w-96 group">
+            <input 
+                type="text" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+                placeholder="Пребарај редакции..." 
+                className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-lg outline-none focus:border-nyt-accent placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
+                <Search size={18} />
+            </div>
           </div>
-          <div className="filter-group">
-            {['all', 'high', 'verified'].map(t => (
-              <button key={t} onClick={() => setFilterTier(t)} className={filterTier === t ? 'active' : ''}>
-                {t === 'all' ? 'СИТЕ' : t === 'high' ? 'ВИСОКА ДОВЕРБА' : 'ПОТВРДЕНИ'}
+          
+          <div className="filter-group flex p-1 bg-secondary/30 rounded-lg border border-border shadow-sm">
+            {[
+                { id: 'all', label: 'СИТЕ' },
+                { id: 'high', label: 'ВИСОКА ДОВЕРБА' },
+                { id: 'verified', label: 'ПОТВРДЕНИ' }
+            ].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setFilterTier(t.id)} 
+                className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
+                    filterTier === t.id 
+                    ? 'bg-nyt-accent text-white shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.label}
               </button>
             ))}
           </div>
@@ -157,22 +188,24 @@ const IzvoriPage: React.FC = () => {
       </header>
 
       <div className="broadsheet-grid">
-        <div className="broadsheet-main">
+        <div className="broadsheet-main pr-12 border-r border-border/40">
           {loading ? (
-            <div className="p-12 text-center opacity-30"><Activity className="animate-pulse mx-auto" /></div>
+            <div className="py-32 text-center opacity-30"><Activity size={48} className="animate-spin mx-auto text-nyt-accent" /></div>
           ) : error ? (
-            <div className="empty-state"><h2>{error}</h2></div>
+            <div className="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+                <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
+            </div>
           ) : (
-            <div className="space-y-16">
+            <div className="space-y-24">
               <section>
-                <h2 className="section-title-italic mb-6">Македонски Медиуми</h2>
-                <div className="editorial-list">
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Македонски Медиуми</h2>
+                <div className="flex flex-col">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-title-italic mb-6">Меѓународни Сигнали</h2>
-                <div className="editorial-list">
+                <h2 className="font-serif text-3xl font-black italic mb-10 pb-3 border-b-4 border-foreground">Меѓународни Сигнали</h2>
+                <div className="flex flex-col">
                   {intSources.map(renderSourceRow)}
                 </div>
               </section>
@@ -180,97 +213,65 @@ const IzvoriPage: React.FC = () => {
           )}
         </div>
 
-        <aside className="broadsheet-rail">
-          <section className="rail-block rail-block-alt">
-            <p className="rail-kicker">Интелигенција</p>
-            <h3 className="rail-title">КВАЛИТЕТЕН ИНДЕКС (QI)</h3>
-            <p className="rail-text">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>систем за длабока анализа</strong>. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
+        <aside className="broadsheet-rail pl-4">
+          <section className="rail-module mb-12 p-8 bg-nyt-accent/5 border border-nyt-accent/10 rounded-xl">
+            <span className="block font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-4">ИНТЕЛИГЕНЦИЈА</span>
+            <h3 className="font-serif text-2xl font-black leading-tight mb-4 tracking-tight">КВАЛИТЕТЕН ИНДЕКС (QI)</h3>
+            <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">QI ги спојува брзината, точноста и плурализмот. Пресметано преку нашиот <strong>систем за длабока анализа</strong>. Оценката 1.00 претставува оптимален баланс на пазарот.</p>
           </section>
 
-          <section className="rail-block">
-            <p className="rail-kicker">Сигнал</p>
-            <h3 className="rail-title">НАЈБРЗИ ДЕНЕС</h3>
-            <div className="rail-directory">
+          <section className="rail-module mb-12">
+            <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-foreground mb-6 pb-2 border-b-2 border-foreground">НАЈБРЗИ ДЕНЕС</h3>
+            <div className="flex flex-col gap-1">
               {fastMovers.map(s => (
-                <div key={s.source} className="dir-row">
-                  <span className="name">{s.source}</span>
-                  <span className="val">+{s.speed_first_count}</span>
+                <div key={s.source} className="flex items-center justify-between py-2.5 border-b border-border/40 hover:bg-secondary/10 px-1 transition-all">
+                  <span className="font-serif font-bold text-base">{s.source}</span>
+                  <span className="font-sans text-[11px] font-black text-nyt-accent bg-nyt-accent/10 px-2 py-0.5 rounded">+{s.speed_first_count}</span>
                 </div>
               ))}
             </div>
           </section>
 
-          <div className="rail-methodology">
-            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-2 mb-3">МЕТОДОЛОГИЈА</h4>
-            <ul className="space-y-3 text-xs opacity-80 leading-relaxed font-nyt-body">
-              <li><strong>Доверба:</strong> Пондериран влез според историска точност.</li>
-              <li><strong>Водство:</strong> Колку често медиумот прв отвора тема.</li>
-              <li><strong>Потврда:</strong> Стапка на прифаќање на веста од другите.</li>
+          <div className="rail-methodology-module p-6 bg-secondary/10 border border-border/40 rounded-sm">
+            <h4 className="font-sans text-[10px] font-black uppercase tracking-widest border-b border-border pb-3 mb-4">МЕТОДОЛОГИЈА</h4>
+            <ul className="space-y-4">
+              <li className="flex flex-col gap-1">
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Доверба</span>
+                <span className="text-xs text-muted-foreground leading-snug">Пондериран влез според историска точност и стабилност на известување.</span>
+              </li>
+              <li className="flex flex-col gap-1">
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Водство</span>
+                <span className="text-xs text-muted-foreground leading-snug">Колку често медиумот прв отвора тема што подоцна станува доминантна.</span>
+              </li>
+              <li className="flex flex-col gap-1">
+                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-foreground">Потврда</span>
+                <span className="text-xs text-muted-foreground leading-snug">Стапка на прифаќање и потврда на веста од други независни извори.</span>
+              </li>
             </ul>
           </div>
         </aside>
       </div>
 
       <style>{`
-        .broadsheet-sources { width: 100%; }
-        .editorial-masthead { border-bottom: 4px solid var(--foreground); padding-bottom: 2rem; margin-bottom: 3rem; }
-        .masthead-kicker { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-accent); }
-        .masthead-title { font-family: var(--font-serif); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; line-height: 0.9; margin: 1rem 0; letter-spacing: -0.02em; }
-        .masthead-title span { font-weight: 400; font-style: italic; }
-        
-        .masthead-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
-        .search-wrap { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--foreground); background: var(--background); flex: 1; min-width: 200px; max-width: 400px; }
-        .search-wrap input { background: transparent; border: 0; outline: none; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 700; width: 100%; }
-        .filter-group { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-        .filter-group button { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; padding: 0.4rem 0.75rem; border: 1px solid var(--border); background: var(--background); transition: all 0.2s; white-space: nowrap; }
-        .filter-group button.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
-
-        .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
-        @media (min-width: 1024px) {
-          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
-          .broadsheet-main { border-right: 1px solid var(--border); padding-right: 2rem; }
-          .broadsheet-rail { position: sticky; top: 7rem; align-self: start; }
-        }
-
-        .section-title-italic { font-family: var(--font-serif); font-size: clamp(1.4rem, 2.5vw, 1.7rem); font-weight: 900; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.25rem; }
-
-        .editorial-list { display: flex; flex-direction: column; }
-        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
-        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 97%, var(--nyt-accent) 3%); }
-        .item-main { flex: 1; padding-right: 1.5rem; }
-        .item-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
-        .health-dot { width: 5px; height: 5px; border-radius: 50%; }
-        .health-dot.active { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+        .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .editorial-source-item:hover { background: color-mix(in srgb, var(--background) 96%, var(--nyt-accent) 4%); padding-left: 1rem; padding-right: 1rem; margin-left: -1rem; margin-right: -1rem; border-radius: 4px; border-bottom-color: var(--nyt-accent); }
+        .item-main { flex: 1; min-width: 0; }
+        .item-head { display: flex; align-items: center; gap: 0.75rem; }
+        .health-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .health-dot.active { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
         .health-dot.stale { background: #f59e0b; }
         .health-dot.critical { background: #ef4444; }
-        .item-title { font-family: var(--font-serif); font-size: clamp(1.1rem, 2vw, 1.25rem); font-weight: 850; }
-        .item-tier { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); padding: 0.1rem 0.3rem; border: 1px solid var(--nyt-accent); white-space: nowrap; }
-        .item-tendency { font-family: var(--font-nyt-body); font-size: 0.9rem; color: var(--secondary-foreground); margin-bottom: 0.5rem; line-height: 1.4; }
-        .item-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .meta-tag { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; background: var(--foreground); color: var(--background); padding: 0.1rem 0.3rem; }
-        .meta-tag-outline { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 850; border: 1px solid var(--border); padding: 0.1rem 0.3rem; color: var(--muted-foreground); }
-        .meta-time { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 800; opacity: 0.4; }
 
-        .item-stats { display: flex; gap: 1rem; }
-        .stat-box { text-align: center; min-width: 2.5rem; }
-        .stat-box span { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 950; color: var(--muted-foreground); display: block; margin-bottom: 0.1rem; }
-        .stat-box strong { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 900; }
-        .stat-box.accent strong { color: var(--nyt-accent); }
+        .broadsheet-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+        @media (min-width: 1024px) {
+          .broadsheet-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+          .broadsheet-rail { position: sticky; top: 8rem; align-self: start; }
+        }
 
-        .rail-block { margin-bottom: 2rem; }
-        .rail-block-alt { padding: 1rem; background: var(--secondary); border-radius: 2px; }
-        .rail-kicker { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; color: var(--nyt-accent); text-transform: uppercase; margin-bottom: 0.4rem; }
-        .rail-title { font-family: var(--font-sans); font-size: 0.7rem; font-weight: 950; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.8rem; }
-        .rail-directory { display: flex; flex-direction: column; }
-        .dir-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
-        .dir-row .name { font-family: var(--font-serif); font-size: 0.85rem; font-weight: 700; }
-        .dir-row .val { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); }
-
-        @media (max-width: 640px) {
-          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 1rem 0; }
-          .item-stats { width: 100%; justify-content: flex-start; gap: 1.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
-          .masthead-controls { flex-direction: column; align-items: stretch; }
-          .filter-group { justify-content: space-between; }
+        @media (max-width: 768px) {
+          .editorial-source-item { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+          .item-stats { margin-left: 0 !important; width: 100%; border-top: 1px solid var(--border); padding-top: 1rem; }
+          .masthead-controls { flex-direction: column; align-items: stretch; gap: 1.5rem; }
         }
       `}</style>
     </div>
