@@ -48,82 +48,61 @@ import Branding from './Branding.astro';
 
 <style>
     .editorial-footer {
-        padding-top: 4rem;
-        padding-bottom: 5rem;
-        margin-top: 5rem;
+        padding-top: 5rem;
+        padding-bottom: 6rem;
+        margin-top: 8rem;
     }
 
     .footer-top-border {
-        height: 4px;
-        background: var(--foreground);
-        margin-bottom: 3.5rem;
-        opacity: 0.9;
+        height: 1px;
+        background: var(--border);
+        margin-bottom: 5rem;
     }
 
     .footer-main {
         display: grid;
-        grid-template-columns: 1.25fr 2fr;
-        gap: 4rem;
+        grid-template-columns: 1fr 2fr;
+        gap: 6rem;
         align-items: start;
     }
 
-    .footer-branding {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .brand-link {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        text-decoration: none;
-    }
-
-    .brand-emblem { height: 1.75rem; }
-    .brand-logo { height: 2.2rem; }
-
     .brand-ethos {
         font-family: var(--font-nyt-body);
-        font-size: 0.94rem;
-        line-height: 1.65;
-        color: var(--secondary-foreground);
-        max-width: 32rem;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--muted-foreground);
+        max-width: 35rem;
         text-wrap: pretty;
+        opacity: 0.9;
     }
 
     .footer-directory {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-    }
-
-    .dir-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.85rem;
+        gap: 3rem;
     }
 
     .dir-title {
         font-family: var(--font-sans);
-        font-size: 0.64rem;
-        font-weight: 900;
+        font-size: 0.6rem;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.18em;
         color: var(--foreground);
-        margin-bottom: 0.5rem;
-        padding-bottom: 0.6rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
         border-bottom: 1px solid var(--border);
     }
 
     .dir-group a {
         font-family: var(--font-sans);
-        font-size: 0.72rem;
-        font-weight: 700;
+        font-size: 0.8rem;
+        font-weight: 800;
         color: var(--muted-foreground);
         text-decoration: none;
-        transition: color 0.2s;
+        transition: all 0.2s ease;
         width: fit-content;
+        letter-spacing: 0.01em;
     }
 
     .dir-group a:hover {

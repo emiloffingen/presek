@@ -46,37 +46,40 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 <style>
 	.briefing-box {
 		height: 100%;
-		padding: 2rem;
-		background: color-mix(in srgb, var(--secondary) 15%, var(--background));
-		border: 1px solid var(--border);
+		padding: 2.5rem;
+		background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
+		border: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, var(--border));
 		display: flex;
 		flex-direction: column;
+        border-radius: 2px;
 	}
 
 	.briefing-kicker {
 		font-family: var(--font-sans);
 		font-size: 0.6rem;
-		font-weight: 900;
-		letter-spacing: 0.15em;
+		font-weight: 950;
+		letter-spacing: 0.18em;
 		color: var(--nyt-accent);
 		display: block;
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.6rem;
+        text-transform: uppercase;
 	}
 
 	.briefing-title {
 		font-family: var(--font-serif);
-		font-size: 1.4rem;
-		font-weight: 900;
-		line-height: 1.1;
+		font-size: 1.6rem;
+		font-weight: 950;
+		line-height: 1.05;
+        letter-spacing: -0.02em;
 	}
 
 	.briefing-point {
-		font-family: var(--font-serif);
-		font-size: 1.05rem;
-		line-height: 1.45;
+		font-family: var(--font-nyt-body);
+		font-size: 1.15rem;
+		line-height: 1.55;
 		color: var(--foreground);
 		position: relative;
-		padding-left: 1.25rem;
+		padding-left: 1.5rem;
 	}
 
 	.briefing-point::before {
@@ -84,6 +87,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 		position: absolute;
 		left: 0;
 		color: var(--nyt-accent);
-		font-weight: 900;
+		font-weight: 950;
+        opacity: 0.8;
 	}
 </style>

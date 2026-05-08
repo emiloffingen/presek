@@ -50,89 +50,70 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 
 <style>
 	.editorial-narrative {
-		margin-bottom: 3rem;
+		margin-bottom: 4rem;
         position: relative;
 	}
 
     .narrative-body.is-collapsible {
-        max-height: 800px;
+        max-height: 1000px;
         overflow: hidden;
-        transition: max-height 0.6s cubic-bezier(0.2, 0, 0, 1);
+        transition: max-height 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
     .narrative-body.is-collapsed {
-        mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-    }
-
-    .narrative-toggle {
-        display: none;
-        margin-top: 1rem;
-        width: 100%;
-        padding: 0.75rem;
-        font-family: var(--font-sans);
-        font-size: 0.75rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        color: var(--nyt-accent);
-        background: var(--secondary);
-        border: 1px solid var(--border);
-        cursor: pointer;
-    }
-
-    @media (max-width: 768px) {
-        .narrative-toggle { display: block; }
+        mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
     }
 
 	.narrative-p {
 		font-family: var(--font-nyt-body);
-		font-size: clamp(1.05rem, 4vw, 1.15rem);
-		line-height: 1.75;
-		color: var(--secondary-foreground);
-		margin-bottom: 1.5rem;
+		font-size: clamp(1.1rem, 4.5vw, 1.25rem);
+		line-height: 1.8;
+		color: var(--foreground);
+		margin-bottom: 1.75rem;
 		text-align: left;
+        letter-spacing: -0.01em;
 	}
 
 	.narrative-p.drop-cap::first-letter {
 		float: left;
 		font-family: var(--font-serif);
-		font-size: clamp(3.5rem, 12vw, 4.8rem);
-		line-height: 0.85;
-		padding-top: 4px;
-		padding-right: 12px;
-		padding-left: 3px;
-		font-weight: 900;
+		font-size: clamp(4rem, 15vw, 5.5rem);
+		line-height: 0.8;
+		padding-top: 6px;
+		padding-right: 14px;
+		padding-left: 4px;
+		font-weight: 950;
 		color: var(--foreground);
 	}
 
-    @media (max-width: 640px) {
-        .narrative-p {
-            text-align: left;
-        }
+    .narrative-facts-box {
+        margin-top: 4rem;
+        padding: 2rem;
+        background: color-mix(in srgb, var(--nyt-accent) 4%, var(--background));
+        border-left: 4px solid var(--nyt-accent);
+        border-radius: 0 4px 4px 0;
+        box-shadow: var(--shadow-editorial);
     }
-
-	.synthesis-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
 
 	.synthesis-item {
 		display: flex;
-		gap: 1rem;
+		gap: 1.25rem;
 		align-items: flex-start;
 		font-family: var(--font-nyt-body);
-		font-size: 1.1rem;
-		line-height: 1.6;
-		color: var(--secondary-foreground);
+		font-size: 1.2rem;
+		line-height: 1.65;
+		color: var(--foreground);
 	}
 
 	.source-tag {
 		font-family: var(--font-sans);
-		font-size: 0.65rem;
+		font-size: 0.6rem;
 		font-weight: 950;
 		color: var(--nyt-accent);
 		white-space: nowrap;
-		margin-top: 0.2rem;
+		margin-top: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
 	}
 
 	:global(.citation-badge) {

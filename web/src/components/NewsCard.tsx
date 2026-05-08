@@ -126,8 +126,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           ></h2>
         </a>
 
+        {cluster.has_synthesis && (
+            <span className="editorial-byline">
+                <Sparkles size={11} className="inline-block mr-1 text-nyt-accent" />
+                Системска синтеза на Пресек
+            </span>
+        )}
+
         <div className="card-content-stack">
-          <p className="why-it-matters">{whyItMatters}</p>
+          <p className="why-it-matters">
+            <span className="label">ЗНАЧЕЊЕ:</span> {whyItMatters}
+          </p>
 
           {displaySummary && (
             <p

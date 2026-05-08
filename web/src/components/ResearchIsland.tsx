@@ -132,16 +132,16 @@ export default function ResearchIsland({ clusterId, initialHeadline, sources = [
       // Headers (robust: matches '# Header' or '1. # Header')
       if (trimmed.includes('#')) {
           const headerText = trimmed.split('#')[1].trim();
-          return <h3 key={i} className={`font-serif font-black text-xl md:text-2xl mt-8 mb-4 border-b border-border pb-2 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
+          return <h3 key={i} className={`font-serif font-black text-2xl md:text-3xl mt-12 mb-6 border-b-2 border-border pb-3 text-foreground tracking-tight text-left ${animClass}`} style={animStyle}>{parseBoldText(headerText)}</h3>;
       }
       
       // List items (robust: matches '-', '•', '*', '1. ', etc.)
       if (/^([-•*]|\d+\.)\s+/.test(trimmed)) {
           const cleanItem = trimmed.replace(/^([-•*]|\d+\.)\s+/, '');
           return (
-            <div key={i} className={`flex gap-3 md:gap-4 mb-4 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
-              <span className="text-nyt-accent mt-1 flex-shrink-0"><CheckCircle2 size={14} strokeWidth={3} /></span>
-              <span className="text-base md:text-xl text-foreground/90 font-nyt-body leading-snug">{parseBoldText(cleanItem)}</span>
+            <div key={i} className={`flex gap-4 md:gap-5 mb-5 items-start pl-1 md:pl-2 text-left ${animClass}`} style={animStyle}>
+              <span className="text-nyt-accent mt-1.5 flex-shrink-0"><CheckCircle2 size={16} strokeWidth={3} /></span>
+              <span className="text-lg md:text-2xl text-foreground font-nyt-body leading-relaxed">{parseBoldText(cleanItem)}</span>
             </div>
           );
       }

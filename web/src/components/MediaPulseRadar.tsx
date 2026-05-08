@@ -62,11 +62,11 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="media-pulse-card bg-zinc-50/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-5 md:p-8 rounded-xl shadow-sm overflow-hidden">
-      <div className="flex flex-col gap-8 md:gap-10 items-center">
+    <div className="media-pulse-card bg-background/60 backdrop-blur-md border border-nyt-accent/15 p-6 md:p-10 rounded-xl shadow-editorial overflow-hidden">
+      <div className="flex flex-col gap-10 md:gap-12 items-center">
         {/* Radar Visualization */}
-        <div className="relative w-56 h-56 flex-shrink-0 mx-auto">
-          <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-sm">
+        <div className="relative w-64 h-64 flex-shrink-0 mx-auto">
+          <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible drop-shadow-md">
             {/* Background circles */}
             {[1, 0.75, 0.5, 0.25].map((lvl) => (
                 <circle 
@@ -74,73 +74,73 @@ export const MediaPulseRadar: React.FC<Props> = ({ data }) => {
                     cx="100" cy="100" r={radius * lvl} 
                     fill="none" 
                     stroke="currentColor" 
-                    strokeWidth="0.5" 
-                    className="text-zinc-300 dark:text-zinc-700" 
-                    strokeDasharray={lvl === 1 ? "none" : "2 2"} 
+                    strokeWidth="0.75" 
+                    className="text-border" 
+                    strokeDasharray={lvl === 1 ? "none" : "3 3"} 
                 />
             ))}
             
             {/* Axis lines */}
-            <line x1="100" y1={cy - radius} x2="100" y2="100" stroke="currentColor" strokeWidth="1" className="text-zinc-300 dark:text-zinc-700" />
-            <line x1="100" y1="100" x2={cx + radius * Math.sin(120 * Math.PI / 180)} y2={cy - radius * Math.cos(120 * Math.PI / 180)} stroke="currentColor" strokeWidth="1" className="text-zinc-300 dark:text-zinc-700" />
-            <line x1="100" y1="100" x2={cx + radius * Math.sin(240 * Math.PI / 180)} y2={cy - radius * Math.cos(240 * Math.PI / 180)} stroke="currentColor" strokeWidth="1" className="text-zinc-300 dark:text-zinc-700" />
+            <line x1="100" y1={cy - radius} x2="100" y2="100" stroke="currentColor" strokeWidth="1.5" className="text-border" />
+            <line x1="100" y1="100" x2={cx + radius * Math.sin(120 * Math.PI / 180)} y2={cy - radius * Math.cos(120 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
+            <line x1="100" y1="100" x2={cx + radius * Math.sin(240 * Math.PI / 180)} y2={cy - radius * Math.cos(240 * Math.PI / 180)} stroke="currentColor" strokeWidth="1.5" className="text-border" />
 
             {/* Labels */}
-            <text x="100" y={cy - radius - 12} textAnchor="middle" className="text-[10px] font-black fill-zinc-500 dark:fill-zinc-400 uppercase tracking-[0.1em]">Објективност</text>
-            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 15} y={cy - radius * Math.cos(120 * Math.PI / 180) + 15} textAnchor="middle" className="text-[10px] font-black fill-zinc-500 dark:fill-zinc-400 uppercase tracking-[0.1em]">Сензационализам</text>
-            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 15} y={cy - radius * Math.cos(240 * Math.PI / 180) + 15} textAnchor="middle" className="text-[10px] font-black fill-zinc-500 dark:fill-zinc-400 uppercase tracking-[0.1em]">Емоции</text>
+            <text x="100" y={cy - radius - 15} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Објективност</text>
+            <text x={cx + radius * Math.sin(120 * Math.PI / 180) + 18} y={cy - radius * Math.cos(120 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Сензационализам</text>
+            <text x={cx + radius * Math.sin(240 * Math.PI / 180) - 18} y={cy - radius * Math.cos(240 * Math.PI / 180) + 18} textAnchor="middle" className="text-[11px] font-black fill-muted-foreground uppercase tracking-[0.2em]">Емоции</text>
 
             {/* Data shape */}
             <polygon 
               points={points} 
               fill="var(--nyt-accent)"
-              fillOpacity="0.15"
+              fillOpacity="0.2"
               stroke="var(--nyt-accent)" 
-              strokeWidth="2.5"
+              strokeWidth="3"
               strokeLinejoin="round"
-              className="transition-all duration-[1200ms] cubic-bezier(0.34, 1.56, 0.64, 1)"
+              className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1)"
             />
             
             {/* Points */}
-            <circle cx={x1} cy={y1} r="5" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.34, 1.56, 0.64, 1) stroke-[3px] stroke-white dark:stroke-zinc-900" />
-            <circle cx={x2} cy={y2} r="5" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.34, 1.56, 0.64, 1) stroke-[3px] stroke-white dark:stroke-zinc-900" />
-            <circle cx={x3} cy={y3} r="5" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.34, 1.56, 0.64, 1) stroke-[3px] stroke-white dark:stroke-zinc-900" />
+            <circle cx={x1} cy={y1} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
+            <circle cx={x2} cy={y2} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
+            <circle cx={x3} cy={y3} r="6" fill="var(--nyt-accent)" className="transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) stroke-[4px] stroke-background" />
           </svg>
         </div>
 
         {/* Text Metrics */}
-        <div className="flex-1 w-full space-y-6">
+        <div className="flex-1 w-full space-y-8">
           <div className="text-center md:text-left">
-            <span className="inline-block bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-2">Медиумски Пулс</span>
-            <p className="text-2xl md:text-3xl font-serif font-black leading-tight text-zinc-900 dark:text-zinc-100">
+            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-3">Медиумски Пулс</span>
+            <p className="text-3xl md:text-4xl font-serif font-black leading-tight text-foreground">
               Тон: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Објективност</span>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl md:text-3xl font-black tabular-nums">{objectivity.toFixed(0)}%</span>
-                <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-1000 delay-300" style={{ width: isMounted ? `${objectivity}%` : '0%' }}></div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10 pt-8 border-t border-border">
+            <div className="space-y-3">
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Објективност</span>
+              <div className="flex items-end gap-3">
+                <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
+                <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
+                    <div className="h-full bg-foreground transition-all duration-1000 delay-300" style={{ width: isMounted ? `${objectivity}%` : '0%' }}></div>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Сензационализам</span>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl md:text-3xl font-black tabular-nums">{sensationalism.toFixed(0)}%</span>
-                <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-600 transition-all duration-1000 delay-500" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}></div>
+            <div className="space-y-3">
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Сензационализам</span>
+              <div className="flex items-end gap-3">
+                <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
+                <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
+                    <div className="h-full bg-nyt-red transition-all duration-1000 delay-500" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}></div>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400 block tracking-wider">Емоционалност</span>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl md:text-3xl font-black tabular-nums">{emotionalCharge.toFixed(0)}%</span>
-                <div className="h-1.5 flex-1 mb-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="space-y-3">
+              <span className="text-[11px] font-black uppercase text-muted-foreground block tracking-[0.15em]">Емоционалност</span>
+              <div className="flex items-end gap-3">
+                <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
+                <div className="h-2 flex-1 mb-2.5 bg-border rounded-full overflow-hidden">
                     <div className="h-full bg-amber-500 transition-all duration-1000 delay-700" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}></div>
                 </div>
               </div>
