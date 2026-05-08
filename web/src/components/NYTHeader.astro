@@ -263,6 +263,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; opacity: 0.9; }
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 60s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .unified-ticker-track:hover { animation-play-state: paused; }
     
     .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; flex-shrink: 0; white-space: nowrap; }
     .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }

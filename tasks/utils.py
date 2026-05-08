@@ -43,11 +43,13 @@ _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live
 
 
 def invalidate_public_data_caches():
-    delete_cache_prefix("v4:news:")
+    delete_cache_prefix("api:news:")
     delete_cache_prefix("api:home:")
-    delete_cache("ssr:index:top_clusters")
-    delete_cache("trending")
-    delete_cache("stats:full")
+    delete_cache_prefix("api:intelligence:")
+    delete_cache_prefix("api:top-entities:")
+    delete_cache_prefix("api:stats:summary:")
+    delete_cache_prefix("stats:intel_summary:")
+    delete_cache("api:trending")
 
 def safe_async_run(coro):
     """Helper to run a coroutine safely across different execution environments (Celery, scripts)."""
