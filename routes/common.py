@@ -202,18 +202,18 @@ async def build_intelligence_summary_payload(last_24h: int, category: Optional[s
     if cached: return cached
 
     # Count articles and international share in one query
-    freshness_expr = "COALESCE(ingested_at, created_at)"
+    freshness_expr = "COALESCE(a.ingested_at, a.created_at)"
     cat_filter = ""
     params = []
     if category:
-        cat_filter = "AND category = %s"
+        cat_filter = "AND a.category = %s"
         params.append(category)
 
     counts_res = await db.async_execute_one(f"""
         SELECT 
             COUNT(*) as total,
-            COUNT(*) FILTER (WHERE category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR is_global = TRUE) as intl
-        FROM articles 
+            COUNT(*) FILTER (WHERE a.category IN ('Свет', 'Европа', 'Балкан', 'Регион', 'Америка', 'САД') OR a.is_global = TRUE) as intl
+        FROM articles a
         WHERE {freshness_expr} >= NOW() - INTERVAL '24 hours' {cat_filter}
     """, tuple(params))
     
