@@ -419,9 +419,9 @@ async def get_source_pulse(category: Optional[str] = None):
         WITH source_stats AS (
             SELECT
                 a.source,
-                AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
-                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
-                AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+                COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
+                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as avg_objectivity,
+                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
                 COUNT(DISTINCT a.cluster_id) as cluster_count
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
@@ -432,7 +432,7 @@ async def get_source_pulse(category: Optional[str] = None):
         historical_baseline AS (
             SELECT
                 a.source,
-                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as historical_objectivity
+                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as historical_objectivity
             FROM cluster_summaries s
             JOIN articles a ON s.cluster_id = a.cluster_id
             WHERE s.sentiment IS NOT NULL 
@@ -477,14 +477,17 @@ async def get_source_pulse(category: Optional[str] = None):
         ORDER BY curr.cluster_count DESC
     """
 
-    # We pass params 4 times because cat_filter is used 4 times in the CTEs
-    rows = await db.async_execute(sql, tuple(params * 4))
+    # We pass params 3 times because cat_filter is used 3 times in the CTEs
+    rows = await db.async_execute(sql, tuple(params * 3))
 
     for r in rows:
         r["trust_label"] = get_source_trust_label(r["source"])
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
-        # Calculate delta
-        r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
+        # Calculate delta defensively
+        if r.get("avg_objectivity") is not None and r.get("baseline_objectivity") is not None:
+            r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
+        else:
+            r["objectivity_delta"] = 0
 
     result = {"status": "success", "data": rows}
     set_cache(cache_key, result, ttl=600)
@@ -593,9 +596,9 @@ async def get_global_pulse(category: Optional[str] = None):
         return await db.async_execute(f"""
             SELECT 
                 m.topics,
-                AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)) as avg_sentiment,
-                AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)) as avg_objectivity,
-                AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)) as avg_sensationalism,
+                COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
+                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as avg_objectivity,
+                COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
                 COUNT(*) as n
             FROM cluster_summaries s
             JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
@@ -603,7 +606,7 @@ async def get_global_pulse(category: Optional[str] = None):
               AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
               {cat_filter.replace('a.category', 'm.category')}
             GROUP BY m.topics ORDER BY n DESC
-        """)
+        """, tuple(params))
 
     velocity, by_category, by_topic_sentiment, count_row = await asyncio.gather(
         get_velocity(),
