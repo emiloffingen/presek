@@ -377,7 +377,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[1000] bg-[color:color-mix(in_srgb,var(--background)_84%,black_16%)]/96 backdrop-blur-md flex flex-col items-center pt-8 md:pt-12 px-4 transition-all animate-in fade-in duration-200"
+          className="fixed inset-0 z-[1000] bg-background/60 backdrop-blur-xl flex flex-col items-center pt-4 md:pt-12 px-4 transition-all animate-in fade-in duration-300"
           role="dialog"
           aria-modal="true"
           aria-labelledby="presek-search-title"
@@ -386,93 +386,87 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         >
           <div
             ref={dialogRef}
-            className="w-full max-w-4xl relative border border-[color:color-mix(in_srgb,var(--border)_88%,transparent)] bg-background shadow-[0_20px_80px_rgba(0,0,0,0.16)]"
+            className="w-full max-w-5xl relative border border-nyt-accent/10 bg-background/95 shadow-editorial rounded-lg overflow-hidden animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center px-5 md:px-8 pt-5 md:pt-6 mb-8">
-              <div className="flex items-center gap-3">
-                <img src="/img/presek_emblem.svg?v=3" alt="ПРЕСЕК.мк" className="h-6 site-emblem" />
+            <div className="flex justify-between items-center px-6 md:px-10 py-6 border-b border-border/40">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-nyt-accent/10 rounded-lg">
+                    <Search size={20} className="text-nyt-accent" />
+                </div>
                 <div>
-                  <span id="presek-search-title" className="font-serif font-black text-lg block">
+                  <span id="presek-search-title" className="font-serif font-black text-xl md:text-2xl block tracking-tight">
                     ИСТРАЖУВАЊЕ НА АРХИВАТА
                   </span>
-                  <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+                  <span className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
                     Длабинско мапирање на теми и настани
                   </span>
                 </div>
               </div>
               <button
                 onClick={closeSearch}
-                className="p-2 text-foreground hover:bg-secondary transition-colors"
+                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-all"
                 aria-label="Затвори пребарување"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={onSubmit} className="mb-8 px-5 md:px-8">
-              <div className="border-y border-foreground/70 flex items-center gap-2 py-1 relative">
+            <form onSubmit={onSubmit} className="px-6 md:px-10 py-8 bg-secondary/20">
+              <div className="relative group">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={placeholders[placeholderIdx]}
-                  className="w-full bg-transparent py-3 text-2xl md:text-4xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground min-w-0"
+                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all"
                   aria-label="Пребарај вести"
                   role="combobox"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck="false"
-                  aria-autocomplete="list"
-                  aria-controls={showSuggestions && suggestions.length > 0 ? 'presek-search-listbox' : undefined}
-                  aria-expanded={showSuggestions && suggestions.length > 0}
-                  aria-activedescendant={
-                    activeIndex >= 0 && suggestions[activeIndex]
-                      ? `search-suggestion-${suggestions[activeIndex].cluster_id}`
-                      : undefined
-                  }
                 />
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-border group-focus-within:bg-nyt-accent transition-colors"></div>
+                
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
                   {query && (
                     <button
                       type="button"
                       onClick={() => { setQuery(''); inputRef.current?.focus(); }}
                       className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Исчисти пребарување"
                     >
-                      <X size={24} />
+                      <X size={28} />
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="bg-foreground text-background px-4 md:px-8 py-3 font-black text-[11px] uppercase tracking-[0.18em] hover:opacity-85 transition-all"
+                    className="bg-nyt-accent text-white px-6 md:px-10 py-3.5 rounded font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] active:scale-95 transition-all"
                   >
-                    Барај
+                    БАРAJ
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-nyt-accent">
-                    <Zap size={10} /> Пребарување низ консолидирани наративи во реално време
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-nyt-accent bg-nyt-accent/5 px-3 py-1.5 rounded-full border border-nyt-accent/10">
+                    <Zap size={12} fill="currentColor" /> КОНСОЛИДИРАНИ НАРАТИВИ ВО РЕАЛНО ВРЕМЕ
                 </div>
 
-                <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-sm border border-border">
+                <div className="flex items-center gap-1.5 p-1 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm">
                    {[
                      { id: '24h', label: '24 ЧАСА' },
                      { id: '7d', label: '7 ДЕНА' },
-                     { id: '30d', label: '30 ДЕНА' },
-                     { id: 'all', label: 'СИТЕ' }
+                     { id: 'all', label: 'АРХИВА' }
                    ].map(ts => (
                      <button
                         key={ts.id}
                         type="button"
                         onClick={() => setTimespan(ts.id)}
-                        className={`px-3 py-1 font-sans text-[9px] font-black tracking-widest transition-all ${
+                        className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
                             timespan === ts.id 
-                            ? 'bg-foreground text-background shadow-sm' 
+                            ? 'bg-nyt-accent text-white shadow-md' 
                             : 'text-muted-foreground hover:text-foreground'
                         }`}
                      >
@@ -483,30 +477,26 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               </div>
             </form>
 
-            <div id="presek-search-results" className="grid grid-cols-1 md:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.8fr)] gap-0">
-              <div className="px-5 md:px-8 pb-6 md:pb-8 md:border-r border-border">
-                <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
+            <div id="presek-search-results" className="grid grid-cols-1 md:grid-cols-[1fr_320px] min-h-[400px]">
+              <div className="px-6 md:px-10 py-8 md:border-r border-border/40 overflow-y-auto max-h-[60vh] hide-scrollbar">
+                <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-8 flex items-center gap-3">
+                  <span className="w-8 h-px bg-border"></span>
                   {showSuggestions ? 'РЕЗУЛТАТИ' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
                 </h3>
 
                 {showSuggestions && (
-                  <div
-                    id="presek-search-listbox"
-                    role="listbox"
-                    aria-label="Резултати од пребарување"
-                    className="space-y-2"
-                  >
+                  <div id="presek-search-listbox" role="listbox" className="space-y-4">
                     {isLoading && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                        <LoaderCircle size={16} className="animate-spin" />
-                        <span>Пребарувам релевантни вести...</span>
+                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground animate-pulse">
+                        <LoaderCircle size={32} className="animate-spin mb-4 text-nyt-accent" />
+                        <span className="font-sans text-xs font-black uppercase tracking-widest">Пребарувам релевантни вести...</span>
                       </div>
                     )}
 
                     {error && (
-                      <div className="p-4 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red text-sm flex items-center gap-3">
-                        <Zap size={14} />
-                        <span>{error}</span>
+                      <div className="p-6 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red rounded-lg flex items-center gap-4">
+                        <Zap size={20} />
+                        <span className="font-bold">{error}</span>
                       </div>
                     )}
 
@@ -514,52 +504,29 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       <a
                         href={`/?entity=${encodeURIComponent(entityResult.name)}`}
                         onClick={(e) => { e.preventDefault(); closeSearch(); navigate(`/?entity=${encodeURIComponent(entityResult.name)}`); }}
-                        className="w-full mb-6 p-5 border-2 border-nyt-accent/20 bg-nyt-accent/[0.03] hover:bg-nyt-accent/[0.06] transition-colors flex items-center gap-6 group text-left no-underline"
+                        className="w-full mb-8 p-6 border border-nyt-accent/20 bg-nyt-accent/[0.04] hover:bg-nyt-accent/[0.08] rounded-xl transition-all flex items-center gap-8 group no-underline shadow-sm hover:shadow-md"
                       >
-                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border overflow-hidden">
+                        <div className="w-20 h-20 rounded-full bg-background flex items-center justify-center shrink-0 border-2 border-nyt-accent/20 overflow-hidden shadow-inner">
                            {entityResult.image_url ? (
-                             <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} alt="" className="w-full h-full object-cover" />
+                             <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                            ) : (
-                             <span className="font-serif font-black text-2xl text-muted-foreground">{entityResult.name[0]}</span>
+                             <span className="font-serif font-black text-3xl text-nyt-accent">{entityResult.name[0]}</span>
                            )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="font-sans text-[9px] font-black uppercase tracking-[0.14em] text-nyt-accent mb-1 block">Профил на субјект</span>
-                          <h4 className="font-serif font-black text-2xl mb-1 group-hover:underline decoration-nyt-accent decoration-2 underline-offset-4">{entityResult.name}</h4>
-                          <p className="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            {entityResult.total_mentions.toLocaleString('mk-MK')} споменувања · {entityResult.sentiment_score > 0.1 ? 'Позитивен' : entityResult.sentiment_score < -0.1 ? 'Негативен' : 'Неутрален'} тон
+                          <span className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-2 block">ПРОФИЛ НА СУБЈЕКТ</span>
+                          <h4 className="font-serif font-black text-3xl mb-1.5 group-hover:text-nyt-accent transition-colors">{entityResult.name}</h4>
+                          <p className="font-sans text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                            {entityResult.total_mentions.toLocaleString('mk-MK')} СПОМЕНУВАЊА · {entityResult.sentiment_score > 0.1 ? 'ПОЗИТИВЕН' : entityResult.sentiment_score < -0.1 ? 'НЕГАТИВЕН' : 'НЕУТРАЛЕН'} ТОН
                           </p>
                         </div>
-                        <ArrowUpRight size={20} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
+                        <div className="p-3 bg-background rounded-full border border-border group-hover:bg-nyt-accent group-hover:text-white transition-all">
+                            <ArrowUpRight size={24} />
+                        </div>
                       </a>
                     )}
 
-                    {!isLoading && !error && suggestions.length === 0 && !entityResult && (
-                      <div className="space-y-4">
-                        <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed">
-                          Нема директни совпаѓања. Притиснете <strong>Барај</strong> за да ја отворите страницата со резултати.
-                        </p>
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={() => navigateToQuery(query)}
-                            className="px-4 py-2 bg-foreground text-background font-sans text-[10px] font-black uppercase tracking-[0.16em]"
-                          >
-                            Отвори ги сите резултати
-                          </button>
-                          <a
-                            href="/archive"
-                            onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/archive'); }}
-                            className="px-4 py-2 border border-border font-sans text-[10px] font-black uppercase tracking-[0.16em] text-foreground"
-                          >
-                            Архива
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {!isLoading &&
-                      suggestions.map((item, index) => (
+                    {!isLoading && suggestions.map((item, index) => (
                         <a
                           key={item.cluster_id}
                           id={`search-suggestion-${item.cluster_id}`}
@@ -567,59 +534,51 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                           role="option"
                           aria-selected={activeIndex === index}
                           onClick={(e) => { e.preventDefault(); navigateToCluster(item.cluster_id); }}
-                          className={`w-full text-left border-b border-border py-4 transition-colors block no-underline ${
+                          className={`w-full text-left p-4 rounded-xl transition-all block no-underline border-b border-border/40 last:border-0 ${
                             activeIndex === index
-                                ? 'text-nyt-accent bg-secondary'
-                                : 'text-foreground hover:text-nyt-accent'
+                                ? 'bg-nyt-accent/5 border-nyt-accent/20 shadow-sm translate-x-1'
+                                : 'hover:bg-secondary/40'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-4 min-w-0 flex-1">
-                              <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground pt-1 shrink-0">
-                                {String(index + 1).padStart(2, '0')}
-                              </span>
-                              
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <div className="flex items-start gap-6">
+                            <div className="min-w-0 flex-1">
+                                <div className="mb-3 flex flex-wrap items-center gap-3">
                                   {item.matchLabel && (
-                                    <span className="border border-border px-2 py-0.5 font-sans text-[9px] font-black uppercase tracking-[0.12em] text-muted-foreground">
+                                    <span className="bg-secondary px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
                                       {item.matchLabel}
                                     </span>
                                   )}
                                   {item.category && (
-                                    <span className="font-sans text-[9px] font-black uppercase tracking-[0.12em] text-nyt-accent">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-nyt-accent">
                                       {item.category}
                                     </span>
                                   )}
                                 </div>
-                                <p className="font-serif font-black text-xl leading-tight mb-2 text-balance">
+                                <p className="font-serif font-black text-2xl leading-tight mb-3 text-foreground group-hover:text-nyt-accent transition-colors">
                                   {renderHighlightedText(item.title, query)}
                                 </p>
                                 {item.description && (
-                                  <p className="mb-3 font-nyt-body text-sm leading-6 text-secondary-foreground">
+                                  <p className="mb-4 font-nyt-body text-base leading-relaxed text-muted-foreground line-clamp-2">
                                     {renderHighlightedText(buildSnippet(item, query), query)}
                                   </p>
                                 )}
-                                <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
-                                  Кластер
-                                  {item.source || item.sourceCount ? ' · ' : ''}
-                                  {[item.source, item.sourceCount ? `${item.sourceCount} ${item.sourceCount === 1 ? 'извор' : 'извори'}` : ''].filter(Boolean).join(' · ')}
+                                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                  <span className="flex items-center gap-1.5"><Newspaper size={12} /> {item.source}</span>
+                                  <span className="w-1 h-1 rounded-full bg-border"></span>
+                                  <span>{item.sourceCount} {item.sourceCount === 1 ? 'ИЗВОР' : 'ИЗВОРИ'}</span>
+                                </div>
+                            </div>
 
-                                </p>
-                              </div>
-
-                              {item.image_url && (
-                                <div className="hidden sm:block shrink-0 w-24 aspect-[4/3] overflow-hidden border border-border bg-secondary/20">
+                            {item.image_url && (
+                                <div className="hidden sm:block shrink-0 w-32 aspect-[4/3] overflow-hidden rounded-lg border border-border shadow-sm">
                                     <img 
                                         src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} 
                                         alt="" 
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                         loading="lazy"
                                     />
                                 </div>
-                              )}
-                            </div>
-                            <ArrowUpRight size={16} className="mt-1 shrink-0" />
+                            )}
                           </div>
                         </a>
                       ))}
@@ -627,122 +586,73 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 )}
 
                 {showRecent && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
-                        Последни пребарувања
-                      </p>
-                      <button
-                        type="button"
-                        onClick={clearRecentSearches}
-                        className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
-                      >
-                        Исчисти
-                      </button>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {recentSearches.map((item) => (
                       <a
                         key={item}
                         href={`/?q=${encodeURIComponent(item)}`}
                         onClick={(e) => { e.preventDefault(); navigateToQuery(item); }}
-                        className="w-full text-left font-serif font-black text-xl text-foreground hover:text-nyt-accent transition-colors block no-underline mb-2"
+                        className="flex items-center justify-between p-5 bg-secondary/30 hover:bg-secondary/60 rounded-xl border border-border/50 transition-all group no-underline"
                       >
-                        {item}
+                        <span className="font-serif font-black text-xl text-foreground group-hover:text-nyt-accent transition-colors">
+                            {item}
+                        </span>
+                        <ArrowUpRight size={18} className="text-muted-foreground group-hover:text-nyt-accent" />
                       </a>
                     ))}
                   </div>
                 )}
-
-                {!showSuggestions && !showRecent && (
-                  <div className="space-y-6">
-                    <p className="font-nyt-body text-base text-secondary-foreground leading-relaxed max-w-[42ch]">
-                      Почнете со име на личност, институција, град или тема за да добиете релевантни групирани вести.
-                    </p>
-                    <div className="pt-4">
-                      <p className="font-sans text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground mb-4">
-                        Истражи по категорија
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SUGGESTED_CATEGORIES.map(cat => (
-                          <a
-                            key={cat.name}
-                            href={`/?category=${encodeURIComponent(cat.name)}`}
-                            onClick={(e) => { e.preventDefault(); closeSearch(); navigate(`/?category=${encodeURIComponent(cat.name)}`); }}
-                            className="flex items-center justify-between p-3 border border-border hover:border-nyt-accent hover:bg-secondary transition-all text-left group no-underline"
-                          >
-                            <span className={`font-serif font-bold ${cat.color}`}>{cat.name}</span>
-                            <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              <div className="px-5 md:px-8 py-6 md:py-0 md:pt-0 bg-[color:color-mix(in_srgb,var(--background)_90%,var(--secondary)_10%)]">
-                <h3 className="font-sans text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground mb-5 pb-2 border-b border-border">
+              <div className="px-6 md:px-10 py-8 bg-secondary/10 flex flex-col">
+                <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-8 flex items-center gap-3">
+                  <span className="w-8 h-px bg-border"></span>
                   ТРЕНД ПРЕБАРУВАЊА
                 </h3>
-                <div className="space-y-3">
-                  {(trendingItems.length > 0
-                    ? trendingItems
-                    : [
-                        { word: 'СДСМ' },
-                        { word: 'Влада' },
-                        { word: 'ЕУ' },
-                        { word: 'Доналд Трамп' },
-                        { word: 'Венко Филипче' },
-                        { word: 'Скопје' },
-                      ]
-                  ).map((item, index) => (
+                <div className="space-y-4 flex-1">
+                  {(trendingItems.length > 0 ? trendingItems : [
+                    { word: 'СДСМ' }, { word: 'Влада' }, { word: 'ЕУ' }, 
+                    { word: 'Доналд Трамп' }, { word: 'Венко Филипче' }, { word: 'Скопје' }
+                  ]).map((item, index) => (
                     <a
                       key={item.word}
                       href={`/?q=${encodeURIComponent(item.word)}`}
                       onClick={(e) => { e.preventDefault(); navigateToQuery(item.word); }}
-                      className="w-full flex items-center justify-between gap-3 border-b border-border py-3 text-left text-foreground hover:text-nyt-accent transition-colors no-underline"
+                      className="group flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-white dark:hover:bg-zinc-900 transition-all no-underline"
                     >
-                      <span className="flex items-center gap-3 min-w-0">
-                        <span className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground shrink-0">
+                      <span className="flex items-center gap-4 min-w-0">
+                        <span className="font-sans text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent shrink-0">
                           {String(index + 1).padStart(2, '0')}
                         </span>
-                        <span className="font-serif font-bold text-lg text-balance">{item.word}</span>
+                        <span className="font-serif font-black text-lg text-foreground group-hover:text-nyt-accent truncate">{item.word}</span>
                       </span>
-                      <ArrowUpRight size={15} className="shrink-0" />
+                      <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                     </a>
                   ))}
                 </div>
 
-                <div className="mt-8 pt-5 border-t border-border">
-                  <p className="font-sans text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-3">
-                    Брзи Патеки
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                <div className="mt-12 pt-8 border-t border-border/40">
+                  <div className="grid grid-cols-2 gap-3 mb-8">
                     <a
                       href="/briefing"
                       onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/briefing'); }}
-                      className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
+                      className="flex items-center justify-center gap-2 p-3 bg-background border border-border rounded-lg font-sans text-[10px] font-black uppercase tracking-widest hover:border-nyt-accent hover:text-nyt-accent transition-all"
                     >
-                      Брифинг
+                      БРИФИНГ <ArrowUpRight size={12} />
                     </a>
                     <a
                       href="/archive"
                       onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/archive'); }}
-                      className="px-3 py-1.5 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground hover:border-nyt-accent hover:text-nyt-accent"
+                      className="flex items-center justify-center gap-2 p-3 bg-background border border-border rounded-lg font-sans text-[10px] font-black uppercase tracking-widest hover:border-nyt-accent hover:text-nyt-accent transition-all"
                     >
-                      Архива
+                      АРХИВА <ArrowUpRight size={12} />
                     </a>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
-                      Ctrl/Cmd + K
-                    </span>
-                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
-                      ↑ ↓ избор
-                    </span>
-                    <span className="px-2.5 py-1 border border-border font-sans text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
-                      Enter отвори
-                    </span>
+                  
+                  <div className="flex flex-wrap gap-2 opacity-50">
+                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">⌘ K</kbd>
+                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">↑ ↓</kbd>
+                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">ESC</kbd>
                   </div>
                 </div>
               </div>
