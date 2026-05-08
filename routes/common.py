@@ -123,25 +123,6 @@ def _source_admin_authorized(request: Request) -> bool:
         return False
     return secrets.compare_digest(token, expected)
 
-def _apply_security_headers(response):
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.highperformanceformat.com https://*.highperformanceformat.com https://*.profitablecpmratenetwork.com https://jsc.adskeeper.com https://*.adskeeper.com https://*.mgid.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com https://www.highperformanceformat.com https://*.highperformanceformat.com https://*.profitablecpmratenetwork.com https://*.adskeeper.com https://*.mgid.com; "
-        "connect-src 'self' https: wss:; "
-        "frame-src 'self' https://www.highperformanceformat.com https://*.highperformanceformat.com https://*.profitablecpmratenetwork.com https://*.adskeeper.com https://*.mgid.com; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
-    return response
-
 def _error_json(message: str, status_code: int, details=None):
     payload = {"status": "error", "message": message}
     if details is not None:

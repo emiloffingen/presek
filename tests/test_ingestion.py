@@ -223,8 +223,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
          patch.object(ingestion, "fetch_feed_async", side_effect=_fake_fetch_feed_async), \
          patch.object(ingestion, "record_source_fetch"), \
          patch("utils.redis_client", MagicMock()):
-        new_count, errors = asyncio.run(ingestion.ingest_all_sources_async())
-
+        new_count, inserted_ids, errors = asyncio.run(ingestion.ingest_all_sources_async())
     assert new_count == 0
     assert errors == []
     # In ingestion.py: db_manager.execute(...) is used for UPDATE sources

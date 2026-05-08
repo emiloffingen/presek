@@ -326,13 +326,12 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                 SELECT s.summary, s.generated_article, a.title
                 FROM cluster_summaries s
                 JOIN articles a ON s.cluster_id = a.cluster_id
+                JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
                 JOIN articles current_a ON current_a.cluster_id = %s
                 WHERE s.cluster_id != %s
                   AND s.created_at >= NOW() - INTERVAL '7 days'
                   AND s.created_at < (SELECT MIN(created_at) FROM articles WHERE cluster_id = %s)
-                ORDER BY (
-                    SELECT AVG(embedding) FROM articles WHERE cluster_id = s.cluster_id
-                ) <=> %s::vector
+                ORDER BY m.centroid <=> %s::vector
                 LIMIT 1
             """, (cluster_id, cluster_id, cluster_id, current_vec_str))
             

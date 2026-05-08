@@ -20,9 +20,10 @@ from routes.security import (
 from fastapi import HTTPException
 
 def test_validate_cluster_id():
-    # Must be 6-64 hex chars
+    # Must be 6-64 hex chars (now supports dashes)
     assert validate_cluster_id("123456") == "123456"
     assert validate_cluster_id("abcdef123456") == "abcdef123456"
+    assert validate_cluster_id("fe0486f7-9bf") == "fe0486f7-9bf"
     
     with pytest.raises(HTTPException) as exc:
         validate_cluster_id("12345") # Too short

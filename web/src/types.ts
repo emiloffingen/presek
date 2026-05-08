@@ -160,6 +160,16 @@ export interface HealthResponse {
   };
 }
 
+export interface HomeResponse {
+  status: 'success' | 'error';
+  news: NewsCluster[];
+  recent: NewsCluster[];
+  trending: string[];
+  top_entities: Array<{ name: string; display_name: string; count: number }>;
+  stats: any;
+  latest_wire: Article[];
+}
+
 export interface BriefingResponse {
   date: string;
   content: string;

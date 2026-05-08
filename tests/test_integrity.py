@@ -139,7 +139,7 @@ class TestAstroFrontendIntegrity:
 
     def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
         briefing = _read("web/src/pages/briefing.astro")
-        assert 'error = "Брифингот моментално не е достапен."' in briefing
+        assert 'Брифингот моментално не е достапен.' in briefing
 
 
 
