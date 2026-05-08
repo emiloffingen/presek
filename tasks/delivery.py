@@ -315,22 +315,17 @@ def _has_valid_daily_brief_structure(brief: str) -> bool:
         return False
     # Check for the new structure
     required_phrases = [
-        "Што го движи денот",
-        "Каде се разликува известувањето",
-        "Што да се следи понатаму",
+        "Големата Слика",
+        "Глобални и Локални Оски",
+        "Медиумски Радар",
+        "Што да се следи",
     ]
     for phrase in required_phrases:
         if phrase not in text:
             log.warning(f"[briefing-debug] Required section missing: {phrase}")
             return False
-            
-    # Check for the numbering format
-    if not any("### " in text for _ in range(1)):
-        log.warning("[briefing-debug] Story header missing (###)")
-        return False
-        
-    return True
 
+    return True
 def _is_high_quality_briefing(brief: str) -> bool:
     """Scan briefing for editorial quality and generic fillers."""
     text = str(brief or "").strip()
@@ -1428,7 +1423,7 @@ def generate_daily_brief_task(retry_attempt=0):
         else: dispatch_name = "Вечерен Преглед"
 
         # 3. Build AI Context
-        clusters = _load_daily_brief_clusters(limit=6)
+        clusters = _load_daily_brief_clusters(limit=10)
         content_context = _build_daily_brief_context(clusters)
         
         system_insight = (
@@ -1443,7 +1438,7 @@ def generate_daily_brief_task(retry_attempt=0):
         
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
 
-        brief, _ = _call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief")
+        brief, _ = _call_ai(full_context, DAILY_BRIEF_SYSTEM_PROMPT, task_type="daily_brief", max_tokens=3500)
         if brief and not _has_valid_daily_brief_structure(brief):
             log.warning(f"[tasks] Daily brief rejected for invalid structure; using local fallback. Text start: {brief[:400]}")
             brief = ""
