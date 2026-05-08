@@ -175,30 +175,110 @@
     transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
 }
 
+/* --- Premium Typography Core --- */
+:root {
+    --font-feature-settings: "kern", "liga", "clig", "calt", "onum";
+}
+
+h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
+    font-variant-ligatures: common-ligatures;
+    font-feature-settings: var(--font-feature-settings);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.kicker {
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--nyt-accent);
+    display: block;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.kicker-secondary {
+    color: var(--muted-foreground);
+    opacity: 0.8;
+}
+
 .headline {
     font-family: var(--font-serif);
     font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em; /* Tighter for display */
     color: var(--foreground);
     text-wrap: balance;
-    transition: color 0.2s ease;
+    transition: color 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .headline-cyrillic {
-    letter-spacing: -0.01em; /* Cyrillic needs slightly more space */
-    line-height: 1.2;
+    letter-spacing: -0.015em; /* Cyrillic needs slightly more space than Latin */
+    line-height: 1.18;
+    word-spacing: 0.05em;
 }
 
 .headline-lead {
     font-size: var(--text-3xl);
-    font-weight: 800;
+    font-weight: 850;
     margin-bottom: 0.75rem;
+    letter-spacing: -0.04em; /* Very tight for hero */
+    line-height: 0.98;
+    /* Subtle "ink" sheen */
+    background: linear-gradient(135deg, var(--foreground) 60%, color-mix(in srgb, var(--foreground), var(--nyt-accent) 15%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.1));
+}
+
+.headline, .editorial-headline, .lead-media-frame {
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.headline.is-visible, .editorial-headline.is-visible, .lead-media-frame.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dark .headline-lead {
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,0.5));
 }
 
 .headline-standard {
     font-size: var(--text-xl);
     margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+/* Elegant Underline Hover for Headlines */
+.headline-link {
+    position: relative;
+    text-decoration: none;
+    display: block;
+}
+
+.headline-link h2 {
+    display: inline; /* Allows multi-line background animation */
+    background-image: linear-gradient(var(--nyt-accent), var(--nyt-accent));
+    background-position: 0% 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 2px;
+    transition: background-size 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.headline-link:hover h2 {
+    background-size: 100% 2px;
+    color: var(--foreground);
+}
+
+.headline-link:hover .headline-lead {
+    /* Don't underline the huge hero headline, just shift it */
+    background-size: 0% 0%;
+    transform: translateX(4px);
 }
 
 /* --- Premium Interactions --- */

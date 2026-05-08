@@ -101,15 +101,18 @@ const IconComponent =
             <span class="lead-edition-label">ВОДЕЧКИ НАРАТИВ</span>
             <span class="lead-edition-note">Консензус помеѓу {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'редакција' : 'редакции'}</span>
         </div>
-        <div class="lead-kicker">
-            <span class="source-label">{leadCluster.articles?.[0].source}</span>
-            {leadCluster.is_breaking && <span class="live-pill">Ударна вест</span>}
-            {leadSignal && (
-                <span class="lead-signal-badge" title="Медиумски Пулс">
-                    <TrendingUp size={12} className="opacity-70" />
-                    <span>{leadSignal}</span>
-                </span>
-            )}
+        <div class="lead-kicker-v2 mb-4">
+            <span class="kicker">{leadCluster.articles?.[0].source}</span>
+            <div class="flex items-center gap-3">
+                {leadCluster.is_breaking && <span class="significance-badge is-breaking">УДАРНА</span>}
+                {leadSignal && (
+                    <span class="lead-signal-tag">
+                        <TrendingUp size={11} className="text-nyt-accent" />
+                        <span>{leadSignal.toUpperCase()}</span>
+                    </span>
+                )}
+                <span class="time-stamp">{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+            </div>
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
             <h1 class:list={["headline headline-lead", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h1>

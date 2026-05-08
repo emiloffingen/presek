@@ -199,6 +199,25 @@ const imageUrl = /^https?:\/\//i.test(image) ? image : `${siteUrl}${image.starts
         <script is:inline data-astro-rerun>
             (function(w,q){w[q]=w[q]||[];w[q].push(["_mgc.load"])})(window,"_mgq");
         </script>
+		<script>
+			// Global Headline Reveal Animation
+			const initHeadlineReveal = () => {
+				const observer = new IntersectionObserver((entries) => {
+					entries.forEach(entry => {
+						if (entry.isIntersecting) {
+							entry.target.classList.add('is-visible');
+						}
+					});
+				}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+				document.querySelectorAll('.headline, .editorial-headline, .lead-media-frame').forEach(el => {
+					observer.observe(el);
+				});
+			};
+
+			document.addEventListener('astro:page-load', initHeadlineReveal);
+			initHeadlineReveal();
+		</script>
 	</body>
 </html>
 

@@ -127,52 +127,24 @@ function getTimeStr(dateStr: string) {
 
 <article class:list={["nyt-article", `variant-${variant}`, { "lead-story": isLead }]} data-cluster={JSON.stringify(slimCluster)}>
 	<div class="article-body">
-		<div class="article-meta">
-			<span class="source-label">
-				{main.source}
-				{showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
-					<span title="Висока доверба">
-						<ShieldCheck size={12} className="inline-block ml-1 text-blue-600 dark:text-blue-400" />
-					</span>
-				)}
-				</span>
-
-				{main.is_global && (
-				<span class="flex items-center text-emerald-800 dark:text-emerald-500" title="Меѓународен контекст">
-					<Globe size={13} />
-				</span>
-				)}
-
-                {/* INTELLIGENCE BADGES (Icon only with tooltips) */}
-
-
-                {hasSynthesis && (
-                    <span class="intel-badge badge-research" title="Достапна е длабинска синтеза и анализа од вештачка интелигенција.">
-                        <Sparkles size={13} />
+		<div class="article-meta-v2">
+			<div class="kicker-group">
+                <span class="kicker">{main.source}</span>
+                {showTrustBadge && sourceSignal.trust_label === 'Висока доверба' && (
+                    <ShieldCheck size={10} className="text-blue-500" />
+                )}
+                {main.is_global && (
+                    <Globe size={10} className="text-emerald-500" />
+                )}
+            </div>
+            <div class="meta-right">
+                {showSignificanceLabel && (
+                    <span class:list={["significance-badge", { "is-breaking": cluster.is_breaking }]}>
+                        {significanceLabel}
                     </span>
                 )}
-
-                {cluster.pulse_score && cluster.pulse_score >= 80 && (
-                    <span class="intel-badge badge-pulse" title="Висока медиумска динамика: приказната е во центарот на вниманието.">
-                        <Zap size={13} fill="currentColor" />
-                    </span>
-                )}
-
-				{cluster.is_breaking && (
-				<span class="flex items-center" title="Ударна вест">
-					<span class="relative flex h-2.5 w-2.5">
-						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-					</span>
-				</span>
-			)}
-
-
-			{showSignificanceLabel && !cluster.is_breaking && (
-				<span class="significance-dot-label flex items-center" title={significanceLabel}>
-					<Layers size={13} className={totalSources >= 6 ? "text-purple-500" : "text-blue-400"} />
-				</span>
-			)}
+                <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+            </div>
 		</div>
 
 
@@ -297,6 +269,54 @@ function getTimeStr(dateStr: string) {
 		min-width: 0;
 		max-width: 100%;
 	}
+
+    /* --- Premium Meta Styles --- */
+    .article-meta-v2 {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.65rem;
+    }
+
+    .kicker-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .meta-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .significance-badge {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted-foreground);
+        padding: 0.15rem 0.4rem;
+        background: var(--secondary);
+        border-radius: 2px;
+        opacity: 0.8;
+    }
+
+    .significance-badge.is-breaking {
+        color: var(--nyt-accent);
+        background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+        opacity: 1;
+    }
+
+    .time-stamp {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: var(--muted-foreground);
+        opacity: 0.5;
+        letter-spacing: 0.02em;
+    }
 
     .editorial-byline {
         display: inline-flex;

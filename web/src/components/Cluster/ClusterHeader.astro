@@ -71,22 +71,34 @@ const {
 <style>
 	.editorial-headline {
 		font-family: var(--font-serif);
-		font-size: clamp(2.75rem, 7vw, 5.2rem);
+		font-size: clamp(3.2rem, 8vw, 6.2rem);
 		font-weight: 950;
-		line-height: 0.94;
-		letter-spacing: -0.04em;
+		line-height: 0.88;
+		letter-spacing: -0.05em;
 		color: var(--foreground);
 		text-wrap: balance;
+        /* Subtle ink sheen */
+        background: linear-gradient(135deg, var(--foreground) 75%, color-mix(in srgb, var(--foreground), var(--nyt-accent) 20%));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 1px 0 rgba(255,255,255,0.05));
 	}
 
+    .dark .editorial-headline {
+        filter: drop-shadow(0 1px 0 rgba(0,0,0,0.5));
+    }
+
 	.editorial-headline.is-cyrillic {
-		line-height: 1.1;
-		letter-spacing: -0.015em;
+		line-height: 1.05;
+		letter-spacing: -0.02em;
 	}
 
 	.editorial-standfirst {
 		text-wrap: pretty;
         font-family: var(--font-nyt-body);
+        font-weight: 450;
+        line-height: 1.4;
+        letter-spacing: -0.01em;
 	}
 
 	.nyt-section-label {
