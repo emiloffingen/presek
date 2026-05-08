@@ -165,27 +165,50 @@ TITLE_PROPER_NOUNS = [
     (re.compile(r"\bпалестина\b", re.IGNORECASE), "Палестина"),
     (re.compile(r"\bгерманија\b", re.IGNORECASE), "Германија"),
     (re.compile(r"\bфранција\b", re.IGNORECASE), "Франција"),
-    (re.compile(r"\bбританска\b", re.IGNORECASE), "Британска"),
-    (re.compile(r"\bбританскиот\b", re.IGNORECASE), "Британскиот"),
     (re.compile(r"\bбританија\b", re.IGNORECASE), "Британија"),
     (re.compile(r"\bкина\b", re.IGNORECASE), "Кина"),
     (re.compile(r"\bпекинг\b", re.IGNORECASE), "Пекинг"),
-    (re.compile(r"\bси џинпинг\b", re.IGNORECASE), "Си Џинпинг"),
     (re.compile(r"\bсад\b", re.IGNORECASE), "САД"),
     (re.compile(r"\bеу\b", re.IGNORECASE), "ЕУ"),
     (re.compile(r"\bнато\b", re.IGNORECASE), "НАТО"),
-    (re.compile(r"\bтито\b", re.IGNORECASE), "Тито"),
-    (re.compile(r"\bзаев\b", re.IGNORECASE), "Заев"),
-    (re.compile(r"\bмицкоски\b", re.IGNORECASE), "Мицкоски"),
-    (re.compile(r"\bфилипче\b", re.IGNORECASE), "Филипче"),
-    (re.compile(r"\bахмети\b", re.IGNORECASE), "Ахмети"),
-    (re.compile(r"\bбашановиќ\b", re.IGNORECASE), "Башановиќ"),
-    (re.compile(r"\bбашановик\b", re.IGNORECASE), "Башановиќ"),
     (re.compile(r"\bскопје\b", re.IGNORECASE), "Скопје"),
     (re.compile(r"\bбитола\b", re.IGNORECASE), "Битола"),
     (re.compile(r"\bохрид\b", re.IGNORECASE), "Охрид"),
     (re.compile(r"\bтетово\b", re.IGNORECASE), "Тетово"),
+    (re.compile(r"\bкуманово\b", re.IGNORECASE), "Куманово"),
+    (re.compile(r"\bприлеп\b", re.IGNORECASE), "Прилеп"),
+    (re.compile(r"\bвелес\b", re.IGNORECASE), "Велес"),
     (re.compile(r"\bштип\b", re.IGNORECASE), "Штип"),
+    (re.compile(r"\bструмица\b", re.IGNORECASE), "Струмица"),
+    (re.compile(r"\bгостивар\b", re.IGNORECASE), "Гостивар"),
+    (re.compile(r"\bкавадарци\b", re.IGNORECASE), "Кавадарци"),
+    (re.compile(r"\bкочани\b", re.IGNORECASE), "Кочани"),
+    (re.compile(r"\bкичево\b", re.IGNORECASE), "Кичево"),
+    (re.compile(r"\bструга\b", re.IGNORECASE), "Струга"),
+    (re.compile(r"\bгевгелија\b", re.IGNORECASE), "Гевгелија"),
+    (re.compile(r"\bкрива паланка\b", re.IGNORECASE), "Крива Паланка"),
+    (re.compile(r"\bмицкоски\b", re.IGNORECASE), "Мицкоски"),
+    (re.compile(r"\bсиљановска\b", re.IGNORECASE), "Сиљановска"),
+    (re.compile(r"\bфилипче\b", re.IGNORECASE), "Филипче"),
+    (re.compile(r"\bапасиев\b", re.IGNORECASE), "Апасиев"),
+    (re.compile(r"\bахмети\b", re.IGNORECASE), "Ахмети"),
+    (re.compile(r"\bкасами\b", re.IGNORECASE), "Касами"),
+    (re.compile(r"\bтаравари\b", re.IGNORECASE), "Таравари"),
+    (re.compile(r"\bгаши\b", re.IGNORECASE), "Гаши"),
+    (re.compile(r"\bмеџити\b", re.IGNORECASE), "Меџити"),
+    (re.compile(r"\bвлада\b", re.IGNORECASE), "Влада"),
+    (re.compile(r"\bсобрание\b", re.IGNORECASE), "Собрание"),
+    (re.compile(r"\bсдсм\b", re.IGNORECASE), "СДСМ"),
+    (re.compile(r"\bвмро-дпмне\b", re.IGNORECASE), "ВМРО-ДПМНЕ"),
+    (re.compile(r"\bдуи\b", re.IGNORECASE), "ДУИ"),
+    (re.compile(r"\bлевица\b", re.IGNORECASE), "Левица"),
+    (re.compile(r"\bзнам\b", re.IGNORECASE), "ЗНАМ"),
+    (re.compile(r"\bмвр\b", re.IGNORECASE), "МВР"),
+    (re.compile(r"\bмнр\b", re.IGNORECASE), "МНР"),
+    (re.compile(r"\bмо\b", re.IGNORECASE), "МО"),
+    (re.compile(r"\bмз\b", re.IGNORECASE), "МЗ"),
+    (re.compile(r"\bујп\b", re.IGNORECASE), "УЈП"),
+    (re.compile(r"\bбг\b", re.IGNORECASE), "БГ"),
 ]
 
 
@@ -432,6 +455,11 @@ def normalize_headline(title: str) -> str:
     t = re.sub(r'["\']([^"\']+)["\']', r'„\1“', t)
 
     # 6. Technical Polish
+    # Remove common clickbait fillers
+    fillers = ["ПОВРЗАНО ВЕСТИ", "ПОВРЗАНО", "ПРОЧИТАЈТЕ И", "ГАЛЕРИЈА", "ФОТОГАЛЕРИЈА", "ГЛЕДАЈТЕ ВО ЖИВО", "СЛЕДЕТЕ ВО ЖИВО"]
+    for filler in fillers:
+        t = re.sub(rf'\b{re.escape(filler)}\b', '', t, flags=re.IGNORECASE)
+
     t = re.sub(r'[\?\!]{2,}', lambda m: m.group(0)[0], t) # No !!! or ???
     t = " ".join(t.split()) # Standardize whitespace
     t = t.strip(" -–—:|") # Remove trailing/leading decorations
