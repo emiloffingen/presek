@@ -361,9 +361,11 @@ invalidate_public_api_caches() {
   fi
   redis-cli "${redis_args[@]}" EVAL "for _,p in ipairs(ARGV) do local cursor='0' repeat local r=redis.call('scan', cursor, 'match', p, 'count', 200) cursor=r[1] for _,k in ipairs(r[2]) do redis.call('del', k) end until cursor == '0' end" 0 \
     "api:news:*" \
+    "api:cluster:*" \
     "api:home:*" \
     "api:stats:summary:*" \
     "api:briefing:*" \
+    "api:intelligence:research:*" \
     >/dev/null || warn "Could not clear Redis API caches"
 }
 
