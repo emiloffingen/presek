@@ -318,16 +318,18 @@ read_release_runtime_meta() {
 }
 
 ensure_release_venv() {
-  local requirements_hash versioned_venv
-  requirements_hash="$(hash_file "$RELEASE_DIR/requirements.txt")"
-  versioned_venv="$PYTHON_ENVS_DIR/$requirements_hash"
+  local lock_hash versioned_venv
+  lock_hash="$(hash_file "$RELEASE_DIR/uv.lock")"
+  versioned_venv="$PYTHON_ENVS_DIR/$lock_hash"
 
   if [ ! -x "$versioned_venv/bin/python3" ]; then
-    info "Creating versioned Python runtime $versioned_venv"
+    info "Creating versioned Python runtime $versioned_venv using uv"
     rm -rf "$versioned_venv"
-    "$PYTHON_BIN" -m venv "$versioned_venv"
-    "$versioned_venv/bin/python3" -m pip install --no-cache-dir --upgrade pip
-    "$versioned_venv/bin/pip" install --no-cache-dir -q -r "$RELEASE_DIR/requirements.txt"
+    # uv creates environment at the specified path
+    # --frozen ensures we use exactly what's in uv.lock
+    # --no-dev excludes development dependencies
+    # --no-install-project skips installing the current package itself
+    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$RELEASE_DIR"
   else
     info "Reusing versioned Python runtime $versioned_venv"
   fi
@@ -563,6 +565,7 @@ main() {
   need_cmd sed
   need_cmd flock
   need_cmd sha256sum
+  need_cmd uv
   need_cmd "$PYTHON_BIN"
 
   assert_paths_safe
