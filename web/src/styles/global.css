@@ -226,6 +226,10 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     margin-bottom: 0.75rem;
     letter-spacing: -0.04em; /* Very tight for hero */
     line-height: 0.98;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     /* Subtle "ink" sheen */
     background: linear-gradient(135deg, var(--foreground) 60%, color-mix(in srgb, var(--foreground), var(--nyt-accent) 15%));
     -webkit-background-clip: text;
@@ -252,6 +256,17 @@ h1, h2, h3, h4, h5, h6, .headline, .editorial-headline {
     font-size: var(--text-xl);
     margin-bottom: 0.5rem;
     letter-spacing: -0.02em;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.headline-compact {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Elegant Underline Hover for Headlines */

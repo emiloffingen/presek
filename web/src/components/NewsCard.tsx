@@ -119,9 +119,9 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         <a href={`/cluster/${cluster.cluster_id}`} className="headline-link group">
           <h2
-            className={`headline ${isLead ? 'headline-lead' : 'headline-standard'} ${
-              titleIsCyrillic ? 'headline-cyrillic' : ''
-            }`}
+            className={`headline ${
+                isLead ? 'headline-lead' : (variant === 'compact' ? 'headline-compact' : 'headline-standard')
+            } ${titleIsCyrillic ? 'headline-cyrillic' : ''}`}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayTitle) }}
           ></h2>
         </a>
