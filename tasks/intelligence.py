@@ -742,15 +742,21 @@ def refresh_cluster_centroid_task(cluster_id):
 
 
 @celery_app.task
-def extract_entities_task(hours=24):
+def extract_entities_task(hours=24, target_clusters=None):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
-        rows = db.execute("""
-            SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
-            FROM articles WHERE created_at >= %s GROUP BY cluster_id
-            HAVING COUNT(DISTINCT source) >= 2 LIMIT 50
-        """, (cutoff,))
+        if target_clusters:
+            rows = db.execute("""
+                SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
+                FROM articles WHERE cluster_id = ANY(%s) GROUP BY cluster_id
+            """, (target_clusters,))
+        else:
+            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
+            rows = db.execute("""
+                SELECT cluster_id, array_agg(DISTINCT title) as titles, MAX(description) as desc
+                FROM articles WHERE created_at >= %s GROUP BY cluster_id
+                HAVING COUNT(DISTINCT source) >= 2 LIMIT 50
+            """, (cutoff,))
 
         for r in rows:
             text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
@@ -812,19 +818,28 @@ def recategorize_clusters_task():
         utils.record_task_event("recategorize_clusters", "ok", "clusters:recent")
 
 @celery_app.task
-def generate_cluster_metadata_task(hours=24):
+def generate_cluster_metadata_task(hours=24, target_clusters=None):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
-
-        cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
-        rows = db.execute("""
-            SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
-                   array_agg(DISTINCT topic) as topics,
-                   mode() WITHIN GROUP (ORDER BY category) as dominant_category,
-                   array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
-            FROM articles WHERE created_at >= %s
-            GROUP BY cluster_id
-        """, (cutoff,))
+        if target_clusters:
+            rows = db.execute("""
+                SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
+                       array_agg(DISTINCT topic) as topics,
+                       mode() WITHIN GROUP (ORDER BY category) as dominant_category,
+                       array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
+                FROM articles WHERE cluster_id = ANY(%s)
+                GROUP BY cluster_id
+            """, (target_clusters,))
+        else:
+            cutoff = datetime.datetime.now() - datetime.timedelta(hours=int(hours or 24))
+            rows = db.execute("""
+                SELECT cluster_id, array_agg(DISTINCT source) as sources, array_agg(DISTINCT title) as titles,
+                       array_agg(DISTINCT topic) as topics,
+                       mode() WITHIN GROUP (ORDER BY category) as dominant_category,
+                       array_agg(embedding) FILTER (WHERE embedding IS NOT NULL) as embeddings
+                FROM articles WHERE created_at >= %s
+                GROUP BY cluster_id
+            """, (cutoff,))
         for r in rows:
             entities = db.execute(
                 "SELECT entity_name, entity_type FROM cluster_entities WHERE cluster_id = %s",
@@ -1018,9 +1033,9 @@ def recluster_recent_articles_task(hours=24, limit=800):
             for table in ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions"):
                 db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
 
-            extract_entities_task.delay(hours=hours)
-            generate_cluster_metadata_task.delay(hours=hours)
-            auto_summarize_task.delay()
+            extract_entities_task.apply_async(kwargs={'hours': hours, 'target_clusters': touched}, countdown=5)
+            generate_cluster_metadata_task.apply_async(kwargs={'hours': hours, 'target_clusters': touched}, countdown=5)
+            auto_summarize_task.apply_async(args=(touched,), countdown=2)
             invalidate_public_data_caches()
 
         from tasks import utils

@@ -144,9 +144,9 @@ class TestReclusterRecentArticlesTask:
              patch("clustering.find_or_create_cluster", return_value="old-a"), \
              patch("tasks.intelligence.invalidate_public_data_caches") as mock_invalidate, \
              patch("tasks.utils.record_task_event"), \
-             patch.object(tasks.extract_entities_task, "delay") as mock_extract_delay, \
-             patch.object(tasks.generate_cluster_metadata_task, "delay") as mock_meta_delay, \
-             patch.object(tasks.intelligence.auto_summarize_task, "delay") as mock_summary_delay:
+             patch.object(tasks.extract_entities_task, "apply_async") as mock_extract_delay, \
+             patch.object(tasks.generate_cluster_metadata_task, "apply_async") as mock_meta_delay, \
+             patch.object(tasks.intelligence.auto_summarize_task, "apply_async") as mock_summary_delay:
             mock_db.execute.side_effect = [
                 recent_rows,
                 1,
@@ -164,9 +164,9 @@ class TestReclusterRecentArticlesTask:
         update_call = mock_db.execute.call_args_list[1]
         assert "UPDATE articles SET cluster_id = %s WHERE id = %s" in update_call.args[0]
         assert update_call.args[1] == ("old-a", 2)
-        mock_extract_delay.assert_called_once_with(hours=24)
-        mock_meta_delay.assert_called_once_with(hours=24)
-        mock_summary_delay.assert_called_once_with()
+        mock_extract_delay.assert_called_once_with(kwargs={'hours': 24, 'target_clusters': ['new-a', 'old-a']}, countdown=5)
+        mock_meta_delay.assert_called_once_with(kwargs={'hours': 24, 'target_clusters': ['new-a', 'old-a']}, countdown=5)
+        mock_summary_delay.assert_called_once_with(args=(['new-a', 'old-a'],), countdown=2)
         mock_invalidate.assert_called_once()
 
 
