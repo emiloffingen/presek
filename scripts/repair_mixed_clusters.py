@@ -25,7 +25,7 @@ def fix_mixed_cluster(target_cluster_id):
     # In a real scenario, we might want to re-cluster them properly, 
     # but for an emergency un-mix, isolation is safer.
     for art in to_move:
-        new_cid = str(uuid.uuid4())[:12]
+        new_cid = uuid.uuid4().hex[:12]
         db.execute("UPDATE articles SET cluster_id = %s WHERE id = %s", (new_cid, art['id']), fetch=False)
         # Also clean up metadata to force refresh
         db.execute("DELETE FROM cluster_metadata WHERE cluster_id = %s", (new_cid,), fetch=False)

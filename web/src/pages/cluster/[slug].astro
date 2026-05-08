@@ -54,8 +54,9 @@ import type { Article, ClusterDetail } from '../../types';
 const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
 
-// Extract ID from slug (matches first 8 hex chars at start of slug)
-const id = slug?.split('-')[0];
+// Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
+const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
+const id = idMatch ? idMatch[0] : slug?.split('-')[0];
 
 let cluster: ClusterDetail | null = null;
 let error = null;

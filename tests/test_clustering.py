@@ -94,7 +94,7 @@ def test_empty_title_creates_new_cluster():
 def test_no_recent_articles():
     """With no recent articles, should always create new cluster."""
     cid = find_or_create_cluster(MagicMock(), "Нова важна вест", [])
-    assert len(cid) == 8  # uuid[:8]
+    assert len(cid) == 12  # uuid.hex[:12]
 
 @patch(_DB_PATCH, _mock_db)
 def test_completely_different_topic():

@@ -357,7 +357,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
 
     # 3. TF-IDF Hybrid Fallback
     vec1 = text_to_vector(title)
-    if not vec1: return str(uuid.uuid4())[:8]
+    if not vec1: return uuid.uuid4().hex[:12]
 
     potential_entities = _extract_title_entities(title)
     normalized_input = _normalize_cluster_title(title)
@@ -535,4 +535,4 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                 log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
         return best_cid
 
-    return str(uuid.uuid4())[:12]
+    return uuid.uuid4().hex[:12]
