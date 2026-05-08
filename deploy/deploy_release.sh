@@ -17,6 +17,7 @@ PREVIOUS_LINK="$APP_ROOT/previous"
 VENV_DIR="${VENV_DIR:-$APP_ROOT/venv}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 PYTHON_ENVS_DIR="${PYTHON_ENVS_DIR:-$SHARED_DIR/python-envs}"
+SHARED_BROWSERS_DIR="${SHARED_BROWSERS_DIR:-$SHARED_DIR/browsers}"
 SHARED_WEB_DEPS_ROOT="${SHARED_WEB_DEPS_ROOT:-$SHARED_DIR/web-deps}"
 SHARED_WEB_NODE_MODULES="${SHARED_WEB_NODE_MODULES:-$SHARED_DIR/web-node_modules}"
 SYSTEMD_TARGET="${SYSTEMD_TARGET:-presek.target}"
@@ -36,24 +37,67 @@ RELEASE_ID="${RELEASE_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
 RUN_TESTS="${RUN_TESTS:-0}"
 BACKUP_BEFORE_MIGRATIONS="${BACKUP_BEFORE_MIGRATIONS:-1}"
-APP_SERVICES=(
-  presek-fastapi.service
-  presek-astro.service
-  presek-worker.service
-  presek-worker-ingestion.service
-  presek-worker-fasttrack.service
-  presek-worker-delivery.service
-  presek-beat.service
-)
+MIN_FREE_DISK_GB="${MIN_FREE_DISK_GB:-2}"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; RESET='\033[0m'
 ok()   { echo -e "${GREEN}✓${RESET}  $*"; }
 warn() { echo -e "${YELLOW}!${RESET}  $*"; }
 info() { echo -e "${BLUE}>${RESET}  $*"; }
-fail() { echo -e "${RED}x${RESET}  $*"; exit 1; }
+fail() { echo -e "${RED}x${RESET}  $*"; [ -n "${RELEASE_ID:-}" ] && notify_deploy "Deployment failed for release $RELEASE_ID: $*" "danger"; exit 1; }
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
+
+notify_deploy() {
+  local msg="$1"
+  local color="${2:-good}" # good (green), warning (yellow), danger (red)
+  local webhook_url
+  webhook_url="$(env -i bash -c 'set -a; source "$1"; set +a; printf "%s" "${DEPLOY_WEBHOOK_URL:-}"' _ "$SHARED_DIR/.env" 2>/dev/null || true)"
+  [ -n "$webhook_url" ] || return 0
+  
+  info "Sending deployment notification"
+  # Support Slack-style JSON payload
+  curl -s -X POST -H 'Content-type: application/json' \
+    --data "{\"attachments\":[{\"color\":\"$color\",\"text\":\"*Presek Deploy*: $msg\"}]}" \
+    "$webhook_url" >/dev/null 2>&1 || true
+}
+
+assert_disk_space() {
+  info "Checking available disk space"
+  local free_kb
+  free_kb="$(df -k "$APP_ROOT" | awk 'NR==2 {print $4}')"
+  local free_gb=$((free_kb / 1024 / 1024))
+  if [ "$free_gb" -lt "$MIN_FREE_DISK_GB" ]; then
+    fail "Insufficient disk space: ${free_gb}GB free, but ${MIN_FREE_DISK_GB}GB required."
+  fi
+  ok "Disk space check passed (${free_gb}GB free)"
+}
+
+discover_app_services() {
+  info "Discovering Presek systemd services"
+  # Find all services starting with presek- that are part of the target or known to be part of the app
+  local services=()
+  while IFS= read -r line; do
+    [ -n "$line" ] && services+=("$line")
+  done < <(systemctl list-dependencies "$SYSTEMD_TARGET" --plain --all | grep '^presek-' | sed 's/^[ \t]*//' || true)
+  
+  if [ "${#services[@]}" -eq 0 ]; then
+    # Fallback to a set of default services if discovery fails or target is empty
+    warn "No services found via systemctl dependencies; using defaults"
+    APP_SERVICES=(
+      presek-fastapi.service
+      presek-astro.service
+      presek-worker.service
+      presek-worker-ingestion.service
+      presek-worker-fasttrack.service
+      presek-worker-delivery.service
+      presek-beat.service
+    )
+  else
+    APP_SERVICES=("${services[@]}")
+    info "Discovered ${#APP_SERVICES[@]} services: ${APP_SERVICES[*]}"
+  fi
 }
 
 cleanup_listener_port() {
@@ -77,13 +121,19 @@ cleanup_listener_port() {
 
   warn "Stopping existing $label listener(s) on port $port: ${runtime_pids[*]}"
   sudo kill "${runtime_pids[@]}" 2>/dev/null || true
-  sleep 1
+  
+  # Wait and verify
+  local i
+  for i in {1..5}; do
+    sleep 1
+    pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+    [ -n "$pids" ] || break
+  done
 
-  local remaining=""
-  remaining="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-  if [ -n "$remaining" ]; then
+  pids="$(sudo lsof -ti TCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  if [ -n "$pids" ]; then
     local stubborn_pids=()
-    for pid in $remaining; do
+    for pid in $pids; do
       if pid_belongs_to_runtime "$pid"; then
         stubborn_pids+=("$pid")
       fi
@@ -189,7 +239,7 @@ normalize_legacy_runtime_links() {
 }
 
 ensure_layout() {
-  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups" "$SHARED_DIR/static/uploads" "$SHARED_DIR/static/generated" "$PYTHON_ENVS_DIR" "$SHARED_WEB_DEPS_ROOT"
+  install -d "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/logs" "$SHARED_DIR/backups" "$SHARED_DIR/static/uploads" "$SHARED_DIR/static/generated" "$PYTHON_ENVS_DIR" "$SHARED_WEB_DEPS_ROOT" "$SHARED_BROWSERS_DIR"
   [ -f "$SHARED_DIR/.env" ] || fail "Missing shared env file at $SHARED_DIR/.env"
   [ -x "$VENV_DIR/bin/uvicorn" ] || fail "Missing Python runtime at $VENV_DIR/bin/uvicorn"
   [ -d "$SHARED_WEB_NODE_MODULES" ] || fail "Missing shared Astro dependencies at $SHARED_WEB_NODE_MODULES. Run deploy/bootstrap_runtime_root.sh first."
@@ -239,7 +289,8 @@ prepare_release_runtime_links() {
 
 ensure_playwright_browsers() {
   if "$RELEASE_VENV_TARGET/bin/python3" -c "import playwright" >/dev/null 2>&1; then
-    info "Ensuring Playwright Chromium browser is installed"
+    info "Ensuring Playwright Chromium browser is installed in $SHARED_BROWSERS_DIR"
+    export PLAYWRIGHT_BROWSERS_PATH="$SHARED_BROWSERS_DIR"
     "$RELEASE_VENV_TARGET/bin/python3" -m playwright install chromium
   fi
 }
@@ -432,12 +483,33 @@ restart_and_smoke() {
   if [ "$SYNC_NGINX_SNIPPETS" = "1" ]; then
     info "Syncing nginx snippets"
     sudo install -d /etc/nginx/snippets || return 1
-    sudo cp "$RELEASE_DIR/deploy/nginx/security-headers.conf" /etc/nginx/snippets/presek-security-headers.conf || return 1
-    sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes.conf" /etc/nginx/snippets/presek-routes.conf || return 1
+    
+    # Backup existing snippets
+    [ -f /etc/nginx/snippets/presek-security-headers.conf ] && sudo cp /etc/nginx/snippets/presek-security-headers.conf /etc/nginx/snippets/presek-security-headers.conf.bak
+    [ -f /etc/nginx/snippets/presek-routes.conf ] && sudo cp /etc/nginx/snippets/presek-routes.conf /etc/nginx/snippets/presek-routes.conf.bak
+
+    if ! sudo cp "$RELEASE_DIR/deploy/nginx/security-headers.conf" /etc/nginx/snippets/presek-security-headers.conf || \
+       ! sudo cp "$RELEASE_DIR/deploy/nginx/presek-routes.conf" /etc/nginx/snippets/presek-routes.conf; then
+      warn "Failed to copy nginx snippets; restoring backups"
+      [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ] && sudo mv /etc/nginx/snippets/presek-security-headers.conf.bak /etc/nginx/snippets/presek-security-headers.conf
+      [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf
+      return 1
+    fi
   fi
 
   info "Validating nginx configuration"
-  sudo nginx -t || return 1
+  if ! sudo nginx -t; then
+    warn "Nginx configuration invalid; restoring snippet backups"
+    if [ "$SYNC_NGINX_SNIPPETS" = "1" ]; then
+      [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ] && sudo mv /etc/nginx/snippets/presek-security-headers.conf.bak /etc/nginx/snippets/presek-security-headers.conf
+      [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo mv /etc/nginx/snippets/presek-routes.conf.bak /etc/nginx/snippets/presek-routes.conf
+    fi
+    return 1
+  fi
+
+  # Cleanup backups on success
+  [ -f /etc/nginx/snippets/presek-security-headers.conf.bak ] && sudo rm /etc/nginx/snippets/presek-security-headers.conf.bak
+  [ -f /etc/nginx/snippets/presek-routes.conf.bak ] && sudo rm /etc/nginx/snippets/presek-routes.conf.bak
 
   info "Reloading $NGINX_SERVICE"
   sudo systemctl reload "$NGINX_SERVICE" || return 1
@@ -494,11 +566,13 @@ main() {
   need_cmd "$PYTHON_BIN"
 
   assert_paths_safe
+  assert_disk_space
   assert_git_deployable
   assert_git_pushed
   assert_web_lockfile
   ensure_layout
   normalize_legacy_runtime_links
+  discover_app_services
 
   # Acquire exclusive deploy lock to prevent concurrent deploys
   LOCK_FILE="$APP_ROOT/.deploy.lock"
@@ -564,6 +638,7 @@ main() {
   info "Pruning old releases"
   DRY_RUN=0 KEEP_EXTRA=3 APP_ROOT="$APP_ROOT" bash "$SOURCE_ROOT/deploy/prune_releases.sh" || warn "Cleanup failed"
 
+  notify_deploy "Release $RELEASE_ID deployed successfully to $APP_ROOT" "good"
   ok "Release deployed successfully"
   ok "Current release: $RELEASE_ID"
 }
