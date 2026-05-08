@@ -106,20 +106,19 @@ def run_ingestion():
     try:
         from ingestion import ingest_feeds
         log.info(f"Presek {APP_VERSION_LABEL}: Starting unified ingestion cycle...")
-        new_count, errors = ingest_feeds()
+        new_count, inserted_ids, errors = ingest_feeds()
 
         # Record health metrics
         record_refresh(new_count, errors)
         record_task_event("run_ingestion", "ok" if not errors else "warning", f"new_articles:{new_count}")
-        
-        if new_count > 0:
+
+        if new_count > 0 and inserted_ids:
             invalidate_public_data_caches()
-            
+
             # Extract modified cluster IDs for targeted updates
             # We fetch from DB to get cluster_ids for all inserted articles
             inserted_data = db.execute("SELECT cluster_id FROM articles WHERE id = ANY(%s)", (inserted_ids,))
             modified_cluster_ids = list(set(art["cluster_id"] for art in inserted_data if art.get("cluster_id")))
-
             # Lazy import to avoid circular dependencies
             from tasks.intelligence import (
                 generate_embeddings_task,

@@ -477,7 +477,7 @@ async def ingest_all_sources_async():
     sources = get_active_sources()
     if not sources:
         log.warning("No active sources found.")
-        return 0, []
+        return 0, [], []
     if httpx is None:
         raise RuntimeError("httpx is required for feed ingestion")
 
@@ -611,7 +611,7 @@ async def ingest_all_sources_async():
                 accepted=stats["accepted"],
                 error=stats["error"],
             )
-        return 0, errors
+        return 0, [], errors
 
     # 3. Batch Processing (CPU/API intensive parts)
     log.info(f"[ingestion] Processing {len(candidates)} candidates...")
@@ -783,7 +783,7 @@ async def ingest_all_sources_async():
                 fetch=False,
             )
 
-    return new_count, errors
+    return new_count, inserted_ids, errors
 
 def ingest_all_sources():
     """Synchronous wrapper for Celery/Script compatibility."""
