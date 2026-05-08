@@ -110,20 +110,24 @@
 
         /* ... rest of variables unchanged ... */
 
-        /* Fluid Typography Scale - Compacted for Density */
-        --text-xs: clamp(0.65rem, 0.6rem + 0.1vw, 0.7rem);
-        --text-sm: clamp(0.75rem, 0.7rem + 0.2vw, 0.825rem);
-        --text-base: clamp(0.875rem, 0.85rem + 0.15vw, 0.9375rem); /* ~14px to 15px */
-        --text-lg: clamp(0.9375rem, 0.9rem + 0.25vw, 1.0625rem);
-        --text-xl: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
-        --text-2xl: clamp(1.25rem, 1.15rem + 0.7vw, 1.625rem);
-        --text-3xl: clamp(1.625rem, 1.35rem + 1.1vw, 2.125rem);
-        --text-4xl: clamp(2rem, 1.6rem + 1.6vw, 2.75rem);
+        /* Fluid Typography Scale - Editorial & Premium */
+        --text-xs: clamp(0.7rem, 0.65rem + 0.1vw, 0.75rem);
+        --text-sm: clamp(0.8rem, 0.75rem + 0.2vw, 0.875rem);
+        --text-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem); /* ~15px to 16px */
+        --text-lg: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+        --text-xl: clamp(1.125rem, 1.05rem + 0.5vw, 1.375rem);
+        --text-2xl: clamp(1.375rem, 1.25rem + 0.8vw, 1.75rem);
+        --text-3xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.25rem);
+        --text-4xl: clamp(2.25rem, 1.8rem + 1.8vw, 3rem);
 
-        /* Standardized Spacing - Compacted for Density */
-        --section-py: clamp(1rem, 2vw, 2.5rem);
-        --page-py: clamp(1.75rem, 4vw, 4.5rem);
-        --grid-gap: clamp(0.75rem, 1.5vw, 1.75rem);
+        /* Standardized Spacing - Relaxed for Premium Feel */
+        --section-py: clamp(1.5rem, 3vw, 3rem);
+        --page-py: clamp(2.5rem, 5vw, 5rem);
+        --grid-gap: clamp(1rem, 2vw, 2.5rem);
+
+        --header-height: 72px;
+        --glass-blur: blur(12px);
+        --glass-opacity: 0.85;
     }
 
     .dark {
@@ -160,21 +164,68 @@
     }
 }
 
-#loading-bar {
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 8px var(--nyt-accent);
+.header-sticky-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: color-mix(in srgb, var(--background) calc(var(--glass-opacity) * 100%), transparent);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
 }
 
-/* Image Reveal Effect */
+.headline {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    text-wrap: balance;
+    transition: color 0.2s ease;
+}
+
+.headline-cyrillic {
+    letter-spacing: -0.01em; /* Cyrillic needs slightly more space */
+    line-height: 1.2;
+}
+
+.headline-lead {
+    font-size: var(--text-3xl);
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+}
+
+.headline-standard {
+    font-size: var(--text-xl);
+    margin-bottom: 0.5rem;
+}
+
+/* --- Premium Interactions --- */
 .article-image,
 .cluster-visual-image {
     opacity: 0;
-    transition: opacity 0.6s ease-out;
+    transform: scale(1.02);
+    filter: blur(4px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .article-image.is-loaded,
 .cluster-visual-image.is-loaded {
     opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+}
+
+.shadow-editorial {
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1),
+                0 4px 10px -5px rgba(0, 0, 0, 0.05);
+}
+
+.dark .shadow-editorial {
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
 @layer components {

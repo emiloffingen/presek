@@ -315,7 +315,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .activity-dot { width: 4px; height: 5px; background: var(--nyt-accent); border-radius: 50%; }
 
     /* ── Discovery Navigation ────────────────────────── */
-    .discovery-nav-v2 { border-top: 1px solid var(--border); background: var(--background); }
+    .discovery-nav-v2 { border-top: 1px solid var(--border); background: transparent; }
     .nav-rail-wrapper { position: relative; overflow: hidden; min-width: 0; }
     .nav-rail-scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .nav-rail-content { display: flex; padding: 0.3rem 0; align-items: stretch; min-width: min-content; }
@@ -324,8 +324,8 @@ function getRelativeTimeStr(dateStr?: string) {
     .group-header { opacity: 0.8; flex-shrink: 0; }
     .group-label { font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
     .group-links { display: flex; align-items: center; gap: 0.25rem; }
-    .nav-rail-link { display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.55rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
-    .nav-rail-link:hover { background: var(--secondary); }
+    .nav-rail-link { display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.55rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; white-space: nowrap; color: var(--muted-foreground); }
+    .nav-rail-link:hover { background: color-mix(in srgb, var(--nyt-accent) 6%, transparent); color: var(--nyt-accent); }
     .nav-rail-link.is-active { background: var(--foreground); color: var(--background); }
     
     .group-core .link-label, .group-dynamic .link-label { font-family: var(--font-sans); font-size: 0.66rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.02em; }

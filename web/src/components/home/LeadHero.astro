@@ -320,21 +320,16 @@ const IconComponent =
 
 	.lead-summary {
 		font-family: var(--font-nyt-body);
-		font-size: 0.98rem;
-		line-height: 1.62;
-		color: var(--secondary-foreground);
-		max-width: 50ch;
+		font-size: var(--text-lg);
+		line-height: 1.6;
+		color: var(--muted-foreground);
+		max-width: 65ch;
 		text-wrap: pretty;
 		margin: 0;
-		display: -webkit-box;
-		-webkit-line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
 	}
 
 	.lead-summary-cyrillic {
-		line-height: 1.74;
-		max-width: 56ch;
+		line-height: 1.65;
 	}
 
 	.lead-signal-badge {
@@ -374,16 +369,17 @@ const IconComponent =
 
     .analyst-label {
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 950;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.15em;
         color: var(--nyt-accent);
+        text-transform: uppercase;
     }
 
     .pulse-indicator {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.4rem;
     }
 
     .pluralism-indicator {
