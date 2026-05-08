@@ -576,7 +576,7 @@ def generate_daily_brief_fallback(clusters):
         lines.append(f"- Што се менува: {summary or clean_title or title}.")
         lines.append(f"- Зошто е важно: {importance}.")
         lines.append("")
-    lines.append("**Напомена**: Брифинг составен локално.")
+    lines.append("**Белешка**: Содржината е генерирана преку локална системска анализа.")
     return "\n".join(lines).strip()
 
 def _article_context_text(article):

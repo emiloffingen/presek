@@ -91,6 +91,10 @@ celery_app.conf.update(
             'task': 'tasks.intelligence.auto_summarize_task',
             'schedule': 180.0, # Every 3 minutes
         },
+        'recluster-recent-articles': {
+            'task': 'tasks.intelligence.recluster_recent_articles_task',
+            'schedule': 300.0,  # Every 5 minutes
+        },
         'prune-database': {
             'task': 'tasks.maintenance.run_prune_db',
             'schedule': crontab(hour=3, minute=0), # Daily maintenance
