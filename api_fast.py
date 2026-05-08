@@ -11,7 +11,6 @@ from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.csrf import CSRFMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from limiter import (
     _rate_limiter_enabled,
@@ -63,21 +62,7 @@ app.add_middleware(
     max_age=600,
 )
 
-# Security: CSRF Protection for state-changing endpoints
-# Note: This requires CSRF token in headers for POST/PUT/DELETE/PATCH
-# API clients must include X-CSRF-Token header with valid token
-csrf_secret = os.environ.get("CSRF_SECRET")
-if csrf_secret:
-    app.add_middleware(
-        CSRFMiddleware,
-        secret=csrf_secret,
-        cookie_samesite="lax",
-        cookie_secure=True if os.environ.get("ENV") == "production" else False,
-    )
-    log.info("CSRF protection enabled")
-else:
-    log.warning("CSRF protection disabled - CSRF_SECRET not set")
-
+# Security: Additional security headers are handled in routes/security.py
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 if _rate_limiter_enabled:
     app.state.limiter = limiter
