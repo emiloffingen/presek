@@ -166,13 +166,21 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className={`image-wrap ${isFallbackArt ? 'image-wrap-fallback' : ''}`}>
           <a href={`/cluster/${cluster.cluster_id}`} className="block h-full">
             {isFallbackArt ? (
-              <div className="article-image-placeholder">
-                <div className="article-image-placeholder-topline">
-                  <p className="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
-                  <p className="article-image-placeholder-chip">{cluster.articles.length} {cluster.articles.length === 1 ? 'извор' : 'извори'}</p>
+              <div className="article-image-placeholder design-card">
+                <div className="design-card-pattern"></div>
+                <div className="design-card-ribbon">
+                    <span>ПРЕСЕК ПРЕГЛЕД</span>
                 </div>
-                <h3>{main.category || 'Вести'}</h3>
-                <p className="article-image-placeholder-source">{main.source}</p>
+                <div className="design-card-main">
+                    <div className="design-card-icon-wrap">
+                        <Activity size={24} className="text-white/90" />
+                    </div>
+                    <h3>{main.category || 'Вести'}</h3>
+                    <p className="design-card-sub">{cluster.articles.length} {cluster.articles.length === 1 ? 'ИЗВОР' : 'ИЗВОРИ'}</p>
+                </div>
+                <div className="design-card-footer">
+                    <span className="design-card-cta">ОДИ ДО СТАТИЈАТА</span>
+                </div>
               </div>
             ) : (
               <>
@@ -192,12 +200,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                     }
                   }}
                 />
-                <div className="article-image-placeholder is-error-fallback" style={{ display: 'none' }}>
-                  <div className="article-image-placeholder-topline">
-                    <p className="article-image-placeholder-label">ПРЕСЕК.мк Избор</p>
-                    <p className="article-image-placeholder-chip">Без визуел</p>
-                  </div>
-                  <p className="article-image-placeholder-source">{main.source}</p>
+                <div className="article-image-placeholder design-card is-error-fallback" style={{ display: 'none' }}>
+                    <div className="design-card-pattern"></div>
+                    <div className="design-card-main">
+                        <h3>{main.source}</h3>
+                    </div>
                 </div>
               </>
             )}
