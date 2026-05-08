@@ -13,14 +13,14 @@ const { formattedBriefing } = Astro.props;
 <style is:global>
     .briefing-content-container { max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 0 1rem; }
     .briefing-body { font-family: var(--font-serif); font-size: clamp(1.2rem, 2.2vw, 1.45rem); line-height: 1.7; color: var(--foreground); }
-    .briefing-section-title { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 900; margin: 4.5rem 0 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--foreground); letter-spacing: -0.02em; }
-    .briefing-paragraph { margin-bottom: 2rem; text-align: left; hyphens: auto; word-wrap: break-word; line-height: 1.75; position: relative; }
+    .briefing-section-title { clear: both; font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 900; margin: 4.5rem 0 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--foreground); letter-spacing: -0.02em; }
+    .briefing-paragraph { margin-bottom: 2rem; text-align: left; hyphens: auto; word-wrap: break-word; line-height: 1.75; position: relative; overflow: hidden; }
     .briefing-paragraph.drop-cap { min-height: 5rem; }
-    .briefing-paragraph.drop-cap::first-letter { float: left; font-family: var(--font-serif); font-size: clamp(3.2rem, 10vw, 4rem); line-height: 0.85; margin-top: 0.15em; margin-right: 0.15em; padding-top: 0.05em; padding-left: 2px; font-weight: 900; color: var(--foreground); }
+    .briefing-paragraph.drop-cap::first-letter { float: left; font-family: var(--font-serif); font-size: clamp(3.5rem, 12vw, 4.5rem); line-height: 0.75; margin-top: 0.1em; margin-right: 0.12em; padding-top: 0.05em; padding-left: 2px; font-weight: 900; color: var(--foreground); }
     .briefing-pull-quote { font-family: var(--font-serif); font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800; font-style: italic; color: var(--nyt-accent); border-left: 6px solid var(--nyt-accent); padding: 1.5rem 2.5rem; margin: 3.5rem 0; line-height: 1.3; letter-spacing: -0.01em; position: relative; }
     .briefing-pull-quote::before { content: "“"; position: absolute; left: 0.5rem; top: 0; font-size: 5rem; opacity: 0.15; font-family: serif; }
     .briefing-kicker { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 950; text-transform: uppercase; color: var(--nyt-accent); letter-spacing: 0.15em; margin-right: 0.75rem; }
-    .briefing-item-title { font-family: var(--font-serif); font-size: clamp(1.5rem, 3.5vw, 1.85rem); font-weight: 850; margin: 3rem 0 1.25rem; color: var(--foreground); line-height: 1.2; }
+    .briefing-item-title { clear: both; font-family: var(--font-serif); font-size: clamp(1.5rem, 3.5vw, 1.85rem); font-weight: 850; margin: 3rem 0 1.25rem; color: var(--foreground); line-height: 1.2; }
     .briefing-ul { list-style: none; padding: 0; margin: 0 0 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
     .briefing-li { position: relative; padding-left: 2rem; font-size: clamp(1.1rem, 2vw, 1.35rem); line-height: 1.5; }
     .briefing-li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 950; font-size: 1.4rem; }
