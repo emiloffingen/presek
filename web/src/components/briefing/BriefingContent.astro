@@ -26,6 +26,6 @@ const { formattedBriefing } = Astro.props;
     .briefing-li::before { content: "—"; position: absolute; left: 0; color: var(--nyt-accent); font-weight: 950; font-size: 1.4rem; }
     .briefing-inline-badge { display: inline-flex; align-items: center; background: color-mix(in srgb, var(--nyt-accent) 15%, transparent); border: 1px solid var(--nyt-accent); color: var(--nyt-accent); font-family: var(--font-sans); font-size: 0.52rem; font-weight: 950; padding: 0.2rem 0.6rem; border-radius: 99px; margin-left: 0.75rem; text-decoration: none; vertical-align: middle; transition: all 0.2s; white-space: nowrap; letter-spacing: 0.05em; }
     .briefing-inline-badge:hover { background: var(--nyt-accent); color: white; transform: translateY(-1px); }
-    .briefing-inline-link { display: inline-flex; align-items: center; justify-content: center; color: var(--nyt-accent); background: color-mix(in srgb, var(--nyt-accent) 10%, transparent); padding: 0.1rem 0.3rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; margin: 0 0.1rem; vertical-align: middle; }
-    .briefing-inline-link:hover { background: var(--nyt-accent); color: white; transform: scale(1.1); }
+    .briefing-inline-link { display: inline-flex; align-items: center; justify-content: center; color: var(--nyt-accent); background: color-mix(in srgb, var(--nyt-accent) 8%, transparent); padding: 0.1rem 0.25rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; margin: 0 0.1rem; vertical-align: baseline; position: relative; top: -0.2em; }
+    .briefing-inline-link:hover { background: var(--nyt-accent); color: white; transform: scale(1.1); top: -0.3em; }
 </style>
