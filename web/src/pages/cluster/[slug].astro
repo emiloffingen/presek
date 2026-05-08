@@ -398,8 +398,8 @@ const articleSchema = cluster ? {
                                                 <div class="section-divider"></div>
                                                 </div>
                                                 <div class="space-y-12">
-                                                <ResearchIsland client:load clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} />
-                                                <StorylineHistoryIsland client:load clusterId={id || ''} apiUrl={API_URL} />
+                                                <ResearchIsland client:visible clusterId={id || ''} initialHeadline={displayHeadline || ''} sources={allSourcesNames} />
+                                                <StorylineHistoryIsland client:visible clusterId={id || ''} apiUrl={API_URL} />
                                                 <ClusterHistoryIsland client:visible clusterId={id || ''} />
                                                 </div>
                                                 </section>
@@ -467,7 +467,7 @@ const articleSchema = cluster ? {
 									<h4 class="sidebar-label">КЛУЧНИ СУБЈЕКТИ</h4>
 									<div class="flex flex-col gap-3 mt-4">
 											{cluster.analyst_entities.map((name: string) => (
-											<EntityContextCard name={name} client:load />
+											<EntityContextCard name={name} client:visible />
 										))}
 									</div>
 								</div>

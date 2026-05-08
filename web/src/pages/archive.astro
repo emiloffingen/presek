@@ -136,7 +136,7 @@ const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', 
     <details class="archive-heatmap-toggle mb-12">
         <summary>Интензитет на циклусот <span>Отвори преглед ↓</span></summary>
         <div class="heatmap-panel pt-8">
-            <ArchiveHeatmapIsland client:load selectedDate={date} />
+            <ArchiveHeatmapIsland client:visible selectedDate={date} />
         </div>
     </details>
 
