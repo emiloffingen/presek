@@ -113,6 +113,13 @@ function getRelativeTimeStr(dateStr?: string) {
     {hasTicker && (
     <div class="unified-dispatch-bar">
         <div class="dispatch-container site-layout">
+            <div class="ticker-prefix">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                </span>
+                <span class="ticker-label">ВО ЖИВО</span>
+            </div>
             <div class="unified-ticker-track-wrap">
                 <div class="unified-ticker-track">
                     <div class="ticker-content-segment">
@@ -150,9 +157,7 @@ function getRelativeTimeStr(dateStr?: string) {
                 <div class="search-entry">
                     <SearchIsland initialQuery={q} client:idle />
                 </div>
-                <div class="flex items-center gap-3">
-                    <time class="topbar-date-display">{currentDate}</time>
-                </div>
+                <time class="topbar-date-display">{currentDate}</time>
             </div>
 
             <div class="topbar-branding">
@@ -164,15 +169,14 @@ function getRelativeTimeStr(dateStr?: string) {
             <div class="topbar-actions">
                 <div class="topbar-modes-rail">
                     <a href="/briefing" class={`mode-link ${Astro.url.pathname === '/briefing' ? 'is-active' : ''}`}>
-                        <Radio size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Брифинг</span>
+                        <Radio size={11} strokeWidth={3} /> <span>Брифинг</span>
                     </a>
                     <a href="/archive" class={`mode-link ${Astro.url.pathname === '/archive' ? 'is-active' : ''}`}>
-                        <Sparkles size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Архива</span>
+                        <Sparkles size={11} strokeWidth={3} /> <span>Архива</span>
                     </a>
                     <a href="/pulse" class={`mode-link ${Astro.url.pathname === '/pulse' ? 'is-active' : ''}`}>
-                        <BarChart3 size={11} strokeWidth={2.5} /> <span class="hidden sm:inline">Пулс</span>
+                        <BarChart3 size={11} strokeWidth={3} /> <span>Пулс</span>
                     </a>
-                    <a href="/for-you" class={`mode-link ${Astro.url.pathname === '/for-you' ? 'is-active' : ''}`}>За Вас</a>
                 </div>
                 
                 <div class="topbar-util">
@@ -215,7 +219,6 @@ function getRelativeTimeStr(dateStr?: string) {
                                             <a href={item.href} class={`nav-rail-link ${isActive ? 'is-active' : ''} ${item.type === 'trending_tag' ? 'is-tag' : ''}`}>
                                                 {item.type === 'trending_tag' && <span class="tag-prefix">#</span>}
                                                 <span class="link-label">{item.label.replace('#', '')}</span>
-                                                {item.count > 0 && <span class="link-count">{item.count}</span>}
                                             </a>
                                         );
                                     })}
@@ -236,130 +239,84 @@ function getRelativeTimeStr(dateStr?: string) {
     .unified-dispatch-bar {
         background: var(--background);
         border-bottom: 1px solid var(--border);
-        height: 1.6rem;
+        height: 1.8rem;
         display: flex;
         align-items: center;
         z-index: 101;
         overflow: hidden;
-        max-width: 100%;
     }
-    .dispatch-container {
-        display: flex;
-        align-items: center;
-        height: 100%;
-        min-width: 0;
-        max-width: 100%;
-    }
+    .dispatch-container { display: flex; align-items: center; height: 100%; }
+    
     .ticker-prefix {
-        display: flex; align-items: center; gap: 0.35rem; 
-        font-family: var(--font-sans); font-size: 0.65rem; font-weight: 900;
-        letter-spacing: 0.12em; text-transform: uppercase;
-        color: var(--muted-foreground);
-        padding-right: 1rem; border-right: 1px solid var(--border);
+        display: flex; align-items: center; gap: 0.5rem; 
+        padding: 0 1.25rem; border-right: 1px solid var(--border);
         background: var(--background); z-index: 2;
-        flex-shrink: 0;
-        opacity: 0.85;
     }
-    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; opacity: 0.9; }
-    .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 60s linear infinite; }
+    .ticker-label { font-family: var(--font-sans); font-size: 0.55rem; font-weight: 950; letter-spacing: 0.15em; color: var(--nyt-red); }
+
+    .unified-ticker-track-wrap { flex: 1; overflow: hidden; position: relative; }
+    .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 80s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     .unified-ticker-track:hover { animation-play-state: paused; }
     
-    .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; flex-shrink: 0; white-space: nowrap; }
-    .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
-    .stats-group { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
-    .dispatch-item { display: flex; align-items: center; gap: 0.35rem; color: var(--foreground); }
-    .dispatch-data { color: var(--foreground); white-space: nowrap; }
-    .dispatch-sep { opacity: 0.3; }
+    .ticker-content-segment { display: flex; align-items: center; gap: 3rem; padding-right: 3rem; }
 
-    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.7rem; line-height: 1; font-weight: 700; color: var(--foreground); text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
-    .ticker-time { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; margin-right: 0.5rem; background: var(--secondary); padding: 1px 4px; border-radius: 2px; }
-    .ticker-title { line-height: 1.1; }
+    .live-ticker-headline { font-family: var(--font-serif); font-size: 0.72rem; font-weight: 750; color: var(--foreground); text-decoration: none; display: flex; align-items: center; gap: 0.6rem; transition: color 0.2s; }
+    .live-ticker-headline:hover { color: var(--nyt-accent); }
+    .ticker-time { font-family: var(--font-sans); font-size: 0.58rem; font-weight: 950; color: var(--muted-foreground); opacity: 0.6; }
 
     /* ── Editorial Topbar ─────────────────────────────── */
     .header-sticky-wrapper {
-        position: sticky; top: 0; z-index: 102; background: var(--background);
-        border-bottom: 1px solid var(--border); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        width: 100%;
-        max-width: 100%;
-        overflow-x: clip;
+        position: sticky; top: 0; z-index: 102; 
+        background: color-mix(in srgb, var(--background) 85%, transparent);
+        backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+        border-bottom: 1px solid var(--border); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .header-sticky-wrapper.header-hidden { transform: translateY(-100%); }
 
-    .editorial-topbar { padding: 0.5rem 0 0.65rem; }
-    .topbar-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; min-width: 0; max-width: 100%; }
+    .editorial-topbar { padding: 1rem 0; }
+    .topbar-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
     
-    .topbar-left-stack { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start; min-width: 0; }
-    .topbar-date-display { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
+    .topbar-left-stack { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+    .topbar-date-display { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.12em; opacity: 0.8; }
 
-    .topbar-branding { display: flex; justify-content: center; min-width: 0; max-width: 100%; }
-    .brand-link { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; min-width: 0; max-width: 100%; }
-    .brand-emblem { height: 1.55rem; }
-    .brand-logo { height: 1.9rem; }
+    .topbar-branding { display: flex; justify-content: center; }
+    .brand-link { text-decoration: none; }
 
-    .topbar-actions { display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; min-width: 0; }
-    .topbar-modes-rail { display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
+    .topbar-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+    .topbar-modes-rail { display: flex; align-items: center; gap: 0.5rem; }
     .mode-link {
-        display: flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.5rem; border-radius: 4px;
-        font-family: var(--font-sans); font-size: 0.6rem; font-weight: 850; text-transform: uppercase;
-        color: var(--foreground); text-decoration: none; transition: all 0.2s; border: 1px solid transparent;
+        display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem; border-radius: 4px;
+        font-family: var(--font-sans); font-size: 0.62rem; font-weight: 950; text-transform: uppercase;
+        color: var(--foreground); text-decoration: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid transparent; letter-spacing: 0.05em;
     }
-    .mode-link:hover { background: var(--secondary); }
-    .mode-link.is-active { background: color-mix(in srgb, var(--nyt-accent) 6%, var(--background)); border-color: color-mix(in srgb, var(--nyt-accent) 25%, transparent); color: var(--nyt-accent); }
+    .mode-link:hover { background: color-mix(in srgb, var(--nyt-accent) 5%, transparent); color: var(--nyt-accent); }
+    .mode-link.is-active { background: var(--foreground); color: var(--background); }
 
-    .topbar-util { display: flex; align-items: center; gap: 0.75rem; }
+    .topbar-util { display: flex; align-items: center; gap: 1rem; }
     .activity-chip {
-        display: flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.45rem; border: 1px solid var(--border);
-        font-family: var(--font-sans); font-size: 0.58rem; font-weight: 850; color: var(--nyt-accent); border-radius: 4px;
+        display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.6rem; 
+        background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+        font-family: var(--font-sans); font-size: 0.6rem; font-weight: 950; color: var(--nyt-accent); border-radius: 2px;
     }
-    .activity-dot { width: 4px; height: 5px; background: var(--nyt-accent); border-radius: 50%; }
+    .activity-dot { width: 5px; height: 5px; background: var(--nyt-accent); border-radius: 50%; box-shadow: 0 0 8px var(--nyt-accent); }
 
     /* ── Discovery Navigation ────────────────────────── */
-    .discovery-nav-v2 { border-top: 1px solid var(--border); background: transparent; }
-    .nav-rail-wrapper { position: relative; overflow: hidden; min-width: 0; }
-    .nav-rail-scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-    .nav-rail-content { display: flex; padding: 0.3rem 0; align-items: stretch; min-width: min-content; }
-    .nav-rail-group { display: flex; align-items: center; padding: 0 1rem; border-right: 1px solid var(--border); gap: 0.65rem; }
-    .nav-rail-group:last-child { border-right: none; }
-    .group-header { opacity: 0.8; flex-shrink: 0; }
-    .group-label { font-family: var(--font-sans); font-size: 0.52rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.08em; }
-    .group-links { display: flex; align-items: center; gap: 0.25rem; }
-    .nav-rail-link { display: flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.55rem; border-radius: 4px; text-decoration: none; transition: all 0.2s; white-space: nowrap; color: var(--muted-foreground); }
-    .nav-rail-link:hover { background: color-mix(in srgb, var(--nyt-accent) 6%, transparent); color: var(--nyt-accent); }
-    .nav-rail-link.is-active { background: var(--foreground); color: var(--background); }
-    
-    .group-core .link-label, .group-dynamic .link-label { font-family: var(--font-sans); font-size: 0.66rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.02em; }
-    .group-magazine .link-label { font-family: var(--font-serif); font-size: 0.78rem; font-weight: 800; line-height: 1.15; }
-    
-    .link-count { font-size: 0.54rem; background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 8px; opacity: 0.75; }
-    .nav-fade { position: absolute; top: 0; bottom: 0; width: 30px; pointer-events: none; z-index: 5; }
-    .nav-fade.left { left: 0; background: linear-gradient(to right, var(--background), transparent); opacity: 0; }
-    .nav-fade.right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
+    .discovery-nav-v2 { border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent); padding: 0 1.5rem; }
+    .group-label { font-size: 0.5rem; letter-spacing: 0.25em; opacity: 0.5; margin-bottom: 0.25rem; display: block; }
+    .nav-rail-link { font-size: 0.68rem; padding: 0.4rem 0.6rem; }
+    .nav-rail-link.is-active { background: var(--nyt-accent); color: white; }
 
     @media (max-width: 960px) {
-        .unified-dispatch-bar { height: 1.4rem; width: 100%; box-sizing: border-box; }
-        .ticker-prefix { padding-right: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 0; }
-        .ticker-label { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 900; letter-spacing: 0.05em; color: var(--nyt-red); white-space: nowrap; }
-        .ticker-content-segment { gap: 1rem; padding-right: 1rem; flex-shrink: 0; white-space: nowrap; }
-        .editorial-topbar { padding: 0.25rem 0.5rem 0.35rem; width: 100%; box-sizing: border-box; }
-        .topbar-main { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.4rem; width: 100%; min-width: 0; }
-        .topbar-left-stack { order: 1; flex-direction: row; align-items: center; min-width: 0; flex-shrink: 1; }
+        .editorial-topbar { padding: 0.5rem 0.75rem; }
+        .topbar-main { grid-template-columns: auto 1fr auto; gap: 1rem; }
+        .topbar-left-stack { order: 1; flex-direction: row; }
         .topbar-date-display { display: none; }
-        .topbar-branding { order: 2; flex: 1; justify-content: flex-start; min-width: 0; overflow: hidden; }
-        .topbar-actions { order: 3; flex-direction: row; align-items: center; gap: 0.4rem; flex-shrink: 0; }
-        .topbar-modes-rail { border: 0; padding: 0; }
-        .mode-link { padding: 0.3rem 0.4rem; font-size: 0.55rem; }
-        .brand-logo { height: 1.15rem; max-width: 100%; object-fit: contain; }
-        .brand-emblem { height: 0.95rem; flex-shrink: 0; }
-        .nav-rail-group { padding: 0 0.65rem; }
-        .nav-rail-content { padding: 0.2rem 0; width: max-content; }
-    }
-
-    @media (max-width: 400px) {
+        .topbar-branding { order: 2; justify-content: flex-start; }
+        .topbar-actions { order: 3; flex-direction: row; }
         .mode-link span { display: none; }
-        .mode-link { padding: 0.35rem; }
-        .topbar-main { grid-template-columns: auto 1fr auto; }
-        .topbar-util { gap: 0.35rem; }
     }
 </style>
 
