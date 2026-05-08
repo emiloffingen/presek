@@ -325,5 +325,22 @@ async def get_query_embedding_async(text: str) -> list[float] | None:
 
 
 def shutdown_embedding_executor():
-    """Clean shutdown of the embedding thread pool."""
+    """Clean shutdown of the embedding thread pool and model."""
+    global _model
     _embedding_executor.shutdown(wait=True, cancel_futures=False)
+    # Unload model to free memory
+    if _model is not None:
+        try:
+            # Clear model references
+            _model = None
+            log.info("[embeddings] Model unloaded from memory")
+        except Exception as e:
+            log.warning(f"[embeddings] Error unloading model: {e}")
+
+
+def get_model_status():
+    """Return whether model is loaded and memory status."""
+    return {
+        "model_loaded": _model is not None,
+        "executor_active": not _embedding_executor._shutdown,
+    }
