@@ -260,11 +260,11 @@ function getRelativeTimeStr(dateStr?: string) {
         flex-shrink: 0;
         opacity: 0.85;
     }
-    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; max-width: 100%; opacity: 0.9; }
+    .unified-ticker-track-wrap { flex: 1 1 auto; overflow: hidden; position: relative; min-width: 0; opacity: 0.9; }
     .unified-ticker-track { display: flex; width: max-content; animation: unified-ticker-scroll 60s linear infinite; }
     @keyframes unified-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     
-    .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; }
+    .ticker-content-segment { display: flex; align-items: center; gap: 2rem; padding-right: 2rem; flex-shrink: 0; white-space: nowrap; }
     .dispatch-stats-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; overflow: hidden; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
     .stats-group { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.1em; }
     .dispatch-item { display: flex; align-items: center; gap: 0.35rem; color: var(--foreground); }
@@ -339,7 +339,7 @@ function getRelativeTimeStr(dateStr?: string) {
         .unified-dispatch-bar { height: 1.4rem; width: 100%; box-sizing: border-box; }
         .ticker-prefix { padding-right: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 0; }
         .ticker-label { font-family: var(--font-sans); font-size: 0.5rem; font-weight: 900; letter-spacing: 0.05em; color: var(--nyt-red); white-space: nowrap; }
-        .ticker-content-segment { gap: 1rem; padding-right: 1rem; }
+        .ticker-content-segment { gap: 1rem; padding-right: 1rem; flex-shrink: 0; white-space: nowrap; }
         .editorial-topbar { padding: 0.25rem 0.5rem 0.35rem; width: 100%; box-sizing: border-box; }
         .topbar-main { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.4rem; width: 100%; min-width: 0; }
         .topbar-left-stack { order: 1; flex-direction: row; align-items: center; min-width: 0; flex-shrink: 1; }

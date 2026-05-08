@@ -33,8 +33,7 @@ function getTimeStr(dateStr: string) {
 ---
 
 <aside class="briefing-sidebar">
-	<div class="sidebar-sticky">
-		<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm mb-6">
+	<section class="sidebar-module p-6 bg-secondary/30 border border-border rounded-sm mb-6">
 			<NewsletterIsland client:load />
 		</section>
 
@@ -140,11 +139,6 @@ function getTimeStr(dateStr: string) {
 
 <style>
     .briefing-sidebar { display: flex; flex-direction: column; gap: 2rem; }
-    .sidebar-sticky { position: sticky; top: 8rem; display: flex; flex-direction: column; gap: 2rem; }
     .sidebar-module { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     .sidebar-module:first-child { border-top: none; padding-top: 0; }
-    
-    @media (max-width: 1024px) {
-        .sidebar-sticky { position: static; }
-    }
 </style>
