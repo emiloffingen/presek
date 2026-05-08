@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.csrf import CSRFMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from limiter import (
     _rate_limiter_enabled,
@@ -61,6 +62,22 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=600,
 )
+
+# Security: CSRF Protection for state-changing endpoints
+# Note: This requires CSRF token in headers for POST/PUT/DELETE/PATCH
+# API clients must include X-CSRF-Token header with valid token
+csrf_secret = os.environ.get("CSRF_SECRET")
+if csrf_secret:
+    app.add_middleware(
+        CSRFMiddleware,
+        secret=csrf_secret,
+        cookie_samesite="lax",
+        cookie_secure=True if os.environ.get("ENV") == "production" else False,
+    )
+    log.info("CSRF protection enabled")
+else:
+    log.warning("CSRF protection disabled - CSRF_SECRET not set")
+
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 if _rate_limiter_enabled:
     app.state.limiter = limiter
@@ -249,7 +266,11 @@ async def track_delivery_event(event_type: str, event_id: int, redirect: str = "
     redirect = _safe_tracking_redirect_path(redirect)
     return RedirectResponse(url=f"{_public_site_url}{redirect}", status_code=302)
 
-# Include routers with /api prefix (for Nginx/Public)
+# API Versioning - support both /api (legacy) and /api/v1 (versioned)
+# For new development, use /api/v1. Legacy /api routes are maintained for backward compatibility.
+API_VERSION = "v1"
+
+# Include routers with /api prefix (for Nginx/Public, legacy support)
 app.include_router(news.router, prefix="/api")
 app.include_router(home.router, prefix="/api")
 app.include_router(intelligence.router, prefix="/api")
@@ -257,3 +278,12 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+
+# Also include v1-prefixed routers for API versioning
+app.include_router(news.router, prefix=f"/api/{API_VERSION}")
+app.include_router(home.router, prefix=f"/api/{API_VERSION}")
+app.include_router(intelligence.router, prefix=f"/api/{API_VERSION}")
+app.include_router(profile.router, prefix=f"/api/{API_VERSION}")
+app.include_router(stats.router, prefix=f"/api/{API_VERSION}")
+app.include_router(system.router, prefix=f"/api/{API_VERSION}")
+app.include_router(admin.router, prefix=f"/api/{API_VERSION}")

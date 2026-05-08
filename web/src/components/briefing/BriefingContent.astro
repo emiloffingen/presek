@@ -3,11 +3,14 @@ interface Props {
 	formattedBriefing: string;
 }
 
+import { sanitizeHtml } from '../../lib/sanitize';
+
 const { formattedBriefing } = Astro.props;
+const safeBriefing = sanitizeHtml(formattedBriefing);
 ---
 
 <article class="briefing-content-container">
-	<div class="briefing-body" set:html={formattedBriefing}></div>
+	<div class="briefing-body" set:html={safeBriefing}></div>
 </article>
 
 <style is:global>

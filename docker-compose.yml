@@ -8,12 +8,13 @@ services:
     environment:
       POSTGRES_DB: presek
       POSTGRES_USER: presek
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     networks:
       - presek-net
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     networks:
       - presek-net
 
@@ -23,8 +24,8 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD:-password}@db:5432/presek
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD}@db:5432/presek
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - db
       - redis
@@ -37,8 +38,8 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD:-password}@db:5432/presek
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://presek:${DATABASE_PASSWORD}@db:5432/presek
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - db
       - redis

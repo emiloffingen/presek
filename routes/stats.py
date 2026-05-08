@@ -421,6 +421,36 @@ async def unsubscribe_newsletter(email: str):
         return HTMLResponse(content="<h1>Грешка при одјавување.</h1>", status_code=500)
     return HTMLResponse(content="<h1>Успешно се одјавивте од билтенот на Пресек.</h1>")
 
+async def _fetch_stats_parallel():
+    """Fetch independent database queries in parallel for better performance."""
+    # Queries that don't depend on each other can run concurrently
+    coroutines = [
+        # Basic stats
+        db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"),
+        db.async_execute_one("SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"),
+        db.async_execute_one("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"),
+        db.async_execute_one("SELECT COUNT(*) FROM articles"),
+        db.async_execute_one(f"SELECT COUNT(DISTINCT source) AS n FROM articles"),
+        
+        # Profile stats
+        db.async_execute_one("""SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, 
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, 
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, 
+           COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources FROM synced_reader_profiles"""),
+        
+        # Delivery stats
+        db.async_execute_one("""SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, 
+           COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, 
+           COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts 
+           FROM synced_delivery_subscriptions"""),
+        
+        # Tracking stats
+        db.async_execute_one("SELECT COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '7 days'"),
+    ]
+    
+    return await asyncio.gather(*coroutines, return_exceptions=True)
+
+
 @router.get("/stats/full")
 async def get_stats_full(request: Request):
     if not _source_admin_authorized(request): raise HTTPException(status_code=403, detail="Забрането")
@@ -435,29 +465,87 @@ async def get_stats_full(request: Request):
         log.warning(f"Redis lock check failed for stats: {e}")
 
     try:
-        last_24h = (await db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"))["count"] or 0
-        db_size_res = await db.async_execute_one("SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb")
-        db_size = float(db_size_res["mb"]) if db_size_res else 0.0
-        dates = await db.async_execute_one("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles")
+        # Fetch independent queries in parallel
+        results = await _fetch_stats_parallel()
         
-        profile_stats = await db.async_execute_one("SELECT COUNT(*) AS synced_profiles, COUNT(*) FILTER (WHERE updated_at >= NOW() - INTERVAL '7 days') AS active_profiles_7d, COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'recentClusters', '[]'::jsonb)) > 0) AS profiles_with_recent_reads, COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) > 0) AS profiles_following_topics, COUNT(*) FILTER (WHERE jsonb_array_length(COALESCE(profile_data->'followedSources', '[]'::jsonb)) > 0) AS profiles_following_sources FROM synced_reader_profiles") or {}
-        delivery_stats = await db.async_execute_one("SELECT COUNT(*) FILTER (WHERE is_active = TRUE) AS delivery_active, COUNT(*) FILTER (WHERE COALESCE(target, '') != '') AS delivery_targets, COUNT(*) FILTER (WHERE morning_briefing = TRUE) AS morning_briefings, COUNT(*) FILTER (WHERE weekly_digest = TRUE) AS weekly_digests, COUNT(*) FILTER (WHERE breaking_topics = TRUE) AS breaking_topic_alerts, COUNT(*) FILTER (WHERE breaking_sources = TRUE) AS breaking_source_alerts FROM synced_delivery_subscriptions") or {}
-        tracking_stats = await db.async_execute_one("SELECT COUNT(*) FILTER (WHERE event_type = 'send') AS sends_7d, COUNT(*) FILTER (WHERE event_type = 'open') AS opens_7d, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '7 days'") or {}
-
+        # Assign results with error handling
+        last_24h = (results[0] or {}).get("count") if results and len(results) > 0 and isinstance(results[0], dict) else 0
+        db_size_res = results[1] if len(results) > 1 else {}
+        db_size = float(db_size_res.get("mb")) if db_size_res else 0.0
+        dates = results[2] if len(results) > 2 else {}
+        total_articles_row = results[3] if len(results) > 3 else {}
+        total_articles = total_articles_row.get("count") if isinstance(total_articles_row, dict) else 0
+        total_feeds_row = results[4] if len(results) > 4 else {}
+        total_feeds = total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
+        profile_stats = results[5] if len(results) > 5 else {}
+        delivery_stats = results[6] if len(results) > 6 else {}
+        tracking_stats = results[7] if len(results) > 7 else {}
+        
+        # Log any errors from parallel execution
+        for i, r in enumerate(results):
+            if isinstance(r, Exception):
+                log.error(f"Parallel stats query {i} failed: {r}")
+        
+        # Sequential queries that depend on results or are complex
         from .common import build_intelligence_summary_payload
+        intelligence = await build_intelligence_summary_payload(last_24h or 0)
+        
+        # These aggregation queries can also run in parallel with each other
+        by_source, by_category_raw, velocity, speed_leaderboard = await asyncio.gather(
+            db.async_execute(f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"),
+            db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"),
+            db.async_execute(f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"),
+            db.async_execute(f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"),
+            return_exceptions=True
+        )
+        
+        # Editor analytics queries - run in parallel
+        topics_followed, sources_followed, delivery_kind_stats, surface_stats_30d, suggestion_kind_stats, surface_stats_7d = await asyncio.gather(
+            db.async_execute("SELECT value AS topic, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"),
+            db.async_execute("SELECT value AS source, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"),
+            db.async_execute("SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"),
+            db.async_execute("""SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
+               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, 
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, 
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows 
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"""),
+            db.async_execute("""SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, 
+               COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals 
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"""),
+            db.async_execute("""SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, 
+               COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, 
+               COUNT(*) FILTER (WHERE event_type = 'dismiss' AND created_at >= NOW() - INTERVAL '7 days') AS current_dismissals 
+               FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY surface"""),
+            return_exceptions=True
+        )
+        
+        # Handle errors from aggregation queries
+        def safe_result(r, default=None):
+            return r if not isinstance(r, Exception) else default
+        
         res = {
-            "total_articles": (await db.async_execute_one("SELECT COUNT(*) FROM articles"))["count"] or 0,
-            "last_24h": last_24h,
+            "total_articles": int(total_articles) if total_articles else 0,
+            "last_24h": int(last_24h) if last_24h else 0,
             "db_size_mb": db_size,
-            "total_feeds": (await db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"))["n"] or 0,
-            "intelligence": await build_intelligence_summary_payload(last_24h),
-            "oldest_article": dates["oldest"] if dates else None,
-            "new_article": dates["newest"] if dates else None,
-            "by_source": await db.async_execute(f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"),
-            "by_category": [{"category": r["category"] or "Друго", "n": r["n"]} for r in await db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8")],
-            "velocity": [{"t": r["t"], "n": r["n"]} for r in await db.async_execute(f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t")],
-            "speed_leaderboard": await db.async_execute(f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"),
-            "editor_analytics": build_editor_analytics_payload(profile_stats, delivery_stats, await db.async_execute("SELECT value AS topic, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedTopics', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"), await db.async_execute("SELECT value AS source, COUNT(*) AS followers FROM synced_reader_profiles, jsonb_array_elements_text(COALESCE(profile_data->'followedSources', '[]'::jsonb)) AS value GROUP BY value ORDER BY followers DESC LIMIT 6"), tracking_stats, await db.async_execute("SELECT delivery_kind, COUNT(*) FILTER (WHERE event_type = 'send') AS sends, COUNT(*) FILTER (WHERE event_type = 'open') AS opens, COUNT(*) FILTER (WHERE event_type = 'click') AS clicks FROM delivery_tracking_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY delivery_kind"), await db.async_execute("SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals, COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'topic') AS topic_follows, COUNT(*) FILTER (WHERE event_type = 'follow' AND suggestion_kind = 'source') AS source_follows FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY surface"), await db.async_execute("SELECT suggestion_kind, COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions, COUNT(*) FILTER (WHERE event_type = 'follow') AS follows, COUNT(*) FILTER (WHERE event_type = 'dismiss') AS dismissals FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '30 days' AND COALESCE(suggestion_kind, '') != '' GROUP BY suggestion_kind"), await db.async_execute("SELECT surface, COUNT(*) FILTER (WHERE event_type = 'impression' AND created_at >= NOW() - INTERVAL '7 days') AS current_impressions, COUNT(*) FILTER (WHERE event_type = 'follow' AND created_at >= NOW() - INTERVAL '7 days') AS current_follows, COUNT(*) FILTER (WHERE event_type = 'dismiss' AND created_at >= NOW() - INTERVAL '7 days') AS current_dismissals FROM suggestion_surface_events WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY surface")),
+            "total_feeds": int(total_feeds) if total_feeds else 0,
+            "intelligence": intelligence,
+            "oldest_article": dates.get("oldest") if dates else None,
+            "new_article": dates.get("newest") if dates else None,
+            "by_source": safe_result(by_source, []),
+            "by_category": [{"category": r["category"] or "Друго", "n": r["n"]} for r in safe_result(by_category_raw, [])],
+            "velocity": [{"t": r["t"], "n": r["n"]} for r in safe_result(velocity, [])],
+            "speed_leaderboard": safe_result(speed_leaderboard, []),
+            "editor_analytics": build_editor_analytics_payload(
+                profile_stats, 
+                delivery_stats, 
+                safe_result(topics_followed, []),
+                safe_result(sources_followed, []),
+                tracking_stats,
+                safe_result(delivery_kind_stats, []),
+                safe_result(surface_stats_30d, []),
+                safe_result(suggestion_kind_stats, []),
+                safe_result(surface_stats_7d, [])
+            ),
         }
         set_cache("stats:full", res, ttl=120)
         return res

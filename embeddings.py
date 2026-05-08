@@ -287,3 +287,43 @@ def get_cluster_embedding(cluster_id: str) -> list[float] | None:
     except Exception as e:
         log.warning(f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}")
         return None
+
+
+# =============================================================================
+# Async Embedding Generation
+# =============================================================================
+# These async functions run embedding generation in a thread pool to avoid
+# blocking the event loop, which is critical for FastAPI performance.
+
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+# Thread pool for CPU-bound embedding work
+_embedding_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embedding")
+
+
+async def generate_embedding_async(text: str) -> list[float] | None:
+    """Async version: Generate a single embedding vector for the given text."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_embedding_executor, generate_embedding, text)
+
+
+async def generate_embeddings_batch_async(texts: list[str]) -> list[list[float] | None]:
+    """Async version: Generate embeddings for a list of texts.
+    
+    Runs the synchronous model.encode() in a thread pool to avoid
+    blocking the event loop. This is critical for API responsiveness.
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_embedding_executor, generate_embeddings_batch, texts)
+
+
+async def get_query_embedding_async(text: str) -> list[float] | None:
+    """Async version of generate_query_embedding with Redis caching."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_embedding_executor, generate_query_embedding, text)
+
+
+def shutdown_embedding_executor():
+    """Clean shutdown of the embedding thread pool."""
+    _embedding_executor.shutdown(wait=True, cancel_futures=False)
