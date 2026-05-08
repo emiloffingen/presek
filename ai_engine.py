@@ -524,4 +524,6 @@ def cleanup_cover_art(valid_ids: set[str]):
             if filename.endswith((".jpg", ".svg")):
                 cid = filename.split(".")[0]
                 if cid not in valid_ids: os.remove(os.path.join(gen_dir, filename))
-    except: pass
+    except (OSError, PermissionError) as e:
+        log.debug(f"[ai_engine] Error cleaning up generated images: {e}")
+        pass

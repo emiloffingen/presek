@@ -90,7 +90,9 @@ def validate_cluster_images_task():
                         if c_resp.status_code == 200:
                             new_img = cand_url
                             break
-                    except: continue
+                    except Exception:
+                        # Network error, try next candidate
+                        continue
                 
                 if new_img:
                     db.execute("UPDATE cluster_metadata SET representative_image = %s WHERE cluster_id = %s", (new_img, cluster['cluster_id']), fetch=False)

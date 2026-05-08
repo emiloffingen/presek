@@ -26,7 +26,7 @@ def clean_summary(text):
             data = json.loads(text)
             if isinstance(data, dict) and 'summary' in data:
                 return data['summary']
-        except:
+        except (json.JSONDecodeError, TypeError):
             # Manual fallback for broken JSON
             m = re.search(r'"summary":\s*"(.*)"', text, re.DOTALL)
             if m:

@@ -290,7 +290,9 @@ async def get_cluster_share_card(cluster_id: str):
                                     break
                             if content:
                                 bg_img = Image.open(BytesIO(content))
-        except: pass
+        except Exception as e:
+            log.debug(f"[system] Error loading background image: {e}")
+            pass
 
         if bg_img:
             # Resize and crop to fill
@@ -312,7 +314,8 @@ async def get_cluster_share_card(cluster_id: str):
             f_title = ImageFont.truetype(font_path_serif, 72)
             f_kicker = ImageFont.truetype(font_path_sans, 32)
             f_footer = ImageFont.truetype(font_path_sans, 24)
-        except:
+        except (IOError, OSError) as e:
+            log.debug(f"[system] Font loading error: {e}, using default")
             f_title = f_kicker = f_footer = ImageFont.load_default()
 
         # 5. Draw Branding (Masthead)

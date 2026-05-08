@@ -1377,7 +1377,7 @@ def _coerce_datetime(value):
             m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
             if m: return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
             return None
-        except:
+        except (re.error, ValueError):
             return None
 
 

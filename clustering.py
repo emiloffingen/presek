@@ -128,8 +128,10 @@ def _temporal_decay(created_at) -> float:
     """Stronger decay for older news to prevent clusters spanning weeks."""
     if not created_at: return 1.0
     if isinstance(created_at, str):
-        try: created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-        except: return 1.0
+        try:
+            created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return 1.0
     
     now = datetime.datetime.now(datetime.timezone.utc)
     if created_at.tzinfo is None: created_at = created_at.replace(tzinfo=datetime.timezone.utc)
@@ -451,7 +453,7 @@ def find_or_create_cluster(conn, title: str, recent_articles: list,
                         source_penalty = 0.4  # Very high penalty for rapid repeats
                     else:
                         source_penalty = 0.85 # Slight penalty for diversity
-                except:
+                except (ValueError, TypeError, AttributeError):
                     source_penalty = 0.6
 
         # 1. Shared Entity Boost

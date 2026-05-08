@@ -466,7 +466,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                                                 WHERE name = %s
                                             """, (entity, entity))
                                             conn.commit()
-                                        except:
+                                        except Exception:
                                             conn.rollback()
                                             raise
                     except Exception as e:

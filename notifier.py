@@ -13,14 +13,16 @@ class BreakingNewsNotifier:
         """Check Redis to see if we already notified this event."""
         try:
             return bool(redis_client.get(f"notifier:sent:{key}"))
-        except:
+        except Exception:
+            log.debug(f"[notifier] Redis error in _is_notified")
             return False
 
     def _mark_as_notified(self, key: str, expiry: int = 86400):
         """Mark event as notified in Redis with 24h expiry."""
         try:
             redis_client.set(f"notifier:sent:{key}", "1", ex=expiry)
-        except:
+        except Exception:
+            log.debug(f"[notifier] Redis error in _mark_as_notified")
             pass
 
     def send_ntfy(self, title, message, cluster_id=None):

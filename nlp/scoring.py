@@ -20,13 +20,13 @@ def _coerce_datetime(value):
         if dt.tzinfo is not None:
             return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         return dt
-    except Exception:
+    except (ValueError, TypeError):
         try:
             import re
             m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
             if m: return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
             return None
-        except:
+        except (ValueError, TypeError, re.error):
             return None
 
 def _cluster_title_overlap(left: str, right: str) -> float:

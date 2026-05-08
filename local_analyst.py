@@ -195,7 +195,7 @@ class LocalAnalyst:
         
         try:
             return json.loads(raw)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             # Fallback if JSON fails (though grammar should prevent this)
             return {
                 "answer": raw if raw else "Нема доволно информации.",

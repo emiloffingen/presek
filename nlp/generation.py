@@ -384,8 +384,11 @@ def compare_cluster_sources(articles):
     common_line = ""
     if common_phrases:
         from nlp.keywords import _format_common_line_from_phrases
-        try: common_line = _format_common_line_from_phrases(common_phrases[:3])
-        except: common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_phrases[:3]) + " како теми во фокус."
+        try:
+            common_line = _format_common_line_from_phrases(common_phrases[:3])
+        except Exception as e:
+            log.debug(f"[nlp.generation] Error formatting common line: {e}")
+            common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_phrases[:3]) + " као теми во фокус."
     elif common_terms:
         common_line = "Повеќето извори се согласуваат околу " + ", ".join(common_terms[:4]) + " како теми во фокус."
 

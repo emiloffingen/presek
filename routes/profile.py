@@ -249,7 +249,7 @@ async def get_personalized_news_sync(request: Request):
     limit = payload.get("limit") or 6
     try:
         limit = min(max(int(limit), 1), 48)
-    except:
+    except (ValueError, TypeError):
         limit = 6
 
     # 2. Semantic Search for similar news in last 72 hours (expanded window)
