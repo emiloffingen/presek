@@ -184,12 +184,56 @@ class NvidiaProvider(AIProvider):
         res = self.call(prompt, system, max_tokens, False)
         if res: yield res
 
+class GeminiProvider(AIProvider):
+    def __init__(self, api_key: str, model: str):
+        self.api_key = api_key
+        self.model = model
+        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    def call(self, prompt: str, system: str, max_tokens: int, json_mode: bool, topic: str = None, task_type: str = "default") -> str | None:
+        if not self.api_key:
+            return None
+
+        # Gemini 1.5+ uses a specific system_instruction field
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "system_instruction": {
+                "parts": [{"text": system}]
+            },
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "temperature": 0.2,
+            }
+        }
+        if json_mode:
+            payload["generationConfig"]["responseMimeType"] = "application/json"
+
+        try:
+            with httpx.Client(timeout=60.0) as client:
+                resp = client.post(self.api_url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            log.warning(f"[ai/gemini] Call failed: {e}")
+        return None
+
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+        res = self.call(prompt, system, max_tokens, False)
+        if res: yield res
+
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         # api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_key=None,
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+    ),
+    "gemini": GeminiProvider(
+        api_key=os.environ.get("GOOGLE_API_KEY", ""),
+        model=os.environ.get("GEMINI_MODEL", "gemini-1.5-flash-latest")
     ),
     "mistral_large": MistralProvider(
         api_key=os.environ.get("MISTRAL_API_KEY", ""),

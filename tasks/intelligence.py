@@ -65,7 +65,7 @@ def summarize_article_task(article_id, final_title=None):
     full_content = row.get("full_content", "")
     topic = row.get("topic")
     
-    context_text = full_content if len(full_content) > len(description) else description
+    context_text = full_content if len(full_content or "") > len(description or "") else description
     
     # AI summarization logic
     prompt_parts = [f"Наслов: {str(title or '').strip()}"]
@@ -186,7 +186,7 @@ def _build_synthesis_source_context(article_rows):
         summary = str(row.get("summary") or "").strip()
         full_content = str(row.get("full_content") or "").strip()
 
-        evidence = full_content if len(full_content) > len(description) else description
+        evidence = full_content if len(full_content or "") > len(description or "") else description
         evidence = evidence[:2200].strip()
         parts = [f"[{idx}] {source}"]
         if category:
@@ -312,7 +312,7 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
     source_context = _build_synthesis_source_context(article_rows)
 
     # In fast mode, we use a much shorter token limit to get a response in seconds
-    max_tokens = 600 if fast_mode else 2800
+    max_tokens = 800 if fast_mode else 3200
     
     # 1. Fetch Historical Context (Cross-Story Memory)
     history_context = ""

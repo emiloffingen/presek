@@ -3,7 +3,7 @@ import secrets
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
 from database import db_manager as db
-from config import PRESEK_ADMIN_TOKEN
+from config import PRESEK_ADMIN_TOKEN, PROVIDER_FALLBACK_ORDER
 from health import get_source_statuses, _probe_database, _probe_redis
 from utils import redis_client
 from version import version_payload
@@ -51,7 +51,7 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "ai": {
             "gemini_usage_today": gemini_usage,
             "gemini_daily_limit": 2000000, # Hand-synced with ai_engine.py for now
-            "current_provider": "gemini"
+            "current_provider": PROVIDER_FALLBACK_ORDER[0] if PROVIDER_FALLBACK_ORDER else "unknown"
         },
         "scrapers": {
             "total_sources": total_sources,

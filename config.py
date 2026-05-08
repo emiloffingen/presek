@@ -9,7 +9,7 @@ except ModuleNotFoundError:  # Optional in pre-provisioned environments.
 # Load environment variables from .env file (only in development)
 # In production, environment variables should be set directly
 if os.environ.get("ENV") != "production":
-    load_dotenv()
+    load_dotenv(override=True)
 
 # Configure logging for config validation
 log = logging.getLogger("presek.config")
@@ -259,9 +259,9 @@ ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "f
 
 # ── AI Routing Configuration ────────────────────────────────────
 # Use Mistral large (free) first, then small (paid), then Local fallback
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "mistral_small", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "mistral_small", "local"]
-PROVIDER_FALLBACK_ORDER = ["mistral_large", "mistral_small", "local"] # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["mistral_large", "gemini", "mistral_small", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["mistral_large", "gemini", "mistral_small", "local"]
+PROVIDER_FALLBACK_ORDER = ["mistral_large", "gemini", "mistral_small", "local"] # default
 
 # ── Clustering Parameters ───────────────────────────────────────
 CLUSTERING_THRESHOLDS = {
