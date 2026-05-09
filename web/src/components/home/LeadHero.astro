@@ -67,6 +67,11 @@ const IconComponent =
                         onload="this.classList.add('is-loaded')"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"
                     />
+                    <div class="lead-media-overlay">
+                        <div class="overlay-content">
+                            <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h2>
+                        </div>
+                    </div>
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card" style="display: none; --placeholder-bg: #1a1a1a;">
                         <div class="design-card-pattern"></div>
                         <div class="design-card-main">
@@ -102,16 +107,16 @@ const IconComponent =
             <span class="lead-edition-note">Консензус помеѓу {leadCluster.articles.length} {leadCluster.articles.length === 1 ? 'редакција' : 'редакции'}</span>
         </div>
         <div class="lead-kicker-v2 mb-4">
-            <span class="kicker">{leadCluster.articles?.[0].source}</span>
-            <div class="flex items-center gap-3">
+            <span class="source-badge">{leadCluster.articles?.[0].source}</span>
+            <div class="flex items-center gap-2">
                 {leadCluster.is_breaking && <span class="significance-badge is-breaking">УДАРНА</span>}
                 {leadSignal && (
-                    <span class="lead-signal-tag">
-                        <TrendingUp size={11} className="text-nyt-accent" />
+                    <span class="lead-status-badge">
+                        <span class="status-dot"></span>
                         <span>{leadSignal.toUpperCase()}</span>
                     </span>
                 )}
-                <span class="time-stamp">{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                <span class="time-stamp-v2">{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
             </div>
         </div>
         <a href={`/cluster/${leadCluster.cluster_id}`} class="no-underline">
@@ -230,6 +235,44 @@ const IconComponent =
 		position: relative;
 		overflow: hidden;
 	}
+
+    .source-badge {
+        background: var(--foreground);
+        color: var(--background);
+        padding: 0.15rem 0.6rem;
+        font-family: var(--font-sans);
+        font-size: 0.65rem;
+        font-weight: 950;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border-radius: 2px;
+    }
+
+    .lead-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 900;
+        color: var(--nyt-accent);
+        letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--nyt-accent);
+        border-radius: 50%;
+    }
+
+    .time-stamp-v2 {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        font-weight: 800;
+        color: var(--muted-foreground);
+        opacity: 0.8;
+    }
 
 	.lead-hero-tint {
 		position: absolute;
@@ -531,12 +574,49 @@ const IconComponent =
 		object-fit: cover;
 		object-position: center;
 		opacity: 0;
-		transition: opacity 0.45s ease-out;
+		transition: opacity 0.45s ease-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 	}
+
+    .lead-media-frame:hover .lead-media-image {
+        transform: scale(1.03);
+    }
 
 	.lead-media-image.is-loaded {
 		opacity: 1;
 	}
+
+    .lead-media-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 30%, transparent 60%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1.5rem;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .lead-media-mobile .lead-media-overlay {
+        opacity: 1;
+    }
+
+    .lead-media-desktop:hover .lead-media-overlay {
+        opacity: 1;
+    }
+
+    .overlay-headline {
+        color: white;
+        font-family: var(--font-serif);
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1.1;
+        margin: 0;
+        text-wrap: balance;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
 
 	.lead-media-placeholder {
 		width: 100%;
@@ -773,10 +853,15 @@ const IconComponent =
 		}
 
 		.lead-media-frame {
-			aspect-ratio: 3 / 2;
+			aspect-ratio: 16 / 10;
 			height: auto;
-            max-height: none;
+            max-height: 45vh;
 		}
+
+        .overlay-headline {
+            font-size: 1.35rem;
+            max-width: 15ch;
+        }
 
 		.lead-hero-filtered .lead-media-frame {
 			aspect-ratio: 16 / 9;
