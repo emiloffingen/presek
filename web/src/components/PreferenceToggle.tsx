@@ -40,18 +40,20 @@ export default function PreferenceToggle({
       sendSuggestionEvents([{ surface: analyticsSurface, eventType: 'follow', suggestionKind: kind, value }]);
     }
 
-    if (feedbackTimerRef.current) {
+    if (typeof window !== 'undefined' && feedbackTimerRef.current) {
       window.clearTimeout(feedbackTimerRef.current);
     }
 
     setFeedback(nextFollowing ? 'Зачувано' : 'Отстрането');
-    feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
+    if (typeof window !== 'undefined') {
+      feedbackTimerRef.current = window.setTimeout(() => setFeedback(''), 1800);
+    }
     onChanged?.(nextFollowing);
   };
 
   useEffect(() => {
     return () => {
-      if (feedbackTimerRef.current) {
+      if (typeof window !== 'undefined' && feedbackTimerRef.current) {
         window.clearTimeout(feedbackTimerRef.current);
       }
     };

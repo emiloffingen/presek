@@ -36,7 +36,7 @@ export default function AdminDashboard() {
         const payload = await res.json();
         setData(payload);
         setIsAuth(true);
-        sessionStorage.setItem('presek_admin_token', activeToken);
+        if (typeof window !== 'undefined') sessionStorage.setItem('presek_admin_token', activeToken);
       } else {
         setError('Пристапот е одбиен. Невалиден токен.');
         setIsAuth(false);
@@ -64,6 +64,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const stored = sessionStorage.getItem('presek_admin_token') || '';
     if (stored) {
       setToken(stored);

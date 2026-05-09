@@ -68,6 +68,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   }, [initialQuery]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const saved = localStorage.getItem('presek_recent_searches');
     if (saved) {
       try {
@@ -92,6 +94,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
     if (!isOpen) {
       document.body.style.overflow = 'unset';
       setActiveIndex(-1);
@@ -215,7 +219,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
   }, [query, isOpen, timespan]);
 
@@ -229,7 +233,9 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
     const newRecent = [cleanQuery, ...recentSearches.filter((s) => s !== cleanQuery)].slice(0, 5);
     setRecentSearches(newRecent);
-    localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
+    }
   };
 
   const navigateToQuery = (searchQuery: string) => {
@@ -249,7 +255,9 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem('presek_recent_searches');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('presek_recent_searches');
+    }
   };
 
   const onSubmit = (e: React.FormEvent) => {

@@ -156,10 +156,10 @@ export default function BriefingDeliveryIsland({
     try {
       await navigator.clipboard.writeText(`${dateLabel}\n\n${digest}\n\nhttps://presek.mk/briefing`);
       setCopyState('done');
-      window.setTimeout(() => setCopyState('idle'), 1800);
+      if (typeof window !== 'undefined') window.setTimeout(() => setCopyState('idle'), 1800);
     } catch {
       setCopyState('error');
-      window.setTimeout(() => setCopyState('idle'), 2200);
+      if (typeof window !== 'undefined') window.setTimeout(() => setCopyState('idle'), 2200);
     }
   };
 

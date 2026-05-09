@@ -2,15 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
 export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     // Sync with actual class if it changed from OS or other script
     const isDark = document.documentElement.classList.contains('dark');
-    setTheme(isDark ? 'dark' : 'light');
+    const initialTheme = isDark ? 'dark' : 'light';
+    setTheme(initialTheme);
+    
+    // Also check localStorage for user preference
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme && savedTheme !== initialTheme) {
+      setTheme(savedTheme);
+    }
   }, []);
 
   const toggleTheme = () => {
+    if (typeof document === 'undefined') return;
     setTheme(prev => {
       const next = prev === 'light' ? 'dark' : 'light';
       const root = document.documentElement;
@@ -31,7 +40,7 @@ export default function ThemeIsland({ fixed = false }: { fixed?: boolean }) {
     });
   };
 
-  if (theme === null) return <div className="p-2 w-9 h-9" />;
+
 
   const baseClasses = "flex items-center justify-center transition-all duration-300 group";
   const fixedClasses = "fixed top-4 right-4 z-[200] h-10 w-10 rounded-full border border-border bg-secondary shadow-sm hover:scale-110";

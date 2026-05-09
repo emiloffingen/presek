@@ -302,8 +302,16 @@ function getRelativeTimeStr(dateStr?: string) {
 
     /* ── Discovery Navigation ────────────────────────── */
     .discovery-nav-v2 { border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
-    .nav-rail-wrapper { position: relative; overflow: hidden; }
-    .nav-rail-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; display: flex; align-items: center; }
+    .nav-rail-wrapper { position: relative; }
+    .nav-rail-scroll { 
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+        display: flex; 
+        align-items: center;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .nav-rail-scroll::-webkit-scrollbar { display: none; }
     .nav-rail-content { display: flex; align-items: center; min-width: max-content; padding: 0.5rem 0; }
     
     .nav-fade {
@@ -313,7 +321,7 @@ function getRelativeTimeStr(dateStr?: string) {
     .nav-fade.left { left: 0; background: linear-gradient(to right, var(--background), transparent); }
     .nav-fade.right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
-    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent); padding: 0 1.2rem; display: flex; align-items: center; height: 100%; }
+    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent); padding: 0 1.2rem; display: flex; align-items: center; height: 100%; flex-shrink: 0; }
     .nav-rail-group:last-child { border-right: none; }
     
     .group-links { display: flex; align-items: center; gap: 0.35rem; }

@@ -102,7 +102,9 @@ let syncTimeout: any = null;
 $profile.subscribe((profile) => {
     if (typeof window === 'undefined') return;
     
-    if (syncTimeout) clearTimeout(syncTimeout);
+    if (syncTimeout) {
+      if (typeof clearTimeout === 'function') clearTimeout(syncTimeout);
+    }
     syncTimeout = setTimeout(async () => {
         const token = $syncToken.get();
         if (!token) return;

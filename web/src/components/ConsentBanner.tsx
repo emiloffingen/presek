@@ -51,14 +51,16 @@ export const ConsentBanner: React.FC = () => {
     }
 
     // Check for dismissed cooldown
-    const raw = localStorage.getItem(CONSENT_KEY);
-    if (raw && raw !== 'accepted') {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed.status === 'dismissed' && Date.now() - parsed.ts < DISMISS_COOLDOWN_MS) {
-          return;
-        }
-      } catch {}
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem(CONSENT_KEY);
+      if (raw && raw !== 'accepted') {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.status === 'dismissed' && Date.now() - parsed.ts < DISMISS_COOLDOWN_MS) {
+            return;
+          }
+        } catch {}
+      }
     }
 
     // Show after a short delay to not block initial render.
@@ -77,6 +79,7 @@ export const ConsentBanner: React.FC = () => {
   };
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     if (visible) {
       document.body.classList.add('has-consent-banner');
     } else {
