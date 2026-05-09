@@ -59,11 +59,14 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
 
 const formattedDisplayDate = new Date(archive.date).toLocaleDateString('mk-MK', { day: 'numeric', month: 'long', year: 'numeric' });
 
-const briefingItems = briefingData.briefing ? briefingData.briefing.split(' • ') : [];
+// More robust splitting to handle different bullet characters or spacing
+const briefingItems = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
 
 function formatBriefingItem(item: string) {
-    // Replace **text** with <strong>text</strong>
+    if (!item) return '';
+    // 1. First, handle markdown bolding
     const bolded = item.replace(/\*\*(.*?)\*\*/g, '<strong class="font-black text-foreground not-italic">$1</strong>');
+    // 2. Sanitize resulting HTML (allows strong, b, etc.)
     return sanitizeHtml(bolded);
 }
 ---

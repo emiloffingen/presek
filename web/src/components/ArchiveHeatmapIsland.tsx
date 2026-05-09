@@ -45,15 +45,29 @@ export default function ArchiveHeatmapIsland({ selectedDate }: Props) {
   const maxTotal = data.length > 0 ? Math.max(...data.map(d => d.total_clusters), 1) : 1;
   const maxBreaking = data.length > 0 ? Math.max(...data.map(d => d.breaking_clusters), 1) : 1;
 
-  // Fill in missing days to make a complete 180-day grid
+  // Fill in missing days to make a complete grid (last 180 days max, but trimmed to data start)
   const today = new Date();
-  const grid = [];
+  const rawGrid = [];
   for (let i = 179; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
     const existing = data.find(x => x.day === dateStr);
-    grid.push(existing || { day: dateStr, total_clusters: 0, breaking_clusters: 0 });
+    rawGrid.push(existing || { day: dateStr, total_clusters: 0, breaking_clusters: 0 });
+  }
+
+  // Find the first day with any data and trim the grid to start from there (but at least last 60 days)
+  const firstDataIdx = rawGrid.findIndex(d => d.total_clusters > 0);
+  const minDays = 60;
+  const startIdx = firstDataIdx === -1 ? (rawGrid.length - minDays) : Math.min(firstDataIdx, rawGrid.length - minDays);
+  const grid = rawGrid.slice(startIdx);
+
+  if (data.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-24 border border-dashed border-border rounded-lg bg-secondary/5">
+        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">Нема податоци за овој период</span>
+      </div>
+    );
   }
 
   const getIntensityClass = (count: number, max: number, isBreaking: boolean) => {

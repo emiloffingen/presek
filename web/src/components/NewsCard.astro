@@ -217,27 +217,29 @@ function getTimeStr(dateStr: string) {
                         </div>
 					</div>
 				) : (
-					<img
-						src={thumbSrc}
-						alt={displayTitle}
-						width="700"
-						height="500"
-						class="article-image"
-						{...(isLead ? { 'transition:name': `cluster-image-${cluster.cluster_id}` } : {})}
-						loading={isLead ? "eager" : "lazy"}
-						decoding="async"
-						fetchpriority={isLead ? "high" : "auto"}
-						onload="this.classList.add('is-loaded')"
-						onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-					/>
-					<div class="article-image-placeholder design-card is-error-fallback" style="display: none; --placeholder-bg: #1a1a1a;">
-                        <div class="design-card-pattern"></div>
-                        <div class="design-card-main">
-                            <h3 class:list={[{ "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
-                        </div>
-                        <div class="design-card-footer">
-						    <p class="article-image-placeholder-source">{main.source}</p>
-                        </div>
+					<div class="relative w-full h-full">
+						<img
+							src={thumbSrc}
+							alt={displayTitle}
+							width="700"
+							height="500"
+							class="article-image"
+							{...(isLead ? { 'transition:name': `cluster-image-${cluster.cluster_id}` } : {})}
+							loading={isLead ? "eager" : "lazy"}
+							decoding="async"
+							fetchpriority={isLead ? "high" : "auto"}
+							onload="this.classList.add('is-loaded')"
+							onerror="this.style.opacity='0'; this.nextElementSibling.style.display='grid';"
+						/>
+						<div class="article-image-placeholder design-card is-error-fallback absolute inset-0" style="display: none; --placeholder-bg: #111827;">
+							<div class="design-card-pattern"></div>
+							<div class="design-card-main p-4">
+								<h3 class:list={["text-xs leading-tight text-center line-clamp-3", { "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
+							</div>
+							<div class="design-card-footer">
+								<p class="article-image-placeholder-source text-[8px] opacity-60 uppercase font-black tracking-widest">{main.source}</p>
+							</div>
+						</div>
 					</div>
 				)}
 			</a>
