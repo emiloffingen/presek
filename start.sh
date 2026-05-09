@@ -78,11 +78,11 @@ bootstrap_runtime() {
 
   info "Bootstrapping runtime dependencies..."
 
-  require_cmd "$ROOT_PYTHON"
+  require_cmd uv
 
   if [ ! -d "$VENV" ]; then
     info "Creating Python virtualenv at $VENV"
-    "$ROOT_PYTHON" -m venv "$VENV"
+    uv venv "$VENV" --python "$ROOT_PYTHON"
   fi
 
   if [ ! -x "$PYTHON" ]; then
@@ -91,8 +91,7 @@ bootstrap_runtime() {
 
   if [ "$FORCE_PY_DEPS" = "1" ] || [ ! -x "$CELERY" ] || [ ! -x "$UVICORN" ]; then
     info "Installing Python dependencies"
-    "$PYTHON" -m pip install --no-cache-dir --upgrade pip
-    "$PYTHON" -m pip install --no-cache-dir -r "$APP_DIR/requirements.txt"
+    UV_PROJECT_ENVIRONMENT="$VENV" uv sync
   fi
 
   if [ "$ENABLE_ASTRO" = "1" ]; then

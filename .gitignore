@@ -25,7 +25,6 @@ wheels/
 # PyInstaller
 *.manifest
 *.spec
-.
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -110,6 +109,10 @@ models/
 list_gemini_models.py
 test_gemini_key.py
 
-# Keys
+# Keys and certificates
 private_key.pem
 public_key.pem
+*.pem
+*.key
+*.crt
+*.cert

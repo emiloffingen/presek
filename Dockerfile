@@ -10,33 +10,42 @@ COPY web/ .
 RUN npm run build
 
 # --- Stage 2: Build Python environment ---
-FROM python:3.11-slim AS python-builder
+FROM python:3.12-slim AS python-builder
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ make cmake git python3-dev libpq-dev && \
     rm -rf /var/lib/apt/lists/*
-COPY requirements.txt .
-# Install pip and use only-binary for heavy ML packages
-RUN pip install --no-cache-dir --user --upgrade pip && \
-    pip install --no-cache-dir --user -r requirements.txt
+COPY pyproject.toml uv.lock ./
+# Install dependencies using uv into a .venv
+RUN uv sync --frozen --no-dev --no-install-project
 
 
 # --- Stage 3: Final Production Image ---
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN groupadd -r presek && useradd -r -g presek presek
+
 # Copy installed python dependencies
-COPY --from=python-builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=python-builder /app/.venv /app/.venv
+ENV PATH=/app/.venv/bin:$PATH
 
 # Copy application code
 COPY . .
 
 # Copy built frontend assets
 COPY --from=node-builder /app/web/dist ./static/dist
+
+# Set ownership for all files
+RUN chown -R presek:presek /app
+
+# Switch to non-root user
+USER presek
 
 # Expose ports
 EXPOSE 8000

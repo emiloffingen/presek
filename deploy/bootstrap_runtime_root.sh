@@ -46,9 +46,9 @@ ensure_shared_env() {
 }
 
 ensure_runtime_venv() {
-  local requirements_hash versioned_venv
-  requirements_hash="$(sha256sum "$SOURCE_ROOT/requirements.txt" | awk '{print $1}')"
-  versioned_venv="$PYTHON_ENVS_DIR/$requirements_hash"
+  local lock_hash versioned_venv
+  lock_hash="$(sha256sum "$SOURCE_ROOT/uv.lock" | awk '{print $1}')"
+  versioned_venv="$PYTHON_ENVS_DIR/$lock_hash"
 
   if [ -d "$VENV_DIR" ] && [ ! -L "$VENV_DIR" ] && [ "$VENV_DIR" != "$versioned_venv" ]; then
     local legacy_venv="$PYTHON_ENVS_DIR/legacy-bootstrap"
@@ -60,9 +60,8 @@ ensure_runtime_venv() {
   else
     rm -rf "$versioned_venv"
     info "Creating runtime venv at $versioned_venv"
-    "$PYTHON_BIN" -m venv "$versioned_venv"
-    "$versioned_venv/bin/python3" -m pip install --no-cache-dir --upgrade pip
-    "$versioned_venv/bin/python3" -m pip install --no-cache-dir -r "$SOURCE_ROOT/requirements.txt"
+    uv venv "$versioned_venv" --python "$PYTHON_BIN"
+    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$SOURCE_ROOT"
     ok "Runtime venv installed"
   fi
 
@@ -107,6 +106,7 @@ ensure_shared_web_deps() {
 
 main() {
   need_cmd "$PYTHON_BIN"
+  need_cmd uv
   need_cmd npm
 
   ensure_layout
