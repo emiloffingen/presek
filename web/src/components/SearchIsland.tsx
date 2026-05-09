@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper } from 'lucide-react';
+import { Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper, Mic, Filter, Clock } from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
 type Suggestion = {
@@ -12,6 +12,7 @@ type Suggestion = {
   description?: string;
   sourceCount?: number;
   matchLabel?: string;
+  created_at?: string;
 };
 
 type EntityResult = {
@@ -29,23 +30,37 @@ type TrendingItem = {
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// Available categories for filtering
+const CATEGORIES = [
+  { id: 'all', label: 'СИТЕ', color: 'text-nyt-accent' },
+  { id: 'Македонија', label: 'МАКЕДОНИЈА', color: 'text-nyt-red' },
+  { id: 'Политика', label: 'ПОЛИТИКА', color: 'text-blue-600' },
+  { id: 'Економија', label: 'ЕКОНОМИЈА', color: 'text-emerald-600' },
+  { id: 'Спорт', label: 'СПОРТ', color: 'text-orange-500' },
+  { id: 'Култура', label: 'КУЛТУРА', color: 'text-purple-600' },
+  { id: 'Технологија', label: 'ТЕХНОЛОГИЈА', color: 'text-cyan-600' },
+];
+
 export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(initialQuery || '');
   const [timespan, setTimespan] = useState('all');
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [recentSearches, setRecentSearches] = useState<{query: string; timestamp: number}[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isListening, setIsListening] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = [
-    "Пребарувај низ архивата...",
-    "Кој е главниот конфликт?",
-    "Што велат бројките?",
-    "Какви се реакциите?",
+    "Истражи ја медиумската архива...",
+    "Анализирај ги противречните ставови...",
+    "Деконструирај ги фактите и бројките...",
+    "Мапирај ги реакциите и последиците...",
     "Што се случува во Скопје?"
   ];
 
@@ -67,13 +82,19 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     }
   }, [initialQuery]);
 
+  // Load recent searches with timestamps
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const saved = localStorage.getItem('presek_recent_searches');
     if (saved) {
       try {
-        setRecentSearches(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Handle legacy format (array of strings) vs new format (array of objects)
+        const loaded = Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string'
+          ? parsed.map((q: string) => ({ query: q, timestamp: 0 }))
+          : parsed;
+        setRecentSearches(loaded || []);
       } catch {
         setRecentSearches([]);
       }
@@ -91,6 +112,35 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Voice search support
+  const startVoiceSearch = useCallback(() => {
+    if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      warn('Гласово пребарување не е поддржано во овој прелистувач');
+      return;
+    }
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'mk-MK';
+    
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0]?.[0]?.transcript;
+      if (transcript && typeof transcript === 'string') {
+        setQuery(transcript);
+        setIsListening(false);
+      }
+    };
+    
+    recognition.start();
+  }, []);
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,6 +151,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       setActiveIndex(-1);
       setSuggestions([]);
       setError(null);
+      setShowFilters(false);
       if (lastFocusedRef.current) {
         lastFocusedRef.current.focus();
       }
@@ -124,6 +175,29 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       clearTimeout(timer);
     };
   }, [isOpen]);
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    if (typeof document === 'undefined' || !showFilters) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.filter-dropdown') || target.closest('button[aria-label*="категори"]')) return;
+      setShowFilters(false);
+    };
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowFilters(false);
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showFilters]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -169,7 +243,8 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       try {
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`;
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
-        const res = await fetch(url + timespanPart);
+        const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
+        const res = await fetch(url + timespanPart + categoryPart);
         if (!res.ok) {
           throw new Error('Системот е привремено зафатен. Ве молиме обидете се повторно.');
         }
@@ -231,10 +306,22 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return;
 
-    const newRecent = [cleanQuery, ...recentSearches.filter((s) => s !== cleanQuery)].slice(0, 5);
+    const newRecent = [
+      { query: cleanQuery, timestamp: Date.now() },
+      ...recentSearches
+        .filter((s) => s.query !== cleanQuery)
+        .slice(0, 4)
+    ];
     setRecentSearches(newRecent);
     if (typeof window !== 'undefined') {
       localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
+    }
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('presek_recent_searches');
     }
   };
 
@@ -244,20 +331,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     persistRecentSearch(cleanQuery);
     closeSearch();
     const tsPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
-    navigate(`/?q=${encodeURIComponent(cleanQuery)}${tsPart}`);
+    const catPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
+    navigate(`/?q=${encodeURIComponent(cleanQuery)}${tsPart}${catPart}`);
   };
 
   const navigateToCluster = (clusterId: string) => {
     if (!clusterId) return;
     closeSearch();
     navigate(`/cluster/${clusterId}`);
-  };
-
-  const clearRecentSearches = () => {
-    setRecentSearches([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('presek_recent_searches');
-    }
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -306,15 +387,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
   const showRecent = query.trim().length < 2 && recentSearches.length > 0;
   const showSuggestions = query.trim().length >= 2;
-
-  const SUGGESTED_CATEGORIES = [
-    { name: 'Економија', color: 'text-emerald-600' },
-    { name: 'Политика', color: 'text-blue-600' },
-    { name: 'Спорт', color: 'text-orange-500' },
-    { name: 'Култура', color: 'text-purple-600' },
-    { name: 'Технологија', color: 'text-cyan-600' },
-    { name: 'Македонија', color: 'text-nyt-red' },
-  ];
+  const showEmptyState = !isLoading && query.trim().length >= 2 && suggestions.length === 0 && !entityResult;
 
   const renderHighlightedText = (text: string, searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
@@ -431,7 +504,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={placeholders[placeholderIdx]}
-                  className="w-full bg-transparent py-3 md:py-4 text-2xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all pr-24 md:pr-40"
+                  className="w-full bg-transparent py-3 md:py-4 text-2xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all pr-24 md:pr-48"
                   aria-label="Пребарај вести"
                   role="combobox"
                   autoComplete="off"
@@ -441,17 +514,34 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 />
                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-border group-focus-within:bg-nyt-accent transition-colors"></div>
                 
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-3">
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
                   {query && (
                     <button
                       type="button"
                       onClick={() => { setQuery(''); inputRef.current?.focus(); }}
                       className="p-1.5 md:p-2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Исчисти пребарување"
                     >
                       <X size={20} className="md:hidden" />
-                      <X size={28} className="hidden md:block" />
+                      <X size={24} className="hidden md:block" />
                     </button>
                   )}
+                  
+                  {/* Voice Search Button */}
+                  <button
+                    type="button"
+                    onClick={startVoiceSearch}
+                    className={`p-1.5 md:p-2 transition-colors ${
+                      isListening 
+                        ? 'text-nyt-accent animate-pulse' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    aria-label="Гласово пребарување"
+                  >
+                    <Mic size={20} className="md:hidden" />
+                    <Mic size={24} className="hidden md:block" />
+                  </button>
+                  
                   <button
                     type="submit"
                     className="bg-nyt-accent text-white px-4 md:px-10 py-2.5 md:py-3.5 rounded font-black text-[10px] md:text-xs uppercase tracking-[0.15em] md:tracking-[0.2em] shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] active:scale-95 transition-all"
@@ -466,17 +556,51 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                     <Zap size={12} fill="currentColor" /> КОНСОЛИДИРАНИ НАРАТИВИ ВО РЕАЛНО ВРЕМЕ
                 </div>
 
-                <div className="flex items-center gap-1.5 p-1 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm">
+                <div className="flex items-center gap-3">
+                  {/* Category Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-background/80 border border-border rounded-lg text-[10px] font-black uppercase tracking-wider hover:border-nyt-accent/30 transition-all"
+                    >
+                      <Filter size={14} />
+                      {CATEGORIES.find(c => c.id === categoryFilter)?.label || 'СИТЕ'}
+                    </button>
+                    {showFilters && (
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200 filter-dropdown">
+                        {CATEGORIES.map(cat => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setCategoryFilter(cat.id);
+                              setShowFilters(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-[11px] font-black uppercase tracking-wider hover:bg-secondary transition-all flex items-center gap-2 ${
+                              categoryFilter === cat.id ? 'text-nyt-accent bg-secondary/30' : 'text-muted-foreground'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${cat.color.replace('text-', 'bg-')}`}></span>
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timespan Filter */}
+                  <div className="flex items-center gap-1.5 p-1 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm">
                    {[
-                     { id: '24h', label: '24 ЧАСА' },
-                     { id: '7d', label: '7 ДЕНА' },
-                     { id: 'all', label: 'АРХИВА' }
+                     { id: '24h', label: '24Ч' },
+                     { id: '7d', label: '7Д' },
+                     { id: 'all', label: 'СИТЕ' }
                    ].map(ts => (
                      <button
                         key={ts.id}
                         type="button"
                         onClick={() => setTimespan(ts.id)}
-                        className={`px-4 py-2 rounded-md font-sans text-[10px] font-black tracking-widest transition-all ${
+                        className={`px-3 py-1.5 rounded-md font-sans text-[9px] font-black tracking-widest transition-all ${
                             timespan === ts.id 
                             ? 'bg-nyt-accent text-white shadow-md' 
                             : 'text-muted-foreground hover:text-foreground'
@@ -485,6 +609,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                        {ts.label}
                      </button>
                    ))}
+                  </div>
                 </div>
               </div>
             </form>
@@ -502,6 +627,14 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground animate-pulse">
                         <LoaderCircle size={32} className="animate-spin mb-4 text-nyt-accent" />
                         <span className="font-sans text-xs font-black uppercase tracking-widest">Пребарувам релевантни вести...</span>
+                      </div>
+                    )}
+
+                    {showEmptyState && (
+                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/60">
+                        <Search size={48} className="mb-4 opacity-30" />
+                        <span className="font-serif text-2xl font-black mb-2">Нема резултати</span>
+                        <span className="font-sans text-xs uppercase tracking-widest">Пробајте со друга пребарувачка фраза</span>
                       </div>
                     )}
 
@@ -598,20 +731,38 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 )}
 
                 {showRecent && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {recentSearches.map((item) => (
-                      <a
-                        key={item}
-                        href={`/?q=${encodeURIComponent(item)}`}
-                        onClick={(e) => { e.preventDefault(); navigateToQuery(item); }}
-                        className="flex items-center justify-between p-5 bg-secondary/30 hover:bg-secondary/60 rounded-xl border border-border/50 transition-all group no-underline"
-                      >
-                        <span className="font-serif font-black text-xl text-foreground group-hover:text-nyt-accent transition-colors">
-                            {item}
-                        </span>
-                        <ArrowUpRight size={18} className="text-muted-foreground group-hover:text-nyt-accent" />
-                      </a>
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {recentSearches
+                      .sort((a, b) => b.timestamp - a.timestamp)
+                      .map((item) => {
+                        const date = new Date(item.timestamp);
+                        const formattedDate = date.toLocaleDateString('mk-MK', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                        return (
+                          <a
+                            key={`${item.query}-${item.timestamp}`}
+                            href={`/?q=${encodeURIComponent(item.query)}`}
+                            onClick={(e) => { e.preventDefault(); navigateToQuery(item.query); }}
+                            className="flex items-center justify-between p-4 bg-secondary/30 hover:bg-secondary/60 rounded-xl border border-border/50 transition-all group no-underline"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-serif font-black text-lg text-foreground group-hover:text-nyt-accent transition-colors block truncate">
+                                {item.query}
+                              </span>
+                              {item.timestamp > 0 && (
+                                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mt-1 block">
+                                  {formattedDate}
+                                </span>
+                              )}
+                            </div>
+                            <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent shrink-0" />
+                          </a>
+                        );
+                      })}
                   </div>
                 )}
               </div>

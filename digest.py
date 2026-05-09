@@ -241,7 +241,7 @@ def render_html(stories_by_cat: dict[str, list[dict]],
               ПРЕСЕК
             </h1>
             <p style="margin:10px 0 0;font-family:sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
-              Повеќе од вести
+              Медиумска транспарентност и јавен увид
             </p>
           </td>
         </tr>

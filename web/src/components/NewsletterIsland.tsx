@@ -55,11 +55,11 @@ export default function NewsletterIsland() {
       <div className="relative z-10">
         <header className="mb-5 pb-4 border-b border-border/40">
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent block mb-2">ДНЕВЕН ПРЕГЛЕД</span>
-          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Вестите што вредат, директно до вас.</h3>
+          <h3 className="font-serif text-xl font-black leading-tight tracking-tight">Уреден преглед на денот низ објективот на плурализмот.</h3>
         </header>
 
         <p className="font-serif italic text-sm text-secondary-foreground leading-relaxed mb-6">
-          Секое утро добивајте уреден преглед на најважните настани што ја обликуваат Македонија.
+          Секое утро добивајте дистилиран сублимат на настаните што ја обликуваат јавната дебата.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
