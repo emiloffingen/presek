@@ -50,7 +50,7 @@ SQL_ARTICLE_SEARCH = """
         END AS match_score
     FROM articles a
     CROSS JOIN query
-    WHERE (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < 0.6)
+    WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < 0.6)
     ORDER BY (match_score * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) DESC
     LIMIT %s
 """
@@ -313,8 +313,17 @@ class DatabaseManager:
         sql = _build_hybrid_search_sql(time_filter, sort_by)
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
-    async def async_search_articles(self, query: str, limit: int = 50):
-        return await self.async_execute(SQL_ARTICLE_SEARCH, (query, query, None, limit))
+    async def async_search_articles(self, query: str, limit: int = 50, timespan: str | None = None):
+        time_filter = ""
+        if timespan == "24h":
+            time_filter = "a.created_at >= NOW() - INTERVAL '24 hours' AND "
+        elif timespan == "7d":
+            time_filter = "a.created_at >= NOW() - INTERVAL '7 days' AND "
+        elif timespan == "30d":
+            time_filter = "a.created_at >= NOW() - INTERVAL '30 days' AND "
+            
+        sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
+        return await self.async_execute(sql, (query, query, None, limit))
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str]):
         if not cluster_ids: return []

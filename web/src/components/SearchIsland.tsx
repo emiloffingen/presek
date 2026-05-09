@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { Search, X, Zap, ArrowUpRight, LoaderCircle } from 'lucide-react';
+import { Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper } from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
 type Suggestion = {
@@ -364,15 +364,18 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 text-foreground hover:text-muted-foreground transition-colors group"
+        className="flex items-center gap-3 px-3 py-1.5 bg-secondary/50 border border-border/60 hover:border-nyt-accent/30 hover:bg-secondary rounded-md transition-all group w-full text-left"
         aria-label="Пребарај"
       >
-        <Search size={18} />
-        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline relative overflow-hidden h-4">
-            <span key={placeholderIdx} className="animate-in slide-in-from-bottom-2 duration-300 block">
+        <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
+        <div className="flex-1 overflow-hidden h-4">
+            <span key={placeholderIdx} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
-        </span>
+        </div>
+        <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background border border-border rounded text-[8px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+            <span className="text-[10px]">⌘</span>K
+        </kbd>
       </button>
 
       {isOpen && (
@@ -412,7 +415,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
               </button>
             </div>
 
-            <form onSubmit={onSubmit} className="px-6 md:px-10 py-8 bg-secondary/20">
+            <form onSubmit={onSubmit} className="px-4 md:px-10 py-6 md:py-8 bg-secondary/20">
               <div className="relative group">
                 <input
                   ref={inputRef}
@@ -420,7 +423,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={placeholders[placeholderIdx]}
-                  className="w-full bg-transparent py-4 text-3xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all"
+                  className="w-full bg-transparent py-3 md:py-4 text-2xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all pr-24 md:pr-40"
                   aria-label="Пребарај вести"
                   role="combobox"
                   autoComplete="off"
@@ -430,19 +433,20 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
                 />
                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-border group-focus-within:bg-nyt-accent transition-colors"></div>
                 
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-3">
                   {query && (
                     <button
                       type="button"
                       onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="p-1.5 md:p-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <X size={28} />
+                      <X size={20} className="md:hidden" />
+                      <X size={28} className="hidden md:block" />
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="bg-nyt-accent text-white px-6 md:px-10 py-3.5 rounded font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] active:scale-95 transition-all"
+                    className="bg-nyt-accent text-white px-4 md:px-10 py-2.5 md:py-3.5 rounded font-black text-[10px] md:text-xs uppercase tracking-[0.15em] md:tracking-[0.2em] shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] active:scale-95 transition-all"
                   >
                     БАРAJ
                   </button>
