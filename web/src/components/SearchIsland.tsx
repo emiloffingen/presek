@@ -368,11 +368,11 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         aria-label="Пребарај"
       >
         <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
-        <div className="flex-1 overflow-hidden h-4">
+        <span className="flex-1 overflow-hidden h-4 block">
             <span key={placeholderIdx} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
-        </div>
+        </span>
         <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background border border-border rounded text-[8px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
             <span className="text-[10px]">⌘</span>K
         </kbd>
