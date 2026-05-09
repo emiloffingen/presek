@@ -201,9 +201,6 @@ function getRelativeTimeStr(dateStr?: string) {
                         const isMagazine = section.type === 'magazine';
                         return (
                             <div class={`nav-rail-group ${isCore ? 'group-core' : isMagazine ? 'group-magazine' : 'group-dynamic'}`}>
-                                <div class="group-header">
-                                    <span class="group-label">{section.label}</span>
-                                </div>
                                 <div class="group-links">
                                     {section.items.map((item: any) => {
                                         const isActive = item.href.includes('category=')
@@ -316,12 +313,10 @@ function getRelativeTimeStr(dateStr?: string) {
     .nav-fade.left { left: 0; background: linear-gradient(to right, var(--background), transparent); }
     .nav-fade.right { right: 0; background: linear-gradient(to left, var(--background), transparent); }
 
-    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent); padding: 0 1.5rem; }
+    .nav-rail-group { border-right: 1px solid color-mix(in srgb, var(--border) 30%, transparent); padding: 0 1.2rem; display: flex; align-items: center; height: 100%; }
     .nav-rail-group:last-child { border-right: none; }
-    .group-header { margin-bottom: 0.25rem; }
-    .group-label { font-size: 0.5rem; font-family: var(--font-sans); font-weight: 950; letter-spacing: 0.25em; opacity: 0.5; text-transform: uppercase; color: var(--foreground); display: block; }
     
-    .group-links { display: flex; align-items: center; gap: 0.4rem; }
+    .group-links { display: flex; align-items: center; gap: 0.35rem; }
     .nav-rail-link { 
         font-family: var(--font-sans); font-size: 0.68rem; font-weight: 850; padding: 0.3rem 0.6rem; 
         color: var(--muted-foreground); text-decoration: none; border-radius: 2px;
