@@ -196,6 +196,9 @@ TITLE_PROPER_NOUNS = [
     (re.compile(r"\bтаравари\b", re.IGNORECASE), "Таравари"),
     (re.compile(r"\bгаши\b", re.IGNORECASE), "Гаши"),
     (re.compile(r"\bмеџити\b", re.IGNORECASE), "Меџити"),
+    (re.compile(r"\bбашановиќ\b", re.IGNORECASE), "Башановиќ"),
+    (re.compile(r"\bзаев\b", re.IGNORECASE), "Заев"),
+    (re.compile(r"\bтито\b", re.IGNORECASE), "Тито"),
     (re.compile(r"\bвлада\b", re.IGNORECASE), "Влада"),
     (re.compile(r"\bсобрание\b", re.IGNORECASE), "Собрание"),
     (re.compile(r"\bсдсм\b", re.IGNORECASE), "СДСМ"),
@@ -456,7 +459,7 @@ def normalize_headline(title: str) -> str:
 
     # 6. Technical Polish
     # Remove common clickbait fillers
-    fillers = ["ПОВРЗАНО ВЕСТИ", "ПОВРЗАНО", "ПРОЧИТАЈТЕ И", "ГАЛЕРИЈА", "ФОТОГАЛЕРИЈА", "ГЛЕДАЈТЕ ВО ЖИВО", "СЛЕДЕТЕ ВО ЖИВО"]
+    fillers = ["ПОВРЗАНО ВЕСТИ", "ПОВРЗАНО", "ПРОЧИТАЈТЕ И", "ФОТОГАЛЕРИЈА", "ГЛЕДАЈТЕ ВО ЖИВО", "СЛЕДЕТЕ ВО ЖИВО"]
     for filler in fillers:
         t = re.sub(rf'\b{re.escape(filler)}\b', '', t, flags=re.IGNORECASE)
 
