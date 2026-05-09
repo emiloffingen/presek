@@ -11,14 +11,11 @@ const { mode = 'full', class: className } = Astro.props;
     {(mode === 'full' || mode === 'emblem') && (
         <div class="emblem-container">
             <svg width="45" height="45" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-emblem-svg">
-                <g class="ink-color">
-                    <rect x="5" y="5" width="90" height="90" rx="0" stroke="currentColor" stroke-width="8" fill="none" class="outer-box" />
-                    {/* The "Presek" (Cross-section) Geometric Logic */}
-                    <path d="M50 5 L50 95" stroke="currentColor" stroke-width="2" opacity="0.3" />
-                    <path d="M5 50 L95 50" stroke="currentColor" stroke-width="2" opacity="0.3" />
-                    <rect x="25" y="25" width="50" height="50" fill="var(--nyt-accent)" class="accent-block" />
-                    <text x="50" y="72" font-family="var(--font-serif)" font-weight="950" font-size="62" text-anchor="middle" fill="white" style="letter-spacing: -0.05em;">П</text>
-                </g>
+                <rect x="4" y="4" width="92" height="92" stroke="currentColor" stroke-width="8" fill="none" />
+                <path d="M50 4 L50 96" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
+                <path d="M4 50 L96 50" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
+                <rect x="26" y="26" width="48" height="48" fill="var(--nyt-accent)" class="accent-block" />
+                <text x="50" y="70" font-family="var(--font-serif)" font-weight="950" font-size="58" text-anchor="middle" fill="white" style="letter-spacing: -0.02em;">П</text>
             </svg>
             <div class="pulse-ring"></div>
         </div>
@@ -26,13 +23,12 @@ const { mode = 'full', class: className } = Astro.props;
 
     {(mode === 'full' || mode === 'logo') && (
         <div class="logo-text-group">
-            <svg width="190" height="42" viewBox="0 0 500 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
-                <g class="ink-color">
-                    <text x="0" y="70" font-family="var(--font-serif)" font-weight="950" font-size="92" letter-spacing="-4" fill="currentColor">ПРЕСЕК</text>
-                    <text x="365" y="70" font-family="var(--font-serif)" font-weight="300" font-size="92" letter-spacing="-4" fill="var(--nyt-accent)" font-style="italic">.мк</text>
-                    <rect x="0" y="94" width="500" height="4" fill="currentColor" />
-                    <rect x="0" y="104" width="350" height="1.5" fill="currentColor" opacity="0.6" />
-                </g>
+            <svg width="190" height="44" viewBox="0 0 500 115" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-logo-svg">
+                <text x="0" y="72" font-family="var(--font-serif)" font-weight="950" font-size="94" letter-spacing="-3" fill="currentColor">ПРЕСЕК</text>
+                <text x="370" y="72" font-family="var(--font-serif)" font-weight="300" font-size="94" letter-spacing="-3" fill="var(--nyt-accent)" font-style="italic">.мк</text>
+                {/* Modern Editorial Double-Rule */}
+                <rect x="0" y="96" width="500" height="4.5" fill="currentColor" />
+                <rect x="0" y="106" width="380" height="1.2" fill="currentColor" opacity="0.5" />
             </svg>
             <span class="logo-sublabel">ДИГИТАЛНА НОВИНСКА АГЕНЦИЈА</span>
         </div>

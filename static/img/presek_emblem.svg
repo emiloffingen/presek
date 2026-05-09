@@ -1,10 +1,7 @@
 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g fill="#1e40af">
-    <!-- Emblem Box -->
-    <rect x="5" y="5" width="90" height="90" rx="0" stroke="#1e40af" stroke-width="4" fill="none" />
-    <rect x="12" y="12" width="76" height="76" rx="0" stroke="#1e40af" stroke-width="1" fill="none" />
-    
-    <!-- Central P (П) -->
-    <text x="50" y="78" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="76" text-anchor="middle">П</text>
-  </g>
+    <rect x="4" y="4" width="92" height="92" stroke="#0f172a" stroke-width="8" fill="white" />
+    <path d="M50 4 L50 96" stroke="#0f172a" stroke-width="1.5" opacity="0.15" />
+    <path d="M4 50 L96 50" stroke="#0f172a" stroke-width="1.5" opacity="0.15" />
+    <rect x="26" y="26" width="48" height="48" fill="#1e40af" />
+    <text x="50" y="70" font-family="Georgia, serif" font-weight="900" font-size="58" text-anchor="middle" fill="white">П</text>
 </svg>

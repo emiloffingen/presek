@@ -1,14 +1,13 @@
 <svg width="500" height="120" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Authoritative Broadsheet Masthead for ПРЕСЕК -->
-  <g fill="#1e40af">
-    <!-- Main Masthead Text -->
-    <text x="250" y="70" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="72" letter-spacing="-1" text-anchor="middle">ПРЕСЕК.мк</text>
-    
-    <!-- Double Rule Line (Classic Newspaper) -->
-    <line x1="50" y1="85" x2="450" y2="85" stroke="#1e40af" stroke-width="2" />
-    <line x1="50" y1="89" x2="450" y2="89" stroke="#1e40af" stroke-width="1" />
-    
-    <!-- Subtitle -->
-    <text x="250" y="105" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="10" letter-spacing="5" text-anchor="middle">ИНФОРМАТИВЕН ДИГИТАЛЕН АГРЕГАТОР</text>
+  <style>
+    .text-serif { font-family: "Georgia", serif; }
+    .text-sans { font-family: "Arial", "Helvetica", sans-serif; }
+  </style>
+  <g fill="#0f172a">
+    <text x="0" y="72" class="text-serif" font-weight="900" font-size="94" letter-spacing="-3">ПРЕСЕК</text>
+    <text x="370" y="72" class="text-serif" font-weight="300" font-size="94" letter-spacing="-3" fill="#1e40af" font-style="italic">.мк</text>
+    <rect x="0" y="96" width="500" height="4.5" fill="#0f172a" />
+    <rect x="0" y="106" width="380" height="1.2" fill="#0f172a" opacity="0.5" />
+    <text x="0" y="118" class="text-sans" font-weight="900" font-size="8" letter-spacing="4" fill="#64748b">ДИГИТАЛНА НОВИНСКА АГЕНЦИЈА</text>
   </g>
 </svg>
