@@ -15,7 +15,7 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 ---
 
 <div class="editorial-narrative prose-editorial">
-	{hasStrongLeadNarrative && generatedArticle ? (
+	{generatedArticle ? (
 		<div class="narrative-body font-serif is-collapsible is-collapsed" id="narrative-body">
 			{generatedArticle.split('\n').filter((p: string) => p.trim()).map((paragraph: string, idx: number) => (
 				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
@@ -23,29 +23,10 @@ const renderSynthesisHtml = (text: string) => sharedRenderSynthesisHtml(text, ha
 		</div>
         <button class="narrative-toggle" id="narrative-toggle" onclick="document.getElementById('narrative-body').classList.remove('is-collapsed'); this.style.display='none';">Прочитај повеќе</button>
 	) : (
-		<div class="synthesis-list">
-			{synthesisItems.map(item => (
-				<div class="synthesis-item">
-					{item.source && <span class="source-tag">[{item.source}]</span>}
-					<span class="synthesis-text" set:html={renderSynthesisHtml(item.content)}></span>
-				</div>
-			))}
-		</div>
-	)}
-
-    {keyFacts && keyFacts.length > 0 && (
-        <div class="narrative-facts-box mt-12 p-8 bg-secondary/30 border-l-4 border-nyt-accent rounded-r-sm">
-            <h4 class="text-[10px] font-black uppercase tracking-widest text-nyt-accent mb-6">КЛУЧНИ ФАКТИ</h4>
-            <ul class="space-y-4">
-                {keyFacts.map((fact: string) => (
-                    <li class="flex items-start gap-3">
-                        <span class="text-nyt-accent mt-1">•</span>
-                        <p class="font-serif text-[1.05rem] leading-snug text-foreground/90" set:html={renderSynthesisHtml(fact)}></p>
-                    </li>
-                ))}
-            </ul>
+		<div class="empty-narrative-fallback italic text-muted-foreground font-serif">
+            Деталната синтеза за овој развој е во процес на консолидација. Ве молиме погледнете го краткиот преглед погоре.
         </div>
-    )}
+	)}
 </div>
 
 <style>

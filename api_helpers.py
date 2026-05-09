@@ -144,6 +144,9 @@ def normalize_summary_text(raw_summary) -> str:
     if not raw_summary:
         return ""
 
+    if isinstance(raw_summary, list):
+        return "\n".join(f"• {_clean_text_block(line)}" for line in raw_summary if _clean_text_block(line))
+
     text = str(raw_summary).replace("\r", "\n")
     lines = []
     seen = set()

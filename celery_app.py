@@ -140,6 +140,10 @@ celery_app.conf.update(
             'task': 'tasks.maintenance.validate_cluster_images_task',
             'schedule': 3600.0, # Every hour
         },
+        'repair-knowledge-graph': {
+            'task': 'tasks.maintenance.repair_knowledge_graph_task',
+            'schedule': crontab(hour=4, minute=0), # Daily at 4 AM UTC
+        },
     },
     # Task-specific rate limits
     task_annotations={

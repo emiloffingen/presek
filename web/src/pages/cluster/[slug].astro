@@ -43,12 +43,11 @@ import { Newspaper, Clock, Link2, Zap, Sparkles, ShieldCheck, TriangleAlert, Bar
 import EntityContextCard from '../../components/EntityContextCard.tsx';
 import ClusterHeader from '../../components/Cluster/ClusterHeader.astro';
 import HeroVisual from '../../components/Cluster/HeroVisual.astro';
-import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
 import AdsKeeperWidget from '../../components/AdsKeeperWidget.astro';
 import CitationSources from '../../components/CitationSources.astro';
 import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.astro';
 import ArticleItem from '../../components/Cluster/ArticleItem.astro';
-import BriefingBox from '../../components/Cluster/BriefingBox.astro';
+import EditorialNarrative from '../../components/Cluster/EditorialNarrative.astro';
 import type { Article, ClusterDetail } from '../../types';
 
 const { slug } = Astro.params;
@@ -286,8 +285,8 @@ const articleSchema = cluster ? {
 					getRelativeTimeStr={getRelativeTimeStr}
 				/>
 
-				{/* 2. HERO GRID (Visual + Executive Summary) */}
-				<div class="hero-grid mb-16">
+				{/* 2. HERO GRID (Visual) */}
+				<div class="hero-full mb-16">
 					<HeroVisual 
 						leadVisual={leadVisual}
 						dominantColor={cluster.dominant_color || undefined}
@@ -297,29 +296,52 @@ const articleSchema = cluster ? {
 						sourcePreview={sourcePreview}
 						articlesCount={cluster.articles?.length || 0}
 					/>
-
-					<aside class="hero-summary-sidebar">
-						{headerBriefItems.length > 0 && (
-							<BriefingBox 
-								headerBriefItems={headerBriefItems}
-								sourcePreview={sourcePreview}
-								synthesisUpdatedAt={synthesisUpdatedAt}
-								synthesisFreshness={synthesisFreshness}
-								hasCitationSources={hasCitationSources}
-								getRelativeTimeStr={getRelativeTimeStr}
-							/>
-						)}
-					</aside>
 				</div>
 
 				<div class="editorial-grid">
 					{/* 3. MAIN COLUMN */}
 					<div class="editorial-main-col">
+                        {/* EXECUTIVE SUMMARY / BRИФИНГ */}
+						{(headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
+                            <div class="executive-summary mb-12 p-8 bg-secondary/15 border-l-4 border-nyt-accent">
+                                <div class="flex items-center gap-2 mb-6">
+                                    <Sparkles size={14} className="text-nyt-accent" />
+                                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТОК ПРЕГЛЕД</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">КЛУЧНИ ПОЕНТИ</h4>
+                                        <ul class="space-y-3">
+                                            {headerBriefItems.map(item => (
+                                                <li class="font-serif text-base md:text-lg leading-snug italic text-foreground/90 relative pl-5">
+                                                    <span class="absolute left-0 top-2.5 w-1 h-1 rounded-full bg-nyt-accent/60"></span>
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    {cluster.key_facts && cluster.key_facts.length > 0 && (
+                                        <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
+                                            <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">СИСТЕМСКИ ПОДАТОЦИ</h4>
+                                            <ul class="space-y-3">
+                                                {cluster.key_facts.map((fact: string) => (
+                                                    <li class="font-sans text-[13px] font-bold leading-tight text-foreground/80 flex items-start gap-2">
+                                                        <span class="text-nyt-accent">›</span>
+                                                        {fact}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+						)}
+
 						{/* NARRATIVE SECTION */}
-						{(hasStrongLeadNarrative || synthesisItems.length > 0) && (
+						{(hasGeneratedNarrative || synthesisItems.length > 0) && (
 						<section class="editorial-section narrative-section mb-16">
 							<div class="section-eyebrow mb-8">
-								<Sparkles size={16} className="text-nyt-accent" />
+								<Newspaper size={16} className="text-muted-foreground" />
 								<h2 class="section-label">{primaryNarrativeLabel}</h2>
 								<div class="section-divider"></div>
 							</div>
@@ -329,7 +351,6 @@ const articleSchema = cluster ? {
 								generatedArticle={generatedArticle}
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
-                                keyFacts={cluster.key_facts}
 							/>
                             <AdsKeeperWidget placement="in-article" />
 						</section>
