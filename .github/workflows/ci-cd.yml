@@ -1,0 +1,265 @@
+name: Presek CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Environment variables available to all jobs
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  UV_VERSION: "0.11.11"
+
+jobs:
+  # ============================================================================
+  # Backend Tests
+  # ============================================================================
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: presek
+          POSTGRES_PASSWORD: presek
+          POSTGRES_DB: presek_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral-sh.github.io/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv sync --dev
+
+      - name: Run linting
+        run: |
+          source .venv/bin/activate
+          pre-commit run --all-files || true
+
+      - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://presek:presek@localhost:5432/presek_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-ci
+          ENV: test
+        run: |
+          source .venv/bin/activate
+          python -m pytest tests/ -v --tb=short --timeout=60 -x
+
+  # ============================================================================
+  # Frontend Tests
+  # ============================================================================
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: web
+        run: npm test
+
+      - name: Run TypeScript check
+        working-directory: web
+        run: npx tsc --noEmit
+
+  # ============================================================================
+  # Build
+  # ============================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral-sh.github.io/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv sync --frozen
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: web
+        run: npm run build
+
+      - name: Build Docker image
+        run: |
+          docker build -t presek:latest .
+
+  # ============================================================================
+  # Load Testing
+  # ============================================================================
+  load-test:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: build
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: presek
+          POSTGRES_PASSWORD: presek
+          POSTGRES_DB: presek_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral-sh.github.io/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv sync --dev
+
+      - name: Install locust
+        run: |
+          source .venv/bin/activate
+          uv pip install locust
+
+      - name: Start application
+        env:
+          DATABASE_URL: postgresql://presek:presek@localhost:5432/presek_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-load-test
+          ENV: test
+        run: |
+          source .venv/bin/activate
+          uvicorn api_fast:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+          curl -s http://localhost:8000/api/health || true
+
+      - name: Run load test
+        run: |
+          source .venv/bin/activate
+          locust -f tests/loadtest.py --headless -u 100 -r 10 --run-time 1m --host=http://localhost:8000
+
+  # ============================================================================
+  # Security Scan
+  # ============================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  # ============================================================================
+  # Deployment
+  # ============================================================================
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [build, load-test, security-scan]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and push Docker image
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t presek:latest -t presek:${{ github.sha }} .
+          docker push presek:latest
+          docker push presek:${{ github.sha }}
+
+      - name: Deploy to server
+        run: |
+          # This would be customized for your deployment
+          # Example: ssh user@server "cd /path/to/app && ./deploy.sh"
+          echo "Deployment would be triggered here"
+          echo "Image: presek:${{ github.sha }}"

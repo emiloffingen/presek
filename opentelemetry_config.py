@@ -25,11 +25,6 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HTTPOTLPSpanExporter
 from opentelemetry.trace import Status, StatusCode
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXInstrumentor
-from opentelemetry.instrumentation.redis import RedisInstrumentor
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
-from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
 
 # Global tracer provider
@@ -119,25 +114,37 @@ def setup_tracing(
 
 def _setup_auto_instrumentation():
     """Configure auto-instrumentation for common libraries."""
-    # FastAPI instrumentation
-    FastAPIInstrumentor.instrument_app(
-        # Will be applied to FastAPI app on import
-    )
-    
-    # HTTPX instrumentation
-    HTTPXInstrumentor.instrument()
-    
-    # Redis instrumentation
-    RedisInstrumentor.instrument()
-    
-    # PostgreSQL instrumentation
-    Psycopg2Instrumentor.instrument()
-    
-    # Celery instrumentation (if available)
+    # Auto-instrumentation is optional and can be added manually
+    # Try to import and instrument common libraries
     try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        FastAPIInstrumentor.instrument_app()
+    except ImportError:
+        pass
+    
+    try:
+        from opentelemetry.instrumentation.httpx import HTTPXInstrumentor
+        HTTPXInstrumentor.instrument()
+    except ImportError:
+        pass
+    
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+        RedisInstrumentor.instrument()
+    except ImportError:
+        pass
+    
+    try:
+        from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+        Psycopg2Instrumentor.instrument()
+    except ImportError:
+        pass
+    
+    try:
+        from opentelemetry.instrumentation.celery import CeleryInstrumentor
         CeleryInstrumentor.instrument()
-    except Exception:
-        pass  # Celery might not be imported yet
+    except ImportError:
+        pass
 
 
 def get_tracer(name: str) -> trace.Tracer:
