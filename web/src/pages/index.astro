@@ -140,7 +140,7 @@ if (isHomepage) {
 
     if (newsResult.status === 'fulfilled') {
         clusters = newsResult.value?.clusters || [];
-        globalClusters = newsResult.value?.global || [];
+        globalClusters = newsResult.value?.global_clusters || [];
     } else {
         console.error('News fetch error:', newsResult.reason);
         error = 'Грешка при вчитување на вестите.';

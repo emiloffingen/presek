@@ -155,7 +155,7 @@ function getRelativeTimeStr(dateStr?: string) {
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry">
-                    <SearchIsland initialQuery={q} client:idle />
+                    <SearchIsland initialQuery={q} client:load />
                 </div>
                 <time class="topbar-date-display">{currentDate}</time>
             </div>
