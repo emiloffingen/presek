@@ -111,6 +111,96 @@ def validate_cluster_images_task():
     return f"Checked {len(recent_clusters)} clusters, fixed {fixed_count} images."
 
 @celery_app.task
+def repair_knowledge_graph_task():
+    """Merges fragmented entities and cleans up noise in the knowledge graph."""
+    from entities import normalize_entity_name
+    import logging
+    
+    try:
+        log.info("[maintenance] Starting knowledge graph repair...")
+        # 1. Fetch all entities
+        rows = db.execute("SELECT name, total_mentions, sentiment_score, type FROM knowledge_entities")
+        if not rows: return "No entities to repair."
+        
+        canonical_map = {} 
+        for r in rows:
+            name = r['name']
+            total = r['total_mentions']
+            sentiment = r['sentiment_score']
+            etype = r['type']
+            canonical = normalize_entity_name(name)
+            
+            if canonical not in canonical_map:
+                canonical_map[canonical] = {
+                    'mentions': total,
+                    'sentiment_sum': sentiment * total,
+                    'type': etype
+                }
+            else:
+                canonical_map[canonical]['mentions'] += total
+                canonical_map[canonical]['sentiment_sum'] += (sentiment * total)
+                if etype in ('PERSON', 'ORG', 'LOC') and canonical_map[canonical]['type'] == 'ENTITY':
+                    canonical_map[canonical]['type'] = etype
+
+        merged_total = 0
+        for canonical, data in canonical_map.items():
+            if data['mentions'] == 0: continue
+            
+            # Find all aliases that resolve to this canonical
+            aliases = [r['name'] for r in rows if normalize_entity_name(r['name']) == canonical and r['name'] != canonical]
+            
+            # Always update/insert canonical first to ensure it exists for FKs
+            final_sentiment = data['sentiment_sum'] / data['mentions']
+            db.execute("""
+                INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
+                VALUES (%s, %s, %s, NOW(), %s)
+                ON CONFLICT (name) DO UPDATE SET
+                    total_mentions = EXCLUDED.total_mentions,
+                    sentiment_score = EXCLUDED.sentiment_score,
+                    type = EXCLUDED.type
+            """, (canonical, data['type'], data['mentions'], final_sentiment), fetch=False)
+            
+            if not aliases: continue
+            
+            for alias in aliases:
+                # Merge relationships safely
+                rel_rows = db.execute("SELECT entity_a, entity_b, weight, last_seen FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s", (alias, alias))
+                for rel in rel_rows:
+                    a, b = rel['entity_a'], rel['entity_b']
+                    new_a = canonical if a == alias else a
+                    new_b = canonical if b == alias else b
+                    if new_a == new_b: continue
+                    new_a, new_b = sorted([new_a, new_b])
+                    
+                    db.execute("""
+                        INSERT INTO knowledge_relationships (entity_a, entity_b, weight, last_seen)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (entity_a, entity_b) DO UPDATE SET
+                            weight = knowledge_relationships.weight + EXCLUDED.weight,
+                            last_seen = GREATEST(knowledge_relationships.last_seen, EXCLUDED.last_seen)
+                    """, (new_a, new_b, rel['weight'], rel['last_seen']), fetch=False)
+                
+                # Delete alias relationships before the entity to satisfy FKs
+                db.execute("DELETE FROM knowledge_relationships WHERE entity_a = %s OR entity_b = %s", (alias, alias), fetch=False)
+                # Now safe to delete alias entity
+                db.execute("DELETE FROM knowledge_entities WHERE name = %s", (alias,), fetch=False)
+                merged_total += 1
+
+        # 3. Noise cleanup (Must delete relationships first)
+        noise_entities = db.execute("SELECT name FROM knowledge_entities WHERE name ~* ' (веќе|како|сами|самите|биле|има|беше)$'")
+        if noise_entities:
+            noise_names = [n['name'] for n in noise_entities]
+            db.execute("DELETE FROM knowledge_relationships WHERE entity_a = ANY(%s) OR entity_b = ANY(%s)", (noise_names, noise_names), fetch=False)
+            db.execute("DELETE FROM knowledge_entities WHERE name = ANY(%s)", (noise_names,), fetch=False)
+            log.info(f"[maintenance] Cleaned up {len(noise_names)} noisy entities.")
+        
+        log.info(f"[maintenance] Merged {merged_total} fragmented entities.")
+        return f"Repaired {merged_total} entities and cleaned up noise."
+    except Exception as e:
+        log.error(f"[maintenance] Knowledge graph repair failed: {e}", exc_info=True)
+        return str(e)
+
+@celery_app.task
 def refresh_global_headlines_task():
     """Fetches top global headlines (English) and caches their embeddings for comparison."""
     import feedparser

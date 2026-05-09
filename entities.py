@@ -225,10 +225,7 @@ KNOWN_ENTITIES = {
     "Ормуз": "LOC",
 }
 
-# Regex for detecting Macedonian proper nouns (starts with capital letter)
-PROPER_NOUN_PATTERN = re.compile(r"(?:\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b(?:[\s-]+\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b){0,2})")
-
-# Words to ignore (common words that are capitalized at start of sentence)
+# Words to ignore (common words that are capitalized at start of sentence or follow entities)
 IGNORE_WORDS = {
     "Денеска", "Утре", "Вчера", "Повеќе", "Според", "Како", "Ова", "Оваа", "Тоа",
     "Сите", "Нема", "Има", "Беше", "Биде", "Овие", "Никој", "Секој", "Веста",
@@ -237,7 +234,16 @@ IGNORE_WORDS = {
     "Кога", "Само", "Она", "Исто", "Истото", "Токму", "Тогаш", "Спротивно",
     "Впрочем", "Меѓу", "Преку", "Во", "На", "За", "Од", "Со", "До",
     "Не", "Да", "Дали", "Прво", "Првиот", "Два", "Три", "Потоа", "После",
+    "Фон", "Дер", "Вон", "Веќе", "Кој", "Која", "Кои", "Што", "Каде", "Зошто",
+    "Каков", "Каква", "Какви", "Негов", "Негова", "Нивни", "Може", "Можеби",
+    "Еден", "Една", "Едно", "Пред", "Под", "Над", "Меѓу", "Помеѓу",
 }
+
+# Regex for detecting Macedonian proper nouns (starts with capital letter)
+# Uses a negative lookahead to avoid matching common trailing noise words
+_trailing_ignore = "|".join(IGNORE_WORDS)
+PROPER_NOUN_PATTERN = re.compile(r"(?:\b[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[А-ЯЀ-ӿ][а-яѐ-ӿ0-9]+\b){0,3})")
+
 
 # Normalize variants to canonical forms
 ENTITY_ALIASES = {
@@ -272,6 +278,13 @@ ENTITY_ALIASES = {
     "МНР": "Министерство за надворешни работи",
     "Micko": "Христијан Мицкоски",
     "Gru": "Никола Груевски",
+    "Урсула фон дер": "Урсула фон дер Лајен",
+    "Урсула Фон Дер": "Урсула фон дер Лајен",
+    "фон дер Лајен": "Урсула фон дер Лајен",
+    "Фон дер Лајен": "Урсула фон дер Лајен",
+    "Лајен": "Урсула фон дер Лајен",
+    "Европската комисија": "Европска комисија",
+    "ЕК": "Европска комисија",
     # Common Latin-script renderings from international wires
     "Donald Trump": "Доналд Трамп",
     "Joe Biden": "Џо Бајден",
@@ -497,15 +510,18 @@ def normalize_entity_name(name: str) -> str:
 
 def _is_name_like_phrase(candidate: str) -> bool:
     parts = [part for part in re.split(r"[\s-]+", str(candidate or "").strip()) if part]
-    if len(parts) < 2 or len(parts) > 3:
+    # Handle up to 4 words for names like Ursula von der Leyen
+    if len(parts) < 2 or len(parts) > 4:
         return False
     if any(part in IGNORE_WORDS for part in parts):
         return False
     for part in parts:
-        if len(part) < 3:
+        if len(part) < 2: # "von der" uses short words
             return False
-        if not re.match(r"^[A-ZА-ЯЀ-ӿ][A-Za-zА-Яа-яЀ-ӿѐ-ӿ'.-]+$", part):
-            return False
+        if not re.match(r"^[A-ZА-ЯЀ-ӿ][A-Za-zА-Яа-яЀ-ӿѐ-ӿ'.-]*$", part):
+            # Allow lowercase parts for particles like 'von', 'der' if already passed IGNORE_WORDS
+            # but usually regex fallback captures capitalized words.
+            pass
     return True
 
 def update_knowledge_graph(entities: list[dict], context_text: str = ""):
@@ -520,15 +536,18 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     sentiment = analyze_sentiment_locally(context_text) if context_text else 0.0
 
     for ent in entities:
+        # Resolve to canonical name before DB update
+        canonical_name = normalize_entity_name(ent['name'])
+        
         sql = """
             INSERT INTO knowledge_entities (name, type, total_mentions, last_seen, sentiment_score)
             VALUES (%s, %s, 1, CURRENT_TIMESTAMP, %s)
             ON CONFLICT (name) DO UPDATE SET
                 total_mentions = knowledge_entities.total_mentions + 1,
                 last_seen = EXCLUDED.last_seen,
-                sentiment_score = (knowledge_entities.sentiment_score * 0.7) + (EXCLUDED.sentiment_score * 0.3)
+                sentiment_score = (knowledge_entities.sentiment_score * 0.8) + (EXCLUDED.sentiment_score * 0.2)
         """
-        db.execute(sql, (ent['name'], ent['type'], sentiment), fetch=False)
+        db.execute(sql, (canonical_name, ent['type'], sentiment), fetch=False)
 
     if len(entities) > 1:
         sorted_names = sorted([e['name'] for e in entities])
