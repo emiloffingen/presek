@@ -14,7 +14,7 @@ function parseBriefing(text: string) {
     
     // Split by ## sections
     const sections = text.split(/(?=## )/);
-    const parsed: Record<string, string[]> = {};
+    const parsed: Record<string, { lines: string[], isKey?: boolean }> = {};
     
     let currentSection = 'intro';
     
@@ -23,11 +23,15 @@ function parseBriefing(text: string) {
         const titleLine = lines[0];
         
         if (titleLine.startsWith('## ')) {
-            currentSection = titleLine.replace('## ', '').trim();
-            parsed[currentSection] = lines.slice(1).map(l => l.trim()).filter(Boolean);
+            const sectionName = titleLine.replace('## ', '').trim();
+            const isKey = sectionName.toLowerCase().includes('клучно') || sectionName.toLowerCase().includes('пулс');
+            parsed[sectionName] = { 
+                lines: lines.slice(1).map(l => l.trim()).filter(Boolean),
+                isKey
+            };
         } else {
-            if (!parsed[currentSection]) parsed[currentSection] = [];
-            parsed[currentSection].push(...lines.map(l => l.trim()).filter(Boolean));
+            if (!parsed['intro']) parsed['intro'] = { lines: [] };
+            parsed['intro'].lines.push(...lines.map(l => l.trim()).filter(Boolean));
         }
     });
     
@@ -62,16 +66,19 @@ function formatDate(dateStr: string) {
         </div>
 
         <div class="briefing-content">
-            {briefingData && Object.entries(briefingData).map(([section, lines]) => (
-                <div class="briefing-section">
+            {briefingData && Object.entries(briefingData).map(([section, data]) => (
+                <div class:list={["briefing-section", { "is-key-section": data.isKey }]}>
                     <h3 class="section-label">{section}</h3>
                     <div class="section-body">
-                        {lines.map(line => {
+                        {data.lines.map(line => {
                             if (line.startsWith('### ')) {
                                 return <h4 class="story-title" set:html={sanitizeHtml(line.replace('### ', ''))}></h4>;
                             }
                             if (line.startsWith('- ') || line.startsWith('• ')) {
-                                return <p class="story-detail" set:html={sanitizeHtml(line.substring(2))}></p>;
+                                return <div class="story-detail-wrap">
+                                    <span class="detail-bullet"></span>
+                                    <p class="story-detail" set:html={sanitizeHtml(line.substring(2))}></p>
+                                </div>;
                             }
                             return <p class="briefing-text" set:html={sanitizeHtml(line)}></p>;
                         })}
@@ -88,61 +95,71 @@ function formatDate(dateStr: string) {
 
 <style>
     .editorial-briefing {
-        margin-bottom: 2.5rem;
-        padding: 1.5rem;
+        margin-bottom: 3.5rem;
+        padding: 2rem;
         background: color-mix(in srgb, var(--background) 96%, #efe8de 4%);
         border: 1px solid var(--border);
-        border-left: 4px solid var(--nyt-accent);
+        border-left: 5px solid var(--nyt-accent);
         position: relative;
+        box-shadow: 0 4px 20px -10px rgba(0,0,0,0.05);
     }
 
     .dark .editorial-briefing {
         background: color-mix(in srgb, var(--background) 94%, var(--secondary) 6%);
+        box-shadow: 0 4px 20px -10px rgba(0,0,0,0.3);
     }
 
     .briefing-header {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
-        margin-bottom: 1.5rem;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 0.75rem;
+        gap: 0.4rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+        padding-bottom: 1rem;
     }
 
     .briefing-kicker {
         font-family: var(--font-sans);
-        font-size: 0.7rem;
-        font-weight: 900;
+        font-size: 0.65rem;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.15em;
         color: var(--nyt-accent);
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.6rem;
     }
 
     .live-dot {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         background-color: var(--nyt-accent);
         border-radius: 50%;
         display: inline-block;
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--nyt-accent) 20%, transparent);
+        animation: pulse-ring 2s infinite;
+    }
+
+    @keyframes pulse-ring {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 color-mix(in srgb, var(--nyt-accent) 40%, transparent); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px color-mix(in srgb, var(--nyt-accent) 0%, transparent); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 color-mix(in srgb, var(--nyt-accent) 0%, transparent); }
     }
 
     .briefing-date {
         font-family: var(--font-serif);
-        font-size: 1.1rem;
-        font-weight: 800;
+        font-size: clamp(1.2rem, 3vw, 1.6rem);
+        font-weight: 900;
         font-style: italic;
         margin: 0;
         color: var(--foreground);
+        letter-spacing: -0.01em;
     }
 
     .briefing-content {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 2.5rem;
     }
 
     @media (min-width: 768px) {
@@ -150,66 +167,90 @@ function formatDate(dateStr: string) {
             grid-template-columns: repeat(2, 1fr);
         }
         
-        /* First section (Pulse of the day) spans both columns */
-        .briefing-section:first-child {
+        .is-key-section {
             grid-column: span 2;
-            border-bottom: 1px dashed var(--border);
-            padding-bottom: 1rem;
+            border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+            padding-bottom: 1.5rem;
         }
     }
 
     .section-label {
         font-family: var(--font-sans);
-        font-size: 0.65rem;
-        font-weight: 900;
+        font-size: 0.6rem;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.15em;
         color: var(--muted-foreground);
-        margin: 0 0 0.75rem 0;
+        margin: 0 0 1.25rem 0;
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        background: color-mix(in srgb, var(--border) 30%, transparent);
+        border-radius: 2px;
     }
 
     .briefing-text {
         font-family: var(--font-nyt-body);
-        font-size: 1rem;
-        line-height: 1.55;
+        font-size: 1.05rem;
+        line-height: 1.65;
         color: var(--foreground);
-        margin: 0 0 0.5rem 0;
+        margin: 0 0 1rem 0;
     }
 
     .story-title {
         font-family: var(--font-serif);
-        font-size: 1.15rem;
-        font-weight: 800;
-        line-height: 1.2;
-        margin: 0.75rem 0 0.4rem 0;
+        font-size: 1.25rem;
+        font-weight: 900;
+        line-height: 1.15;
+        margin: 1.25rem 0 0.6rem 0;
         color: var(--foreground);
+        letter-spacing: -0.02em;
+    }
+
+    .story-detail-wrap {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .detail-bullet {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--nyt-accent);
+        margin-top: 0.65rem;
+        flex-shrink: 0;
     }
 
     .story-detail {
         font-family: var(--font-nyt-body);
-        font-size: 0.94rem;
-        line-height: 1.5;
+        font-size: 0.96rem;
+        line-height: 1.6;
         color: var(--secondary-foreground);
-        margin: 0 0 0.4rem 0;
-        padding-left: 1rem;
-        border-left: 2px solid color-mix(in srgb, var(--border) 50%, transparent);
+        margin: 0;
     }
 
     .briefing-footer {
-        margin-top: 1.5rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--border);
+        margin-top: 2.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
         font-family: var(--font-sans);
-        font-size: 0.6rem;
-        font-weight: 700;
+        font-size: 0.58rem;
+        font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         color: var(--muted-foreground);
-        opacity: 0.7;
+        opacity: 0.6;
+    }
+
+    @media (max-width: 640px) {
+        .editorial-briefing { padding: 1.25rem; border-left-width: 3px; }
+        .briefing-header { margin-bottom: 1.5rem; }
+        .briefing-content { gap: 1.75rem; }
+        .story-title { font-size: 1.15rem; }
     }
 
     :global(.editorial-briefing b), :global(.editorial-briefing strong) {
-        font-weight: 800;
+        font-weight: 900;
         color: var(--foreground);
     }
 </style>
