@@ -223,9 +223,12 @@ export function isMostlyCyrillic(text: any): boolean {
  */
 export function highlightScores(text: string): string {
     if (!text) return '';
+
+    // Normalize ALL CAPS to Sentence Case (editorial polish)
+    const normalized = deShout(text);
     
     // Pattern for N:N or N-N (with optional parentheses)
-    return text.replace(/\(?\b(\d+[:\-]\d+)\b\)?/g, (match, score) => {
+    return normalized.replace(/\(?\b(\d+[:\-]\d+)\b\)?/g, (match, score) => {
         const parts = score.split(/[:\-]/);
         if (parts.length === 2) {
             const h = parseInt(parts[0], 10);

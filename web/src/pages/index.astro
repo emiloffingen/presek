@@ -188,12 +188,15 @@ const leadSignal = leadCluster ? getLeadSignal(leadCluster) : '';
 const leadSummary = isHomepage
     ? String(homepageLeadDisplay?.summary || '')
     : (leadCluster ? getLeadSummary(leadCluster) : '');
-const leadTitle = isHomepage
+const leadTitle = highlightScores(isHomepage
     ? String(homepageLeadDisplay?.title || '')
-    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : '');
+    : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
 const effectiveLeadSignal = isHomepage
     ? String(homepageLeadDisplay?.signal || leadSignal)
     : leadSignal;
+
+// Remove the verbose development signal if it matches the default
+const finalLeadSignal = effectiveLeadSignal === 'Развој што вреди да се следи' ? '' : effectiveLeadSignal;
 const leadTitleIsCyrillic = isMostlyCyrillic(leadTitle);
 const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
@@ -346,7 +349,7 @@ function getBriefingSnippet(content: string) {
 							leadCluster={leadCluster}
 							leadTitle={leadTitle}
 							leadTitleIsCyrillic={leadTitleIsCyrillic}
-							leadSignal={effectiveLeadSignal}
+							leadSignal={finalLeadSignal}
 							leadSummary={leadSummary}
 							leadSummaryIsCyrillic={leadSummaryIsCyrillic}
 							leadVisual={leadVisual}
@@ -461,9 +464,9 @@ function getBriefingSnippet(content: string) {
     }
 
     /* ── Section Dividers ────────────────────────────── */
-    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 3rem; margin-bottom: 3rem; }
+    .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
     .section-wrapper:last-child { border-bottom: none; }
-    .lead-wrapper { padding-bottom: 2.5rem; margin-bottom: 2.5rem; }
+    .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
     
     /* ── Supporting Band & Developments Grids ────────── */
     .supporting-featured-grid, 
@@ -472,6 +475,7 @@ function getBriefingSnippet(content: string) {
         grid-template-columns: minmax(0, 1fr);
         gap: 1.5rem;
         margin-bottom: 2rem;
+        align-items: start;
     }
 
     .supporting-compact-grid,
@@ -479,6 +483,7 @@ function getBriefingSnippet(content: string) {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         gap: 1.25rem;
+        align-items: start;
     }
 
     @media (min-width: 768px) {
