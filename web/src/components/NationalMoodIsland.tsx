@@ -108,13 +108,13 @@ export default function NationalMoodIsland() {
                     </div>
                     <div className="flex flex-col items-end">
                         <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1 text-right">Трендови (7д)</p>
-                        <div className="flex gap-1 h-8 items-end">
+                        <div className="flex gap-1.5 h-12 items-end">
                             {trends.map((t, i) => (
                                 <div 
                                     key={i}
-                                    className="w-2 rounded-t-sm transition-all hover:opacity-80"
+                                    className="w-2.5 rounded-t-sm transition-all hover:opacity-80"
                                     style={{ 
-                                        height: `${Math.max(15, (t.objectivity * 100))}%`,
+                                        height: `${Math.max(20, (t.objectivity * 100))}%`,
                                         backgroundColor: t.score > 0.1 ? '#10b981' : t.score < -0.1 ? '#ef4444' : '#71717a'
                                     }}
                                     title={`${t.day}: ${t.label} (Obj: ${t.objectivity})`}

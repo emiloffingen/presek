@@ -145,22 +145,38 @@ export function extractCleanSummaryText(input: any): string {
     let text = input || '';
     if (typeof text !== 'string') text = String(text);
 
-    const trimmed = text.trim();
-    if (
-        trimmed.startsWith('{') ||
-        trimmed.startsWith('&lt;%') ||
-        trimmed.includes('&quot;summary&quot;')
-    ) {
-        try {
-            const decoded = trimmed.includes('&quot;') ? cleanAndDecode(trimmed) : trimmed;
-            if (decoded.startsWith('{')) {
-                const parsed = JSON.parse(decoded);
-                if (parsed?.summary) text = parsed.summary;
-                else if (parsed?.text) text = parsed.text;
+    // AI summary extraction with recursive protection against double-stringification
+    let attempts = 0;
+    while (attempts < 3) {
+        const trimmed = text.trim();
+        if (
+            trimmed.startsWith('{') ||
+            trimmed.startsWith('&lt;%') ||
+            trimmed.includes('&quot;summary&quot;') ||
+            trimmed.includes('"summary":')
+        ) {
+            try {
+                const decoded = (trimmed.includes('&quot;') || trimmed.includes('&lt;')) 
+                    ? cleanAndDecode(trimmed) 
+                    : trimmed;
+                
+                if (decoded.startsWith('{')) {
+                    const parsed = JSON.parse(decoded);
+                    if (parsed?.summary) {
+                        text = parsed.summary;
+                        attempts++;
+                        continue;
+                    } else if (parsed?.text) {
+                        text = parsed.text;
+                        attempts++;
+                        continue;
+                    }
+                }
+            } catch {
+                break;
             }
-        } catch {
-            // Leave the original text in place if it's not valid JSON.
         }
+        break;
     }
 
     return cleanAndDecode(text);
