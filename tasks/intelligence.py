@@ -27,7 +27,9 @@ from nlp.categories import detect_topic, detect_category
 from entities import extract_entities, validate_person_names
 from nlp import (
     summarize_article_fallback, synthesize_cluster_fallback,
-    extract_cluster_tags_locally, filter_cluster_tags, deShout
+    extract_cluster_tags_locally, filter_cluster_tags, deShout,
+    generate_local_placeholder
+)
 )
 from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color
@@ -648,7 +650,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
             
             if not strong_img:
                 # Trigger cover art generation
-                img_url = generate_cover_art(cluster_id, summary)
+                svg_content = generate_local_placeholder(cluster_id, summary)
+                img_url = generate_cover_art(cluster_id, svg_content)
                 if img_url:
                     # Update all articles without images to use this generated one
                     db.execute("UPDATE articles SET image_url = %s WHERE cluster_id = %s AND (image_url IS NULL OR image_url LIKE '%%placeholder%%')", (img_url, cluster_id), fetch=False)
@@ -895,7 +898,8 @@ def generate_cluster_metadata_task(hours=24, target_clusters=None):
 
             if not rep_image:
                 # If we still have no image, try to generate one (AI cover art)
-                rep_image = generate_cover_art(r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
+                svg_content = generate_local_placeholder(r['cluster_id'], r['titles'][0] if r['titles'] else 'Вест')
+                rep_image = generate_cover_art(r['cluster_id'], svg_content)
 
             curr_meta = db.execute_one("SELECT representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = %s", (r['cluster_id'],))
             dominant_color = curr_meta['dominant_color'] if curr_meta else None
@@ -1064,7 +1068,8 @@ def backfill_cover_art_single_task(cluster_id, title):
         log.info("[tasks] Skipping cover art generation for %s while queue backlog is high.", cluster_id)
         return
     try:
-        img_url = generate_cover_art(cluster_id, title or '')
+        svg_content = generate_local_placeholder(cluster_id, title or 'Вест')
+        img_url = generate_cover_art(cluster_id, svg_content)
         if img_url:
             db.execute(
                 "UPDATE articles SET image_url = %s WHERE cluster_id = %s AND image_url IS NULL",
