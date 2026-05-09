@@ -363,8 +363,14 @@ async def get_stats_summary():
               OR COALESCE(s.summary, '') != ''
               OR COALESCE(s.generated_article, '') != ''
           )
+          -- Priority to objective content if sentiment data exists
+          AND (
+              s.sentiment->'tone_analysis'->>'objectivity' IS NULL 
+              OR (s.sentiment->'tone_analysis'->>'objectivity')::float >= 0.4
+          )
         ORDER BY
             CASE WHEN COALESCE(s.quote, '') != '' THEN 0 ELSE 1 END,
+            COALESCE((s.sentiment->'tone_analysis'->>'objectivity')::float, 0.5) DESC,
             s.created_at DESC
         LIMIT 1
     """)
