@@ -130,12 +130,14 @@ def run_ingestion():
             )
             # Create a chain of post-ingestion tasks
             # This ensures they run sequentially immediately after ingestion completes.
+            # Use .si() for immutable signatures to prevent passing previous task results
+            # into tasks that expect zero arguments.
             ingestion_chain = chain(
-                generate_embeddings_task.signature(),
-                generate_cluster_metadata_task.signature(),
-                classify_topics_task.signature(),
-                extract_entities_task.signature(),
-                recategorize_clusters_task.signature(),
+                generate_embeddings_task.si(),
+                generate_cluster_metadata_task.si(),
+                classify_topics_task.si(),
+                extract_entities_task.si(),
+                recategorize_clusters_task.si(),
                 auto_summarize_task.signature(kwargs={"cluster_ids": modified_cluster_ids})
             )
             ingestion_chain.apply_async()
