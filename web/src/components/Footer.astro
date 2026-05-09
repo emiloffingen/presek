@@ -70,7 +70,7 @@ import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-re
 
     <div class="footer-legal">
         <div class="legal-left">
-            <p class="copyright mb-2">© 2026 ПРЕСЕК.МК · ПРВА ДИГИТАЛНА НОВИНСКА АГЕНЦИЈА ЗА СИНТЕЗА</p>
+            <p class="copyright mb-2">© {new Date().getFullYear()} ПРЕСЕК.МК · ПРВА ДИГИТАЛНА НОВИНСКА АГЕНЦИЈА ЗА СИНТЕЗА</p>
             <p class="legal-note font-sans text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
                 ПОДАТОЦИТЕ СЕ ГЕНЕРИРАНИ ПРЕКУ ЈАВНО ДОСТАПНИ ИЗВОРИ. СИСТЕМОТ КОРИСТИ ВЕШТАЧКА ИНТЕЛИГЕНЦИЈА ЗА АНАЛИЗА.
             </p>
@@ -95,10 +95,10 @@ import { Activity, Globe, ShieldCheck, Mail, ArrowUpRight, Zap } from 'lucide-re
     }
 
     .footer-top-border {
-        height: 8px;
-        background: var(--foreground);
+        height: 6px;
+        border-top: 1px solid var(--foreground);
+        border-bottom: 3px solid var(--foreground);
         margin-bottom: 6rem;
-        clip-path: polygon(0 0, 100% 0, 100% 2px, 0 2px, 0 0, 10px 0, 10px 8px, 12px 8px, 12px 0); /* Decorative rule */
     }
 
     .footer-main {
