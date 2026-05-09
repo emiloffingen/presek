@@ -202,6 +202,23 @@ const leadSummaryIsCyrillic = isMostlyCyrillic(leadSummary);
 const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero') : null;
 const activeFilterLabel = subcategory || entity || category || topic || q || null;
 
+// --- DEDUPLICATION LOGIC ---
+const usedIds = new Set<string>();
+if (leadCluster) usedIds.add(leadCluster.cluster_id);
+
+const filteredSupporting = supportingClusters.filter(c => !usedIds.has(c.cluster_id));
+const supportingFeatured = filteredSupporting.slice(0, 2);
+supportingFeatured.forEach(c => usedIds.add(c.cluster_id));
+
+const supportingCompact = filteredSupporting.slice(2).filter(c => !usedIds.has(c.cluster_id));
+supportingCompact.forEach(c => usedIds.add(c.cluster_id));
+
+// Identify High Consensus Clusters (5+ sources) - Filtered for duplicates
+const consensusClusters = clusters
+    .filter((c: NewsCluster) => (c.articles?.length || 0) >= 5 && !usedIds.has(c.cluster_id))
+    .slice(0, 3);
+consensusClusters.forEach(c => usedIds.add(c.cluster_id));
+
 if (!isHomepage) {
     const FOR_YOU_START = 5;
     const FOR_YOU_END = 11;
@@ -226,21 +243,20 @@ if (!isHomepage) {
     feedClusters = clusters.slice(FOR_YOU_END);
     wireClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) < 2).slice(0, 12);
 }
-const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2);
-const supportingFeatured = supportingClusters.slice(0, 2);
-const supportingCompact = supportingClusters.slice(2);
+
+const continuingClusters = feedClusters.filter((cluster: NewsCluster) => (cluster?.articles?.length || 0) >= 2 && !usedIds.has(cluster.cluster_id));
 const developmentsFeatured = continuingClusters.slice(0, 6);
-const developmentsCompact = continuingClusters.slice(6, 18);
+developmentsFeatured.forEach(c => usedIds.add(c.cluster_id));
+
+const developmentsCompact = continuingClusters.slice(6, 18).filter(c => !usedIds.has(c.cluster_id));
+developmentsCompact.forEach(c => usedIds.add(c.cluster_id));
+
 const railWireArticles = [...wireArticles].sort((a: any, b: any) => {
     const aTime = (a?.ingested_at || a?.created_at) ? new Date(a.ingested_at || a.created_at).getTime() : 0;
     const bTime = (b?.ingested_at || b?.created_at) ? new Date(b.ingested_at || b.created_at).getTime() : 0;
     return bTime - aTime;
 });
 
-// Identify High Consensus Clusters (5+ sources)
-const consensusClusters = clusters
-    .filter((c: NewsCluster) => (c.articles?.length || 0) >= 5 && c.cluster_id !== leadCluster?.cluster_id)
-    .slice(0, 3);
 const consensusIds = new Set(consensusClusters.map(c => c.cluster_id));
 
 if (!isHomepage) {
@@ -467,6 +483,11 @@ function getBriefingSnippet(content: string) {
     .section-wrapper { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2rem; }
     .section-wrapper:last-child { border-bottom: none; }
     .lead-wrapper { padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+
+    @media (max-width: 768px) {
+        .section-wrapper { padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+        .lead-wrapper { padding-bottom: 1rem; margin-bottom: 1rem; }
+    }
     
     /* ── Supporting Band & Developments Grids ────────── */
     .supporting-featured-grid, 
@@ -498,6 +519,15 @@ function getBriefingSnippet(content: string) {
         background: color-mix(in srgb, var(--nyt-accent) 4%, transparent);
         padding: 2.5rem 1rem;
         border-y: 1px solid color-mix(in srgb, var(--nyt-accent) 15%, transparent);
+    }
+
+    @media (max-width: 768px) {
+        .consensus-section {
+            padding: 1.5rem 1rem !important;
+        }
+        .for-you-wrapper {
+            padding: 1.5rem 1rem;
+        }
     }
     .editorial-briefing-wrap { padding-bottom: 2.25rem; }
 

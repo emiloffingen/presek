@@ -231,13 +231,10 @@ function getTimeStr(dateStr: string) {
 							onload="this.classList.add('is-loaded')"
 							onerror="this.style.opacity='0'; this.nextElementSibling.style.display='grid';"
 						/>
-						<div class="article-image-placeholder design-card is-error-fallback absolute inset-0" style="display: none; --placeholder-bg: #111827;">
-							<div class="design-card-pattern"></div>
-							<div class="design-card-main p-4">
-								<h3 class:list={["text-xs leading-tight text-center line-clamp-3", { "headline-cyrillic": titleIsCyrillic }]}>{rawLeadTitle}</h3>
-							</div>
-							<div class="design-card-footer">
-								<p class="article-image-placeholder-source text-[8px] opacity-60 uppercase font-black tracking-widest">{main.source}</p>
+						<div class="article-image-placeholder design-card is-error-fallback absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
+							<div class="design-card-pattern opacity-5"></div>
+							<div class="design-card-main p-4 flex items-center justify-center h-full">
+								<Newspaper size={24} className="text-white/20" />
 							</div>
 						</div>
 					</div>
@@ -307,11 +304,12 @@ function getTimeStr(dateStr: string) {
         background: var(--secondary);
         border-radius: 2px;
         opacity: 0.8;
+        white-space: nowrap;
     }
 
     .significance-badge.is-breaking {
-        color: var(--nyt-accent);
-        background: color-mix(in srgb, var(--nyt-accent) 10%, transparent);
+        color: white;
+        background: var(--nyt-red, #d0021b);
         opacity: 1;
     }
 
@@ -554,6 +552,12 @@ function getTimeStr(dateStr: string) {
 	}
 
 	@media (max-width: 767px) {
+		.headline-lead {
+			font-size: 1.5rem;
+			line-height: 1.05;
+			margin-bottom: 0.6rem;
+		}
+
 		.nyt-article:not(.lead-story) {
 			display: grid;
 			grid-template-columns: minmax(0, 1fr) clamp(6.4rem, 28vw, 7.6rem);
@@ -581,7 +585,9 @@ function getTimeStr(dateStr: string) {
 			max-height: 7.75rem;
 		}
 
-		.nyt-article:not(.lead-story) .headline-standard {
+		.nyt-article:not(.lead-story) .headline-standard,
+		.nyt-article:not(.lead-story) .headline-compact,
+		.nyt-article:not(.lead-story) .headline-wire {
 			font-size: 1.1rem;
 			line-height: 1.1;
 			margin-bottom: 0.4rem;

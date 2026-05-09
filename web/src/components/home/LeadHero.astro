@@ -72,10 +72,10 @@ const IconComponent =
                             <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h2>
                         </div>
                     </div>
-                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #111827;">
-                        <div class="design-card-pattern"></div>
-                        <div class="design-card-main p-8">
-                            <h2 class:list={["text-2xl md:text-4xl text-center", { "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
+                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
+                        <div class="design-card-pattern opacity-5"></div>
+                        <div class="design-card-main p-8 flex items-center justify-center h-full">
+                            <Newspaper size={48} className="text-white/10" />
                         </div>
                     </div>
                 </>
@@ -202,10 +202,10 @@ const IconComponent =
                             <h2 class:list={["overlay-headline", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(leadTitle)}></h2>
                         </div>
                     </div>
-                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #111827;">
-                        <div class="design-card-pattern"></div>
-                        <div class="design-card-main p-8">
-                            <h2 class:list={["text-2xl md:text-4xl text-center", { "headline-cyrillic": leadTitleIsCyrillic }]}>{leadTitle}</h2>
+                    <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: #27272a;">
+                        <div class="design-card-pattern opacity-5"></div>
+                        <div class="design-card-main p-8 flex items-center justify-center h-full">
+                            <Newspaper size={48} className="text-white/10" />
                         </div>
                     </div>
                 </>
@@ -250,6 +250,26 @@ const IconComponent =
         letter-spacing: 0.05em;
         text-transform: uppercase;
         border-radius: 2px;
+    }
+
+    .significance-badge {
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted-foreground);
+        padding: 0.15rem 0.4rem;
+        background: var(--secondary);
+        border-radius: 2px;
+        opacity: 0.8;
+        white-space: nowrap;
+    }
+
+    .significance-badge.is-breaking {
+        color: white;
+        background: var(--nyt-red, #d0021b);
+        opacity: 1;
     }
 
     .lead-status-badge {
