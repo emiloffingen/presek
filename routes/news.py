@@ -56,6 +56,8 @@ class NewsResponse(BaseModel):
     page: int
     page_size: int
     clusters: List[Any]
+    global_clusters: Optional[List[Any]] = None
+    entity: Optional[Any] = None
 
 _SOFT_EXCLUDE_TOPICS = {"Живот", "Забава", "Здравје"}
 _HARD_NEWS_TOPICS = {"Политика", "Економија", "Криминал", "Спорт", "Технологија"}
@@ -486,7 +488,7 @@ async def get_news(
         final_response = {
             "status": "success", 
             "clusters": result, 
-            "global": global_result,
+            "global_clusters": global_result,
             "page": page, 
             "page_size": page_size,
             "has_more": len(ranked_clusters) > start + page_size,
