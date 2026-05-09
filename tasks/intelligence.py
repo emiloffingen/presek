@@ -30,7 +30,6 @@ from nlp import (
     extract_cluster_tags_locally, filter_cluster_tags, deShout,
     generate_local_placeholder
 )
-)
 from api_helpers import normalize_summary_text, normalize_perspectives, normalize_citation_sources
 from utils import get_dominant_color
 from tasks.utils import (
