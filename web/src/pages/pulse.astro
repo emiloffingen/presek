@@ -104,9 +104,9 @@ const currentDate = new Date().toLocaleDateString('mk-MK', {
             </div>
 
             <div class="masthead-deck mt-8">
-                <span class="deck-item"><strong>{categories.length || 6}</strong> Категории</span>
-                <span class="deck-item"><strong>{globalPulse?.intelligence?.pluralism?.pluralism_pct || 0}%</strong> Диверзитет</span>
-                <span class="deck-item"><strong>{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</strong> Објави Денес</span>
+                <span class="deck-item"><strong class="mr-1.5">{categories.length || 6}</strong> Категории</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.intelligence?.pluralism?.pluralism_pct || 0}%</strong> Диверзитет</span>
+                <span class="deck-item"><strong class="mr-1.5">{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</strong> Објави Денес</span>
             </div>
         </header>
 

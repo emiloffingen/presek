@@ -595,17 +595,18 @@ async def get_global_pulse(category: Optional[str] = None):
     async def get_topic_sentiment():
         return await db.async_execute(f"""
             SELECT 
-                m.topics,
+                t as topic,
                 COALESCE(AVG(CAST(s.sentiment->'sentiment'->>'score' AS REAL)), 0) as avg_sentiment,
                 COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'objectivity' AS REAL)), 0) as avg_objectivity,
                 COALESCE(AVG(CAST(s.sentiment->'tone_analysis'->>'sensationalism' AS REAL)), 0) as avg_sensationalism,
                 COUNT(*) as n
             FROM cluster_summaries s
-            JOIN cluster_metadata m ON s.cluster_id = m.cluster_id
+            JOIN cluster_metadata m ON s.cluster_id = m.cluster_id,
+            UNNEST(m.topics) t
             WHERE s.sentiment IS NOT NULL AND s.created_at >= NOW() - INTERVAL '24 hours'
               AND m.topics IS NOT NULL AND array_length(m.topics, 1) > 0
               {cat_filter.replace('a.category', 'm.category')}
-            GROUP BY m.topics ORDER BY n DESC
+            GROUP BY t ORDER BY n DESC
         """, tuple(params))
 
     velocity, by_category, by_topic_sentiment, count_row = await asyncio.gather(

@@ -39,23 +39,38 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, onSo
 
     // Filter to top sources for clarity in the map
     const plotData = useMemo(() => {
-        return data
-            .slice(0, 35)
-            .map((item, idx) => {
-                // Base positions
-                const xBase = item.avg_objectivity * 100;
-                const yBase = item.avg_sensationalism * 100;
+        if (!data || data.length === 0) return [];
+        
+        const topData = data.slice(0, 35);
+        
+        // Find ranges for normalization to spread points across quadrants
+        const objs = topData.map(d => d.avg_objectivity);
+        const sens = topData.map(d => d.avg_sensationalism);
+        
+        const minObj = Math.min(...objs);
+        const maxObj = Math.max(...objs);
+        const minSens = Math.min(...sens);
+        const maxSens = Math.max(...sens);
+        
+        const rangeObj = (maxObj - minObj) || 1;
+        const rangeSens = (maxSens - minSens) || 1;
 
-                // Deterministic jitter based on index to prevent overlap
-                const jitterX = ((idx % 3) - 1) * 2.2; 
-                const jitterY = (((idx * 7) % 3) - 1) * 2.2;
+        return topData.map((item, idx) => {
+            // Normalized positions (0-100)
+            // We use a bit of padding (15% to 85%) to avoid edge clipping
+            const xNorm = 15 + ((item.avg_objectivity - minObj) / rangeObj) * 70;
+            const yNorm = 15 + ((item.avg_sensationalism - minSens) / rangeSens) * 70;
 
-                return {
-                    ...item,
-                    x: Math.max(5, Math.min(95, xBase + jitterX)),
-                    y: Math.max(5, Math.min(95, yBase + jitterY))
-                };
-            });
+            // Deterministic jitter based on index to prevent overlap
+            const jitterX = ((idx % 3) - 1) * 2.2; 
+            const jitterY = (((idx * 7) % 3) - 1) * 2.2;
+
+            return {
+                ...item,
+                x: Math.max(5, Math.min(95, xNorm + jitterX)),
+                y: Math.max(5, Math.min(95, yNorm + jitterY))
+            };
+        });
     }, [data]);
 
     return (
