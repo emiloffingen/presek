@@ -115,12 +115,14 @@ async def _build_gemma_research_context(cluster_id: str, mode: str = "custom", q
             try:
                 vr = json.loads(summary_row["verification_report"]) if isinstance(summary_row["verification_report"], str) else summary_row["verification_report"]
                 parts.append(f"ПРОВЕРКА НА ФАКТИ (Системска анализа):\n{json.dumps(vr, ensure_ascii=False, indent=2)}")
-            except Exception: pass
+            except Exception as e:
+                log.debug(f"Failed to parse verification_report JSON: {e}")
         if summary_row.get("perspectives"):
             try:
                 pers = json.loads(summary_row["perspectives"]) if isinstance(summary_row["perspectives"], str) else summary_row["perspectives"]
                 parts.append(f"МЕДИУМСКИ ПЕРСПЕКТИВИ (Системска анализа):\n{json.dumps(pers, ensure_ascii=False, indent=2)}")
-            except Exception: pass
+            except Exception as e:
+                log.debug(f"Failed to parse perspectives JSON: {e}")
 
     sources = []
     for article in articles:

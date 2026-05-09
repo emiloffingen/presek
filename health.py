@@ -212,8 +212,9 @@ def record_refresh(article_count: int, errors: list[str] | None = None):
     }
     try:
         _get_redis().set(_REDIS_KEY, json.dumps(payload), ex=3600)
-    except Exception:
-        pass  # Non-critical; health endpoint falls back gracefully
+    except Exception as e:
+        # Non-critical; health endpoint falls back gracefully
+        log.debug(f"Failed to record refresh in Redis: {e}")
 
 
 def record_source_fetch(source_name: str, status: str, fetched: int = 0, accepted: int = 0, error: str | None = None):

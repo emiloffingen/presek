@@ -248,7 +248,10 @@ def _peer_ip(response):
             if conn is not None:
                 sock = getattr(conn, "sock", None)
                 if sock is not None: return sock.getpeername()[0]
-    except Exception: pass
+    except Exception as e:
+        # Debug-level log for socket inspection failures (expected in some cases)
+        log.debug(f"Failed to extract peer IP from raw response: {e}")
+        pass
     return None
 
 def record_runtime_event(event: str, **fields):

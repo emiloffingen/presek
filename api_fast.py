@@ -173,7 +173,6 @@ async def health_check():
             last_refresh = json.loads(raw)
     except Exception as e:
         log.error(f"Health check error (redis/freshness): {e}")
-        pass
 
     return {
         "status": "healthy" if db_status["ok"] and redis_status["ok"] else "degraded",

@@ -1032,7 +1032,9 @@ def recluster_recent_articles_task(hours=24, limit=800):
 
         if touched_clusters:
             touched = sorted(touched_clusters)
-            for table in ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions"):
+            # Whitelist of tables that can be safely deleted from
+            _ALLOWED_CLEANUP_TABLES = ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions")
+            for table in _ALLOWED_CLEANUP_TABLES:
                 db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
 
             extract_entities_task.apply_async(kwargs={'hours': hours, 'target_clusters': touched}, countdown=5)

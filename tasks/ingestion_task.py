@@ -17,6 +17,10 @@ from tasks.utils import invalidate_public_data_caches, redis_client, log, safe_a
 from tasks.notifier import Notifier
 from version import APP_VERSION_LABEL
 
+# Whitelist of allowed columns for dynamic UPDATE to prevent SQL injection
+_ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
+
+
 @celery_app.task(rate_limit='100/m', autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
 def crawl_article_task(article_id, url):
     """
@@ -29,21 +33,27 @@ def crawl_article_task(article_id, url):
             log.warning(f"Crawl failed for article {article_id}: {res['error']}")
             return
 
+        # Build UPDATE query using whitelist to prevent SQL injection
         updates = []
         params = []
         
-        if res.get("content"):
-            updates.append("full_content = %s")
-            params.append(res["content"])
-            
+        # Only allow whitelisted columns
+        column_mappings = {
+            "content": "full_content",
+            "image_url": "image_url",
+        }
+        
+        for crawler_key, db_column in column_mappings.items():
+            if res.get(crawler_key) and db_column in _ALLOWED_ARTICLE_COLUMNS:
+                updates.append(f"{db_column} = %s")
+                params.append(res[crawler_key])
+        
         image_url = res.get("image_url")
-        if image_url:
-            updates.append("image_url = %s")
-            params.append(image_url)
-            
+        
         if updates:
             params.append(article_id)
-            db.execute(f"UPDATE articles SET {', '.join(updates)} WHERE id = %s", tuple(params), fetch=False)
+            sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"
+            db.execute(sql, tuple(params), fetch=False)
             log.info(f"Updated article {article_id} with crawled content.")
             
             # Post-crawl pipeline

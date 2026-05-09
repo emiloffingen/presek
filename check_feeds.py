@@ -1,7 +1,10 @@
 import asyncio
+import logging
 import httpx
 import feedparser
 from database import db_manager as db
+
+log = logging.getLogger("presek.check_feeds")
 
 async def check_feed(client, name, url):
     try:
@@ -24,8 +27,9 @@ async def check_feed(client, name, url):
         return name, url, f"Error: {str(e)}"
 
 async def main():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     sources = db.execute("SELECT name, url FROM sources WHERE is_active = TRUE")
-    print(f"Checking {len(sources)} active feeds...")
+    log.info(f"Checking {len(sources)} active feeds...")
     
     async with httpx.AsyncClient(headers={"User-Agent": "Presek/1.0 (Audit)"}) as client:
         # Check in batches of 10 to avoid overwhelming local resources/DNS
@@ -36,7 +40,7 @@ async def main():
             results = await asyncio.gather(*tasks)
             for r in results:
                 if r:
-                    print(f"FAILED: {r[0]} ({r[1]}) - {r[2]}")
+                    log.warning(f"FAILED: {r[0]} ({r[1]}) - {r[2]}")
             # Small delay between batches
             await asyncio.sleep(0.5)
 

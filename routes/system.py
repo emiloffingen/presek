@@ -410,7 +410,8 @@ async def proxy_image(
         cached_bin = binary_redis_client.get(cache_key)
         if cached_bin:
             return Response(cached_bin, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"})
-    except Exception: pass
+    except Exception as e:
+        log.debug(f"Binary Redis cache lookup failed: {e}")
 
     def serve_fallback(reason="error"):
         svg = generate_local_placeholder(cid or "px", t or "Вест", cat or "Вести")
@@ -504,7 +505,8 @@ async def proxy_image(
 
         try:
             binary_redis_client.setex(cache_key, 86400, optimized)
-        except Exception: pass
+        except Exception as e:
+            log.debug(f"Failed to cache binary image: {e}")
 
         return Response(optimized, media_type="image/webp", headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"})
     except Exception as e:
