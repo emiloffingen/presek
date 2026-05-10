@@ -1,382 +1,18 @@
 import datetime
-import asyncio
-import logging
 import math
-import redis
-import json
-import os
-import time
 import re
-import socket
-import ipaddress
-import urllib.parse
-from PIL import Image
-from io import BytesIO
-from typing import Optional, List, Dict, Any
-from config import (
-    SOURCE_CREDIBILITY,
-    DEFAULT_CREDIBILITY,
-    SOURCE_CATEGORIES,
-    BALANCED_COVERAGE_THRESHOLD,
-)
+import json
+import time
+from typing import List, Dict, Any, Optional
+import logging
+from config import BALANCED_COVERAGE_THRESHOLD, DEFAULT_CREDIBILITY
+from utils.cache import redis_client
+from utils.db_helpers import get_source_registry
+from utils.time import _coerce_datetime
 
 log = logging.getLogger("presek")
 
-# Redis client with password support
-# REDIS_URL format: redis://[:password@]hostname[:port]/db
-redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-try:
-    redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
-    # Test connection
-    redis_client.ping()
-    log.info(f"Redis connected: {redis_url.split('@')[-1].split('/')[0]}")
-except redis.ConnectionError as e:
-    log.error(f"Redis connection failed to {redis_url}: {e}")
-    # Fallback to localhost without password for backward compatibility
-    redis_client = redis.Redis.from_url(
-        "redis://localhost:6379/0", decode_responses=True
-    )
-except Exception as e:
-    log.error(f"Redis initialization error: {e}")
-    # Last resort: create a client that will fail on first use
-    redis_client = redis.Redis.from_url(
-        "redis://localhost:6379/0", decode_responses=True
-    )
-
 _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
-_SOURCE_REGISTRY_CACHE = {"time": 0.0, "data": {}}
-
-
-def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
-    """
-    Returns a unified map of source metadata (credibility, category).
-    Prefer database values, fall back to hardcoded config.
-    """
-    now = time.time()
-    if (
-        _SOURCE_REGISTRY_CACHE["data"]
-        and now - _SOURCE_REGISTRY_CACHE["time"] < ttl_seconds
-    ):
-        return _SOURCE_REGISTRY_CACHE["data"]
-
-    # Initialize with hardcoded defaults
-    registry = {}
-
-    # We use a combined set of keys from hardcoded and DB
-    all_names = set(SOURCE_CREDIBILITY.keys()) | set(SOURCE_CATEGORIES.keys())
-
-    for name in all_names:
-        registry[name] = {
-            "name": name,
-            "credibility": float(SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)),
-            "category": SOURCE_CATEGORIES.get(name, "Локални"),
-        }
-
-    # Override/Extend with database values
-    try:
-        from database import db_manager as db
-
-        # We perform a raw query to avoid complex model overhead during config loading
-        rows = db.execute(
-            "SELECT name, credibility, category FROM sources WHERE is_active = TRUE"
-        )
-        for row in rows:
-            name = row["name"] if isinstance(row, dict) else row[0]
-            cred = row["credibility"] if isinstance(row, dict) else row[1]
-            cat = row["category"] if isinstance(row, dict) else row[2]
-
-            registry[name] = {
-                "name": name,
-                "credibility": float(
-                    cred
-                    if cred is not None
-                    else SOURCE_CREDIBILITY.get(name, DEFAULT_CREDIBILITY)
-                ),
-                "category": cat or SOURCE_CATEGORIES.get(name, "Локални"),
-            }
-    except Exception as e:
-        log.warning(
-            f"[source_registry] Database metadata unavailable, using hardcoded only: {e}"
-        )
-
-    _SOURCE_REGISTRY_CACHE["time"] = now
-    _SOURCE_REGISTRY_CACHE["data"] = registry
-    return registry
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    """Custom JSON encoder to handle datetime objects."""
-
-    def default(self, obj):
-        if isinstance(obj, (datetime.datetime, datetime.date)):
-            if isinstance(obj, datetime.datetime) and obj.tzinfo is None:
-                return obj.isoformat() + "Z"
-            return obj.isoformat()
-        return super().default(obj)
-
-
-async def get_dominant_color(url: str) -> str:
-    """Extracts the dominant hex color from an image URL (Asynchronous)."""
-    if not url:
-        return ""
-
-    internal_proxy_markers = [
-        "/api/proxy",
-        "presek.live/proxy",
-        "localhost:5001/proxy",
-        "api:5001/proxy",
-    ]
-    if any(marker in url for marker in internal_proxy_markers):
-        log.warning(
-            f"[utils] color extraction blocked for recursive/internal URL: {url}"
-        )
-        return ""
-
-    if not url.startswith("http"):
-        return ""
-
-    try:
-        import httpx
-
-
-
-        async with httpx.AsyncClient(
-            timeout=4.0, follow_redirects=True, max_redirects=2
-        ) as client:
-            try:
-                safe_ips = _resolve_public_ips(url)
-            except Exception as e:
-                log.debug(f"Failed to resolve public IPs for {url}: {e}")
-                return ""
-
-            async with client.stream(
-                "GET", url, headers={"User-Agent": "PresekColorBot/1.0"}
-            ) as response:
-                if response.status_code != 200:
-                    return ""
-
-                p_ip = _peer_ip(response)
-                if not p_ip or p_ip not in safe_ips:
-                    log.warning(
-                        f"[utils] color extraction blocked: IP mismatch/private for {url}"
-                    )
-                    return ""
-
-                content = await response.aread()
-
-        img = Image.open(BytesIO(content))
-        img = img.convert("RGB")
-        img.thumbnail((60, 60))
-
-        colors = img.getcolors(3600)
-        if not colors:
-            return ""
-
-        def is_usable(rgb):
-            r, g, b = rgb
-            if r > 245 and g > 245 and b > 245:
-                return False
-            if r < 15 and g < 15 and b < 15:
-                return False
-            avg = (r + g + b) / 3
-            if abs(r - avg) < 12 and abs(g - avg) < 12 and abs(b - avg) < 12:
-                return False
-            return True
-
-        sorted_colors = sorted(colors, key=lambda x: x[0], reverse=True)
-        usable = [c for c in sorted_colors if is_usable(c[1])]
-        dominant = usable[0][1] if usable else sorted_colors[0][1]
-
-        return "#{:02x}{:02x}{:02x}".format(*dominant)
-    except Exception as e:
-        log.debug(f"[utils] color extraction failed for {url}: {e}")
-        return ""
-
-
-def cached_response(key: str, ttl: int = 60) -> Optional[Any]:
-    """Read a cached JSON value from Redis."""
-    try:
-        val = redis_client.get(key)
-        if val:
-            return json.loads(val)
-    except Exception as e:
-        log.warning(f"[cache] redis read error on {key}: {e}")
-    return None
-
-
-def set_cache(key: str, val, ttl: int = 60):
-    """Write a JSON value to Redis cache."""
-    try:
-        json_val = json.dumps(val, cls=DateTimeEncoder)
-        redis_client.setex(key, ttl, json_val)
-    except Exception as e:
-        log.warning(f"[cache] write error on {key}: {e}")
-
-
-def delete_cache(key: str):
-    """Delete a key from Redis cache."""
-    try:
-        redis_client.delete(key)
-    except Exception as e:
-        log.warning(f"[cache] delete error on {key}: {e}")
-
-
-def delete_cache_prefix(prefix: str):
-    """Delete all keys with a given prefix from Redis."""
-    try:
-        cursor = 0
-        pattern = f"{prefix}*"
-        while True:
-            cursor, keys = redis_client.scan(cursor=cursor, match=pattern, count=200)
-            if keys:
-                redis_client.delete(*keys)
-            if cursor == 0:
-                break
-    except Exception as e:
-        log.warning(f"[cache] prefix delete error on {prefix}: {e}")
-
-
-def format_sources(count: int) -> str:
-    """Pluralization helper for Macedonian sources."""
-    if count == 1:
-        return "1 извор"
-    elif 2 <= count <= 4:
-        return f"{count} извора"
-    return f"{count} извори"
-
-
-def _resolve_public_ips(candidate_url: str) -> List[str]:
-    parsed = urllib.parse.urlparse(candidate_url)
-    hostname = (parsed.hostname or "").lower()
-    if not hostname or hostname in {
-        "localhost",
-        "metadata.google.internal",
-        "metadata.internal",
-    }:
-        raise ValueError("Blocked URL")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    try:
-        resolved = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-    except socket.gaierror:
-        raise ValueError("Could not resolve hostname")
-
-    safe = []
-    for info in resolved:
-        ip = info[4][0]
-        try:
-            addr = ipaddress.ip_address(ip)
-            if not (
-                addr.is_private
-                or addr.is_loopback
-                or addr.is_link_local
-                or addr.is_multicast
-                or addr.is_reserved
-                or addr.is_unspecified
-            ):
-                if ip not in safe:
-                    safe.append(ip)
-        except ValueError:
-            continue
-    if not safe:
-        raise PermissionError("Blocked URL (Private/Reserved IP)")
-    return safe
-
-
-def _peer_ip(response) -> Optional[str]:
-    try:
-        # httpx support
-        extensions = getattr(response, "extensions", {})
-        stream = extensions.get("network_stream")
-        if stream:
-            addr = stream.get_extra_info("server_addr")
-            if addr:
-                return addr[0]
-
-        # requests support
-        raw = getattr(response, "raw", None)
-        if raw is not None:
-            conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
-            if conn is not None:
-                sock = getattr(conn, "sock", None)
-                if sock is not None:
-                    return sock.getpeername()[0]
-    except Exception as e:
-        log.debug(f"Failed to get peer IP: {e}")
-    return None
-
-
-def record_runtime_event(event: str, **fields):
-    """Record an application event to Redis for analytics."""
-    event = str(event or "").strip()
-    if not event:
-        return
-
-    normalized_fields = {
-        str(k): str(v) for k, v in fields.items() if v is not None and str(v) != ""
-    }
-    field_suffix = "|".join(
-        f"{k}={normalized_fields[k]}" for k in sorted(normalized_fields)
-    )
-    bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
-    counter_key = f"presek:runtime_events:{bucket}"
-    counter_field = event if not field_suffix else f"{event}|{field_suffix}"
-
-    try:
-        redis_client.hincrby(counter_key, counter_field, 1)
-        redis_client.expire(counter_key, 60 * 60 * 24 * 14)
-    except Exception as e:
-        log.warning(f"[runtime_event] Redis unavailable: {e}")
-
-    log.info(
-        f"[runtime_event] {event} {json.dumps(normalized_fields, ensure_ascii=False)}"
-    )
-
-
-def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) -> bool:
-    """Sliding window rate limiter."""
-    if ip in {"127.0.0.1", "::1"}:
-        return True
-
-    is_ai = path.endswith("/research") or path.endswith("/analyst")
-    max_reqs = 12 if is_ai else 60
-    daily_lim = 100 if is_ai else None
-
-    if is_authenticated:
-        max_reqs *= 2
-        if daily_lim:
-            daily_lim *= 2
-
-    tier = "auth" if is_authenticated else "anon"
-    scope = "ai" if is_ai else "general"
-    key = f"rate_limit:{tier}:{scope}:{ip}"
-    now = time.time()
-
-    try:
-        if daily_lim:
-            bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
-            daily_key = f"rate_limit_daily:{tier}:{scope}:{ip}:{bucket}"
-            if redis_client.incr(daily_key) > daily_lim:
-                return False
-            redis_client.expire(daily_key, 172800)
-
-        pipe = redis_client.pipeline()
-        pipe.zremrangebyscore(key, 0, now - 60)
-        pipe.zcard(key)
-        pipe.zadd(key, {str(now): now})
-        pipe.expire(key, 60)
-        results = pipe.execute()
-        return results[1] < max_reqs
-    except Exception as e:
-        log.debug(f"Rate limit check failed: {e}")
-        return True
-
-
-def calculate_reading_time(text: str) -> int:
-    """Estimates reading time in minutes."""
-    if not text:
-        return 1
-    return max(1, math.ceil(len(text.split()) / 200))
-
 
 def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
     now = time.time()
@@ -391,7 +27,6 @@ def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
         log.debug(f"Failed to load source statuses: {e}")
         return _SOURCE_STATUS_CACHE["data"] or {}
 
-
 def get_source_quality_multiplier(source: str) -> float:
     status = get_source_health_map().get(source) or {}
     q_score = status.get("quality_score")
@@ -399,12 +34,10 @@ def get_source_quality_multiplier(source: str) -> float:
         return 1.0
     return max(0.45, min(1.05, 0.55 + float(q_score) * 0.5))
 
-
 def get_source_effective_weight(source: str) -> float:
     reg = get_source_registry()
     base = reg.get(source, {}).get("credibility", DEFAULT_CREDIBILITY)
     return base * get_source_quality_multiplier(source)
-
 
 def get_source_trust_label(source: str) -> str:
     weight = get_source_effective_weight(source)
@@ -414,33 +47,11 @@ def get_source_trust_label(source: str) -> str:
         return "Потврден извор"
     return "Следен извор"
 
-
-def _coerce_datetime(value) -> Optional[datetime.datetime]:
-    if isinstance(value, datetime.datetime):
-        if value.tzinfo:
-            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        return value
-    if not value:
-        return None
-    try:
-        dt = datetime.datetime.fromisoformat(str(value).replace(" ", "T"))
-        if dt.tzinfo:
-            return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        return dt
-    except Exception as e:
-        log.debug(f"Failed to parse datetime: {e}")
-        m = re.match(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", str(value))
-        if m:
-            return datetime.datetime.fromisoformat(m.group(1).replace(" ", "T"))
-    return None
-
-
 def _cluster_title_overlap(left: str, right: str) -> float:
     l_set = {t for t in str(left or "").lower().split() if len(t) >= 4}
     r_set = {t for t in str(right or "").lower().split() if len(t) >= 4}
     union = len(l_set | r_set) or 1
     return len(l_set & r_set) / union
-
 
 def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     ranked = rank_articles_in_cluster(arts)
@@ -533,7 +144,6 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
         )
     return signals
 
-
 def annotate_cluster_articles(
     arts: List[Dict[str, Any]], prefer_recent: bool = False
 ) -> List[Dict[str, Any]]:
@@ -589,7 +199,6 @@ def annotate_cluster_articles(
         annotated.append(enriched)
     return annotated
 
-
 def rank_articles_in_cluster(
     arts: List[Dict[str, Any]], prefer_recent: bool = False
 ) -> List[Dict[str, Any]]:
@@ -623,7 +232,6 @@ def rank_articles_in_cluster(
         return (penalty, dt, w) if prefer_recent else (penalty + w, dt)
 
     return sorted(ranked, key=final_key, reverse=True)
-
 
 def build_read_next_clusters(
     cur_id: str,
@@ -737,7 +345,6 @@ def build_read_next_clusters(
 
     return sorted(results, key=lambda x: x["score"], reverse=True)[:limit]
 
-
 def build_source_reputation_rows(
     source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None
 ):
@@ -816,7 +423,6 @@ def build_source_reputation_rows(
         ),
         reverse=True,
     )
-
 
 def build_editor_analytics_payload(
     profile_stats=None,
@@ -902,7 +508,6 @@ def build_editor_analytics_payload(
         ],
     }
 
-
 def score_cluster(arts: List[Dict[str, Any]]) -> float:
     if not arts:
         return 0.0
@@ -918,7 +523,6 @@ def score_cluster(arts: List[Dict[str, Any]]) -> float:
     clicks = sum(a.get("clicks", 0) or 0 for a in arts)
     return cred * recency * math.log1p(len(arts)) * (1 + math.log1p(clicks) * 0.15)
 
-
 def score_cluster_for_synthesis(arts: List[Dict[str, Any]]) -> float:
     if not arts:
         return 0.0
@@ -930,7 +534,6 @@ def score_cluster_for_synthesis(arts: List[Dict[str, Any]]) -> float:
     )
     return base * src_bonus * ctx_bonus
 
-
 def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     if not arts:
         return 0.0
@@ -939,7 +542,6 @@ def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     w = [get_source_effective_weight(a["source"]) for a in ranked[:3]]
     t_bonus = 1 + max(0.0, min(0.22, (sum(w) / len(w) - 1.0) * 0.16))
     return base * t_bonus * (0.72 if len({a["source"] for a in ranked}) <= 1 else 1.0)
-
 
 def assess_cluster_synthesis_freshness(
     arts: List[Dict[str, Any]], synth_at
@@ -1053,7 +655,6 @@ def assess_cluster_synthesis_freshness(
         "synthesis_updated_at": s_dt,
     }
 
-
 def is_balanced(arts: List[Dict[str, Any]]) -> bool:
     if len(arts) < BALANCED_COVERAGE_THRESHOLD:
         return False
@@ -1062,28 +663,3 @@ def is_balanced(arts: List[Dict[str, Any]]) -> bool:
         len({a["source"] for a in arts}) >= 4
         or len({reg.get(a["source"], {}).get("category") for a in arts}) >= 2
     )
-
-
-def publish_event(channel: str, data: dict):
-    try:
-        redis_client.publish(channel, json.dumps(data, cls=DateTimeEncoder))
-    except Exception as e:
-        log.debug(f"Failed to publish event to {channel}: {e}")
-
-
-async def event_stream(channel: str, request=None):
-    pubsub = redis_client.pubsub()
-    pubsub.subscribe(channel)
-    try:
-        while True:
-            if request and await request.is_disconnected():
-                break
-            msg = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if msg:
-                yield f"data: {msg['data']}\n\n"
-            else:
-                yield "retry: 10000\n\n"
-            await asyncio.sleep(0.1)
-    finally:
-        pubsub.unsubscribe(channel)
-        pubsub.close()

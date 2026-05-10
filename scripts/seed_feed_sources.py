@@ -1,0 +1,117 @@
+from database import db_manager as db
+
+# The original hardcoded catalog
+ORIGINAL_FEED_CATALOG = [
+    ("Sloboden Pecat", "https://slobodenpecat.mk/feed/"),
+    ("Kanal 5", "https://kanal5.com.mk/rss.aspx?id=1"),
+    ("MIA", "https://mia.mk/feed"),
+    ("Sitel", "https://sitel.com.mk/rss.xml"),
+    ("Telma", "https://telma.com.mk/feed/"),
+    ("Kurir", "https://kurir.mk/feed/"),
+    ("Republika", "https://republika.mk/feed/"),
+    ("Fokus", "https://fokus.mk/feed/"),
+    ("Nezavisen", "https://nezavisen.mk/feed/"),
+    ("Faktor", "https://faktor.mk/feed/"),
+    ("Vecer", "https://vecer.mk/feed/"),
+    ("Meta", "https://meta.mk/feed/"),
+    ("360 Stepeni", "https://360stepeni.mk/feed/"),
+    ("Makfax", "https://makfax.com.mk/feed/"),
+    ("Nova Makedonija", "https://novamakedonija.com.mk/feed/"),
+    ("Infomax", "https://infomax.mk/feed/"),
+    ("Press24", "https://press24.mk/feed/"),
+    ("Skopje1", "https://skopje1.mk/feed/"),
+    ("Plusinfo", "https://plusinfo.mk/feed/"),
+    ("4News", "https://4news.mk/feed/"),
+    ("Makpress", "https://makpress.mk/feed/"),
+    ("Vistinomer", "https://vistinomer.mk/feed/"),
+    ("Lider", "https://lider.mk/feed/"),
+    ("MKD", "https://mkd.mk/feed/"),
+    ("NetPress", "https://netpress.com.mk/feed/"),
+    ("Akademik", "https://akademik.mk/feed/"),
+    ("Skopje Info", "https://skopjeinfo.mk/feed/"),
+    ("Prizma", "https://prizma.mk/feed/"),
+    ("Expres", "https://expres.mk/feed/"),
+    ("Tetovo Info", "https://tetovoinfo.mk/feed/"),
+    ("A1on", "https://a1on.mk/feed/"),
+    ("SportSport", "https://sportsport.mk/feed/"),
+    ("24 Вести", "https://admin.24.mk/api/rss.xml"),
+    ("TV21", "https://tv21.mk/feed/"),
+    ("Civil Media", "https://civilmedia.mk/feed/"),
+    ("Радио МОФ", "https://radiomof.mk/feed/"),
+    ("Сакам да кажам", "https://sdk.mk/index.php/mk/feed/"),
+    ("Бизнис Вести", "https://biznisvesti.mk/feed/"),
+    ("MRT", "https://mrt.com.mk/rss.xml"),
+    ("Okno", "https://okno.mk/feed/"),
+    ("Alfa TV", "https://alfa.mk/feed/"),
+    ("Tocka", "https://tocka.com.mk/rss"),
+    ("IRL", "https://irl.mk/mk/feed/"),
+    ("Nova TV", "https://novatv.mk/feed/"),
+    ("Libertas", "https://libertas.mk/feed/"),
+    ("Racin", "https://racin.mk/feed/"),
+    ("Kajgana", "https://kajgana.com/rss.xml"),
+    ("Pari.com.mk", "https://pari.com.mk/feed/"),
+    ("E-Magazin", "https://emagazin.mk/feed/"),
+    ("IT.mk", "https://it.mk/feed/"),
+    ("Sportmanija", "https://sportmanija.mk/feed/"),
+    ("Reporter", "https://reporter.mk/feed/"),
+    ("Off.net.mk", "https://off.net.mk/feed/"),
+    ("Denesen", "https://denesen.mk/feed/"),
+    ("24info", "https://24info.mk/feed/"),
+    ("Vreme", "https://vreme.mk/feed/"),
+    ("Frontline", "https://frontline.mk/feed/"),
+    ("Nacional", "https://nacionalno.mk/feed/"),
+    ("Antropol", "https://antropol.mk/feed/"),
+    ("Brif", "https://brif.mk/feed/"),
+    ("Pressing TV", "https://pressingtv.mk/feed/"),
+    ("Inbox7", "https://inbox7.mk/feed/"),
+    ("Kanal77", "https://kanal77.mk/feed/"),
+    ("Glas", "https://glas.mk/feed/"),
+    ("Vistina", "https://vistina.mk/feed/"),
+    ("Vesnik", "https://vesnik.com/feed/"),
+    ("Sloboden Svet", "https://slobodensvet.com.mk/feed/"),
+    ("BiznisInfo", "https://biznisinfo.mk/feed/"),
+    ("Bitola News", "https://bitolanews.mk/feed/"),
+    ("PopUp", "https://popup.mk/feed/"),
+    ("Kultura.mk", "https://www.kultura.mk/feed"),
+    ("Cooltura", "https://cooltura.mk/feed/"),
+    ("Smartportal", "https://smartportal.mk/feed/"),
+    ("USB.mk", "https://usb.mk/feed/"),
+    ("Hashtag", "https://hashtag.mk/feed/"),
+    ("Muzika24", "https://muzika24.mk/feed/"),
+    ("Denar", "https://denar.mk/feed/"),
+    ("Ekonomski", "https://ekonomski.mk/feed/"),
+    ("Kapital", "https://kapital.mk/feed/"),
+    ("Inovativnost", "https://inovativnost.mk/feed/"),
+    ("Motika", "https://motika.mk/feed/"),
+    ("Espreso", "https://www.espreso.mk/feed/"),
+]
+
+def seed_feed_sources():
+    print(f"Seeding {len(ORIGINAL_FEED_CATALOG)} feed sources into the 'feed_sources' table...")
+    
+    added = 0
+    updated = 0
+    
+    for name, url in ORIGINAL_FEED_CATALOG:
+        exists = db.execute_one("SELECT name FROM feed_sources WHERE name = %s", (name,))
+        if not exists:
+            db.execute(
+                "INSERT INTO feed_sources (name, url, is_active) VALUES (%s, %s, %s)",
+                (name, url, True),
+                fetch=False,
+            )
+            added += 1
+            print(f"  + Added feed source: {name}")
+        else:
+            db.execute(
+                "UPDATE feed_sources SET url = %s WHERE name = %s",
+                (url, name),
+                fetch=False,
+            )
+            updated += 1
+            print(f"  . Updated feed source: {name}")
+            
+    print(f"Sync complete. Added {added}, updated {updated} feed sources.")
+
+if __name__ == "__main__":
+    seed_feed_sources()

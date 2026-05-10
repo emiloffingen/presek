@@ -600,7 +600,20 @@ async def fetch_feed_async(
 def get_active_sources():
     """Fetches all active sources from the database."""
     rows = db.execute(
-        "SELECT name, url, country, category, credibility, source_limit, pause_mode, pause_reason FROM sources WHERE is_active = TRUE"
+        """
+        SELECT 
+            fs.name, 
+            fs.url, 
+            s.country, 
+            COALESCE(fs.category, s.category) as category, 
+            s.credibility, 
+            s.source_limit, 
+            s.pause_mode, 
+            s.pause_reason
+        FROM feed_sources fs
+        JOIN sources s ON fs.name = s.name
+        WHERE fs.is_active = TRUE AND s.is_active = TRUE
+        """
     )
     return [dict(r) for r in rows]
 

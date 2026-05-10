@@ -466,7 +466,6 @@ def extract_entities_semantic(text: str) -> set[str]:
                 model="Babelscape/wikineural-multilingual-ner",
                 aggregation_strategy="simple",
                 device="cpu",
-                torch_dtype=torch.bfloat16,
             )
         except Exception as e:
             import logging
