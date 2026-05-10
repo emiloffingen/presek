@@ -55,7 +55,7 @@ if cors_origins == "*" and os.environ.get("ENV") == "production":
         "CORS_ORIGINS was '*', defaulting to presek.live for production security"
     )
 else:
-    cors_origins = cors_origins.split(",") if cors_origins else ["*"]
+    cors_origins = cors_origins.split(",") if cors_origins else ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5001", "http://127.0.0.1:5001"]
 
 app.add_middleware(
     CORSMiddleware,
