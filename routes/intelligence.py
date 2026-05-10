@@ -808,28 +808,59 @@ async def get_global_pulse(category: Optional[str] = None):
     async def fetch_top_entities(interval_str):
         if category:
             sql = f"""
-                SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
-                FROM knowledge_entities ke
-                JOIN cluster_entities ce ON ke.name = ce.entity_name
-                JOIN articles a ON ce.cluster_id = a.cluster_id
-                WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
-                GROUP BY ke.name, ke.sentiment_score, ke.type
+                SELECT t.name, COUNT(DISTINCT t.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+                FROM (
+                    SELECT UNNEST(cm.tags) as name, cm.cluster_id
+                    FROM cluster_metadata cm
+                    JOIN articles a ON cm.cluster_id = a.cluster_id
+                    WHERE a.category = %s AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                ) t
+                LEFT JOIN knowledge_entities ke ON t.name = ke.name
+                WHERE t.name IS NOT NULL AND length(t.name) >= 3
+                GROUP BY t.name, ke.sentiment_score, ke.type
                 ORDER BY total_mentions DESC
-                LIMIT 8
+                LIMIT 12
             """
-            return await db.async_execute(sql, (category,))
+            rows = await db.async_execute(sql, (category,))
         else:
             sql = f"""
-                SELECT ke.name, COUNT(DISTINCT a.cluster_id) as total_mentions, ke.sentiment_score, ke.type
-                FROM knowledge_entities ke
-                JOIN cluster_entities ce ON ke.name = ce.entity_name
-                JOIN articles a ON ce.cluster_id = a.cluster_id
-                WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
-                GROUP BY ke.name, ke.sentiment_score, ke.type
+                SELECT t.name, COUNT(DISTINCT t.cluster_id) as total_mentions, ke.sentiment_score, ke.type
+                FROM (
+                    SELECT UNNEST(cm.tags) as name, cm.cluster_id
+                    FROM cluster_metadata cm
+                    JOIN articles a ON cm.cluster_id = a.cluster_id
+                    WHERE COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL {interval_str}
+                ) t
+                LEFT JOIN knowledge_entities ke ON t.name = ke.name
+                WHERE t.name IS NOT NULL AND length(t.name) >= 3
+                GROUP BY t.name, ke.sentiment_score, ke.type
                 ORDER BY total_mentions DESC
-                LIMIT 8
+                LIMIT 12
             """
-            return await db.async_execute(sql)
+            rows = await db.async_execute(sql)
+            
+        # Post-process: clean names and filter out common generic tags
+        from .common import _is_valid_focus_entity
+        from nlp import normalize_tag_name
+        
+        processed = []
+        seen = set()
+        for r in rows:
+            name = normalize_tag_name(r["name"])
+            if not _is_valid_focus_entity(name, None):
+                continue
+            if name.casefold() in seen:
+                continue
+            seen.add(name.casefold())
+            processed.append({
+                "name": name,
+                "total_mentions": r["total_mentions"],
+                "sentiment_score": r["sentiment_score"] or 0,
+                "type": r["type"] or "ENTITY"
+            })
+            if len(processed) >= 8:
+                break
+        return processed
 
     top_entities = await fetch_top_entities("'24 hours'")
     if not top_entities or len(top_entities) < 3:

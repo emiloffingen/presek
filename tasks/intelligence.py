@@ -1061,7 +1061,7 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
 
 
 @celery_app.task
-def classify_topics_task():
+def classify_topics_task(*args, **kwargs):
     """Classify default 'Вести' clusters using local rule-based detection."""
     try:
         # Increased limit as local classification is nearly free
@@ -1086,7 +1086,7 @@ def classify_topics_task():
 
 
 @celery_app.task
-def recategorize_clusters_task():
+def recategorize_clusters_task(*args, **kwargs):
     """Verify if 'Македонија' articles belong in specialized categories using rule-based detection."""
     try:
         rows = db.execute(
