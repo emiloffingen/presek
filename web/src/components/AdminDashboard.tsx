@@ -311,6 +311,3 @@ function StatusTile({ icon, label, value, detail, ok }: any) {
     </div>
   );
 }
->
-  );
-}
