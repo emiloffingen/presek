@@ -90,6 +90,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
     }
 
     function formatStat(val: number) {
+        if (val === 0 || !val) return '–';
         return (val * 100).toFixed(0) + '%';
     }
 
@@ -128,7 +129,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
             <div className={`pulse-stats-grid mb-12 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                 <div className="pulse-card" title="Вкупен број на обработени објави во последните 24 часа.">
                     <p className="card-label"><Activity size={12}/> ИНФОРМАТИВЕН РИТАМ</p>
-                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || 0}</p>
+                    <p className="card-value">{globalPulse?.last_24h?.toLocaleString('mk-MK') || '–'}</p>
                     <div className="card-sparkline group">
                         {velocityData.length > 0 ? (() => {
                             const maxVelocity = Math.max(1, ...velocityData.map((d: any) => d.n || 0));
@@ -153,13 +154,13 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
 
                 <div className="pulse-card border-t-4 border-t-nyt-accent" title="Процент на теми кои се покриени од повеќе различни извори (покажува медиумски фокус).">
                     <p className="card-label !text-nyt-accent"><ShieldCheck size={12}/> ПЛУРАЛИЗАМ</p>
-                    <p className="card-value">{intelligence.pluralism?.pluralism_pct || 0}%</p>
-                    <p className="card-note">{(intelligence.pluralism?.pluralism_pct || 0) > 0 ? `${intelligence.pluralism?.high_consensus_pct}% медиумски консензус` : 'Системот анализира нови кластери'}</p>
+                    <p className="card-value">{intelligence.pluralism?.pluralism_pct > 0 ? `${intelligence.pluralism?.pluralism_pct}%` : '–'}</p>
+                    <p className="card-note">{intelligence.pluralism?.pluralism_pct > 0 ? `${intelligence.pluralism?.high_consensus_pct}% медиумски консензус` : 'Системот анализира нови кластери'}</p>
                 </div>
 
                 <div className="pulse-card" title="Процент на меѓународни извори што известуваат.">
                     <p className="card-label"><Globe size={12}/> СВЕТОТ КАЈ НАС</p>
-                    <p className="card-value">{intelligence.international_share_pct || 0}%</p>
+                    <p className="card-value">{intelligence.international_share_pct > 0 ? `${intelligence.international_share_pct}%` : '–'}</p>
                     <p className="card-note">Вести од меѓународни извори</p>
                 </div>
 
@@ -191,7 +192,9 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                     <p className="font-serif italic text-lg md:text-xl leading-snug">
                         {intelligence.pluralism?.pluralism_pct > 50 
                             ? "Забележан е висок степен на медиумски консензус кај водечките стории денес."
-                            : "Низок плурализам: темите се обработуваат со специфични, дивергентни агли."
+                            : intelligence.pluralism?.pluralism_pct > 0
+                                ? "Низок плурализам: темите се обработуваат со специфични, дивергентни агли."
+                                : "Системот анализира..."
                         }
                     </p>
                 </div>
@@ -201,7 +204,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             <span className="block text-[9px] font-black uppercase text-muted-foreground">Транспарентност</span>
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
-                        <span className="text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio || 0}%</span>
+                        <span className="text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
                         <div className="absolute hidden group-hover:block bg-foreground text-background text-[10px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans left-0 md:left-auto">
                             Процент на објави чија содржина е потврдена низ системот.
                         </div>
@@ -253,17 +256,17 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                     <div key={tp.topic} className="p-4 border border-border bg-secondary/5 hover:bg-secondary/10 transition-colors border-l-2 border-l-nyt-accent flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-black uppercase text-nyt-accent mb-1">{tp.topic}</span>
-                                            <span className="text-xs font-serif italic text-muted-foreground">{tp.n} стории анализирани</span>
+                                            <span className="text-xs font-serif italic text-muted-foreground">{tp.n > 0 ? tp.n + ' стории анализирани' : '–'}</span>
                                         </div>
                                         <div className="flex gap-6 items-center">
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[8px] font-black uppercase opacity-50">Објективност</span>
-                                                <span className="text-sm font-black">{(tp.avg_objectivity * 100).toFixed(0)}%</span>
+                                                <span className="text-sm font-black">{tp.avg_objectivity > 0 ? (tp.avg_objectivity * 100).toFixed(0) + '%' : '–'}</span>
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[8px] font-black uppercase opacity-50">Сензација</span>
                                                 <span className={`text-sm font-black ${tp.avg_sensationalism > 0.4 ? 'text-nyt-red' : 'text-emerald-600'}`}>
-                                                    {(tp.avg_sensationalism * 100).toFixed(0)}%
+                                                    {tp.avg_sensationalism > 0 ? (tp.avg_sensationalism * 100).toFixed(0) + '%' : '–'}
                                                 </span>
                                             </div>
                                         </div>
@@ -307,7 +310,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <div className="mt-auto pt-4 border-t border-border/40 flex items-center justify-between">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-muted-foreground uppercase">Споменувања</span>
-                                                <span className="text-xl font-black tabular-nums">{ent.total_mentions}</span>
+                                                <span className="text-xl font-black tabular-nums">{ent.total_mentions > 0 ? ent.total_mentions : '–'}</span>
                                             </div>
                                             <div className={`text-[10px] font-black uppercase tracking-tighter ${ent.sentiment_score > 0.1 ? 'text-green-600' : ent.sentiment_score < -0.1 ? 'text-red-600' : 'text-muted-foreground'}`}>
                                                 {ent.sentiment_score > 0.1 ? 'Позитивен' : ent.sentiment_score < -0.1 ? 'Критичен' : 'Неутрален'}
@@ -344,7 +347,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                      <div key={tp.topic} className="space-y-1">
                                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
                                              <span>{tp.topic}</span>
-                                             <span className={tension > 60 ? 'text-nyt-red' : 'text-muted-foreground'}>{tension.toFixed(0)}%</span>
+                                             <span className={tension > 60 ? 'text-nyt-red' : 'text-muted-foreground'}>{tension > 0 ? tension.toFixed(0) + '%' : '–'}</span>
                                          </div>
                                          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                                              <div 
@@ -379,7 +382,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             {[...pulseLeaders].sort((a,b) => b.avg_objectivity - a.avg_objectivity).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-emerald-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-emerald-600">{(s.avg_objectivity * 100).toFixed(0)}% Објективност</span>
+                                    <span className="text-xs font-black text-emerald-600">{s.avg_objectivity > 0 ? (s.avg_objectivity * 100).toFixed(0) + '% Објективност' : '–'}</span>
                                 </div>
                             ))}
                         </div>
@@ -390,7 +393,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             {[...pulseLeaders].sort((a,b) => a.avg_sensationalism - b.avg_sensationalism).slice(0, 3).map(s => (
                                 <div key={s.source} className="flex justify-between items-center group">
                                     <span className="font-bold text-sm group-hover:text-red-600 transition-colors">{s.source}</span>
-                                    <span className="text-xs font-black text-red-600">{(s.avg_sensationalism * 100).toFixed(0)}% Сензација</span>
+                                    <span className="text-xs font-black text-red-600">{s.avg_sensationalism > 0 ? (s.avg_sensationalism * 100).toFixed(0) + '% Сензација' : '–'}</span>
                                 </div>
                             ))}
                         </div>
