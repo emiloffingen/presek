@@ -24,7 +24,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 # --- Stage 3: Final Production Image ---
 FROM python:3.12-slim
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
