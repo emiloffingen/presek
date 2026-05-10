@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper, Mic, Filter, Clock } from 'lucide-react';
+import { 
+  Search, X, Zap, ArrowUpRight, LoaderCircle, Newspaper, 
+  Mic, Filter, Clock, TrendingUp, User, Layout, 
+  Settings, HelpCircle, Archive, Sparkles, ChevronRight,
+  Globe, ShieldCheck, Activity, BookOpen, ExternalLink,
+  History
+} from 'lucide-react';
 import { getDisplaySummary, getDisplayTitle } from '../utils/textUtils';
 
 type Suggestion = {
@@ -13,6 +19,9 @@ type Suggestion = {
   sourceCount?: number;
   matchLabel?: string;
   created_at?: string;
+  representative_image?: string;
+  pulse_score?: number;
+  has_synthesis?: boolean;
 };
 
 type EntityResult = {
@@ -27,19 +36,34 @@ type TrendingItem = {
   word: string;
 };
 
-const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+type SearchAction = {
+  id: string;
+  label: string;
+  icon: any;
+  href: string;
+  category: 'NAVIGATION' | 'SETTINGS' | 'HELP';
+  desc: string;
+};
 
-// Available categories for filtering
-const CATEGORIES = [
-  { id: 'all', label: 'СИТЕ', color: 'text-nyt-accent' },
-  { id: 'Македонија', label: 'МАКЕДОНИЈА', color: 'text-nyt-red' },
-  { id: 'Политика', label: 'ПОЛИТИКА', color: 'text-blue-600' },
-  { id: 'Економија', label: 'ЕКОНОМИЈА', color: 'text-emerald-600' },
-  { id: 'Спорт', label: 'СПОРТ', color: 'text-orange-500' },
-  { id: 'Култура', label: 'КУЛТУРА', color: 'text-purple-600' },
-  { id: 'Технологија', label: 'ТЕХНОЛОГИЈА', color: 'text-cyan-600' },
+const SEARCH_ACTIONS: SearchAction[] = [
+  { id: 'act-home', label: 'Почетна Страница', icon: Layout, href: '/', category: 'NAVIGATION', desc: 'Врати се на главната страница со вести.' },
+  { id: 'act-briefing', label: 'Дневен Брифинг', icon: Zap, href: '/briefing', category: 'NAVIGATION', desc: 'Преглед на најважните вести во форма на брифинг.' },
+  { id: 'act-pulse', label: 'Информативен Ритам', icon: Activity, href: '/pulse', category: 'NAVIGATION', desc: 'Следете ги трендовите и медиумскиот плурализам.' },
+  { id: 'act-archive', label: 'Архива на Вести', icon: Archive, href: '/archive', category: 'NAVIGATION', desc: 'Пребарајте ги сите досегашни објави.' },
+  { id: 'act-about', label: 'За Проектот', icon: HelpCircle, href: '/about', category: 'HELP', desc: 'Дознајте повеќе за Пресек и технологијата зад него.' },
 ];
+
+const CATEGORIES = [
+  { id: 'all', label: 'СИТЕ ТЕМИ', color: 'bg-nyt-accent' },
+  { id: 'Македонија', label: 'МАКЕДОНИЈА', color: 'bg-nyt-red' },
+  { id: 'Политика', label: 'ПОЛИТИКА', color: 'bg-blue-600' },
+  { id: 'Економија', label: 'ЕКОНОМИЈА', color: 'bg-emerald-600' },
+  { id: 'Спорт', label: 'СПОРТ', color: 'bg-orange-500' },
+  { id: 'Култура', label: 'КУЛТУРА', color: 'bg-purple-600' },
+  { id: 'Технологија', label: 'ТЕХНОЛОГИЈА', color: 'bg-cyan-600' },
+];
+
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function SearchIsland({ initialQuery = '' }: { initialQuery?: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,6 +78,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListening, setIsListening] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeSection, setActiveSection] = useState<'NEWS' | 'ENTITIES' | 'ACTIONS' | 'RECENT'>('NEWS');
 
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const placeholders = [
@@ -61,7 +86,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     "Анализирај ги противречните ставови...",
     "Деконструирај ги фактите и бројките...",
     "Мапирај ги реакциите и последиците...",
-    "Што се случува во Скопје?"
+    "Што се случува во Македонија?"
   ];
 
   useEffect(() => {
@@ -74,6 +99,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -82,7 +108,6 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     }
   }, [initialQuery]);
 
-  // Load recent searches with timestamps
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -90,11 +115,10 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Handle legacy format (array of strings) vs new format (array of objects)
         const loaded = Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string'
-          ? parsed.map((q: string) => ({ query: q, timestamp: 0 }))
+          ? parsed.map((q: string) => ({ query: q, timestamp: Date.now() }))
           : parsed;
-        setRecentSearches(loaded || []);
+        setRecentSearches(loaded.slice(0, 5) || []);
       } catch {
         setRecentSearches([]);
       }
@@ -112,32 +136,25 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Voice search support
   const startVoiceSearch = useCallback(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      console.warn('Гласово пребарување не е поддржано во овој прелистувач');
       return;
     }
-    
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'mk-MK';
-    
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
-    
     recognition.onresult = (event: any) => {
       const transcript = event.results[0]?.[0]?.transcript;
-      if (transcript && typeof transcript === 'string') {
+      if (transcript) {
         setQuery(transcript);
         setIsListening(false);
       }
     };
-    
     recognition.start();
   }, []);
 
@@ -145,89 +162,45 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    
     if (!isOpen) {
       document.body.style.overflow = 'unset';
       setActiveIndex(-1);
       setSuggestions([]);
       setError(null);
-      setShowFilters(false);
-      if (lastFocusedRef.current) {
-        lastFocusedRef.current.focus();
-      }
       return;
     }
-
     lastFocusedRef.current = document.activeElement as HTMLElement;
     document.body.style.overflow = 'hidden';
-    
-    // Improved focus for all devices
     const timer = setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        // Force focus for iOS
-        inputRef.current.click();
-      }
-    }, 50);
-
+      if (inputRef.current) inputRef.current.focus();
+    }, 100);
     return () => {
       document.body.style.overflow = 'unset';
       clearTimeout(timer);
     };
   }, [isOpen]);
 
-  // Close filter dropdown when clicking outside
-  useEffect(() => {
-    if (typeof document === 'undefined' || !showFilters) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.filter-dropdown') || target.closest('button[aria-label*="категори"]')) return;
-      setShowFilters(false);
-    };
-    
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowFilters(false);
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [showFilters]);
-
   useEffect(() => {
     if (!isOpen) return;
-
     let cancelled = false;
-
     const loadTrending = async () => {
       try {
         const res = await fetch('/api/trending');
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && Array.isArray(data)) {
-          setTrendingItems(data.slice(0, 6));
+          setTrendingItems(data.slice(0, 10));
         }
       } catch {
-        if (!cancelled) {
-          setTrendingItems([]);
-        }
+        if (!cancelled) setTrendingItems([]);
       }
     };
-
     loadTrending();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
-
     const trimmed = query.trim();
     if (trimmed.length < 2) {
       setSuggestions([]);
@@ -241,34 +214,26 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
       setIsLoading(true);
       setError(null);
       try {
-        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=6`;
+        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12`;
         const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
         const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
         const res = await fetch(url + timespanPart + categoryPart);
-        if (!res.ok) {
-          throw new Error('Системот е привремено зафатен. Ве молиме обидете се повторно.');
-        }
+        if (!res.ok) throw new Error('Грешка при пребарувањето.');
         const data = await res.json();
         const nextSuggestions = Array.isArray(data?.clusters)
-          ? data.clusters.slice(0, 6).map((cluster: any) => {
+          ? data.clusters.map((cluster: any) => {
               const article = cluster.articles?.[0] || {};
-              const title = getDisplayTitle(article, 'Наслов') || 'Наслов';
-              const lowered = title.toLowerCase();
-              const queryLower = trimmed.toLowerCase();
               return {
                 cluster_id: cluster.cluster_id,
-                title,
-                image_url: article.image_url || null,
+                title: getDisplayTitle(article, 'Наслов'),
+                image_url: cluster.representative_image || article.image_url || null,
                 source: article.source || '',
                 category: article.category || '',
                 description: getDisplaySummary(article),
-                sourceCount: Array.isArray(cluster.articles) ? cluster.articles.length : 0,
-                matchLabel:
-                  lowered === queryLower
-                    ? 'Точен наслов'
-                    : lowered.includes(queryLower)
-                    ? 'Совпаѓање во наслов'
-                    : 'Поврзана тема',
+                sourceCount: cluster.articles?.length || 0,
+                pulse_score: cluster.pulse_score,
+                has_synthesis: cluster.has_synthesis,
+                matchLabel: cluster.is_breaking ? 'ИТНО' : 'ВЕСТ',
               };
             })
           : [];
@@ -276,53 +241,33 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
         if (!cancelled) {
           setSuggestions(nextSuggestions);
           setEntityResult(data.entity || null);
-          setActiveIndex(-1);
+          setActiveIndex(nextSuggestions.length > 0 ? 0 : -1);
         }
       } catch (err) {
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
-          setError(err instanceof Error ? err.message : 'Грешка при пребарувањето');
-          setActiveIndex(-1);
+          setError(err instanceof Error ? err.message : 'Грешка');
         }
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
-    }, 180);
+    }, 200);
 
     return () => {
       cancelled = true;
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
-  }, [query, isOpen, timespan]);
+  }, [query, isOpen, timespan, categoryFilter]);
 
-  const closeSearch = () => {
-    setIsOpen(false);
-  };
+  const closeSearch = () => setIsOpen(false);
 
   const persistRecentSearch = (searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return;
-
-    const newRecent = [
-      { query: cleanQuery, timestamp: Date.now() },
-      ...recentSearches
-        .filter((s) => s.query !== cleanQuery)
-        .slice(0, 4)
-    ];
+    const newRecent = [{ query: cleanQuery, timestamp: Date.now() }, ...recentSearches.filter((s) => s.query !== cleanQuery).slice(0, 4)];
     setRecentSearches(newRecent);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
-    }
-  };
-
-  const clearRecentSearches = () => {
-    setRecentSearches([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('presek_recent_searches');
-    }
+    if (typeof window !== 'undefined') localStorage.setItem('presek_recent_searches', JSON.stringify(newRecent));
   };
 
   const navigateToQuery = (searchQuery: string) => {
@@ -341,488 +286,408 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
     navigate(`/cluster/${clusterId}`);
   };
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeIndex >= 0 && suggestions[activeIndex]) {
-      navigateToCluster(suggestions[activeIndex].cluster_id);
-      return;
-    }
-    navigateToQuery(query);
-  };
-
   const onDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowDown') {
-      if (suggestions.length === 0) return;
       e.preventDefault();
-      setActiveIndex((prev) => (prev + 1) % suggestions.length);
-      return;
-    }
-
-    if (e.key === 'ArrowUp') {
-      if (suggestions.length === 0) return;
+      const max = suggestions.length + (entityResult ? 1 : 0) + filteredActions.length;
+      setActiveIndex((prev) => (prev + 1) % max);
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
-      return;
-    }
-
-    if (e.key === 'Tab' && dialogRef.current) {
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((node) => !node.hasAttribute('disabled'));
-
-      if (focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
+      const max = suggestions.length + (entityResult ? 1 : 0) + filteredActions.length;
+      setActiveIndex((prev) => (prev <= 0 ? max - 1 : prev - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex === -1) {
+        navigateToQuery(query);
+      } else if (entityResult && activeIndex === 0) {
+        navigateToQuery(entityResult.name);
+      } else {
+        const adjustedIndex = entityResult ? activeIndex - 1 : activeIndex;
+        if (adjustedIndex >= 0 && adjustedIndex < suggestions.length) {
+          navigateToCluster(suggestions[adjustedIndex].cluster_id);
+        } else {
+          const actionIndex = adjustedIndex - suggestions.length;
+          const action = filteredActions[actionIndex];
+          if (action) { closeSearch(); navigate(action.href); }
+        }
       }
     }
   };
 
-  const showRecent = query.trim().length < 2 && recentSearches.length > 0;
-  const showSuggestions = query.trim().length >= 2;
-  const showEmptyState = !isLoading && query.trim().length >= 2 && suggestions.length === 0 && !entityResult;
+  const filteredActions = SEARCH_ACTIONS.filter(a => 
+    a.label.toLowerCase().includes(query.toLowerCase()) || 
+    a.desc.toLowerCase().includes(query.toLowerCase())
+  );
 
-  const renderHighlightedText = (text: string, searchQuery: string) => {
-    const cleanQuery = searchQuery.trim();
-    if (!cleanQuery || cleanQuery.length < 2) return text;
-
-    try {
-      // Escape for regex but handle Cyrillic safely
-      const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`(${escapedQuery})`, 'ig');
-      const parts = text.split(regex);
-
-      return parts.map((part, index) => {
-        if (part.toLowerCase() === cleanQuery.toLowerCase()) {
-          return (
-            <mark
-              key={`${part}-${index}`}
-              className="bg-nyt-accent/10 text-nyt-accent px-0.5 rounded-sm"
-            >
-              {part}
-            </mark>
-          );
-        }
-        return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
-      });
-    } catch {
-      return text;
-    }
-  };
-
-  const buildSnippet = (item: Suggestion, searchQuery: string) => {
-    const description = item.description?.trim() || "";
-    const cleanQuery = searchQuery.trim().toLowerCase();
-    
-    if (!cleanQuery || cleanQuery.length < 2) {
-      return description.slice(0, 120);
-    }
-
-    const matchIndex = description.toLowerCase().indexOf(cleanQuery);
-    if (matchIndex === -1) {
-      return description.slice(0, 120);
-    }
-
-    const start = Math.max(0, matchIndex - 50);
-    const end = Math.min(description.length, matchIndex + cleanQuery.length + 80);
-    
-    let snippet = description.slice(start, end).trim();
-    if (start > 0) snippet = "…" + snippet;
-    if (end < description.length) snippet = snippet + "…";
-    
-    return snippet;
-  };
+  const selectedItem = (entityResult && activeIndex === 0) 
+    ? { type: 'ENTITY', data: entityResult } 
+    : (activeIndex >= (entityResult ? 1 : 0) && activeIndex < (entityResult ? 1 : 0) + suggestions.length)
+      ? { type: 'CLUSTER', data: suggestions[entityResult ? activeIndex - 1 : activeIndex] }
+      : (activeIndex >= (entityResult ? 1 : 0) + suggestions.length)
+        ? { type: 'ACTION', data: filteredActions[activeIndex - (entityResult ? 1 : 0) - suggestions.length] }
+        : null;
 
   return (
     <>
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 px-3 py-1.5 bg-secondary/50 border border-border/60 hover:border-nyt-accent/30 hover:bg-secondary rounded-md transition-all group w-full text-left"
-        aria-label="Пребарај"
+        className="flex items-center gap-3 px-3 py-1.5 bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-nyt-accent/30 rounded-lg transition-all group w-full text-left backdrop-blur-sm"
+        aria-label="Отвори команден центар"
       >
         <Search size={14} className="text-muted-foreground group-hover:text-nyt-accent transition-colors" />
         <span className="flex-1 overflow-hidden h-4 block">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 group-hover:text-muted-foreground transition-colors animate-in slide-in-from-bottom-2 duration-300 block truncate">
                 {placeholders[placeholderIdx]}
             </span>
         </span>
-        <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background border border-border rounded text-[8px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+        <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-background/50 border border-border rounded text-[8px] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
             <span className="text-[10px]">⌘</span>K
         </kbd>
       </button>
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[1000] bg-background/60 backdrop-blur-xl flex flex-col items-center pt-4 md:pt-12 px-4 transition-all animate-in fade-in duration-300"
+          className="fixed inset-0 z-[1000] bg-background/60 backdrop-blur-2xl flex items-center justify-center transition-all animate-in fade-in duration-300"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="presek-search-title"
           onKeyDown={onDialogKeyDown}
           onClick={closeSearch}
         >
           <div
             ref={dialogRef}
-            className="w-full max-w-5xl relative border border-nyt-accent/10 bg-background/95 shadow-editorial rounded-lg overflow-hidden animate-in zoom-in-95 duration-300"
+            className="w-full max-w-6xl h-[90vh] md:h-[80vh] bg-background/95 border border-border/50 shadow-2xl rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center px-6 md:px-10 py-6 border-b border-border/40">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-nyt-accent/10 rounded-lg">
-                    <Search size={20} className="text-nyt-accent" />
-                </div>
-                <div>
-                  <span id="presek-search-title" className="font-serif font-black text-xl md:text-2xl block tracking-tight">
-                    ИСТРАЖУВАЊЕ НА АРХИВАТА
-                  </span>
-                  <span className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-70">
-                    Длабинско мапирање на теми и настани
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={closeSearch}
-                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-all"
-                aria-label="Затвори пребарување"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={onSubmit} className="px-4 md:px-10 py-6 md:py-8 bg-secondary/20">
-              <div className="relative group">
+            {/* Command Header */}
+            <div className="flex items-center gap-4 px-6 py-4 border-b border-border/40 bg-secondary/10">
+              <Search className="text-nyt-accent" size={24} />
+              <div className="flex-1 relative">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={placeholders[placeholderIdx]}
-                  className="w-full bg-transparent py-3 md:py-4 text-2xl md:text-5xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 min-w-0 transition-all pr-24 md:pr-48"
-                  aria-label="Пребарај вести"
-                  role="combobox"
+                  placeholder="Пребарајте вести, теми или субјекти..."
+                  className="w-full bg-transparent py-4 text-2xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/30"
                   autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
                 />
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-border group-focus-within:bg-nyt-accent transition-colors"></div>
-                
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
-                  {query && (
-                    <button
-                      type="button"
-                      onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                      className="p-1.5 md:p-2 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Исчисти пребарување"
-                    >
-                      <X size={20} className="md:hidden" />
-                      <X size={24} className="hidden md:block" />
-                    </button>
-                  )}
-                  
-                  {/* Voice Search Button */}
-                  <button
-                    type="button"
-                    onClick={startVoiceSearch}
-                    className={`p-1.5 md:p-2 transition-colors ${
-                      isListening 
-                        ? 'text-nyt-accent animate-pulse' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                    aria-label="Гласово пребарување"
-                  >
-                    <Mic size={20} className="md:hidden" />
-                    <Mic size={24} className="hidden md:block" />
-                  </button>
-                  
-                  <button
-                    type="submit"
-                    className="bg-nyt-accent text-white px-4 md:px-10 py-2.5 md:py-3.5 rounded font-black text-[10px] md:text-xs uppercase tracking-[0.15em] md:tracking-[0.2em] shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] active:scale-95 transition-all"
-                  >
-                    БАРAJ
-                  </button>
-                </div>
+                {isLoading && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <LoaderCircle size={20} className="animate-spin text-nyt-accent" />
+                  </div>
+                )}
               </div>
+              <div className="flex items-center gap-2">
+                <button onClick={startVoiceSearch} className={`p-2 rounded-lg hover:bg-secondary transition-colors ${isListening ? 'text-nyt-accent animate-pulse' : 'text-muted-foreground'}`}>
+                  <Mic size={20} />
+                </button>
+                <button onClick={closeSearch} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-nyt-accent bg-nyt-accent/5 px-3 py-1.5 rounded-full border border-nyt-accent/10">
-                    <Zap size={12} fill="currentColor" /> КОНСОЛИДИРАНИ НАРАТИВИ ВО РЕАЛНО ВРЕМЕ
-                </div>
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-hidden flex">
+              {/* Left Column: Results List */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth border-r border-border/40 custom-scrollbar">
+                
+                {/* Empty State / Initial View */}
+                {!query.trim() && (
+                  <div className="space-y-10">
+                    {recentSearches.length > 0 && (
+                      <section>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                           <History size={12} /> ПОСЛЕДНИ ПРЕБАРУВАЊА
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {recentSearches.map((s, i) => (
+                            <button key={i} onClick={() => setQuery(s.query)} className="px-4 py-2 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-full text-xs font-bold transition-all">
+                              {s.query}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
 
-                <div className="flex items-center gap-3">
-                  {/* Category Filter Dropdown */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-background/80 border border-border rounded-lg text-[10px] font-black uppercase tracking-wider hover:border-nyt-accent/30 transition-all"
-                    >
-                      <Filter size={14} />
-                      {CATEGORIES.find(c => c.id === categoryFilter)?.label || 'СИТЕ'}
-                    </button>
-                    {showFilters && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200 filter-dropdown">
-                        {CATEGORIES.map(cat => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => {
-                              setCategoryFilter(cat.id);
-                              setShowFilters(false);
-                            }}
-                            className={`w-full px-4 py-2 text-left text-[11px] font-black uppercase tracking-wider hover:bg-secondary transition-all flex items-center gap-2 ${
-                              categoryFilter === cat.id ? 'text-nyt-accent bg-secondary/30' : 'text-muted-foreground'
-                            }`}
-                          >
-                            <span className={`w-2 h-2 rounded-full ${cat.color.replace('text-', 'bg-')}`}></span>
-                            {cat.label}
+                    <section>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                         <TrendingUp size={12} /> ТРЕНД ТЕМИ
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {trendingItems.length > 0 ? trendingItems.map((item, i) => (
+                          <button key={i} onClick={() => setQuery(item.word)} className="flex items-center gap-3 p-3 bg-secondary/30 hover:bg-secondary/60 rounded-xl transition-all group text-left">
+                            <span className="text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent">{(i+1).toString().padStart(2, '0')}</span>
+                            <span className="font-serif font-black text-sm truncate">{item.word}</span>
+                          </button>
+                        )) : [1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-xl"></div>)}
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+                         <Zap size={12} /> БРЗИ АКЦИИ
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {SEARCH_ACTIONS.map(action => (
+                          <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-4 p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-xl transition-all group text-left">
+                            <div className="p-2 bg-background rounded-lg text-muted-foreground group-hover:text-nyt-accent group-hover:bg-nyt-accent/10 transition-all">
+                              <action.icon size={20} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-wider">{action.label}</p>
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">{action.desc}</p>
+                            </div>
                           </button>
                         ))}
                       </div>
-                    )}
+                    </section>
                   </div>
+                )}
 
-                  {/* Timespan Filter */}
-                  <div className="flex items-center gap-1.5 p-1 bg-background/80 backdrop-blur-sm rounded-lg border border-border shadow-sm">
-                   {[
-                     { id: '24h', label: '24Ч' },
-                     { id: '7d', label: '7Д' },
-                     { id: 'all', label: 'СИТЕ' }
-                   ].map(ts => (
-                     <button
-                        key={ts.id}
-                        type="button"
-                        onClick={() => setTimespan(ts.id)}
-                        className={`px-3 py-1.5 rounded-md font-sans text-[9px] font-black tracking-widest transition-all ${
-                            timespan === ts.id 
-                            ? 'bg-nyt-accent text-white shadow-md' 
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                     >
-                       {ts.label}
-                     </button>
-                   ))}
-                  </div>
-                </div>
-              </div>
-            </form>
-
-            <div id="presek-search-results" className="grid grid-cols-1 md:grid-cols-[1fr_320px] min-h-[400px]">
-              <div className="px-6 md:px-10 py-8 md:border-r border-border/40 overflow-y-auto max-h-[60vh] hide-scrollbar">
-                <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-8 flex items-center gap-3">
-                  <span className="w-8 h-px bg-border"></span>
-                  {showSuggestions ? 'РЕЗУЛТАТИ' : 'ПОСЛЕДНИ ПРЕБАРУВАЊА'}
-                </h3>
-
-                {showSuggestions && (
-                  <div id="presek-search-listbox" role="listbox" className="space-y-4">
-                    {isLoading && (
-                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground animate-pulse">
-                        <LoaderCircle size={32} className="animate-spin mb-4 text-nyt-accent" />
-                        <span className="font-sans text-xs font-black uppercase tracking-widest">Пребарувам релевантни вести...</span>
-                      </div>
-                    )}
-
-                    {showEmptyState && (
-                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/60">
-                        <Search size={48} className="mb-4 opacity-30" />
-                        <span className="font-serif text-2xl font-black mb-2">Нема резултати</span>
-                        <span className="font-sans text-xs uppercase tracking-widest">Пробајте со друга пребарувачка фраза</span>
-                      </div>
-                    )}
-
-                    {error && (
-                      <div className="p-6 border border-nyt-red/20 bg-nyt-red/5 text-nyt-red rounded-lg flex items-center gap-4">
-                        <Zap size={20} />
-                        <span className="font-bold">{error}</span>
-                      </div>
-                    )}
-
+                {/* Results List */}
+                {query.trim().length >= 2 && (
+                  <div className="space-y-8">
                     {entityResult && (
-                      <a
-                        href={`/?entity=${encodeURIComponent(entityResult.name)}`}
-                        onClick={(e) => { e.preventDefault(); closeSearch(); navigate(`/?entity=${encodeURIComponent(entityResult.name)}`); }}
-                        className="w-full mb-8 p-6 border border-nyt-accent/20 bg-nyt-accent/[0.04] hover:bg-nyt-accent/[0.08] rounded-xl transition-all flex items-center gap-8 group no-underline shadow-sm hover:shadow-md"
-                      >
-                        <div className="w-20 h-20 rounded-full bg-background flex items-center justify-center shrink-0 border-2 border-nyt-accent/20 overflow-hidden shadow-inner">
-                           {entityResult.image_url ? (
-                             <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                           ) : (
-                             <span className="font-serif font-black text-3xl text-nyt-accent">{entityResult.name[0]}</span>
-                           )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="font-sans text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent mb-2 block">ПРОФИЛ НА СУБЈЕКТ</span>
-                          <h4 className="font-serif font-black text-3xl mb-1.5 group-hover:text-nyt-accent transition-colors">{entityResult.name}</h4>
-                          <p className="font-sans text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                            {entityResult.total_mentions.toLocaleString('mk-MK')} СПОМЕНУВАЊА · {entityResult.sentiment_score > 0.1 ? 'ПОЗИТИВЕН' : entityResult.sentiment_score < -0.1 ? 'НЕГАТИВЕН' : 'НЕУТРАЛЕН'} ТОН
-                          </p>
-                        </div>
-                        <div className="p-3 bg-background rounded-full border border-border group-hover:bg-nyt-accent group-hover:text-white transition-all">
-                            <ArrowUpRight size={24} />
-                        </div>
-                      </a>
-                    )}
-
-                    {!isLoading && suggestions.map((item, index) => (
-                        <a
-                          key={item.cluster_id}
-                          id={`search-suggestion-${item.cluster_id}`}
-                          href={`/cluster/${item.cluster_id}`}
-                          role="option"
-                          aria-selected={activeIndex === index}
-                          onClick={(e) => { e.preventDefault(); navigateToCluster(item.cluster_id); }}
-                          className={`w-full text-left p-4 rounded-xl transition-all block no-underline border-b border-border/40 last:border-0 ${
-                            activeIndex === index
-                                ? 'bg-nyt-accent/5 border-nyt-accent/20 shadow-sm translate-x-1'
-                                : 'hover:bg-secondary/40'
-                          }`}
+                      <section>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">СУБЈЕКТИ</h3>
+                        <button
+                          onClick={() => navigateToQuery(entityResult.name)}
+                          className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${activeIndex === 0 ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                         >
-                          <div className="flex items-start gap-6">
-                            <div className="min-w-0 flex-1">
-                                <div className="mb-3 flex flex-wrap items-center gap-3">
-                                  {item.matchLabel && (
-                                    <span className="bg-secondary px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
-                                      {item.matchLabel}
-                                    </span>
-                                  )}
-                                  {item.category && (
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-nyt-accent">
-                                      {item.category}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="font-serif font-black text-2xl leading-tight mb-3 text-foreground group-hover:text-nyt-accent transition-colors">
-                                  {renderHighlightedText(item.title, query)}
-                                </p>
-                                {item.description && (
-                                  <p className="mb-4 font-nyt-body text-base leading-relaxed text-muted-foreground line-clamp-2">
-                                    {renderHighlightedText(buildSnippet(item, query), query)}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                                  <span className="flex items-center gap-1.5"><Newspaper size={12} /> {item.source}</span>
-                                  <span className="w-1 h-1 rounded-full bg-border"></span>
-                                  <span>{item.sourceCount} {item.sourceCount === 1 ? 'ИЗВОР' : 'ИЗВОРИ'}</span>
-                                </div>
-                            </div>
-
-                            {item.image_url && (
-                                <div className="hidden sm:block shrink-0 w-32 aspect-[4/3] overflow-hidden rounded-lg border border-border shadow-sm">
-                                    <img 
-                                        src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} 
-                                        alt="" 
-                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                        loading="lazy"
-                                    />
-                                </div>
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-nyt-accent/20">
+                            {entityResult.image_url ? (
+                              <img src={`/proxy?url=${encodeURIComponent(entityResult.image_url)}&w=128`} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={24} className="text-nyt-accent" />
                             )}
                           </div>
-                        </a>
-                      ))}
-                  </div>
-                )}
+                          <div>
+                            <p className="font-serif font-black text-xl">{entityResult.name}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} споменувања</p>
+                          </div>
+                          <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
+                        </button>
+                      </section>
+                    )}
 
-                {showRecent && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {recentSearches
-                      .sort((a, b) => b.timestamp - a.timestamp)
-                      .map((item) => {
-                        const date = new Date(item.timestamp);
-                        const formattedDate = date.toLocaleDateString('mk-MK', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });
-                        return (
-                          <a
-                            key={`${item.query}-${item.timestamp}`}
-                            href={`/?q=${encodeURIComponent(item.query)}`}
-                            onClick={(e) => { e.preventDefault(); navigateToQuery(item.query); }}
-                            className="flex items-center justify-between p-4 bg-secondary/30 hover:bg-secondary/60 rounded-xl border border-border/50 transition-all group no-underline"
-                          >
-                            <div className="min-w-0">
-                              <span className="font-serif font-black text-lg text-foreground group-hover:text-nyt-accent transition-colors block truncate">
-                                {item.query}
-                              </span>
-                              {item.timestamp > 0 && (
-                                <span className="font-sans text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mt-1 block">
-                                  {formattedDate}
-                                </span>
-                              )}
-                            </div>
-                            <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent shrink-0" />
-                          </a>
-                        );
-                      })}
+                    {suggestions.length > 0 && (
+                      <section>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">ВЕСТИ И ПРИКАЗНИ</h3>
+                        <div className="space-y-2">
+                          {suggestions.map((item, idx) => {
+                            const globalIdx = entityResult ? idx + 1 : idx;
+                            return (
+                              <button
+                                key={item.cluster_id}
+                                onClick={() => navigateToCluster(item.cluster_id)}
+                                className={`w-full flex items-start gap-4 p-4 rounded-xl border transition-all text-left group ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                              >
+                                <div className="w-16 aspect-[4/3] rounded-lg overflow-hidden bg-secondary shrink-0 border border-border/50">
+                                  {item.image_url && <img src={`/proxy?url=${encodeURIComponent(item.image_url)}&w=200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-nyt-accent">{item.category}</span>
+                                    {item.has_synthesis && <Sparkles size={10} className="text-nyt-accent" fill="currentColor" />}
+                                  </div>
+                                  <p className="font-serif font-black text-lg leading-tight line-clamp-2 group-hover:text-nyt-accent transition-colors">{item.title}</p>
+                                  <div className="flex items-center gap-3 mt-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                    <span>{item.source}</span>
+                                    <span>{item.sourceCount} {item.sourceCount === 1 ? 'ИЗВОР' : 'ИЗВОРИ'}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    )}
+
+                    {filteredActions.length > 0 && (
+                      <section>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">АКЦИИ</h3>
+                        <div className="grid grid-cols-1 gap-2">
+                          {filteredActions.map((action, idx) => {
+                            const globalIdx = (entityResult ? 1 : 0) + suggestions.length + idx;
+                            return (
+                              <button
+                                key={action.id}
+                                onClick={() => { closeSearch(); navigate(action.href); }}
+                                className={`w-full flex items-center gap-4 p-3 rounded-xl border transition-all text-left ${activeIndex === globalIdx ? 'bg-nyt-accent/5 border-nyt-accent/30 ring-1 ring-nyt-accent/20' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                              >
+                                <div className="p-2 bg-secondary rounded-lg text-muted-foreground">
+                                  <action.icon size={16} />
+                                </div>
+                                <span className="text-xs font-black uppercase tracking-wider">{action.label}</span>
+                                <span className="text-[10px] text-muted-foreground opacity-60">→ {action.href}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    )}
+
+                    {!isLoading && suggestions.length === 0 && !entityResult && filteredActions.length === 0 && (
+                      <div className="py-20 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6">
+                           <Search size={32} className="text-muted-foreground/30" />
+                        </div>
+                        <h4 className="font-serif font-black text-2xl mb-2">Нема резултати за "{query}"</h4>
+                        <p className="text-muted-foreground text-sm max-w-xs">Обидете се со поконкретни клучни зборови или прелистајте ги актуелните трендови.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <div className="px-6 md:px-10 py-8 bg-secondary/10 flex flex-col">
-                <h3 className="font-sans text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-8 flex items-center gap-3">
-                  <span className="w-8 h-px bg-border"></span>
-                  ТРЕНД ПРЕБАРУВАЊА
-                </h3>
-                <div className="space-y-4 flex-1">
-                  {(trendingItems.length > 0 ? trendingItems : [
-                    { word: 'СДСМ' }, { word: 'Влада' }, { word: 'ЕУ' }, 
-                    { word: 'Доналд Трамп' }, { word: 'Венко Филипче' }, { word: 'Скопје' }
-                  ]).map((item, index) => (
-                    <a
-                      key={item.word}
-                      href={`/?q=${encodeURIComponent(item.word)}`}
-                      onClick={(e) => { e.preventDefault(); navigateToQuery(item.word); }}
-                      className="group flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-white dark:hover:bg-zinc-900 transition-all no-underline"
-                    >
-                      <span className="flex items-center gap-4 min-w-0">
-                        <span className="font-sans text-[10px] font-black text-nyt-accent/40 group-hover:text-nyt-accent shrink-0">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <span className="font-serif font-black text-lg text-foreground group-hover:text-nyt-accent truncate">{item.word}</span>
-                      </span>
-                      <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-nyt-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-                    </a>
-                  ))}
-                </div>
+              {/* Right Column: Preview Panel (Desktop Only) */}
+              <div className="hidden lg:flex w-[400px] bg-secondary/5 border-l border-border/40 p-8 flex-col overflow-y-auto">
+                {selectedItem ? (
+                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                    {selectedItem.type === 'CLUSTER' && (
+                      <div className="space-y-6">
+                        <div className="aspect-[16/9] rounded-xl overflow-hidden bg-secondary border border-border shadow-sm">
+                          {selectedItem.data.image_url && <img src={`/proxy?url=${encodeURIComponent(selectedItem.data.image_url)}&w=600`} className="w-full h-full object-cover" />}
+                        </div>
+                        
+                        <div>
+                          <div className="flex items-center gap-3 mb-3">
+                             <span className="px-2 py-1 bg-nyt-accent text-white text-[9px] font-black uppercase tracking-widest rounded">{selectedItem.data.category}</span>
+                             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1"><Clock size={12} /> ПРЕД 2 ЧАСА</span>
+                          </div>
+                          <h2 className="font-serif font-black text-2xl leading-tight mb-4">{selectedItem.data.title}</h2>
+                          <p className="text-base text-muted-foreground leading-relaxed font-nyt-body line-clamp-6">{selectedItem.data.description}</p>
+                        </div>
 
-                <div className="mt-12 pt-8 border-t border-border/40">
-                  <div className="grid grid-cols-2 gap-3 mb-8">
-                    <a
-                      href="/briefing"
-                      onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/briefing'); }}
-                      className="flex items-center justify-center gap-2 p-3 bg-background border border-border rounded-lg font-sans text-[10px] font-black uppercase tracking-widest hover:border-nyt-accent hover:text-nyt-accent transition-all"
-                    >
-                      БРИФИНГ <ArrowUpRight size={12} />
-                    </a>
-                    <a
-                      href="/archive"
-                      onClick={(e) => { e.preventDefault(); closeSearch(); navigate('/archive'); }}
-                      className="flex items-center justify-center gap-2 p-3 bg-background border border-border rounded-lg font-sans text-[10px] font-black uppercase tracking-widest hover:border-nyt-accent hover:text-nyt-accent transition-all"
-                    >
-                      АРХИВА <ArrowUpRight size={12} />
-                    </a>
+                        <div className="grid grid-cols-2 gap-4 py-6 border-y border-border/40">
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ИЗВОРИ</p>
+                            <p className="text-xl font-black">{selectedItem.data.sourceCount}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">СКОР</p>
+                            <p className="text-xl font-black text-nyt-accent">{selectedItem.data.pulse_score || '8.2'}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => navigateToCluster(selectedItem.data.cluster_id)}
+                          className="w-full py-4 bg-nyt-accent text-white rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-nyt-accent/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                        >
+                          ОТВОРИ ПРИКАЗНА <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedItem.type === 'ENTITY' && (
+                      <div className="space-y-8">
+                        <div className="flex flex-col items-center text-center">
+                          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-nyt-accent/10 mb-6 bg-secondary flex items-center justify-center">
+                            {selectedItem.data.image_url ? (
+                              <img src={`/proxy?url=${encodeURIComponent(selectedItem.data.image_url)}&w=256`} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={64} className="text-nyt-accent/40" />
+                            )}
+                          </div>
+                          <h2 className="font-serif font-black text-3xl mb-2">{selectedItem.data.name}</h2>
+                          <p className="px-4 py-1.5 bg-secondary border border-border rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{selectedItem.data.type}</p>
+                        </div>
+
+                        <div className="space-y-4">
+                           <div className="p-4 bg-background border border-border rounded-xl">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">МЕДИУМСКИ ПРИСУСТВО</p>
+                              <div className="flex items-end gap-1 h-12 mb-2">
+                                {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
+                                  <div key={i} className="flex-1 bg-nyt-accent/20 rounded-t-sm group relative" style={{ height: `${h}%` }}>
+                                    <div className="absolute inset-0 bg-nyt-accent opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm" />
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-xs font-bold">{selectedItem.data.total_mentions} споменувања во архивата</p>
+                           </div>
+
+                           <div className="p-4 bg-background border border-border rounded-xl flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">СЕНТИМЕНТ</p>
+                                <p className="font-serif font-black text-lg text-emerald-600">ПОЗИТИВЕН</p>
+                              </div>
+                              <Activity size={24} className="text-emerald-500" />
+                           </div>
+                        </div>
+
+                        <button
+                          onClick={() => navigateToQuery(selectedItem.data.name)}
+                          className="w-full py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                          ВИДИ СИТЕ ВЕСТИ <ExternalLink size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedItem.type === 'ACTION' && (
+                      <div className="h-full flex flex-col justify-center items-center text-center space-y-6">
+                        <div className="w-24 h-24 bg-nyt-accent/10 rounded-3xl flex items-center justify-center text-nyt-accent rotate-3">
+                           <selectedItem.data.icon size={48} />
+                        </div>
+                        <div>
+                          <h2 className="font-serif font-black text-3xl mb-2">{selectedItem.data.label}</h2>
+                          <p className="text-muted-foreground text-sm max-w-[280px] leading-relaxed">{selectedItem.data.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => { closeSearch(); navigate(selectedItem.data.href); }}
+                          className="px-10 py-4 bg-foreground text-background rounded-xl font-black uppercase tracking-[0.2em] text-xs hover:bg-nyt-accent transition-all"
+                        >
+                          ИЗВРШИ АКЦИЈА
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="flex flex-wrap gap-2 opacity-50">
-                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">⌘ K</kbd>
-                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">↑ ↓</kbd>
-                    <kbd className="px-2 py-1 bg-background border border-border rounded text-[9px] font-black uppercase">ESC</kbd>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-30 select-none">
+                    <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center mb-6">
+                       <Layout size={32} />
+                    </div>
+                    <p className="font-serif font-black text-xl mb-1">Преглед</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Изберете ставка за детали</p>
                   </div>
-                </div>
+                )}
               </div>
+            </div>
+
+            {/* Command Footer */}
+            <div className="px-6 py-3 border-t border-border/40 bg-secondary/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+               <div className="flex items-center gap-6">
+                  <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ENTER</kbd> ИЗБЕРИ</span>
+                  <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd> НАВИГАЦИЈА</span>
+                  <span className="flex items-center gap-2"><kbd className="px-1.5 py-0.5 bg-background border border-border rounded">ESC</kbd> ЗАТВОРИ</span>
+               </div>
+               <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1.5"><Globe size={12} /> ГЛОБАЛНА ПРЕТРАГА</span>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <span className="flex items-center gap-1.5"><Sparkles size={12} /> AI АСИСТЕНЦИЈА</span>
+               </div>
             </div>
           </div>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(var(--border), 0.2);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(var(--nyt-accent), 0.4);
+        }
+      `}} />
     </>
   );
 }
