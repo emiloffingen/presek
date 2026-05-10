@@ -115,7 +115,7 @@ export default function SearchIsland({ initialQuery = '' }: { initialQuery?: str
   // Voice search support
   const startVoiceSearch = useCallback(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      warn('Гласово пребарување не е поддржано во овој прелистувач');
+      console.warn('Гласово пребарување не е поддржано во овој прелистувач');
       return;
     }
     
