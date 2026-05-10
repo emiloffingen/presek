@@ -96,7 +96,6 @@ class BreakingNewsNotifier:
         if sources:
             source_line += f" ({', '.join(sources[:5])})"
         parts.append(f"<i>{source_line}</i>")
-        msg = "\n\n".join(parts)
 
         self.send_ntfy(
             "Важна вест — Пресек",

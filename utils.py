@@ -138,10 +138,7 @@ async def get_dominant_color(url: str) -> str:
     try:
         import httpx
 
-        try:
-            import pillow_avif  # noqa: F401
-        except ImportError:
-            pass
+
 
         async with httpx.AsyncClient(
             timeout=4.0, follow_redirects=True, max_redirects=2
@@ -833,10 +830,9 @@ def build_editor_analytics_payload(
     sugg_period=None,
 ):
     p, d, t = (profile_stats or {}), (delivery_stats or {}), (tracking_stats or {})
-    s7, o7, c7 = (
+    s7, o7 = (
         int(t.get("sends_7d") or 0),
         int(t.get("opens_7d") or 0),
-        int(t.get("clicks_7d") or 0),
     )
 
     def _perf(rows, kind_map):

@@ -416,9 +416,9 @@ def extract_image_url(entry):
         )
 
         seen_urls = set()
-        for html in html_sources:
+        for html_source in html_sources:
             for img_match in re.finditer(
-                r'<img[^>]+src=["\']([^"\']+)["\']', str(html)
+                r'<img[^>]+src=["\']([^"\']+)["\']', str(html_source)
             ):
                 img_url = img_match.group(1).strip()
                 if img_url in seen_urls or not re.match(r"^https?://", img_url):
@@ -813,7 +813,6 @@ async def ingest_all_sources_async():
 
         prepared_rows = []
         batch_clusters = []
-        international_ids = []
 
         for i, c in enumerate(candidates):
             try:

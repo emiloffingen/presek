@@ -220,7 +220,7 @@ export function sendSuggestionEvents(events, storage = globalThis?.localStorage)
       events: cleanEvents,
     }),
     keepalive: true,
-  }).catch(() => {});
+  }).catch(console.error);
 }
 
 export function getSuggestionConversionSummary(storage = globalThis?.localStorage) {

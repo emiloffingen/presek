@@ -15,7 +15,7 @@ export default function EntityContextCard({ name }: EntityContextCardProps) {
       .then(json => {
         if (json.status === 'success') setData(json.data);
       })
-      .catch(() => {})
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [name]);
 

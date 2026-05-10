@@ -8,7 +8,7 @@ _rate_limiter_enabled = False
 limiter = None
 
 
-class RateLimitExceeded(Exception):
+class _RateLimitExceededFallback(Exception):
     """Fallback if slowapi is not installed."""
 
     def __init__(self, detail=None, retry_after=None):
@@ -32,6 +32,7 @@ except ImportError as exc:
     if os.environ.get("ENV") == "production" and "pytest" not in sys.modules:
         raise RuntimeError("slowapi is required when ENV=production") from exc
     log.warning("Rate limiting disabled - slowapi not installed")
+    RateLimitExceeded = _RateLimitExceededFallback
 
 
 def custom_rate_limit(limit_str):
