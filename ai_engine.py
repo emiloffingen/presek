@@ -10,13 +10,9 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import AsyncGenerator
 
-# from config import (
-#     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FALLBACK_MODELS,
-#     PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
-# )
-
 from config import (
-    PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY
+    PROVIDER_FALLBACK_ORDER, PROVIDER_FALLBACK_ORDER_RESEARCH, PROVIDER_FALLBACK_ORDER_SUMMARY,
+    GEMINI_API_KEY, GEMINI_MODEL
 )
 
 
@@ -135,8 +131,6 @@ class LocalProvider(AIProvider):
                 return json.dumps({"report": res, "status": "success", "mode": "local_fallback"})
         return res
 
-        return summarize_locally(prompt, sentence_count=4, topic=topic).replace("Summarize:", "").strip()
-
 class MistralProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, api_url: str, model: str):
         super().__init__("mistral", api_key, api_url, model)
@@ -161,8 +155,6 @@ class NvidiaProvider(AIProvider):
             "temperature": 0.2,
             "top_p": 0.7,
         }
-        # Note: Some NVIDIA models might not support response_format="json_object"
-        # but most modern Llama/Nemotron models on NIM do.
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
@@ -194,7 +186,6 @@ class GeminiProvider(AIProvider):
         if not self.api_key:
             return None
 
-        # Gemini 1.5+ uses a specific system_instruction field
         payload = {
             "contents": [{
                 "parts": [{"text": prompt}]
@@ -226,14 +217,13 @@ class GeminiProvider(AIProvider):
 
 PROVIDERS = {
     "nvidia": NvidiaProvider(
-        # api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_key=None,
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
         model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
     ),
     "gemini": GeminiProvider(
-        api_key=os.environ.get("GOOGLE_API_KEY", ""),
-        model=os.environ.get("GEMINI_MODEL", "gemini-1.5-flash-latest")
+        api_key=GEMINI_API_KEY,
+        model=GEMINI_MODEL
     ),
     "mistral_large": MistralProvider(
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
@@ -321,6 +311,7 @@ def _call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: i
 
     log.error(f"[ai/cascade] All providers in {fallback_order} failed for task {task_type}")
     return None, None
+
 def sync_call_ai(prompt: str, system: str, task_type: str = "default", max_tokens: int = 2000, json_mode: bool = False, topic: str = None):
     """Backwards-compatible alias for synchronous callers."""
     return _call_ai(prompt, system, task_type, max_tokens, json_mode, topic=topic)
@@ -331,83 +322,34 @@ def clean_json_response(text: str) -> dict | str | None:
     text = text.strip()
     if not text:
         return ""
-
-    # 1. Strip markdown fences if present
     text = re.sub(r'^```(?:json)?\s*', '', text)
     text = re.sub(r'\s*```$', '', text)
     text = text.strip()
-
-    # 2. Try direct JSON parse
     try:
         data = json.loads(text)
-        if isinstance(data, dict):
-            # If it's the expected structure, return it
-            if "answer" in data: return data
-            if "report" in data: return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
-            # Single key unwrapping
-            if len(data) == 1:
-                val = list(data.values())[0]
-                if isinstance(val, str) and (len(val) > 20 or " " in val):
-                    return {"answer": val, "suggestions": []}
         return data
     except Exception:
-        pass
-
-    # 3. Aggressive Regex Extraction (if JSON parse failed)
-    # This handles cases where the model returns broken JSON or text with JSON inside
-    # Look for "answer": "..." OR "report": "..."
-    for key in ("answer", "report", "summary"):
-        pattern = rf'"{key}"\s*:\s*"(.*?)"(?=\s*[,}}])'
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-            clean_text = match.group(1).replace('\\n', '\n').replace('\"', '"').replace('\\\'', "'")
-            return {"answer": clean_text, "suggestions": []}
-
-    # 4. Brute force: find the first { and last } and try parsing that
-    try:
-        first = text.find('{')
-        last = text.rfind('}')
-        if first != -1 and last > first:
-            candidate = text[first:last+1]
-            data = json.loads(candidate)
-            if isinstance(data, dict):
-                if "answer" in data: return data
-                if "report" in data: return {"answer": data["report"], "suggestions": data.get("suggestions", [])}
-    except Exception:
-        pass
-
-    # 5. Final Fallback: Return the raw text but strip common JSON artifacts 
-    # if it obviously leaked (e.g. starts with { "answer": )
-    text = re.sub(r'^\{\s*"answer"\s*:\s*"', '', text)
-    text = re.sub(r'"\s*,\s*"suggestions".*\}\s*$', '', text, flags=re.DOTALL)
-    text = re.sub(r'"\s*\}\s*$', '', text)
-    
-    return text.replace('\\n', '\n').replace('\"', '"').strip()
+        return text
 
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
-    import sys
     try:
         from config import AUTO_SUMMARIZE_TOP_N, AUTO_SUMMARIZE_MIN_SRC
         from database import db_manager as db
         from utils import redis_client
 
         if target_cluster_ids:
-            # If specific clusters are targeted (e.g. from fresh ingestion), 
-            # we fetch all their articles to build context.
             rows = db.execute(
                 "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                 (target_cluster_ids,)
             )
         else:
-            # Default: global top-N discovery
             rows = db.execute(
                 "SELECT * FROM articles "
                 "WHERE COALESCE(ingested_at, created_at) >= NOW() - make_interval(days => 1) "
-                "ORDER BY COALESCE(ingested_at, created_at) DESC LIMIT 1200"
+                "ORDER BY created_at DESC"
             )
-        if not rows:
-            return
+        if not rows: return
 
         clusters_map = defaultdict(list)
         for r in rows:
@@ -422,101 +364,18 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
             ranked.append((cid, arts, len(unique_sources), newest))
 
         ranked.sort(key=lambda x: (x[3], x[2]), reverse=True)
-        
-        # Only slice if we are in discovery mode; if targeted, we process all provided
         top = ranked[:AUTO_SUMMARIZE_TOP_N] if not target_cluster_ids else ranked
-        
-        if not top:
-            return
 
-        top_cids = [r[0] for r in top]
-        existing_rows = db.execute(
-            """
-            SELECT cluster_id, created_at, generated_article, synthetic_standfirst,
-                   verification_report
-            FROM cluster_summaries
-            WHERE cluster_id = ANY(%s)
-            """,
-            (top_cids,)
-        ) or []
-        existing_map = {r["cluster_id"]: r for r in existing_rows}
+        if not top: return
 
-        STALE_THRESHOLD = datetime.timedelta(minutes=30)
-
-        tasks_mod = sys.modules.get("tasks")
-        if tasks_mod is None:
-            import tasks as tasks_mod
-
-        dispatched = 0
-        skipped_locked = 0
-        skipped_fresh = 0
-        for cid, arts, _src_count, newest in top:
-            existing = existing_map.get(cid)
-            existing_at = existing.get("created_at") if existing else None
-            standfirst = str((existing or {}).get("synthetic_standfirst") or "")
-            generated_article = str((existing or {}).get("generated_article") or "")
-            verification_report = (existing or {}).get("verification_report")
-            local_fallback_synthesis = bool(
-                existing
-                and not generated_article.strip()
-                and not verification_report
-                and (
-                    "Локален сублимат" in standfirst
-                    or "Автоматски преглед" in standfirst
-                    or "AI анализа" in standfirst
-                )
-            )
-            if existing_at is not None and not local_fallback_synthesis and (newest - existing_at) <= STALE_THRESHOLD:
-                skipped_fresh += 1
-                continue
-
-            try:
-                if not redis_client.set(f"task:synthesize:{cid}", 1, nx=True, ex=600):
-                    skipped_locked += 1
-                    continue
-            except Exception:
-                pass
-
-            lines = "\n".join(f"- [{a.get('source', 'Извор')}]: {a.get('title', '')}" for a in arts[:10])
+        from tasks.intelligence import synthesize_cluster_task
+        for cid, arts, src_count, dt in top:
+            synthesize_cluster_task.delay(cid)
             
-            if existing_at is None:
-                # Stage 1: Fast Draft (Immediate - Priority)
-                tasks_mod.synthesize_urgent_task.delay(cid, lines)
-                # Stage 2: Deep Synthesis (Scheduled 2 mins later - Routine)
-                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False}, countdown=120)
-            elif local_fallback_synthesis:
-                tasks_mod.synthesize_cluster_task.apply_async(args=(cid, lines), kwargs={"fast_mode": False})
-            else:
-                # Just update existing stale synthesis
-                tasks_mod.synthesize_cluster_task.delay(cid, lines)
-            dispatched += 1
-        log.info(
-            "[auto-summarize] mode=%s ranked=%s top=%s dispatched=%s skipped_fresh=%s skipped_locked=%s",
-            "targeted" if target_cluster_ids else "discovery",
-            len(ranked),
-            len(top),
-            dispatched,
-            skipped_fresh,
-            skipped_locked,
-        )
     except Exception as e:
-        log.error(f"[auto-summarize] Error: {e}")
+        log.error(f"[ai/auto_summarize] Orchestration failed: {e}")
 
-
-def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
-    """Generate and save cover art for a cluster."""
-    try:
-        path = f"static/generated/{safe_id}.svg"
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(svg_content)
-        return f"/static/generated/{safe_id}.svg"
-    except Exception as e:
-        log.warning(f"[ai] Local placeholder failed: {e}")
-
-    return None
-
-def cleanup_cover_art(valid_ids: set[str]):
-    """Remove generated images for clusters that no longer exist."""
+def cleanup_generated_images(valid_ids: list[str]):
     gen_dir = "static/generated"
     if not os.path.exists(gen_dir): return
     try:
@@ -526,4 +385,3 @@ def cleanup_cover_art(valid_ids: set[str]):
                 if cid not in valid_ids: os.remove(os.path.join(gen_dir, filename))
     except (OSError, PermissionError) as e:
         log.debug(f"[ai_engine] Error cleaning up generated images: {e}")
-        pass
