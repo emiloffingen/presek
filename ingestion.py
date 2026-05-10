@@ -927,20 +927,29 @@ async def ingest_all_sources_async():
 
         # Batch Insert
         if prepared_rows:
-            from psycopg import execute_values
-
             cur = conn.cursor()
             sql = """
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory, 
                     cluster_id, created_at, ingested_at, image_url, description, original_description, 
                     country, is_translated, embedding, topic, is_fact_check
-                ) VALUES %s ON CONFLICT (link) DO NOTHING RETURNING id, country
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                ) ON CONFLICT (link) DO NOTHING RETURNING id
             """
-            execute_values(cur, sql, prepared_rows)
-            results = cur.fetchall()
-            new_count = len(results)
-            inserted_ids = [r[0] for r in results]
+            cur.executemany(sql, prepared_rows, returning=True)
+            
+            inserted_ids = []
+            while True:
+                batch_results = cur.fetchall()
+                if batch_results:
+                    for r in batch_results:
+                        if r and "id" in r:
+                            inserted_ids.append(r["id"])
+                if not cur.nextset():
+                    break
+            
+            new_count = len(inserted_ids)
             conn.commit()
 
             # Post-ingestion tasks: batch trigger translations/summaries

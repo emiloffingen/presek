@@ -55,7 +55,7 @@ def _get_model():
             log.info(f"[embeddings] Loading local model '{EMBEDDING_MODEL}' on CPU")
             _model = SentenceTransformer(EMBEDDING_MODEL, device="cpu")
             log.info(
-                f"[embeddings] Model loaded, dim={_model.get_sentence_embedding_dimension()}"
+                f"[embeddings] Model loaded, dim={_model.get_embedding_dimension()}"
             )
         except Exception as e:
             log.error(f"[embeddings] Failed to load model: {e}")
