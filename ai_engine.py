@@ -331,6 +331,18 @@ def clean_json_response(text: str) -> dict | str | None:
     except Exception:
         return text
 
+def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
+    """Generate and save cover art for a cluster."""
+    try:
+        path = f"static/generated/{safe_id}.svg"
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+        return f"/static/generated/{safe_id}.svg"
+    except Exception as e:
+        log.warning(f"[ai] Local placeholder failed: {e}")
+    return None
+
+
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
     try:
