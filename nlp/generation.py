@@ -73,6 +73,8 @@ def _briefing_lines_from_text(text, *, max_lines=3):
 
 def _extract_briefing_update(cluster):
     cluster = cluster or {}
+    
+    # 1. Try to use synthesis if available (it should already be diverse)
     synthesis_lines = _briefing_lines_from_text(
         cluster.get("cluster_summary") or cluster.get("generated_article") or "",
         max_lines=4,
@@ -80,13 +82,38 @@ def _extract_briefing_update(cluster):
     if synthesis_lines:
         return synthesis_lines[0]
 
+    # 2. Extract from description, explicitly avoiding title repetition
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
+    
+    if not clean_description or len(clean_description) < 20:
+        return clean_title # Fallback if no description
+
+    title_terms = set(_extract_terms(clean_title))
+    description_sentences = [
+        s.strip() for s in re.split(r"(?<=[.!?])\s+", clean_description) if len(s.strip()) > 20
+    ]
+
+    for sentence in description_sentences:
+        sent_terms = set(_extract_terms(sentence))
+        if not sent_terms:
+            continue
+        # If the sentence is mostly different from the title, use it
+        overlap = len(title_terms & sent_terms) / len(sent_terms) if sent_terms else 1.0
+        if overlap < 0.7:
+            return sentence
+
+    # 3. If no unique sentence found, use localized summary but skip title-only lines
     summary = _clean_briefing_snippet(
         summarize_locally(
-            f"{clean_title}. {clean_description}", sentence_count=2
+            f"{clean_title}. {clean_description}", sentence_count=1, title=clean_title
         ).strip()
     )
+    
+    # Final check: if summary is still just the title, try to return first 140 chars of description
+    if summary.casefold() == clean_title.casefold() and clean_description:
+        return clean_description[:140]
+
     return summary or clean_description or clean_title
 
 
@@ -100,6 +127,7 @@ def _extract_briefing_importance(cluster):
     if open_point:
         return open_point
 
+    # Use the second line of synthesis if available
     synthesis_lines = _briefing_lines_from_text(
         cluster.get("cluster_summary") or cluster.get("generated_article") or "",
         max_lines=4,
@@ -110,65 +138,50 @@ def _extract_briefing_importance(cluster):
     clean_title = _clean_briefing_snippet(cluster.get("title"))
     clean_description = _clean_briefing_snippet(cluster.get("description"))
     context = f"{clean_title} {clean_description}".casefold()
-    if any(
-        term in context
-        for term in ("избори", "парламентарни избори", "гласање", "гласаат")
-    ):
-        return "Исходот може брзо да ја насочи следната политичка фаза и регионалните реакции"
+    
+    # Check for domain-specific impact markers
+    if any(term in context for term in ("избори", "гласање", "парламентар")):
+        return "Потенцијална промена во политичката моќ и регионалните стратегии."
+    if any(term in context for term in ("цена", "поскап", "инфлација", "буџет")):
+        return "Директно влијание врз економската стабилност и стандардот на граѓаните."
 
     # 1. Fact Extraction: Find the most informative sentence in description that adds new info
-    description_lines = _briefing_lines_from_text(clean_description, max_lines=4)
+    # We use a stricter overlap check than the 'update' to ensure importance is different
+    description_lines = _briefing_lines_from_text(clean_description, max_lines=6)
     title_terms = set(_extract_terms(clean_title))
+    update_text = _extract_briefing_update(cluster)
+    update_terms = set(_extract_terms(update_text))
 
-    best_fact = ""
     for line in description_lines:
         line_terms = set(_extract_terms(line))
         if not line_terms:
             continue
-        overlap = len(title_terms & line_terms) / len(line_terms)
-        # We want a line that isn't just repeating the title (overlap < 0.6)
-        # but is substantial (len > 30)
-        if overlap < 0.6 and len(line) > 30:
-            best_fact = _condense_briefing_update(line, max_chars=160)
-            break
+        t_overlap = len(title_terms & line_terms) / len(line_terms)
+        u_overlap = len(update_terms & line_terms) / len(line_terms)
+        
+        # We want a line that isn't title AND isn't the update
+        if t_overlap < 0.6 and u_overlap < 0.6 and len(line) > 35:
+            return _condense_briefing_update(line, max_chars=160)
 
-    if best_fact:
-        return best_fact
-
-    if any(
-        term in context
-        for term in ("балистич", "ракета", "ракети", "северна кореја", "пјонгјанг")
-    ):
-        return "нови воени сигнали, предупредувања и дипломатски реакции"
-    if any(
-        term in context
-        for term in (
-            "мировник",
-            "мировници",
-            "он",
-            "либан",
-            "унифил",
-            "меѓународните мисии",
-        )
-    ):
-        return "безбедноста на меѓународните мисии и регионалната стабилност"
-
-    # 2. Coverage-based fallback (last resort, better than "remains important")
+    # 2. Coverage-based fallback
     source_count = cluster.get("source_count") or 1
-    source_name = cluster.get("source") or "повеќе извори"
-
     if source_count >= 3:
-        return f"Темата предизвика широк интерес кај медиумите, со потврдени извештаи од {source_count} различни извори"
+        return f"Потврден развој со висок медиумски консензус од {source_count} извори."
 
-    return f"Развојот на настанот го следат медиумите, со првични детални информации објавени од {source_name}"
+    return "Настанот е во фаза на развој и се очекуваат понатамошни официјални потврди."
 
 
 def _condense_briefing_update(text, *, max_chars=180):
     clean = _normalize_briefing_line(text)
     if not clean:
         return ""
-    first_sentence = re.split(r"(?<=[.!?])\s+", clean, maxsplit=1)[0].strip()
-    candidate = first_sentence or clean
+    # Split by sentence but keep punctuation
+    sentences = re.split(r"(?<=[.!?])\s+", clean)
+    candidate = sentences[0].strip()
+    
+    if len(candidate) < 30 and len(sentences) > 1:
+        candidate = f"{candidate} {sentences[1].strip()}"
+        
     candidate = candidate.rstrip(" .,;:")
     if len(candidate) <= max_chars:
         return candidate
@@ -176,11 +189,11 @@ def _condense_briefing_update(text, *, max_chars=180):
 
 
 def _extract_briefing_focus_point(cluster):
-    text = _condense_briefing_update(_extract_briefing_update(cluster), max_chars=140)
+    text = _condense_briefing_update(_extract_briefing_update(cluster), max_chars=160)
     if not text:
         text = _clean_briefing_snippet(cluster.get("title"))
-    text = _normalize_briefing_line(text)
-    return text[:180].rstrip(" .,;:")
+    return _normalize_briefing_line(text).rstrip(" .,;:")
+
 
 
 def _dedupe_briefing_clusters(clusters, limit=4):
@@ -680,11 +693,17 @@ def synthesize_cluster_fallback(articles):
     # 2. Build Summary Points
     summary_lines = []
     lead_title = deShout(cleanAndDecode(lead.get("title", ""))).strip()
-    if lead_title:
-        summary_lines.append(f"• Што се случи: {lead_title}")
+    
+    # Use the improved update extraction to avoid title repetition
+    update_point = _extract_briefing_update({"title": lead_title, "description": desc})
+    if update_point and update_point.casefold() != lead_title.casefold():
+        summary_lines.append(f"• Клучен развој: {update_point}")
+    else:
+        # If no good update found, use a refined version of the title
+        summary_lines.append(f"• Настан: {lead_title}")
 
-    if sentences:
-        summary_lines.append(f"• Контекст: {sentences[0]}")
+    if len(sentences) > 1:
+        summary_lines.append(f"• Детали: {sentences[0]}")
 
     common = (
         comparison.get("common_line", "")
@@ -693,23 +712,24 @@ def synthesize_cluster_fallback(articles):
         .strip()
     )
     if common and len(common) > 18 and "," not in common:
-        summary_lines.append(f"• Потврда: {common}")
+        summary_lines.append(f"• Фокус: {common}")
 
     sources_str = _source_list(articles, limit=4)
     summary_lines.append(
-        f"• Извори: Развојот го следат {len(articles)} медиуми ({sources_str})."
+        f"• Медиумска покриеност: Следено од {len(articles)} извори ({sources_str})."
     )
+    
     if comparison.get("open_points"):
-        summary_lines.append(f"• Што е следно: {comparison['open_points'][0]}")
+        summary_lines.append(f"• Отворено: {comparison['open_points'][0]}")
 
     summary = "\n".join(summary_lines)
 
-    # 3. Build a "Generated Article" from available snippets
+    # 3. Build a "Generated Article"
     article_body = []
-    if sentences:
-        article_body.append(f"{lead_title}. {'. '.join(sentences[:2])}.")
+    if update_point and update_point.casefold() != lead_title.casefold():
+        article_body.append(f"{lead_title}. {update_point}.")
     else:
-        article_body.append(f"{lead_title}. Настанот е под лупа на медиумите.")
+        article_body.append(f"{lead_title}. Развојот на настаните го следат повеќе медиуми.")
 
     if comparison.get("common_line"):
         article_body.append(comparison["common_line"])
@@ -745,7 +765,7 @@ def synthesize_cluster_fallback(articles):
         "perspectives": perspectives[:3],
         "synthetic_headline": lead_title,
         "generated_article": generated_article,
-        "synthetic_standfirst": f"Уреднички преглед базиран на {len(articles)} извори.",
+        "synthetic_standfirst": f"Системски преглед базиран на {len(articles)} извори.",
     }
 
 
@@ -761,24 +781,24 @@ def generate_daily_brief_fallback(clusters):
         ),
     )
     display_clusters = _dedupe_briefing_clusters(display_clusters, limit=4)
-    lines = ["## Што го движи денот", ""]
-    # 1. Editorial Intro: explicitly state the lead story and second story
+    lines = ["## Динамика на денот", ""]
+    
     if len(display_clusters) >= 1:
-        lead_title = _condense_briefing_update(
+        lead_update = _condense_briefing_update(
             _extract_briefing_update(display_clusters[0]), max_chars=150
         )
-        intro_line = f"Денешниот преглед го одбележа: {lead_title}."
+        intro_line = f"Денешниот преглед е обележан со: {lead_update}."
 
         if len(display_clusters) >= 2:
-            sec_title = _condense_briefing_update(
+            sec_update = _condense_briefing_update(
                 _extract_briefing_update(display_clusters[1]), max_chars=150
             )
-            intro_line = f"Денешниот ден го одбележа {lead_title}, додека внимание предизвика и {sec_title}."
+            intro_line = f"Денот го обележа {lead_update}, а внимание привлекува и {sec_update}."
 
         lines.append(intro_line)
         lines.append("")
 
-    lines.append("## Каде се разликува известувањето")
+    lines.append("## Контекст и разлики")
     lines.append("")
     difference_added = False
     for cluster in display_clusters[:3]:
@@ -795,40 +815,27 @@ def generate_daily_brief_fallback(clusters):
         )
     lines.append("")
 
-    lines.append("## Што да се следи понатаму")
-    lines.append("")
-    open_added = False
-    for cluster in display_clusters[:3]:
-        open_p = _normalize_briefing_line(cluster.get("open_point"))
-        if open_p:
-            short_t = _condense_briefing_update(cluster.get("title"), max_chars=80)
-            lines.append(f"• {short_t}: {open_p}")
-            open_added = True
-    if not open_added and display_clusters[:3]:
-        fallback_cluster = display_clusters[0]
-        short_t = _condense_briefing_update(fallback_cluster.get("title"), max_chars=80)
-        lines.append(
-            f"• {short_t}: "
-            f"Вреди да се следат следните потврди и официјални реакции околу развојот."
-        )
-    lines.append("")
-
     for index, cluster in enumerate(display_clusters, start=1):
-        title, source = (
-            str(cluster.get("title") or "").strip(),
-            str(cluster.get("source") or "Извор").strip(),
-        )
+        title = str(cluster.get("title") or "").strip()
         clean_title = _clean_briefing_snippet(title)
-        summary = _condense_briefing_update(_extract_briefing_update(cluster))
+        
+        # Use content-aware extraction to avoid repeating the title
+        summary = _extract_briefing_update(cluster)
         importance = _extract_briefing_importance(cluster)
+        
         lines.append(f"### {index}. {clean_title or title}")
-        lines.append(f"- Што се менува: {summary or clean_title or title}.")
+        
+        if summary and summary.casefold() != (clean_title or title).casefold():
+            lines.append(f"- Клучен аспект: {summary}.")
+        
         lines.append(f"- Зошто е важно: {importance}.")
         lines.append("")
+        
     lines.append(
         "**Белешка**: Содржината е генерирана преку локална системска анализа."
     )
     return "\n".join(lines).strip()
+
 
 
 def _article_context_text(article):
