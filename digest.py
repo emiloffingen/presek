@@ -4,11 +4,13 @@ Generates a styled HTML email digest of the top stories.
 Can send via Gmail SMTP or save to file.
 
 Usage:
-    python3 digest.py --save           # saves digest.html
-    python3 digest.py --email you@gmail.com --password yourpass --to recipient@email.com
+    python3 digest.py --save                           # saves digest.html
+    python3 digest.py --email you@gmail.com --to recipient@email.com
+
+Note: Email password must be provided via SMTP_PASS environment variable.
 
 Cron (every Monday 08:00):
-    0 8 * * 1 cd /path/to/timeai && python3 digest.py --email ... >> digest.log 2>&1
+    0 8 * * 1 cd /path/to/presek && python3 digest.py --save >> digest.log 2>&1
 """
 
 import database
@@ -463,17 +465,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Пресек digest generator")
     parser.add_argument("--days", default=7, type=int, help="Days to look back")
     parser.add_argument("--save", default="digest.html", help="Save HTML to file")
-    parser.add_argument("--email", default=None, help="Gmail address (sender)")
-    parser.add_argument("--password", default=None, help="Gmail app password")
+    parser.add_argument(
+        "--email", default=None, help="Sender email (overrides SMTP_USER env var)"
+    )
     parser.add_argument("--to", default=None, help="Recipient email")
     parser.add_argument("--ntfy", default=None, help="ntfy.sh topic for push digest")
     args = parser.parse_args()
 
+    # Password must come from SMTP_PASS environment variable, never CLI
+    import os
+
+    smtp_user = args.email or os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+
     generate_digest(
         days=args.days,
         save_path=args.save,
-        smtp_user=args.email,
-        smtp_pass=args.password,
+        smtp_user=smtp_user,
+        smtp_pass=smtp_pass,
         to_address=args.to,
         ntfy_topic=args.ntfy,
     )

@@ -668,7 +668,8 @@ def _load_weekly_cluster_engagement(days=45):
         if isinstance(metadata, str):
             try:
                 metadata = json.loads(metadata)
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to parse metadata JSON: {e}")
                 metadata = {}
         cluster_ids = []
         for cluster_id in metadata.get("cluster_ids") or []:
@@ -745,7 +746,8 @@ def _load_weekly_topic_engagement(days=45):
         if isinstance(metadata, str):
             try:
                 metadata = json.loads(metadata)
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to parse metadata JSON: {e}")
                 metadata = {}
         child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
         for topic in metadata.get("focus_topics") or []:
@@ -810,7 +812,8 @@ def _load_weekly_source_engagement(days=45):
         if isinstance(metadata, str):
             try:
                 metadata = json.loads(metadata)
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to parse metadata JSON: {e}")
                 metadata = {}
         child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
         for source in metadata.get("focus_sources") or []:
@@ -1093,7 +1096,8 @@ def _parse_row_datetime(value):
     if isinstance(value, str) and value.strip():
         try:
             return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse datetime: {e}")
             return None
     return None
 
@@ -1228,7 +1232,8 @@ def _normalize_alert_context(context):
     if isinstance(context, str):
         try:
             context = json.loads(context)
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse alert context JSON: {e}")
             return {}
     if not isinstance(context, dict):
         return {}
@@ -1318,7 +1323,8 @@ def _load_breaking_target_performance(days=45):
         if isinstance(metadata, str):
             try:
                 metadata = json.loads(metadata)
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to parse metadata JSON: {e}")
                 metadata = {}
         child_stats = child_map.get(event_id) or {"opens": 0, "clicks": 0}
 

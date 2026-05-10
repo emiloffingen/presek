@@ -1,7 +1,9 @@
 import os
 import subprocess
+import logging
 from pathlib import Path
 
+log = logging.getLogger("presek.version")
 
 _ROOT = Path(__file__).resolve().parent
 _VERSION_FILE = _ROOT / "VERSION"
@@ -36,7 +38,8 @@ def _git_sha() -> str | None:
             timeout=1.5,
         )
         return result.stdout.strip() or None
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to get git describe: {e}")
         return None
 
 

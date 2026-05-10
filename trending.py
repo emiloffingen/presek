@@ -404,7 +404,8 @@ def get_trending(hours: int = 12, limit: int = MAX_RESULTS) -> list[dict]:
                     now
                     - datetime.fromisoformat(row["created_at"].replace("+00:00", ""))
                 ).total_seconds() / 3600
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to calculate age: {e}")
             age_h = 12
 
         # Momentum Windows

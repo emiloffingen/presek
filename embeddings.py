@@ -190,8 +190,8 @@ def parse_embedding_value(value) -> list[float] | None:
     if hasattr(value, "tolist"):
         try:
             value = value.tolist()
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"Failed to convert to list: {e}")
 
     if isinstance(value, dict):
         for key in ("embedding", "vector", "vec", "values", "data"):
@@ -212,14 +212,16 @@ def parse_embedding_value(value) -> list[float] | None:
         if raw.startswith("{") or raw.startswith("["):
             try:
                 return parse_embedding_value(json.loads(raw))
-            except Exception:
+            except Exception as e:
+                log.debug(f"Failed to parse embedding JSON: {e}")
                 pass
         cleaned = raw.strip("[]()")
         if not cleaned:
             return None
         try:
             return [float(part.strip()) for part in cleaned.split(",") if part.strip()]
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse embedding string: {e}")
             return None
 
     if isinstance(value, (list, tuple)):
@@ -229,12 +231,14 @@ def parse_embedding_value(value) -> list[float] | None:
                 return nested
         try:
             return [float(item) for item in value]
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse embedding list: {e}")
             normalized = []
             for item in value:
                 try:
                     normalized.append(float(item))
-                except Exception:
+                except Exception as e2:
+                    log.debug(f"Failed to parse embedding item: {e2}")
                     return None
             return normalized or None
 
@@ -245,7 +249,8 @@ def parse_embedding_value(value) -> list[float] | None:
             if nested:
                 return nested
         return [float(item) for item in items]
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to parse embedding iterable: {e}")
         return None
 
 

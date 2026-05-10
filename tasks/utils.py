@@ -69,7 +69,8 @@ def safe_async_run(coro):
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 return pool.submit(asyncio.run, coro).result()
         return loop.run_until_complete(coro)
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to run coroutine in existing loop: {e}")
         return asyncio.run(coro)
 
 
@@ -84,22 +85,24 @@ def invalidate_cluster_caches(cluster_id=None):
 def get_celery_queue_depth(queue_name="celery"):
     try:
         return int(redis_client.llen(queue_name) or 0)
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to get queue depth for {queue_name}: {e}")
         return 0
 
 
 def acquire_task_lock(lock_key: str, ttl_seconds: int = 300) -> bool:
     try:
         return bool(redis_client.set(lock_key, "1", ex=int(ttl_seconds), nx=True))
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to acquire lock {lock_key}: {e}")
         return True
 
 
 def release_task_lock(lock_key: str):
     try:
         redis_client.delete(lock_key)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to release lock {lock_key}: {e}")
 
 
 def record_runtime_event(event: str, **fields):

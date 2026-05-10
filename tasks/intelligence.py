@@ -607,7 +607,8 @@ def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=Fals
                                                 (entity, entity),
                                             )
                                             conn.commit()
-                                        except Exception:
+                                        except Exception as e:
+                                            log.debug(f"Failed to update entity mentions: {e}")
                                             conn.rollback()
                                             raise
                     except Exception as e:
@@ -1477,8 +1478,8 @@ def backfill_cover_art_task():
             if redis_client.get(cooldown_key):
                 log.info("Cover art backfill paused due to Pollinations cooldown.")
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"Failed to check Redis cooldown: {e}")
 
         # Find clusters from last 24h that either:
         # 1. Have no representative image

@@ -18,7 +18,8 @@ def _raise_http_error(status_code: int, detail: str):
     try:
         fastapi_mod = importlib.import_module("fastapi")
         exc_cls = getattr(fastapi_mod, "HTTPException", HTTPException)
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to import fastapi: {e}")
         exc_cls = HTTPException
     raise exc_cls(status_code=status_code, detail=detail)
 
@@ -189,6 +190,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         # Content Security Policy
+        # TODO: Remove 'unsafe-inline' - requires frontend nonce/hash implementation
+        # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
         csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://jsc.adskeeper.com https://*.adskeeper.com https://*.mgid.com; "
@@ -272,8 +275,12 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
 
         client_ip = _client_ip_for_request(request)
 
-        # Skip rate limiting for localhost and private IPs in development
-        if client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}:
+        # Skip rate limiting for localhost only in development mode
+        # In production, rate limit all requests including localhost
+        if (
+            client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+            and os.environ.get("ENV") != "production"
+        ):
             return await call_next(request)
 
         # Check if this path should be rate limited

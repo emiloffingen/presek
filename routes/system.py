@@ -150,7 +150,8 @@ async def get_weather():
         }
         set_cache("weather:skopje", res, ttl=900)
         return res
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to fetch weather: {e}")
         return {"temp": None, "icon": "🌡️"}
 
 
@@ -617,7 +618,8 @@ async def proxy_image(
             # Security: Resolve IPs to prevent SSRF
             try:
                 safe_ips = _resolve_public_ips(url)
-            except Exception:
+            except Exception as e:
+                log.debug(f"SSRF: Failed to resolve IPs for {url}: {e}")
                 return serve_fallback("security_block")
 
             import httpx

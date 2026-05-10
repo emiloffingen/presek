@@ -193,8 +193,8 @@ def run_ingestion():
         # waiting for the 15-minute TTL.
         try:
             redis_client.delete(lock_key)
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"Failed to delete lock {lock_key}: {e}")
 
 
 @celery_app.task

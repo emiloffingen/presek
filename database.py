@@ -11,6 +11,44 @@ import time
 import os
 from version import APP_VERSION_LABEL
 
+# --- Security: Input Validation for SQL ---
+
+# Valid timespan values and their corresponding SQL fragments
+VALID_TIMESPANS = {
+    "24h": "AND created_at >= NOW() - INTERVAL '24 hours'",
+    "7d": "AND created_at >= NOW() - INTERVAL '7 days'",
+    "30d": "AND created_at >= NOW() - INTERVAL '30 days'",
+    None: "",
+    "": "",
+}
+
+# Valid sort options
+VALID_SORT_BY = {"hybrid", "recent"}
+
+
+def _validate_timespan(timespan: str | None) -> str:
+    """Validate timespan parameter and return safe SQL WHERE clause fragment.
+    
+    Security: Only allows predefined timespan values to prevent SQL injection.
+    Returns empty string for None or invalid values.
+    """
+    if timespan is None:
+        return ""
+    # Normalize to lowercase for case-insensitive matching
+    normalized = timespan.lower() if isinstance(timespan, str) else ""
+    return VALID_TIMESPANS.get(normalized, "")
+
+
+def _validate_sort_by(sort_by: str) -> str:
+    """Validate sort_by parameter to prevent SQL injection.
+    
+    Returns 'hybrid' for invalid values.
+    """
+    if isinstance(sort_by, str) and sort_by.lower() in VALID_SORT_BY:
+        return sort_by.lower()
+    return "hybrid"
+
+
 # --- SQL Query Catalog ---
 
 DB_SESSION_OPTIONS = (
@@ -55,7 +93,18 @@ SQL_ARTICLE_SEARCH = """
 
 
 def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
-    """Helper to build dynamic hybrid search SQL."""
+    """Helper to build dynamic hybrid search SQL.
+    
+    Security: time_filter and sort_by must be validated by caller to prevent SQL injection.
+    time_filter should only contain safe WHERE clause fragments (e.g., "AND created_at >= ...")
+    sort_by should only be "hybrid" or "recent"
+    """
+    # Validate sort_by to prevent SQL injection
+    if sort_by not in ("hybrid", "recent"):
+        sort_by = "hybrid"
+    
+    order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
+    
     return f"""
         WITH fts_results AS (
             SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
@@ -92,7 +141,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         SELECT *, (base_score * recency_factor) as hybrid_score
         FROM ranked_clusters
         WHERE cluster_rank = 1
-        ORDER BY {"hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"}
+        ORDER BY {order_clause}
         LIMIT %s
     """
 
@@ -141,8 +190,8 @@ class AsyncDatabaseManager:
                 # We can't easily close an async pool from a sync signal handler
                 # but we can at least null it out so the next async call re-inits
                 self._pool = None
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(f"Failed to close async pool: {e}")
 
     async def _ensure_pool(self):
         async with self._lock:
@@ -321,29 +370,22 @@ class DatabaseManager:
         sort_by: str = "hybrid",
         timespan: str | None = None,
     ):
-        # Build time constraint
-        time_filter = ""
-        if timespan == "24h":
-            time_filter = "AND created_at >= NOW() - INTERVAL '24 hours'"
-        elif timespan == "7d":
-            time_filter = "AND created_at >= NOW() - INTERVAL '7 days'"
-        elif timespan == "30d":
-            time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
+        # Validate inputs to prevent SQL injection
+        time_filter = _validate_timespan(timespan)
+        validated_sort_by = _validate_sort_by(sort_by)
 
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        sql = _build_hybrid_search_sql(time_filter, sort_by)
+        sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
         return await self.async_execute(sql, (query_text, query_text, vec_str, limit))
 
     async def async_search_articles(
         self, query: str, limit: int = 50, timespan: str | None = None
     ):
-        time_filter = ""
-        if timespan == "24h":
-            time_filter = "a.created_at >= NOW() - INTERVAL '24 hours' AND "
-        elif timespan == "7d":
-            time_filter = "a.created_at >= NOW() - INTERVAL '7 days' AND "
-        elif timespan == "30d":
-            time_filter = "a.created_at >= NOW() - INTERVAL '30 days' AND "
+        # Validate timespan to prevent SQL injection
+        time_filter = _validate_timespan(timespan)
+        # Remove leading "AND " for this query format
+        if time_filter.startswith("AND "):
+            time_filter = time_filter[4:]
 
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
         return await self.async_execute(sql, (query, query, None, limit))
@@ -386,17 +428,12 @@ class DatabaseManager:
         """
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
 
-        # Build time constraint
-        time_filter = ""
-        if timespan == "24h":
-            time_filter = "AND created_at >= NOW() - INTERVAL '24 hours'"
-        elif timespan == "7d":
-            time_filter = "AND created_at >= NOW() - INTERVAL '7 days'"
-        elif timespan == "30d":
-            time_filter = "AND created_at >= NOW() - INTERVAL '30 days'"
+        # Validate inputs to prevent SQL injection
+        time_filter = _validate_timespan(timespan)
+        validated_sort_by = _validate_sort_by(sort_by)
 
         # We use websearch_to_tsquery for more natural search behavior
-        sql = _build_hybrid_search_sql(time_filter, sort_by)
+        sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
         return self.execute(sql, (query_text, query_text, vec_str, limit))
 
     def get_articles_by_country(

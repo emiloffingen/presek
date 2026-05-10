@@ -367,7 +367,8 @@ def _rep_age_hours(created_at) -> float:
     if isinstance(dt, str):
         try:
             dt = datetime.datetime.fromisoformat(dt.replace("Z", "+00:00"))
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse datetime string: {e}")
             return 999.0
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=datetime.timezone.utc)

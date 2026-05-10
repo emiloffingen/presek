@@ -243,7 +243,14 @@ class GeminiProvider(AIProvider):
     def __init__(self, api_key: str, model: str):
         self.api_key = api_key
         self.model = model
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+    def _get_headers(self) -> dict:
+        """Get headers with API key in Authorization header (Bearer token)."""
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
 
     def call(
         self,
@@ -270,7 +277,7 @@ class GeminiProvider(AIProvider):
 
         try:
             with httpx.Client(timeout=60.0) as client:
-                resp = client.post(self.api_url, json=payload)
+                resp = client.post(self.api_url, json=payload, headers=self._get_headers())
                 resp.raise_for_status()
                 data = resp.json()
                 return data["candidates"][0]["content"]["parts"][0]["text"]
@@ -470,7 +477,8 @@ def clean_json_response(text: str) -> dict | str | None:
     try:
         data = json.loads(text)
         return data
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to parse JSON: {e}")
         return text
 
 

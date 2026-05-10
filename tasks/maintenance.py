@@ -103,8 +103,9 @@ def validate_cluster_images_task():
                         if c_resp.status_code == 200:
                             new_img = cand_url
                             break
-                    except Exception:
+                    except Exception as e:
                         # Network error, try next candidate
+                        log.debug(f"Failed to check image URL {cand_url}: {e}")
                         continue
 
                 if new_img:

@@ -59,7 +59,8 @@ def score_cluster(arts):
         else:
             latest = datetime.datetime.fromisoformat(ts.replace("+00:00", ""))
         hours_old = (now - latest).total_seconds() / 3600
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to calculate recency: {e}")
         hours_old = 24
     recency = math.exp(-0.115 * hours_old)
     breadth = math.log1p(len(arts))

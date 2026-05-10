@@ -281,8 +281,8 @@ def parse_entry_timestamp(entry, fallback_now: datetime.datetime) -> datetime.da
             if published_at < fallback_now - datetime.timedelta(days=14):
                 return fallback_now
             return published_at
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug(f"Failed to parse published_at date: {e}")
     return fallback_now
 
 
@@ -520,8 +520,8 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                 resolved = urljoin(str(resp.url), img_url)
                 if re.match(r"^https?://", resolved, flags=re.IGNORECASE):
                     return resolved
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to extract og:image: {e}")
     return None
 
 

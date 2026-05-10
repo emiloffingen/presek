@@ -154,7 +154,8 @@ class ImageService:
                                 f.write(data)
                                 f.truncate()
                             log.info(f"Pruned large log file: {log_file}")
-                        except Exception:
+                        except Exception as e:
+                            log.warning(f"Failed to prune log file {log_file}: {e}")
                             continue
         except Exception as e:
             log.error(f"Cleanup storage failed: {e}")

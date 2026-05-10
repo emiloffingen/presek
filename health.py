@@ -52,8 +52,8 @@ def _probe_database():
         if conn is not None:
             try:
                 conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug(f"Failed to close DB connection: {e}")
 
     try:
         result["size_mb"] = database.get_db_size()
@@ -131,8 +131,8 @@ def update_source_policy(
         raw = _get_redis().hget(_SOURCE_POLICY_REDIS_KEY, source_name)
         if raw:
             state.update(json.loads(raw.decode() if isinstance(raw, bytes) else raw))
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to load source policy for {source_name}: {e}")
 
     if status == "error":
         state["consecutive_errors"] = int(state.get("consecutive_errors", 0)) + 1
@@ -157,16 +157,16 @@ def update_source_policy(
     try:
         _get_redis().hset(_SOURCE_POLICY_REDIS_KEY, source_name, json.dumps(state))
         _get_redis().expire(_SOURCE_POLICY_REDIS_KEY, 3600 * 24 * 7)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to save source policy for {source_name}: {e}")
     return state
 
 
 def reset_source_policy(source_name: str):
     try:
         _get_redis().hdel(_SOURCE_POLICY_REDIS_KEY, source_name)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to reset source policy for {source_name}: {e}")
 
 
 def record_refresh(article_count: int, errors: list[str] | None = None):
@@ -207,8 +207,8 @@ def record_source_fetch(
     try:
         _get_redis().hset(_SOURCE_REDIS_KEY, source_name, json.dumps(payload))
         _get_redis().expire(_SOURCE_REDIS_KEY, 3600 * 12)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to save source status for {source_name}: {e}")
 
 
 def get_source_statuses():
@@ -220,7 +220,8 @@ def get_source_statuses():
             )
             for key, value in raw_sources.items()
         }
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to get source statuses: {e}")
         return {}
 
 
@@ -237,7 +238,8 @@ def _freshness_payload(last_refresh_time: str | None):
         age_minutes = max(
             0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60)
         )
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to parse refresh time {last_refresh_time}: {e}")
         return {"status": "stale", "age_minutes": None, "label": "Непознато освежување"}
 
     if age_minutes <= 15:
@@ -269,5 +271,5 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
     try:
         _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))
         _get_redis().expire(_TASK_REDIS_KEY, 3600 * 12)
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Failed to record task event for {task_name}: {e}")

@@ -225,7 +225,8 @@ def normalize_perspectives(raw_perspectives) -> list[dict]:
     if isinstance(raw_perspectives, str):
         try:
             raw_perspectives = json.loads(raw_perspectives)
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse perspectives JSON: {e}")
             return []
     if not isinstance(raw_perspectives, list):
         return []
@@ -274,7 +275,8 @@ def normalize_citation_sources(raw_sources) -> list[dict]:
     if isinstance(raw_sources, str):
         try:
             raw_sources = json.loads(raw_sources)
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse citation sources JSON: {e}")
             return []
     if not isinstance(raw_sources, list):
         return []
@@ -417,7 +419,8 @@ def rank_cluster_citations(
     for raw in preferred_numbers or []:
         try:
             idx = int(raw)
-        except Exception:
+        except Exception as e:
+            log.debug(f"Failed to parse preferred number {raw}: {e}")
             continue
         if idx not in preferred_order:
             preferred_order.append(idx)
