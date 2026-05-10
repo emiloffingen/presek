@@ -814,7 +814,7 @@ def refresh_cluster_centroid_task(cluster_id):
 
 
 @celery_app.task
-def extract_entities_task(hours=24, target_clusters=None):
+def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
     """Extract entities for top clusters using local hybrid logic (Lexicon + spaCy + Regex)."""
     try:
         if target_clusters:
