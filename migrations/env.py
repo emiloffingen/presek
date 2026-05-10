@@ -27,7 +27,15 @@ from database import DATABASE_URL
 
 target_metadata = MetaData()
 
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+# Ensure we use the psycopg 3 driver for SQLAlchemy
+if DATABASE_URL.startswith("postgresql://"):
+    ALEMBIC_DB_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgres://"):
+    ALEMBIC_DB_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+else:
+    ALEMBIC_DB_URL = DATABASE_URL
+
+config.set_main_option("sqlalchemy.url", ALEMBIC_DB_URL)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
