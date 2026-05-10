@@ -297,13 +297,13 @@ const articleSchema = cluster ? {
 						articlesCount={cluster.articles?.length || 0}
 					/>
 				</div>
-
-				<div class="editorial-grid">
-					{/* 3. MAIN COLUMN */}
-					<div class="editorial-main-col">
-                        {/* EXECUTIVE SUMMARY / BRИФИНГ */}
-						{(headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
-                            <div class="executive-summary mb-12 p-8 bg-secondary/15 border-l-4 border-nyt-accent">
+<div class="editorial-grid">
+	{/* 3. MAIN COLUMN */}
+	<div class="editorial-main-col">
+{/* EXECUTIVE SUMMARY / BRИФИНГ - Hidden when we have a full narrative centerpiece */}
+		{(!hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0))) && (
+<div class="executive-summary mb-12 p-8 bg-secondary/15 border-l-4 border-nyt-accent">
+...
                                 <div class="flex items-center gap-2 mb-6">
                                     <Sparkles size={14} className="text-nyt-accent" />
                                     <span class="text-[10px] font-black uppercase tracking-[0.2em] text-nyt-accent">КРАТОК ПРЕГЛЕД</span>
@@ -352,6 +352,41 @@ const articleSchema = cluster ? {
 								synthesisItems={synthesisItems}
 								hasCitationSources={hasCitationSources}
 							/>
+
+                            {/* DATA RECAP / KEY POINTS (Moved to bottom of narrative) */}
+                            {hasGeneratedNarrative && (headerBriefItems.length > 0 || (cluster.key_facts && cluster.key_facts.length > 0)) && (
+                                <div class="narrative-recap mt-12 p-8 bg-secondary/10 border-t border-border/40">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {headerBriefItems.length > 0 && (
+                                            <div>
+                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">КЛУЧНИ ПОЕНТИ</h4>
+                                                <ul class="space-y-2">
+                                                    {headerBriefItems.map(item => (
+                                                        <li class="font-sans text-[13px] leading-snug text-foreground/80 flex items-start gap-2">
+                                                            <span class="text-nyt-accent">•</span>
+                                                            {item}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {cluster.key_facts && cluster.key_facts.length > 0 && (
+                                            <div class="border-t md:border-t-0 md:border-l border-border/40 pt-6 md:pt-0 md:pl-8">
+                                                <h4 class="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">СИСТЕМСКИ ПОДАТОЦИ</h4>
+                                                <ul class="space-y-2">
+                                                    {cluster.key_facts.map((fact: string) => (
+                                                        <li class="font-sans text-[12px] font-bold leading-tight text-foreground/70 flex items-start gap-2">
+                                                            <span class="text-nyt-accent">›</span>
+                                                            {fact}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <AdsKeeperWidget placement="in-article" />
 						</section>
 						)}
